@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - run: chmod 777
       - run: ./gradlew build
 #      - name: Archive production artifacts
 #        uses: actions/upload-artifact@v2
