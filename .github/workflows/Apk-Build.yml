@@ -1,0 +1,19 @@
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Person to greet'
+        required: true
+        default: 'Mona the Octocat'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: ./gradlew build
+#      - name: Archive production artifacts
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: dist
+#          path: test.js
