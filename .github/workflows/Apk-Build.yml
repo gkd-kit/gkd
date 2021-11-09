@@ -15,8 +15,9 @@ jobs:
       - uses: actions/checkout@v2
       - run: chmod 777 ./gradlew
       - run: ./gradlew build
-#      - name: Archive production artifacts
-#        uses: actions/upload-artifact@v2
-#        with:
-#          name: dist
-#          path: test.js
+      - run: ./gradlew assembleDebug
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-outputs-apk
+          path: app/build/outputs/apk
