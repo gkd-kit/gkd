@@ -35,8 +35,8 @@ private fun match(
         return false
     }
     val childCount = nodeInfo.childCount
-    val text:CharSequence? = nodeInfo.text
-    val id:String? = nodeInfo.viewIdResourceName
+    val text: CharSequence? = nodeInfo.text
+    val id: String? = nodeInfo.viewIdResourceName
 
 //    在属性匹配列表不空的情况下, 列表所有项都匹配
     if (matchUnit.attributeSelectorList.isNotEmpty()) {
@@ -49,7 +49,7 @@ private fun match(
                     AttributeSelector.Operator.Less -> childCount < it.value.toInt()
                     AttributeSelector.Operator.More -> childCount > it.value.toInt()
                     AttributeSelector.Operator.Start -> false
-                    else-> TODO()
+                    else -> TODO()
                 }
                 AttributeSelector.Attribute.Id -> {
                     when (it.operator) {
@@ -59,19 +59,19 @@ private fun match(
                         AttributeSelector.Operator.Less -> false
                         AttributeSelector.Operator.More -> false
                         AttributeSelector.Operator.Start -> false
-                        else-> TODO()
+                        else -> TODO()
                     }
                 }
-                AttributeSelector.Attribute.Text -> text!=null &&when (it.operator) {
+                AttributeSelector.Attribute.Text -> text != null && when (it.operator) {
                     AttributeSelector.Operator.End -> text.endsWith(it.value)
                     AttributeSelector.Operator.Equal -> text == it.value
                     AttributeSelector.Operator.Include -> text.contains(it.value)
                     AttributeSelector.Operator.Less -> false
                     AttributeSelector.Operator.More -> false
                     AttributeSelector.Operator.Start -> text.startsWith(it.value)
-                    else-> TODO()
+                    else -> TODO()
                 }
-                else-> TODO()
+                else -> TODO()
             }
         }
         if (!condition2) {
@@ -123,7 +123,7 @@ private fun match(
     return false
 }
 
- fun findNodeInfo(
+fun findNodeInfo(
     nodeInfo: AccessibilityNodeInfo?,
     matchUnit: MatchUnit,
     pathIndexList: List<Int>,

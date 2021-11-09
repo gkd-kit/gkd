@@ -1,9 +1,6 @@
 package li.songe.ad_closer.service
 
 import android.accessibilityservice.AccessibilityService
-import android.content.ComponentName
-import android.content.pm.ActivityInfo
-import android.content.pm.PackageManager.NameNotFoundException
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
@@ -18,24 +15,23 @@ import li.songe.ad_closer.util.findNodeInfo
  */
 class AdCloserService : AccessibilityService() {
 
-    private fun getActivityInfo(componentName: ComponentName): ActivityInfo? {
-        return try {
-            packageManager.getActivityInfo(componentName, 0)
-        } catch (e: NameNotFoundException) {
-            null
-        }
-    }
+//    private fun getActivityInfo(componentName: ComponentName): ActivityInfo? {
+//        return try {
+//            packageManager.getActivityInfo(componentName, 0)
+//        } catch (e: NameNotFoundException) {
+//            null
+//        }
+//    }
 
     private val scope = CoroutineScope(Dispatchers.Default + Job())
 //    override fun onDestroy() {
 //        super.onDestroy()
 //    }
 
-    private var currentPackageName: String? = null
-//    考虑n种模式
-//    默认情况 正常获取 activity class name
-//    不使用 activity class name, 直接用 package class name, 会导致 匹配规则 变多
-//    借助 shizuku 使用 adb 获取 activity class name
+    override fun onCreate() {
+        super.onCreate()
+        LogUtils.d("onCreate")
+    }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -54,14 +50,22 @@ class AdCloserService : AccessibilityService() {
                 if (window != null && ruleListMap.containsKey(currentActivityClassName)) {
                     run loop@{
                         ruleListMap[currentActivityClassName]!!.forEachIndexed { _, rule ->
-                            val nodeInfo =
-                                findNodeInfo(window, rule.matchUnit, listOf(0))
-                            if (nodeInfo != null) {
-                                LogUtils.dTag("click", rule.rawText)
-                                nodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                                nodeInfo.recycle()
-                                return@loop
+                            var nodeInfo = findNodeInfo(window, rule.matchUnit, listOf(0))
+                            var level = 0
+                            while (nodeInfo != null && !nodeInfo.isClickable) {
+                                nodeInfo = nodeInfo.parent
+                                level += 1
                             }
+                            if (nodeInfo != null) {
+                                nodeInfo.apply {
+                                    LogUtils.dTag("click", level, rule.rawText)
+                                    performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                                }
+                            } else {
+                                LogUtils.dTag("click", "not isClickable", rule.rawText)
+                            }
+                            return@loop
+
                         }
                     }
                 }
@@ -105,7 +109,12 @@ class AdCloserService : AccessibilityService() {
 //                在桌面和应用之间来回切换, 大概率导致识别失败
                 if (!className.startsWith("android.") && !className.startsWith("androidx.")) {
 //                    className.startsWith(packageName)
-                    currentActivityClassName = className
+                    val rootPackageName = rootInActiveWindow?.packageName?.toString() ?: ""
+                    if ((className == "com.miui.home.launcher.Launcher" && rootPackageName != "com.miui.home")) {
+//                        上滑手势, 导致 活动名 不属于包名
+                    } else {
+                        currentActivityClassName = className
+                    }
                 }
             }
             else -> {
@@ -141,7 +150,12 @@ class AdCloserService : AccessibilityService() {
         set(value) {
             if (field != value) {
                 field = value
-                LogUtils.dTag("updateClassName", field, rootInActiveWindow?.packageName)
+                val packageName = rootInActiveWindow?.packageName
+                LogUtils.dTag(
+                    "updateClassName",
+                    field,
+                    packageName,
+                )
             }
         }
 

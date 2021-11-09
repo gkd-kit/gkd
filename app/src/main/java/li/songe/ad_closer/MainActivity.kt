@@ -28,10 +28,10 @@ class MainActivity : ComponentActivity() {
             LogUtils.d(this)
             packageName
         }
-        checkPermission(0)
-        Shizuku.addRequestPermissionResultListener { requestCode, grantResult ->
-            LogUtils.d(requestCode, grantResult)
-        }
+//        Shizuku.addRequestPermissionResultListener { requestCode, grantResult ->
+//            LogUtils.d(requestCode, grantResult)
+//        }
+//        checkPermission(0)
 //        Shizuku.bindUserService()
 
     }
