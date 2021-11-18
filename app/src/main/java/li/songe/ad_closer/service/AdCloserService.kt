@@ -161,7 +161,15 @@ class AdCloserService : AccessibilityService() {
 
     override fun onInterrupt() {
         scope.cancel()
+//        val invok = {a: Int, b: Int->a+b}
+
     }
 
 
 }
+//typealias Test = (a: Int, b: Int) -> Int
+//typealias Test = (a: Int, ) -> Int
+
+//fun invok(a: Int, b: Int = 0){
+//
+//}
