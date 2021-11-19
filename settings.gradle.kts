@@ -6,4 +6,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "AdCloser"
-include ':app'
+include(":app")
