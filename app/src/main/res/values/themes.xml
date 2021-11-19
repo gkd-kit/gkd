@@ -22,4 +22,12 @@
     <style name="Theme.AdCloser.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="Theme.AdCloser.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="Entry">
+        <item name="background">@android:color/transparent</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="colorPrimaryDark">@android:color/transparent</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
 </resources>
