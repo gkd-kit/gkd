@@ -5,13 +5,13 @@ plugins {
 
 val composeVersion = "1.0.5"
 android {
-    compileSdk =31
-    buildToolsVersion ="31.0.0"
+    compileSdk = 31
+    buildToolsVersion = "31.0.0"
 
     defaultConfig {
         applicationId = "li.songe.ad_closer"
-        minSdk =26
-        targetSdk =31
+        minSdk = 26
+        targetSdk = 31
         versionCode = 1
         versionName = "1.0"
 
@@ -20,24 +20,30 @@ android {
             useSupportLibrary = true
         }
     }
-//    signingConfigs{
-//        release{
-//            storeFile = file("./android.jks")
-//            storePassword = "KdMQ6pqiNSJ6Sype"
-//            keyAlias = "key0"
-//            keyPassword = "KdMQ6pqiNSJ6Sype"
-//        }
-//    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file("./android.jks")
+            storePassword = "KdMQ6pqiNSJ6Sype"
+            keyAlias = "key0"
+            keyPassword = "KdMQ6pqiNSJ6Sype"
+        }
+    }
 
     buildTypes {
-        getByName("release") {
-//            isMinifyEnabled = false
-//            setProguardFiles(listOf(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"))
-//            signingConfig = signingConfigs.getByName("release")
+        release {
+            isMinifyEnabled = false
+            setProguardFiles(
+                listOf(
+                    getDefaultProguardFile("proguard-android-optimize.txt"),
+                    "proguard-rules.pro"
+                )
+            )
+            signingConfig = signingConfigs.getByName("release")
         }
-//        debug{
-//            signingConfig = signingConfigs.getByName("release")
-//        }
+        debug {
+            applicationIdSuffix = ".debug"
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -47,7 +53,7 @@ android {
         jvmTarget = "1.8"
     }
     buildFeatures {
-        compose =true
+        compose = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = composeVersion
