@@ -1,27 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="li.songe.ad_closer">
+    package="li.songe.gkd">
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
+        android:label="${appName}"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:name=".App"
+        android:name="li.songe.gkd.App"
         android:theme="@style/Theme.AdCloser">
 
         <activity
-            android:name=".MainActivity"
+            android:name="li.songe.gkd.MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:excludeFromRecents="true"
             android:theme="@style/Theme.AdCloser.NoActionBar">
         </activity>
         <activity
-            android:name=".EntryActivity"
+            android:name="li.songe.gkd.EntryActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:excludeFromRecents="true"
             android:theme="@style/Entry">
             <intent-filter>
@@ -30,9 +31,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name="li.songe.gkd.WebActivity"
+            android:exported="true">
+            <intent-filter>
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="dev.songe.li"
+                    android:path="/detail"
+                    android:port="80"
+                    android:scheme="adcloser" />
+            </intent-filter>
+        </activity>
 
         <service
-            android:name=".service.AdCloserService"
+            android:name="li.songe.gkd.service.GkdService"
             android:exported="false"
             android:label="@string/accessibility_service_label"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">

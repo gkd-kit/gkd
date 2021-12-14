@@ -5,5 +5,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "AdCloser"
+rootProject.name = "gkd"
 include(":app")

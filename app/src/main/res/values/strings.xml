@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">AdCloser</string>
-    <string name="accessibility_service_label">accessibility_service_label</string>
-    <string name="accessibility_service_description">accessibility_service_description</string>
+    <string name="app_name">搞快点</string>
+    <string name="accessibility_service_label">搞快点</string>
+    <string name="accessibility_service_description">基于规则匹配的无障碍速点服务</string>
 </resources>
