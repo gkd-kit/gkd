@@ -5,19 +5,28 @@ buildscript {
 //        kotlin_version = "1.5.31"
 //    }
     repositories {
-        google()
+        mavenLocal()
+//        maven { url = uri("https://maven.aliyun.com/repository/google") }
+//        maven { url = uri("https://maven.aliyun.com/repository/central") }
+//        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
         mavenCentral()
+        google()
+        maven {
+            url = uri("https://jitpack.io")
+        }
+//        maven { url = uri("https://androidx.dev/snapshots/builds/9153953/artifacts/repository") }
+
     }
     dependencies {
-        val kotlinVersion= "1.5.31"
-        classpath("com.android.tools.build:gradle:7.0.4")
-        classpath(kotlin("gradle-plugin", version = kotlinVersion))
-
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
+        classpath("com.android.tools.build:gradle:7.3.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.10")
+        classpath("org.jetbrains.kotlin:kotlin-serialization:1.7.10")
+        classpath("dev.rikka.tools.refine:gradle-plugin:3.0.3")
     }
 }
 
+
+
 tasks.register<Delete>("clean").configure {
     delete(rootProject.buildDir)
- }
+}
