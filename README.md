@@ -4,13 +4,14 @@
 
 ## feature
 
+- 扩展自css选择器语法的高级选择语法
 - 跳过启动页面
 - 关闭app内部广告
-- 任意点击操作
-- 支持导入订阅链接
+- 任意点击操作, 组合操作
+- 支持导入订阅链接, 订阅支持 json/json5/yaml/toml 格式
 - 支持浏览器直接跳转导入规则至app
+- 无障碍模式, shizuku 模式, root 模式, 设备管理员 模式
 
-类似 uiautomatorviewer 的路径选取规则创建器
 
 # Fix Bug
 

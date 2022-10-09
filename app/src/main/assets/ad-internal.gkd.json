@@ -1,0 +1,602 @@
+{
+  "$schema": "https://raw.githubusercontent.com/lisonge/gkd-subscription/main/lib/gkd.schema.json",
+  "version": 1,
+  "author": "https://github.com/lisonge",
+  "description": "APP内部广告集合",
+  "appList": [
+    {
+      "packageName": "com.zhihu.android",
+      "groupList": [
+        {
+          "key": 0,
+          "className": "com.zhihu.android.mix.activity.ContentMixProfileActivity",
+          "description": "知乎回答页面-文章底部-卡片广告",
+          "ruleList": [
+            {
+              "selector": "View[text$=`广告`] - View[text=`×`]"
+            },
+            {
+              "selector": "TextView[text$=`广告`] - Image"
+            },
+            {
+              "selector": "TextView[text$=`广告`] +2 Image"
+            },
+            {
+              "selector": "TextView[text.length>0] + TextView[text*=`热度`] + View > Image"
+            },
+            {
+              "selector": "View[text$=`的广告`] + View[text=`×`]"
+            },
+            {
+              "selector": "TextView[text$=`的广告`] + TextView[text=`×`]"
+            },
+            {
+              "selector": "View[text$=`的广告`] +2 View[text=`×`]"
+            },
+            {
+              "selector": "TextView[text=`了解更多`] > TextView[text=`×`]"
+            },
+            {
+              "selector": "TextView[text$=`的广告`] +2 TextView[text=`×`]"
+            },
+            {
+              "selector": "TextView[text=`限时解锁`] +2 Image",
+              "description": "盐选会员推荐"
+            }
+          ]
+        },
+        {
+          "key": 1,
+          "className": "com.zhihu.android.mix.activity.ContentMixProfileActivity",
+          "description": "知乎回答页面-文章底部-文章推荐",
+          "ruleList": [
+            {
+              "selector": "View[text$=`关注`][text*=`回答`] + View[text=`×`]"
+            },
+            {
+              "selector": "View[text*=`的回答`][text*=`点赞`][text$=`评论`] + TextView + Image"
+            },
+            {
+              "selector": "TextView[text*=`赞同`][text$=`评论`][text*=`·`] + TextView[text$=`专题精选`] + View[text=`×`]"
+            }
+          ]
+        },
+        {
+          "key": 2,
+          "className": "com.zhihu.android.ContentActivity",
+          "description": "题目概览页面-回答列表-广告",
+          "ruleList": [
+            {
+              "selector": "TextView[text=`确认`][id=`com.zhihu.android:id/confirm_uninterest`]",
+              "description": "确认关闭广告按钮"
+            },
+            {
+              "selector": "TextView[text=`撤销`] <2 LinearLayoutCompat + FrameLayout > TextView[id=`com.zhihu.android:id/uninterest_reason`]",
+              "description": "不感兴趣理由按钮"
+            },
+            {
+              "selector": "ViewGroup > TextView[text*=`广告`] +4 ImageView",
+              "description": "广告关闭按钮-1"
+            },
+            {
+              "selector": "ViewGroup > TextView[text*=`广告`] +2 ImageView",
+              "description": "广告关闭按钮-2"
+            }
+          ]
+        },
+        {
+          "className": "com.zhihu.android.app.ui.activity.MainActivity",
+          "ruleList": [
+            {
+              "selector": "TextView[id=`com.zhihu.android:id/confirm_uninterest`]",
+              "description": "确认关闭广告按钮"
+            },
+            {
+              "selector": "TextView[id=`com.zhihu.android:id/uninterest_reason`]",
+              "description": "不感兴趣理由按钮"
+            },
+            {
+              "selector": "ViewGroup > TextView[text*=`的广告`] +2 ImageView"
+            }
+          ]
+        },
+        {
+          "className": "com.zhihu.android.app.ui.activity.LauncherActivity",
+          "description": "开屏广告",
+          "ruleList": [
+            {
+              "selector": "TextView[id=`com.zhihu.android:id/btn_skip`]",
+              "className": "com.zhihu.android.app.ui.activity.LauncherActivity"
+            },
+            {
+              "selector": "TextView[id=`com.zhihu.android:id/btn_skip`]",
+              "className": "com.zhihu.android.app.ui.activity.LaunchAdActivity"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.baidu.tieba",
+      "groupList": [
+        {
+          "className": "com.baidu.tieba.tblauncher.MainTabActivity",
+          "description": "开屏广告",
+          "ruleList": [
+            {
+              "selector": "View[id=`com.byted.pangle:id/tt_splash_skip_btn`]"
+            },
+            {
+              "selector": "TextView[text*=`广告`] - TextView[text^=`跳过`]"
+            }
+          ]
+        },
+        {
+          "className": "com.baidu.tieba.tblauncher.MainTabActivity",
+          "description": "主页推荐-广告",
+          "ruleList": [
+            {
+              "selector": "TextView[text*=`广告`] < LinearLayout -2 RelativeLayout > TextView[text=`选择不喜欢理由`] + View"
+            },
+            {
+              "selector": "TextView[text$=`广告`] < RelativeLayout <3 LinearLayout - LinearLayout >4 ImageView"
+            }
+          ]
+        },
+        {
+          "className": "com.baidu.tieba.pb.pb.main.PbActivity",
+          "ruleList": [
+            {
+              "selector": "TextView[text*=`广告`] < LinearLayout -2 RelativeLayout > TextView[text*=`选择不喜欢理由`] + View[index=1]"
+            },
+            {
+              "selector": "RelativeLayout[id=`com.baidu.tieba:id/obfuscated`] > LinearLayout > FrameLayout[id=`com.baidu.tieba:id/obfuscated`] > ImageView"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.tencent.mm",
+      "groupList": [
+        {
+          "className": "com.tencent.mm.plugin.sns.ui.SnsTimeLineUI",
+          "description": "朋友圈-广告卡片",
+          "ruleList": [
+            {
+              "selector": "TextView[text=`选择后将减少该类推荐`] + TextView[text=`确认`]"
+            },
+            {
+              "selector": "TextView[text=`选择后将减少该类推荐`] + FrameLayout > ViewGroup > TextView[text.length>0]"
+            },
+            {
+              "selector": "TextView[text*=`广告`] + TextView[text*=`广告`] + FrameLayout > LinearLayout > LinearLayout + LinearLayout"
+            },
+            {
+              "selector": "ImageView[contentDescription$=`的头像`] + LinearLayout > LinearLayout[childCount=2] > TextView[id!=null][text.length>0] + LinearLayout[id!=null][childCount=0]"
+            },
+            {
+              "selector": "ImageView[contentDescription$=`的头像`] + LinearLayout > LinearLayout[childCount=2] > TextView[id!=null][text.length>0] + LinearLayout > TextView[text*=`广告`]"
+            }
+          ]
+        },
+        {
+          "className": "com.tencent.mm.plugin.webwx.ui.ExtDeviceWXLoginUI",
+          "description": "其他设备登录界面-自动点击登录",
+          "ruleList": [
+            {
+              "selector": "TextView[text=`取消登录`] - Button[text=`登录`]"
+            }
+          ]
+        },
+        {
+          "className": "com.tencent.mm.ui.LauncherUI",
+          "description": "微信聊天界面-红包",
+          "ruleList": [
+            {
+              "selector": "TextView[text$=`的红包`] <2 LinearLayout < LinearLayout +2 ImageButton[contentDescription=`开`] + Button",
+              "className": "com.tencent.mm.plugin.luckymoney.ui.LuckyMoneyNotHookReceiveUI"
+            },
+            {
+              "selector": "TextView[text$=`的红包`] >2 LinearLayout - ImageView < LinearLayout +2 RelativeLayout > TextView[text=`微信红包`]",
+              "description": "红包描述下面有一行小字-**的红包"
+            },
+            {
+              "selector": "RelativeLayout + LinearLayout >5 LinearLayout[childCount=1] - ImageView < LinearLayout +2 RelativeLayout > TextView[text=`微信红包`]",
+              "description": "红包下面没有小字, 但是得和自己的红包区分开来"
+            }
+          ]
+        },
+        {
+          "className": "com.tencent.mm.ui.LauncherUI",
+          "description": "微信聊天界面-转账",
+          "ruleList": [
+            {
+              "className": "com.tencent.mm.plugin.luckymoney.ui.LuckyMoneyDetailUI",
+              "selector": "ImageView[contentDescription=`返回按钮`]",
+              "description": "红包领取结果页面-返回按钮"
+            },
+            {
+              "selector": "TextView - Button[text=`收款`]",
+              "className": "com.tencent.mm.plugin.remittance.ui.RemittanceDetailUI"
+            },
+            {
+              "selector": "RelativeLayout + LinearLayout >4 TextView[text!=`已被接收`][text!=`已收款`][text!=`已收款待入账`] <2 LinearLayout < RelativeLayout <2 LinearLayout + RelativeLayout > TextView[text=`微信转账`]",
+              "description": "注意:如果红包备注是[已被接收,已收款,已收款待入账],则无法区分"
+            }
+          ]
+        },
+        {
+          "className": "com.tencent.mm.plugin.webview.ui.tools.SDKOAuthUI",
+          "description": "第三方网页登录",
+          "ruleList": [
+            {
+              "selector": "Button[text=`拒绝`] - Button[text=`允许`]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "tv.danmaku.bili",
+      "groupList": [
+        {
+          "className": "tv.danmaku.bili.ui.video.VideoDetailsActivity",
+          "description": "视频播放页-评论区顶部-公告或推荐",
+          "ruleList": [
+            {
+              "selector": "ImageView + TextView[id=`tv.danmaku.bili:id/content`] + ImageView[id=`tv.danmaku.bili:id/close`]"
+            },
+            {
+              "selector": "ImageView + TextView[id=`tv.danmaku.bili:id/content`] + ImageView[id=`tv.danmaku.bili:id/close`]",
+              "className": "com.bilibili.video.videodetail.VideoDetailsActivity",
+              "description": "视频评论区-公告"
+            },
+            {
+              "selector": "ImageView + TextView[id=`tv.danmaku.bili:id/content`] + ImageView[id=`tv.danmaku.bili:id/close`]",
+              "className": "com.bilibili.lib.ui.GeneralActivity",
+              "description": "用户动态评论区-公告"
+            },
+            {
+              "selector": "ImageView + TextView[id=`tv.danmaku.bili:id/content`] + ImageView[id=`tv.danmaku.bili:id/close`]",
+              "className": "com.bilibili.bangumi.ui.page.detail.BangumiDetailActivityV3",
+              "description": "番剧评论区-公告"
+            }
+          ]
+        },
+        {
+          "className": "tv.danmaku.bili.MainActivityV2",
+          "description": "动态-综合-广告卡片",
+          "ruleList": [
+            {
+              "selector": "TextView[id^=`tv.danmaku.bili:id/reason`]",
+              "description": "点击广告关闭后的弹窗的列表项的第一个",
+              "className": "com.bilibili.lib.ui.menu.a"
+            },
+            {
+              "selector": "TextView[id=`tv.danmaku.bili:id/ad_tag_text`]",
+              "description": "广告卡片-右上角文本-广告^"
+            }
+          ]
+        },
+        {
+          "className": "tv.danmaku.bili.MainActivityV2",
+          "description": "首屏推荐",
+          "ruleList": [
+            {
+              "selector": "TextView[text^=`跳过`][id=`tv.danmaku.bili:id/count_down`]"
+            }
+          ]
+        },
+        {
+          "className": "com.bilibili.teenagersmode.ui.TeenagersModeDialogActivity",
+          "description": "青少年模式弹窗",
+          "ruleList": [
+            {
+              "selector": "TextView[text=`我知道了`]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.duokan.phone.remotecontroller",
+      "groupList": [
+        {
+          "className": "com.xiaomi.mitv.phone.remotecontroller.HoriWidgetMainActivityV2",
+          "description": "首页-底部推荐卡片",
+          "ruleList": [
+            {
+              "selector": "ImageView[id=`com.duokan.phone.remotecontroller:id/image_close_banner`]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.coolapk.market",
+      "groupList": [
+        {
+          "className": "com.coolapk.market.view.main.MainActivity",
+          "ruleList": [
+            {
+              "selector": "TextView[text=`举报广告`] < LinearLayout - LinearLayout",
+              "className": "com.bytedance.sdk.openadsdk.core.dislike.ui.c",
+              "description": "关闭广告后的弹窗, [举报广告] 上面有多个按钮, 且按钮文字顺序随机, 所以我们只需要点击最近一个按钮即可"
+            },
+            {
+              "selector": "TextView[text=`举报广告`] < LinearLayout - LinearLayout",
+              "description": "关闭广告后的弹窗, [举报广告] 上面有多个按钮, 且按钮文字顺序随机, 所以我们只需要点击最近一个按钮即可"
+            },
+            {
+              "selector": "Button[text*=`广告`] - Button[text=`不感兴趣`]"
+            },
+            {
+              "selector": "TextView[id=`com.coolapk.market:id/ad_text_view`] + ImageView[id=`com.coolapk.market:id/close_view`]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.sina.weibo",
+      "groupList": [
+        {
+          "className": "com.sina.weibo.feed.DetailWeiboActivity",
+          "ruleList": [
+            {
+              "selector": "RelativeLayout > TextView[id=`com.sina.weibo:id/tvTrendsTitle`] + ImageView[id=`com.sina.weibo:id/iv_ad_x`]"
+            },
+            {
+              "selector": "TextView[text=`为何会看到此广告`] -n TextView[text=`不感兴趣`]",
+              "className": "com.sina.weibo.utils.WeiboDialog$CustomDialog"
+            },
+            {
+              "selector": "TextView[id=`com.sina.weibo:id/tv_tips`][text=`广告`] + ImageView[id=`com.sina.weibo:id/iv_close_icon`]"
+            }
+          ]
+        },
+        {
+          "className": "com.sina.weibo.MainTabActivity",
+          "ruleList": [
+            {
+              "selector": "LinearLayout[id=`com.sina.weibo:id/comment_guide_view`] -3 ViewGroup[id=`com.sina.weibo:id/mblogHeadtitle`][index=0](95%, 43%)"
+            },
+            {
+              "selector": "RelativeLayout[id=`com.sina.weibo:id/complete_layout`] + ImageView[id=`com.sina.weibo:id/close`]",
+              "description": "立即领取红包右上角x"
+            },
+            {
+              "selector": "TextView[text=`为何会看到此广告`] < LinearLayout <2 LinearLayout -3 LinearLayout >2 TextView[text=`不感兴趣`]"
+            }
+          ]
+        },
+        {
+          "className": "com.sina.weibo.SplashActivity",
+          "ruleList": [
+            {
+              "selector": "TextView[text=`跳过`](50%, 50%)",
+              "className": "com.sina.weibo.mobileads.view.a"
+            },
+            {
+              "selector": "TextView[text=`跳过`](50%, 50%)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.tencent.mobileqq",
+      "groupList": [
+        {
+          "className": "com.tencent.mobileqq.activity.SplashActivity",
+          "description": "qq空间广告",
+          "ruleList": [
+            {
+              "selector": "TextView[text=`关闭此条广告`]",
+              "className": "com.tencent.qqlive.module.videoreport.inject.dialog.ReportDialog"
+            },
+            {
+              "selector": "ImageView[contentDescription=`关闭`] < FrameLayout[contentDescription*=`广告`]",
+              "description": "极简模式-动态"
+            },
+            {
+              "selector": "ImageView[contentDescription=`关闭`] < FrameLayout[contentDescription*=`广告`]",
+              "className": "cooperation.qzone.QzoneFeedsPluginProxyActivity",
+              "description": "动态-好友动态"
+            }
+          ]
+        },
+        {
+          "className": "com.tencent.mobileqq.activity.SplashActivity",
+          "description": "qq空间-注销后-重新开通提示",
+          "ruleList": [
+            {
+              "selector": "View[contentDescription=`你已注销你的空间`] - ImageView",
+              "description": "极简模式-动态"
+            },
+            {
+              "selector": "View[contentDescription=`你已注销你的空间`] - ImageView",
+              "className": "cooperation.qzone.QzoneFeedsPluginProxyActivity",
+              "description": "动态-好友动态"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.iqiyi.hotchat",
+      "groupList": [
+        {
+          "className": "com.iqiyi.hotchat.ui.activity.WelcomeActivity",
+          "description": "开屏广告/其他可跳过提示",
+          "ruleList": [
+            {
+              "selector": "TextView[id=`com.iqiyi.hotchat:id/tv_advertisement_lunch_skip`]"
+            },
+            {
+              "selector": "TextView[id=`com.iqiyi.hotchat:id/tv_advertisement_lunch_skip`]",
+              "className": "com.iqiyi.hotchat.ui.activity.AdvertisementActivity"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.sdu.didi.psnger",
+      "groupList": [
+        {
+          "className": "com.didi.sdk.app.launch.splash.SplashActivity",
+          "description": "开屏推荐",
+          "ruleList": [
+            {
+              "selector": "TextView[id=`com.sdu.didi.psnger:id/skip_ad_tv`]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.baidu.BaiduMap",
+      "groupList": [
+        {
+          "className": "com.baidu.baidumaps.WelcomeScreen",
+          "description": "开屏推荐",
+          "ruleList": [
+            {
+              "selector": "TextView[text=`com.baidu.BaiduMap:id/skip_text`]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.tencent.qqlive",
+      "groupList": [
+        {
+          "className": "com.tencent.qqlive.ona.activity.SplashHomeActivity",
+          "description": "开屏广告/推荐",
+          "ruleList": [
+            {
+              "selector": "TextView < LinearLayout + TextView[text=`跳过`](50%, 50%)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.tencent.qqmusic",
+      "groupList": [
+        {
+          "className": "com.tencent.qqmusic.activity.AppStarterActivity",
+          "ruleList": [
+            {
+              "selector": "ViewGroup + TextView[text=`跳过`]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.MobileTicket",
+      "groupList": [
+        {
+          "className": "com.MobileTicket.ui.dialog.SplashAdDialog",
+          "ruleList": [
+            {
+              "selector": "TextView[id=`com.MobileTicket:id/tv_skip`]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.hpbr.bosszhipin",
+      "groupList": [
+        {
+          "className": "com.hpbr.bosszhipin.module.launcher.WelcomeActivity",
+          "ruleList": [
+            {
+              "selector": "TextView[text*=`跳过`]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.sankuai.meituan.takeoutnew",
+      "groupList": [
+        {
+          "className": "com.sankuai.meituan.takeoutnew.ui.page.boot.SplashAdActivity",
+          "ruleList": [
+            {
+              "selector": "TextView[text*=`跳过`]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.sankuai.meituan",
+      "groupList": [
+        {
+          "className": "com.meituan.android.pt.homepage.activity.MainActivit",
+          "ruleList": [
+            {
+              "selector": "TextView[id=`com.sankuai.meituan:id/close_btn`][text*=`跳过`]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.mihoyo.hyperion",
+      "groupList": [
+        {
+          "className": "com.mihoyo.hyperion.ui.SplashActivity",
+          "description": "开屏推荐",
+          "ruleList": [
+            {
+              "selector": "Button[id=`com.mihoyo.hyperion:id/mSplashBtJump`]"
+            }
+          ]
+        },
+        {
+          "className": "com.mihoyo.hyperion.teenage.ui.TeenageTipsDialogActivity",
+          "description": "青少年模式弹窗-我知道了",
+          "ruleList": [
+            {
+              "selector": "TextView[id=`com.mihoyo.hyperion:id/tv_i_know`]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "cn.wps.moffice.documentmanager",
+      "groupList": [
+        {
+          "className": "cn.wps.moffice.documentmanager.PreStartActivity",
+          "ruleList": [
+            {
+              "selector": "TextView[id=`cn.wps.moffice_eng:id/splash_skip`]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageName": "com.duowan.kiwi",
+      "groupList": [
+        {
+          "className": "com.duowan.kiwi.adsplash.view.AdSplashActivity",
+          "ruleList": [
+            {
+              "selector": "TextView[text*=`跳过`]"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
