@@ -9,6 +9,7 @@ import androidx.lifecycle.lifecycleScope
 import com.blankj.utilcode.util.LogUtils
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.journeyapps.barcodescanner.BarcodeEncoder
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import li.songe.gkd.router.RouterHost

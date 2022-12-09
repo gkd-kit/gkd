@@ -24,8 +24,8 @@ import kotlinx.coroutines.*
 import li.songe.gkd.MainActivity
 import li.songe.gkd.router.Page
 import li.songe.gkd.router.Router
-import li.songe.gkd.service.GkdAccessService
-import li.songe.gkd.service.HttpServerService
+import li.songe.gkd.accessibility.GkdAccessService
+import li.songe.gkd.server.HttpServerService
 import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.ui.component.StatusBar
 import li.songe.gkd.ui.component.TextSwitch

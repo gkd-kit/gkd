@@ -8,7 +8,7 @@ import li.songe.gkd.db.BaseTable
 
 @Entity(
     tableName = "subs_item",
-    indices = [Index(value = ["url"], unique = true)]
+    indices = [Index(value = ["update_url"], unique = true)]
 )
 @Parcelize
 data class SubsItem(
@@ -18,23 +18,22 @@ data class SubsItem(
     @PrimaryKey(autoGenerate = true) @ColumnInfo(name = "id") override var id: Long = 0,
     @ColumnInfo(name = "ctime") override var ctime: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "mtime") override var mtime: Long = System.currentTimeMillis(),
-    /**
-     * 订阅文件下载地址,也是更新链接
-     */
-    @ColumnInfo(name = "url") var url: String,
-    /**
-     * 订阅文件下载后存放的路径
-     */
-    @ColumnInfo(name = "file_path") var filePath: String,
+
+    @ColumnInfo(name = "enable") var enable: Boolean = true,
     /**
      * 用户自定义备注
      */
     @ColumnInfo(name = "comment") var comment: String = "",
+
     /**
-     * 来自订阅文件的描述,不应该由用户write
+     * 订阅文件下载地址,也是更新链接
      */
-    @ColumnInfo(name = "description") var description: String = "",
-    @ColumnInfo(name = "enable") var enable: Boolean = true,
+    @ColumnInfo(name = "update_url") var updateUrl: String,
+    /**
+     * 订阅文件下载后存放的路径
+     */
+    @ColumnInfo(name = "file_path") var filePath: String,
+
 
     ) : Parcelable, BaseTable {
     @Dao

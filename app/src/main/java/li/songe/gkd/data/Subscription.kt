@@ -8,84 +8,55 @@ import li.songe.gkd.util.Singleton
 
 
 @Serializable
-//@JsonClass(generateAdapter = true)
 data class Subscription(
-    @SerialName("appList")
-    //@Json(name = "appList")
-    val appList: List<App>,
-
-    @SerialName("author")
-    //@Json(name = "author")
-    val author: String?=null,
-
-    @SerialName("description")
-    //@Json(name = "description")
-    val description: String = "",
-
-    @SerialName("version")
-    //@Json(name = "version")
-    val version: Int,
-
-    @SerialName("url")
-    //@Json(name = "url")
-    var url: String = ""
+    @SerialName("name") val name: String? = null,
+    @SerialName("version") val version: Int,
+    @SerialName("author") val author: String? = null,
+    @SerialName("updateUrl") val updateUrl: String? = null,
+    @SerialName("appList") val appList: List<App>,
 ) {
-
 
     companion object {
         fun parse(source: String) = Singleton.json.decodeFromString<Subscription>(source)
+        fun parse5(source: String): Subscription {
+            return Singleton.json.decodeFromString(
+                Singleton.json5.load(source).toJson()
+            )
+        }
         fun stringify(source: Subscription) = Singleton.json.encodeToString(source)
     }
 
     @Serializable
-    //@JsonClass(generateAdapter = true)
     data class App(
-        @SerialName("groupList")
-        //@Json(name = "groupList")
-        val groupList: List<Group>,
-
-        @SerialName("packageName")
-        //@Json(name = "packageName")
-        val packageName: String
+        @SerialName("id") val id: String,
+        @SerialName("groupList") val groupList: List<Group>,
     )
 
     @Serializable
-    //@JsonClass(generateAdapter = true)
     data class Group(
-        @SerialName("className")
-        //@Json(name = "className")
-        val className: String,
-
-        @SerialName("description")
-        //@Json(name = "description")
-        val description: String?=null,
-
-        @SerialName("key")
-        //@Json(name = "key")
-        val key: Int?=null,
-
-        @SerialName("ruleList")
-        //@Json(name = "ruleList")
-        val ruleList: List<Rule>
+        @SerialName("key") val key: Int? = null,
+        @SerialName("name") val name: String? = null,
+        @SerialName("activityId") val activityId: String,
+        @SerialName("cd") val cd: Int? = null,
+        @SerialName("ruleList") val ruleList: List<Rule>,
     )
 
     @Serializable
-    //@JsonClass(generateAdapter = true)
     data class Rule(
-        @SerialName("className")
-        //@Json(name = "className")
-        val className: String?=null,
+        @SerialName("key") val key: Int? = null,
+        @SerialName("name") val name: String? = null,
+        @SerialName("activityId") val activityId: String? = null,
+        @SerialName("cd") val cd: Int? = null,
+        @SerialName("prompt") val prompt: String? = null,
+        @SerialName("match") val match: String,
+        @SerialName("action") val action: Action? = null,
+        @SerialName("ordered") val ordered: Boolean = false,
+    )
 
-        @SerialName("description")
-        //@Json(name = "description")
-        val description: String?=null,
-
-        @SerialName("selector")
-        //@Json(name = "selector")
-        val selector: String,
-
-        @SerialName("prompt")
-        //@Json(name = "prompt")
-        val prompt: String?=null
+    @Serializable
+    data class Action(
+        @SerialName("type") val type: String,
+        @SerialName("target") val target: String,
+        @SerialName("position") val position: String? = null,
     )
 }

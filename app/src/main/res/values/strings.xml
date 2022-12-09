@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">gkd</string>
-    <string name="accessibility_service_label">搞快点</string>
-    <string name="accessibility_service_description">基于规则匹配的无障碍速点服务</string>
+    <string name="accessibility_service_label" translatable="false">搞快点</string>
+    <string name="accessibility_service_description" translatable="false">基于规则匹配的无障碍速点服务</string>
 </resources>

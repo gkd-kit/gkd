@@ -6,11 +6,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,13 +32,13 @@ fun SubsItemCard(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = if (data.comment.isNotEmpty()) "${data.comment}:${data.description}" else data.description,
+                text = data.comment,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = data.url,
+                text = data.updateUrl,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis
@@ -89,7 +87,7 @@ fun PreviewSubscriptionItemCard() {
         SubsItemCard(
             SubsItem(
                 filePath = "filepath",
-                url = "https://raw.githubusercontents.com/lisonge/gkd-subscription/main/src/ad-startup.gkd.json",
+                updateUrl = "https://raw.githubusercontents.com/lisonge/gkd-subscription/main/src/ad-startup.gkd.json",
                 comment = "备注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注"
             )
         )

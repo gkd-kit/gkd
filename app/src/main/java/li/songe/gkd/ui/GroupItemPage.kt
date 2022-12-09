@@ -10,7 +10,6 @@ import androidx.compose.material.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,7 +45,7 @@ object GroupItemPage : Page<GroupItemPage.Params, Unit> {
                         .padding(10.dp, 0.dp)
                 )
                 Text(
-                    text = params.group.className, modifier = Modifier
+                    text = params.group.activityId, modifier = Modifier
                         .fillMaxWidth()
                         .padding(10.dp, 0.dp)
                 )
@@ -71,7 +70,7 @@ object GroupItemPage : Page<GroupItemPage.Params, Unit> {
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = ruleList[i].description ?: "-",
+                            text = ruleList[i].name ?: "-",
                             maxLines = 1,
                             softWrap = false,
                             overflow = TextOverflow.Ellipsis,
@@ -79,7 +78,7 @@ object GroupItemPage : Page<GroupItemPage.Params, Unit> {
                                 .fillMaxWidth(),
                         )
                         Text(
-                            text = ruleList[i].selector,
+                            text = ruleList[i].match,
                             maxLines = 1,
                             softWrap = false,
                             overflow = TextOverflow.Ellipsis,
@@ -107,11 +106,11 @@ object GroupItemPage : Page<GroupItemPage.Params, Unit> {
                     setShowData(null)
                 },
                 title = {
-                    Text(text = showData.description ?: "-")
+                    Text(text = showData.name ?: "-")
                 },
                 text = {
                     Text(
-                        text = showData.selector,
+                        text = showData.match,
                         fontSize = 16.sp
                     )
                 },

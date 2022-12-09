@@ -65,7 +65,7 @@ object SubsPage : Page<SubsItem, Unit> {
                             )!!,
                             subsConfig = SubsConfig(
                                 subsItemId = it.toLong(),
-                                packageName = "" + it
+                                appId = "" + it
                             )
                         )
                     )
@@ -126,16 +126,16 @@ object SubsPage : Page<SubsItem, Unit> {
             val defaultName = "-"
             val newSubsAppCardDataList = (subStatus as Status.Success).value.appList.map { app ->
                 mutableSet.firstOrNull { v ->
-                    v.packageName == app.packageName
+                    v.appId == app.id
                 }.apply {
                     if (this != null) {
                         mutableSet.remove(this)
                     }
-                } ?: SubsConfig(subsItemId = subsItem.id, packageName = app.packageName, type = SubsConfig.AppType)
+                } ?: SubsConfig(subsItemId = subsItem.id, appId = app.id, type = SubsConfig.AppType)
             }.map { subsConfig ->
                 async(IO) {
                     val info: ApplicationInfo = try {
-                        packageManager.getApplicationInfo(subsConfig.packageName, 0)
+                        packageManager.getApplicationInfo(subsConfig.appId, 0)
                     } catch (e: Exception) {
                         return@async SubsAppCardData(
                             defaultName,
@@ -183,7 +183,7 @@ object SubsPage : Page<SubsItem, Unit> {
                             modifier = textModifier
                         )
                         Text(
-                            text = "描述: ${sub?.description}",
+                            text = "描述: ${sub?.name}",
                             modifier = textModifier
                         )
                     }
@@ -222,6 +222,7 @@ object SubsPage : Page<SubsItem, Unit> {
                             .wrapContentSize()
                     ) {
                         SubsAppCard(loading = true, args = placeholderList[i])
+                        Text(text = "")
                     }
                 }
             }

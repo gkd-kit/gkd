@@ -27,10 +27,10 @@ data class SubsConfig(
     @ColumnInfo(name = "type") var type: Int = 0,
     @ColumnInfo(name = "enable") var enable: Boolean = true,
 
-    @ColumnInfo(name = "subs_item_id") var subsItemId: Long = 0,
-    @ColumnInfo(name = "package_name") var packageName: String = "",
-    @ColumnInfo(name = "group_key") var groupKey: Int = 0,
-    @ColumnInfo(name = "rule_key") var ruleKey: Int = 0,
+    @ColumnInfo(name = "subs_item_id") var subsItemId: Long = -1,
+    @ColumnInfo(name = "app_id") var appId: String = "",
+    @ColumnInfo(name = "group_key") var groupKey: Int = -1,
+    @ColumnInfo(name = "rule_key") var ruleKey: Int = -1,
 ) : BaseTable, Parcelable {
 
     companion object {

@@ -94,18 +94,20 @@ object SubsItemInsertPage : Page<Unit, SubsItem?> {
             Button(onClick = {
                 scope.launch {
                     subReqStatus = Status.Progress()
-                    if (RoomX.select { SubsItem::url eq url }.isNotEmpty()) {
+                    if (RoomX.select { SubsItem::updateUrl eq url }.isNotEmpty()) {
                         subReqStatus = Status.Error("链接已经存在,不可重复添加")
                         return@launch
                     }
-                    val sub = try {
+                    var sub = try {
                         Singleton.client.get(url).body<Subscription>()
                     } catch (e: Exception) {
                         e.printStackTrace()
                         subReqStatus = Status.Error(e)
                         return@launch
                     }
-                    sub.url = url
+                    if (sub.updateUrl == null) {
+                        sub = sub.copy(updateUrl = url)
+                    }
                     File(
                         PathUtils.getExternalAppFilesPath()
                             .plus("/subscription/")
@@ -126,9 +128,8 @@ object SubsItemInsertPage : Page<Unit, SubsItem?> {
                     val newSubsItem = SubsItem(
                         enable = enable,
                         comment = comment,
-                        url = url,
+                        updateUrl = url,
                         filePath = fp.absolutePath,
-                        description = sub.description
                     )
                     RoomX.insert(newSubsItem)
                     subReqStatus = Status.Success(Unit)
