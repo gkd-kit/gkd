@@ -1,12 +1,12 @@
 package li.songe.gkd.db
 
-import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.blankj.utilcode.util.PathUtils
 import li.songe.gkd.App
-import li.songe.gkd.db.table.*
+import li.songe.gkd.db.table.SubsConfig
+import li.songe.gkd.db.table.SubsItem
 import java.io.File
 
 @Database(
@@ -20,9 +20,6 @@ import java.io.File
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun subsItemRoomDao(): SubsItem.RoomDao
-//    abstract fun subsAppItemRoomDao(): SubsAppItem.RoomDao
-//    abstract fun subsGroupItemRoomDao(): SubsGroupItem.RoomDao
-//    abstract fun subsRuleItemRoomDao(): SubsRuleItem.RoomDao
     abstract fun subsConfigRoomDao(): SubsConfig.RoomDao
 
     companion object {

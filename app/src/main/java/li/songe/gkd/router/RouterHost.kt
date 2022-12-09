@@ -15,7 +15,6 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import li.songe.gkd.router.Router.Companion.LocalRouter

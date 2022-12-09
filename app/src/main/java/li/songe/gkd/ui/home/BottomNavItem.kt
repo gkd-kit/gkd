@@ -12,16 +12,6 @@ data class BottomNavItem(
 
 val BottomNavItems = listOf(
     BottomNavItem(
-        label = "统计",
-        icon = R.drawable.ic_chart_bar,
-        route = "statistics"
-    ),
-    BottomNavItem(
-        label = "本地",
-        icon = R.drawable.ic_database_set,
-        route = "native"
-    ),
-    BottomNavItem(
         label = "订阅",
         icon = R.drawable.ic_link,
         route = "subscription"

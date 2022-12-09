@@ -32,7 +32,7 @@ object SubsItemUpdatePage : Page<SubsItem, SubsItem?> {
         val scope = rememberCoroutineScope()
 
         var comment by remember { mutableStateOf(params.comment) }
-        var url by remember { mutableStateOf(params.url) }
+        var url by remember { mutableStateOf(params.updateUrl) }
         var enable by remember { mutableStateOf(params.enable) }
 
         Column(modifier = Modifier.padding(10.dp, 0.dp)) {
@@ -75,7 +75,7 @@ object SubsItemUpdatePage : Page<SubsItem, SubsItem?> {
                     val newSubsItem = params.copy(
                         enable = enable,
                         comment = comment,
-                        url = url,
+                        updateUrl = url,
                         mtime = System.currentTimeMillis()
                     )
                     RoomX.update(newSubsItem)

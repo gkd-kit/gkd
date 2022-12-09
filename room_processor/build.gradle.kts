@@ -20,7 +20,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 
 dependencies{
     //ksp依赖
-    implementation("com.google.devtools.ksp:symbol-processing-api:1.7.10-1.0.6")
+    implementation("com.google.devtools.ksp:symbol-processing-api:1.7.20-1.0.7")
     //poet依赖
     implementation("com.squareup:kotlinpoet:1.11.0")
     implementation("com.squareup:kotlinpoet-ksp:1.11.0")

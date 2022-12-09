@@ -51,7 +51,7 @@
         </activity>
 
         <service
-            android:name="li.songe.gkd.service.GkdAccessService"
+            android:name="li.songe.gkd.accessibility.GkdAccessService"
             android:exported="false"
             android:label="@string/accessibility_service_label"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
@@ -67,9 +67,9 @@
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
         <service
-            android:name=".service.HttpServerService"
+            android:name=".server.HttpServerService"
             android:exported="false" />
-        <service android:name=".service.TestService"  android:exported="false" />
+        <service android:name=".accessibility.KeepAliveService"  android:exported="false" />
 
         <!-- This provider is required by Shizuku, remove this if your app only supports Sui -->
         <provider

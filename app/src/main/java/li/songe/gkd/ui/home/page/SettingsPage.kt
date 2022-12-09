@@ -14,10 +14,8 @@ import com.blankj.utilcode.util.LogUtils
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.router.Router.Companion.LocalRouter
-import li.songe.gkd.service.TestService
 import li.songe.gkd.store.Storage
 import li.songe.gkd.ui.DebugPage
-import li.songe.gkd.ui.component.StatusBar
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.util.LocaleString.Companion.localeString
 

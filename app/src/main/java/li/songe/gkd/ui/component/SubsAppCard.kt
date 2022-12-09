@@ -60,7 +60,7 @@ fun SubsAppCard(
                     .placeholder(loading, highlight = PlaceholderHighlight.fade())
             )
             Text(
-                text = args.subsConfig.packageName, maxLines = 1,
+                text = args.subsConfig.appId, maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier

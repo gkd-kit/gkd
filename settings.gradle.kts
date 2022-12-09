@@ -20,7 +20,7 @@ pluginManagement {
 
 rootProject.name = "gkd"
 include(":app")
-include(":node_selector")
+include(":selector")
 include(":room_processor")
 //include(":shizuku_automator")
 //include(":shizuku_automator:hidden_api")

@@ -1,23 +1,23 @@
 package li.songe.gkd.data
 
-import li.songe.node_selector.GkdSelector
+import li.songe.selector.GkdSelector
 
 class RuleMap {
     private val data = mutableMapOf<String, MutableMap<String, MutableList<GkdSelector>>>()
     fun load(subscription: Subscription) {
         subscription.appList.forEach {
-            if (!data.containsKey(it.packageName)) {
-                data[it.packageName] = mutableMapOf()
+            if (!data.containsKey(it.id)) {
+                data[it.id] = mutableMapOf()
             }
-            val m2 = data[it.packageName]!!
+            val m2 = data[it.id]!!
             it.groupList.forEach { group ->
                 group.ruleList.forEach loop@{ rule ->
-                    val name = (rule.className ?: group.className)
+                    val name = (rule.activityId ?: group.activityId)
                     if (!m2.containsKey(name)) {
                         m2[name] = mutableListOf()
                     }
                     val list = m2[name]!!
-                    list.add(GkdSelector.gkdSelectorParser(rule.selector))
+                    list.add(GkdSelector.gkdSelectorParser(rule.match))
                 }
             }
         }

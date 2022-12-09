@@ -4,10 +4,10 @@ plugins {
     id("kotlin-parcelize")
     id("kotlin-kapt")
     id("org.jetbrains.kotlin.plugin.serialization")
-    id("com.google.devtools.ksp") version "1.7.10-1.0.6"
+    id("com.google.devtools.ksp") version "1.7.20-1.0.7"
 }
 
-val composeVersion = "1.3.0-beta01"
+val composeVersion = "1.3.0"
 android {
     compileSdk = 33
     buildToolsVersion = "33.0.0"
@@ -87,7 +87,9 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = composeVersion
+//        compose 编译器的版本, 需要注意它与 compose 的版本不一致
+//        https://mvnrepository.com/artifact/androidx.compose.compiler/compiler
+        kotlinCompilerExtensionVersion = "1.3.2"
     }
     packagingOptions {
         resources {
@@ -103,7 +105,7 @@ dependencies {
 
 //    normal
     implementation("androidx.appcompat:appcompat:1.5.1")
-    implementation("com.google.android.material:material:1.6.1")
+    implementation("com.google.android.material:material:1.7.0")
 
 //    ktx
     implementation("androidx.core:core-ktx:1.9.0")
@@ -115,7 +117,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview:$composeVersion")
     debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
-    implementation("androidx.activity:activity-compose:1.6.0")
+    implementation("androidx.activity:activity-compose:1.6.1")
 
 //    test
     testImplementation("junit:junit:4.13.2")
@@ -151,10 +153,6 @@ dependencies {
 //    https://github.com/Tencent/MMKV/blob/master/README_CN.md
     implementation("com.tencent:mmkv:1.2.13")
 
-//    https://juejin.cn/post/6969841959082917901
-    implementation("com.squareup.moshi:moshi-kotlin:1.13.0")
-    kapt("com.squareup.moshi:moshi-kotlin-codegen:1.13.0")
-
 //    ktor
     implementation("io.ktor:ktor-server-core:2.1.0")
     implementation("io.ktor:ktor-server-netty:2.1.0")
@@ -186,6 +184,12 @@ dependencies {
 
 
     ksp(project(":room_processor"))
-    implementation(project(mapOf("path" to ":node_selector")))
+    implementation(project(mapOf("path" to ":selector")))
+
+//    https://github.com/falkreon/Jankson
+    implementation("blue.endless:jankson:1.2.1")
+
+//    https://github.com/Kotlin/kotlinx.collections.immutable
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
 
 }

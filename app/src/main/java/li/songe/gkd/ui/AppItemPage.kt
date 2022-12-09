@@ -71,7 +71,7 @@ object AppItemPage : Page<AppItemPage.Params, Unit> {
             delay(400)
             val config = params.subsConfig
             val mutableSet =
-                RoomX.select { (SubsConfig::type eq SubsConfig.GroupType) and (SubsConfig::subsItemId eq config.subsItemId) and (SubsConfig::packageName eq config.packageName) }
+                RoomX.select { (SubsConfig::type eq SubsConfig.GroupType) and (SubsConfig::subsItemId eq config.subsItemId) and (SubsConfig::appId eq config.appId) }
                     .toMutableSet()
             val list = mutableListOf<SubsConfig?>()
             params.subsApp.groupList.forEach { group ->
@@ -80,7 +80,7 @@ object AppItemPage : Page<AppItemPage.Params, Unit> {
                 } else {
                     val item = mutableSet.find { s -> s.groupKey == group.key } ?: SubsConfig(
                         subsItemId = config.subsItemId,
-                        packageName = config.packageName,
+                        appId = config.appId,
                         groupKey = group.key,
                         type = SubsConfig.GroupType
                     )
@@ -107,7 +107,7 @@ object AppItemPage : Page<AppItemPage.Params, Unit> {
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = params.subsApp.packageName,
+                            text = params.subsApp.id,
                             maxLines = 1,
                             softWrap = false,
                             overflow = TextOverflow.Ellipsis,
@@ -143,7 +143,7 @@ object AppItemPage : Page<AppItemPage.Params, Unit> {
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = group.description ?: "-",
+                            text = group.name ?: "-",
                             maxLines = 1,
                             softWrap = false,
                             overflow = TextOverflow.Ellipsis,
@@ -151,10 +151,10 @@ object AppItemPage : Page<AppItemPage.Params, Unit> {
                                 .fillMaxWidth()
                         )
                         Text(
-                            text = if (group.className.startsWith(params.subsApp.packageName)) {
-                                group.className.substring(params.subsApp.packageName.length)
+                            text = if (group.activityId.startsWith(params.subsApp.id)) {
+                                group.activityId.substring(params.subsApp.id.length)
                             } else {
-                                group.className
+                                group.activityId
                             },
                             maxLines = 1,
                             softWrap = false,
