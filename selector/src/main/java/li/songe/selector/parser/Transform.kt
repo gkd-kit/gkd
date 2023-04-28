@@ -1,45 +1,55 @@
 package li.songe.selector.parser
 
 import li.songe.selector.GkdSelector
+import li.songe.selector.expression.BinaryExpression
+import li.songe.selector.operator.End
+import li.songe.selector.operator.Equal
+import li.songe.selector.operator.Include
+import li.songe.selector.operator.Less
+import li.songe.selector.operator.LessEqual
+import li.songe.selector.operator.More
+import li.songe.selector.operator.MoreEqual
+import li.songe.selector.operator.NotEqual
+import li.songe.selector.operator.Start
 import li.songe.selector.selector.CombinatorSelector
 import li.songe.selector.selector.PropertySelector
 import li.songe.selector.wrapper.CombinatorSelectorWrapper
 import li.songe.selector.wrapper.PropertySelectorWrapper
 
-object Transform {
-    val whiteCharParser = Parser("\u0020\t\r\n") { source, offset, prefix ->
+internal object Transform {
+    val whiteCharParser = GkdParser("\u0020\t\r\n") { source, offset, prefix ->
         var i = offset
         var data = ""
         while (i < source.length && prefix.contains(source[i])) {
             data += source[i]
             i++
         }
-        ParserResult(data, i - offset)
+        GkdParserResult(data, i - offset)
     }
 
-    val whiteCharStrictParser = Parser("\u0020\t\r\n") { source, offset, prefix ->
-        SyntaxError.assert(source, offset, prefix, "whitespace")
+    val whiteCharStrictParser = GkdParser("\u0020\t\r\n") { source, offset, prefix ->
+        GkdSyntaxError.assert(source, offset, prefix, "whitespace")
         whiteCharParser(source, offset)
     }
 
     val nameParser =
-        Parser("*1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM_") { source, offset, prefix ->
+        GkdParser("*1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM_") { source, offset, prefix ->
             var i = offset
             val s0 = source.getOrNull(i)
             if (s0 != null && !prefix.contains(s0)) {
-                return@Parser ParserResult("", i - offset)
+                return@GkdParser GkdParserResult("", i - offset)
             }
-            SyntaxError.assert(source, i, prefix, "*0-9a-zA-Z_")
+            GkdSyntaxError.assert(source, i, prefix, "*0-9a-zA-Z_")
             var data = source[i].toString()
             i++
             if (data == "*") { // 范匹配
-                return@Parser ParserResult(data, i - offset)
+                return@GkdParser GkdParserResult(data, i - offset)
             }
             val center = "1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM_."
             while (i < source.length) {
 //                . 不能在开头和结尾
                 if (data[i - offset - 1] == '.') {
-                    SyntaxError.assert(source, i, prefix, "[0-9a-zA-Z_]")
+                    GkdSyntaxError.assert(source, i, prefix, "[0-9a-zA-Z_]")
                 }
                 if (center.contains(source[i])) {
                     data += source[i]
@@ -48,36 +58,36 @@ object Transform {
                 }
                 i++
             }
-            ParserResult(data, i - offset)
+            GkdParserResult(data, i - offset)
         }
 
-    val combinatorOperatorParser = Parser("+-><") { source, offset, prefix ->
+    val combinatorOperatorParser = GkdParser("+-><") { source, offset, prefix ->
         var i = offset
-        SyntaxError.assert(source, i, prefix)
-        return@Parser when (source[i]) {
-            '+' -> ParserResult(CombinatorSelector.Operator.ElderBrother, ++i - offset)
-            '-' -> ParserResult(CombinatorSelector.Operator.YoungerBrother, ++i - offset)
-            '>' -> ParserResult(CombinatorSelector.Operator.Ancestor, ++i - offset)
-            '<' -> ParserResult(CombinatorSelector.Operator.Child, ++i - offset)
-            else -> SyntaxError.throwError(source, i, prefix)
+        GkdSyntaxError.assert(source, i, prefix)
+        return@GkdParser when (source[i]) {
+            '+' -> GkdParserResult(CombinatorSelector.Operator.ElderBrother, ++i - offset)
+            '-' -> GkdParserResult(CombinatorSelector.Operator.YoungerBrother, ++i - offset)
+            '>' -> GkdParserResult(CombinatorSelector.Operator.Ancestor, ++i - offset)
+            '<' -> GkdParserResult(CombinatorSelector.Operator.Child, ++i - offset)
+            else -> GkdSyntaxError.throwError(source, i, prefix)
         }
     }
 
-    val integerParser = Parser("1234567890") { source, offset, prefix ->
+    val integerParser = GkdParser("1234567890") { source, offset, prefix ->
         var i = offset
-        SyntaxError.assert(source, i, prefix, "number")
+        GkdSyntaxError.assert(source, i, prefix, "number")
         var s = ""
         while (prefix.contains(source[i]) && i < source.length) {
             s += source[i]
             i++
         }
-        ParserResult(s.toInt(), i - offset)
+        GkdParserResult(s.toInt(), i - offset)
     }
 
     //    [+-][a][n[^b]]
-    val monomialParser = Parser("+-1234567890n") { source, offset, prefix ->
+    val monomialParser = GkdParser("+-1234567890n") { source, offset, prefix ->
         var i = offset
-        SyntaxError.assert(source, i, prefix)
+        GkdSyntaxError.assert(source, i, prefix)
         /**
          * one of 1, -1
          */
@@ -94,7 +104,7 @@ object Transform {
         }
         i += whiteCharParser(source, i).length
         // [a][n[^b]]
-        SyntaxError.assert(source, i, integerParser.prefix + "n")
+        GkdSyntaxError.assert(source, i, integerParser.prefix + "n")
         val coefficient =
             if (integerParser.prefix.contains(source[i])) {
                 val coefficientResult = integerParser(source, i)
@@ -110,35 +120,35 @@ object Transform {
                 i++
                 val powerResult = integerParser(source, i)
                 i += powerResult.length
-                return@Parser ParserResult(Pair(powerResult.data, coefficient), i - offset)
+                return@GkdParser GkdParserResult(Pair(powerResult.data, coefficient), i - offset)
             } else {
-                return@Parser ParserResult(Pair(1, coefficient), i - offset)
+                return@GkdParser GkdParserResult(Pair(1, coefficient), i - offset)
             }
         } else {
-            return@Parser ParserResult(Pair(0, coefficient), i - offset)
+            return@GkdParser GkdParserResult(Pair(0, coefficient), i - offset)
         }
     }
 
     //    ([+-][a][n[^b]] [+-][a][n[^b]])
-    val expressionParser = Parser("(0123456789n") { source, offset, prefix ->
+    val expressionParser = GkdParser("(0123456789n") { source, offset, prefix ->
         var i = offset
-        SyntaxError.assert(source, i, prefix)
-        val monomialResultList = mutableListOf<ParserResult<Pair<Int, Int>>>()
+        GkdSyntaxError.assert(source, i, prefix)
+        val monomialResultList = mutableListOf<GkdParserResult<Pair<Int, Int>>>()
         when (source[i]) {
             '(' -> {
                 i++
                 i += whiteCharParser(source, i).length
-                SyntaxError.assert(source, i, monomialParser.prefix)
+                GkdSyntaxError.assert(source, i, monomialParser.prefix)
                 while (source[i] != ')') {
                     if (monomialResultList.size > 0) {
-                        SyntaxError.assert(source, i, "+-")
+                        GkdSyntaxError.assert(source, i, "+-")
                     }
                     val monomialResult = monomialParser(source, i)
                     monomialResultList.add(monomialResult)
                     i += monomialResult.length
                     i += whiteCharParser(source, i).length
                     if (i >= source.length) {
-                        SyntaxError.assert(source, i, ")")
+                        GkdSyntaxError.assert(source, i, ")")
                     }
                 }
                 i++
@@ -154,22 +164,22 @@ object Transform {
             val (power, coefficient) = monomialResult.data
             map[power] = (map[power] ?: 0) + coefficient
         }
-        ParserResult(CombinatorSelector.PolynomialExpression(map.filter { (_, coefficient) ->
+        GkdParserResult(CombinatorSelector.PolynomialExpression(map.filter { (_, coefficient) ->
             coefficient != 0
         }), i - offset)
     }
 
     //    [+-><](a*n^b)
-    val combinatorParser = Parser(combinatorOperatorParser.prefix) { source, offset, _ ->
+    val combinatorParser = GkdParser(combinatorOperatorParser.prefix) { source, offset, _ ->
         var i = offset
         val operatorResult = combinatorOperatorParser(source, i)
         i += operatorResult.length
-        var expressionResult: ParserResult<CombinatorSelector.PolynomialExpression>? = null
+        var expressionResult: GkdParserResult<CombinatorSelector.PolynomialExpression>? = null
         if (i < source.length && expressionParser.prefix.contains(source[i])) {
             expressionResult = expressionParser(source, i)
             i += expressionResult.length
         }
-        ParserResult(
+        GkdParserResult(
             CombinatorSelector(
                 operatorResult.data,
                 expressionResult?.data ?: CombinatorSelector.PolynomialExpression()
@@ -177,9 +187,9 @@ object Transform {
         )
     }
 
-    val attrOperatorParser = Parser("><!*$^=") { source, offset, prefix ->
+    val attrOperatorParser = GkdParser("><!*$^=") { source, offset, prefix ->
         var i = offset
-        SyntaxError.assert(source, i, prefix)
+        GkdSyntaxError.assert(source, i, prefix)
         val attrOperator =
             when (source[i]) {
                 '=' -> {
@@ -187,10 +197,10 @@ object Transform {
                     when (source.getOrNull(i)) {
                         '=' -> {
                             i++
-                            PropertySelector.Operator.Equal
+                            Equal
                         }
                         else -> {
-                            PropertySelector.Operator.Equal
+                            Equal
                         }
                     }
                 }
@@ -199,10 +209,10 @@ object Transform {
                     when (source.getOrNull(i)) {
                         '=' -> {
                             i++
-                            PropertySelector.Operator.MoreEqual
+                            MoreEqual
                         }
                         else -> {
-                            PropertySelector.Operator.More
+                            More
                         }
                     }
                 }
@@ -211,60 +221,60 @@ object Transform {
                     when (source.getOrNull(i)) {
                         '=' -> {
                             i++
-                            PropertySelector.Operator.LessEqual
+                            LessEqual
                         }
                         else -> {
-                            PropertySelector.Operator.Less
+                            Less
                         }
                     }
                 }
                 '!' -> {
                     i++
-                    SyntaxError.assert(source, i, "=")
+                    GkdSyntaxError.assert(source, i, "=")
                     i++
-                    PropertySelector.Operator.NotEqual
+                    NotEqual
                 }
                 '*' -> {
                     i++
-                    SyntaxError.assert(source, i, "=")
+                    GkdSyntaxError.assert(source, i, "=")
                     i++
-                    PropertySelector.Operator.Include
+                    Include
                 }
                 '^' -> {
                     i++
-                    SyntaxError.assert(source, i, "=")
+                    GkdSyntaxError.assert(source, i, "=")
                     i++
-                    PropertySelector.Operator.Start
+                    Start
                 }
                 '$' -> {
                     i++
-                    SyntaxError.assert(source, i, "=")
+                    GkdSyntaxError.assert(source, i, "=")
                     i++
-                    PropertySelector.Operator.End
+                    End
                 }
                 else -> {
-                    SyntaxError.throwError(source, i, prefix)
+                    GkdSyntaxError.throwError(source, i, prefix)
                 }
             }
-        ParserResult(attrOperator, i - offset)
+        GkdParserResult(attrOperator, i - offset)
     }
 
-    val stringParser = Parser("`") { source, offset, prefix ->
+    val stringParser = GkdParser("`") { source, offset, prefix ->
         var i = offset
-        SyntaxError.assert(source, i, prefix)
+        GkdSyntaxError.assert(source, i, prefix)
         i++
         var data = ""
         while (source[i] != '`') {
             if (i == source.length - 1) {
-                SyntaxError.assert(source, i, "`")
+                GkdSyntaxError.assert(source, i, "`")
                 break
             }
             if (source[i] == '\\') {
                 i++
-                SyntaxError.assert(source, i)
+                GkdSyntaxError.assert(source, i)
                 if (source[i] == '`') {
                     data += source[i]
-                    SyntaxError.assert(source, i + 1)
+                    GkdSyntaxError.assert(source, i + 1)
                 } else {
                     data += '\\' + source[i].toString()
                 }
@@ -274,17 +284,17 @@ object Transform {
             i++
         }
         i++
-        ParserResult(data, i - offset)
+        GkdParserResult(data, i - offset)
     }
 
-    val numberParser = Parser("1234567890.") { source, offset, prefix ->
+    val numberParser = GkdParser("1234567890.") { source, offset, prefix ->
         var i = offset
-        SyntaxError.assert(source, i, prefix)
+        GkdSyntaxError.assert(source, i, prefix)
         var value = ""
         value = if (source[i] == '.') {
             value += source[i]
             i++
-            SyntaxError.assert(source, i, "1234567890")
+            GkdSyntaxError.assert(source, i, "1234567890")
             while ("1234567890".contains(source[i])) {
                 value += source[i]
                 i++
@@ -321,13 +331,13 @@ object Transform {
                 value.toInt()
             }
         }
-        ParserResult<Number>(data, i - offset)
+        GkdParserResult<Number>(data, i - offset)
     }
 
     val propertyParser =
-        Parser("1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM_") { source, offset, prefix ->
+        GkdParser("1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM_") { source, offset, prefix ->
             var i = offset
-            SyntaxError.assert(source, i, prefix)
+            GkdSyntaxError.assert(source, i, prefix)
             var data = source[i].toString()
             i++
             while (i < source.length) {
@@ -338,17 +348,17 @@ object Transform {
                 i++
             }
 
-            ParserResult(data, i - offset)
+            GkdParserResult(data, i - offset)
         }
 
-    val valueParser = Parser("tfn`1234567890.") { source, offset, prefix ->
+    val valueParser = GkdParser("tfn`1234567890.") { source, offset, prefix ->
         var i = offset
-        SyntaxError.assert(source, i, prefix)
+        GkdSyntaxError.assert(source, i, prefix)
         val value: Any? = when (source[i]) {
             't' -> {
                 i++
                 "rue".forEach { c ->
-                    SyntaxError.assert(source, i, c.toString())
+                    GkdSyntaxError.assert(source, i, c.toString())
                     i++
                 }
                 true
@@ -356,7 +366,7 @@ object Transform {
             'f' -> {
                 i++
                 "alse".forEach { c ->
-                    SyntaxError.assert(source, i, c.toString())
+                    GkdSyntaxError.assert(source, i, c.toString())
                     i++
                 }
                 false
@@ -364,7 +374,7 @@ object Transform {
             'n' -> {
                 i++
                 "ull".forEach { c ->
-                    SyntaxError.assert(source, i, c.toString())
+                    GkdSyntaxError.assert(source, i, c.toString())
                     i++
                 }
                 null
@@ -380,15 +390,15 @@ object Transform {
                 n.data
             }
             else -> {
-                SyntaxError.throwError(source, i, prefix)
+                GkdSyntaxError.throwError(source, i, prefix)
             }
         }
-        ParserResult(value, i - offset)
+        GkdParserResult(value, i - offset)
     }
 
-    val attrParser = Parser("[") { source, offset, prefix ->
+    val attrParser = GkdParser("[") { source, offset, prefix ->
         var i = offset
-        SyntaxError.assert(source, i, prefix)
+        GkdSyntaxError.assert(source, i, prefix)
         i++
         val parserResult = propertyParser(source, i)
         i += parserResult.length
@@ -396,10 +406,10 @@ object Transform {
         i += operatorResult.length
         val valueResult = valueParser(source, i)
         i += valueResult.length
-        SyntaxError.assert(source, i, "]")
+        GkdSyntaxError.assert(source, i, "]")
         i++
-        ParserResult(
-            PropertySelector.BinaryExpression(
+        GkdParserResult(
+            BinaryExpression(
                 parserResult.data,
                 operatorResult.data,
                 valueResult.data
@@ -407,7 +417,7 @@ object Transform {
         )
     }
 
-    val selectorParser = Parser { source, offset, _ ->
+    val selectorParser = GkdParser { source, offset, _ ->
         var i = offset
         var match = false
         if (source.getOrNull(i) == '@') {
@@ -416,19 +426,19 @@ object Transform {
         }
         val nameResult = nameParser(source, i)
         i += nameResult.length
-        val attrList = mutableListOf<PropertySelector.BinaryExpression>()
+        val attrList = mutableListOf<BinaryExpression>()
         while (i < source.length && source[i] == '[') {
             val attrResult = attrParser(source, i)
             i += attrResult.length
             attrList.add(attrResult.data)
         }
         if (nameResult.length == 0 && attrList.size == 0) {
-            SyntaxError.throwError(source, i, "[")
+            GkdSyntaxError.throwError(source, i, "[")
         }
-        ParserResult(PropertySelector(match, nameResult.data, attrList), i - offset)
+        GkdParserResult(PropertySelector(match, nameResult.data, attrList), i - offset)
     }
 
-    val combinatorSelectorParser = Parser { source, offset, _ ->
+    val combinatorSelectorParser = GkdParser { source, offset, _ ->
         var i = offset
         i += whiteCharParser(source, i).length
         val topSelector = selectorParser(source, i)
@@ -448,14 +458,14 @@ object Transform {
             i += selectorResult.length
             selectorList.add(combinator to selectorResult.data)
         }
-        ParserResult(topSelector.data to selectorList, i - offset)
+        GkdParserResult(topSelector.data to selectorList, i - offset)
     }
 
-    val endParser = Parser { source, offset, _ ->
+    val endParser = GkdParser { source, offset, _ ->
         if (offset != source.length) {
-            SyntaxError.throwError(source, offset, "end")
+            GkdSyntaxError.throwError(source, offset, "end")
         }
-        ParserResult(Unit, 0)
+        GkdParserResult(Unit, 0)
     }
 
     val gkdSelectorParser: (String) -> GkdSelector = { source ->

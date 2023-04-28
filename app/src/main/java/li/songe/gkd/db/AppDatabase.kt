@@ -10,7 +10,7 @@ import li.songe.gkd.db.table.SubsItem
 import java.io.File
 
 @Database(
-    version = 1,
+    version = 3,
     entities = [SubsItem::class, SubsConfig::class],
     autoMigrations = [
 //        AutoMigration(from = 1, to = 2),

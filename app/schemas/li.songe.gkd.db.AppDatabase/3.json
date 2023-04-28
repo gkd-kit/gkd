@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 3,
-    "identityHash": "f3082a1bb735b6f7f163e448585542ce",
+    "identityHash": "c87d5110fcf059e6e690b1fb7938c8a8",
     "entities": [
       {
         "tableName": "subs_item",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `ctime` INTEGER NOT NULL, `mtime` INTEGER NOT NULL, `url` TEXT NOT NULL, `file_path` TEXT NOT NULL, `comment` TEXT NOT NULL, `description` TEXT NOT NULL, `enable` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `ctime` INTEGER NOT NULL, `mtime` INTEGER NOT NULL, `enable` INTEGER NOT NULL, `name` TEXT NOT NULL, `update_url` TEXT NOT NULL, `file_path` TEXT NOT NULL, `index` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -27,8 +27,20 @@
             "notNull": true
           },
           {
-            "fieldPath": "url",
-            "columnName": "url",
+            "fieldPath": "enable",
+            "columnName": "enable",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updateUrl",
+            "columnName": "update_url",
             "affinity": "TEXT",
             "notNull": true
           },
@@ -39,46 +51,34 @@
             "notNull": true
           },
           {
-            "fieldPath": "comment",
-            "columnName": "comment",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "description",
-            "columnName": "description",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "enable",
-            "columnName": "enable",
+            "fieldPath": "index",
+            "columnName": "index",
             "affinity": "INTEGER",
             "notNull": true
           }
         ],
         "primaryKey": {
+          "autoGenerate": true,
           "columnNames": [
             "id"
-          ],
-          "autoGenerate": true
+          ]
         },
         "indices": [
           {
-            "name": "index_subs_item_url",
+            "name": "index_subs_item_update_url",
             "unique": true,
             "columnNames": [
-              "url"
+              "update_url"
             ],
             "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_subs_item_url` ON `${TABLE_NAME}` (`url`)"
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_subs_item_update_url` ON `${TABLE_NAME}` (`update_url`)"
           }
         ],
         "foreignKeys": []
       },
       {
         "tableName": "subs_config",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `ctime` INTEGER NOT NULL, `mtime` INTEGER NOT NULL, `type` INTEGER NOT NULL, `enable` INTEGER NOT NULL, `subs_item_id` INTEGER NOT NULL, `package_name` TEXT NOT NULL, `group_key` INTEGER NOT NULL, `rule_key` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `ctime` INTEGER NOT NULL, `mtime` INTEGER NOT NULL, `type` INTEGER NOT NULL, `enable` INTEGER NOT NULL, `subs_item_id` INTEGER NOT NULL, `app_id` TEXT NOT NULL, `group_key` INTEGER NOT NULL, `rule_key` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -117,8 +117,8 @@
             "notNull": true
           },
           {
-            "fieldPath": "packageName",
-            "columnName": "package_name",
+            "fieldPath": "appId",
+            "columnName": "app_id",
             "affinity": "TEXT",
             "notNull": true
           },
@@ -136,10 +136,10 @@
           }
         ],
         "primaryKey": {
+          "autoGenerate": true,
           "columnNames": [
             "id"
-          ],
-          "autoGenerate": true
+          ]
         },
         "indices": [],
         "foreignKeys": []
@@ -148,7 +148,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f3082a1bb735b6f7f163e448585542ce')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c87d5110fcf059e6e690b1fb7938c8a8')"
     ]
   }
 }

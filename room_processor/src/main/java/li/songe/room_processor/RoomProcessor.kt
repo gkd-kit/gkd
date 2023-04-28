@@ -11,7 +11,7 @@ import com.google.devtools.ksp.validate
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.ksp.KotlinPoetKspPreview
+//import com.squareup.kotlinpoet.ksp.KotlinPoetKspPreview
 import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
 import kotlin.concurrent.thread
@@ -27,7 +27,7 @@ class RoomProcessor(private val environment: SymbolProcessorEnvironment) : Symbo
     /**
      * return value see https://book.kotlincn.net/text/ksp-multi-round.html
      */
-    @OptIn(KotlinPoetKspPreview::class)
+//    @OptIn(KotlinPoetKspPreview::class)
     override fun process(resolver: Resolver): List<KSAnnotated> {
         val class2property2nameMap =
             mutableMapOf<String, Pair<String, MutableMap<String, String>>>()

@@ -2,7 +2,12 @@ package li.songe.gkd.ui.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -22,6 +27,7 @@ fun SubsItemCard(
     onShareClick: (() -> Unit)? = null,
     onEditClick: (() -> Unit)? = null,
     onDelClick: (() -> Unit)? = null,
+    onRefreshClick: (() -> Unit)? = null,
 ) {
 
     Row(
@@ -32,7 +38,7 @@ fun SubsItemCard(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = data.comment,
+                text = data.name,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis
@@ -44,6 +50,17 @@ fun SubsItemCard(
                 overflow = TextOverflow.Ellipsis
             )
         }
+        Spacer(modifier = Modifier.width(5.dp))
+        Image(
+            painter = painterResource(R.drawable.ic_refresh),
+            contentDescription = "refresh",
+            modifier = Modifier
+                .clickable {
+                    onRefreshClick?.invoke()
+                }
+                .padding(4.dp)
+                .size(20.dp)
+        )
         Spacer(modifier = Modifier.width(5.dp))
         Image(
             painter = painterResource(R.drawable.ic_share),
@@ -88,7 +105,7 @@ fun PreviewSubscriptionItemCard() {
             SubsItem(
                 filePath = "filepath",
                 updateUrl = "https://raw.githubusercontents.com/lisonge/gkd-subscription/main/src/ad-startup.gkd.json",
-                comment = "备注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注"
+                name = "APP工具箱"
             )
         )
     }

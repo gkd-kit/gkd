@@ -18,3 +18,7 @@
 ## Android Studio kts lint error
 
 replace default "Embedded JDK" with download jdk by `File->Project Structrue...->SDK Location->Gradle Settings->Gradle JDK`
+
+## Layout Inspector not working
+
+开发者选项 - 启用视图属性检查功能

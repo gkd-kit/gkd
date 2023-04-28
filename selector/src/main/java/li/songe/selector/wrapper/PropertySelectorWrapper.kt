@@ -5,7 +5,7 @@ import li.songe.selector.selector.PropertySelector
 
 data class PropertySelectorWrapper(
     private val propertySelector: PropertySelector,
-    val to: CombinatorSelectorWrapper? = null
+    val to: CombinatorSelectorWrapper? = null,
 ) {
     override fun toString(): String {
         return (if (to != null) {
@@ -17,34 +17,36 @@ data class PropertySelectorWrapper(
 
     fun match(
         nodeInfo: AccessibilityNodeInfo,
-        trackList: MutableList<AccessibilityNodeInfo?>
-    ): Boolean {
-        if (propertySelector.name != "*" || propertySelector.name.isNotEmpty()) {
+        trackNodes: MutableList<AccessibilityNodeInfo?> = mutableListOf(),
+    ): List<AccessibilityNodeInfo?>? {
+
+        if (propertySelector.needMatchName) {
             val className = nodeInfo.className.toString()
             if (!((className.endsWith(propertySelector.name) &&
                         className[className.length - propertySelector.name.length - 1] == '.')
                         || className == propertySelector.name
                         )
             ) {
-                return false
+                return null
             }
         }
+
+//        属性匹配单元 完全匹配
         propertySelector.expressionList.forEach { expression ->
             if (!expression.matchNodeInfo(nodeInfo)) {
-                return false
+                return null
             }
         }
-//        属性匹配单元 完全匹配 之后
 
-        if (propertySelector.match || trackList.isEmpty()) {
-            trackList.add(nodeInfo)
+        if (propertySelector.match || trackNodes.isEmpty()) {
+            trackNodes.add(nodeInfo)
         } else {
-            trackList.add(null)
+            trackNodes.add(null)
         }
         if (to == null) {
-            return true
+            return trackNodes
         }
-        return to.match(nodeInfo, trackList)
+        return to.match(nodeInfo, trackNodes)
     }
 
 
