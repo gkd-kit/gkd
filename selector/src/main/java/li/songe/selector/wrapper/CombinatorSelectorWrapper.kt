@@ -1,12 +1,19 @@
 package li.songe.selector.wrapper
 
 import android.view.accessibility.AccessibilityNodeInfo
-import li.songe.selector.*
+import li.songe.selector.forEachAncestorIndexed
+import li.songe.selector.forEachElderBrotherIndexed
+import li.songe.selector.forEachIndexed
+import li.songe.selector.forEachYoungerBrotherIndexed
+import li.songe.selector.getAncestor
+import li.songe.selector.getBrother
+import li.songe.selector.getDepth
+import li.songe.selector.getIndex
 import li.songe.selector.selector.CombinatorSelector
 
 data class CombinatorSelectorWrapper(
     private val combinatorSelector: CombinatorSelector,
-    val to: PropertySelectorWrapper
+    val to: PropertySelectorWrapper,
 ) {
     override fun toString(): String {
         return to.toString() + "\u0020" + combinatorSelector.toString()
@@ -14,8 +21,8 @@ data class CombinatorSelectorWrapper(
 
     fun match(
         nodeInfo: AccessibilityNodeInfo,
-        trackList: MutableList<AccessibilityNodeInfo?>
-    ): Boolean {
+        trackNodes: MutableList<AccessibilityNodeInfo?>,
+    ): List<AccessibilityNodeInfo?>? {
         val expression = combinatorSelector.polynomialExpression
         val isConstant = expression.isConstant
         when (combinatorSelector.operator) {
@@ -23,21 +30,15 @@ data class CombinatorSelectorWrapper(
                 if (isConstant) {
                     val constantValue = expression.calculate()
                     if (constantValue > 0) {
-                        nodeInfo.traverseAncestor { depth, ancestorNode ->
-                            if (depth == constantValue) {
-                                val targetNode = to.match(ancestorNode, trackList)
-                                if (targetNode) {
-                                    return true
-                                }
-                                return@traverseAncestor true
-                            }
-                            return@traverseAncestor Unit
+                        val ancestorNode = nodeInfo.getAncestor(constantValue)
+                        if (ancestorNode != null) {
+                            to.match(ancestorNode, trackNodes)?.let { return it }
                         }
                     }
                 } else {
                     val maxDepth = nodeInfo.getDepth()
                     if (maxDepth <= 0) {
-                        return false
+                        return null
                     }
                     val set = mutableSetOf<Int>()
                     repeat(maxDepth) {
@@ -46,13 +47,10 @@ data class CombinatorSelectorWrapper(
                             set.add(v)
                         }
                     }
-                    nodeInfo.traverseAncestor { depth, ancestorNode ->
+                    nodeInfo.forEachAncestorIndexed { depth, ancestorNode ->
                         if (set.contains(depth)) {
                             set.remove(depth)
-                            val targetNode = to.match(ancestorNode, trackList)
-                            if (targetNode) {
-                                return true
-                            }
+                            to.match(ancestorNode, trackNodes)?.let { return it }
                         }
                     }
                 }
@@ -63,12 +61,12 @@ data class CombinatorSelectorWrapper(
                     if (0 < constantValue && constantValue <= nodeInfo.childCount) {
                         val childNode: AccessibilityNodeInfo? = nodeInfo.getChild(constantValue - 1)
                         if (childNode != null) {
-                            return to.match(childNode, trackList)
+                            return to.match(childNode, trackNodes)
                         }
                     }
                 } else {
                     if (nodeInfo.childCount <= 0) {
-                        return false
+                        return null
                     }
                     val set = mutableSetOf<Int>()
                     repeat(nodeInfo.childCount) {
@@ -80,33 +78,24 @@ data class CombinatorSelectorWrapper(
                     nodeInfo.forEachIndexed { index, childNode ->
                         if (set.contains(index)) {
                             set.remove(index)
-                            val targetNode = to.match(childNode, trackList)
-                            if (targetNode) {
-                                return true
-                            }
+                            to.match(childNode, trackNodes)?.let { return it }
                         }
                     }
                 }
             }
             CombinatorSelector.Operator.ElderBrother -> {
-                val i = nodeInfo.getIndex() ?: return false
+                val i = nodeInfo.getIndex() ?: return null
                 if (isConstant) {
                     val constantValue = expression.calculate()
                     if (constantValue in 1..i) {
-                        nodeInfo.traverseElderBrother { offset, brotherNode ->
-                            if (offset == constantValue) {
-                                val targetNode = to.match(brotherNode, trackList)
-                                if (targetNode) {
-                                    return true
-                                }
-                                return@traverseElderBrother true
-                            }
-                            return@traverseElderBrother Unit
+                        val brotherNode = nodeInfo.getBrother(constantValue)
+                        if (brotherNode != null) {
+                             to.match(brotherNode, trackNodes)?.let { return it }
                         }
                     }
                 } else {
                     if (i <= 0) {
-                        return false
+                        return null
                     }
                     val set = mutableSetOf<Int>()
                     repeat(i) {
@@ -115,37 +104,28 @@ data class CombinatorSelectorWrapper(
                             set.add(v)
                         }
                     }
-                    nodeInfo.traverseElderBrother { offset, brotherNode ->
+                    nodeInfo.forEachElderBrotherIndexed { offset, brotherNode ->
                         if (set.contains(offset)) {
                             set.remove(offset)
-                            val targetNode = to.match(brotherNode, trackList)
-                            if (targetNode) {
-                                return true
-                            }
+                            to.match(brotherNode, trackNodes)?.let { return it }
                         }
                     }
                 }
             }
             CombinatorSelector.Operator.YoungerBrother -> {
-                val i = nodeInfo.getIndex() ?: return false
+                val i = nodeInfo.getIndex() ?: return null
                 if (isConstant) {
                     val constantValue = expression.calculate()
                     if (0 < constantValue && i + constantValue < nodeInfo.parent.childCount) {
-                        nodeInfo.traverseYoungerBrother { offset, brotherNode ->
-                            if (offset == constantValue) {
-                                val targetNode = to.match(brotherNode, trackList)
-                                if (targetNode) {
-                                    return true
-                                }
-                                return@traverseYoungerBrother true
-                            }
-                            return@traverseYoungerBrother Unit
+                        val brotherNode = nodeInfo.getBrother(constantValue, false)
+                        if (brotherNode != null) {
+                            to.match(brotherNode, trackNodes)?.let { return it }
                         }
                     }
                 } else {
-                    val parentNodeInfo = nodeInfo.parent ?: return false
+                    val parentNodeInfo = nodeInfo.parent ?: return null
                     if (parentNodeInfo.childCount - i - 1 <= 0) {
-                        return false
+                        return null
                     }
                     val set = mutableSetOf<Int>()
                     repeat(parentNodeInfo.childCount - i - 1) {
@@ -154,18 +134,15 @@ data class CombinatorSelectorWrapper(
                             set.add(v)
                         }
                     }
-                    nodeInfo.traverseYoungerBrother { offset, brotherNode ->
+                    nodeInfo.forEachYoungerBrotherIndexed { offset, brotherNode ->
                         if (set.contains(offset)) {
                             set.remove(offset)
-                            val targetNode = to.match(brotherNode, trackList)
-                            if (targetNode) {
-                                return true
-                            }
+                            to.match(brotherNode, trackNodes)?.let { return it }
                         }
                     }
                 }
             }
         }
-        return false
+        return null
     }
 }

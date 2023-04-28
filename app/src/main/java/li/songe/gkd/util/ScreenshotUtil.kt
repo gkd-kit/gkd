@@ -16,6 +16,7 @@ import android.media.projection.MediaProjectionManager
 import android.os.Handler
 import android.os.Looper
 import com.blankj.utilcode.util.ScreenUtils
+import li.songe.gkd.util.Ext.isEmptyBitmap
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -44,10 +45,11 @@ class ScreenshotUtil(private val context: Context, private val screenshotIntent:
         mediaProjection?.stop()
     }
 
+    //    TODO android13 上一半概率获取到全透明图片, android12 暂无此问题
     suspend fun execute() = suspendCoroutine<Bitmap> { block ->
         imageReader = ImageReader.newInstance(
             width, height,
-            PixelFormat.RGBA_8888, 1
+            PixelFormat.RGBA_8888, 2
         )
         if (mediaProjection == null) {
             mediaProjection = mediaProjectionManager.getMediaProjection(
@@ -60,13 +62,14 @@ class ScreenshotUtil(private val context: Context, private val screenshotIntent:
             width,
             height,
             dpi,
-            DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY,
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
             imageReader!!.surface,
             null,
             handler
         )
+        var resumed = false
         imageReader!!.setOnImageAvailableListener({ reader ->
-            imageReader?.setOnImageAvailableListener(null, null)
+            if (resumed) return@setOnImageAvailableListener
             var image: Image? = null
             var bitmapWithStride: Bitmap? = null
             val bitmap: Bitmap?
@@ -83,16 +86,19 @@ class ScreenshotUtil(private val context: Context, private val screenshotIntent:
                     )
                     bitmapWithStride.copyPixelsFromBuffer(buffer)
                     bitmap = Bitmap.createBitmap(bitmapWithStride, 0, 0, width, height)
-                    block.resume(bitmap)
+                    if (!bitmap.isEmptyBitmap()) {
+                        imageReader?.setOnImageAvailableListener(null, null)
+                        block.resume(bitmap)
+                        resumed = true
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                imageReader?.setOnImageAvailableListener(null, null)
                 block.resumeWithException(e)
             } finally {
                 bitmapWithStride?.recycle()
                 image?.close()
-                imageReader?.close()
-                virtualDisplay?.release()
             }
         }, handler)
     }

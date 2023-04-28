@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "8ca34ac65f8956691667eb1cbca0bfb3",
+    "identityHash": "5e3c352578a63c3fccbb5e3fba31c89d",
     "entities": [
       {
         "tableName": "subs_item",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `ctime` INTEGER NOT NULL, `mtime` INTEGER NOT NULL, `update_url` TEXT NOT NULL, `file_path` TEXT NOT NULL, `comment` TEXT NOT NULL, `enable` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `ctime` INTEGER NOT NULL, `mtime` INTEGER NOT NULL, `enable` INTEGER NOT NULL, `comment` TEXT NOT NULL, `update_url` TEXT NOT NULL, `file_path` TEXT NOT NULL, `index` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -27,6 +27,18 @@
             "notNull": true
           },
           {
+            "fieldPath": "enable",
+            "columnName": "enable",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "comment",
+            "columnName": "comment",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
             "fieldPath": "updateUrl",
             "columnName": "update_url",
             "affinity": "TEXT",
@@ -39,14 +51,8 @@
             "notNull": true
           },
           {
-            "fieldPath": "comment",
-            "columnName": "comment",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "enable",
-            "columnName": "enable",
+            "fieldPath": "index",
+            "columnName": "index",
             "affinity": "INTEGER",
             "notNull": true
           }
@@ -142,7 +148,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8ca34ac65f8956691667eb1cbca0bfb3')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5e3c352578a63c3fccbb5e3fba31c89d')"
     ]
   }
 }

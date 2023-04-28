@@ -1,7 +1,11 @@
 package li.songe.gkd.db.table
 
 import android.os.Parcelable
-import androidx.room.*
+import androidx.room.ColumnInfo
+import androidx.room.Dao
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 import kotlinx.parcelize.Parcelize
 import li.songe.gkd.db.BaseDao
 import li.songe.gkd.db.BaseTable
@@ -20,10 +24,11 @@ data class SubsItem(
     @ColumnInfo(name = "mtime") override var mtime: Long = System.currentTimeMillis(),
 
     @ColumnInfo(name = "enable") var enable: Boolean = true,
+
     /**
      * 用户自定义备注
      */
-    @ColumnInfo(name = "comment") var comment: String = "",
+    @ColumnInfo(name = "name") var name: String = "",
 
     /**
      * 订阅文件下载地址,也是更新链接
@@ -33,6 +38,11 @@ data class SubsItem(
      * 订阅文件下载后存放的路径
      */
     @ColumnInfo(name = "file_path") var filePath: String,
+
+    /**
+     * 顺序
+     */
+    @ColumnInfo(name = "index") var index: Int=0,
 
 
     ) : Parcelable, BaseTable {

@@ -4,10 +4,11 @@ plugins {
     id("kotlin-parcelize")
     id("kotlin-kapt")
     id("org.jetbrains.kotlin.plugin.serialization")
-    id("com.google.devtools.ksp") version "1.7.20-1.0.7"
+    id("com.google.devtools.ksp") version "1.8.10-1.0.9"
 }
 
-val composeVersion = "1.3.0"
+//val composeVersion = "1.3.3"
+@Suppress("UnstableApiUsage")
 android {
     compileSdk = 33
     buildToolsVersion = "33.0.0"
@@ -65,6 +66,7 @@ android {
         }
         debug {
             applicationIdSuffix = ".debug"
+            signingConfig = signingConfigs.getByName("release")
             manifestPlaceholders["appName"] = "搞快点-dev"
         }
     }
@@ -89,14 +91,21 @@ android {
     composeOptions {
 //        compose 编译器的版本, 需要注意它与 compose 的版本不一致
 //        https://mvnrepository.com/artifact/androidx.compose.compiler/compiler
-        kotlinCompilerExtensionVersion = "1.3.2"
+        kotlinCompilerExtensionVersion = "1.4.4"
     }
     packagingOptions {
         resources {
-            excludes += "META-INF/*"
             // Due to https://github.com/Kotlin/kotlinx.coroutines/issues/2023
+            excludes += "META-INF/INDEX.LIST"
             excludes += "META-INF/licenses/*"
             excludes += "**/attach_hotspot_windows.dll"
+            excludes += "META-INF/io.netty.*"
+        }
+    }
+    configurations.all {
+        resolutionStrategy{
+            //    https://github.com/Kotlin/kotlinx.coroutines/issues/2023
+            exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-debug")
         }
     }
 }
@@ -104,30 +113,30 @@ android {
 dependencies {
 
 //    normal
-    implementation("androidx.appcompat:appcompat:1.5.1")
-    implementation("com.google.android.material:material:1.7.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.8.0")
 
 //    ktx
     implementation("androidx.core:core-ktx:1.9.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.5.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
 
 //    compose
-    implementation("androidx.compose.ui:ui:$composeVersion")
-    implementation("androidx.compose.material:material:$composeVersion")
-    implementation("androidx.compose.ui:ui-tooling-preview:$composeVersion")
-    debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
-    implementation("androidx.activity:activity-compose:1.6.1")
+    implementation("androidx.compose.ui:ui:1.4.0")
+    implementation("androidx.compose.material:material:1.4.0")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.4.0")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.4.0")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.4.0")
+    implementation("androidx.activity:activity-compose:1.7.0")
 
 //    test
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.3")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.4.0")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 
 //    https://github.com/RikkaApps/Shizuku-API
-    val shizukuVersion = "12.1.0"
-    implementation("dev.rikka.shizuku:api:$shizukuVersion")
-    implementation("dev.rikka.shizuku:provider:$shizukuVersion")
+//    val shizukuVersion = "12.1.0"
+    implementation("dev.rikka.shizuku:api:12.1.0")
+    implementation("dev.rikka.shizuku:provider:12.1.0")
 
     //    工具集合类
     //    https://github.com/Blankj/AndroidUtilCode/blob/master/lib/utilcode/README-CN.md
@@ -142,10 +151,10 @@ dependencies {
     implementation("com.tencent.bugly:crashreport:4.0.4")
 
 //    https://developer.android.google.cn/training/data-storage/room?hl=zh-cn
-    val roomVersion = "2.4.3"
-    implementation("androidx.room:room-runtime:$roomVersion")
-    kapt("androidx.room:room-compiler:$roomVersion")
-    implementation("androidx.room:room-ktx:$roomVersion")
+//    val roomVersion = "2.4.3"
+    implementation("androidx.room:room-runtime:2.5.1")
+    kapt("androidx.room:room-compiler:2.5.1")
+    implementation("androidx.room:room-ktx:2.5.1")
 
 //    implementation("com.squareup.retrofit2:retrofit:2.9.0")
 //    implementation ("com.google.code.gson:gson:2.8.9")
@@ -154,21 +163,20 @@ dependencies {
     implementation("com.tencent:mmkv:1.2.13")
 
 //    ktor
-    implementation("io.ktor:ktor-server-core:2.1.0")
-    implementation("io.ktor:ktor-server-netty:2.1.0")
+    implementation("io.ktor:ktor-server-core:2.2.3")
+    implementation("io.ktor:ktor-server-netty:2.2.3")
 //    https://ktor.io/docs/cors.html#install_plugin
-    implementation("io.ktor:ktor-server-cors:2.1.0")
-    implementation("io.ktor:ktor-server-content-negotiation:2.1.0")
+    implementation("io.ktor:ktor-server-cors:2.2.3")
+    implementation("io.ktor:ktor-server-content-negotiation:2.2.3")
 
 //  请注意,当 client 和 server 版本不一致时, 会报错 socket hang up
-    implementation("io.ktor:ktor-client-core:2.1.0")
-    implementation("io.ktor:ktor-client-cio:2.1.0")
-    implementation("io.ktor:ktor-client-content-negotiation:2.1.0")
-
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.1.0")
+    implementation("io.ktor:ktor-client-core:2.2.3")
+    implementation("io.ktor:ktor-client-cio:2.2.3")
+    implementation("io.ktor:ktor-client-content-negotiation:2.2.3")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.2.3")
 
 //    https://github.com/Kotlin/kotlinx.serialization/blob/master/docs
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
 
 //    https://dylancaicoding.github.io/ActivityResultLauncher/#/
     implementation("com.github.DylanCaiCoding:ActivityResultLauncher:1.1.2")
@@ -185,11 +193,14 @@ dependencies {
 
     ksp(project(":room_processor"))
     implementation(project(mapOf("path" to ":selector")))
+    implementation(project(mapOf("path" to ":router")))
 
 //    https://github.com/falkreon/Jankson
     implementation("blue.endless:jankson:1.2.1")
 
 //    https://github.com/Kotlin/kotlinx.collections.immutable
     implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
+
+    implementation("io.github.torrydo:floating-bubble-view:0.5.2")
 
 }

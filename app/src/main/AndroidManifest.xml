@@ -5,17 +5,20 @@
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> <!-- com.tencent.bugly -->
+
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
-        tools:ignore="QueryAllPackagesPermission" />
-    <uses-permission
-        android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+        tools:ignore="QueryAllPackagesPermission" /> <!-- packageManager.getApplicationInfo  -->
 
-    <!--  compose docs https://milklab.dev/docs/ -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+
     <application
         android:name="li.songe.gkd.App"
         android:allowBackup="true"
@@ -24,11 +27,18 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="false"
         android:theme="@style/Theme.Gkd.NoActionBar">
+
+        <activity
+            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            android:screenOrientation="fullSensor"
+            tools:replace="screenOrientation" />
+
         <activity
             android:name="li.songe.gkd.MainActivity"
             android:configChanges="uiMode|screenSize|orientation|keyboardHidden|touchscreen|smallestScreenSize|screenLayout|navigation|mnc|mcc|locale|layoutDirection|keyboard|fontWeightAdjustment|fontScale|density|colorMode"
             android:exported="true"
             android:launchMode="singleInstance">
+
             <!--
             about android:configChanges
             https://developer.android.com/guide/topics/resources/runtime-changes
@@ -37,12 +47,12 @@
 
             <intent-filter>
                 <category android:name="android.intent.category.BROWSABLE" />
+
                 <data
                     android:host="i"
                     android:path="/"
                     android:scheme="gkd" />
             </intent-filter>
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -51,27 +61,31 @@
         </activity>
 
         <service
-            android:name="li.songe.gkd.accessibility.GkdAccessService"
+            android:name="li.songe.gkd.accessibility.GkdAbService"
             android:exported="false"
             android:label="@string/accessibility_service_label"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
             </intent-filter>
+
             <meta-data
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_description" />
         </service>
         <service
-            android:name=".service.ScreenshotService"
+            android:name=".debug.ScreenshotService"
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
         <service
-            android:name=".server.HttpServerService"
+            android:name=".debug.server.HttpService"
             android:exported="false" />
-        <service android:name=".accessibility.KeepAliveService"  android:exported="false" />
-
-        <!-- This provider is required by Shizuku, remove this if your app only supports Sui -->
+        <service
+            android:name=".debug.FloatingService"
+            android:exported="false" />
+        <service
+            android:name=".accessibility.KeepAliveService"
+            android:exported="false" /> <!-- This provider is required by Shizuku, remove this if your app only supports Sui -->
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
@@ -79,8 +93,6 @@
             android:exported="true"
             android:multiprocess="false"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
-
-
     </application>
 
 </manifest>

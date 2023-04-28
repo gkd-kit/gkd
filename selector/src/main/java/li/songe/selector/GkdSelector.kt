@@ -13,39 +13,36 @@ data class GkdSelector(val wrapper: PropertySelectorWrapper) {
     override fun toString() = wrapper.toString()
 
     fun collect(nodeInfo: AccessibilityNodeInfo): AccessibilityNodeInfo? {
-        val trackList: MutableList<AccessibilityNodeInfo?> = mutableListOf()
-        nodeInfo.traverseAll {
-            val match = wrapper.match(it, trackList)
-            if (!match) {
-                trackList.clear()
+        for (child in nodeInfo.traverse()) {
+            val trackNodes = wrapper.match(child)
+            if (trackNodes != null) {
+                return trackNodes.findLast { it != null } ?: child
             }
-            return@traverseAll match
         }
-        return trackList.findLast { it != null }
+        return null
     }
 
-
-    fun click(nodeInfo: AccessibilityNodeInfo, service: AccessibilityService) = when {
-        nodeInfo.isClickable -> {
-            nodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-            "self"
-        }
-        else -> {
-            val react = Rect()
-            nodeInfo.getBoundsInScreen(react)
-            val x = react.left + 50f / 100f * (react.right - react.left)
-            val y = react.top + 50f / 100f * (react.bottom - react.top)
-            val gestureDescription = GestureDescription.Builder()
-            val path = Path()
-            path.moveTo(x, y)
-            gestureDescription.addStroke(GestureDescription.StrokeDescription(path, 0, 300))
-            service.dispatchGesture(gestureDescription.build(), null, null)
-            "(50%, 50%)"
-        }
-
-    }
 
     companion object {
         val gkdSelectorParser = Transform.gkdSelectorParser
+        fun click(nodeInfo: AccessibilityNodeInfo, service: AccessibilityService) = when {
+            nodeInfo.isClickable -> {
+                nodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                "self"
+            }
+            else -> {
+                val react = Rect()
+                nodeInfo.getBoundsInScreen(react)
+                val x = react.left + 50f / 100f * (react.right - react.left)
+                val y = react.top + 50f / 100f * (react.bottom - react.top)
+                val gestureDescription = GestureDescription.Builder()
+                val path = Path()
+                path.moveTo(x, y)
+                gestureDescription.addStroke(GestureDescription.StrokeDescription(path, 0, 300))
+                service.dispatchGesture(gestureDescription.build(), null, null)
+                "(50%, 50%)"
+            }
+
+        }
     }
 }

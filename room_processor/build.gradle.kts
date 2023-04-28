@@ -1,11 +1,6 @@
 plugins {
-//    id("com.android.library")
     id("kotlin")
-//    id("java")
     kotlin("jvm")
-//    id("java-library")
-//    id("org.jetbrains.kotlin.jvm")
-//    application
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
@@ -20,12 +15,10 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 
 dependencies{
     //ksp依赖
-    implementation("com.google.devtools.ksp:symbol-processing-api:1.7.20-1.0.7")
+    implementation("com.google.devtools.ksp:symbol-processing-api:1.8.10-1.0.9")
     //poet依赖
-    implementation("com.squareup:kotlinpoet:1.11.0")
-    implementation("com.squareup:kotlinpoet-ksp:1.11.0")
-//    implementation(kotlin("stdlib"))
-//    implementation(kotlin("reflect"))
+    implementation("com.squareup:kotlinpoet:1.12.0")
+    implementation("com.squareup:kotlinpoet-ksp:1.12.0")
 }
 
 java {

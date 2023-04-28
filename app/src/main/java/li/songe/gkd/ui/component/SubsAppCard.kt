@@ -2,7 +2,15 @@ package li.songe.gkd.ui.component
 
 import android.graphics.drawable.Drawable
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Switch
 import androidx.compose.material.Text
@@ -22,7 +30,7 @@ import li.songe.gkd.db.table.SubsConfig
 @Composable
 fun SubsAppCard(
     loading: Boolean = false,
-    args: SubsAppCardData,
+    sub: SubsAppCardData,
     onValueChange: ((Boolean) -> Unit)? = null
 ) {
     Row(
@@ -34,7 +42,7 @@ fun SubsAppCard(
     ) {
 
         Image(
-            rememberDrawablePainter(args.icon),
+            painter = rememberDrawablePainter(sub.icon),
             contentDescription = null,
             modifier = Modifier
                 .fillMaxHeight()
@@ -52,7 +60,7 @@ fun SubsAppCard(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = args.appName, maxLines = 1,
+                text = sub.appName, maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
@@ -60,7 +68,7 @@ fun SubsAppCard(
                     .placeholder(loading, highlight = PlaceholderHighlight.fade())
             )
             Text(
-                text = args.subsConfig.appId, maxLines = 1,
+                text = sub.subsConfig.appId, maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
@@ -72,7 +80,7 @@ fun SubsAppCard(
         Spacer(modifier = Modifier.width(10.dp))
 
         Switch(
-            args.subsConfig.enable,
+            sub.subsConfig.enable,
             onValueChange,
             modifier = Modifier.placeholder(loading, highlight = PlaceholderHighlight.fade())
         )
