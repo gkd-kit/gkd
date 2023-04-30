@@ -1,27 +1,22 @@
 plugins {
     id("com.android.library")
+    id("org.jetbrains.kotlin.android")
     id("kotlin-android")
 }
 
 android {
-    compileSdk = 33
-    buildToolsVersion = "33.0.0"
+    namespace = "li.songe.selector"
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    buildToolsVersion = libs.versions.android.buildToolsVersion.get()
 
     defaultConfig {
-        minSdk = 26
-        targetSdk = 33
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        targetSdk = libs.versions.android.targetSdk.get().toInt()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-//        consumerProguardFiles("consumer-rules.pro")
     }
 
     buildTypes {
         release {
-//            setProguardFiles(
-//                listOf(
-//                    getDefaultProguardFile("proguard-android-optimize.txt"),
-//                    "proguard-rules.pro"
-//                )
-//            )
             isMinifyEnabled = false
         }
     }
@@ -38,9 +33,9 @@ android {
 }
 
 dependencies {
-
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    testImplementation("org.json:json:20210307")
+    implementation(libs.androidx.core.ktx)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso)
+    testImplementation(libs.org.json)
 }

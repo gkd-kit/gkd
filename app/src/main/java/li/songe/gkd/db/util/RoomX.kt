@@ -1,12 +1,10 @@
 package li.songe.gkd.db.util
 
 import androidx.sqlite.db.SimpleSQLiteQuery
-import kotlinx.coroutines.flow.Flow
 import li.songe.gkd.db.AppDatabase.Companion.db
 import li.songe.gkd.db.BaseDao
 import li.songe.gkd.db.BaseTable
 import li.songe.gkd.db.table.*
-import li.songe.room_annotation.RoomAnnotation
 import kotlin.reflect.KClass
 
 
