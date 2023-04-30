@@ -33,6 +33,11 @@ android {
         }
     }
 
+    lint {
+        disable.add("ModifierFactoryUnreferencedReceiver")
+//        baseline = file("lint-baseline.xml")
+    }
+
     signingConfigs {
         create("release") {
             storeFile = file("./android.jks")
@@ -95,7 +100,7 @@ android {
         }
     }
     configurations.all {
-        resolutionStrategy{
+        resolutionStrategy {
             //    https://github.com/Kotlin/kotlinx.coroutines/issues/2023
             exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-debug")
         }
