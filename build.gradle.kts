@@ -4,22 +4,15 @@ buildscript {
         mavenLocal()
         mavenCentral()
         google()
-        maven {
-            url = uri("https://jitpack.io")
-        }
+        maven("https://jitpack.io")
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:7.3.1")
-
-//        当前 android 项目 kotlin 的版本
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.10")
-        classpath("org.jetbrains.kotlin:kotlin-serialization:1.8.10")
-
-        classpath("dev.rikka.tools.refine:gradle-plugin:3.0.3")
+        classpath(libs.android.gradle)
+        classpath(libs.kotlin.gradle.plugin)
+        classpath(libs.kotlin.serialization)
+        classpath(libs.rikka.gradle)
     }
 }
-
-
 
 tasks.register<Delete>("clean").configure {
     delete(rootProject.buildDir)

@@ -5,15 +5,12 @@ plugins {
 
 android {
     namespace = "li.songe.router"
-    compileSdk = 33
-
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    buildToolsVersion = libs.versions.android.buildToolsVersion.get()
     defaultConfig {
-        minSdk = 26
-        targetSdk = 33
-
-//        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        targetSdk = libs.versions.android.targetSdk.get().toInt()
     }
-
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -30,15 +27,14 @@ android {
         compose = true
     }
     composeOptions {
-//        compose 编译器的版本, 需要注意它与 compose 的版本不一致
-//        https://mvnrepository.com/artifact/androidx.compose.compiler/compiler
-        kotlinCompilerExtensionVersion = "1.4.4"
+        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
     }
 }
 
 dependencies {
-    implementation("com.blankj:utilcodex:1.31.0")
-    implementation("androidx.compose.ui:ui:1.4.0")
-    implementation("androidx.compose.material:material:1.4.0")
-    implementation("androidx.activity:activity-compose:1.7.0")
+    implementation(libs.others.utilcodex)
+    implementation(libs.compose.ui)
+    implementation(libs.compose.material)
+    implementation(libs.compose.activity)
+    implementation(libs.androidx.core.ktx)
 }

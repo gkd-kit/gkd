@@ -4,19 +4,19 @@ plugins {
     id("kotlin-parcelize")
     id("kotlin-kapt")
     id("org.jetbrains.kotlin.plugin.serialization")
-    id("com.google.devtools.ksp") version "1.8.10-1.0.9"
+    id("org.jetbrains.kotlin.android")
 }
 
-//val composeVersion = "1.3.3"
 @Suppress("UnstableApiUsage")
 android {
-    compileSdk = 33
-    buildToolsVersion = "33.0.0"
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    buildToolsVersion = libs.versions.android.buildToolsVersion.get()
 
     defaultConfig {
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        targetSdk = libs.versions.android.targetSdk.get().toInt()
+
         applicationId = "li.songe.gkd"
-        minSdk = 26
-        targetSdk = 33
         versionCode = 1
         versionName = "1.0.0"
 
@@ -74,24 +74,16 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
 
-//        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "1.8"
         freeCompilerArgs = freeCompilerArgs + "-opt-in=kotlin.RequiresOptIn"
-//        忽略 compose 对 kotlin 版本的限制
-//        freeCompilerArgs = freeCompilerArgs + listOf(
-//            "-P",
-//            "plugin:androidx.compose.compiler.plugins.kotlin:suppressKotlinVersionCompatibilityCheck=true"
-//        )
     }
     buildFeatures {
         compose = true
     }
     composeOptions {
-//        compose 编译器的版本, 需要注意它与 compose 的版本不一致
-//        https://mvnrepository.com/artifact/androidx.compose.compiler/compiler
-        kotlinCompilerExtensionVersion = "1.4.4"
+        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
     }
     packagingOptions {
         resources {
@@ -111,96 +103,55 @@ android {
 }
 
 dependencies {
-
-//    normal
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.8.0")
-
-//    ktx
-    implementation("androidx.core:core-ktx:1.9.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
-
-//    compose
-    implementation("androidx.compose.ui:ui:1.4.0")
-    implementation("androidx.compose.material:material:1.4.0")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.4.0")
-    debugImplementation("androidx.compose.ui:ui-tooling:1.4.0")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.4.0")
-    implementation("androidx.activity:activity-compose:1.7.0")
-
-//    test
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-
-//    https://github.com/RikkaApps/Shizuku-API
-//    val shizukuVersion = "12.1.0"
-    implementation("dev.rikka.shizuku:api:12.1.0")
-    implementation("dev.rikka.shizuku:provider:12.1.0")
-
-    //    工具集合类
-    //    https://github.com/Blankj/AndroidUtilCode/blob/master/lib/utilcode/README-CN.md
-    implementation("com.blankj:utilcodex:1.31.0")
-
-//    https://developer.android.com/jetpack/compose/navigation
-//    implementation("androidx.navigation:navigation-compose:2.4.2")
-//    2.4.0/2.4.1/2.4.2 在 红米k40 android 12 需要 向左滑动 才会渲染, 在 android studio 自带 preview 也不渲染
-//    implementation("com.google.accompanist:accompanist-navigation-animation:0.23.1")
-
-//    https://bugly.qq.com/docs/user-guide/instruction-manual-android/
-    implementation("com.tencent.bugly:crashreport:4.0.4")
-
-//    https://developer.android.google.cn/training/data-storage/room?hl=zh-cn
-//    val roomVersion = "2.4.3"
-    implementation("androidx.room:room-runtime:2.5.1")
-    kapt("androidx.room:room-compiler:2.5.1")
-    implementation("androidx.room:room-ktx:2.5.1")
-
-//    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-//    implementation ("com.google.code.gson:gson:2.8.9")
-
-//    https://github.com/Tencent/MMKV/blob/master/README_CN.md
-    implementation("com.tencent:mmkv:1.2.13")
-
-//    ktor
-    implementation("io.ktor:ktor-server-core:2.2.3")
-    implementation("io.ktor:ktor-server-netty:2.2.3")
-//    https://ktor.io/docs/cors.html#install_plugin
-    implementation("io.ktor:ktor-server-cors:2.2.3")
-    implementation("io.ktor:ktor-server-content-negotiation:2.2.3")
-
-//  请注意,当 client 和 server 版本不一致时, 会报错 socket hang up
-    implementation("io.ktor:ktor-client-core:2.2.3")
-    implementation("io.ktor:ktor-client-cio:2.2.3")
-    implementation("io.ktor:ktor-client-content-negotiation:2.2.3")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.2.3")
-
-//    https://github.com/Kotlin/kotlinx.serialization/blob/master/docs
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
-
-//    https://dylancaicoding.github.io/ActivityResultLauncher/#/
-    implementation("com.github.DylanCaiCoding:ActivityResultLauncher:1.1.2")
-
-//    https://github.com/journeyapps/zxing-android-embedded
-    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
-
-
-//    implementation("androidx.startup:startup-runtime:1.1.1")
-
-    implementation("com.google.accompanist:accompanist-drawablepainter:0.23.1")
-    implementation("com.google.accompanist:accompanist-placeholder-material:0.23.1")
-
-
-    ksp(project(":room_processor"))
     implementation(project(mapOf("path" to ":selector")))
     implementation(project(mapOf("path" to ":router")))
 
-//    https://github.com/falkreon/Jankson
-    implementation("blue.endless:jankson:1.2.1")
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
 
-//    https://github.com/Kotlin/kotlinx.collections.immutable
-    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
+    implementation(libs.compose.ui)
+    implementation(libs.compose.material)
+    implementation(libs.compose.preview)
+    debugImplementation(libs.compose.tooling)
+    androidTestImplementation(libs.compose.junit4)
+    implementation(libs.compose.activity)
 
-    implementation("io.github.torrydo:floating-bubble-view:0.5.2")
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso)
+
+    implementation(libs.rikka.shizuku.api)
+    implementation(libs.rikka.shizuku.provider)
+
+    implementation(libs.tencent.bugly)
+    implementation(libs.tencent.mmkv)
+
+    implementation(libs.androidx.room.runtime)
+    kapt(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.ktx)
+
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.content.negotiation)
+
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+
+    implementation(libs.google.material)
+    implementation(libs.google.accompanist.drawablepainter)
+    implementation(libs.google.accompanist.placeholder.material)
+
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.collections.immutable)
+
+    implementation(libs.others.jankson)
+    implementation(libs.others.utilcodex)
+    implementation(libs.others.activityResultLauncher)
+    implementation(libs.others.zxing.android.embedded)
+    implementation(libs.others.floating.bubble.view)
 
 }
