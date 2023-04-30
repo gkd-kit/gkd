@@ -21,17 +21,18 @@ dependencyResolutionManagement {
             version("android.targetSdk", "33")
             version("android.buildToolsVersion", "33.0.0")
 
-            library("kotlin.gradle.plugin", "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.10")
-            library("kotlin.serialization", "org.jetbrains.kotlin:kotlin-serialization:1.8.10")
+            library("kotlin.gradle.plugin", "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.20")
+            library("kotlin.serialization", "org.jetbrains.kotlin:kotlin-serialization:1.8.20")
+//            library("kotlin.stdlib", "org.jetbrains.kotlin:kotlin-stdlib:1.8.10")
 
             // compose 编译器的版本, 需要注意它与 compose 的版本没有关联
             // https://mvnrepository.com/artifact/androidx.compose.compiler/compiler
-            version("compose.compiler", "1.4.4")
-            library("compose.ui", "androidx.compose.ui:ui:1.4.0")
-            library("compose.material", "androidx.compose.material:material:1.4.0")
-            library("compose.preview", "androidx.compose.ui:ui-tooling-preview:1.4.0")
-            library("compose.tooling", "androidx.compose.ui:ui-tooling:1.4.0")
-            library("compose.junit4", "androidx.compose.ui:ui-test-junit4:1.4.0")
+            version("compose.compiler", "1.4.6")
+            library("compose.ui", "androidx.compose.ui:ui:1.4.2")
+            library("compose.material", "androidx.compose.material:material:1.4.2")
+            library("compose.preview", "androidx.compose.ui:ui-tooling-preview:1.4.2")
+            library("compose.tooling", "androidx.compose.ui:ui-tooling:1.4.2")
+            library("compose.junit4", "androidx.compose.ui:ui-test-junit4:1.4.2")
             library("compose.activity", "androidx.activity:activity-compose:1.7.0")
 
             // https://github.com/Tencent/MMKV/blob/master/README_CN.md
@@ -58,7 +59,7 @@ dependencyResolutionManagement {
             library("others.floating.bubble.view", "io.github.torrydo:floating-bubble-view:0.5.2")
 
             library("androidx.appcompat", "androidx.appcompat:appcompat:1.6.1")
-            library("androidx.core.ktx", "androidx.core:core-ktx:1.9.0")
+            library("androidx.core.ktx", "androidx.core:core-ktx:1.10.0")
             library(
                 "androidx.lifecycle.runtime.ktx",
                 "androidx.lifecycle:lifecycle-runtime-ktx:2.6.1"

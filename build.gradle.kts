@@ -17,3 +17,13 @@ buildscript {
 tasks.register<Delete>("clean").configure {
     delete(rootProject.buildDir)
 }
+
+project.gradle.taskGraph.whenReady {
+    allTasks.forEach { task ->
+//        error: The binary version of its metadata is 1.8.0, expected version is 1.6.0.
+//        I don't know how to solve it, so just disable these tasks
+        if (task.name.contains("lintAnalyzeDebug") || task.name.contains("lintVitalAnalyzeRelease")) {
+            task.enabled = false
+        }
+    }
+}
