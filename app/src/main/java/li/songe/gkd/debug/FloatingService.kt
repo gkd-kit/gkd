@@ -9,7 +9,7 @@ import com.torrydo.floatingbubbleview.FloatingBubble
 import li.songe.gkd.App
 import li.songe.gkd.R
 import li.songe.gkd.composition.CompositionFbService
-import li.songe.gkd.composition.Hook.useMessage
+import li.songe.gkd.composition.CompositionExt.useMessage
 import li.songe.gkd.composition.InvokeMessage
 import li.songe.gkd.debug.server.HttpService
 

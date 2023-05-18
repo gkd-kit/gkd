@@ -1,7 +1,7 @@
 package li.songe.gkd.db
 
 interface BaseTable {
-    var id: Long
-    var ctime: Long
-    var mtime: Long
+    val id: Long
+    val ctime: Long
+    val mtime: Long
 }

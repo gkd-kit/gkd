@@ -16,6 +16,9 @@ class App : Application() {
         context = this
         MMKV.initialize(this)
         LogUtils.d(Storage.settings)
+        if (!Storage.settings.enableConsoleLogOut){
+            LogUtils.d("关闭日志控制台输出")
+        }
         LogUtils.getConfig().apply {
             isLog2FileSwitch = true
             saveDays = 30

@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import li.songe.gkd.util.Singleton
-import li.songe.selector.GkdSelector
+import li.songe.selector_android.GkdSelector
 
 
 @Parcelize
@@ -200,7 +200,7 @@ data class SubscriptionRaw(
 
         fun stringify(source: SubscriptionRaw) = Singleton.json.encodeToString(source)
 
-        private fun parse(source: String): SubscriptionRaw {
+        fun parse(source: String): SubscriptionRaw {
             return jsonToSubscriptionRaw(Singleton.json.parseToJsonElement(source).jsonObject)
         }
 

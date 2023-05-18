@@ -1,6 +1,6 @@
 package li.songe.gkd.data
 
-import li.songe.selector.GkdSelector
+import li.songe.selector_core.Selector
 
 class RuleManager(vararg subscriptionRawArray: SubscriptionRaw) {
 
@@ -42,13 +42,14 @@ class RuleManager(vararg subscriptionRawArray: SubscriptionRaw) {
                             ?: appRaw.excludeActivityIds
                             ?: emptyList()).toSet()
 
+
                         ruleGroupList.add(
                             Rule(
                                 cd = cd,
                                 index = count,
-                                matches = ruleRaw.matches.map { GkdSelector.gkdSelectorParser(it) },
+                                matches = ruleRaw.matches.map { Selector.parse(it) },
                                 excludeMatches = ruleRaw.excludeMatches.map {
-                                    GkdSelector.gkdSelectorParser(
+                                    Selector.parse(
                                         it
                                     )
                                 },

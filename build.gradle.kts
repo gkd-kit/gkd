@@ -14,6 +14,7 @@ buildscript {
     }
 }
 
+// https://youtrack.jetbrains.com/issue/KT-33191/
 tasks.register<Delete>("clean").configure {
     delete(rootProject.buildDir)
 }

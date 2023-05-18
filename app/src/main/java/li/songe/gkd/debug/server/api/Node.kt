@@ -2,7 +2,7 @@ package li.songe.gkd.debug.server.api
 
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.serialization.Serializable
-import li.songe.selector.forEach
+import li.songe.selector_android.forEach
 import java.util.ArrayDeque
 
 

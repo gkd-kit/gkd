@@ -1,14 +1,15 @@
 package li.songe.gkd.data
 
 import android.view.accessibility.AccessibilityNodeInfo
-import li.songe.selector.GkdSelector
+import li.songe.gkd.selector.querySelector
+import li.songe.selector_core.Selector
 
 data class Rule(
     /**
      * length>0
      */
-    val matches: List<GkdSelector> = emptyList(),
-    val excludeMatches: List<GkdSelector> = emptyList(),
+    val matches: List<Selector> = emptyList(),
+    val excludeMatches: List<Selector> = emptyList(),
     /**
      * 任意一个元素是上次触发过的
      */
@@ -34,11 +35,11 @@ data class Rule(
     fun query(nodeInfo: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
         if (nodeInfo == null) return null
         var target: AccessibilityNodeInfo? = null
-        for (gkd in matches) {
-            target = gkd.collect(nodeInfo) ?: return null
+        for (selector in matches) {
+            target = nodeInfo.querySelector(selector) ?: return null
         }
-        for (gkd in excludeMatches) {
-            if (gkd.collect(nodeInfo) != null) return null
+        for (selector in excludeMatches) {
+            if (nodeInfo.querySelector(selector) != null) return null
         }
         return target
     }

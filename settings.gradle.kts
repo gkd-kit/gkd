@@ -1,9 +1,17 @@
 rootProject.name = "gkd"
 include(":app")
-include(":selector")
 include(":router")
+include(":selector_core")
+include(":selector_android")
+
+pluginManagement {
+    repositories {
+        maven("https://plugins.gradle.org/m2/")
+    }
+}
 
 dependencyResolutionManagement {
+//    https://youtrack.jetbrains.com/issue/KT-55620
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         mavenLocal()
@@ -13,7 +21,6 @@ dependencyResolutionManagement {
     }
     versionCatalogs {
         create("libs") {
-            // 当前 android 项目 kotlin 的版本
             library("android.gradle", "com.android.tools.build:gradle:7.3.1")
 
             version("android.compileSdk", "33")
@@ -21,6 +28,7 @@ dependencyResolutionManagement {
             version("android.targetSdk", "33")
             version("android.buildToolsVersion", "33.0.0")
 
+            // 当前 android 项目 kotlin 的版本
             library("kotlin.gradle.plugin", "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.20")
             library("kotlin.serialization", "org.jetbrains.kotlin:kotlin-serialization:1.8.20")
 //            library("kotlin.stdlib", "org.jetbrains.kotlin:kotlin-stdlib:1.8.10")
@@ -58,6 +66,8 @@ dependencyResolutionManagement {
             library("others.zxing.android.embedded", "com.journeyapps:zxing-android-embedded:4.3.0")
             library("others.floating.bubble.view", "io.github.torrydo:floating-bubble-view:0.5.2")
 
+
+            library("androidx.localbroadcastmanager", "androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
             library("androidx.appcompat", "androidx.appcompat:appcompat:1.6.1")
             library("androidx.core.ktx", "androidx.core:core-ktx:1.10.0")
             library(
@@ -72,7 +82,6 @@ dependencyResolutionManagement {
             library("androidx.room.compiler", "androidx.room:room-compiler:2.5.1")
             library("androidx.room.ktx", "androidx.room:room-ktx:2.5.1")
 
-            library("google.material", "com.google.android.material:material:1.8.0")
             library(
                 "google.accompanist.drawablepainter",
                 "com.google.accompanist:accompanist-drawablepainter:0.23.1"
@@ -113,13 +122,9 @@ dependencyResolutionManagement {
                 "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5"
             )
 
+//            https://developer.android.com/reference/kotlin/org/json/package-summary
             library("org.json", "org.json:json:20210307")
         }
     }
 }
 
-pluginManagement {
-    repositories {
-        maven("https://plugins.gradle.org/m2/")
-    }
-}

@@ -5,7 +5,6 @@ import androidx.room.Insert
 import androidx.room.RawQuery
 import androidx.room.Update
 import androidx.sqlite.db.SupportSQLiteQuery
-import kotlinx.coroutines.flow.Flow
 
 interface BaseDao<T : Any> {
     @Insert

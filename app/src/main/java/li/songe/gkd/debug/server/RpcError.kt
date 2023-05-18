@@ -8,7 +8,7 @@ data class RpcError(
     val code: Int = 0,
 ) : Exception(message) {
     companion object {
-        const val HeaderKey = "X-Rpc-Result"
+        const val HeaderKey = "X_Rpc_Result"
         const val HeaderOkValue = "ok"
         const val HeaderErrorValue = "error"
     }

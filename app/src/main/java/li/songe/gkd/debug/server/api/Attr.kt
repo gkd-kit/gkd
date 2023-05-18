@@ -6,12 +6,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Attr(
-    val id: String?,
-    val className: String?,
-    val childCount: Int,
-    val text: String?,
-    val isClickable: Boolean,
-    val desc: String?,
+    val id: String? = null,
+    val className: String? = null,
+    val childCount: Int = 0,
+    val text: String? = null,
+    val isClickable: Boolean = false,
+    val desc: String? = null,
     val left: Int,
     val top: Int,
     val right: Int,
