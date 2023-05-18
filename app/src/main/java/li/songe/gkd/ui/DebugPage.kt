@@ -17,7 +17,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -44,10 +43,10 @@ val DebugPage = Page {
     val launcher = LocalLauncher.current
     val scope = rememberCoroutineScope()
 
-    var httpServerRunning by usePollState { HttpService.isRunning() }
-    var screenshotRunning by usePollState { ScreenshotService.isRunning() }
-    var gkdAccessRunning by usePollState { GkdAbService.isRunning() }
-    var floatingRunning by usePollState {
+    val httpServerRunning by usePollState { HttpService.isRunning() }
+    val screenshotRunning by usePollState { ScreenshotService.isRunning() }
+    val gkdAccessRunning by usePollState { GkdAbService.isRunning() }
+    val floatingRunning by usePollState {
         FloatingService.isRunning() && Settings.canDrawOverlays(
             context
         )
@@ -55,7 +54,7 @@ val DebugPage = Page {
 
 
     val debugAvailable by remember {
-        derivedStateOf { httpServerRunning && screenshotRunning && gkdAccessRunning }
+        derivedStateOf { httpServerRunning }
     }
 
     val serverUrl by remember {
@@ -132,8 +131,8 @@ val DebugPage = Page {
                     launcher.launch(intent) { resultCode, _ ->
                         if (resultCode != ComponentActivity.RESULT_OK) return@launch
                         if (!Settings.canDrawOverlays(context)) return@launch
-                        val intent = Intent(context, FloatingService::class.java)
-                        ContextCompat.startForegroundService(context, intent)
+                        val intent1 = Intent(context, FloatingService::class.java)
+                        ContextCompat.startForegroundService(context, intent1)
                     }
                 }
             } else {

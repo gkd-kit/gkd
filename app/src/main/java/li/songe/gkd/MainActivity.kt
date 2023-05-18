@@ -6,7 +6,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import com.blankj.utilcode.util.LogUtils
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import li.songe.gkd.composition.CompositionActivity
-import li.songe.gkd.composition.Hook.useLifeCycleLog
+import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.ui.home.HomePage
 import li.songe.gkd.ui.theme.MainTheme
 import li.songe.gkd.util.Ext.LocalLauncher

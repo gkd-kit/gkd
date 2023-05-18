@@ -18,37 +18,37 @@ object Operator {
         operator: String,
     ) =
         Expression(
-            RoomAnnotation.getColumnName(T::class.java.name, name),
+            RoomAnnotation.getColumnName(T::class, name),
             operator,
             value,
             T::class
         )
 
-    inline infix fun <reified T : Any, reified V> KMutableProperty1<T, V>.eq(value: V) =
+    inline infix fun <reified T : Any, reified V> KProperty1<T, V>.eq(value: V) =
         baseOperator(value, "==")
 
-    inline infix fun <reified T : Any, reified V> KMutableProperty1<T, V>.neq(value: V) =
+    inline infix fun <reified T : Any, reified V> KProperty1<T, V>.neq(value: V) =
         baseOperator(value, "!=")
 
-    inline infix fun <reified T : Any, reified V> KMutableProperty1<T, V>.less(value: V) =
+    inline infix fun <reified T : Any, reified V> KProperty1<T, V>.less(value: V) =
         baseOperator(value, "<")
 
-    inline infix fun <reified T : Any, reified V> KMutableProperty1<T, V>.lessEq(value: V) =
+    inline infix fun <reified T : Any, reified V> KProperty1<T, V>.lessEq(value: V) =
         baseOperator(value, "<=")
 
-    inline infix fun <reified T : Any, reified V> KMutableProperty1<T, V>.greater(value: V) =
+    inline infix fun <reified T : Any, reified V> KProperty1<T, V>.greater(value: V) =
         baseOperator(value, ">")
 
-    inline infix fun <reified T : Any, reified V> KMutableProperty1<T, V>.greaterEq(value: V) =
+    inline infix fun <reified T : Any, reified V> KProperty1<T, V>.greaterEq(value: V) =
         baseOperator(value, ">=")
 
-    inline infix fun <reified T : Any, reified V> KMutableProperty1<T, V>.inList(value: List<V>) =
+    inline infix fun <reified T : Any, reified V> KProperty1<T, V>.inList(value: List<V>) =
         baseOperator(value, "IN")
 
-    inline infix fun <reified T : Any, reified V> KMutableProperty1<T, V>.glob(value: GlobString) =
+    inline infix fun <reified T : Any, reified V> KProperty1<T, V>.glob(value: GlobString) =
         baseOperator(value, "GLOB")
 
-    inline infix fun <reified T : Any, reified V> KMutableProperty1<T, V>.like(value: LikeString) =
+    inline infix fun <reified T : Any, reified V> KProperty1<T, V>.like(value: LikeString) =
         baseOperator(value, "LIKE")
 
     inline fun <reified T : Any, V, V2> KProperty1<T, V>.baseOperator(
@@ -56,7 +56,7 @@ object Operator {
         operator: String,
     ) =
         Expression(
-            RoomAnnotation.getColumnName(T::class.java.name, name),
+            RoomAnnotation.getColumnName(T::class, name),
             operator,
             value,
             T::class

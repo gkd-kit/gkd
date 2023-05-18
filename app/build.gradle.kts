@@ -9,6 +9,7 @@ plugins {
 
 @Suppress("UnstableApiUsage")
 android {
+    namespace = "li.songe.gkd"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     buildToolsVersion = libs.versions.android.buildToolsVersion.get()
 
@@ -35,7 +36,6 @@ android {
 
     lint {
         disable.add("ModifierFactoryUnreferencedReceiver")
-//        baseline = file("lint-baseline.xml")
     }
 
     signingConfigs {
@@ -85,6 +85,7 @@ android {
         freeCompilerArgs = freeCompilerArgs + "-opt-in=kotlin.RequiresOptIn"
     }
     buildFeatures {
+        buildConfig = true
         compose = true
     }
     composeOptions {
@@ -108,12 +109,14 @@ android {
 }
 
 dependencies {
-    implementation(project(mapOf("path" to ":selector")))
+    implementation(project(mapOf("path" to ":selector_core")))
+    implementation(project(mapOf("path" to ":selector_android")))
     implementation(project(mapOf("path" to ":router")))
 
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.localbroadcastmanager)
 
     implementation(libs.compose.ui)
     implementation(libs.compose.material)
@@ -146,7 +149,6 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
 
-    implementation(libs.google.material)
     implementation(libs.google.accompanist.drawablepainter)
     implementation(libs.google.accompanist.placeholder.material)
 

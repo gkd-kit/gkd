@@ -4,18 +4,18 @@ import blue.endless.jankson.Jankson
 import com.journeyapps.barcodescanner.BarcodeEncoder
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 object Singleton {
 
-//    @OptIn(ExperimentalSerializationApi::class)
     val json by lazy {
         Json {
-//            prettyPrint = true
-//            prettyPrintIndent = "\u0020".repeat(2)
             isLenient = true
             ignoreUnknownKeys = true
         }
@@ -26,21 +26,13 @@ object Singleton {
             install(ContentNegotiation) {
                 json(json, ContentType.Any)
             }
+            install(HttpTimeout){
+                connectTimeoutMillis = 3000
+            }
         }
     }
-
-//    inline fun <reified T : Any> produce(data: T, block: (data: T) -> Unit): T {
-//        val proxyData = Proxy.newProxyInstance(
-//            T::class.java.classLoader,
-//            arrayOf(),
-//            InvocationHandler { proxy, method, args ->
-//
-//            }) as T
-//        block(proxyData)
-//        return proxyData
-//    }
+    val simpleDateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
     val barcodeEncoder by lazy { BarcodeEncoder() }
-
 
 }

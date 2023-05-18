@@ -11,23 +11,32 @@ import io.ktor.server.response.respond
 
 val RpcErrorHeaderPlugin = createApplicationPlugin(name = "RpcErrorHeaderPlugin") {
     onCall { call ->
-        Log.d("Ktor", "Request Path: ${call.request.uri}")
+        Log.d("Ktor", "onCall: ${call.request.uri}")
     }
     on(CallFailed) { call, cause ->
-        if (cause is RpcError) {
-            // 主动抛出的错误
-            LogUtils.d(call.request.uri, cause.code, cause.message)
-            call.response.header(RpcError.HeaderKey, RpcError.HeaderErrorValue)
-            call.respond(cause)
-        } else if (cause is Exception) {
-            // 未知错误
-            LogUtils.d(call.request.uri, cause.message)
-            cause.printStackTrace()
-            call.respond(HttpStatusCode.InternalServerError, cause)
+        when (cause) {
+            is RpcError -> {
+                // 主动抛出的错误
+                LogUtils.d(call.request.uri, cause.code, cause.message)
+                call.response.header(RpcError.HeaderKey, RpcError.HeaderErrorValue)
+                call.respond(cause)
+            }
+
+            is Exception -> {
+                // 未知错误
+                LogUtils.d(call.request.uri, cause.message)
+                cause.printStackTrace()
+                call.respond(HttpStatusCode.InternalServerError, cause)
+            }
+
+            else -> {
+                cause.printStackTrace()
+            }
         }
     }
     onCallRespond { call, _ ->
-        if (call.response.status() == HttpStatusCode.OK &&
+        val status=call.response.status() ?: HttpStatusCode.OK
+        if (status == HttpStatusCode.OK &&
             !call.response.headers.contains(
                 RpcError.HeaderKey
             )

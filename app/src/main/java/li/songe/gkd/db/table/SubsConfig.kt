@@ -11,26 +11,25 @@ import li.songe.gkd.db.BaseTable
 
 @Entity(
     tableName = "subs_config",
-//    indices = [Index(value = ["url"], unique = true)]
 )
 @Parcelize
 data class SubsConfig(
-    @PrimaryKey(autoGenerate = true) @ColumnInfo(name = "id") override var id: Long = 0,
-    @ColumnInfo(name = "ctime") override var ctime: Long = System.currentTimeMillis(),
-    @ColumnInfo(name = "mtime") override var mtime: Long = System.currentTimeMillis(),
+    @PrimaryKey(autoGenerate = true) @ColumnInfo(name = "id") override val id: Long = 0,
+    @ColumnInfo(name = "ctime") override val ctime: Long = System.currentTimeMillis(),
+    @ColumnInfo(name = "mtime") override val mtime: Long = System.currentTimeMillis(),
 
     /**
      * 0 - app
      * 1 - group
      * 2 - rule
      */
-    @ColumnInfo(name = "type") var type: Int = 0,
-    @ColumnInfo(name = "enable") var enable: Boolean = true,
+    @ColumnInfo(name = "type") val type: Int = 0,
+    @ColumnInfo(name = "enable") val enable: Boolean = true,
 
-    @ColumnInfo(name = "subs_item_id") var subsItemId: Long = -1,
-    @ColumnInfo(name = "app_id") var appId: String = "",
-    @ColumnInfo(name = "group_key") var groupKey: Int = -1,
-    @ColumnInfo(name = "rule_key") var ruleKey: Int = -1,
+    @ColumnInfo(name = "subs_item_id") val subsItemId: Long = -1,
+    @ColumnInfo(name = "app_id") val appId: String = "",
+    @ColumnInfo(name = "group_key") val groupKey: Int = -1,
+    @ColumnInfo(name = "rule_key") val ruleKey: Int = -1,
 ) : BaseTable, Parcelable {
 
     companion object {

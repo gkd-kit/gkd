@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "5e3c352578a63c3fccbb5e3fba31c89d",
+    "identityHash": "2083d8585fffd897fde3733958e356f8",
     "entities": [
       {
         "tableName": "subs_item",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `ctime` INTEGER NOT NULL, `mtime` INTEGER NOT NULL, `enable` INTEGER NOT NULL, `comment` TEXT NOT NULL, `update_url` TEXT NOT NULL, `file_path` TEXT NOT NULL, `index` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `ctime` INTEGER NOT NULL, `mtime` INTEGER NOT NULL, `enable` INTEGER NOT NULL, `name` TEXT NOT NULL, `update_url` TEXT NOT NULL, `version` INTEGER NOT NULL, `file_path` TEXT NOT NULL, `index` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -33,8 +33,8 @@
             "notNull": true
           },
           {
-            "fieldPath": "comment",
-            "columnName": "comment",
+            "fieldPath": "name",
+            "columnName": "name",
             "affinity": "TEXT",
             "notNull": true
           },
@@ -42,6 +42,12 @@
             "fieldPath": "updateUrl",
             "columnName": "update_url",
             "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "version",
+            "columnName": "version",
+            "affinity": "INTEGER",
             "notNull": true
           },
           {
@@ -58,10 +64,10 @@
           }
         ],
         "primaryKey": {
+          "autoGenerate": true,
           "columnNames": [
             "id"
-          ],
-          "autoGenerate": true
+          ]
         },
         "indices": [
           {
@@ -136,10 +142,10 @@
           }
         ],
         "primaryKey": {
+          "autoGenerate": true,
           "columnNames": [
             "id"
-          ],
-          "autoGenerate": true
+          ]
         },
         "indices": [],
         "foreignKeys": []
@@ -148,7 +154,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5e3c352578a63c3fccbb5e3fba31c89d')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2083d8585fffd897fde3733958e356f8')"
     ]
   }
 }

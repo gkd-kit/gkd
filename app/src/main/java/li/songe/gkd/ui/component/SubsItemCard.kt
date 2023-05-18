@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -20,31 +23,34 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.R
 import li.songe.gkd.db.table.SubsItem
+import li.songe.gkd.util.Singleton
 
 @Composable
 fun SubsItemCard(
-    data: SubsItem,
+    subsItem: SubsItem,
     onShareClick: (() -> Unit)? = null,
     onEditClick: (() -> Unit)? = null,
     onDelClick: (() -> Unit)? = null,
     onRefreshClick: (() -> Unit)? = null,
 ) {
-
+    val dateStr by remember(subsItem) {
+        derivedStateOf { "更新于:" + Singleton.simpleDateFormat.format(subsItem.mtime) }
+    }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .padding(8.dp)
-            .alpha(if (data.enable) 1f else .3f),
+            .alpha(if (subsItem.enable) 1f else .3f),
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = data.name,
+                text = subsItem.name,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = data.updateUrl,
+                text = dateStr,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis

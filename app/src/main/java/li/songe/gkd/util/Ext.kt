@@ -16,11 +16,11 @@ import android.os.Looper
 import androidx.compose.runtime.*
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.blankj.utilcode.util.ToastUtils
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -192,13 +192,26 @@ object Ext {
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend CoroutineScope.() -> Unit,
-    ): Job {
-        return this.launch(context, start) {
-            while (isActive) {
-                block()
-            }
+    ) = launch(context, start) {
+        while (isActive) {
+            block()
         }
     }
+
+    fun CoroutineScope.launchTry(
+        context: CoroutineContext = EmptyCoroutineContext,
+        start: CoroutineStart = CoroutineStart.DEFAULT,
+        block: suspend CoroutineScope.() -> Unit,
+    ) = launch(context, start) {
+        try {
+            block()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ToastUtils.showShort(e.message)
+        }
+    }
+
+
 
     fun createNotificationChannel(context: Service) {
         val channelId = "CHANNEL_TEST"

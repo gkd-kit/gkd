@@ -2,20 +2,28 @@ package li.songe.gkd.accessibility
 
 import android.view.accessibility.AccessibilityEvent
 import com.blankj.utilcode.util.LogUtils
+import com.blankj.utilcode.util.NetworkUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.blankj.utilcode.util.ServiceUtils
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.delay
 import li.songe.gkd.composition.CompositionAbService
-import li.songe.gkd.composition.Hook.useLifeCycleLog
-import li.songe.gkd.composition.Hook.useScope
+import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
+import li.songe.gkd.composition.CompositionExt.useScope
 import li.songe.gkd.data.RuleManager
+import li.songe.gkd.data.SubscriptionRaw
+import li.songe.gkd.db.table.SubsItem
+import li.songe.gkd.db.util.RoomX
 import li.songe.gkd.debug.server.api.Node
 import li.songe.gkd.util.Ext.buildRuleManager
 import li.songe.gkd.util.Ext.getActivityIdByShizuku
 import li.songe.gkd.util.Ext.getSubsFileLastModified
 import li.songe.gkd.util.Ext.launchWhile
+import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.Storage
-import li.songe.selector.GkdSelector
+import li.songe.selector_android.GkdSelector
+import java.io.File
 
 class GkdAbService : CompositionAbService({
     useLifeCycleLog()
@@ -28,11 +36,13 @@ class GkdAbService : CompositionAbService({
     onDestroy { service = null }
 
     KeepAliveService.start(context)
+    onDestroy {
+        KeepAliveService.stop(context)
+    }
 
     var serviceConnected = false
     onServiceConnected { serviceConnected = true }
     onInterrupt { serviceConnected = false }
-
 
     onAccessibilityEvent { event ->
         val activityId = event?.className?.toString() ?: return@onAccessibilityEvent
@@ -103,6 +113,36 @@ class GkdAbService : CompositionAbService({
             )
         }
         delay(200)
+    }
+
+    scope.launchWhile {
+        delay(5000)
+        RoomX.select<SubsItem>().map { subsItem ->
+            if (!NetworkUtils.isAvailable()) return@map
+            try {
+                val text = Singleton.client.get(subsItem.updateUrl).bodyAsText()
+                val subscriptionRaw = SubscriptionRaw.parse5(text)
+                if (subscriptionRaw.version <= subsItem.version) {
+                    return@map
+                }
+                val newItem = subsItem.copy(
+                    updateUrl = subscriptionRaw.updateUrl
+                        ?: subsItem.updateUrl,
+                    name = subscriptionRaw.name,
+                    mtime = System.currentTimeMillis()
+                )
+                RoomX.update(newItem)
+                File(newItem.filePath).writeText(
+                    SubscriptionRaw.stringify(
+                        subscriptionRaw
+                    )
+                )
+                LogUtils.d("更新订阅文件:${subsItem.name}")
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        delay(30 * 60_000)
     }
 
 }) {

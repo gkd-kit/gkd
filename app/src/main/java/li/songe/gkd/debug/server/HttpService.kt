@@ -31,13 +31,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import li.songe.gkd.App
 import li.songe.gkd.composition.CompositionService
-import li.songe.gkd.composition.Hook.useMessage
+import li.songe.gkd.composition.CompositionExt.useMessage
 import li.songe.gkd.composition.InvokeMessage
 import li.songe.gkd.debug.Ext.captureSnapshot
 import li.songe.gkd.debug.Ext.screenshotDir
 import li.songe.gkd.debug.Ext.snapshotDir
 import li.songe.gkd.debug.Ext.windowDir
 import li.songe.gkd.debug.FloatingService
+import li.songe.gkd.debug.server.api.Device
 import li.songe.gkd.util.Ext.getIpAddressInLocalNetwork
 import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.Storage
@@ -78,16 +79,19 @@ class HttpService : CompositionService({
 
         routing {
             route("/api/rpc") {
+                get("/device") {
+                    call.respond(Device.singleton)
+                }
                 get("/capture") {
                     removeBubbles()
                     delay(200)
                     try {
                         call.respond(captureSnapshot())
                     } catch (e: Exception) {
-                        showBubbles()
                         throw e
+                    } finally {
+                        showBubbles()
                     }
-                    showBubbles()
                 }
                 get("/snapshot") {
                     val id = call.request.queryParameters["id"]?.toLongOrNull()
@@ -95,7 +99,6 @@ class HttpService : CompositionService({
                     call.response.cacheControl(CacheControl.MaxAge(3600))
                     call.respondFile(snapshotDir, "/${id}.json")
                 }
-
                 get("/window") {
                     val id = call.request.queryParameters["id"]?.toLongOrNull()
                         ?: throw RpcError("miss id")
@@ -110,7 +113,6 @@ class HttpService : CompositionService({
                     call.respondFile(screenshotDir, "/${id}.png")
                 }
             }
-
             listOf("/", "/index.html").forEach { p ->
                 get(p) {
                     val response = Singleton.client.get("$proxyUrl${call.request.uri}")
