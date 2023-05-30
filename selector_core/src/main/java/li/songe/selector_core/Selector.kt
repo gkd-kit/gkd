@@ -17,9 +17,7 @@ data class Selector(private val propertyWrapper: PropertyWrapper) {
 //        }.toList().reversed()
 //    }
 
-    fun match(node: Node): Node? {
-       val text=  node.attr("text") as CharSequence?
-
+    fun match(node: NodeExt): NodeExt? {
         val trackNodes = propertyWrapper.match(node) ?: return null
         return trackNodes.lastOrNull() ?: node
     }

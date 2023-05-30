@@ -1,21 +1,19 @@
 package li.songe.selector_core
 
-interface Node {
-    val parent: Node?
-    val children: Sequence<Node?>
-
+interface NodeExt {
+    val parent: NodeExt?
+    val children: Sequence<NodeExt?>
     val name: CharSequence
+    fun attr(name: String): Any?
 
     /**
      * constant traversal
      */
     fun getChild(offset: Int) = children.elementAtOrNull(offset)
 
-    fun attr(name: String): Any?
-
-    val ancestors: Sequence<Node>
+    val ancestors: Sequence<NodeExt>
         get() = sequence {
-            var parentVar: Node? = parent ?: return@sequence
+            var parentVar: NodeExt? = parent ?: return@sequence
             while (parentVar != null) {
                 yield(parentVar)
                 parentVar = parentVar.parent
@@ -25,10 +23,10 @@ interface Node {
     fun getAncestor(offset: Int) = ancestors.elementAtOrNull(offset)
 
     //    if index=3, traverse 2,1,0
-    val beforeBrothers: Sequence<Node?>
+    val beforeBrothers: Sequence<NodeExt?>
         get() = sequence {
             val parentVal = parent ?: return@sequence
-            val list = parentVal.children.takeWhile { it != this@Node }.toMutableList()
+            val list = parentVal.children.takeWhile { it != this@NodeExt }.toMutableList()
             list.reverse()
             yieldAll(list)
         }
@@ -36,25 +34,32 @@ interface Node {
     fun getBeforeBrother(offset: Int) = beforeBrothers.elementAtOrNull(offset)
 
     //    if index=3, traverse 4,5,6...
-    val afterBrothers: Sequence<Node?>
+    val afterBrothers: Sequence<NodeExt?>
         get() = sequence {
             val parentVal = parent ?: return@sequence
-            yieldAll(parentVal.children.dropWhile { it == this@Node })
+            yieldAll(parentVal.children.dropWhile { it != this@NodeExt }.drop(1))
         }
 
     fun getAfterBrother(offset: Int) = afterBrothers.elementAtOrNull(offset)
 
-    val descendants: Sequence<Node>
+    val descendants: Sequence<NodeExt>
         get() = sequence {
-            val stack = mutableListOf<Node>()
-            stack.add(this@Node)
+//            深度优先先序遍历
+//            https://developer.mozilla.org/zh-CN/docs/Web/API/Document/querySelector
+            val stack = mutableListOf(this@NodeExt)
+            val reverseList = mutableListOf<NodeExt>()
             do {
                 val top = stack.removeLast()
                 yield(top)
                 for (childNode in top.children) {
                     if (childNode != null) {
-                        stack.add(childNode)
+                        reverseList.add(childNode)
                     }
+                }
+                if (reverseList.isNotEmpty()) {
+                    reverseList.reverse()
+                    stack.addAll(reverseList)
+                    reverseList.clear()
                 }
             } while (stack.isNotEmpty())
         }
@@ -69,5 +74,6 @@ interface Node {
         }
     }
 }
+
 
 

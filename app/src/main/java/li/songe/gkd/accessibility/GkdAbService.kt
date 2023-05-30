@@ -15,14 +15,16 @@ import li.songe.gkd.data.RuleManager
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.table.SubsItem
 import li.songe.gkd.db.util.RoomX
-import li.songe.gkd.debug.server.api.Node
+import li.songe.gkd.debug.NodeSnapshot
+import li.songe.gkd.selector.click
+import li.songe.gkd.selector.querySelectorAll
 import li.songe.gkd.util.Ext.buildRuleManager
 import li.songe.gkd.util.Ext.getActivityIdByShizuku
 import li.songe.gkd.util.Ext.getSubsFileLastModified
 import li.songe.gkd.util.Ext.launchWhile
 import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.Storage
-import li.songe.selector_android.GkdSelector
+import li.songe.selector_core.Selector
 import java.io.File
 
 class GkdAbService : CompositionAbService({
@@ -93,6 +95,7 @@ class GkdAbService : CompositionAbService({
     }
 
     scope.launchWhile {
+        delay(50)
         if (!serviceConnected) return@launchWhile
         if (!Storage.settings.enableService || ScreenUtils.isScreenLock()) return@launchWhile
 
@@ -101,18 +104,17 @@ class GkdAbService : CompositionAbService({
         )
         val shot = nodeSnapshot
         if (shot.root == null) return@launchWhile
-
         for (rule in ruleManager.match(shot.appId, shot.activityId)) {
             val target = rule.query(shot.root) ?: continue
-            val clickResult = GkdSelector.click(target, context)
+            val clickResult = target.click(context)
             ruleManager.trigger(rule)
             LogUtils.d(
                 *rule.matches.toTypedArray(),
-                Node.info2data(target),
+                NodeSnapshot.abNodeToNode(target),
                 clickResult
             )
         }
-        delay(200)
+        delay(150)
     }
 
     scope.launchWhile {
@@ -163,6 +165,11 @@ class GkdAbService : CompositionAbService({
     companion object {
         fun isRunning() = ServiceUtils.isServiceRunning(GkdAbService::class.java)
         fun currentNodeSnapshot() = service?.nodeSnapshot
+        fun match(selector: String) {
+            val rootAbNode = service?.rootInActiveWindow ?: return
+            val list = rootAbNode.querySelectorAll(Selector.parse(selector)).map { it.value }.toList()
+        }
+
         private var service: GkdAbService? = null
     }
 }

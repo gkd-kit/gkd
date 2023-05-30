@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import li.songe.gkd.util.Singleton
-import li.songe.selector_android.GkdSelector
+import li.songe.selector_core.Selector
 
 
 @Parcelize
@@ -136,11 +136,11 @@ data class SubscriptionRaw(
                 matches = (getStringIArray(
                     rulesJson,
                     "matches"
-                ) ?: emptyList()).onEach { GkdSelector.gkdSelectorParser(it) },
+                ) ?: emptyList()).onEach { Selector.parse(it) },
                 excludeMatches = (getStringIArray(
                     rulesJson,
                     "excludeMatches"
-                ) ?: emptyList()).onEach { GkdSelector.gkdSelectorParser(it) },
+                ) ?: emptyList()).onEach { Selector.parse(it) },
                 key = getInt(rulesJson, "key"),
                 name = getString(rulesJson, "name"),
                 preKeys = getIntIArray(rulesJson, "preKeys") ?: emptyList(),

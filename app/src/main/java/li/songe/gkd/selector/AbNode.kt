@@ -1,13 +1,13 @@
 package li.songe.gkd.selector
 
 import android.view.accessibility.AccessibilityNodeInfo
-import li.songe.selector_core.Node
+import li.songe.selector_core.NodeExt
 
 @JvmInline
-value class AbNode(val value: AccessibilityNodeInfo) : Node {
-    override val parent: Node?
+value class AbNode(val value: AccessibilityNodeInfo) : NodeExt {
+    override val parent: NodeExt?
         get() = value.parent?.let { AbNode(it) }
-    override val children: Sequence<Node?>
+    override val children: Sequence<NodeExt?>
         get() = sequence {
             repeat(value.childCount) { i ->
                 val child = value.getChild(i)
@@ -32,8 +32,9 @@ value class AbNode(val value: AccessibilityNodeInfo) : Node {
         "desc" -> value.contentDescription
         "descLen" -> value.contentDescription?.length
         "isClickable" -> value.isClickable
-        "isChecked" -> value.isChecked
+        "childCount" -> value.childCount
         "index" -> value.getIndex()
+        "depth" -> value.getDepth()
         else -> null
     }
 }

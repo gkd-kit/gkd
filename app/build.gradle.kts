@@ -110,7 +110,6 @@ android {
 
 dependencies {
     implementation(project(mapOf("path" to ":selector_core")))
-    implementation(project(mapOf("path" to ":selector_android")))
     implementation(project(mapOf("path" to ":router")))
 
     implementation(libs.androidx.appcompat)

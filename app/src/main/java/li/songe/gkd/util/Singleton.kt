@@ -18,6 +18,7 @@ object Singleton {
         Json {
             isLenient = true
             ignoreUnknownKeys = true
+            encodeDefaults = true
         }
     }
     val json5: Jankson by lazy { Jankson.builder().build() }
