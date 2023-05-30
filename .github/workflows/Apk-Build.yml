@@ -18,5 +18,5 @@ jobs:
       - name: Archive artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: build-outputs-apk
+          name: build-outputs-apk.zip
           path: app/build/outputs/apk
