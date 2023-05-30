@@ -1,6 +1,6 @@
 package li.songe.selector_core.data
 
-import li.songe.selector_core.Node
+import li.songe.selector_core.NodeExt
 
 /**
  * an+b
@@ -9,6 +9,7 @@ data class PolynomialExpression(val a: Int = 0, val b: Int = 1) {
 
     override fun toString(): String {
         if (a == 0 && b == 0) return "0"
+        if (a == 1 && b == 1) return "(n+1)"
         if (b == 0) {
             if (a == 1) return "n"
             return if (a > 0) {
@@ -34,7 +35,7 @@ data class PolynomialExpression(val a: Int = 0, val b: Int = 1) {
      */
     val b1 = b - 1
 
-    val traversal: (Sequence<Node?>) -> Sequence<Node?> =
+    val traversal: (Sequence<NodeExt?>) -> Sequence<NodeExt?> =
         if (a <= 0 && b <= 0) ({ emptySequence() })
         else ({ sequence ->
             sequence.filterIndexed { x, _ -> (x - b1) % a == 0 && (x - b1) / a > 0 }

@@ -1,6 +1,6 @@
 package li.songe.selector_core.data
 
-import li.songe.selector_core.Node
+import li.songe.selector_core.NodeExt
 
 data class ConnectWrapper(
     val connectSegment: ConnectSegment,
@@ -11,9 +11,9 @@ data class ConnectWrapper(
     }
 
     fun match(
-        node: Node,
-        trackNodes: MutableList<Node> = mutableListOf(),
-    ): List<Node>? {
+        node: NodeExt,
+        trackNodes: MutableList<NodeExt> = mutableListOf(),
+    ): List<NodeExt>? {
         connectSegment.traversal(node).forEach {
             if (it == null) return@forEach
             val r = to.match(it, trackNodes)

@@ -1,6 +1,6 @@
 package li.songe.selector_core.data
 
-import li.songe.selector_core.Node
+import li.songe.selector_core.NodeExt
 
 data class PropertyWrapper(
     val propertySegment: PropertySegment,
@@ -15,13 +15,13 @@ data class PropertyWrapper(
     }
 
     fun match(
-        node: Node,
-        trackNodes: MutableList<Node> = mutableListOf(),
-    ): List<Node>? {
+        node: NodeExt,
+        trackNodes: MutableList<NodeExt> = mutableListOf(),
+    ): List<NodeExt>? {
         if (!propertySegment.match(node)) {
             return null
         }
-        if (propertySegment.match || trackNodes.isEmpty()) {
+        if (propertySegment.tracked || trackNodes.isEmpty()) {
             trackNodes.add(node)
         }
         if (to == null) {

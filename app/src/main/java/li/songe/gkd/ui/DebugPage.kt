@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.accessibility.GkdAbService
 import li.songe.gkd.debug.FloatingService
 import li.songe.gkd.debug.ScreenshotService
-import li.songe.gkd.debug.server.HttpService
+import li.songe.gkd.debug.HttpService
 import li.songe.gkd.ui.component.StatusBar
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.util.Ext

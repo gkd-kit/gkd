@@ -78,7 +78,7 @@
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
         <service
-            android:name=".debug.server.HttpService"
+            android:name=".debug.HttpService"
             android:exported="false" />
         <service
             android:name=".debug.FloatingService"

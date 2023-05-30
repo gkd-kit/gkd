@@ -1,4 +1,4 @@
-package li.songe.gkd.debug.server
+package li.songe.gkd.debug
 
 import android.util.Log
 import com.blankj.utilcode.util.LogUtils
@@ -35,7 +35,8 @@ val RpcErrorHeaderPlugin = createApplicationPlugin(name = "RpcErrorHeaderPlugin"
         }
     }
     onCallRespond { call, _ ->
-        val status=call.response.status() ?: HttpStatusCode.OK
+        call.response.header("Access-Control-Expose-Headers", "*")
+        val status = call.response.status() ?: HttpStatusCode.OK
         if (status == HttpStatusCode.OK &&
             !call.response.headers.contains(
                 RpcError.HeaderKey

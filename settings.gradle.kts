@@ -2,7 +2,6 @@ rootProject.name = "gkd"
 include(":app")
 include(":router")
 include(":selector_core")
-include(":selector_android")
 
 pluginManagement {
     repositories {

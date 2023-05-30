@@ -1,6 +1,6 @@
 package li.songe.selector_core.data
 
-import li.songe.selector_core.Node
+import li.songe.selector_core.NodeExt
 
 data class ConnectSegment(
     val operator: ConnectOperator = ConnectOperator.Ancestor,
@@ -13,15 +13,17 @@ data class ConnectSegment(
         return operator.toString() + polynomialExpression.toString()
     }
 
-    fun traversal(node: Node): Sequence<Node?> {
-        if (polynomialExpression.isConstant) {
-            return sequence {
+    val traversal: (node: NodeExt) -> Sequence<NodeExt?> = if (polynomialExpression.isConstant) {
+        ({ node ->
+            sequence {
                 val node1 = operator.traversal(node, polynomialExpression.b1)
                 if (node1 != null) {
                     yield(node1)
                 }
             }
-        }
-        return polynomialExpression.traversal(operator.traversal(node))
+        })
+    } else {
+        ({ node -> polynomialExpression.traversal(operator.traversal(node)) })
     }
+
 }

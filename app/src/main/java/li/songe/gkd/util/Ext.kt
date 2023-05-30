@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import li.songe.gkd.App
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.data.RuleManager
@@ -57,6 +58,15 @@ object Ext {
                 value
             )
         }
+    }
+
+    fun getAppName(appId: String? = null): String? {
+        appId ?: return null
+        return App.context.packageManager.getApplicationLabel(
+            App.context.packageManager.getApplicationInfoExt(
+                appId
+            )
+        ).toString()
     }
 
     fun Bitmap.isEmptyBitmap(): Boolean {
@@ -212,9 +222,8 @@ object Ext {
     }
 
 
-
     fun createNotificationChannel(context: Service) {
-        val channelId = "CHANNEL_TEST"
+        val channelId = "channel_service_ab"
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -235,8 +244,8 @@ object Ext {
             .setOngoing(true)
             .setAutoCancel(false)
 
-        val name = "调试模式2"
-        val descriptionText = "测试后台任务"
+        val name = "无障碍服务"
+        val descriptionText = "无障碍服务保持活跃"
         val importance = NotificationManager.IMPORTANCE_DEFAULT
         val channel = NotificationChannel(channelId, name, importance).apply {
             description = descriptionText
