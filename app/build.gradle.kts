@@ -1,11 +1,16 @@
+import com.android.build.gradle.internal.cxx.json.jsonStringOf
+import java.text.SimpleDateFormat
+import java.util.Locale
+
 plugins {
     id("com.android.application")
-    id("kotlin-android")
     id("kotlin-parcelize")
-    id("kotlin-kapt")
-    id("org.jetbrains.kotlin.plugin.serialization")
-    id("org.jetbrains.kotlin.android")
+    kotlin("android")
+    kotlin("plugin.serialization")
+    id("com.google.devtools.ksp")
+    id("dev.rikka.tools.refine")
 }
+
 
 @Suppress("UnstableApiUsage")
 android {
@@ -26,12 +31,17 @@ android {
             useSupportLibrary = true
         }
 
-        kapt {
-            arguments {
-//                room 依赖每次构建的产物来执行自动迁移
-                arg("room.schemaLocation", "$projectDir/schemas")
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments += mapOf(
+                    "room.schemaLocation" to "$projectDir/schemas",
+                    "room.incremental" to "true"
+                )
             }
         }
+        val nowTime = System.currentTimeMillis()
+        buildConfigField("Long", "BUILD_TIME", jsonStringOf(nowTime) + "L")
+        buildConfigField("String", "BUILD_DATE", jsonStringOf(SimpleDateFormat("yyyy-MM-dd HH:mm:ss ZZ", Locale.SIMPLIFIED_CHINESE).format(nowTime)))
     }
 
     lint {
@@ -47,18 +57,8 @@ android {
         }
     }
 
-    kotlin {
-        sourceSets.debug {
-            kotlin.srcDir("build/generated/ksp/debug/kotlin")
-        }
-        sourceSets.release {
-            kotlin.srcDir("build/generated/ksp/release/kotlin")
-        }
-    }
-
     buildTypes {
         release {
-            manifestPlaceholders += mapOf()
             isMinifyEnabled = false
             setProguardFiles(
                 listOf(
@@ -67,31 +67,31 @@ android {
                 )
             )
             signingConfig = signingConfigs.getByName("release")
-            manifestPlaceholders["appName"] = "搞快点"
+            manifestPlaceholders["appName"] = "GKD"
         }
         debug {
             applicationIdSuffix = ".debug"
             signingConfig = signingConfigs.getByName("release")
-            manifestPlaceholders["appName"] = "搞快点-dev"
+            manifestPlaceholders["appName"] = "GKD-debug"
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
 
     }
     kotlinOptions {
-        jvmTarget = "1.8"
-        freeCompilerArgs = freeCompilerArgs + "-opt-in=kotlin.RequiresOptIn"
+        jvmTarget = JavaVersion.VERSION_17.majorVersion
+        freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
     }
     buildFeatures {
         buildConfig = true
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
+        kotlinCompilerExtensionVersion = libs.versions.compose.compilerVersion.get()
     }
-    packagingOptions {
+    packaging {
         resources {
             // Due to https://github.com/Kotlin/kotlinx.coroutines/issues/2023
             excludes += "META-INF/INDEX.LIST"
@@ -106,16 +106,20 @@ android {
             exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-debug")
         }
     }
+
+//    ksp
+    sourceSets.configureEach {
+        kotlin.srcDir("$buildDir/generated/ksp/$name/kotlin/")
+    }
 }
 
-dependencies {
-    implementation(project(mapOf("path" to ":selector_core")))
-    implementation(project(mapOf("path" to ":router")))
 
+dependencies {
+
+    implementation(project(mapOf("path" to ":selector")))
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.localbroadcastmanager)
 
     implementation(libs.compose.ui)
     implementation(libs.compose.material)
@@ -128,15 +132,18 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso)
 
+
+    compileOnly(project(mapOf("path" to ":hidden_api")))
     implementation(libs.rikka.shizuku.api)
     implementation(libs.rikka.shizuku.provider)
+    implementation(libs.lsposed.hiddenapibypass)
 
     implementation(libs.tencent.bugly)
     implementation(libs.tencent.mmkv)
 
     implementation(libs.androidx.room.runtime)
-    kapt(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)
@@ -144,12 +151,13 @@ dependencies {
     implementation(libs.ktor.server.content.negotiation)
 
     implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.android)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
 
     implementation(libs.google.accompanist.drawablepainter)
     implementation(libs.google.accompanist.placeholder.material)
+    implementation(libs.google.accompanist.systemuicontroller)
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.collections.immutable)
@@ -159,5 +167,10 @@ dependencies {
     implementation(libs.others.activityResultLauncher)
     implementation(libs.others.zxing.android.embedded)
     implementation(libs.others.floating.bubble.view)
+
+    implementation(libs.destinations.core)
+    implementation(libs.destinations.animations)
+    ksp(libs.destinations.ksp)
+
 
 }

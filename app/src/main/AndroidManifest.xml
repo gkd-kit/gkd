@@ -17,16 +17,21 @@
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
-
+    <!--
+    APP 有两个进程, 主进程 + :remote 进程
+    主进程: 主要是 activity 的前端界面
+    remote进程: 主要是 service
+    优点: 在最近任务界面删除当前APP的窗口记录时,不会让 remote进程里的 service 停止
+    -->
 
     <application
         android:name="li.songe.gkd.App"
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_launcher"
         android:label="${appName}"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@drawable/ic_launcher_round"
         android:supportsRtl="false"
-        android:theme="@style/Theme.Gkd.NoActionBar">
+        android:theme="@style/AppTheme">
 
         <activity
             android:name="com.journeyapps.barcodescanner.CaptureActivity"
@@ -36,8 +41,7 @@
         <activity
             android:name="li.songe.gkd.MainActivity"
             android:configChanges="uiMode|screenSize|orientation|keyboardHidden|touchscreen|smallestScreenSize|screenLayout|navigation|mnc|mcc|locale|layoutDirection|keyboard|fontWeightAdjustment|fontScale|density|colorMode"
-            android:exported="true"
-            android:launchMode="singleInstance">
+            android:exported="true">
 
             <!--
             about android:configChanges
@@ -63,29 +67,39 @@
         <service
             android:name=".accessibility.GkdAbService"
             android:exported="false"
-            android:label="@string/accessibility_service_label"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            android:label="@string/ab_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:process=":remote">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
             </intent-filter>
 
             <meta-data
                 android:name="android.accessibilityservice"
-                android:resource="@xml/accessibility_service_description" />
+                android:resource="@xml/ab_desc" />
         </service>
         <service
             android:name=".debug.ScreenshotService"
             android:exported="false"
-            android:foregroundServiceType="mediaProjection" />
+            android:foregroundServiceType="mediaProjection"
+            android:process=":remote" />
         <service
             android:name=".debug.HttpService"
-            android:exported="false" />
+            android:exported="false"
+            android:process=":remote" />
         <service
             android:name=".debug.FloatingService"
-            android:exported="false" />
+            android:exported="false"
+            android:process=":remote" />
         <service
             android:name=".accessibility.KeepAliveService"
-            android:exported="false" /> <!-- This provider is required by Shizuku, remove this if your app only supports Sui -->
+            android:exported="false"
+            android:process=":remote" />
+        <service
+            android:name=".accessibility.ShizukuService"
+            android:exported="false"
+            android:process=":remote" />
+
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
@@ -93,6 +107,17 @@
             android:exported="true"
             android:multiprocess="false"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
     </application>
 
 </manifest>

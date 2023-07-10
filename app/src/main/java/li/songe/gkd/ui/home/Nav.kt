@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
@@ -43,11 +44,13 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun BottomNavigationBar(tabInt: Int, onTabChange: ((Int) -> Unit)? = null) {
     BottomNavigation(
-        backgroundColor = Color.White,
+        backgroundColor = Color.Transparent,
+        elevation = 0.dp
     ) {
         BottomNavItems.forEachIndexed { i, navItem ->
             BottomNavigationItem(
                 selected = i == tabInt,
+                modifier = Modifier.background(Color.Transparent),
                 onClick = {
                     onTabChange?.invoke(i)
                 },

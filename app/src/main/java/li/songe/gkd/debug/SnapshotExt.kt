@@ -2,13 +2,20 @@ package li.songe.gkd.debug
 
 import android.graphics.Bitmap
 import com.blankj.utilcode.util.LogUtils
+import com.blankj.utilcode.util.ScreenUtils
+import com.blankj.utilcode.util.ZipUtils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.encodeToString
 import li.songe.gkd.App
 import li.songe.gkd.accessibility.GkdAbService
-import li.songe.gkd.util.Singleton
+import li.songe.gkd.data.RpcError
+import li.songe.gkd.data.Snapshot
+import li.songe.gkd.db.DbSet
+import li.songe.gkd.utils.Singleton
 import java.io.File
 
 object SnapshotExt {
@@ -16,7 +23,15 @@ object SnapshotExt {
         App.context.getExternalFilesDir("snapshot")!!.apply { if (!exists()) mkdir() }
     }
 
-    private fun getSnapshotParentPath(snapshotId: Long) =
+    private val emptyBitmap by lazy {
+        Bitmap.createBitmap(
+            ScreenUtils.getScreenWidth(),
+            ScreenUtils.getScreenHeight(),
+            Bitmap.Config.ARGB_8888
+        )
+    }
+
+    fun getSnapshotParentPath(snapshotId: Long) =
         "${snapshotDir.absolutePath}/${snapshotId}"
 
     fun getSnapshotPath(snapshotId: Long) =
@@ -30,21 +45,51 @@ object SnapshotExt {
             ?.mapNotNull { f -> f.name.toLongOrNull() } ?: emptyList()
     }
 
+    suspend fun getSnapshotZipFile(snapshotId: Long): File {
+        val file = File(getSnapshotParentPath(snapshotId) + "/${snapshotId}.zip")
+        if (!file.exists()) {
+            withContext(Dispatchers.IO) {
+                ZipUtils.zipFiles(
+                    listOf(
+                        getSnapshotPath(snapshotId),
+                        getScreenshotPath(snapshotId)
+                    ), file.absolutePath
+                )
+            }
+        }
+        return file
+    }
+
+    fun remove(id: Long) {
+        File(getSnapshotParentPath(id)).apply {
+            if (exists()) {
+                deleteRecursively()
+            }
+        }
+    }
+
     suspend fun captureSnapshot(): Snapshot {
         if (!GkdAbService.isRunning()) {
             throw RpcError("无障碍不可用")
         }
-        if (!ScreenshotService.isRunning()) {
-            LogUtils.d("截屏不可用，即将使用空白图片")
+
+        val snapshotDef = coroutineScope { async(Dispatchers.IO) { Snapshot.current() } }
+        val bitmapDef = coroutineScope {
+            async(Dispatchers.IO) {
+                GkdAbService.currentScreenshot() ?: withTimeoutOrNull(3_000) {
+                    if (!ScreenshotService.isRunning()) {
+                        return@withTimeoutOrNull null
+                    }
+                    ScreenshotService.screenshot()
+                } ?: emptyBitmap.apply {
+                    LogUtils.d("截屏不可用，即将使用空白图片")
+                }
+            }
         }
-        val snapshot = Snapshot.current()
-        val bitmap = withTimeoutOrNull(3_000) {
-            ScreenshotService.screenshot()
-        } ?: Bitmap.createBitmap(
-            snapshot.screenWidth,
-            snapshot.screenHeight,
-            Bitmap.Config.ARGB_8888
-        )
+
+        val bitmap = bitmapDef.await()
+        val snapshot = snapshotDef.await()
+
         withContext(Dispatchers.IO) {
             File(getSnapshotParentPath(snapshot.id)).apply { if (!exists()) mkdirs() }
             val stream =
@@ -53,6 +98,7 @@ object SnapshotExt {
             stream.close()
             val text = Singleton.json.encodeToString(snapshot)
             File(getSnapshotPath(snapshot.id)).writeText(text)
+            DbSet.snapshotDao.insert(snapshot)
         }
         return snapshot
     }

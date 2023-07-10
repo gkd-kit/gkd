@@ -6,9 +6,8 @@ import kotlinx.coroutines.delay
 import li.songe.gkd.App
 import li.songe.gkd.composition.CompositionService
 import li.songe.gkd.composition.CompositionExt.useScope
-import li.songe.gkd.util.Ext.createNotificationChannel
-import li.songe.gkd.util.Ext.launchWhile
-
+import li.songe.gkd.utils.launchWhile
+import li.songe.gkd.utils.Ext.createNotificationChannel
 
 class KeepAliveService : CompositionService({
     createNotificationChannel(this)

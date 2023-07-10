@@ -1,8 +1,8 @@
 package li.songe.gkd.data
 
 import android.view.accessibility.AccessibilityNodeInfo
-import li.songe.gkd.selector.querySelector
-import li.songe.selector_core.Selector
+import li.songe.gkd.accessibility.querySelector
+import li.songe.selector.Selector
 
 data class Rule(
     /**

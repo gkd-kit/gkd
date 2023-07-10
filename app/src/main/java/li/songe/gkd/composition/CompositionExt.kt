@@ -6,14 +6,13 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import li.songe.gkd.util.Singleton
+import li.songe.gkd.utils.Singleton
 import kotlin.coroutines.CoroutineContext
 
 object CompositionExt {
@@ -40,15 +39,14 @@ object CompositionExt {
         }
         val filter = IntentFilter(packageName)
 
-        val broadcastManager = LocalBroadcastManager.getInstance(this)
-        broadcastManager.registerReceiver(receiver, filter)
+        registerReceiver(receiver, filter)
         val sendMessage: (InvokeMessage) -> Unit = { message ->
-            broadcastManager.sendBroadcast(Intent(packageName).apply {
+            sendBroadcast(Intent(packageName).apply {
                 putExtra("__invoke", Singleton.json.encodeToString(message))
             })
         }
         onDestroy {
-            broadcastManager.unregisterReceiver(receiver)
+            unregisterReceiver(receiver)
         }
         val setter: ((InvokeMessage) -> Unit) -> Unit = { onMessage = it }
         return (setter to sendMessage)

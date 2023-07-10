@@ -1,20 +1,10 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Theme.Gkd" parent="Theme.AppCompat">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">#ededed</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor" tools:targetApi="l">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <!-- Customize your theme here. -->
-    </style>
+<resources>
 
-    <style name="Theme.Gkd.NoActionBar">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
-        <item name="android:windowTranslucentStatus">true</item>
+    <style name="AppTheme" parent="Theme.AppCompat">
         <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:background">@android:color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
     </style>
-
 
 </resources>

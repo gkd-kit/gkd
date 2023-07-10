@@ -6,8 +6,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
-import li.songe.gkd.util.Singleton
-import li.songe.selector_core.Selector
+import li.songe.gkd.utils.Singleton
+import li.songe.selector.Selector
 
 
 @Parcelize
@@ -35,6 +35,7 @@ data class SubscriptionRaw(
     @Serializable
     data class GroupRaw(
         @SerialName("name") val name: String? = null,
+        @SerialName("desc") val desc: String? = null,
         @SerialName("key") val key: Int? = null,
         @SerialName("cd") val cd: Long? = null,
         @SerialName("activityIds") val activityIds: List<String>? = null,
@@ -78,13 +79,13 @@ data class SubscriptionRaw(
                 JsonNull, null -> null
                 is JsonArray -> element.map {
                     when (it) {
-                        is JsonObject, is JsonArray, JsonNull -> error("Element ${this::class} is not a int")
+                        is JsonObject, is JsonArray, JsonNull -> error("Element $it is not a int")
                         is JsonPrimitive -> it.int
                     }
                 }
 
                 is JsonPrimitive -> listOf(element.int)
-                else -> error("")
+                else -> error("Element $element is not a Array")
             }
         }
 
@@ -95,11 +96,11 @@ data class SubscriptionRaw(
                     if (p.isString) {
                         p.content
                     } else {
-                        error("")
+                        error("Element $p is not a string")
                     }
                 }
 
-                else -> error("")
+                else -> error("Element $p is not a string")
             }
 
         @Suppress("SameParameterValue")
@@ -110,7 +111,7 @@ data class SubscriptionRaw(
                     p.long
                 }
 
-                else -> error("")
+                else -> error("Element $p is not a long")
             }
 
         private fun getInt(json: JsonObject? = null, key: String = ""): Int? =
@@ -120,7 +121,7 @@ data class SubscriptionRaw(
                     p.int
                 }
 
-                else -> error("")
+                else -> error("Element $p is not a int")
             }
 
         private fun jsonToRuleRaw(rulesRawJson: JsonElement): RuleRaw {
@@ -134,12 +135,10 @@ data class SubscriptionRaw(
                 excludeActivityIds = getStringIArray(rulesJson, "excludeActivityIds"),
                 cd = getLong(rulesJson, "cd"),
                 matches = (getStringIArray(
-                    rulesJson,
-                    "matches"
+                    rulesJson, "matches"
                 ) ?: emptyList()).onEach { Selector.parse(it) },
                 excludeMatches = (getStringIArray(
-                    rulesJson,
-                    "excludeMatches"
+                    rulesJson, "excludeMatches"
                 ) ?: emptyList()).onEach { Selector.parse(it) },
                 key = getInt(rulesJson, "key"),
                 name = getString(rulesJson, "name"),
@@ -154,11 +153,11 @@ data class SubscriptionRaw(
                 is JsonObject -> groupsRawJson
                 is JsonPrimitive, is JsonArray -> JsonObject(mapOf("rules" to groupsRawJson))
             }
-            return GroupRaw(
-                activityIds = getStringIArray(groupsJson, "activityIds"),
+            return GroupRaw(activityIds = getStringIArray(groupsJson, "activityIds"),
                 excludeActivityIds = getStringIArray(groupsJson, "excludeActivityIds"),
                 cd = getLong(groupsJson, "cd"),
                 name = getString(groupsJson, "name"),
+                desc = getString(groupsJson, "desc"),
                 key = getInt(groupsJson, "key"),
                 rules = when (val rulesJson = groupsJson["rules"]) {
                     null, JsonNull -> emptyList()
@@ -166,13 +165,11 @@ data class SubscriptionRaw(
                     is JsonArray -> rulesJson
                 }.map {
                     jsonToRuleRaw(it)
-                }
-            )
+                })
         }
 
         private fun jsonToAppRaw(appsJson: JsonObject): AppRaw {
-            return AppRaw(
-                activityIds = getStringIArray(appsJson, "activityIds"),
+            return AppRaw(activityIds = getStringIArray(appsJson, "activityIds"),
                 excludeActivityIds = getStringIArray(appsJson, "excludeActivityIds"),
                 cd = getLong(appsJson, "cd"),
                 id = getString(appsJson, "id") ?: error(""),
@@ -182,25 +179,22 @@ data class SubscriptionRaw(
                     is JsonArray -> groupsJson
                 }).map {
                     jsonToGroupRaw(it)
-                }
-            )
+                })
         }
 
         private fun jsonToSubscriptionRaw(rootJson: JsonObject): SubscriptionRaw {
-            return SubscriptionRaw(
-                name = getString(rootJson, "name") ?: error(""),
+            return SubscriptionRaw(name = getString(rootJson, "name") ?: error(""),
                 version = getInt(rootJson, "version") ?: error(""),
                 author = getString(rootJson, "author"),
                 updateUrl = getString(rootJson, "updateUrl"),
                 supportUrl = getString(rootJson, "supportUrl"),
                 apps = rootJson["apps"]?.jsonArray?.map { jsonToAppRaw(it.jsonObject) }
-                    ?: emptyList()
-            )
+                    ?: emptyList())
         }
 
         fun stringify(source: SubscriptionRaw) = Singleton.json.encodeToString(source)
 
-        fun parse(source: String): SubscriptionRaw {
+        private fun parse(source: String): SubscriptionRaw {
             return jsonToSubscriptionRaw(Singleton.json.parseToJsonElement(source).jsonObject)
         }
 

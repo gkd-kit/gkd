@@ -8,11 +8,14 @@ import com.blankj.utilcode.util.ServiceUtils
 import com.torrydo.floatingbubbleview.FloatingBubble
 import li.songe.gkd.App
 import li.songe.gkd.R
+import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.composition.CompositionFbService
 import li.songe.gkd.composition.CompositionExt.useMessage
 import li.songe.gkd.composition.InvokeMessage
+import li.songe.gkd.utils.SafeR
 
 class FloatingService : CompositionFbService({
+    useLifeCycleLog()
     val context = this
     val (onMessage, sendMessage) = useMessage(this::class.simpleName)
 
@@ -22,9 +25,8 @@ class FloatingService : CompositionFbService({
             "removeBubbles" -> context.removeBubbles()
         }
     }
-
     setupBubble { _, resolve ->
-        val builder = FloatingBubble.Builder(this).bubble(R.drawable.capture, 40, 40)
+        val builder = FloatingBubble.Builder(this).bubble(SafeR.capture, 40, 40)
             .enableCloseBubble(false)
             .addFloatingBubbleListener(object : FloatingBubble.Listener {
                 override fun onClick() {
@@ -38,16 +40,16 @@ class FloatingService : CompositionFbService({
     override fun setupNotificationBuilder(channelId: String): Notification {
         return NotificationCompat.Builder(this, channelId)
             .setOngoing(true)
-            .setSmallIcon(R.drawable.ic_app_2)
-            .setContentTitle("bubble is running")
-            .setContentText("click to do nothing")
+            .setSmallIcon(SafeR.ic_launcher)
+            .setContentTitle("搞快点")
+            .setContentText("正在显示悬浮窗按钮")
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setCategory(Notification.CATEGORY_SERVICE)
             .build()
     }
 
-    override fun channelId() = "your_channel_id"
-    override fun channelName() = "your_channel_name"
+    override fun channelId() = "service-floating"
+    override fun channelName() = "悬浮窗按钮服务"
     override fun notificationId() = 69
 
     companion object{
