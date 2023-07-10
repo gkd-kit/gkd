@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">gkd</string>
+    <string name="ab_label">gkd</string>
+    <string name="ab_desc">Cabin -free speed point service based on rules -based matching</string>
 </resources>

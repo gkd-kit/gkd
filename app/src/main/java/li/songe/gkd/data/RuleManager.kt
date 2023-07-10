@@ -1,6 +1,6 @@
 package li.songe.gkd.data
 
-import li.songe.selector_core.Selector
+import li.songe.selector.Selector
 
 class RuleManager(vararg subscriptionRawArray: SubscriptionRaw) {
 
@@ -88,24 +88,31 @@ class RuleManager(vararg subscriptionRawArray: SubscriptionRaw) {
         }
     }
 
+
     fun match(appId: String? = null, activityId: String? = null) = sequence {
         if (appId == null) return@sequence
         val rules = appToRulesMap[appId] ?: return@sequence
+        if (activityId == null) {
+            yieldAll(rules)
+            return@sequence
+        }
         rules.forEach { rule ->
-            if (!rule.active) return@forEach // 处于冷却时间
+            if (rule.excludeActivityIds.any { activityId.startsWith(it) }) return@forEach // 是被排除的 界面 id
 
-            if (rule.excludeActivityIds.contains(activityId)) return@forEach // 是被排除的 界面 id
-
-            if (rule.preRules.isNotEmpty()) { // 需要提前触发某个规则
-                val record = triggerLogQueue.lastOrNull() ?: return@forEach
-                if (!rule.preRules.any { it == record.rule }) return@forEach // 上一个触发的规则不在当前需要触发的列表
-            }
-
-            if (activityId == null || rule.matchAnyActivity  // 全匹配
-                || rule.activityIds.contains(activityId) // 在匹配列表
+            if (rule.matchAnyActivity || rule.activityIds.any { activityId.startsWith(it) } // 在匹配列表
             ) {
                 yield(rule)
             }
         }
+    }
+
+    fun ruleIsAvailable(rule: Rule): Boolean {
+        if (!rule.active) return false // 处于冷却时间
+        if (rule.preKeys.isNotEmpty()) { // 需要提前触发某个规则
+            if (rule.preRules.isEmpty()) return false // 声明了 preKeys 但是没有在当前列表找到
+            val record = triggerLogQueue.lastOrNull() ?: return false
+            if (!rule.preRules.any { it == record.rule }) return false // 上一个触发的规则不在当前需要触发的列表
+        }
+        return true
     }
 }

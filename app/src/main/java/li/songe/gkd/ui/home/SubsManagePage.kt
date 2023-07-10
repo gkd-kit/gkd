@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.home
 
+import android.webkit.URLUtil
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,59 +20,127 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.blankj.utilcode.util.ClipboardUtils
-import com.blankj.utilcode.util.PathUtils
 import com.blankj.utilcode.util.ToastUtils
 import com.google.zxing.BarcodeFormat
+import com.ramcosta.composedestinations.navigation.navigate
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import li.songe.gkd.R
+import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.SubscriptionRaw
-import li.songe.gkd.db.table.SubsConfig
-import li.songe.gkd.db.table.SubsItem
-import li.songe.gkd.db.util.Operator.eq
-import li.songe.gkd.db.util.RoomX
-import li.songe.gkd.hooks.useNavigateForQrcodeResult
-import li.songe.gkd.ui.SubsPage
+import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SubsItemCard
-import li.songe.gkd.util.Ext.launchTry
-import li.songe.gkd.util.Singleton
-import li.songe.gkd.util.ThrottleState
-import li.songe.router.LocalRouter
-import java.io.File
+import li.songe.gkd.ui.destinations.SubsPageDestination
+import li.songe.gkd.utils.LaunchedEffectTry
+import li.songe.gkd.utils.LocalNavController
+import li.songe.gkd.utils.SafeR
+import li.songe.gkd.utils.Singleton
+import li.songe.gkd.utils.launchAsFn
+import li.songe.gkd.utils.rememberCache
+import li.songe.gkd.utils.useNavigateForQrcodeResult
+import li.songe.gkd.utils.useTask
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SubscriptionManagePage() {
     val scope = rememberCoroutineScope()
-    val router = LocalRouter.current
+    val navController = LocalNavController.current
 
-    var subItemList by remember { mutableStateOf(listOf<SubsItem>()) }
-    var shareSubItem: SubsItem? by remember { mutableStateOf(null) }
-    var shareQrcode: ImageBitmap? by remember { mutableStateOf(null) }
-    var deleteSubItem: SubsItem? by remember { mutableStateOf(null) }
+    var subItems by rememberCache { mutableStateOf(listOf<SubsItem>()) }
+    var shareSubItem: SubsItem? by rememberCache { mutableStateOf(null) }
+    var shareQrcode: ImageBitmap? by rememberCache { mutableStateOf(null) }
+    var deleteSubItem: SubsItem? by rememberCache { mutableStateOf(null) }
+    var moveSubItem: SubsItem? by rememberCache { mutableStateOf(null) }
 
-    var showAddDialog by remember { mutableStateOf(false) }
-    var showLinkInputDialog by remember { mutableStateOf(false) }
-    val viewSubItemThrottle = ThrottleState.use(scope)
-    val editSubItemThrottle = ThrottleState.use(scope)
-    val refreshSubItemThrottle = ThrottleState.use(scope, 250)
+    var showAddDialog by rememberCache { mutableStateOf(false) }
+
+    var showLinkDialog by rememberCache { mutableStateOf(false) }
+    var link by rememberCache { mutableStateOf("") }
+
     val navigateForQrcodeResult = useNavigateForQrcodeResult()
 
-    var linkText by remember {
-        mutableStateOf("")
+    LaunchedEffectTry(Unit) {
+        DbSet.subsItemDao.query().flowOn(IO).collect {
+            subItems = it
+        }
     }
 
-    LaunchedEffect(Unit) {
-        subItemList = RoomX.select<SubsItem>().sortedBy { it.index }
+    val addSubs = scope.useTask(dialog = true).launchAsFn<List<String>> { urls ->
+        val safeUrls = urls.filter { url ->
+            URLUtil.isNetworkUrl(url) && subItems.all { it.updateUrl != url }
+        }
+        if (safeUrls.isEmpty()) return@launchAsFn
+        onChangeLoading(true)
+        val newItems = safeUrls.mapIndexedNotNull { index, url ->
+            try {
+                val text = Singleton.client.get(url).bodyAsText()
+                val subscriptionRaw = SubscriptionRaw.parse5(text)
+                val newItem = SubsItem(
+                    updateUrl = subscriptionRaw.updateUrl ?: url,
+                    name = subscriptionRaw.name,
+                    version = subscriptionRaw.version,
+                    order = index + 1 + subItems.size
+                )
+                withContext(IO) {
+                    newItem.subsFile.writeText(text)
+                }
+                newItem
+            } catch (e: Exception) {
+                null
+            }
+        }
+        if (newItems.isNotEmpty()) {
+            DbSet.subsItemDao.insert(*newItems.toTypedArray())
+            ToastUtils.showShort("成功添加 ${newItems.size} 条订阅")
+        } else {
+            ToastUtils.showShort("添加失败")
+        }
+    }
+
+    val updateSubs = scope.useTask(dialog = true).launchAsFn<List<SubsItem>> { oldItems ->
+        if (oldItems.isEmpty()) return@launchAsFn
+        onChangeLoading(true)
+        val newItems = oldItems.mapNotNull { oldItem ->
+            try {
+                val subscriptionRaw = SubscriptionRaw.parse5(
+                    Singleton.client.get(oldItem.updateUrl).bodyAsText()
+                )
+                if (subscriptionRaw.version <= oldItem.version) {
+                    return@mapNotNull null
+                }
+                val newItem = oldItem.copy(
+                    updateUrl = subscriptionRaw.updateUrl ?: oldItem.updateUrl,
+                    name = subscriptionRaw.name,
+                    mtime = System.currentTimeMillis(),
+                    version = subscriptionRaw.version
+                )
+                withContext(IO) {
+                    newItem.subsFile.writeText(
+                        SubscriptionRaw.stringify(
+                            subscriptionRaw
+                        )
+                    )
+                }
+                newItem
+            } catch (e: Exception) {
+                ToastUtils.showShort(e.message)
+                null
+            }
+        }
+        if (newItems.isEmpty()) {
+            ToastUtils.showShort("暂无更新")
+        } else {
+            DbSet.subsItemDao.update(*newItems.toTypedArray())
+            ToastUtils.showShort("更新 ${newItems.size} 条订阅")
+        }
     }
 
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxHeight()
     ) {
-        item(subItemList) {
+        item(subItems) {
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
@@ -79,11 +148,17 @@ fun SubscriptionManagePage() {
                     .fillMaxWidth()
                     .padding(10.dp, 0.dp)
             ) {
-                Text(
-                    text = "共有${subItemList.size}条订阅,激活:${subItemList.count { it.enable }},禁用:${subItemList.count { !it.enable }}",
-                )
+                if (subItems.isEmpty()) {
+                    Text(
+                        text = "暂无订阅",
+                    )
+                } else {
+                    Text(
+                        text = "共有${subItems.size}条订阅,激活:${subItems.count { it.enable }},禁用:${subItems.count { !it.enable }}",
+                    )
+                }
                 Row {
-                    Image(painter = painterResource(R.drawable.ic_add),
+                    Image(painter = painterResource(SafeR.ic_add),
                         contentDescription = "",
                         modifier = Modifier
                             .clickable {
@@ -91,98 +166,51 @@ fun SubscriptionManagePage() {
                             }
                             .padding(4.dp)
                             .size(25.dp))
-                    Image(painter = painterResource(R.drawable.ic_refresh),
+                    Image(
+                        painter = painterResource(SafeR.ic_refresh),
                         contentDescription = "",
                         modifier = Modifier
-                            .clickable {
-                                scope.launchTry {
-                                    subItemList.mapIndexed { i, oldItem ->
-                                        val subscriptionRaw = SubscriptionRaw.parse5(
-                                            Singleton.client
-                                                .get(oldItem.updateUrl)
-                                                .bodyAsText()
-                                        )
-                                        if (subscriptionRaw.version <= oldItem.version) {
-                                            ToastUtils.showShort("暂无更新:${oldItem.name}")
-                                            return@mapIndexed
-                                        }
-                                        val newItem = oldItem.copy(
-                                            updateUrl = subscriptionRaw.updateUrl
-                                                ?: oldItem.updateUrl,
-                                            name = subscriptionRaw.name,
-                                            mtime = System.currentTimeMillis(),
-                                            version = subscriptionRaw.version
-                                        )
-                                        RoomX.update(newItem)
-                                        File(newItem.filePath).writeText(
-                                            SubscriptionRaw.stringify(
-                                                subscriptionRaw
-                                            )
-                                        )
-                                        ToastUtils.showShort("更新成功:${newItem.name}")
-                                        subItemList = subItemList
-                                            .toMutableList()
-                                            .also {
-                                                it[i] = newItem
-                                            }
-                                    }
-                                }
-                            }
+                            .clickable(onClick = {
+                                updateSubs(subItems)
+                            })
                             .padding(4.dp)
-                            .size(25.dp))
+                            .size(25.dp)
+                    )
                 }
             }
         }
 
-        items(subItemList.size) { i ->
+        items(subItems.size) { i ->
             Card(
                 modifier = Modifier
                     .animateItemPlacement()
                     .padding(vertical = 3.dp, horizontal = 8.dp)
-                    .clickable(onClick = { router.navigate(SubsPage, subItemList[i]) }),
+                    .combinedClickable(
+                        onClick = scope
+                            .useTask()
+                            .launchAsFn {
+                                navController.navigate(SubsPageDestination(subItems[i]))
+                            }, onLongClick = {
+                            if (subItems.size > 1) {
+                                moveSubItem = subItems[i]
+                            }
+                        }),
                 elevation = 0.dp,
                 border = BorderStroke(1.dp, Color(0xfff6f6f6)),
                 shape = RoundedCornerShape(8.dp),
             ) {
-                SubsItemCard(subItemList[i], onShareClick = {
-                    shareSubItem = subItemList[i]
-                }, onEditClick = editSubItemThrottle.invoke {
+                SubsItemCard(subItems[i], onShareClick = {
+                    shareSubItem = subItems[i]
                 }, onDelClick = {
-                    deleteSubItem = subItemList[i]
-                }, onRefreshClick = refreshSubItemThrottle.invoke {
-                    val oldItem = subItemList[i]
-                    val subscriptionRaw = SubscriptionRaw.parse5(
-                        Singleton.client.get(oldItem.updateUrl).bodyAsText()
-                    )
-                    if (subscriptionRaw.version <= oldItem.version) {
-                        ToastUtils.showShort("暂无更新:${oldItem.name}")
-                        return@invoke
-                    }
-                    val newItem = oldItem.copy(
-                        updateUrl = subscriptionRaw.updateUrl
-                            ?: oldItem.updateUrl,
-                        name = subscriptionRaw.name,
-                        mtime = System.currentTimeMillis(),
-                        version = subscriptionRaw.version
-                    )
-                    RoomX.update(newItem)
-                    withContext(IO) {
-                        File(newItem.filePath).writeText(SubscriptionRaw.stringify(subscriptionRaw))
-                    }
-                    subItemList = subItemList.toMutableList().also {
-                        it[i] = newItem
-                    }
-                    ToastUtils.showShort("更新成功:${newItem.name}")
-                }.catch {
-                    if (!it.message.isNullOrEmpty()) {
-                        ToastUtils.showShort(it.message)
-                    }
+                    deleteSubItem = subItems[i]
+                }, onRefreshClick = {
+                    updateSubs(listOf(subItems[i]))
                 })
             }
         }
     }
 
-    shareSubItem?.let { _shareSubItem ->
+    shareSubItem?.let { shareSubItemVal ->
         Dialog(onDismissRequest = { shareSubItem = null }) {
             Box(
                 Modifier
@@ -191,64 +219,109 @@ fun SubscriptionManagePage() {
                     .padding(8.dp)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(text = "二维码",
-                        modifier = Modifier
-                            .clickable {
-                                shareQrcode = Singleton.barcodeEncoder
-                                    .encodeBitmap(
-                                        _shareSubItem.updateUrl,
-                                        BarcodeFormat.QR_CODE,
-                                        500,
-                                        500
-                                    )
-                                    .asImageBitmap()
-                                shareSubItem = null
-                            }
-                            .fillMaxWidth()
-                            .padding(8.dp))
-                    Text(text = "导出至剪切板",
-                        modifier = Modifier
-                            .clickable {
-                                ClipboardUtils.copyText(_shareSubItem.updateUrl)
-                                shareSubItem = null
-                            }
-                            .fillMaxWidth()
-                            .padding(8.dp))
+                    Text(text = "二维码", modifier = Modifier
+                        .clickable {
+                            shareQrcode = Singleton.barcodeEncoder
+                                .encodeBitmap(
+                                    shareSubItemVal.updateUrl, BarcodeFormat.QR_CODE, 500, 500
+                                )
+                                .asImageBitmap()
+                            shareSubItem = null
+                        }
+                        .fillMaxWidth()
+                        .padding(8.dp))
+                    Text(text = "导出至剪切板", modifier = Modifier
+                        .clickable {
+                            ClipboardUtils.copyText(shareSubItemVal.updateUrl)
+                            shareSubItem = null
+                            ToastUtils.showShort("复制成功")
+                        }
+                        .fillMaxWidth()
+                        .padding(8.dp))
                 }
             }
         }
     }
 
-    shareQrcode?.let { _shareQrcode ->
+    shareQrcode?.let { shareQrcodeVal ->
         Dialog(onDismissRequest = { shareQrcode = null }) {
             Image(
-                bitmap = _shareQrcode,
+                bitmap = shareQrcodeVal,
                 contentDescription = "qrcode",
                 modifier = Modifier.size(400.dp)
             )
         }
     }
 
+    moveSubItem?.let { moveSubItemVal ->
+        Dialog(onDismissRequest = { moveSubItem = null }) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .width(200.dp)
+                    .wrapContentHeight()
+                    .background(Color.White)
+                    .padding(8.dp)
+            ) {
+                if (subItems.firstOrNull() != moveSubItemVal) {
+                    Text(
+                        text = "上移",
+                        modifier = Modifier
+                            .clickable(
+                                onClick = scope
+                                    .useTask()
+                                    .launchAsFn {
+                                        val lastItem =
+                                            subItems[subItems.indexOf(moveSubItemVal) - 1]
+                                        DbSet.subsItemDao.update(
+                                            lastItem.copy(
+                                                order = moveSubItemVal.order
+                                            ),
+                                            moveSubItemVal.copy(
+                                                order = lastItem.order
+                                            )
+                                        )
+                                        moveSubItem = null
+                                    })
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                    )
+                }
+                if (subItems.lastOrNull() != moveSubItemVal) {
+                    Text(
+                        text = "下移",
+                        modifier = Modifier
+                            .clickable(
+                                onClick = scope
+                                    .useTask()
+                                    .launchAsFn {
+                                        val nextItem =
+                                            subItems[subItems.indexOf(moveSubItemVal) + 1]
+                                        DbSet.subsItemDao.update(
+                                            nextItem.copy(
+                                                order = moveSubItemVal.order
+                                            ),
+                                            moveSubItemVal.copy(
+                                                order = nextItem.order
+                                            )
+                                        )
+                                        moveSubItem = null
+                                    })
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                    )
+                }
+            }
+        }
+    }
 
-    val delSubItemThrottle = ThrottleState.use(scope)
-    if (deleteSubItem != null) {
+
+    deleteSubItem?.let { deleteSubItemVal ->
         AlertDialog(onDismissRequest = { deleteSubItem = null },
             title = { Text(text = "是否删除该项") },
             confirmButton = {
-                Button(onClick = delSubItemThrottle.invoke {
-                    if (deleteSubItem == null) return@invoke
-                    deleteSubItem?.let {
-                        RoomX.delete(it)
-                        RoomX.delete { SubsConfig::subsItemId eq it.id }
-                    }
-                    withContext(IO) {
-                        try {
-                            File(deleteSubItem!!.filePath).delete()
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }
-                    subItemList = subItemList.toMutableList().also { it.remove(deleteSubItem) }
+                Button(onClick = scope.launchAsFn {
+                    deleteSubItemVal.removeAssets()
                     deleteSubItem = null
                 }) {
                     Text("是")
@@ -262,98 +335,79 @@ fun SubscriptionManagePage() {
                 }
             })
     }
+
     if (showAddDialog) {
-        val clickQrcodeThrottle = ThrottleState.use(scope)
         Dialog(onDismissRequest = { showAddDialog = false }) {
-            Box(
-                Modifier
+            Column(
+                modifier = Modifier
                     .width(250.dp)
                     .background(Color.White)
-                    .padding(8.dp)
+                    .padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "二维码", modifier = Modifier
-                            .clickable(onClick = clickQrcodeThrottle.invoke {
-                                showAddDialog = false
-                                val qrCode = navigateForQrcodeResult()
-                                val contents = qrCode.contents
-                                if (contents != null) {
-                                    showLinkInputDialog = true
-                                    linkText = contents
-                                }
-                            })
-                            .fillMaxWidth()
-                            .padding(8.dp)
-                    )
-                    Text(text = "链接", modifier = Modifier
-                        .clickable {
-                            showLinkInputDialog = true
+                Text(
+                    text = "默认订阅", modifier = Modifier
+                        .clickable(onClick = {
                             showAddDialog = false
-                        }
+                            addSubs(
+                                listOf(
+                                    "https://cdn.lisonge.com/startup_ad.json",
+                                    "https://cdn.lisonge.com/internal_ad.json",
+                                    "https://cdn.lisonge.com/quick_util.json",
+                                )
+                            )
+                        })
                         .fillMaxWidth()
-                        .padding(8.dp))
-                }
+                        .padding(8.dp)
+                )
+                Text(
+                    text = "二维码", modifier = Modifier
+                        .clickable(onClick = scope.launchAsFn {
+                            showAddDialog = false
+                            val qrCode = navigateForQrcodeResult()
+                            val contents = qrCode.contents
+                            if (contents != null) {
+                                showLinkDialog = true
+                                link = contents
+                            }
+                        })
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                )
+                Text(text = "链接", modifier = Modifier
+                    .clickable {
+                        showLinkDialog = true
+                        showAddDialog = false
+                    }
+                    .fillMaxWidth()
+                    .padding(8.dp))
             }
         }
     }
-    if (showLinkInputDialog) {
-        Dialog(onDismissRequest = { showLinkInputDialog = false;linkText = "" }) {
+
+
+
+    LaunchedEffect(showLinkDialog) {
+        if (!showLinkDialog) {
+            link = ""
+        }
+    }
+    if (showLinkDialog) {
+        Dialog(onDismissRequest = { showLinkDialog = false }) {
             Box(
                 Modifier
-                    .width(250.dp)
+                    .width(300.dp)
                     .background(Color.White)
                     .padding(8.dp)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(text = "请输入订阅链接")
                     TextField(
-                        value = linkText,
-                        onValueChange = { linkText = it },
-                        singleLine = true
+                        value = link, onValueChange = { link = it.trim() }, singleLine = true
                     )
                     Button(onClick = {
-                        showLinkInputDialog = false
-                        if (subItemList.any { it.updateUrl == linkText }) {
-                            ToastUtils.showShort("该链接已经添加过")
-                            return@Button
-                        }
-                        scope.launch {
-                            try {
-                                val text = Singleton.client.get(linkText).bodyAsText()
-                                val subscriptionRaw = SubscriptionRaw.parse5(text)
-                                File(
-                                    PathUtils.getExternalAppFilesPath()
-                                        .plus("/subscription/")
-                                ).apply {
-                                    if (!exists()) {
-                                        mkdir()
-                                    }
-                                }
-                                val file = File(
-                                    PathUtils.getExternalAppFilesPath()
-                                        .plus("/subscription/")
-                                        .plus(System.currentTimeMillis())
-                                        .plus(".json")
-                                )
-                                withContext(IO) {
-                                    file.writeText(text)
-                                }
-                                val tempItem = SubsItem(
-                                    updateUrl = subscriptionRaw.updateUrl ?: linkText,
-                                    filePath = file.absolutePath,
-                                    name = subscriptionRaw.name,
-                                    version = subscriptionRaw.version
-                                )
-                                val newItem = tempItem.copy(
-                                    id = RoomX.insert(tempItem)[0]
-                                )
-                                subItemList = subItemList.toMutableList().apply { add(newItem) }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                                ToastUtils.showShort(e.message ?: "")
-                            }
-                        }
+                        addSubs(listOf(link))
+                        showLinkDialog = false
                     }) {
                         Text(text = "添加")
                     }

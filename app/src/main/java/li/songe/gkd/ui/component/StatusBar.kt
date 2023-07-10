@@ -12,7 +12,7 @@ import com.blankj.utilcode.util.BarUtils
 import com.blankj.utilcode.util.ConvertUtils
 
 @Composable
-fun StatusBar(color: Color = Color.White) {
+fun StatusBar(color: Color = Color.Transparent) {
     Spacer(
         modifier = Modifier
             .height(statusBarHeight)

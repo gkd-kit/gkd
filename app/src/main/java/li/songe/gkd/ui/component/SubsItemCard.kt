@@ -21,15 +21,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import li.songe.gkd.R
-import li.songe.gkd.db.table.SubsItem
-import li.songe.gkd.util.Singleton
+import li.songe.gkd.data.SubsItem
+import li.songe.gkd.utils.SafeR
+import li.songe.gkd.utils.Singleton
 
 @Composable
 fun SubsItemCard(
     subsItem: SubsItem,
     onShareClick: (() -> Unit)? = null,
-    onEditClick: (() -> Unit)? = null,
     onDelClick: (() -> Unit)? = null,
     onRefreshClick: (() -> Unit)? = null,
 ) {
@@ -49,16 +48,25 @@ fun SubsItemCard(
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis
             )
-            Text(
-                text = dateStr,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row {
+                Text(
+                    text = dateStr,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "版本:" + subsItem.version,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
         Spacer(modifier = Modifier.width(5.dp))
         Image(
-            painter = painterResource(R.drawable.ic_refresh),
+            painter = painterResource(SafeR.ic_refresh),
             contentDescription = "refresh",
             modifier = Modifier
                 .clickable {
@@ -69,7 +77,7 @@ fun SubsItemCard(
         )
         Spacer(modifier = Modifier.width(5.dp))
         Image(
-            painter = painterResource(R.drawable.ic_share),
+            painter = painterResource(SafeR.ic_share),
             contentDescription = "share",
             modifier = Modifier
                 .clickable {
@@ -80,18 +88,7 @@ fun SubsItemCard(
         )
         Spacer(modifier = Modifier.width(5.dp))
         Image(
-            painter = painterResource(R.drawable.ic_create_round),
-            contentDescription = "edit",
-            modifier = Modifier
-                .clickable {
-                    onEditClick?.invoke()
-                }
-                .padding(4.dp)
-                .size(20.dp)
-        )
-        Spacer(modifier = Modifier.width(5.dp))
-        Image(
-            painter = painterResource(R.drawable.ic_del),
+            painter = painterResource(SafeR.ic_del),
             contentDescription = "edit",
             modifier = Modifier
                 .clickable {
@@ -109,7 +106,6 @@ fun PreviewSubscriptionItemCard() {
     Surface(modifier = Modifier.width(300.dp)) {
         SubsItemCard(
             SubsItem(
-                filePath = "filepath",
                 updateUrl = "https://raw.githubusercontents.com/lisonge/gkd-subscription/main/src/ad-startup.gkd.json",
                 name = "APP工具箱"
             )

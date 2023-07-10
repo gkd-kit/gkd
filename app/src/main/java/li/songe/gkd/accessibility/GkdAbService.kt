@@ -1,31 +1,40 @@
 package li.songe.gkd.accessibility
 
+import android.graphics.Bitmap
+import android.os.Build
+import android.view.Display
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.NetworkUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.blankj.utilcode.util.ServiceUtils
+import com.blankj.utilcode.util.ToastUtils
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 import li.songe.gkd.composition.CompositionAbService
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.composition.CompositionExt.useScope
+import li.songe.gkd.data.NodeInfo
+import li.songe.gkd.data.Rule
 import li.songe.gkd.data.RuleManager
 import li.songe.gkd.data.SubscriptionRaw
-import li.songe.gkd.db.table.SubsItem
-import li.songe.gkd.db.util.RoomX
-import li.songe.gkd.debug.NodeSnapshot
-import li.songe.gkd.selector.click
-import li.songe.gkd.selector.querySelectorAll
-import li.songe.gkd.util.Ext.buildRuleManager
-import li.songe.gkd.util.Ext.getActivityIdByShizuku
-import li.songe.gkd.util.Ext.getSubsFileLastModified
-import li.songe.gkd.util.Ext.launchWhile
-import li.songe.gkd.util.Singleton
-import li.songe.gkd.util.Storage
-import li.songe.selector_core.Selector
-import java.io.File
+import li.songe.gkd.db.DbSet
+import li.songe.gkd.debug.SnapshotExt
+import li.songe.gkd.shizuku.activityTaskManager
+import li.songe.gkd.shizuku.shizukuIsSafeOK
+import li.songe.gkd.utils.Singleton
+import li.songe.gkd.utils.Storage
+import li.songe.gkd.utils.launchTry
+import li.songe.gkd.utils.launchWhile
+import li.songe.gkd.utils.launchWhileTry
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class GkdAbService : CompositionAbService({
     useLifeCycleLog()
@@ -35,7 +44,11 @@ class GkdAbService : CompositionAbService({
     val scope = useScope()
 
     service = context
-    onDestroy { service = null }
+    onDestroy {
+        service = null
+        currentAppId = null
+        currentActivityId = null
+    }
 
     KeepAliveService.start(context)
     onDestroy {
@@ -46,100 +59,98 @@ class GkdAbService : CompositionAbService({
     onServiceConnected { serviceConnected = true }
     onInterrupt { serviceConnected = false }
 
-    onAccessibilityEvent { event ->
-        val activityId = event?.className?.toString() ?: return@onAccessibilityEvent
-        val rootAppId = rootInActiveWindow?.packageName?.toString() ?: return@onAccessibilityEvent
-        when (event.eventType) {
+    onAccessibilityEvent { event -> // 根据事件获取 activityId, 概率不准确
+        when (event?.eventType) {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED, AccessibilityEvent.TYPE_WINDOWS_CHANGED -> {
-//                在桌面和应用之间来回切换, 大概率导致识别失败
-                if (!activityId.startsWith("android.") &&
-                    !activityId.startsWith("androidx.") &&
-                    !activityId.startsWith("com.android.")
-                ) {
-                    if ((activityId == "com.miui.home.launcher.Launcher" && rootAppId != "com.miui.home")) {
-//                        小米手机 上滑手势, 导致 活动名 不属于包名
-//                        另外 微信扫码登录第三方网站 也会导致失败
-                    } else {
-                        if (activityId != nodeSnapshot.activityId) {
-                            nodeSnapshot = nodeSnapshot.copy(
-                                activityId = activityId
-                            )
-                        }
+                val activityId = event.className?.toString() ?: return@onAccessibilityEvent
+                if (activityId == "com.miui.home.launcher.Launcher") { // 小米桌面 bug
+                    val appId =
+                        rootInActiveWindow?.packageName?.toString() ?: return@onAccessibilityEvent
+                    if (appId != "com.miui.home") {
+                        return@onAccessibilityEvent
                     }
                 }
+
+                if (activityId.startsWith("android.") ||
+                    activityId.startsWith("androidx.") ||
+                    activityId.startsWith("com.android.")
+                ) {
+                    return@onAccessibilityEvent
+                }
+                currentActivityId = activityId
             }
 
             else -> {}
         }
     }
 
-    scope.launchWhile {
-        delay(300)
-        val activityId = getActivityIdByShizuku() ?: return@launchWhile
-        if (activityId != nodeSnapshot.activityId) {
-            nodeSnapshot = nodeSnapshot.copy(
-                activityId = activityId
-            )
+    onAccessibilityEvent { event -> // 小米手机监听截屏保存快照
+        if (!Storage.settings.enableCaptureSystemScreenshot) return@onAccessibilityEvent
+        if (event?.packageName == null || event.className == null) return@onAccessibilityEvent
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && event.contentChangeTypes == AccessibilityEvent.CONTENT_CHANGE_TYPE_UNDEFINED && event.packageName.contentEquals(
+                "com.miui.screenshot"
+            ) && event.className!!.startsWith("android.") // android.widget.RelativeLayout
+        ) {
+            scope.launchTry {
+                val snapshot = SnapshotExt.captureSnapshot()
+                ToastUtils.showShort("保存快照成功")
+                LogUtils.d("截屏:保存快照", snapshot.id)
+            }
         }
     }
 
-    var subsFileLastModified = 0L
-    scope.launchWhile { // 根据本地文件最新写入时间 决定 是否 更新数据
-        val t = getSubsFileLastModified()
-        if (t > subsFileLastModified) {
-            subsFileLastModified = t
-            ruleManager = buildRuleManager()
-            LogUtils.d("读取本地规则")
-        }
-        delay(10_000)
-    }
-
-    scope.launchWhile {
-        delay(50)
+    scope.launchWhile { // 屏幕无障碍信息轮询
+        delay(200)
         if (!serviceConnected) return@launchWhile
         if (!Storage.settings.enableService || ScreenUtils.isScreenLock()) return@launchWhile
 
-        nodeSnapshot = nodeSnapshot.copy(
-            root = rootInActiveWindow,
-        )
-        val shot = nodeSnapshot
-        if (shot.root == null) return@launchWhile
-        for (rule in ruleManager.match(shot.appId, shot.activityId)) {
-            val target = rule.query(shot.root) ?: continue
-            val clickResult = target.click(context)
-            ruleManager.trigger(rule)
-            LogUtils.d(
-                *rule.matches.toTypedArray(),
-                NodeSnapshot.abNodeToNode(target),
-                clickResult
-            )
+        currentAppId = rootInActiveWindow?.packageName?.toString()
+        var tempRules = rules
+        var i = 0
+        while (i < tempRules.size) {
+            val rule = tempRules[i]
+            i++
+            if (!ruleManager.ruleIsAvailable(rule)) continue
+            val frozenNode = rootInActiveWindow
+            val target = rule.query(frozenNode)
+            if (target != null) {
+                val clickResult = target.click(context)
+                ruleManager.trigger(rule)
+                LogUtils.d(
+                    *rule.matches.toTypedArray(), NodeInfo.abNodeToNode(target), clickResult
+                )
+            }
+            delay(50)
+            currentAppId = rootInActiveWindow?.packageName?.toString()
+            if (tempRules != rules) {
+                tempRules = rules
+                i = 0
+            }
         }
-        delay(150)
     }
 
-    scope.launchWhile {
+    scope.launchWhile { // 自动从网络更新订阅文件
         delay(5000)
-        RoomX.select<SubsItem>().map { subsItem ->
-            if (!NetworkUtils.isAvailable()) return@map
+        if (!NetworkUtils.isAvailable()) return@launchWhile
+        DbSet.subsItemDao.query().first().forEach { subsItem ->
             try {
                 val text = Singleton.client.get(subsItem.updateUrl).bodyAsText()
                 val subscriptionRaw = SubscriptionRaw.parse5(text)
                 if (subscriptionRaw.version <= subsItem.version) {
-                    return@map
+                    return@forEach
                 }
                 val newItem = subsItem.copy(
-                    updateUrl = subscriptionRaw.updateUrl
-                        ?: subsItem.updateUrl,
+                    updateUrl = subscriptionRaw.updateUrl ?: subsItem.updateUrl,
                     name = subscriptionRaw.name,
                     mtime = System.currentTimeMillis()
                 )
-                RoomX.update(newItem)
-                File(newItem.filePath).writeText(
+                newItem.subsFile.writeText(
                     SubscriptionRaw.stringify(
                         subscriptionRaw
                     )
                 )
-                LogUtils.d("更新订阅文件:${subsItem.name}")
+                DbSet.subsItemDao.update(newItem)
+                LogUtils.d("更新磁盘订阅文件:${subsItem.name}")
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -147,29 +158,96 @@ class GkdAbService : CompositionAbService({
         delay(30 * 60_000)
     }
 
-}) {
-    private var nodeSnapshot = NodeSnapshot()
-        set(value) {
-            if (field.appId != value.appId || field.activityId != value.activityId) {
-                LogUtils.d(
-                    value.appId,
-                    value.activityId,
-                    *ruleManager.match(value.appId, value.activityId).toList().toTypedArray()
-                )
+    scope.launchTry {
+        DbSet.subsItemDao.query().flowOn(IO).collect {
+            val subscriptionRawArray = withContext(IO) {
+                it.filter { s -> s.enable }
+                    .mapNotNull { s -> s.subscriptionRaw }
             }
-            field = value
+            ruleManager = RuleManager(*subscriptionRawArray.toTypedArray())
         }
+    }
 
-    private var ruleManager = RuleManager()
+    scope.launchWhileTry(interval = 400) {
+        if (shizukuIsSafeOK()) {
+            val topActivity =
+                activityTaskManager.getTasks(1, false, true)?.firstOrNull()?.topActivity
+            if (topActivity != null) {
+                currentAppId = topActivity.packageName
+                currentActivityId = topActivity.className
+            }
+        }
+    }
+
+}) {
 
     companion object {
+        private var service: GkdAbService? = null
         fun isRunning() = ServiceUtils.isServiceRunning(GkdAbService::class.java)
-        fun currentNodeSnapshot() = service?.nodeSnapshot
-        fun match(selector: String) {
-            val rootAbNode = service?.rootInActiveWindow ?: return
-            val list = rootAbNode.querySelectorAll(Selector.parse(selector)).map { it.value }.toList()
+
+        private var ruleManager = RuleManager()
+            set(value) {
+                field = value
+                rules = value.match(currentAppId, currentActivityId).toList()
+            }
+        private var rules = listOf<Rule>()
+            set(value) {
+                field = value
+                LogUtils.d(
+                    "currentAppId: $currentAppId",
+                    "currentActivityId: $currentActivityId",
+                    *value.toTypedArray()
+                )
+            }
+
+        var currentActivityId: String? = null
+            set(value) {
+                val oldValue = field
+                field = value
+                if (value != oldValue) {
+                    rules = ruleManager.match(currentAppId, value).toList()
+                }
+            }
+        private var currentAppId: String? = null
+            set(value) {
+                val oldValue = field
+                field = value
+                if (value != oldValue) {
+                    rules = ruleManager.match(value, currentActivityId).toList()
+                }
+            }
+        val currentAbNode: AccessibilityNodeInfo?
+            get() {
+                return service?.rootInActiveWindow
+            }
+
+        suspend fun currentScreenshot() = service?.run {
+            suspendCoroutine {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    takeScreenshot(Display.DEFAULT_DISPLAY,
+                        application.mainExecutor,
+                        object : TakeScreenshotCallback {
+                            override fun onSuccess(screenshot: ScreenshotResult) {
+                                it.resume(
+                                    Bitmap.wrapHardwareBuffer(
+                                        screenshot.hardwareBuffer, screenshot.colorSpace
+                                    )
+                                )
+                            }
+
+                            override fun onFailure(errorCode: Int) = it.resume(null)
+                        })
+                } else {
+                    it.resume(null)
+                }
+            }
         }
 
-        private var service: GkdAbService? = null
+//        fun match(selector: String) {
+//            val rootAbNode = service?.rootInActiveWindow ?: return
+//            val list =
+//                rootAbNode.querySelectorAll(Selector.parse(selector)).map { it.value }.toList()
+//        }
+
     }
 }

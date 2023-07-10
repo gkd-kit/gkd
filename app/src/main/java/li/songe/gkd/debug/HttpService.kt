@@ -21,16 +21,24 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import li.songe.gkd.App
 import li.songe.gkd.composition.CompositionExt.useMessage
 import li.songe.gkd.composition.CompositionService
 import li.songe.gkd.composition.InvokeMessage
+import li.songe.gkd.data.DeviceInfo
+import li.songe.gkd.data.RpcError
+import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt.captureSnapshot
-import li.songe.gkd.util.Ext.getIpAddressInLocalNetwork
-import li.songe.gkd.util.Storage
+import li.songe.gkd.utils.Ext.getIpAddressInLocalNetwork
+import li.songe.gkd.utils.Storage
+import li.songe.gkd.utils.launchTry
 import java.io.File
 
 class HttpService : CompositionService({
@@ -71,30 +79,16 @@ class HttpService : CompositionService({
 
         routing {
             route("/api") {
-                get("/device") { call.respond(DeviceSnapshot.instance) }
-                get("/snapshotIds") {
-                    call.respond(SnapshotExt.getSnapshotIds())
-                }
+                get("/device") { call.respond(DeviceInfo.instance) }
                 get("/snapshot") {
                     val id = call.request.queryParameters["id"]?.toLongOrNull()
-                    if (id != null) {
-                        val fp = File(SnapshotExt.getSnapshotPath(id))
-                        if (!fp.exists()) {
-                            throw RpcError("对应快照不存在")
-                        }
-                        call.response.cacheControl(CacheControl.MaxAge(3600))
-                        call.respondFile(fp)
-                    } else {
-                        removeBubbles()
-                        delay(200)
-                        try {
-                            call.respond(captureSnapshot())
-                        } catch (e: Exception) {
-                            throw e
-                        } finally {
-                            showBubbles()
-                        }
+                        ?: throw RpcError("miss id")
+                    val fp = File(SnapshotExt.getSnapshotPath(id))
+                    if (!fp.exists()) {
+                        throw RpcError("对应快照不存在")
                     }
+                    call.response.cacheControl(CacheControl.MaxAge(3600 * 24 * 7))
+                    call.respondFile(fp)
                 }
                 get("/screenshot") {
                     val id = call.request.queryParameters["id"]?.toLongOrNull()
@@ -103,22 +97,35 @@ class HttpService : CompositionService({
                     if (!fp.exists()) {
                         throw RpcError("对应截图不存在")
                     }
-                    call.response.cacheControl(CacheControl.MaxAge(3600))
+                    call.response.cacheControl(CacheControl.MaxAge(3600 * 24 * 7))
                     call.respondFile(fp)
+                }
+                get("/captureSnapshot") {
+                    removeBubbles()
+                    delay(200)
+                    val snapshot = try {
+                        captureSnapshot()
+                    } finally {
+                        showBubbles()
+                    }
+                    call.respond(snapshot)
+                }
+                get("/snapshots") {
+                    call.respond(DbSet.snapshotDao.query().first())
                 }
             }
         }
     }
-    scope.launch {
+    scope.launchTry(Dispatchers.IO) {
         LogUtils.d(*getIpAddressInLocalNetwork().map { host -> "http://${host}:${Storage.settings.httpServerPort}" }
             .toList().toTypedArray())
         server.start(true)
     }
     onDestroy {
-        scope.launch(Dispatchers.IO) {
-            server.stop(1000, 2000)
-            scope.cancel()
+        scope.launchTry(Dispatchers.IO) {
+            server.stop()
             LogUtils.d("http server is stopped")
+            scope.cancel()
         }
     }
 }) {

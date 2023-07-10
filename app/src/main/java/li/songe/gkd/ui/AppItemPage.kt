@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.material.Switch
 import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,103 +31,83 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.fade
 import com.google.accompanist.placeholder.material.placeholder
-import kotlinx.coroutines.delay
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.annotation.RootNavGraph
+import kotlinx.serialization.encodeToString
+import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubscriptionRaw
-import li.songe.gkd.db.table.SubsConfig
-import li.songe.gkd.db.util.Operator.eq
-import li.songe.gkd.db.util.RoomX
-import li.songe.gkd.ui.component.StatusBar
-import li.songe.gkd.util.ThrottleState
-import li.songe.router.LocalRoute
-import li.songe.router.LocalRouter
-import li.songe.router.Page
+import li.songe.gkd.data.getAppInfo
+import li.songe.gkd.db.DbSet
+import li.songe.gkd.utils.Singleton
+import li.songe.gkd.utils.launchAsFn
 
-data class AppItemPageParams(
-    val subsApp: SubscriptionRaw.AppRaw,
-    val subsConfig: SubsConfig,
-    val appName: String,
-)
-
-val AppItemPage = Page {
-
-//        https://developer.android.com/jetpack/compose/modifiers-list
-
-    val router = LocalRouter.current
-
-    val params = LocalRoute.current.data as AppItemPageParams
-
+@RootNavGraph
+@Destination
+@Composable
+fun AppItemPage(
+    subsApp: SubscriptionRaw.AppRaw,
+    subsConfig: SubsConfig,
+) {
     val scope = rememberCoroutineScope()
-//        val context = LocalContext.current
 
-    var subsConfigList: List<SubsConfig?>? by remember { mutableStateOf(null) }
-
-    val changeItemThrottle = ThrottleState.use(scope)
+    var subsConfigs: List<SubsConfig?>? by remember { mutableStateOf(null) }
 
     LaunchedEffect(Unit) {
-        delay(400)
-        val config = params.subsConfig
-        val mutableSet =
-            RoomX.select { (SubsConfig::type eq SubsConfig.GroupType) and (SubsConfig::subsItemId eq config.subsItemId) and (SubsConfig::appId eq config.appId) }
-                .toMutableSet()
+        val mutableSet = DbSet.subsConfigDao.queryGroupTypeConfig(subsConfig.subsItemId, subsApp.id)
         val list = mutableListOf<SubsConfig?>()
-        params.subsApp.groups.forEach { group ->
+        subsApp.groups.forEach { group ->
             if (group.key == null) {
                 list.add(null)
             } else {
-                val item = mutableSet.find { s -> s.groupKey == group.key } ?: SubsConfig(
-                    subsItemId = config.subsItemId,
-                    appId = config.appId,
-                    groupKey = group.key,
-                    type = SubsConfig.GroupType
-                )
+                val item = mutableSet.find { s -> s.groupKey == group.key }
+                    ?: SubsConfig(
+                        subsItemId = subsConfig.subsItemId,
+                        appId = subsConfig.appId,
+                        groupKey = group.key,
+                        type = SubsConfig.GroupType
+                    )
                 list.add(item)
             }
         }
-        subsConfigList = list
+        subsConfigs = list
     }
+
+    var showGroupItem: SubscriptionRaw.GroupRaw? by remember { mutableStateOf(null) }
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
-            Column {
-                StatusBar()
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(10.dp, 0.dp)
-                ) {
-                    Text(
-                        text = params.appName,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = params.subsApp.id,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp, 0.dp)
+            ) {
+                Text(
+                    text = getAppInfo(subsApp.id).name ?: "-",
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = subsApp.id,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
+            Spacer(modifier = Modifier.height(10.dp))
         }
 
-        items(params.subsApp.groups.size) { i ->
-            val group = params.subsApp.groups[i]
+        items(subsApp.groups.size) { i ->
+            val group = subsApp.groups[i]
             Row(
                 modifier = Modifier
                     .clickable {
-//                        router.navigate(
-//                            GroupItemPage, GroupItemPage.Params(
-//                                group = group,
-//                                subsConfig = subsConfigList?.get(i),
-//                                appName = params.appName
-//                            )
-//                        )
+                        showGroupItem = group
                     }
                     .padding(10.dp, 6.dp)
                     .fillMaxWidth()
@@ -149,7 +130,7 @@ val AppItemPage = Page {
                             .fillMaxWidth()
                     )
                     Text(
-                        text = group.activityIds?.joinToString() ?: "",
+                        text = group.desc ?: "-",
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
@@ -163,10 +144,10 @@ val AppItemPage = Page {
                 if (group.key != null) {
                     val crPx = with(LocalDensity.current) { 4.dp.toPx() }
                     Switch(
-                        checked = subsConfigList?.get(i)?.enable ?: true,
+                        checked = subsConfigs?.get(i)?.enable != false,
                         modifier = Modifier
                             .placeholder(
-                                subsConfigList == null,
+                                subsConfigs == null,
                                 highlight = PlaceholderHighlight.fade(),
                                 shape = GenericShape { size, _ ->
                                     val cr = CornerRadius(crPx, crPx)
@@ -184,16 +165,12 @@ val AppItemPage = Page {
                                     )
                                 }
                             ),
-//                        当 onCheckedChange 是 null 时, size 是长方形, 反之是 正方形
-                        onCheckedChange = changeItemThrottle.invoke { enable ->
-                            val list = subsConfigList ?: return@invoke
-                            val newItem = list[i]?.copy(enable = enable) ?: return@invoke
-                            if (newItem.id == 0L) {
-                                RoomX.insert(newItem)
-                            } else {
-                                RoomX.update(newItem)
-                            }
-                            subsConfigList = list.toMutableList().apply {
+                        onCheckedChange = scope.launchAsFn { enable ->
+                            val subsConfigsVal = subsConfigs ?: return@launchAsFn
+                            val newItem =
+                                subsConfigsVal[i]?.copy(enable = enable) ?: return@launchAsFn
+                            DbSet.subsConfigDao.insert(newItem)
+                            subsConfigs = subsConfigsVal.toMutableList().apply {
                                 set(i, newItem)
                             }
                         }
@@ -208,6 +185,16 @@ val AppItemPage = Page {
                     )
                 }
             }
+        }
+    }
+
+
+    showGroupItem?.let { showGroupItemVal ->
+        Dialog(onDismissRequest = { showGroupItem = null }) {
+            Text(
+                text = Singleton.json.encodeToString(showGroupItemVal),
+                modifier = Modifier.width(400.dp)
+            )
         }
     }
 }

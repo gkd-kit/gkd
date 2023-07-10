@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.R
+import li.songe.gkd.utils.SafeR
 
 @Composable
 fun NativePage() {
@@ -28,7 +29,7 @@ fun NativePage() {
             modifier = Modifier.height(40.dp)
         ) {
             Image(
-                painter = painterResource(R.drawable.ic_app_2),
+                painter = painterResource(SafeR.ic_app_2),
                 contentDescription = "",
                 modifier = Modifier
                     .fillMaxHeight()

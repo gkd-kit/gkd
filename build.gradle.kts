@@ -10,14 +10,24 @@ buildscript {
         classpath(libs.android.gradle)
         classpath(libs.kotlin.gradle.plugin)
         classpath(libs.kotlin.serialization)
-        classpath(libs.rikka.gradle)
+//        classpath(libs.rikka.gradle)
     }
 }
 
-// https://youtrack.jetbrains.com/issue/KT-33191/
-tasks.register<Delete>("clean").configure {
-    delete(rootProject.buildDir)
+// https://youtrack.jetbrains.com/issue/KTIJ-19369
+@Suppress(
+    "DSL_SCOPE_VIOLATION",
+)
+plugins {
+    alias(libs.plugins.google.ksp) apply false
+    alias(libs.plugins.rikka.refine) apply false
 }
+
+// can not work with Kotlin Multiplatform
+// https://youtrack.jetbrains.com/issue/KT-33191/
+//tasks.register<Delete>("clean").configure {
+//    delete(rootProject.buildDir)
+//}
 
 project.gradle.taskGraph.whenReady {
     allTasks.forEach { task ->
@@ -27,4 +37,10 @@ project.gradle.taskGraph.whenReady {
             task.enabled = false
         }
     }
+}
+
+// https://kotlinlang.org/docs/js-project-setup.html#use-pre-installed-node-js
+rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
+    rootProject.the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension>().download =
+        false
 }
