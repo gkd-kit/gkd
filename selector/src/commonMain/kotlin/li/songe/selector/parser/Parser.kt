@@ -1,6 +1,6 @@
 package li.songe.selector.parser
 
-internal open class Parser<T>(
+internal data class Parser<T>(
     val prefix: String = "",
     private val temp: (source: String, offset: Int, prefix: String) -> ParserResult<T>
 )  {

@@ -12,7 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import li.songe.gkd.utils.Singleton
+import li.songe.gkd.util.Singleton
 import kotlin.coroutines.CoroutineContext
 
 object CompositionExt {

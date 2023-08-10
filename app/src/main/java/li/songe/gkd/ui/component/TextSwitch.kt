@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.Surface
 import androidx.compose.material.Switch
@@ -23,16 +24,16 @@ fun TextSwitch(
     checked: Boolean = true,
     onCheckedChange: ((Boolean) -> Unit)? = null,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier.padding(10.dp, 5.dp), verticalAlignment = Alignment.CenterVertically
+    ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                name,
-                fontSize = 18.sp
+                name, fontSize = 18.sp
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                desc,
-                fontSize = 14.sp
+                desc, fontSize = 14.sp
             )
         }
         Spacer(modifier = Modifier.width(10.dp))
@@ -46,7 +47,5 @@ fun TextSwitch(
 @Preview
 @Composable
 fun PreviewTextSwitch() {
-    Surface(modifier = Modifier.width(300.dp)) {
-        TextSwitch("隐藏后台", "在最近任务列表中隐藏", true)
-    }
+    TextSwitch("隐藏后台", "在最近任务列表中隐藏", true)
 }

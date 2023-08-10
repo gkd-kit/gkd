@@ -15,7 +15,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.utils.FolderExt
+import li.songe.gkd.util.FolderExt
 import java.io.File
 
 @Entity(
@@ -27,12 +27,12 @@ data class SubsItem(
     @ColumnInfo(name = "mtime") val mtime: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "enable") val enable: Boolean = true,
     @ColumnInfo(name = "enable_update") val enableUpdate: Boolean = true,
-    @ColumnInfo(name = "order") val order: Int = 0,
+    @ColumnInfo(name = "order") val order: Int = 1,
 
-//    订阅文件的根字段
+    //    订阅文件的根字段
     @ColumnInfo(name = "name") val name: String = "",
     @ColumnInfo(name = "author") val author: String = "",
-    @ColumnInfo(name = "version") val version: Int = 0,
+    @ColumnInfo(name = "version") val version: Int = 1,
     @ColumnInfo(name = "update_url") val updateUrl: String = "",
     @ColumnInfo(name = "support_url") val supportUrl: String = "",
 
@@ -61,6 +61,17 @@ data class SubsItem(
         DbSet.subsConfigDao.deleteSubs(id)
     }
 
+    companion object {
+        fun getSubscriptionRaw(subsItemId: Long): SubscriptionRaw? {
+            return try {
+                SubscriptionRaw.parse5(File(FolderExt.subsFolder.absolutePath.plus("/${subsItemId}.json")).readText())
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
+    }
+
 
     @Dao
     interface SubsItemDao {
@@ -75,5 +86,10 @@ data class SubsItem(
 
         @Query("SELECT * FROM subs_item ORDER BY `order`")
         fun query(): Flow<List<SubsItem>>
+
+        @Query("SELECT * FROM subs_item WHERE id=:id")
+        fun queryById(id: Long): SubsItem?
     }
+
+
 }

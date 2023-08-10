@@ -2,7 +2,7 @@ package li.songe.gkd.data
 
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.serialization.Serializable
-import li.songe.gkd.accessibility.forEachIndexed
+import li.songe.gkd.service.forEachIndexed
 import java.util.ArrayDeque
 
 @Serializable

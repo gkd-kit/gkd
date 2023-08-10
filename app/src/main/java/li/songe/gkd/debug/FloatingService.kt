@@ -6,13 +6,12 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.blankj.utilcode.util.ServiceUtils
 import com.torrydo.floatingbubbleview.FloatingBubble
-import li.songe.gkd.App
-import li.songe.gkd.R
+import li.songe.gkd.app
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.composition.CompositionFbService
 import li.songe.gkd.composition.CompositionExt.useMessage
 import li.songe.gkd.composition.InvokeMessage
-import li.songe.gkd.utils.SafeR
+import li.songe.gkd.util.SafeR
 
 class FloatingService : CompositionFbService({
     useLifeCycleLog()
@@ -26,7 +25,7 @@ class FloatingService : CompositionFbService({
         }
     }
     setupBubble { _, resolve ->
-        val builder = FloatingBubble.Builder(this).bubble(SafeR.capture, 40, 40)
+        val builder = FloatingBubble.Builder(this).bubble(SafeR.ic_capture, 40, 40)
             .enableCloseBubble(false)
             .addFloatingBubbleListener(object : FloatingBubble.Listener {
                 override fun onClick() {
@@ -54,7 +53,7 @@ class FloatingService : CompositionFbService({
 
     companion object{
         fun isRunning() = ServiceUtils.isServiceRunning(FloatingService::class.java)
-        fun stop(context: Context = App.context) {
+        fun stop(context: Context =app) {
             if (isRunning()) {
                 context.stopService(Intent(context, FloatingService::class.java))
             }

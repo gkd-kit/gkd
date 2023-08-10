@@ -10,17 +10,17 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.encodeToString
-import li.songe.gkd.App
-import li.songe.gkd.accessibility.GkdAbService
+import li.songe.gkd.service.GkdAbService
+import li.songe.gkd.app
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.utils.Singleton
+import li.songe.gkd.util.Singleton
 import java.io.File
 
 object SnapshotExt {
     private val snapshotDir by lazy {
-        App.context.getExternalFilesDir("snapshot")!!.apply { if (!exists()) mkdir() }
+        app.getExternalFilesDir("snapshot")!!.apply { if (!exists()) mkdir() }
     }
 
     private val emptyBitmap by lazy {

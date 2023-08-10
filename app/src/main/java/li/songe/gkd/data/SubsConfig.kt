@@ -22,7 +22,7 @@ data class SubsConfig(
     @ColumnInfo(name = "type") val type: Int = SubsType,
     @ColumnInfo(name = "enable") val enable: Boolean = true,
 
-    @ColumnInfo(name = "subs_item_id") val subsItemId: Long = -1,
+    @ColumnInfo(name = "subs_item_id") val subsItemId: Long ,
     @ColumnInfo(name = "app_id") val appId: String = "",
     @ColumnInfo(name = "group_key") val groupKey: Int = -1,
 ) : Parcelable {
@@ -58,7 +58,7 @@ data class SubsConfig(
         fun queryAppTypeConfig(subsItemId: Long): Flow<List<SubsConfig>>
 
         @Query("SELECT * FROM subs_config WHERE type=${GroupType} and subs_item_id=:subsItemId and app_id=:appId")
-        suspend fun queryGroupTypeConfig(subsItemId: Long, appId: String): List<SubsConfig>
+         fun queryGroupTypeConfig(subsItemId: Long, appId: String): Flow<List<SubsConfig>>
     }
 
 }

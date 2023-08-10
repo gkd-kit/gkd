@@ -51,54 +51,16 @@
 
             <intent-filter>
                 <category android:name="android.intent.category.BROWSABLE" />
-
                 <data
-                    android:host="i"
+                    android:host="import-subs"
                     android:path="/"
                     android:scheme="gkd" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <service
-            android:name=".accessibility.GkdAbService"
-            android:exported="false"
-            android:label="@string/ab_label"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:process=":remote">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/ab_desc" />
-        </service>
-        <service
-            android:name=".debug.ScreenshotService"
-            android:exported="false"
-            android:foregroundServiceType="mediaProjection"
-            android:process=":remote" />
-        <service
-            android:name=".debug.HttpService"
-            android:exported="false"
-            android:process=":remote" />
-        <service
-            android:name=".debug.FloatingService"
-            android:exported="false"
-            android:process=":remote" />
-        <service
-            android:name=".accessibility.KeepAliveService"
-            android:exported="false"
-            android:process=":remote" />
-        <service
-            android:name=".accessibility.ShizukuService"
-            android:exported="false"
-            android:process=":remote" />
 
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
@@ -117,6 +79,43 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <service
+            android:name=".service.GkdAbService"
+            android:exported="false"
+            android:label="@string/ab_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:process=":remote">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/ab_desc" />
+        </service>
+        <service
+            android:name=".service.ManageService"
+            android:exported="false"
+            android:process=":remote" />
+        <service
+            android:name=".debug.ScreenshotService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection"
+            android:process=":remote" />
+        <service
+            android:name=".debug.HttpService"
+            android:exported="false"
+            android:process=":remote" />
+        <service
+            android:name=".debug.FloatingService"
+            android:exported="false"
+            android:process=":remote" />
+        <service
+            android:name=".service.ShizukuService"
+            android:exported="false"
+            android:process=":remote" />
+
 
     </application>
 

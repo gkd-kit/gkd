@@ -2,5 +2,5 @@
 <resources>
     <string name="app_name">搞快点</string>
     <string name="ab_label">搞快点</string>
-    <string name="ab_desc">基于规则匹配的无障碍速点服务</string>
+    <string name="ab_desc">基于规则匹配的无障碍速点服务\n强大的自定义规则能帮助你实现点击关闭各种广告, 自定义快捷操作等高级功能</string>
 </resources>

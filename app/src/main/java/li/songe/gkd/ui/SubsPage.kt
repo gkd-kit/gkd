@@ -1,156 +1,92 @@
 package li.songe.gkd.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.Text
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.google.accompanist.placeholder.PlaceholderHighlight
-import com.google.accompanist.placeholder.material.fade
-import com.google.accompanist.placeholder.material.placeholder
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import com.ramcosta.composedestinations.navigation.navigate
-import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.withContext
 import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.SubsItem
-import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.data.getAppInfo
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.SimpleTopAppBar
 import li.songe.gkd.ui.component.SubsAppCard
-import li.songe.gkd.ui.component.SubsAppCardData
 import li.songe.gkd.ui.destinations.AppItemPageDestination
-import li.songe.gkd.utils.LaunchedEffectTry
-import li.songe.gkd.utils.LocalNavController
-import li.songe.gkd.utils.launchAsFn
-import li.songe.gkd.utils.rememberCache
-import li.songe.gkd.utils.useTask
+import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.util.launchAsFn
+import java.text.Collator
+import java.util.Locale
 
 @RootNavGraph
 @Destination
 @Composable
 fun SubsPage(
-    subsItem: SubsItem
+    subsItemId: Long,
 ) {
     val scope = rememberCoroutineScope()
     val navController = LocalNavController.current
 
-    var sub: SubscriptionRaw? by rememberCache { mutableStateOf(null) }
-    var subsAppCards: List<SubsAppCardData>? by rememberCache { mutableStateOf(null) }
+    val vm = hiltViewModel<SubsVm>()
+    val subsItem by vm.subsItemFlow.collectAsState()
+    val subsConfigs by vm.subsConfigsFlow.collectAsState(initial = emptyList())
 
-    LaunchedEffectTry(Unit) {
-        scope.launchAsFn {  }
-        val newSub = if (sub === null) {
-            SubscriptionRaw.parse5(subsItem.subsFile.readText()).apply {
-                withContext(IO) {
-                    apps.forEach {
-                        getAppInfo(it.id)
-                    }
-                }
+    val orderedApps by remember(subsItem) {
+        derivedStateOf {
+            (subsItem?.subscriptionRaw?.apps ?: emptyList()).sortedWith { a, b ->
+                Collator.getInstance(Locale.CHINESE)
+                    .compare(getAppInfo(a.id).realName, getAppInfo(b.id).realName)
             }
-        } else {
-            sub!!
-        }
-        sub = newSub
-        DbSet.subsConfigDao.queryAppTypeConfig(subsItem.id).flowOn(IO).cancellable().collect {
-            val mutableSet = it.toMutableSet()
-            val newSubsAppCards = newSub.apps.map { appRaw ->
-                mutableSet.firstOrNull { v ->
-                    v.appId == appRaw.id
-                }.apply {
-                    mutableSet.remove(this)
-                } ?: SubsConfig(
-                    subsItemId = subsItem.id,
-                    appId = appRaw.id,
-                    type = SubsConfig.AppType
-                )
-            }.mapIndexed { index, subsConfig ->
-                SubsAppCardData(
-                    subsConfig,
-                    newSub.apps[index]
-                )
-            }
-            subsAppCards = newSubsAppCards
         }
     }
-
-    val openAppPage = scope.useTask().launchAsFn<SubsAppCardData> {
-        navController.navigate(AppItemPageDestination(it.appRaw, it.subsConfig))
-    }
-
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(0.dp),
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        item {
-            val textModifier = Modifier
-                .fillMaxWidth()
-                .placeholder(visible = sub == null, highlight = PlaceholderHighlight.fade())
-            Column(
-                modifier = Modifier.padding(10.dp, 0.dp),
-                verticalArrangement = Arrangement.spacedBy(5.dp)
+//    val openAppPage = scope.useTask().launchAsFn<SubsAppCardData> {
+//        navController.navigate(AppItemPageDestination(it.subsConfig.subsItemId, it.appRaw.id))
+//    }
+    Scaffold(
+        topBar = {
+            SimpleTopAppBar(
+                onClickIcon = { navController.popBackStack() }, title = subsItem?.name ?: ""
+            )
+//            右上角菜单显示关于 dialog 一级属性
+        },
+    ) { padding ->
+        subsItem?.subscriptionRaw?.let {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(0.dp),
+                modifier = Modifier.padding(padding)
             ) {
-                Text(
-                    text = "作者: " + (sub?.author ?: "未知"),
-                    modifier = textModifier
-                )
-                Text(
-                    text = "版本: ${sub?.version}",
-                    modifier = textModifier
-                )
-                Text(
-                    text = "描述: ${sub?.name}",
-                    modifier = textModifier
-                )
-            }
-        }
-        subsAppCards?.let { subsAppCardsVal ->
-            items(subsAppCardsVal.size) { i ->
-                SubsAppCard(
-                    sub = subsAppCardsVal[i],
-                    onClick = {
-                        openAppPage(subsAppCardsVal[i])
-                    },
-                    onValueChange = scope.launchAsFn { enable ->
-                        val newItem = subsAppCardsVal[i].subsConfig.copy(
+                items(orderedApps, { it.id }) { appRaw ->
+                    val subsConfig = subsConfigs.find { s -> s.appId == appRaw.id }
+                    SubsAppCard(appRaw = appRaw, subsConfig = subsConfig, onClick = {
+                        navController.navigate(AppItemPageDestination(subsItemId, appRaw.id))
+                    }, onValueChange = scope.launchAsFn { enable ->
+                        val newItem = subsConfig?.copy(
                             enable = enable
+                        ) ?: SubsConfig(
+                            enable = enable,
+                            type = SubsConfig.AppType,
+                            subsItemId = subsItemId,
+                            appId = appRaw.id,
                         )
                         DbSet.subsConfigDao.insert(newItem)
-                    }
-                )
+                    })
+                }
+                item(null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
             }
         }
-//        if (subsAppCards == null) {
-//            items(placeholderList.size) { i ->
-//                Box(
-//                    modifier = Modifier
-//                        .wrapContentSize()
-//                ) {
-//                    SubsAppCard(loading = true, sub = placeholderList[i])
-//                    Text(text = "")
-//                }
-//            }
-//        }
-
-        item(true) {
-            Spacer(modifier = Modifier.height(10.dp))
-        }
     }
-
 }

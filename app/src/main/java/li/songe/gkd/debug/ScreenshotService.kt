@@ -5,11 +5,11 @@ import android.content.Context
 import android.content.Intent
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ServiceUtils
-import li.songe.gkd.App
+import li.songe.gkd.app
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.composition.CompositionService
-import li.songe.gkd.utils.Ext
-import li.songe.gkd.utils.ScreenshotUtil
+import li.songe.gkd.util.Ext
+import li.songe.gkd.util.ScreenshotUtil
 
 class ScreenshotService : CompositionService({
     useLifeCycleLog()
@@ -30,13 +30,13 @@ class ScreenshotService : CompositionService({
         suspend fun screenshot() = screenshotUtil?.execute()
         private var screenshotUtil: ScreenshotUtil? = null
 
-        fun start(context: Context = App.context, intent: Intent) {
+        fun start(context: Context = app, intent: Intent) {
             intent.component = ComponentName(context, ScreenshotService::class.java)
             context.startForegroundService(intent)
         }
 
         fun isRunning() = ServiceUtils.isServiceRunning(ScreenshotService::class.java)
-        fun stop(context: Context = App.context) {
+        fun stop(context: Context = app) {
             if (isRunning()) {
                 context.stopService(Intent(context, ScreenshotService::class.java))
             }

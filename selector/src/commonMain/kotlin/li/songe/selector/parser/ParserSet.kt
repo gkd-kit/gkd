@@ -7,7 +7,9 @@ import li.songe.selector.data.CompareOperator
 import li.songe.selector.data.ConnectOperator
 import li.songe.selector.data.ConnectSegment
 import li.songe.selector.data.ConnectWrapper
-import li.songe.selector.data.OrExpression
+import li.songe.selector.data.Expression
+import li.songe.selector.data.LogicalExpression
+import li.songe.selector.data.LogicalOperator
 import li.songe.selector.data.PolynomialExpression
 import li.songe.selector.data.PropertySegment
 import li.songe.selector.data.PropertyWrapper
@@ -59,8 +61,7 @@ internal object ParserSet {
         Parser(ConnectOperator.allSubClasses.joinToString("") { it.key }) { source, offset, _ ->
             val operator = ConnectOperator.allSubClasses.find { subOperator ->
                 source.startsWith(
-                    subOperator.key,
-                    offset
+                    subOperator.key, offset
                 )
             } ?: ExtSyntaxError.throwError(source, offset, "ConnectOperator")
             ParserResult(operator, operator.key.length)
@@ -70,7 +71,7 @@ internal object ParserSet {
         var i = offset
         ExtSyntaxError.assert(source, i, prefix, "number")
         var s = ""
-        while (prefix.contains(source[i])) {
+        while (i < source.length && prefix.contains(source[i])) {
             s += source[i]
             i++
         }
@@ -101,14 +102,13 @@ internal object ParserSet {
         i += whiteCharParser(source, i).length
         // [a][n[^b]]
         ExtSyntaxError.assert(source, i, integerParser.prefix + "n")
-        val coefficient =
-            if (integerParser.prefix.contains(source[i])) {
-                val coefficientResult = integerParser(source, i)
-                i += coefficientResult.length
-                coefficientResult.data
-            } else {
-                1
-            } * signal
+        val coefficient = if (integerParser.prefix.contains(source[i])) {
+            val coefficientResult = integerParser(source, i)
+            i += coefficientResult.length
+            coefficientResult.data
+        } else {
+            1
+        } * signal
         // [n[^b]]
         if (i < source.length && source[i] == 'n') {
             i++
@@ -126,7 +126,7 @@ internal object ParserSet {
     }
 
     //    ([+-][a][n[^b]] [+-][a][n[^b]])
-    val expressionParser = Parser("(0123456789n") { source, offset, prefix ->
+    val polynomialExpressionParser = Parser("(0123456789n") { source, offset, prefix ->
         var i = offset
         ExtSyntaxError.assert(source, i, prefix)
         val monomialResultList = mutableListOf<ParserResult<Pair<Int, Int>>>()
@@ -175,22 +175,21 @@ internal object ParserSet {
         val operatorResult = combinatorOperatorParser(source, i)
         i += operatorResult.length
         var expressionResult: ParserResult<PolynomialExpression>? = null
-        if (i < source.length && expressionParser.prefix.contains(source[i])) {
-            expressionResult = expressionParser(source, i)
+        if (i < source.length && polynomialExpressionParser.prefix.contains(source[i])) {
+            expressionResult = polynomialExpressionParser(source, i)
             i += expressionResult.length
         }
         ParserResult(
             ConnectSegment(
-                operatorResult.data,
-                expressionResult?.data ?: PolynomialExpression()
+                operatorResult.data, expressionResult?.data ?: PolynomialExpression()
             ), i - offset
         )
     }
 
     val attrOperatorParser =
         Parser(CompareOperator.allSubClasses.joinToString("") { it.key }) { source, offset, _ ->
-            val operator = CompareOperator.allSubClasses.find { SubOperator ->
-                source.startsWith(SubOperator.key, offset)
+            val operator = CompareOperator.allSubClasses.find { compareOperator ->
+                source.startsWith(compareOperator.key, offset)
             } ?: ExtSyntaxError.throwError(source, offset, "CompareOperator")
             ParserResult(operator, operator.key.length)
         }
@@ -223,21 +222,22 @@ internal object ParserSet {
         ParserResult(data, i - offset)
     }
 
-    val propertyParser =
-        Parser("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_") { source, offset, prefix ->
-            var i = offset
-            ExtSyntaxError.assert(source, i, prefix)
-            var data = source[i].toString()
-            i++
-            while (i < source.length) {
-                if (!prefix.contains(source[i])) {
-                    break
-                }
-                data += source[i]
-                i++
+    private val varPrefix = "_" + ('a'..'z').joinToString("") + ('A'..'Z').joinToString("")
+    private val varStr = varPrefix + '.' + ('0'..'9').joinToString("")
+    val propertyParser = Parser(varPrefix) { source, offset, prefix ->
+        var i = offset
+        ExtSyntaxError.assert(source, i, prefix)
+        var data = source[i].toString()
+        i++
+        while (i < source.length && varStr.contains(source[i])) {
+            if (source[i] == '.') {
+                ExtSyntaxError.assert(source, i + 1, prefix)
             }
-            ParserResult(data, i - offset)
+            data += source[i]
+            i++
         }
+        ParserResult(data, i - offset)
+    }
 
     val valueParser =
         Parser("tfn" + stringParser.prefix + integerParser.prefix) { source, offset, prefix ->
@@ -290,7 +290,7 @@ internal object ParserSet {
             ParserResult(value, i - offset)
         }
 
-    val attrParser = Parser("") { source, offset, _ ->
+    val binaryExpressionParser = Parser { source, offset, _ ->
         var i = offset
         val parserResult = propertyParser(source, i)
         i += parserResult.length
@@ -302,43 +302,116 @@ internal object ParserSet {
         i += valueResult.length
         ParserResult(
             BinaryExpression(
-                parserResult.data,
-                operatorResult.data,
-                valueResult.data
+                parserResult.data, operatorResult.data, valueResult.data
             ), i - offset
         )
     }
 
-    val orParser = Parser("[") { source, offset, prefix ->
+    val logicalOperatorParser = Parser { source, offset, _ ->
+        var i = offset
+        i += whiteCharParser(source, i).length
+        val operator = LogicalOperator.allSubClasses.find { logicalOperator ->
+            source.startsWith(logicalOperator.key, offset)
+        } ?: ExtSyntaxError.throwError(source, offset, "LogicalOperator")
+        ParserResult(operator, operator.key.length)
+    }
+
+
+    //    a>1 && a>1 || a>1
+//    (a>1 || a>1) && a>1
+    fun expressionParser(source: String, offset: Int): ParserResult<Expression> {
+        var i = offset
+        i += whiteCharParser(source, i).length
+//        [exp, ||, exp, &&, &&]
+        val parserResults = mutableListOf<ParserResult<*>>()
+        while (i < source.length && source[i] != ']' && source[i] != ')') {
+            when (source[i]) {
+                '(' -> {
+                    if (parserResults.isNotEmpty()) {
+                        val lastToken = parserResults.first()
+                        if (lastToken.data !is LogicalOperator) {
+                            var count = 0
+                            while (i - 1 >= count && source[i - 1 - count] in whiteCharParser.prefix) {
+                                count++
+                            }
+                            ExtSyntaxError.throwError(
+                                source, i - count - lastToken.length, "LogicalOperator"
+                            )
+                        }
+                    }
+                    i++
+                    parserResults.add(expressionParser(source, i).apply { i += length })
+                    ExtSyntaxError.assert(source, i, ")")
+                    i++
+                }
+
+                in "|&" -> {
+                    parserResults.add(logicalOperatorParser(source, i).apply { i += length })
+                    i += whiteCharParser(source, i).length
+                    ExtSyntaxError.assert(source, i, "(" + propertyParser.prefix)
+                }
+
+                else -> {
+                    parserResults.add(binaryExpressionParser(source, i).apply { i += length })
+                }
+            }
+            i += whiteCharParser(source, i).length
+        }
+        if (parserResults.isEmpty()) {
+            ExtSyntaxError.throwError(
+                source, i - offset, "Expression"
+            )
+        }
+        if (parserResults.size == 1) {
+            return ParserResult(parserResults.first().data as Expression, i - offset)
+        }
+
+//        运算符优先级 && > ||
+//        a && b || c -> ab || c
+//        0 1  2 3  4 -> 0  1  2
+        val tokens = parserResults.map { it.data }.toMutableList()
+        var index = 0
+        while (index < tokens.size) {
+            val token = tokens[index]
+            if (token == LogicalOperator.AndOperator) {
+                tokens[index] = LogicalExpression(
+                    left = tokens[index - 1] as Expression,
+                    operator = LogicalOperator.AndOperator,
+                    right = tokens[index + 1] as Expression
+                )
+                tokens.removeAt(index - 1)
+                tokens.removeAt(index + 1 - 1)
+            } else {
+                index++
+            }
+        }
+        while (tokens.size > 1) {
+            tokens[1] = LogicalExpression(
+                left = tokens[0] as Expression,
+                operator = tokens[1] as LogicalOperator.OrOperator,
+                right = tokens[2] as Expression
+            )
+            tokens.removeAt(0)
+            tokens.removeAt(2 - 1)
+        }
+        return ParserResult(tokens.first() as Expression, i - offset)
+    }
+
+
+    val attrParser = Parser("[") { source, offset, prefix ->
         var i = offset
         ExtSyntaxError.assert(source, i, prefix)
         i++
         i += whiteCharParser(source, i).length
-        val binaryExpressions = mutableListOf<BinaryExpression>()
-        while (i < source.length && source[i] != ']') {
-            if (binaryExpressions.isNotEmpty()) {
-                ExtSyntaxError.assert(source, i, "|")
-                ExtSyntaxError.assert(source, i, "|")
-                i += 2
-                i += whiteCharParser(source, i).length
-            }
-            val attrResult = attrParser(source, i)
-            i += attrResult.length
-            binaryExpressions.add(attrResult.data)
-            i += whiteCharParser(source, i).length
-        }
-        if (binaryExpressions.isEmpty()) {
-            ExtSyntaxError.throwError(source, i, "binaryExpression")
-        }
+        val exp = expressionParser(source, i)
+        i += exp.length
         ExtSyntaxError.assert(source, i, "]")
         i++
         ParserResult(
-            OrExpression(
-                binaryExpressions,
-            ),
-            i - offset
+            exp.data, i - offset
         )
     }
+
 
     val selectorUnitParser = Parser { source, offset, _ ->
         var i = offset
@@ -349,16 +422,16 @@ internal object ParserSet {
         }
         val nameResult = nameParser(source, i)
         i += nameResult.length
-        val orExpressions = mutableListOf<OrExpression>()
+        val expressions = mutableListOf<Expression>()
         while (i < source.length && source[i] == '[') {
-            val attrResult = orParser(source, i)
+            val attrResult = attrParser(source, i)
             i += attrResult.length
-            orExpressions.add(attrResult.data)
+            expressions.add(attrResult.data)
         }
-        if (nameResult.length == 0 && orExpressions.size == 0) {
+        if (nameResult.length == 0 && expressions.size == 0) {
             ExtSyntaxError.throwError(source, i, "[")
         }
-        ParserResult(PropertySegment(tracked, nameResult.data, orExpressions), i - offset)
+        ParserResult(PropertySegment(tracked, nameResult.data, expressions), i - offset)
     }
 
     val connectSelectorParser = Parser { source, offset, _ ->
@@ -409,8 +482,7 @@ internal object ParserSet {
         }
         val wrapperList = mutableListOf(PropertyWrapper(propertySelectorList.first()))
         combinatorSelectorList.forEachIndexed { index, combinatorSelector ->
-            val combinatorSelectorWrapper =
-                ConnectWrapper(combinatorSelector, wrapperList.last())
+            val combinatorSelectorWrapper = ConnectWrapper(combinatorSelector, wrapperList.last())
             val propertySelectorWrapper =
                 PropertyWrapper(propertySelectorList[index + 1], combinatorSelectorWrapper)
             wrapperList.add(propertySelectorWrapper)

@@ -5,10 +5,12 @@ import java.util.Locale
 plugins {
     id("com.android.application")
     id("kotlin-parcelize")
-    kotlin("android")
-    kotlin("plugin.serialization")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.serialization")
+    id("org.jetbrains.kotlin.kapt")
     id("com.google.devtools.ksp")
     id("dev.rikka.tools.refine")
+    id("com.google.dagger.hilt.android")
 }
 
 
@@ -113,6 +115,9 @@ android {
     }
 }
 
+kapt {
+    correctErrorTypes = true
+}
 
 dependencies {
 
@@ -131,7 +136,6 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso)
-
 
     compileOnly(project(mapOf("path" to ":hidden_api")))
     implementation(libs.rikka.shizuku.api)
@@ -172,5 +176,7 @@ dependencies {
     implementation(libs.destinations.animations)
     ksp(libs.destinations.ksp)
 
-
+    implementation(libs.google.hilt.android)
+    kapt(libs.google.hilt.android.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
 }

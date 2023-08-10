@@ -22,3 +22,9 @@ replace default "Embedded JDK" with download jdk by `File->Project Structrue...-
 ## Layout Inspector not working
 
 开发者选项 - 启用视图属性检查功能
+
+## 开发辅助文档
+
+- <https://foso.github.io/Jetpack-Compose-Playground/>
+- <https://google.github.io/accompanist/>
+- 
