@@ -18,8 +18,7 @@ val RpcErrorHeaderPlugin = createApplicationPlugin(name = "RpcErrorHeaderPlugin"
         when (cause) {
             is RpcError -> {
                 // 主动抛出的错误
-                LogUtils.d(call.request.uri, cause.code, cause.message)
-                call.response.header(RpcError.HeaderKey, RpcError.HeaderErrorValue)
+                LogUtils.d(call.request.uri, cause.message)
                 call.respond(cause)
             }
 
@@ -38,13 +37,5 @@ val RpcErrorHeaderPlugin = createApplicationPlugin(name = "RpcErrorHeaderPlugin"
     onCallRespond { call, _ ->
         call.response.header("Access-Control-Expose-Headers", "*")
         call.response.header("Access-Control-Allow-Private-Network", "true")
-        val status = call.response.status() ?: HttpStatusCode.OK
-        if (status == HttpStatusCode.OK &&
-            !call.response.headers.contains(
-                RpcError.HeaderKey
-            )
-        ) {
-            call.response.header(RpcError.HeaderKey, RpcError.HeaderOkValue)
-        }
     }
 }

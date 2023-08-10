@@ -6,7 +6,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
-import li.songe.gkd.utils.Singleton
+import li.songe.gkd.util.Singleton
 import li.songe.selector.Selector
 
 
@@ -36,7 +36,7 @@ data class SubscriptionRaw(
     data class GroupRaw(
         @SerialName("name") val name: String? = null,
         @SerialName("desc") val desc: String? = null,
-        @SerialName("key") val key: Int? = null,
+        @SerialName("key") val key: Int,
         @SerialName("cd") val cd: Long? = null,
         @SerialName("activityIds") val activityIds: List<String>? = null,
         @SerialName("excludeActivityIds") val excludeActivityIds: List<String>? = null,
@@ -147,7 +147,7 @@ data class SubscriptionRaw(
         }
 
 
-        private fun jsonToGroupRaw(groupsRawJson: JsonElement): GroupRaw {
+        private fun jsonToGroupRaw(groupIndex: Int, groupsRawJson: JsonElement): GroupRaw {
             val groupsJson = when (groupsRawJson) {
                 JsonNull -> error("")
                 is JsonObject -> groupsRawJson
@@ -158,7 +158,7 @@ data class SubscriptionRaw(
                 cd = getLong(groupsJson, "cd"),
                 name = getString(groupsJson, "name"),
                 desc = getString(groupsJson, "desc"),
-                key = getInt(groupsJson, "key"),
+                key = getInt(groupsJson, "key") ?: groupIndex,
                 rules = when (val rulesJson = groupsJson["rules"]) {
                     null, JsonNull -> emptyList()
                     is JsonPrimitive, is JsonObject -> JsonArray(listOf(rulesJson))
@@ -177,8 +177,8 @@ data class SubscriptionRaw(
                     null, JsonNull -> emptyList()
                     is JsonPrimitive, is JsonObject -> JsonArray(listOf(groupsJson))
                     is JsonArray -> groupsJson
-                }).map {
-                    jsonToGroupRaw(it)
+                }).mapIndexed { index, jsonElement ->
+                    jsonToGroupRaw(index, jsonElement)
                 })
         }
 

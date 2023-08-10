@@ -6,6 +6,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.intOrNull
+import li.songe.selector.parser.ParserSet
 import org.junit.Test
 import java.io.File
 
@@ -13,9 +14,16 @@ import java.io.File
 class ParserTest {
 
     @Test
+    fun test_expression() {
+        println(ParserSet.expressionParser("a>1&&b>1&&c>1||d>1", 0).data)
+        println(Selector.parse("View[a>1&&b>1&&c>1||d>1&&x^=1] > Button[a>1||b*='zz'||c^=1]"))
+    }
+
+    @Test
     fun string_selector() {
-        val text = "Button > View[a=1||b=2||c$=3][x=3] Image > Layout @*"
-        println(Selector.parse(text))
+        val text =
+            "ImageView < @FrameLayout < LinearLayout < RelativeLayout <n LinearLayout < RelativeLayout + LinearLayout > RelativeLayout > TextView[text\$='广告']"
+        println("trackIndex: " + Selector.parse(text).trackIndex)
     }
 
     @Test

@@ -14,7 +14,6 @@ class Selector internal constructor(private val propertyWrapper: PropertyWrapper
         while (true) {
             list.add(list.last().to?.to ?: break)
         }
-        list.reverse()
         list.map { p -> p.propertySegment.tracked }.toTypedArray()
     }
 
@@ -36,7 +35,6 @@ class Selector internal constructor(private val propertyWrapper: PropertyWrapper
         transform: Transform<T>,
         trackNodes: MutableList<T> = mutableListOf(),
     ): List<T>? {
-        trackNodes.clear()
         return propertyWrapper.matchTracks(node, transform, trackNodes)
     }
 

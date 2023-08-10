@@ -2,7 +2,7 @@ package li.songe.selector.data
 
 sealed class CompareOperator(val key: String) {
     override fun toString() = key
-    abstract fun compare(a: Any?, b: Any?): Boolean
+    abstract fun compare(left: Any?, right: Any?): Boolean
 
     companion object {
         val allSubClasses = listOf(
@@ -22,66 +22,66 @@ sealed class CompareOperator(val key: String) {
     }
 
     object Equal : CompareOperator("=") {
-        override fun compare(a: Any?, b: Any?): Boolean {
-            return if (a is CharSequence && b is CharSequence) a.contentEquals(b) else a == b
+        override fun compare(left: Any?, right: Any?): Boolean {
+            return if (left is CharSequence && right is CharSequence) left.contentEquals(right) else left == right
         }
     }
 
     object NotEqual : CompareOperator("!=") {
-        override fun compare(a: Any?, b: Any?) = !Equal.compare(a, b)
+        override fun compare(left: Any?, right: Any?) = !Equal.compare(left, right)
     }
 
     object Start : CompareOperator("^=") {
-        override fun compare(a: Any?, b: Any?): Boolean {
-            return if (a is CharSequence && b is CharSequence) a.startsWith(b) else false
+        override fun compare(left: Any?, right: Any?): Boolean {
+            return if (left is CharSequence && right is CharSequence) left.startsWith(right) else false
         }
     }
 
     object NotStart : CompareOperator("!^=") {
-        override fun compare(a: Any?, b: Any?) = !Start.compare(a, b)
+        override fun compare(left: Any?, right: Any?) = !Start.compare(left, right)
     }
 
     object Include : CompareOperator("*=") {
-        override fun compare(a: Any?, b: Any?): Boolean {
-            return if (a is CharSequence && b is CharSequence) a.contains(b) else false
+        override fun compare(left: Any?, right: Any?): Boolean {
+            return if (left is CharSequence && right is CharSequence) left.contains(right) else false
         }
     }
 
     object NotInclude : CompareOperator("!*=") {
-        override fun compare(a: Any?, b: Any?) = !Include.compare(a, b)
+        override fun compare(left: Any?, right: Any?) = !Include.compare(left, right)
     }
 
     object End : CompareOperator("$=") {
-        override fun compare(a: Any?, b: Any?): Boolean {
-            return if (a is CharSequence && b is CharSequence) a.endsWith(b) else false
+        override fun compare(left: Any?, right: Any?): Boolean {
+            return if (left is CharSequence && right is CharSequence) left.endsWith(right) else false
         }
     }
 
     object NotEnd : CompareOperator("!$=") {
-        override fun compare(a: Any?, b: Any?) = !End.compare(a, b)
+        override fun compare(left: Any?, right: Any?) = !End.compare(left, right)
     }
 
     object Less : CompareOperator("<") {
-        override fun compare(a: Any?, b: Any?): Boolean {
-            return if (a is Int && b is Int) a < b else false
+        override fun compare(left: Any?, right: Any?): Boolean {
+            return if (left is Int && right is Int) left < right else false
         }
     }
 
     object LessEqual : CompareOperator("<=") {
-        override fun compare(a: Any?, b: Any?): Boolean {
-            return if (a is Int && b is Int) a <= b else false
+        override fun compare(left: Any?, right: Any?): Boolean {
+            return if (left is Int && right is Int) left <= right else false
         }
     }
 
     object More : CompareOperator(">") {
-        override fun compare(a: Any?, b: Any?): Boolean {
-            return if (a is Int && b is Int) a > b else false
+        override fun compare(left: Any?, right: Any?): Boolean {
+            return if (left is Int && right is Int) left > right else false
         }
     }
 
     object MoreEqual : CompareOperator(">=") {
-        override fun compare(a: Any?, b: Any?): Boolean {
-            return if (a is Int && b is Int) a >= b else false
+        override fun compare(left: Any?, right: Any?): Boolean {
+            return if (left is Int && right is Int) left >= right else false
         }
     }
 

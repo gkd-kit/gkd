@@ -2,6 +2,7 @@ package li.songe.gkd.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import li.songe.gkd.data.Snapshot
 import li.songe.gkd.data.TriggerLog
 
 @Database(

@@ -33,12 +33,12 @@ dependencyResolutionManagement {
             version("android.buildToolsVersion", "33.0.2")
             version("android.minSdk", "26")
 
-            library("android.gradle", "com.android.tools.build:gradle:8.0.2")
+            library("android.gradle", "com.android.tools.build:gradle:8.1.0")
 
             // 当前 android 项目 kotlin 的版本
             library("kotlin.gradle.plugin", "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.20")
             library("kotlin.serialization", "org.jetbrains.kotlin:kotlin-serialization:1.8.20")
-//            library("kotlin.stdlib", "org.jetbrains.kotlin:kotlin-stdlib:1.8.10")
+            library("kotlin.stdlib.common", "org.jetbrains.kotlin:kotlin-stdlib-common:1.8.20")
 
             // compose 编译器的版本, 需要注意它与 compose 的版本没有关联
             // https://mvnrepository.com/artifact/androidx.compose.compiler/compiler
@@ -86,8 +86,7 @@ dependencyResolutionManagement {
             library("androidx.appcompat", "androidx.appcompat:appcompat:1.6.1")
             library("androidx.core.ktx", "androidx.core:core-ktx:1.10.0")
             library(
-                "androidx.lifecycle.runtime.ktx",
-                "androidx.lifecycle:lifecycle-runtime-ktx:2.6.1"
+                "androidx.lifecycle.runtime.ktx", "androidx.lifecycle:lifecycle-runtime-ktx:2.6.1"
             )
             library("androidx.junit", "androidx.test.ext:junit:1.1.5")
             library("androidx.espresso", "androidx.test.espresso:espresso-core:3.5.1")
@@ -109,7 +108,10 @@ dependencyResolutionManagement {
             )
 
 //            https://google.github.io/accompanist/systemuicontroller/
-            library("google.accompanist.systemuicontroller", "com.google.accompanist:accompanist-systemuicontroller:0.30.1")
+            library(
+                "google.accompanist.systemuicontroller",
+                "com.google.accompanist:accompanist-systemuicontroller:0.30.1"
+            )
 
             library("junit", "junit:junit:4.13.2")
 
@@ -118,21 +120,18 @@ dependencyResolutionManagement {
             library("ktor.server.netty", "io.ktor:ktor-server-netty:2.3.1")
             library("ktor.server.cors", "io.ktor:ktor-server-cors:2.3.1")
             library(
-                "ktor.server.content.negotiation",
-                "io.ktor:ktor-server-content-negotiation:2.3.1"
+                "ktor.server.content.negotiation", "io.ktor:ktor-server-content-negotiation:2.3.1"
             )
             library("ktor.client.core", "io.ktor:ktor-client-core:2.3.1")
 //            library("ktor.client.okhttp", "io.ktor:ktor-client-okhttp:2.3.1")
 //            https://ktor.io/docs/http-client-engines.html#android android 平台使用 android 或者 okhttp 都行
             library("ktor.client.android", "io.ktor:ktor-client-android:2.3.1")
             library(
-                "ktor.client.content.negotiation",
-                "io.ktor:ktor-client-content-negotiation:2.3.1"
+                "ktor.client.content.negotiation", "io.ktor:ktor-client-content-negotiation:2.3.1"
             )
 
             library(
-                "ktor.serialization.kotlinx.json",
-                "io.ktor:ktor-serialization-kotlinx-json:2.2.3"
+                "ktor.serialization.kotlinx.json", "io.ktor:ktor-serialization-kotlinx-json:2.2.3"
             )
 
             library(
@@ -150,10 +149,21 @@ dependencyResolutionManagement {
 
             plugin("google.ksp", "com.google.devtools.ksp").version("1.8.20-1.0.11")
 
+            plugin("google.hilt", "com.google.dagger.hilt.android").version("2.44")
+            library("google.hilt.android", "com.google.dagger:hilt-android:2.44")
+            library("google.hilt.android.compiler", "com.google.dagger:hilt-android-compiler:2.44")
+            library("androidx.hilt.navigation.compose", "androidx.hilt:hilt-navigation-compose:1.0.0")
+
 //            https://composedestinations.rafaelcosta.xyz/setup
-            library("destinations.core", "io.github.raamcosta.compose-destinations:core:1.8.42-beta")
+            library(
+                "destinations.core",
+                "io.github.raamcosta.compose-destinations:core:1.8.42-beta"
+            )
             library("destinations.ksp", "io.github.raamcosta.compose-destinations:ksp:1.8.42-beta")
-            library("destinations.animations", "io.github.raamcosta.compose-destinations:animations-core:1.8.42-beta")
+            library(
+                "destinations.animations",
+                "io.github.raamcosta.compose-destinations:animations-core:1.8.42-beta"
+            )
         }
     }
 }

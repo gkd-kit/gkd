@@ -1,6 +1,5 @@
 package li.songe.gkd.ui.component
 
-import android.graphics.drawable.Drawable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,24 +22,20 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
-import com.google.accompanist.placeholder.PlaceholderHighlight
-import com.google.accompanist.placeholder.material.fade
-import com.google.accompanist.placeholder.material.placeholder
-import li.songe.gkd.R
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.data.getAppInfo
-import li.songe.gkd.utils.SafeR
+import li.songe.gkd.util.SafeR
 
 
 @Composable
 fun SubsAppCard(
-    loading: Boolean = false,
-    sub: SubsAppCardData,
+    appRaw: SubscriptionRaw.AppRaw,
+    subsConfig: SubsConfig? = null,
     onClick: (() -> Unit)? = null,
-    onValueChange: ((Boolean) -> Unit)? = null
+    onValueChange: ((Boolean) -> Unit)? = null,
 ) {
-    val info = getAppInfo(sub.appRaw.id)
+    val info = getAppInfo(appRaw.id)
     Row(
         modifier = Modifier
             .height(60.dp)
@@ -55,12 +50,9 @@ fun SubsAppCard(
         Image(
             painter = if (info.icon != null) rememberDrawablePainter(info.icon) else painterResource(
                 SafeR.ic_app_2
-            ),
-            contentDescription = null,
-            modifier = Modifier
+            ), contentDescription = null, modifier = Modifier
                 .fillMaxHeight()
                 .clip(CircleShape)
-                .placeholder(loading, highlight = PlaceholderHighlight.fade())
         )
 
         Spacer(modifier = Modifier.width(10.dp))
@@ -73,35 +65,28 @@ fun SubsAppCard(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = info.name ?: "-", maxLines = 1,
+                text = info.realName,
+                maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .placeholder(loading, highlight = PlaceholderHighlight.fade())
+                modifier = Modifier.fillMaxWidth()
             )
             Text(
-                text = sub.appRaw.groups.size.toString() + "组规则", maxLines = 1,
+                text = appRaw.groups.size.toString() + "组规则",
+                maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .placeholder(loading, highlight = PlaceholderHighlight.fade())
+                modifier = Modifier.fillMaxWidth()
             )
         }
 
         Spacer(modifier = Modifier.width(10.dp))
 
         Switch(
-            sub.subsConfig.enable,
+            subsConfig?.enable ?: true,
             onValueChange,
-            modifier = Modifier.placeholder(loading, highlight = PlaceholderHighlight.fade())
         )
     }
 }
 
-data class SubsAppCardData(
-    val subsConfig: SubsConfig,
-    val appRaw: SubscriptionRaw.AppRaw
-)
 

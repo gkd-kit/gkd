@@ -21,14 +21,11 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
-import li.songe.gkd.App
+import li.songe.gkd.app
 import li.songe.gkd.composition.CompositionExt.useMessage
 import li.songe.gkd.composition.CompositionService
 import li.songe.gkd.composition.InvokeMessage
@@ -36,9 +33,9 @@ import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt.captureSnapshot
-import li.songe.gkd.utils.Ext.getIpAddressInLocalNetwork
-import li.songe.gkd.utils.Storage
-import li.songe.gkd.utils.launchTry
+import li.songe.gkd.util.Ext.getIpAddressInLocalNetwork
+import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.storeFlow
 import java.io.File
 
 class HttpService : CompositionService({
@@ -70,7 +67,7 @@ class HttpService : CompositionService({
     }
     val server = embeddedServer(
         Netty,
-        Storage.settings.httpServerPort,
+        storeFlow.value.httpServerPort,
         configure = { tcpKeepAlive = true }
     ) {
         install(CORS) { anyHost() }
@@ -117,7 +114,7 @@ class HttpService : CompositionService({
         }
     }
     scope.launchTry(Dispatchers.IO) {
-        LogUtils.d(*getIpAddressInLocalNetwork().map { host -> "http://${host}:${Storage.settings.httpServerPort}" }
+        LogUtils.d(*getIpAddressInLocalNetwork().map { host -> "http://${host}:${storeFlow.value.httpServerPort}" }
             .toList().toTypedArray())
         server.start(true)
     }
@@ -131,13 +128,13 @@ class HttpService : CompositionService({
 }) {
     companion object {
         fun isRunning() = ServiceUtils.isServiceRunning(HttpService::class.java)
-        fun stop(context: Context = App.context) {
+        fun stop(context: Context = app) {
             if (isRunning()) {
                 context.stopService(Intent(context, HttpService::class.java))
             }
         }
 
-        fun start(context: Context = App.context) {
+        fun start(context: Context = app) {
             context.startService(Intent(context, HttpService::class.java))
         }
 

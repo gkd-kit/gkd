@@ -3,18 +3,29 @@ package li.songe.gkd
 import android.app.Application
 import android.content.Context
 import android.os.Build
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import com.blankj.utilcode.util.LogUtils
 import com.tencent.bugly.crashreport.CrashReport
 import com.tencent.mmkv.MMKV
-import li.songe.gkd.utils.Storage
+import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import li.songe.gkd.data.getAppInfo
+import li.songe.gkd.db.DbSet
+import li.songe.gkd.util.isMainProcess
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.ShizukuProvider
 
+lateinit var app: Application
+var appScope = MainScope()
+
+@HiltAndroidApp
 class App : Application() {
-    companion object {
-        lateinit var context: Application
+    override fun onLowMemory() {
+        super.onLowMemory()
+        appScope.cancel("onLowMemory() called by system")
+        appScope = MainScope()
     }
 
     override fun attachBaseContext(base: Context?) {
@@ -26,18 +37,22 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        context = this
+        app = this
         MMKV.initialize(this)
-        LogUtils.d(Storage.settings)
-        if (!Storage.settings.enableConsoleLogOut) {
-            LogUtils.d("关闭日志控制台输出")
-        }
         LogUtils.getConfig().apply {
             isLog2FileSwitch = true
-            saveDays = 30
-            LogUtils.getConfig().setConsoleSwitch(Storage.settings.enableConsoleLogOut)
+            saveDays = 7
         }
         ShizukuProvider.enableMultiProcessSupport(true)
         CrashReport.initCrashReport(applicationContext, "d0ce46b353", false)
+
+        if (isMainProcess) {
+            appScope.launch(Dispatchers.IO) {
+//                提前获取 appInfo 缓存
+                DbSet.subsItemDao.query().collect {
+                    it.forEach { s -> s.subscriptionRaw?.apps?.forEach { app -> getAppInfo(app.id) } }
+                }
+            }
+        }
     }
 }

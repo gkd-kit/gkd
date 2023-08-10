@@ -10,11 +10,11 @@ data class PropertySegment(
      */
     val tracked: Boolean,
     val name: String,
-    val expressions: List<OrExpression>,
+    val expressions: List<Expression>,
 ) {
     override fun toString(): String {
         val matchTag = if (tracked) "@" else ""
-        return matchTag + name + expressions.joinToString("")
+        return matchTag + name + expressions.joinToString("") { "[$it]" }
     }
 
     private val matchName = if (name.isBlank() || name == "*") {

@@ -1,6 +1,6 @@
 plugins {
-    kotlin("multiplatform")
-    kotlin("plugin.serialization")
+    id("org.jetbrains.kotlin.multiplatform")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 kotlin {
@@ -12,17 +12,13 @@ kotlin {
 //    https://kotlinlang.org/docs/js-to-kotlin-interop.html#kotlin-types-in-javascript
     js(IR) {
         binaries.executable()
-//        useEsModules() many bugs
+//        useEsModules()
 //        bug example kotlin CharSequence.contains(char: Char) not work with js string.includes(string)
         generateTypeScriptDefinitions()
         browser {}
     }
-    sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation(kotlin("stdlib-common"))
-            }
-        }
+    sourceSets["commonMain"].dependencies {
+        implementation(libs.kotlin.stdlib.common)
     }
     sourceSets["jvmTest"].dependencies {
         implementation(libs.kotlinx.serialization.json)

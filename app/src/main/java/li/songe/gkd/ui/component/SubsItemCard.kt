@@ -9,11 +9,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.Surface
+import androidx.compose.material.Switch
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -22,19 +20,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.data.SubsItem
-import li.songe.gkd.utils.SafeR
-import li.songe.gkd.utils.Singleton
+import li.songe.gkd.util.SafeR
+import li.songe.gkd.util.formatTimeAgo
 
 @Composable
 fun SubsItemCard(
     subsItem: SubsItem,
-    onShareClick: (() -> Unit)? = null,
-    onDelClick: (() -> Unit)? = null,
-    onRefreshClick: (() -> Unit)? = null,
+    onMenuClick: (() -> Unit)? = null,
+    onCheckedChange: ((Boolean) -> Unit)? = null,
 ) {
-    val dateStr by remember(subsItem) {
-        derivedStateOf { "更新于:" + Singleton.simpleDateFormat.format(subsItem.mtime) }
-    }
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -42,22 +37,24 @@ fun SubsItemCard(
             .alpha(if (subsItem.enable) 1f else .3f),
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = subsItem.name,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis
-            )
             Row {
                 Text(
-                    text = dateStr,
+                    text = subsItem.order.toString() + ". " + subsItem.name,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Row {
+                Text(
+                    text = formatTimeAgo(subsItem.mtime) + "更新",
                     maxLines = 1,
                     softWrap = false,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "版本:" + subsItem.version,
+                    text = "v" + subsItem.version.toString(),
                     maxLines = 1,
                     softWrap = false,
                     overflow = TextOverflow.Ellipsis
@@ -65,37 +62,47 @@ fun SubsItemCard(
             }
         }
         Spacer(modifier = Modifier.width(5.dp))
-        Image(
-            painter = painterResource(SafeR.ic_refresh),
+        Image(painter = painterResource(SafeR.ic_menu),
             contentDescription = "refresh",
             modifier = Modifier
                 .clickable {
-                    onRefreshClick?.invoke()
+                    onMenuClick?.invoke()
                 }
-                .padding(4.dp)
-                .size(20.dp)
+                .size(30.dp)
+
         )
-        Spacer(modifier = Modifier.width(5.dp))
-        Image(
-            painter = painterResource(SafeR.ic_share),
-            contentDescription = "share",
-            modifier = Modifier
-                .clickable {
-                    onShareClick?.invoke()
-                }
-                .padding(4.dp)
-                .size(20.dp)
-        )
-        Spacer(modifier = Modifier.width(5.dp))
-        Image(
-            painter = painterResource(SafeR.ic_del),
-            contentDescription = "edit",
-            modifier = Modifier
-                .clickable {
-                    onDelClick?.invoke()
-                }
-                .padding(4.dp)
-                .size(20.dp)
+//        Spacer(modifier = Modifier.width(5.dp))
+//        Image(painter = painterResource(SafeR.ic_refresh),
+//            contentDescription = "refresh",
+//            modifier = Modifier
+//                .clickable {
+//                    onRefreshClick?.invoke()
+//                }
+//                .padding(4.dp)
+//                .size(20.dp))
+//        Spacer(modifier = Modifier.width(5.dp))
+//        Image(painter = painterResource(SafeR.ic_share),
+//            contentDescription = "share",
+//            modifier = Modifier
+//                .clickable {
+//                    onShareClick?.invoke()
+//                }
+//                .padding(4.dp)
+//                .size(20.dp))
+//        Spacer(modifier = Modifier.width(5.dp))
+//        Image(painter = painterResource(SafeR.ic_del),
+//            contentDescription = "edit",
+//            modifier = Modifier
+//                .clickable {
+//                    onDelClick?.invoke()
+//                }
+//                .padding(4.dp)
+//                .size(20.dp))
+
+        Spacer(modifier = Modifier.width(10.dp))
+        Switch(
+            checked = subsItem.enable,
+            onCheckedChange = onCheckedChange,
         )
     }
 }
@@ -103,11 +110,12 @@ fun SubsItemCard(
 @Preview
 @Composable
 fun PreviewSubscriptionItemCard() {
-    Surface(modifier = Modifier.width(300.dp)) {
+    Surface(modifier = Modifier.width(400.dp)) {
         SubsItemCard(
             SubsItem(
-                updateUrl = "https://raw.githubusercontents.com/lisonge/gkd-subscription/main/src/ad-startup.gkd.json",
-                name = "APP工具箱"
+                updateUrl = "https://registry.npmmirror.com/@gkd-kit/subscription/latest/files",
+                name = "GKD官方订阅",
+                author = "gkd",
             )
         )
     }

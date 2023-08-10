@@ -1,7 +1,7 @@
 package li.songe.gkd.data
 
 import android.view.accessibility.AccessibilityNodeInfo
-import li.songe.gkd.accessibility.querySelector
+import li.songe.gkd.service.querySelector
 import li.songe.selector.Selector
 
 data class Rule(
@@ -21,6 +21,8 @@ data class Rule(
     val excludeActivityIds: Set<String> = emptySet(),
     val key: Int? = null,
     val preKeys: Set<Int> = emptySet(),
+    val group: SubscriptionRaw.GroupRaw,
+    val subsItem: SubsItem,
 ) {
     private var triggerTime = 0L
     fun trigger() {

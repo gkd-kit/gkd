@@ -9,33 +9,22 @@ import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
 import kotlinx.parcelize.Parcelize
-import java.nio.channels.Selector
 
 @Entity(
     tableName = "trigger_log",
 )
 @Parcelize
 data class TriggerLog(
-    /**
-     * 此 id 与某个 snapshot id 一致, 表示 one to one
-     */
-    @PrimaryKey @ColumnInfo(name = "id") val id: Long,
-    /**
-     * 订阅文件 id
-     */
+    @PrimaryKey @ColumnInfo(name = "id") val id: Long = System.currentTimeMillis(),
+    @ColumnInfo(name = "app_id") val appId: String? = null,
+    @ColumnInfo(name = "activity_id") val activityId: String? = null,
     @ColumnInfo(name = "subs_id") val subsId: Long,
-    /**
-     * 触发的组 id
-     */
     @ColumnInfo(name = "group_key") val groupKey: Int,
-
-    /**
-     * 触发的选择器
-     */
-    @ColumnInfo(name = "match") val match: String,
-
-    ) : Parcelable {
+    @ColumnInfo(name = "rule_index") val ruleIndex: Int,
+    @ColumnInfo(name = "rule_key") val ruleKey: Int? = null,
+) : Parcelable {
     @Dao
     interface TriggerLogDao {
 
@@ -43,12 +32,15 @@ data class TriggerLog(
         suspend fun update(vararg objects: TriggerLog): Int
 
         @Insert
-        suspend fun insert(vararg users: TriggerLog): List<Long>
+        suspend fun insert(vararg objects: TriggerLog): List<Long>
 
         @Delete
-        suspend fun delete(vararg users: TriggerLog): Int
+        suspend fun delete(vararg objects: TriggerLog): Int
 
-        @Query("SELECT * FROM trigger_log")
-        suspend fun query(): List<TriggerLog>
+        @Query("SELECT * FROM trigger_log ORDER BY id DESC")
+        fun query(): Flow<List<TriggerLog>>
+
+        @Query("SELECT COUNT(*) FROM trigger_log")
+        fun count(): Flow<Int>
     }
 }
