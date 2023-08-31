@@ -1,21 +1,26 @@
 package li.songe.gkd.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import li.songe.gkd.BuildConfig
 import li.songe.gkd.ui.component.SimpleTopAppBar
 import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.util.ProfileTransitions
 
 @RootNavGraph
-@Destination
+@Destination(style = ProfileTransitions::class)
 @Composable
 fun AboutPage() {
     //    val systemUiController = rememberSystemUiController()
@@ -29,6 +34,7 @@ fun AboutPage() {
     //            WindowCompat.setDecorFitsSystemWindows(context.window, true)
     //        }
     //    }
+    val context = LocalContext.current
     val navController = LocalNavController.current
     Scaffold(topBar = {
         SimpleTopAppBar(onClickIcon = { navController.popBackStack() }, title = "关于")

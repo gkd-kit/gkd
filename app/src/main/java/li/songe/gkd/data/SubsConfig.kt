@@ -19,16 +19,15 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 data class SubsConfig(
     @PrimaryKey @ColumnInfo(name = "id") val id: Long = System.currentTimeMillis(),
-    @ColumnInfo(name = "type") val type: Int = SubsType,
-    @ColumnInfo(name = "enable") val enable: Boolean = true,
+    @ColumnInfo(name = "type") val type: Int,
+    @ColumnInfo(name = "enable") val enable: Boolean,
 
-    @ColumnInfo(name = "subs_item_id") val subsItemId: Long ,
+    @ColumnInfo(name = "subs_item_id") val subsItemId: Long,
     @ColumnInfo(name = "app_id") val appId: String = "",
     @ColumnInfo(name = "group_key") val groupKey: Int = -1,
 ) : Parcelable {
 
     companion object {
-        const val SubsType = 0
         const val AppType = 1
         const val GroupType = 2
     }
@@ -51,14 +50,12 @@ data class SubsConfig(
         @Query("SELECT * FROM subs_config")
         fun query(): Flow<List<SubsConfig>>
 
-        @Query("SELECT * FROM subs_config WHERE type=${SubsType}")
-        fun querySubsTypeConfig(): Flow<List<SubsConfig>>
 
         @Query("SELECT * FROM subs_config WHERE type=${AppType} and subs_item_id=:subsItemId")
         fun queryAppTypeConfig(subsItemId: Long): Flow<List<SubsConfig>>
 
         @Query("SELECT * FROM subs_config WHERE type=${GroupType} and subs_item_id=:subsItemId and app_id=:appId")
-         fun queryGroupTypeConfig(subsItemId: Long, appId: String): Flow<List<SubsConfig>>
+        fun queryGroupTypeConfig(subsItemId: Long, appId: String): Flow<List<SubsConfig>>
     }
 
 }

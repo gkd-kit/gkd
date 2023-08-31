@@ -26,9 +26,10 @@ import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
 import li.songe.gkd.util.LaunchedEffectTry
+import li.songe.gkd.util.ProfileTransitions
 
 @RootNavGraph
-@Destination
+@Destination(style = ProfileTransitions::class)
 @Composable
 fun ImagePreviewPage(
     filePath: String?,

@@ -20,9 +20,7 @@ fun createChannel(context: Context, notifChannel: NotifChannel) {
     notificationManager.createNotificationChannel(channel)
 }
 
-fun createNotif(context: Service, notifChannel: NotifChannel, notif: Notif) {
-    createChannel(context, notifChannel)
-
+fun createNotif(context: Service, channelId: String, notif: Notif) {
     val intent = Intent(context, MainActivity::class.java).apply {
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
     }
@@ -30,14 +28,13 @@ fun createNotif(context: Service, notifChannel: NotifChannel, notif: Notif) {
         context, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
 
-    val builder = NotificationCompat.Builder(context, notifChannel.id).setSmallIcon(notif.icon)
+    val builder = NotificationCompat.Builder(context, channelId).setSmallIcon(notif.icon)
         .setContentTitle(notif.title).setContentText(notif.text).setContentIntent(pendingIntent)
         .setPriority(NotificationCompat.PRIORITY_DEFAULT).setOngoing(notif.ongoing)
         .setAutoCancel(notif.autoCancel)
 
     val notification = builder.build()
     val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-//    manager.notify(notice.id, notification)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         context.startForeground(
             notif.id, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST

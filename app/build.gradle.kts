@@ -3,18 +3,16 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 plugins {
-    id("com.android.application")
-    id("kotlin-parcelize")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.serialization")
-    id("org.jetbrains.kotlin.kapt")
-    id("com.google.devtools.ksp")
-    id("dev.rikka.tools.refine")
-    id("com.google.dagger.hilt.android")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.parcelize)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.google.ksp)
+    alias(libs.plugins.google.hilt)
+    alias(libs.plugins.rikka.refine)
 }
 
-
-@Suppress("UnstableApiUsage")
 android {
     namespace = "li.songe.gkd"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -155,7 +153,7 @@ dependencies {
     implementation(libs.ktor.server.content.negotiation)
 
     implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
 
@@ -173,10 +171,14 @@ dependencies {
     implementation(libs.others.floating.bubble.view)
 
     implementation(libs.destinations.core)
-    implementation(libs.destinations.animations)
+//    implementation(libs.destinations.animations)
     ksp(libs.destinations.ksp)
 
     implementation(libs.google.hilt.android)
     kapt(libs.google.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
+
+    implementation(libs.others.reorderable)
+
+    implementation(libs.androidx.splashscreen)
 }

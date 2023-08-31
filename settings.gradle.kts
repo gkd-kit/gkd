@@ -5,6 +5,10 @@ include(":hidden_api")
 
 pluginManagement {
     repositories {
+        mavenLocal()
+        mavenCentral()
+        google()
+        maven("https://jitpack.io")
         maven("https://plugins.gradle.org/m2/")
     }
 }
@@ -24,21 +28,29 @@ dependencyResolutionManagement {
 
     versionCatalogs {
         create("libs") {
+            val kotlinVersion = "1.8.20"
             // use jdk17
             version("jdkVersion", JavaVersion.VERSION_17.majorVersion)
-            version("kotlinVersion", "1.8.20")
+            version("kotlinVersion", kotlinVersion)
 
-            version("android.compileSdk", "33")
-            version("android.targetSdk", "33")
-            version("android.buildToolsVersion", "33.0.2")
+            version("android.compileSdk", "34")
+            version("android.targetSdk", "34")
+            version("android.buildToolsVersion", "34.0.0")
             version("android.minSdk", "26")
 
             library("android.gradle", "com.android.tools.build:gradle:8.1.0")
+            plugin("android.library", "com.android.library").version("8.1.0")
+            plugin("android.application", "com.android.application").version("8.1.0")
 
             // 当前 android 项目 kotlin 的版本
-            library("kotlin.gradle.plugin", "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.20")
-            library("kotlin.serialization", "org.jetbrains.kotlin:kotlin-serialization:1.8.20")
-            library("kotlin.stdlib.common", "org.jetbrains.kotlin:kotlin-stdlib-common:1.8.20")
+            library("kotlin.gradle.plugin", "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+            library("kotlin.serialization", "org.jetbrains.kotlin:kotlin-serialization:$kotlinVersion")
+            library("kotlin.stdlib.common", "org.jetbrains.kotlin:kotlin-stdlib-common:$kotlinVersion")
+            plugin("kotlin.serialization", "org.jetbrains.kotlin.plugin.serialization").version(kotlinVersion)
+            plugin("kotlin.parcelize", "org.jetbrains.kotlin.plugin.parcelize").version(kotlinVersion)
+            plugin("kotlin.kapt", "org.jetbrains.kotlin.kapt").version(kotlinVersion)
+            plugin("kotlin.multiplatform", "org.jetbrains.kotlin.multiplatform").version(kotlinVersion)
+            plugin("kotlin.android", "org.jetbrains.kotlin.android").version(kotlinVersion)
 
             // compose 编译器的版本, 需要注意它与 compose 的版本没有关联
             // https://mvnrepository.com/artifact/androidx.compose.compiler/compiler
@@ -74,14 +86,15 @@ dependencyResolutionManagement {
             library("others.utilcodex", "com.blankj:utilcodex:1.31.0")
             // https://dylancaicoding.github.io/ActivityResultLauncher/#/
             library(
-                "others.ActivityResultLauncher",
+                "others.activityResultLauncher",
                 "com.github.DylanCaiCoding:ActivityResultLauncher:1.1.2"
             )
             // https://github.com/falkreon/Jankson
             library("others.jankson", "blue.endless:jankson:1.2.1")
             // https://github.com/journeyapps/zxing-android-embedded
             library("others.zxing.android.embedded", "com.journeyapps:zxing-android-embedded:4.3.0")
-            library("others.floating.bubble.view", "io.github.torrydo:floating-bubble-view:0.5.2")
+            // https://github.com/TorryDo/Floating-Bubble-View
+            library("others.floating.bubble.view", "io.github.torrydo:floating-bubble-view:0.5.6")
 
             library("androidx.appcompat", "androidx.appcompat:appcompat:1.6.1")
             library("androidx.core.ktx", "androidx.core:core-ktx:1.10.0")
@@ -123,9 +136,8 @@ dependencyResolutionManagement {
                 "ktor.server.content.negotiation", "io.ktor:ktor-server-content-negotiation:2.3.1"
             )
             library("ktor.client.core", "io.ktor:ktor-client-core:2.3.1")
-//            library("ktor.client.okhttp", "io.ktor:ktor-client-okhttp:2.3.1")
+            library("ktor.client.okhttp", "io.ktor:ktor-client-okhttp:2.3.1")
 //            https://ktor.io/docs/http-client-engines.html#android android 平台使用 android 或者 okhttp 都行
-            library("ktor.client.android", "io.ktor:ktor-client-android:2.3.1")
             library(
                 "ktor.client.content.negotiation", "io.ktor:ktor-client-content-negotiation:2.3.1"
             )
@@ -152,18 +164,22 @@ dependencyResolutionManagement {
             plugin("google.hilt", "com.google.dagger.hilt.android").version("2.44")
             library("google.hilt.android", "com.google.dagger:hilt-android:2.44")
             library("google.hilt.android.compiler", "com.google.dagger:hilt-android-compiler:2.44")
-            library("androidx.hilt.navigation.compose", "androidx.hilt:hilt-navigation-compose:1.0.0")
+            library(
+                "androidx.hilt.navigation.compose", "androidx.hilt:hilt-navigation-compose:1.0.0"
+            )
 
 //            https://composedestinations.rafaelcosta.xyz/setup
             library(
-                "destinations.core",
-                "io.github.raamcosta.compose-destinations:core:1.8.42-beta"
+                "destinations.core", "io.github.raamcosta.compose-destinations:core:1.9.52"
             )
-            library("destinations.ksp", "io.github.raamcosta.compose-destinations:ksp:1.8.42-beta")
-            library(
-                "destinations.animations",
-                "io.github.raamcosta.compose-destinations:animations-core:1.8.42-beta"
-            )
+            library("destinations.ksp", "io.github.raamcosta.compose-destinations:ksp:1.9.52")
+//            library(
+//                "destinations.animations",
+//                "io.github.raamcosta.compose-destinations:animations-core:1.9.52"
+//            )
+
+//            https://github.com/aclassen/ComposeReorderable
+            library("others.reorderable", "org.burnoutcrew.composereorderable:reorderable:0.9.6")
         }
     }
 }

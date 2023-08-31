@@ -16,6 +16,7 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.db.IgnoreConverters
 import li.songe.gkd.debug.SnapshotExt
+import li.songe.gkd.service.activityIdFlow
 import java.io.File
 
 @TypeConverters(IgnoreConverters::class)
@@ -27,7 +28,7 @@ data class Snapshot(
     @PrimaryKey @ColumnInfo(name = "id") val id: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "app_id") val appId: String? = null,
     @ColumnInfo(name = "activity_id") val activityId: String? = null,
-    @ColumnInfo(name = "app_name") val appName: String? = getAppName(appId),
+    @ColumnInfo(name = "app_name") val appName: String? = AppUtils.getAppName(appId),
     @ColumnInfo(name = "app_version_code") val appVersionCode: Int? = appId?.let {
         AppUtils.getAppVersionCode(
             appId
@@ -68,7 +69,7 @@ data class Snapshot(
         ): Snapshot {
             val currentAbNode = GkdAbService.currentAbNode
             val appId = currentAbNode?.packageName?.toString()
-            val currentActivityId = GkdAbService.currentActivityId
+            val currentActivityId = activityIdFlow.value
             return Snapshot(
                 appId = appId,
                 activityId = currentActivityId,

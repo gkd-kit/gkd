@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -20,6 +23,7 @@ import li.songe.gkd.icon.ArrowIcon
 @Composable
 fun SettingItem(
     title: String,
+    imageVector: ImageVector = Icons.Default.KeyboardArrowRight,
     onClick: () -> Unit,
 ) {
     Row(
@@ -34,7 +38,7 @@ fun SettingItem(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text = title, fontSize = 18.sp)
-        Icon(imageVector = ArrowIcon, contentDescription = title)
+        Icon(imageVector = imageVector, contentDescription = title)
     }
 }
 

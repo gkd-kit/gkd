@@ -1,30 +1,10 @@
 # gkd
 
-搞快点，顾名思义，做快速点击，一款基于无障碍和自定义匹配规则的快速点击app
+基于 *无障碍* + *高级选择器* + *订阅规则* 的自定义屏幕点击 APP
 
 ## feature
 
-- 扩展自css选择器语法的高级选择语法
-- 跳过启动页面
-- 关闭app内部广告
-- 任意点击操作, 组合操作
-- 支持导入订阅链接, 订阅支持 json/json5/yaml/toml 格式
-- 支持浏览器直接跳转导入规则至app
-- 无障碍模式, shizuku 模式, root 模式, 设备管理员 模式
+根据 [高级选择器](https://github.com/gkd-kit/selector) + [订阅规则](https://github.com/gkd-kit/subscription), 它可以实现
 
-
-# Fix Bug
-
-## Android Studio kts lint error
-
-replace default "Embedded JDK" with download jdk by `File->Project Structrue...->SDK Location->Gradle Settings->Gradle JDK`
-
-## Layout Inspector not working
-
-开发者选项 - 启用视图属性检查功能
-
-## 开发辅助文档
-
-- <https://foso.github.io/Jetpack-Compose-Playground/>
-- <https://google.github.io/accompanist/>
-- 
+- 点击跳过任意开屏广告/点击关闭应用内部任意弹窗广告, 如关闭百度贴吧帖子广告卡片/知乎回答底部推荐广告卡片
+- 一些快捷操作, 如微信电脑登录自动同意/微信扫描登录自动同意/微信抢红包

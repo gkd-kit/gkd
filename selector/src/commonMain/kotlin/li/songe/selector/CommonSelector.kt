@@ -25,6 +25,7 @@ class CommonSelector private constructor(
 
     companion object {
         fun parse(source: String) = CommonSelector(Selector.parse(source))
+        fun check(source: String) = Selector.check(source)
     }
 }
 

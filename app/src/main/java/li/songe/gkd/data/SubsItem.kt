@@ -1,5 +1,6 @@
 package li.songe.gkd.data
 
+import android.content.ContentValues
 import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Dao
@@ -23,18 +24,15 @@ import java.io.File
 )
 @Parcelize
 data class SubsItem(
-    @PrimaryKey @ColumnInfo(name = "id") val id: Long = System.currentTimeMillis(),
+    @PrimaryKey @ColumnInfo(name = "id") val id: Long,
+
+    @ColumnInfo(name = "ctime") val ctime: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "mtime") val mtime: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "enable") val enable: Boolean = true,
     @ColumnInfo(name = "enable_update") val enableUpdate: Boolean = true,
-    @ColumnInfo(name = "order") val order: Int = 1,
+    @ColumnInfo(name = "order") val order: Int,
 
-    //    订阅文件的根字段
-    @ColumnInfo(name = "name") val name: String = "",
-    @ColumnInfo(name = "author") val author: String = "",
-    @ColumnInfo(name = "version") val version: Int = 1,
-    @ColumnInfo(name = "update_url") val updateUrl: String = "",
-    @ColumnInfo(name = "support_url") val supportUrl: String = "",
+    @ColumnInfo(name = "update_url") val updateUrl: String,
 
     ) : Parcelable {
 
@@ -43,14 +41,16 @@ data class SubsItem(
         File(FolderExt.subsFolder.absolutePath.plus("/${id}.json"))
     }
 
-    @IgnoredOnParcel
-    val subscriptionRaw by lazy {
-        try {
-            SubscriptionRaw.parse5(subsFile.readText())
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
+    fun toContentValues(): ContentValues {
+        val values = ContentValues()
+        values.put("id", id)
+        values.put("ctime", ctime)
+        values.put("mtime", mtime)
+        values.put("enable", enable)
+        values.put("enable_update", enableUpdate)
+        values.put("`order`", order)
+        values.put("update_url", updateUrl)
+        return values
     }
 
     suspend fun removeAssets() {
@@ -62,9 +62,14 @@ data class SubsItem(
     }
 
     companion object {
+
         fun getSubscriptionRaw(subsItemId: Long): SubscriptionRaw? {
             return try {
-                SubscriptionRaw.parse5(File(FolderExt.subsFolder.absolutePath.plus("/${subsItemId}.json")).readText())
+                val file = File(FolderExt.subsFolder.absolutePath.plus("/${subsItemId}.json"))
+                if (!file.exists()) {
+                    return null
+                }
+                return SubscriptionRaw.parse(file.readText())
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
@@ -88,8 +93,7 @@ data class SubsItem(
         fun query(): Flow<List<SubsItem>>
 
         @Query("SELECT * FROM subs_item WHERE id=:id")
-        fun queryById(id: Long): SubsItem?
+        fun queryById(id: Long): Flow<SubsItem?>
     }
-
 
 }

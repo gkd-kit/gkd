@@ -17,10 +17,20 @@ buildscript {
 // https://youtrack.jetbrains.com/issue/KTIJ-19369
 @Suppress(
     "DSL_SCOPE_VIOLATION",
-)
-plugins {
+) plugins {
     alias(libs.plugins.google.ksp) apply false
     alias(libs.plugins.google.hilt) apply false
+
+    alias(libs.plugins.android.library) apply false
+    alias(libs.plugins.android.application) apply false
+
+    alias(libs.plugins.kotlin.serialization) apply false
+    alias(libs.plugins.kotlin.parcelize) apply false
+
+    alias(libs.plugins.kotlin.multiplatform) apply false
+    alias(libs.plugins.kotlin.android) apply false
+    alias(libs.plugins.kotlin.kapt) apply false
+
     alias(libs.plugins.rikka.refine) apply false
 }
 

@@ -2,16 +2,13 @@ package li.songe.gkd.composition
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
+import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
 
 open class CompositionAbService(
     private val block: CompositionAbService.() -> Unit,
-) : AccessibilityService(),
-    CanOnDestroy,
-    CanOnStartCommand,
-    CanOnAccessibilityEvent,
-    CanOnServiceConnected,
-    CanOnInterrupt {
+) : AccessibilityService(), CanOnDestroy, CanOnStartCommand, CanOnAccessibilityEvent,
+    CanOnServiceConnected, CanOnInterrupt, CanOnKeyEvent {
     override fun onCreate() {
         super.onCreate()
         block(this)
@@ -51,5 +48,16 @@ open class CompositionAbService(
     override fun onServiceConnected() {
         super.onServiceConnected()
         onServiceConnectedHooks.forEach { f -> f() }
+    }
+
+
+    private val onKeyEventHooks by lazy { linkedSetOf<(KeyEvent?) -> Unit>() }
+    override fun onKeyEvent(event: KeyEvent?): Boolean {
+        onKeyEventHooks.forEach { f -> f(event) }
+        return super.onKeyEvent(event)
+    }
+
+    override fun onKeyEvent(f: (KeyEvent?) -> Unit) {
+        onKeyEventHooks.add(f)
     }
 }

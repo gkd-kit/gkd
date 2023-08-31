@@ -70,4 +70,40 @@ class ParserTest {
     fun check_parser() {
         println(Selector.parse("View > Text"))
     }
+
+    @Test
+    fun check_query(){
+        val projectCwd = File("../").absolutePath
+        val text =
+            "@TextView[text^='跳过'] + LinearLayout TextView[text*=`跳转`]"
+        val selector = Selector.parse(text)
+        println("selector: $selector")
+        println(selector.trackIndex)
+        println(selector.tracks.toList())
+
+        val jsonString = File("$projectCwd/_assets/snapshot-1693227637861.json").readText()
+        val json = Json {
+            ignoreUnknownKeys = true
+        }
+        val nodes = json.decodeFromString<TestSnapshot>(jsonString).nodes
+
+        nodes.forEach { node ->
+            node.parent = nodes.getOrNull(node.pid)
+            node.parent?.apply {
+                children.add(node)
+            }
+        }
+        val transform = Transform<TestNode>(getAttr = { node, name ->
+            if (name=="_id") return@Transform  node.id
+            if (name=="_pid") return@Transform  node.pid
+            val value = node.attr[name] ?: return@Transform null
+            if (value is JsonNull) return@Transform null
+            value.intOrNull ?: value.booleanOrNull ?: value.content
+        }, getName = { node -> node.attr["name"]?.content }, getChildren = { node ->
+            node.children.asSequence()
+        }, getParent = { node -> node.parent })
+        val targets = transform.querySelectorAll(nodes.first(), selector).toList()
+        println("target_size: " + targets.size)
+        println(targets.firstOrNull())
+    }
 }

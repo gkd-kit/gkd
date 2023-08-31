@@ -8,56 +8,120 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.Singleton
+import li.songe.gkd.util.subsIdToRawFlow
+import li.songe.gkd.util.subsItemsFlow
 import javax.inject.Inject
 
 
 @HiltViewModel
 class SubsManageVm @Inject constructor() : ViewModel() {
-    val subsItemsFlow = DbSet.subsItemDao.query().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    suspend fun addSubsFromUrl(url: String) {
+    fun addSubsFromUrl(url: String) = viewModelScope.launch {
+
+        if (refreshingFlow.value) return@launch
         if (!URLUtil.isNetworkUrl(url)) {
             ToastUtils.showShort("非法链接")
-            return
+            return@launch
         }
-        val subItems = subsItemsFlow.first()
+        val subItems = subsItemsFlow.value
         if (subItems.any { it.updateUrl == url }) {
             ToastUtils.showShort("订阅链接已存在")
-            return
+            return@launch
         }
-        val text = try {
-            Singleton.client.get(url).bodyAsText()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            ToastUtils.showShort("下载订阅文件失败")
-            return
+        refreshingFlow.value = true
+        try {
+            val text = try {
+                Singleton.client.get(url).bodyAsText()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                ToastUtils.showShort("下载订阅文件失败")
+                return@launch
+            }
+            val newSubsRaw = try {
+                SubscriptionRaw.parse5(text)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                ToastUtils.showShort("解析订阅文件失败")
+                return@launch
+            }
+            if (subItems.any { it.id == newSubsRaw.id }) {
+                ToastUtils.showShort("订阅已存在")
+                return@launch
+            }
+            if (newSubsRaw.id < 0) {
+                ToastUtils.showShort("订阅id不可小于0")
+                return@launch
+            }
+            val newItem = SubsItem(
+                id = newSubsRaw.id,
+                updateUrl = newSubsRaw.updateUrl ?: url,
+                order = if (subItems.isEmpty()) 1 else (subItems.maxBy { it.order }.order + 1)
+            )
+            withContext(Dispatchers.IO) {
+                newItem.subsFile.writeText(text)
+            }
+            DbSet.subsItemDao.insert(newItem)
+            ToastUtils.showShort("成功添加订阅")
+        } finally {
+            refreshingFlow.value = false
         }
-        val subscriptionRaw = try {
-            SubscriptionRaw.parse5(text)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            ToastUtils.showShort("解析订阅文件失败")
-            return
+
+    }
+
+    val refreshingFlow = MutableStateFlow(false)
+    fun refreshSubs() = viewModelScope.launch(Dispatchers.IO) {
+        if (refreshingFlow.value) return@launch
+        refreshingFlow.value = true
+        val st = System.currentTimeMillis()
+        var errorNum = 0
+        val oldSubItems = subsItemsFlow.value
+        val newSubsItems = oldSubItems.mapNotNull { oldItem ->
+            val oldSubsRaw = subsIdToRawFlow.value[oldItem.id]
+            try {
+                val newSubsRaw = SubscriptionRaw.parse5(
+                    Singleton.client.get(oldItem.updateUrl).bodyAsText()
+                )
+                if (oldSubsRaw != null && newSubsRaw.version <= oldSubsRaw.version) {
+                    return@mapNotNull null
+                }
+                val newItem = oldItem.copy(
+                    updateUrl = newSubsRaw.updateUrl ?: oldItem.updateUrl,
+                    mtime = System.currentTimeMillis(),
+                )
+                withContext(Dispatchers.IO) {
+                    newItem.subsFile.writeText(
+                        SubscriptionRaw.stringify(
+                            newSubsRaw
+                        )
+                    )
+                }
+                newItem
+            } catch (e: Exception) {
+                e.printStackTrace()
+                errorNum++
+                null
+            }
         }
-        val newItem = SubsItem(
-            updateUrl = subscriptionRaw.updateUrl ?: url,
-            name = subscriptionRaw.name,
-            version = subscriptionRaw.version,
-            order = subItems.size + 1
-        )
-        withContext(Dispatchers.IO) {
-            newItem.subsFile.writeText(text)
+        if (newSubsItems.isEmpty()) {
+            if (errorNum == oldSubItems.size) {
+                ToastUtils.showShort("更新失败")
+            } else {
+                ToastUtils.showShort("暂无更新")
+            }
+        } else {
+            DbSet.subsItemDao.update(*newSubsItems.toTypedArray())
+            ToastUtils.showShort("更新 ${newSubsItems.size} 条订阅")
         }
-        DbSet.subsItemDao.insert(newItem)
-        ToastUtils.showShort("成功添加订阅")
+        delay(500)
+        refreshingFlow.value = false
     }
 
 }

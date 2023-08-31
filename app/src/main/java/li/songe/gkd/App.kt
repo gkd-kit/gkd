@@ -4,30 +4,29 @@ import android.app.Application
 import android.content.Context
 import android.os.Build
 import com.blankj.utilcode.util.LogUtils
+import com.blankj.utilcode.util.ProcessUtils
 import com.tencent.bugly.crashreport.CrashReport
 import com.tencent.mmkv.MMKV
 import dagger.hilt.android.HiltAndroidApp
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import li.songe.gkd.data.getAppInfo
-import li.songe.gkd.db.DbSet
+import li.songe.gkd.notif.initChannel
+import li.songe.gkd.util.initAppState
+import li.songe.gkd.util.initStore
+import li.songe.gkd.util.initSubsState
+import li.songe.gkd.util.initUpgrade
 import li.songe.gkd.util.isMainProcess
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.ShizukuProvider
 
-lateinit var app: Application
-var appScope = MainScope()
+val appScope by lazy { MainScope() }
+
+private lateinit var _app: Application
+val app: Application
+    get() = _app
+
 
 @HiltAndroidApp
 class App : Application() {
-    override fun onLowMemory() {
-        super.onLowMemory()
-        appScope.cancel("onLowMemory() called by system")
-        appScope = MainScope()
-    }
-
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -37,7 +36,8 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        app = this
+        _app = this
+        LogUtils.d("App onCreate", ProcessUtils.getCurrentProcessName())
         MMKV.initialize(this)
         LogUtils.getConfig().apply {
             isLog2FileSwitch = true
@@ -47,12 +47,11 @@ class App : Application() {
         CrashReport.initCrashReport(applicationContext, "d0ce46b353", false)
 
         if (isMainProcess) {
-            appScope.launch(Dispatchers.IO) {
-//                提前获取 appInfo 缓存
-                DbSet.subsItemDao.query().collect {
-                    it.forEach { s -> s.subscriptionRaw?.apps?.forEach { app -> getAppInfo(app.id) } }
-                }
-            }
+            initChannel()
+            initStore()
+            initAppState()
+            initSubsState()
+            initUpgrade()
         }
     }
 }
