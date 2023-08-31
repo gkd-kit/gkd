@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -31,61 +31,37 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.flowOn
-import li.songe.gkd.data.SubsItem
-import li.songe.gkd.data.TriggerLog
-import li.songe.gkd.data.getAppInfo
-import li.songe.gkd.data.getAppName
+import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.data.ClickLog
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SimpleTopAppBar
 import li.songe.gkd.ui.destinations.AppItemPageDestination
-import li.songe.gkd.util.LaunchedEffectTry
 import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.Singleton
-import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.rememberCache
-import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.util.ProfileTransitions
+import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.format
+import li.songe.gkd.util.launchAsFn
 
 @RootNavGraph
-@Destination
+@Destination(style = ProfileTransitions::class)
 @Composable
-fun RecordPage() {
+fun ClickLogPage() {
     val scope = rememberCoroutineScope()
     val navController = LocalNavController.current
 
-    val vm = hiltViewModel<RecordVm>()
-    val triggerLogs by vm.triggerLogsFlow.collectAsState()
-    val subItems by vm.subItemsFlow.collectAsState(initial = emptyList())
+    val vm = hiltViewModel<ClickLogVm>()
+    val clickLogs by vm.clickLogsFlow.collectAsState()
+    val clickLogCount by vm.clickLogCountFlow.collectAsState()
+    val appInfoCache by appInfoCacheFlow.collectAsState()
 
-    val groups = remember(triggerLogs, subItems) {
-        triggerLogs.map { logWrapper ->
-            val sub = subItems.find { sub -> sub.id == logWrapper.subsId } ?: return@map null
-            val app = sub.subscriptionRaw?.apps?.find { app -> app.id == logWrapper.appId }
-            app?.groups?.find { group -> group.key == logWrapper.groupKey }
-        }
-    }
-    val rules = remember(groups) {
-        groups.mapIndexed { index, groupRaw ->
-            groupRaw ?: return@mapIndexed null
-            val log = triggerLogs.getOrNull(index)
-            log?.run {
-                if (ruleKey != null) {
-                    groupRaw.rules.find { r -> r.key == ruleKey }?.let { return@mapIndexed it }
-                }
-                groupRaw.rules.getOrNull(ruleIndex)
-            }
-        }
-    }
-    var previewTriggerLog by remember {
-        mutableStateOf<TriggerLog?>(null)
+    var previewClickLog by remember {
+        mutableStateOf<ClickLog?>(null)
     }
 
     Scaffold(topBar = {
         SimpleTopAppBar(
             onClickIcon = { navController.popBackStack() },
-            title = "触发记录" + if (triggerLogs.isEmpty()) "" else ("-" + triggerLogs.size.toString())
+            title = "点击记录" + if (clickLogCount <= 0) "" else ("-$clickLogCount")
         )
     }, content = { contentPadding ->
         LazyColumn(
@@ -97,12 +73,12 @@ fun RecordPage() {
             item {
                 Spacer(modifier = Modifier.height(5.dp))
             }
-            itemsIndexed(triggerLogs) { index, triggerLog ->
+            items(clickLogs, { triggerLog -> triggerLog.id }) { triggerLog ->
                 Column(modifier = Modifier
                     .fillMaxWidth()
                     .border(BorderStroke(1.dp, Color.Black))
                     .clickable {
-                        previewTriggerLog = triggerLog
+                        previewClickLog = triggerLog
                     }) {
                     Row {
                         Text(
@@ -111,22 +87,22 @@ fun RecordPage() {
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = getAppName(triggerLog.appId) ?: triggerLog.appId ?: ""
+                            text = appInfoCache[triggerLog.appId]?.name ?: triggerLog.appId ?: ""
                         )
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(text = triggerLog.activityId ?: "")
-                    groups.getOrNull(index)?.name?.let { groupName ->
+                    val group = vm.getGroup(triggerLog)
+                    if (group?.name != null) {
                         Spacer(modifier = Modifier.width(10.dp))
-                        Text(text = groupName)
+                        Text(text = group.name)
                     }
-                    rules.getOrNull(index)?.name?.let { ruleName ->
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(text = ruleName)
+                    val rule = group?.rules?.run {
+                        find { r -> r.key == triggerLog.ruleKey } ?: getOrNull(triggerLog.ruleIndex)
                     }
-                    rules.getOrNull(index)?.matches?.lastOrNull()?.let { matchText ->
+                    if (rule?.name != null) {
                         Spacer(modifier = Modifier.width(10.dp))
-                        Text(text = matchText)
+                        Text(text = rule.name)
                     }
                 }
             }
@@ -136,8 +112,8 @@ fun RecordPage() {
         }
     })
 
-    previewTriggerLog?.let { previewTriggerLogVal ->
-        Dialog(onDismissRequest = { previewTriggerLog = null }) {
+    previewClickLog?.let { previewTriggerLogVal ->
+        Dialog(onDismissRequest = { previewClickLog = null }) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
@@ -155,15 +131,15 @@ fun RecordPage() {
                                 previewTriggerLogVal.groupKey
                             )
                         )
-                        previewTriggerLog = null
+                        previewClickLog = null
                     }
                     .fillMaxWidth()
                     .padding(10.dp))
                 Text(text = "删除", modifier = Modifier
                     .clickable(onClick = scope.launchAsFn {
-                        previewTriggerLog = null
-                        DbSet.triggerLogDb
-                            .triggerLogDao()
+                        previewClickLog = null
+                        DbSet.clickLogDb
+                            .clickLogDao()
                             .delete(previewTriggerLogVal)
                     })
                     .fillMaxWidth()

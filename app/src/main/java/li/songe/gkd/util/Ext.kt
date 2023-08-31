@@ -16,10 +16,8 @@ import android.os.Looper
 import androidx.compose.runtime.*
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.suspendCancellableCoroutine
 import li.songe.gkd.MainActivity
-import li.songe.gkd.db.DbSet
 import java.net.NetworkInterface
 import kotlin.coroutines.resume
 
@@ -116,11 +114,6 @@ object Ext {
             }.map { inetAddress -> inetAddress.hostAddress }
         }
         return localAddresses
-    }
-
-    suspend fun getSubsFileLastModified(): Long {
-        return DbSet.subsItemDao.query().first().map { it.subsFile }
-            .filter { it.isFile && it.exists() }.maxOfOrNull { it.lastModified() } ?: -1L
     }
 
     fun createNotificationChannel(context: Service) {

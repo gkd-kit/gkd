@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ServiceUtils
-import com.blankj.utilcode.util.ToastUtils
 import io.ktor.http.CacheControl
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.call
@@ -13,24 +12,24 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
+import io.ktor.server.request.receive
 import io.ktor.server.response.cacheControl
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondFile
 import io.ktor.server.routing.get
+import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import li.songe.gkd.app
-import li.songe.gkd.composition.CompositionExt.useMessage
 import li.songe.gkd.composition.CompositionService
-import li.songe.gkd.composition.InvokeMessage
 import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.data.RpcError
+import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt.captureSnapshot
 import li.songe.gkd.util.Ext.getIpAddressInLocalNetwork
@@ -40,85 +39,66 @@ import java.io.File
 
 class HttpService : CompositionService({
     val scope = CoroutineScope(Dispatchers.IO)
-    val (onMessage, sendMessage) = useMessage(this::class.simpleName)
-    val removeBubbles = {
-        sendMessage(InvokeMessage(FloatingService::class.simpleName, "removeBubbles"))
-    }
-    val showBubbles = {
-        sendMessage(InvokeMessage(FloatingService::class.simpleName, "showBubbles"))
-    }
-    onMessage { message ->
-        when (message.method) {
-            "capture" -> {
-                scope.launch {
-                    removeBubbles()
-                    delay(200)
-                    try {
-                        captureSnapshot()
-                        ToastUtils.showShort("保存快照成功")
-                    } catch (e: Exception) {
-                        ToastUtils.showShort("保存快照失败")
-                        e.printStackTrace()
-                    }
-                    showBubbles()
-                }
-            }
-        }
-    }
-    val server = embeddedServer(
-        Netty,
-        storeFlow.value.httpServerPort,
-        configure = { tcpKeepAlive = true }
-    ) {
-        install(CORS) { anyHost() }
-        install(RpcErrorHeaderPlugin)
-        install(ContentNegotiation) { json() }
+    subsFlow.value = null
+    val server =
+        embeddedServer(Netty, storeFlow.value.httpServerPort, configure = { tcpKeepAlive = true }) {
+            install(CORS) { anyHost() }
+            install(RpcErrorHeaderPlugin)
+            install(ContentNegotiation) { json() }
 
-        routing {
-            route("/api") {
-                get("/device") { call.respond(DeviceInfo.instance) }
-                get("/snapshot") {
-                    val id = call.request.queryParameters["id"]?.toLongOrNull()
-                        ?: throw RpcError("miss id")
-                    val fp = File(SnapshotExt.getSnapshotPath(id))
-                    if (!fp.exists()) {
-                        throw RpcError("对应快照不存在")
+            routing {
+                get("/") { call.respond("hello world") }
+                route("/api") {
+                    get("/device") { call.respond(DeviceInfo.instance) }
+                    get("/snapshot") {
+                        val id = call.request.queryParameters["id"]?.toLongOrNull()
+                            ?: throw RpcError("miss id")
+                        val fp = File(SnapshotExt.getSnapshotPath(id))
+                        if (!fp.exists()) {
+                            throw RpcError("对应快照不存在")
+                        }
+                        call.response.cacheControl(CacheControl.MaxAge(3600 * 24 * 7))
+                        call.respondFile(fp)
                     }
-                    call.response.cacheControl(CacheControl.MaxAge(3600 * 24 * 7))
-                    call.respondFile(fp)
-                }
-                get("/screenshot") {
-                    val id = call.request.queryParameters["id"]?.toLongOrNull()
-                        ?: throw RpcError("miss id")
-                    val fp = File(SnapshotExt.getScreenshotPath(id))
-                    if (!fp.exists()) {
-                        throw RpcError("对应截图不存在")
+                    get("/screenshot") {
+                        val id = call.request.queryParameters["id"]?.toLongOrNull()
+                            ?: throw RpcError("miss id")
+                        val fp = File(SnapshotExt.getScreenshotPath(id))
+                        if (!fp.exists()) {
+                            throw RpcError("对应截图不存在")
+                        }
+                        call.response.cacheControl(CacheControl.MaxAge(3600 * 24 * 7))
+                        call.respondFile(fp)
                     }
-                    call.response.cacheControl(CacheControl.MaxAge(3600 * 24 * 7))
-                    call.respondFile(fp)
-                }
-                get("/captureSnapshot") {
-                    removeBubbles()
-                    delay(200)
-                    val snapshot = try {
-                        captureSnapshot()
-                    } finally {
-                        showBubbles()
+                    get("/captureSnapshot") {
+                        call.respond(captureSnapshot())
                     }
-                    call.respond(snapshot)
-                }
-                get("/snapshots") {
-                    call.respond(DbSet.snapshotDao.query().first())
+                    get("/snapshots") {
+                        call.respond(DbSet.snapshotDao.query().first())
+                    }
+                    get("/subsApps") {
+                        call.respond(subsFlow.value?.apps ?: emptyList())
+                    }
+                    post("/updateSubsApps") {
+                        val subsStr =
+                            """{"name":"GKD-内存订阅","id":-1,"version":0,"author":"@gkd-kit/inspect","apps":${call.receive<String>()}}"""
+                        try {
+                            subsFlow.value = SubscriptionRaw.parse(subsStr)
+                        } catch (e: Exception) {
+                            throw RpcError(e.message ?: "未知")
+                        }
+                        call.respond("")
+                    }
                 }
             }
         }
-    }
     scope.launchTry(Dispatchers.IO) {
         LogUtils.d(*getIpAddressInLocalNetwork().map { host -> "http://${host}:${storeFlow.value.httpServerPort}" }
             .toList().toTypedArray())
         server.start(true)
     }
     onDestroy {
+        subsFlow.value = null
         scope.launchTry(Dispatchers.IO) {
             server.stop()
             LogUtils.d("http server is stopped")
@@ -127,6 +107,10 @@ class HttpService : CompositionService({
     }
 }) {
     companion object {
+
+        val subsFlow by lazy { MutableStateFlow<SubscriptionRaw?>(null) }
+
+
         fun isRunning() = ServiceUtils.isServiceRunning(HttpService::class.java)
         fun stop(context: Context = app) {
             if (isRunning()) {

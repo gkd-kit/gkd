@@ -5,16 +5,60 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Parcelable
-import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
 import kotlinx.parcelize.Parcelize
 import li.songe.gkd.app
-import li.songe.gkd.appScope
+import java.util.WeakHashMap
 
-private const val STORE_KEY = "store-v1"
-private const val EVENT_KEY = "updateStore"
+
+private val onReceives by lazy {
+    mutableListOf<(
+        context: Context?,
+        intent: Intent?,
+    ) -> Unit>()
+}
+private val receiver by lazy {
+    object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            onReceives.forEach { fc -> fc(context, intent) }
+        }
+    }.apply {
+        app.registerReceiver(this, IntentFilter(app.packageName))
+    }
+}
+
+private val stateFlowToKey by lazy { WeakHashMap<StateFlow<*>, String>() }
+
+private inline fun <reified T : Parcelable> createStorageFlow(
+    key: String,
+    crossinline init: () -> T,
+): StateFlow<T> {
+    val stateFlow = MutableStateFlow(kv.decodeParcelable(key, T::class.java) ?: init())
+    receiver
+    onReceives.add { _, intent ->
+        val extras = intent?.extras ?: return@add
+        val type = extras.getString("type") ?: return@add
+        val itKey = extras.getString("key") ?: return@add
+        if (type == "update_storage" && itKey == key) {
+            stateFlow.value = kv.decodeParcelable(key, T::class.java) ?: init()
+        }
+    }
+    stateFlowToKey[stateFlow] = key
+    return stateFlow
+}
+
+
+fun <T : Parcelable> updateStorage(stateFlow: StateFlow<T>, newState: T) {
+    val key = stateFlowToKey[stateFlow] ?: error("not found stateFlow key")
+    kv.encode(key, newState)
+    app.sendBroadcast(Intent(app.packageName).apply {
+        putExtra("type", "update_storage")
+        putExtra("key", key)
+    })
+}
+
 
 /**
  * 属性不可删除,注释弃用即可
@@ -25,40 +69,41 @@ private const val EVENT_KEY = "updateStore"
 @Parcelize
 data class Store(
     val enableService: Boolean = true,
-    val excludeFromRecents: Boolean = true,
-    val enableConsoleLogOut: Boolean = true,
-    val enableCaptureScreenshot: Boolean = true,
+    val excludeFromRecents: Boolean = false,
+    val captureScreenshot: Boolean = false,
     val httpServerPort: Int = 8888,
+    val autoUpdateSubsIntervalTimeMillis: Long = 60 * 60_000,
+    val autoUpdateSubs: Boolean = false,
+    val captureVolumeKey: Boolean = false,
+    val autoCheckAppUpdate: Boolean = true,
 ) : Parcelable
 
-private fun getStore(): Store {
-    return kv.decodeParcelable(STORE_KEY, Store::class.java) ?: Store()
+val storeFlow by lazy {
+    createStorageFlow("store") { Store() }
 }
 
-val storeFlow by lazy<StateFlow<Store>> {
-    val state = MutableStateFlow(getStore())
-    val receiver=object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            intent?.extras?.getString(EVENT_KEY) ?: return
-            state.value = getStore()
-        }
-    }
-    app.registerReceiver(receiver, IntentFilter(app.packageName))
-//    app.unregisterReceiver(receiver)
-    appScope.launch {
-        LogUtils.getConfig().setConsoleSwitch(state.value.enableConsoleLogOut)
-        state.collect {
-            LogUtils.getConfig().setConsoleSwitch(state.value.enableConsoleLogOut)
-        }
-    }
-    state
+@Parcelize
+data class RecordStore(
+    val clickCount: Int = 0,
+) : Parcelable
+
+val recordStoreFlow by lazy {
+    createStorageFlow("record_store") { RecordStore() }
 }
 
-fun updateStore(newStore: Store) {
-    if (storeFlow.value == newStore) return
-    kv.encode(STORE_KEY, newStore)
-    app.sendBroadcast(Intent(app.packageName).apply {
-        putExtra(EVENT_KEY, EVENT_KEY)
-    })
+val clickCountFlow by lazy {
+    recordStoreFlow.map { r -> r.clickCount }
+}
+
+fun increaseClickCount(n: Int = 1) {
+    updateStorage(
+        recordStoreFlow,
+        recordStoreFlow.value.copy(clickCount = recordStoreFlow.value.clickCount + n)
+    )
+}
+
+fun initStore() {
+    storeFlow.value
+    recordStoreFlow.value
 }
 

@@ -17,11 +17,13 @@
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
+    <!-- update self -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <!--
     APP 有两个进程, 主进程 + :remote 进程
     主进程: 主要是 activity 的前端界面
     remote进程: 主要是 service
-    优点: 在最近任务界面删除当前APP的窗口记录时,不会让 remote进程里的 service 停止
     -->
 
     <application
@@ -41,7 +43,8 @@
         <activity
             android:name="li.songe.gkd.MainActivity"
             android:configChanges="uiMode|screenSize|orientation|keyboardHidden|touchscreen|smallestScreenSize|screenLayout|navigation|mnc|mcc|locale|layoutDirection|keyboard|fontWeightAdjustment|fontScale|density|colorMode"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/SplashScreenTheme">
 
             <!--
             about android:configChanges
@@ -50,11 +53,15 @@
             -->
 
             <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+
                 <data
-                    android:host="import-subs"
-                    android:path="/"
+                    android:host="import"
                     android:scheme="gkd" />
+
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

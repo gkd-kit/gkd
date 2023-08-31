@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Switch
 import androidx.compose.material.Text
@@ -36,15 +36,16 @@ import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.serialization.encodeToString
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubscriptionRaw
-import li.songe.gkd.data.getAppName
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SimpleTopAppBar
 import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.Singleton
+import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
 
 @RootNavGraph
-@Destination
+@Destination(style = ProfileTransitions::class)
 @Composable
 fun AppItemPage(
     subsItemId: Long,
@@ -54,15 +55,19 @@ fun AppItemPage(
     val scope = rememberCoroutineScope()
     val navController = LocalNavController.current
     val vm = hiltViewModel<AppItemVm>()
+    val subsItem by vm.subsItemFlow.collectAsState()
     val subsConfigs by vm.subsConfigsFlow.collectAsState()
     val subsApp by vm.subsAppFlow.collectAsState()
+    val appInfoCache by appInfoCacheFlow.collectAsState()
 
     var showGroupItem: SubscriptionRaw.GroupRaw? by remember { mutableStateOf(null) }
+
 
     Scaffold(topBar = {
         SimpleTopAppBar(
             onClickIcon = { navController.popBackStack() },
-            title = getAppName(subsApp?.id) ?: subsApp?.id ?: ""
+            title = if (subsItem == null) "订阅文件缺失" else (appInfoCache[subsApp?.id]?.name
+                ?: subsApp?.id ?: "")
         )
     }, content = { contentPadding ->
         LazyColumn(
@@ -74,7 +79,7 @@ fun AppItemPage(
                 Spacer(modifier = Modifier.height(10.dp))
             }
             subsApp?.groups?.let { groupsVal ->
-                items(groupsVal, { it.key }) { group ->
+                itemsIndexed(groupsVal, { i, g -> i.toString() + g.key }) { _, group ->
                     Row(
                         modifier = Modifier
                             .background(
@@ -100,13 +105,21 @@ fun AppItemPage(
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.fillMaxWidth()
                             )
-                            Text(
-                                text = group.desc ?: "-",
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                            if (group.valid) {
+                                Text(
+                                    text = group.desc ?: "-",
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            } else {
+                                Text(
+                                    text = "规则组损坏",
+                                    color = Color.Red,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.width(10.dp))
@@ -115,11 +128,13 @@ fun AppItemPage(
                         Switch(checked = subsConfig?.enable != false,
                             modifier = Modifier,
                             onCheckedChange = scope.launchAsFn { enable ->
-                                val newItem = (subsConfig ?: SubsConfig(
+                                val newItem = (subsConfig?.copy(enable = enable) ?: SubsConfig(
                                     type = SubsConfig.GroupType,
                                     subsItemId = subsItemId,
                                     appId = appId,
-                                )).copy(enable = enable)
+                                    groupKey = group.key,
+                                    enable = enable
+                                ))
                                 DbSet.subsConfigDao.insert(newItem)
                             })
                     }

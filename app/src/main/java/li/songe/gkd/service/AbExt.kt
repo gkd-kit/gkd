@@ -80,50 +80,39 @@ private fun AccessibilityNodeInfo.getTempRect(): Rect {
     return tempRect
 }
 
-val abTransform = Transform<AccessibilityNodeInfo>(
-    getAttr = { node, name ->
-        when (name) {
-            "id" -> node.viewIdResourceName
-            "name" -> node.className
-            "text" -> node.text
-            "textLen" -> node.text?.length
-            "desc" -> node.contentDescription
-            "descLen" -> node.contentDescription?.length
-            "childCount" -> node.childCount
+val abTransform = Transform<AccessibilityNodeInfo>(getAttr = { node, name ->
+    when (name) {
+        "id" -> node.viewIdResourceName
+        "name" -> node.className
+        "text" -> node.text
+        "text.length" -> node.text?.length
+        "desc" -> node.contentDescription
+        "desc.length" -> node.contentDescription?.length
 
-            "isEnabled" -> node.isEnabled
-            "isClickable" -> node.isClickable
-            "isChecked" -> node.isChecked
-            "isCheckable" -> node.isCheckable
-            "isFocused" -> node.isFocused
-            "isFocusable" -> node.isFocusable
-            "isVisibleToUser" -> node.isVisibleToUser
-            ""->node.isAccessibilityFocused
+        "clickable" -> node.isClickable
+        "focusable" -> node.isFocusable
+        "visibleToUser" -> node.isVisibleToUser
 
-            "left" -> node.getTempRect().left
-            "top" -> node.getTempRect().top
-            "right" -> node.getTempRect().right
-            "bottom" -> node.getTempRect().bottom
+        "left" -> node.getTempRect().left
+        "top" -> node.getTempRect().top
+        "right" -> node.getTempRect().right
+        "bottom" -> node.getTempRect().bottom
 
-            "width" -> node.getTempRect().width()
-            "height" -> node.getTempRect().height()
+        "width" -> node.getTempRect().width()
+        "height" -> node.getTempRect().height()
 
-            "index" -> node.getIndex()
-            "depth" -> node.getDepth()
-            else -> null
+        "index" -> node.getIndex()
+        "depth" -> node.getDepth()
+        "childCount" -> node.childCount
+        else -> null
+    }
+}, getName = { node -> node.className }, getChildren = { node ->
+    sequence {
+        repeat(node.childCount) { i ->
+            yield(node.getChild(i))
         }
-    },
-    getName = { node -> node.className },
-    getChildren = { node ->
-        sequence {
-            repeat(node.childCount) { i ->
-                yield(node.getChild(i))
-            }
-        }
-    },
-    getChild = { node, index -> node.getChild(index) },
-    getParent = { node -> node.parent }
-)
+    }
+}, getChild = { node, index -> node.getChild(index) }, getParent = { node -> node.parent })
 
 
 

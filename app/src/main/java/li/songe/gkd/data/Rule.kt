@@ -1,6 +1,7 @@
 package li.songe.gkd.data
 
 import android.view.accessibility.AccessibilityNodeInfo
+import li.songe.gkd.service.lastTriggerRuleFlow
 import li.songe.gkd.service.querySelector
 import li.songe.selector.Selector
 
@@ -11,7 +12,7 @@ data class Rule(
     val matches: List<Selector> = emptyList(),
     val excludeMatches: List<Selector> = emptyList(),
     /**
-     * 任意一个元素是上次触发过的
+     * 任意一个元素是上次点击过的
      */
     val preRules: Set<Rule> = emptySet(),
     val cd: Long = defaultMiniCd,
@@ -21,18 +22,20 @@ data class Rule(
     val excludeActivityIds: Set<String> = emptySet(),
     val key: Int? = null,
     val preKeys: Set<Int> = emptySet(),
+    val rule: SubscriptionRaw.RuleRaw,
     val group: SubscriptionRaw.GroupRaw,
+    val app: SubscriptionRaw.AppRaw,
     val subsItem: SubsItem,
 ) {
     private var triggerTime = 0L
     fun trigger() {
         triggerTime = System.currentTimeMillis()
+        lastTriggerRuleFlow.value = this
     }
 
     val active: Boolean
         get() = triggerTime + cd < System.currentTimeMillis()
 
-    val matchAnyActivity = activityIds.contains("*")
 
     fun query(nodeInfo: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
         if (nodeInfo == null) return null
@@ -44,6 +47,13 @@ data class Rule(
             if (nodeInfo.querySelector(selector) != null) return null
         }
         return target
+    }
+
+    fun matchActivityId(activityId: String?): Boolean {
+        if (activityId == null) return false
+        if (excludeActivityIds.any { activityId.startsWith(it) }) return false
+        if (activityIds.isEmpty()) return true
+        return activityIds.any { activityId.startsWith(it) }
     }
 
     companion object {

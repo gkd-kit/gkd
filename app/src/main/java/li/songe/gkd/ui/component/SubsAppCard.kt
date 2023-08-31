@@ -22,20 +22,20 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
+import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubscriptionRaw
-import li.songe.gkd.data.getAppInfo
 import li.songe.gkd.util.SafeR
 
 
 @Composable
 fun SubsAppCard(
     appRaw: SubscriptionRaw.AppRaw,
+    appInfo: AppInfo? = null,
     subsConfig: SubsConfig? = null,
     onClick: (() -> Unit)? = null,
     onValueChange: ((Boolean) -> Unit)? = null,
 ) {
-    val info = getAppInfo(appRaw.id)
     Row(
         modifier = Modifier
             .height(60.dp)
@@ -48,7 +48,7 @@ fun SubsAppCard(
     ) {
 
         Image(
-            painter = if (info.icon != null) rememberDrawablePainter(info.icon) else painterResource(
+            painter = if (appInfo?.icon != null) rememberDrawablePainter(appInfo.icon) else painterResource(
                 SafeR.ic_app_2
             ), contentDescription = null, modifier = Modifier
                 .fillMaxHeight()
@@ -65,7 +65,7 @@ fun SubsAppCard(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = info.realName,
+                text = appInfo?.name ?: appRaw.id,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,

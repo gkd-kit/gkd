@@ -13,10 +13,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.parcelize.Parcelize
 
 @Entity(
-    tableName = "trigger_log",
+    tableName = "click_log",
 )
 @Parcelize
-data class TriggerLog(
+data class ClickLog(
     @PrimaryKey @ColumnInfo(name = "id") val id: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "app_id") val appId: String? = null,
     @ColumnInfo(name = "activity_id") val activityId: String? = null,
@@ -29,18 +29,22 @@ data class TriggerLog(
     interface TriggerLogDao {
 
         @Update
-        suspend fun update(vararg objects: TriggerLog): Int
+        suspend fun update(vararg objects: ClickLog): Int
 
         @Insert
-        suspend fun insert(vararg objects: TriggerLog): List<Long>
+        suspend fun insert(vararg objects: ClickLog): List<Long>
 
         @Delete
-        suspend fun delete(vararg objects: TriggerLog): Int
+        suspend fun delete(vararg objects: ClickLog): Int
 
-        @Query("SELECT * FROM trigger_log ORDER BY id DESC")
-        fun query(): Flow<List<TriggerLog>>
+        @Query("SELECT * FROM click_log ORDER BY id DESC LIMIT 1000")
+        fun query(): Flow<List<ClickLog>>
 
-        @Query("SELECT COUNT(*) FROM trigger_log")
+        @Query("SELECT COUNT(*) FROM click_log")
         fun count(): Flow<Int>
+
+
+        @Query("SELECT * FROM click_log ORDER BY id DESC LIMIT 1")
+        fun queryLatest(): Flow<ClickLog?>
     }
 }

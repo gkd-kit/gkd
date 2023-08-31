@@ -12,14 +12,33 @@ data class Notif(
 )
 
 
-const val STATUS_NOTIF_ID = 100
-
 val abNotif by lazy {
     Notif(
-        id = STATUS_NOTIF_ID,
+        id = 100,
         icon = SafeR.ic_launcher,
         title = "搞快点",
         text = "无障碍正在运行",
+        ongoing = true,
+        autoCancel = false
+    )
+}
+val screenshotNotif by lazy {
+    Notif(
+        id = 101,
+        icon = SafeR.ic_launcher,
+        title = "搞快点",
+        text = "截屏服务正在运行",
+        ongoing = true,
+        autoCancel = false
+    )
+}
+
+val floatingNotif by lazy {
+    Notif(
+        id = 102,
+        icon = SafeR.ic_launcher,
+        title = "搞快点",
+        text = "悬浮窗按钮正在显示",
         ongoing = true,
         autoCancel = false
     )

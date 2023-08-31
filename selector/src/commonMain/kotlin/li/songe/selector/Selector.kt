@@ -40,5 +40,13 @@ class Selector internal constructor(private val propertyWrapper: PropertyWrapper
 
     companion object {
         fun parse(source: String) = ParserSet.selectorParser(source)
+        fun check(source: String): Boolean {
+            return try {
+                ParserSet.selectorParser(source)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
     }
 }

@@ -26,6 +26,10 @@ data class PropertyWrapper(
         if (to == null) {
             return trackNodes
         }
-        return to.matchTracks(node, transform, trackNodes)
+        val r = to.matchTracks(node, transform, trackNodes)
+        if (r == null) {
+            trackNodes.removeLast()
+        }
+        return r
     }
 }

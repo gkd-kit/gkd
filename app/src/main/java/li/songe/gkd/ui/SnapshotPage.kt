@@ -46,11 +46,12 @@ import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.ui.component.SimpleTopAppBar
 import li.songe.gkd.ui.destinations.ImagePreviewPageDestination
 import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.format
 import li.songe.gkd.util.launchAsFn
 
 @RootNavGraph
-@Destination
+@Destination(style = ProfileTransitions::class)
 @Composable
 fun SnapshotPage() {
     val scope = rememberCoroutineScope()
@@ -94,8 +95,6 @@ fun SnapshotPage() {
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(text = snapshot.appName ?: "")
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(text = snapshot.appId ?: "")
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(text = snapshot.activityId ?: "")
                 }

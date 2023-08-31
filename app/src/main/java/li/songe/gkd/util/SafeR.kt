@@ -22,4 +22,5 @@ object SafeR {
     val ic_refresh: Int = R.drawable.ic_refresh
     val ic_share: Int = R.drawable.ic_share
     val ic_home: Int = R.drawable.ic_home
+    val ic_info: Int = R.drawable.ic_info
 }

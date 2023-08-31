@@ -1,5 +1,6 @@
 package li.songe.gkd.debug
 
+import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -8,12 +9,14 @@ import com.blankj.utilcode.util.ServiceUtils
 import li.songe.gkd.app
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.composition.CompositionService
-import li.songe.gkd.util.Ext
+import li.songe.gkd.notif.createNotif
+import li.songe.gkd.notif.screenshotChannel
+import li.songe.gkd.notif.screenshotNotif
 import li.songe.gkd.util.ScreenshotUtil
 
 class ScreenshotService : CompositionService({
     useLifeCycleLog()
-    Ext.createNotificationChannel(this, 110)
+    createNotif(this, screenshotChannel.id, screenshotNotif)
 
     onStartCommand { intent, _, _ ->
         if (intent == null) return@onStartCommand
@@ -28,6 +31,8 @@ class ScreenshotService : CompositionService({
 }) {
     companion object {
         suspend fun screenshot() = screenshotUtil?.execute()
+
+        @SuppressLint("StaticFieldLeak")
         private var screenshotUtil: ScreenshotUtil? = null
 
         fun start(context: Context = app, intent: Intent) {

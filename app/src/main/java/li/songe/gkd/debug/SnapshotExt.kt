@@ -7,14 +7,16 @@ import com.blankj.utilcode.util.ZipUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.encodeToString
-import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.app
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.util.Singleton
 import java.io.File
 
@@ -25,13 +27,11 @@ object SnapshotExt {
 
     private val emptyBitmap by lazy {
         Bitmap.createBitmap(
-            ScreenUtils.getScreenWidth(),
-            ScreenUtils.getScreenHeight(),
-            Bitmap.Config.ARGB_8888
+            ScreenUtils.getScreenWidth(), ScreenUtils.getScreenHeight(), Bitmap.Config.ARGB_8888
         )
     }
 
-    fun getSnapshotParentPath(snapshotId: Long) =
+    private fun getSnapshotParentPath(snapshotId: Long) =
         "${snapshotDir.absolutePath}/${snapshotId}"
 
     fun getSnapshotPath(snapshotId: Long) =
@@ -40,19 +40,13 @@ object SnapshotExt {
     fun getScreenshotPath(snapshotId: Long) =
         "${getSnapshotParentPath(snapshotId)}/${snapshotId}.png"
 
-    fun getSnapshotIds(): List<Long> {
-        return snapshotDir.listFiles { f -> f.isDirectory }
-            ?.mapNotNull { f -> f.name.toLongOrNull() } ?: emptyList()
-    }
-
     suspend fun getSnapshotZipFile(snapshotId: Long): File {
         val file = File(getSnapshotParentPath(snapshotId) + "/${snapshotId}.zip")
         if (!file.exists()) {
             withContext(Dispatchers.IO) {
                 ZipUtils.zipFiles(
                     listOf(
-                        getSnapshotPath(snapshotId),
-                        getScreenshotPath(snapshotId)
+                        getSnapshotPath(snapshotId), getScreenshotPath(snapshotId)
                     ), file.absolutePath
                 )
             }
@@ -68,38 +62,48 @@ object SnapshotExt {
         }
     }
 
-    suspend fun captureSnapshot(): Snapshot {
-        if (!GkdAbService.isRunning()) {
-            throw RpcError("无障碍不可用")
-        }
+    val captureLoading = MutableStateFlow(false)
 
-        val snapshotDef = coroutineScope { async(Dispatchers.IO) { Snapshot.current() } }
-        val bitmapDef = coroutineScope {
-            async(Dispatchers.IO) {
-                GkdAbService.currentScreenshot() ?: withTimeoutOrNull(3_000) {
-                    if (!ScreenshotService.isRunning()) {
-                        return@withTimeoutOrNull null
+    suspend fun captureSnapshot(): Snapshot {
+        if (captureLoading.value) {
+            throw RpcError("正在截屏,不可重复截屏")
+        }
+        captureLoading.value = true
+
+        try {
+            if (!GkdAbService.isRunning()) {
+                throw RpcError("无障碍不可用")
+            }
+
+            val snapshotDef = coroutineScope { async(Dispatchers.IO) { Snapshot.current() } }
+            val bitmapDef = coroutineScope {
+                async(Dispatchers.IO) {
+                    GkdAbService.currentScreenshot() ?: withTimeoutOrNull(3_000) {
+                        if (!ScreenshotService.isRunning()) {
+                            return@withTimeoutOrNull null
+                        }
+                        ScreenshotService.screenshot()
+                    } ?: emptyBitmap.apply {
+                        LogUtils.d("截屏不可用，即将使用空白图片")
                     }
-                    ScreenshotService.screenshot()
-                } ?: emptyBitmap.apply {
-                    LogUtils.d("截屏不可用，即将使用空白图片")
                 }
             }
-        }
 
-        val bitmap = bitmapDef.await()
-        val snapshot = snapshotDef.await()
+            val bitmap = bitmapDef.await()
+            val snapshot = snapshotDef.await()
 
-        withContext(Dispatchers.IO) {
-            File(getSnapshotParentPath(snapshot.id)).apply { if (!exists()) mkdirs() }
-            val stream =
-                File(getScreenshotPath(snapshot.id)).outputStream()
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-            stream.close()
-            val text = Singleton.json.encodeToString(snapshot)
-            File(getSnapshotPath(snapshot.id)).writeText(text)
-            DbSet.snapshotDao.insert(snapshot)
+            withContext(Dispatchers.IO) {
+                File(getSnapshotParentPath(snapshot.id)).apply { if (!exists()) mkdirs() }
+                val stream = File(getScreenshotPath(snapshot.id)).outputStream()
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                stream.close()
+                val text = Singleton.json.encodeToString(snapshot)
+                File(getSnapshotPath(snapshot.id)).writeText(text)
+                DbSet.snapshotDao.insert(snapshot)
+            }
+            return snapshot
+        } finally {
+            captureLoading.value = false
         }
-        return snapshot
     }
 }
