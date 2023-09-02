@@ -7,14 +7,15 @@ import com.blankj.utilcode.util.ZipUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.encodeToString
 import li.songe.gkd.app
+import li.songe.gkd.data.ComplexSnapshot
 import li.songe.gkd.data.RpcError
-import li.songe.gkd.data.Snapshot
+import li.songe.gkd.data.createComplexSnapshot
+import li.songe.gkd.data.toSnapshot
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.util.Singleton
@@ -62,9 +63,9 @@ object SnapshotExt {
         }
     }
 
-    val captureLoading = MutableStateFlow(false)
+   private val captureLoading = MutableStateFlow(false)
 
-    suspend fun captureSnapshot(): Snapshot {
+    suspend fun captureSnapshot(): ComplexSnapshot {
         if (captureLoading.value) {
             throw RpcError("正在截屏,不可重复截屏")
         }
@@ -75,7 +76,7 @@ object SnapshotExt {
                 throw RpcError("无障碍不可用")
             }
 
-            val snapshotDef = coroutineScope { async(Dispatchers.IO) { Snapshot.current() } }
+            val snapshotDef = coroutineScope { async(Dispatchers.IO) { createComplexSnapshot() } }
             val bitmapDef = coroutineScope {
                 async(Dispatchers.IO) {
                     GkdAbService.currentScreenshot() ?: withTimeoutOrNull(3_000) {
@@ -99,7 +100,7 @@ object SnapshotExt {
                 stream.close()
                 val text = Singleton.json.encodeToString(snapshot)
                 File(getSnapshotPath(snapshot.id)).writeText(text)
-                DbSet.snapshotDao.insert(snapshot)
+                DbSet.snapshotDao.insert(snapshot.toSnapshot())
             }
             return snapshot
         } finally {
