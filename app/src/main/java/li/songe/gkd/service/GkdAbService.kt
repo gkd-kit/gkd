@@ -17,13 +17,15 @@ import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import li.songe.gkd.composition.CompositionAbService
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.composition.CompositionExt.useScope
-import li.songe.gkd.data.NodeInfo
-import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.data.ClickLog
+import li.songe.gkd.data.NodeInfo
+import li.songe.gkd.data.RpcError
+import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.shizuku.activityTaskManager
@@ -36,6 +38,7 @@ import li.songe.gkd.util.launchWhileTry
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
+import li.songe.selector.Selector
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -153,15 +156,33 @@ class GkdAbService : CompositionAbService({
         }
     }
 
+    scope.launchTry {
 
+        storeFlow.map { s -> s.updateSubsInterval }.collect { updateSubsInterval ->
+            if (updateSubsInterval <= 0) {
+                // clear
+            } else {
+                // new task
+                updateSubsInterval.coerceAtLeast(60 * 60_000)
+            }
+        }
+    }
+
+    var lastUpdateSubsTime = System.currentTimeMillis()
     scope.launchWhile(IO) { // 自动从网络更新订阅文件
-        delay(storeFlow.value.autoUpdateSubsIntervalTimeMillis.coerceAtLeast(30 * 60_000))
-        if (!NetworkUtils.isAvailable()) return@launchWhile
-        if (!storeFlow.value.autoUpdateSubs) return@launchWhile
+        delay(60_000)
+        if (!NetworkUtils.isAvailable() || storeFlow.value.updateSubsInterval <= 0) return@launchWhile
+        if (System.currentTimeMillis() - lastUpdateSubsTime < storeFlow.value.updateSubsInterval.coerceAtLeast(
+                60 * 60_000
+            )
+        ) {
+            return@launchWhile
+        }
         subsItemsFlow.value.forEach { subsItem ->
+            if (subsItem.updateUrl == null) return@forEach
             try {
-                val text = Singleton.client.get(subsItem.updateUrl).bodyAsText()
-                val newSubsRaw = SubscriptionRaw.parse5(text)
+                val newSubsRaw =
+                    SubscriptionRaw.parse5(Singleton.client.get(subsItem.updateUrl).bodyAsText())
                 if (newSubsRaw.id != subsItem.id) {
                     return@forEach
                 }
@@ -184,6 +205,7 @@ class GkdAbService : CompositionAbService({
                 e.printStackTrace()
             }
         }
+        lastUpdateSubsTime = System.currentTimeMillis()
     }
 
     scope.launch {
@@ -204,6 +226,16 @@ class GkdAbService : CompositionAbService({
     companion object {
         private var service: GkdAbService? = null
         fun isRunning() = ServiceUtils.isServiceRunning(GkdAbService::class.java)
+
+        fun click(source: String): String? {
+            val serviceVal = service ?: throw RpcError("无障碍没有运行")
+            val selector = try {
+                Selector.parse(source)
+            } catch (e: Exception) {
+                throw RpcError("非法选择器")
+            }
+            return currentAbNode?.querySelector(selector)?.click(serviceVal)
+        }
 
 
         val currentAbNode: AccessibilityNodeInfo?

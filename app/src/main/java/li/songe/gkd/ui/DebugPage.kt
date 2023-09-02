@@ -143,7 +143,7 @@ fun DebugPage() {
             // Build.VERSION.SDK_INT < Build.VERSION_CODES.R
             val screenshotRunning by usePollState { ScreenshotService.isRunning() }
             TextSwitch(name = "截屏服务",
-                desc = "生成快照需要获取屏幕截图",
+                desc = "生成快照需要获取屏幕截图,Android11无需开启",
                 screenshotRunning,
                 appScope.launchAsFn<Boolean> {
                     if (it) {

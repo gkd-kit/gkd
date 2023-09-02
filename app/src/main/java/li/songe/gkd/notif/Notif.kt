@@ -43,3 +43,13 @@ val floatingNotif by lazy {
         autoCancel = false
     )
 }
+val httpNotif by lazy {
+    Notif(
+        id = 103,
+        icon = SafeR.ic_launcher,
+        title = "搞快点",
+        text = "HTTP服务正在运行",
+        ongoing = true,
+        autoCancel = false
+    )
+}

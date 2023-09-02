@@ -46,7 +46,8 @@ fun ControlPage() {
     val context = LocalContext.current as MainActivity
     val navController = LocalNavController.current
     val vm = hiltViewModel<ControlVm>()
-    val latestRecordGroup by vm.latestRecordGroup.collectAsState()
+    val latestRecordDesc by vm.latestRecordDescFlow.collectAsState()
+
     val subsStatus by vm.subsStatusFlow.collectAsState()
     val store by storeFlow.collectAsState()
 
@@ -106,8 +107,10 @@ fun ControlPage() {
                         text = subsStatus, fontSize = 18.sp
                     )
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(text = latestRecordGroup?.name?.let { "最近点击: $it" } ?: "暂无记录",
-                        fontSize = 14.sp)
+                    Text(
+                        text = if (latestRecordDesc != null) "最近点击: $latestRecordDesc" else "暂无记录",
+                        fontSize = 14.sp
+                    )
                 }
                 Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = null)
             }

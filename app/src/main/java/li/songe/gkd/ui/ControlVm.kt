@@ -8,8 +8,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.appIdToRulesFlow
+import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.clickCountFlow
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import javax.inject.Inject
 
@@ -18,10 +18,24 @@ class ControlVm @Inject constructor() : ViewModel() {
     private val latestRecordFlow = DbSet.clickLogDb.clickLogDao().queryLatest()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    val latestRecordGroup =
-        combine(latestRecordFlow, subsIdToRawFlow) { latestRecord, subsIdToRaw ->
-            subsIdToRaw[latestRecord?.subsId]?.apps?.find { a -> a.id == latestRecord?.appId }?.groups?.find { g -> g.key == latestRecord?.groupKey }
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    val latestRecordDescFlow = combine(
+        latestRecordFlow, subsIdToRawFlow, appInfoCacheFlow
+    ) { latestRecord, subsIdToRaw, appInfoCache ->
+        if (latestRecord == null) return@combine null
+        val groupName =
+            subsIdToRaw[latestRecord?.subsId]?.apps?.find { a -> a.id == latestRecord?.appId }?.groups?.find { g -> g.key == latestRecord?.groupKey }?.name
+        val appName = appInfoCache[latestRecord?.appId]?.name
+        val appShowName = appName ?: latestRecord?.appId ?: ""
+        if (groupName != null) {
+            if (groupName.contains(appShowName)) {
+                groupName
+            } else {
+                "$appShowName-$groupName"
+            }
+        } else {
+            appShowName
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val subsStatusFlow = combine(appIdToRulesFlow, clickCountFlow) { appIdToRules, clickCount ->
         val appSize = appIdToRules.keys.size

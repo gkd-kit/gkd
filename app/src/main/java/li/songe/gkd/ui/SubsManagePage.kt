@@ -273,13 +273,15 @@ fun SubsManagePage() {
                     .background(Color.White)
                     .padding(8.dp)
             ) {
-                Text(text = "分享", modifier = Modifier
-                    .clickable {
-                        shareSubItem = menuSubItemVal
-                        menuSubItem = null
-                    }
-                    .fillMaxWidth()
-                    .padding(8.dp))
+                if (menuSubItemVal.updateUrl != null) {
+                    Text(text = "分享", modifier = Modifier
+                        .clickable {
+                            shareSubItem = menuSubItemVal
+                            menuSubItem = null
+                        }
+                        .fillMaxWidth()
+                        .padding(8.dp))
+                }
 
                 Text(text = "删除", modifier = Modifier
                     .clickable {
@@ -324,7 +326,7 @@ fun SubsManagePage() {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (subItems.all { it.id != 0L }) {
-                    Text(text = "默认订阅", modifier = Modifier
+                    Text(text = "导入默认订阅", modifier = Modifier
                         .clickable {
                             showAddDialog = false
                             vm.addSubsFromUrl("https://registry.npmmirror.com/@gkd-kit/subscription/latest/files")
@@ -334,7 +336,7 @@ fun SubsManagePage() {
                 }
 
                 Text(
-                    text = "二维码", modifier = Modifier
+                    text = "扫描二维码导入", modifier = Modifier
                         .clickable(onClick = scope.launchAsFn {
                             showAddDialog = false
                             val qrCode = navigateForQrcodeResult()
@@ -347,7 +349,7 @@ fun SubsManagePage() {
                         .fillMaxWidth()
                         .padding(8.dp)
                 )
-                Text(text = "链接", modifier = Modifier
+                Text(text = "输入链接导入", modifier = Modifier
                     .clickable {
                         showAddDialog = false
                         showAddLinkDialog = true

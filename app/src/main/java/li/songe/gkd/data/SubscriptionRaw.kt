@@ -1,6 +1,7 @@
 package li.songe.gkd.data
 
 import android.os.Parcelable
+import blue.endless.jankson.Jankson
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.SerialName
@@ -19,7 +20,7 @@ data class SubscriptionRaw(
     @SerialName("version") val version: Int,
     @SerialName("author") val author: String? = null,
     @SerialName("updateUrl") val updateUrl: String? = null,
-    @SerialName("supportUrl") val supportUrl: String? = null,
+    @SerialName("supportUri") val supportUri: String? = null,
     @SerialName("apps") val apps: List<AppRaw> = emptyList(),
 ) : Parcelable {
 
@@ -200,6 +201,7 @@ data class SubscriptionRaw(
                 else -> error("Element $p is not a int")
             }
 
+        @Suppress("SameParameterValue")
         private fun getBoolean(json: JsonObject? = null, key: String): Boolean? =
             when (val p = json?.get(key)) {
                 JsonNull, null -> null
@@ -251,7 +253,7 @@ data class SubscriptionRaw(
                 cd = getLong(groupsJson, "cd"),
                 name = getString(groupsJson, "name"),
                 desc = getString(groupsJson, "desc"),
-                enable = getBoolean(groupsJson, "boolean"),
+                enable = getBoolean(groupsJson, "enable"),
                 key = getInt(groupsJson, "key") ?: groupIndex,
                 rules = when (val rulesJson = groupsJson["rules"]) {
                     null, JsonNull -> emptyList()
@@ -297,7 +299,7 @@ data class SubscriptionRaw(
                 version = getInt(rootJson, "version") ?: error("miss subscription.version"),
                 author = getString(rootJson, "author"),
                 updateUrl = getString(rootJson, "updateUrl"),
-                supportUrl = getString(rootJson, "supportUrl"),
+                supportUri = getString(rootJson, "supportUrl"),
                 apps = rootJson["apps"]?.jsonArray?.mapIndexed { index, jsonElement ->
                     jsonToAppRaw(
                         jsonElement.jsonObject, index
@@ -334,7 +336,7 @@ data class SubscriptionRaw(
 
         fun parse5(source: String): SubscriptionRaw {
             return parse(
-                Singleton.json5.load(source).toJson()
+                Jankson.builder().build().load(source).toJson()
             )
         }
     }
