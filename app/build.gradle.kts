@@ -34,14 +34,19 @@ android {
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments += mapOf(
-                    "room.schemaLocation" to "$projectDir/schemas",
-                    "room.incremental" to "true"
+                    "room.schemaLocation" to "$projectDir/schemas", "room.incremental" to "true"
                 )
             }
         }
         val nowTime = System.currentTimeMillis()
         buildConfigField("Long", "BUILD_TIME", jsonStringOf(nowTime) + "L")
-        buildConfigField("String", "BUILD_DATE", jsonStringOf(SimpleDateFormat("yyyy-MM-dd HH:mm:ss ZZ", Locale.SIMPLIFIED_CHINESE).format(nowTime)))
+        buildConfigField(
+            "String", "BUILD_DATE", jsonStringOf(
+                SimpleDateFormat(
+                    "yyyy-MM-dd HH:mm:ss ZZ", Locale.SIMPLIFIED_CHINESE
+                ).format(nowTime)
+            )
+        )
     }
 
     lint {
@@ -62,17 +67,16 @@ android {
             isMinifyEnabled = false
             setProguardFiles(
                 listOf(
-                    getDefaultProguardFile("proguard-android-optimize.txt"),
-                    "proguard-rules.pro"
+                    getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
                 )
             )
             signingConfig = signingConfigs.getByName("release")
             manifestPlaceholders["appName"] = "GKD"
         }
         debug {
-            applicationIdSuffix = ".debug"
             signingConfig = signingConfigs.getByName("release")
             manifestPlaceholders["appName"] = "GKD-debug"
+            applicationIdSuffix = ".debug"
         }
     }
     compileOptions {
@@ -170,7 +174,6 @@ dependencies {
     implementation(libs.others.floating.bubble.view)
 
     implementation(libs.destinations.core)
-//    implementation(libs.destinations.animations)
     ksp(libs.destinations.ksp)
 
     implementation(libs.google.hilt.android)
