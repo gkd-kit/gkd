@@ -5,6 +5,7 @@
 ## 安装
 
 - [releases](https://github.com/gkd-kit/gkd/releases)
+- [蓝奏云](https://lisonge.lanzouy.com/ifQgP179ag6f)
 
 ## 功能
 
