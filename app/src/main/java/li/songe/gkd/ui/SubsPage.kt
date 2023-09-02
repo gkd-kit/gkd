@@ -148,11 +148,11 @@ fun SubsPage(
                 Text(text = "更新: " + formatTimeAgo(subsItem!!.mtime))
             }
         }, confirmButton = {
-            if (subsRaw.supportUrl != null) {
+            if (subsRaw.supportUri != null) {
                 TextButton(onClick = {
                     context.startActivity(
                         Intent(
-                            Intent.ACTION_VIEW, Uri.parse(subsRaw.supportUrl)
+                            Intent.ACTION_VIEW, Uri.parse(subsRaw.supportUri)
                         )
                     )
                 }) {

@@ -10,7 +10,7 @@ import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import li.songe.gkd.data.RpcError
 
-val RpcErrorHeaderPlugin = createApplicationPlugin(name = "RpcErrorHeaderPlugin") {
+val KtorErrorPlugin = createApplicationPlugin(name = "KtorErrorPlugin") {
     onCall { call ->
         Log.d("Ktor", "onCall: ${call.request.uri}")
     }
@@ -33,9 +33,5 @@ val RpcErrorHeaderPlugin = createApplicationPlugin(name = "RpcErrorHeaderPlugin"
                 cause.printStackTrace()
             }
         }
-    }
-    onCallRespond { call, _ ->
-        call.response.header("Access-Control-Expose-Headers", "*")
-        call.response.header("Access-Control-Allow-Private-Network", "true")
     }
 }

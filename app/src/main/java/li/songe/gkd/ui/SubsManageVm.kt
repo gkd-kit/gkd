@@ -84,6 +84,7 @@ class SubsManageVm @Inject constructor() : ViewModel() {
         var errorNum = 0
         val oldSubItems = subsItemsFlow.value
         val newSubsItems = oldSubItems.mapNotNull { oldItem ->
+            if (oldItem.updateUrl == null) return@mapNotNull null
             val oldSubsRaw = subsIdToRawFlow.value[oldItem.id]
             try {
                 val newSubsRaw = SubscriptionRaw.parse5(

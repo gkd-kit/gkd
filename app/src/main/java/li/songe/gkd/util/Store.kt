@@ -72,8 +72,7 @@ data class Store(
     val excludeFromRecents: Boolean = false,
     val captureScreenshot: Boolean = false,
     val httpServerPort: Int = 8888,
-    val autoUpdateSubsIntervalTimeMillis: Long = 60 * 60_000,
-    val autoUpdateSubs: Boolean = false,
+    val updateSubsInterval: Long = 60 * 60_000,
     val captureVolumeKey: Boolean = false,
     val autoCheckAppUpdate: Boolean = true,
 ) : Parcelable

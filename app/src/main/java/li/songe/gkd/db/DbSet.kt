@@ -52,6 +52,7 @@ object DbSet {
                 )
                 db.insert("subs_item", SQLiteDatabase.CONFLICT_IGNORE, subsItem.toContentValues())
                 appScope.launch(Dispatchers.IO) {
+                    if (subsItem.updateUrl == null) return@launch
                     try {
                         val s = System.currentTimeMillis()
                         val newSubsRaw = withTimeout(3000) {

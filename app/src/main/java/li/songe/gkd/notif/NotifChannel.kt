@@ -24,9 +24,15 @@ val screenshotChannel by lazy {
         id = "screenshot", name = "截屏服务", desc = "用于捕获屏幕截屏生成快照"
     )
 }
+val httpChannel by lazy {
+    NotifChannel(
+        id = "http", name = "HTTP服务", desc = "用于连接Web端工具调试"
+    )
+}
 
 fun initChannel() {
     createChannel(app, defaultChannel)
     createChannel(app, floatingChannel)
     createChannel(app, screenshotChannel)
+    createChannel(app, httpChannel)
 }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Switch
 import androidx.compose.material.Text
@@ -149,12 +150,11 @@ fun AppItemPage(
 
 
     showGroupItem?.let { showGroupItemVal ->
-        Dialog(onDismissRequest = { showGroupItem = null }) {
-            Text(
-                text = Singleton.json.encodeToString(showGroupItemVal),
-                modifier = Modifier.width(400.dp)
-            )
-        }
+        AlertDialog(onDismissRequest = { showGroupItem = null }, title = {
+            Text(text = showGroupItemVal.name ?: "-")
+        }, text = {
+            Text(text = showGroupItemVal.desc ?: "-")
+        }, buttons = { })
     }
 }
 

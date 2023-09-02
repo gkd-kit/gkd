@@ -9,6 +9,7 @@ import com.tencent.bugly.crashreport.CrashReport
 import com.tencent.mmkv.MMKV
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.MainScope
+import li.songe.gkd.debug.clearHttpSubs
 import li.songe.gkd.notif.initChannel
 import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initStore
@@ -52,6 +53,7 @@ class App : Application() {
             initAppState()
             initSubsState()
             initUpgrade()
+            clearHttpSubs()
         }
     }
 }

@@ -7,6 +7,7 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Entity
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
@@ -31,8 +32,7 @@ data class SubsItem(
     @ColumnInfo(name = "enable") val enable: Boolean = true,
     @ColumnInfo(name = "enable_update") val enableUpdate: Boolean = true,
     @ColumnInfo(name = "order") val order: Int,
-
-    @ColumnInfo(name = "update_url") val updateUrl: String,
+    @ColumnInfo(name = "update_url") val updateUrl: String? = null,
 
     ) : Parcelable {
 
@@ -55,10 +55,10 @@ data class SubsItem(
 
     suspend fun removeAssets() {
         DbSet.subsItemDao.delete(this)
+        DbSet.subsConfigDao.deleteSubs(id)
         withContext(IO) {
             subsFile.exists() && subsFile.delete()
         }
-        DbSet.subsConfigDao.deleteSubs(id)
     }
 
     companion object {
@@ -83,7 +83,7 @@ data class SubsItem(
         @Update
         suspend fun update(vararg objects: SubsItem): Int
 
-        @Insert
+        @Insert(onConflict = OnConflictStrategy.REPLACE)
         suspend fun insert(vararg users: SubsItem): List<Long>
 
         @Delete

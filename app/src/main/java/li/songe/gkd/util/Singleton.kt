@@ -21,7 +21,6 @@ object Singleton {
             encodeDefaults = true
         }
     }
-    val json5: Jankson by lazy { Jankson.builder().build() }
 
     val client by lazy {
         HttpClient(OkHttp) {
