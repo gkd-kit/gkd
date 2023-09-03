@@ -90,6 +90,8 @@ val abTransform = Transform<AccessibilityNodeInfo>(getAttr = { node, name ->
         "desc.length" -> node.contentDescription?.length
 
         "clickable" -> node.isClickable
+        "checkable" -> node.isCheckable
+        "checked" -> node.isChecked
         "focusable" -> node.isFocusable
         "visibleToUser" -> node.isVisibleToUser
 
