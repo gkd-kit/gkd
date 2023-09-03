@@ -2,23 +2,20 @@ name: Apk-Build
 
 on:
   workflow_dispatch:
-    inputs:
-      name:
-        description: 'Person to greet'
-        required: true
-        default: 'Mona the Octocat'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+
       - uses: actions/setup-java@v3
         with:
           distribution: 'adopt'
           java-version: '17'
       - run: chmod 777 ./gradlew
       - run: ./gradlew build
+
       - name: Archive artifacts
         uses: actions/upload-artifact@v2
         with:
