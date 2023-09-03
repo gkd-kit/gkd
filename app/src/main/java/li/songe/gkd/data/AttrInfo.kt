@@ -15,6 +15,8 @@ data class AttrInfo(
 
     val clickable: Boolean,
     val focusable: Boolean,
+    val checkable: Boolean,
+    val checked: Boolean,
     val visibleToUser: Boolean,
 
     val left: Int,
@@ -46,6 +48,8 @@ data class AttrInfo(
 
                 clickable = node.isClickable,
                 focusable = node.isFocusable,
+                checkable = node.isCheckable,
+                checked = node.isChecked,
                 visibleToUser = node.isVisibleToUser,
 
                 left = rect.left,
