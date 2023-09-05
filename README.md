@@ -9,7 +9,7 @@
 
 ## 功能
 
-根据 [高级选择器](https://github.com/gkd-kit/selector) + [订阅规则](https://github.com/gkd-kit/subscription),
+根据 [高级选择器](https://github.com/gkd-kit/selector) + [订阅规则](https://github.com/gkd-kit/subscription) + [快照审查](https://github.com/gkd-kit/inspect),
 它可以实现
 
 - 点击跳过任意开屏广告/点击关闭应用内部任意弹窗广告, 如关闭百度贴吧帖子广告卡片/知乎回答底部推荐广告卡片
