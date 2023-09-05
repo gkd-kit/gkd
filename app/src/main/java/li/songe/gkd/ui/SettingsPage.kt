@@ -45,6 +45,7 @@ import li.songe.gkd.ui.destinations.DebugPageDestination
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.checkUpdate
+import li.songe.gkd.util.checkUpdatingFlow
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.updateStorage
@@ -62,6 +63,7 @@ fun SettingsPage() {
     var showSubsIntervalDlg by remember {
         mutableStateOf(false)
     }
+    val checkUpdating by checkUpdatingFlow.collectAsState()
 
     Scaffold(topBar = {
         TopAppBar(backgroundColor = Color(0xfff8f9f9), title = {
@@ -125,8 +127,9 @@ fun SettingsPage() {
                 })
             Divider()
 
-            SettingItem(title = "检查更新", onClick = {
+            SettingItem(title = if (checkUpdating) "检查更新ing" else "检查更新", onClick = {
                 appScope.launchTry {
+                    if (checkUpdatingFlow.value) return@launchTry
                     val newVersion = checkUpdate()
                     if (newVersion == null) {
                         ToastUtils.showShort("暂无更新")
@@ -165,7 +168,8 @@ fun SettingsPage() {
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .selectable(selected = (option.second == store.updateSubsInterval),
+                            .selectable(
+                                selected = (option.second == store.updateSubsInterval),
                                 onClick = {
                                     updateStorage(
                                         storeFlow,
@@ -174,8 +178,7 @@ fun SettingsPage() {
                                 })
                             .padding(horizontal = 16.dp)
                     ) {
-                        RadioButton(
-                            selected = (option.second == store.updateSubsInterval),
+                        RadioButton(selected = (option.second == store.updateSubsInterval),
                             onClick = {
                                 updateStorage(
                                     storeFlow,

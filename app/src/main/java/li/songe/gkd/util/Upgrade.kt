@@ -2,8 +2,11 @@ package li.songe.gkd.util
 
 import android.os.Parcelable
 import android.util.Log
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.AlertDialog
@@ -13,7 +16,9 @@ import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -25,6 +30,8 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.util.cio.writeChannel
 import io.ktor.utils.io.copyAndClose
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
@@ -55,7 +62,7 @@ val checkUpdatingFlow by lazy { MutableStateFlow(false) }
 val newVersionFlow by lazy { MutableStateFlow<NewVersion?>(null) }
 val downloadStatusFlow by lazy { MutableStateFlow<LoadStatus<String>?>(null) }
 suspend fun checkUpdate(): NewVersion? {
-    if (checkUpdatingFlow.value || newVersionFlow.value != null || downloadStatusFlow.value != null) return null
+    if (checkUpdatingFlow.value) return null
     checkUpdatingFlow.value = true
     try {
         val newVersion = Singleton.client.get(UPDATE_URL).body<NewVersion>()
@@ -78,19 +85,29 @@ fun startDownload(newVersion: NewVersion) {
     if (newApkFile.exists()) {
         newApkFile.delete()
     }
-    appScope.launch {
+    var job: Job? = null
+    job = appScope.launch(Dispatchers.IO) {
         try {
             val channel =
                 Singleton.client.get(URI(UPDATE_URL).resolve(newVersion.downloadUrl).toString()) {
                     onDownload { bytesSentTotal, contentLength ->
-                        downloadStatusFlow.value =
-                            LoadStatus.Loading(bytesSentTotal.toFloat() / contentLength)
+                        if (downloadStatusFlow.value is LoadStatus.Loading) {
+                            downloadStatusFlow.value =
+                                LoadStatus.Loading(bytesSentTotal.toFloat() / contentLength)
+                        } else if (downloadStatusFlow.value is LoadStatus.Failure) {
+                            // 提前终止下载
+                            job?.cancel()
+                        }
                     }
                 }.bodyAsChannel()
-            channel.copyAndClose(newApkFile.writeChannel())
-            downloadStatusFlow.value = LoadStatus.Success(newApkFile.absolutePath)
+            if (downloadStatusFlow.value is LoadStatus.Loading) {
+                channel.copyAndClose(newApkFile.writeChannel())
+                downloadStatusFlow.value = LoadStatus.Success(newApkFile.absolutePath)
+            }
         } catch (e: Exception) {
-            downloadStatusFlow.value = LoadStatus.Failure(e)
+            if (downloadStatusFlow.value is LoadStatus.Loading) {
+                downloadStatusFlow.value = LoadStatus.Failure(e)
+            }
         }
     }
 }
@@ -122,18 +139,46 @@ fun UpgradeDialog() {
         when (downloadStatusVal) {
             is LoadStatus.Loading -> {
                 Dialog(onDismissRequest = { }) {
-                    Column(modifier = Modifier.padding(10.dp)) {
-                        Text(text = "下载新版本中,稍等片刻", fontSize = 16.sp)
-                        Spacer(modifier = Modifier.height(10.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "下载新版本中,稍等片刻",
+                            fontSize = 16.sp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(10.dp)
+                        )
+                        Spacer(modifier = Modifier.height(15.dp))
                         LinearProgressIndicator(progress = downloadStatusVal.progress)
+                        Spacer(modifier = Modifier.height(5.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = {
+                                downloadStatusFlow.value = LoadStatus.Failure(
+                                    Exception("终止下载")
+                                )
+                            }) {
+                                Text(text = "终止下载", color = Color.Red)
+                            }
+                        }
                     }
                 }
             }
 
             is LoadStatus.Failure -> {
                 AlertDialog(
-                    title = { Text(text = "下载失败") },
-                    text = { Text(text = downloadStatusVal.exception.toString()) },
+                    title = { Text(text = "安装包下载失败") },
+                    text = {
+                        Text(text = downloadStatusVal.exception.let {
+                            it.message ?: it.toString()
+                        })
+                    },
                     onDismissRequest = { downloadStatusFlow.value = null },
                     confirmButton = {
                         TextButton(onClick = {
@@ -146,7 +191,7 @@ fun UpgradeDialog() {
             }
 
             is LoadStatus.Success -> {
-                AlertDialog(title = { Text(text = "下载完毕") },
+                AlertDialog(title = { Text(text = "新版本下载完毕") },
                     onDismissRequest = {},
                     dismissButton = {
                         TextButton(onClick = {
