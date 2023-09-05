@@ -13,6 +13,17 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: '17'
+          cache: 'gradle'
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
       - run: chmod 777 ./gradlew
       - run: ./gradlew build
 
