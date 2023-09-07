@@ -30,18 +30,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
-import kotlinx.serialization.encodeToString
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SimpleTopAppBar
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
-import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
 
@@ -68,7 +65,7 @@ fun AppItemPage(
         SimpleTopAppBar(
             onClickIcon = { navController.popBackStack() },
             title = if (subsItem == null) "订阅文件缺失" else (appInfoCache[subsApp?.id]?.name
-                ?: subsApp?.id ?: "")
+                ?: subsApp?.name ?: subsApp?.id ?: "")
         )
     }, content = { contentPadding ->
         LazyColumn(
@@ -126,7 +123,7 @@ fun AppItemPage(
                         Spacer(modifier = Modifier.width(10.dp))
 
                         val subsConfig = subsConfigs.find { it.groupKey == group.key }
-                        Switch(checked = subsConfig?.enable != false,
+                        Switch(checked = (subsConfig?.enable ?: group.enable) ?: true,
                             modifier = Modifier,
                             onCheckedChange = scope.launchAsFn { enable ->
                                 val newItem = (subsConfig?.copy(enable = enable) ?: SubsConfig(

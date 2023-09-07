@@ -65,7 +65,7 @@ fun SubsAppCard(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = appInfo?.name ?: appRaw.id,
+                text = appInfo?.name ?: appRaw.name ?: appRaw.id,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,
