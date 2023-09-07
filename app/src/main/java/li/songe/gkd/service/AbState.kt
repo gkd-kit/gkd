@@ -31,10 +31,10 @@ val lastTriggerRuleFlow by lazy {
 
 fun isAvailableRule(rule: Rule): Boolean {
     if (!rule.active) return false // 处于冷却时间
-    if (rule.preKeys.isNotEmpty()) { // 需要提前点击某个规则
-        if (rule.preRules.isEmpty()) return false // 声明了 preKeys 但是没有在当前列表找到
+    if (rule.preRules.isNotEmpty()) { // 需要提前点击某个规则
         lastTriggerRuleFlow.value ?: return false
-        if (!rule.preRules.any { it === lastTriggerRuleFlow.value }) return false // 上一个点击的规则不在当前需要点击的列表
+        // 上一个点击的规则不在当前需要点击的列表
+        return rule.preRules.any { it == lastTriggerRuleFlow.value }
     }
     return true
 }
