@@ -3,21 +3,25 @@ package li.songe.gkd.ui
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.RadioButton
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -63,6 +67,9 @@ fun SettingsPage() {
     var showSubsIntervalDlg by remember {
         mutableStateOf(false)
     }
+    var showToastInputDlg by remember {
+        mutableStateOf(false)
+    }
     val checkUpdating by checkUpdatingFlow.collectAsState()
 
     Scaffold(topBar = {
@@ -88,6 +95,21 @@ fun SettingsPage() {
                     updateStorage(
                         storeFlow, store.copy(
                             excludeFromRecents = it
+                        )
+                    )
+                })
+            Divider()
+
+            TextSwitch(name = "点击提示",
+                desc = "触发点击时提示:[${store.clickToast}]",
+                checked = store.toastWhenClick,
+                modifier = Modifier.clickable {
+                    showToastInputDlg = true
+                },
+                onCheckedChange = {
+                    updateStorage(
+                        storeFlow, store.copy(
+                            toastWhenClick = it
                         )
                     )
                 })
@@ -195,6 +217,47 @@ fun SettingsPage() {
             }
         }
     }
+    if (showToastInputDlg) {
+        Dialog(onDismissRequest = { showToastInputDlg = false }) {
+            var value by remember {
+                mutableStateOf(store.clickToast)
+            }
+            Column(
+                modifier = Modifier.padding(10.dp)
+            ) {
+                Text(text = "请输入提示文字", style = MaterialTheme.typography.h6)
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = { value = it },
+                    singleLine = true,
+                    modifier = Modifier,
+                )
+                Row(
+                    horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()
+                ) {
+                    TextButton(onClick = { showToastInputDlg = false }) {
+                        Text(
+                            text = "取消", modifier = Modifier
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(5.dp))
+                    TextButton(onClick = {
+                        updateStorage(
+                            storeFlow, store.copy(
+                                clickToast = value
+                            )
+                        )
+                        showToastInputDlg = false
+                    }) {
+                        Text(
+                            text = "确认", modifier = Modifier
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 val radioOptions = listOf(
@@ -203,7 +266,3 @@ val radioOptions = listOf(
     "每12小时" to 12 * 60 * 60_000L,
     "每天" to 24 * 60 * 60_000L
 )
-//data class UpdateInterval(
-//    val timeMillis: Long,
-//    val desc: String,
-//)

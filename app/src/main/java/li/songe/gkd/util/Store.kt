@@ -75,6 +75,8 @@ data class Store(
     val updateSubsInterval: Long = 60 * 60_000,
     val captureVolumeKey: Boolean = false,
     val autoCheckAppUpdate: Boolean = true,
+    val toastWhenClick: Boolean = false,
+    val clickToast: String = "跳过",
 ) : Parcelable
 
 val storeFlow by lazy {
