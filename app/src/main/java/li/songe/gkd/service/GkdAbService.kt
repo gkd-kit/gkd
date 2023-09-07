@@ -123,6 +123,7 @@ class GkdAbService : CompositionAbService({
         delay(1000)
     }
 
+    var lastToastTime = -1L
 
     scope.launchWhile { // 屏幕无障碍信息轮询
         delay(200)
@@ -135,6 +136,13 @@ class GkdAbService : CompositionAbService({
             val target = rule.query(rootInActiveWindow)
             val clickResult = target?.click(context)
             if (clickResult != null) {
+                if (storeFlow.value.toastWhenClick) {
+                    val t = System.currentTimeMillis()
+                    if (t - lastToastTime > 3000) {
+                        ToastUtils.showShort(storeFlow.value.clickToast)
+                        lastToastTime = t
+                    }
+                }
                 rule.trigger()
                 LogUtils.d(
                     *rule.matches.toTypedArray(), NodeInfo.abNodeToNode(target).attr, clickResult

@@ -17,13 +17,14 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun TextSwitch(
+    modifier: Modifier = Modifier,
     name: String = "",
     desc: String = "",
     checked: Boolean = true,
     onCheckedChange: ((Boolean) -> Unit)? = null,
 ) {
     Row(
-        modifier = Modifier.padding(10.dp, 5.dp), verticalAlignment = Alignment.CenterVertically
+        modifier = modifier.padding(10.dp, 5.dp), verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -45,5 +46,7 @@ fun TextSwitch(
 @Preview
 @Composable
 fun PreviewTextSwitch() {
-    TextSwitch("隐藏后台", "在最近任务列表中隐藏", true)
+    TextSwitch(
+        name = "隐藏后台", desc = "在最近任务列表中隐藏", checked = true
+    )
 }
