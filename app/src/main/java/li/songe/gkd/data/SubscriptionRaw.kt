@@ -82,6 +82,7 @@ data class SubscriptionRaw(
     @Serializable
     data class AppRaw(
         @SerialName("id") val id: String,
+        @SerialName("name") val name: String? = null,
         @SerialName("cd") override val cd: Long? = null,
         @SerialName("activityIds") override val activityIds: List<String>? = null,
         @SerialName("excludeActivityIds") override val excludeActivityIds: List<String>? = null,
@@ -277,6 +278,7 @@ data class SubscriptionRaw(
                 excludeActivityIds = getStringIArray(appsJson, "excludeActivityIds"),
                 cd = getLong(appsJson, "cd"),
                 id = getString(appsJson, "id") ?: error("miss subscription.apps[$appIndex].id"),
+                name = getString(appsJson, "name"),
                 groups = (when (val groupsJson = appsJson["groups"]) {
                     null, JsonNull -> emptyList()
                     is JsonPrimitive, is JsonObject -> JsonArray(listOf(groupsJson))
@@ -307,7 +309,7 @@ data class SubscriptionRaw(
                 } ?: emptyList())
         }
 
-//        订阅文件状态: 文件不存在, 文件正常, 文件损坏(损坏原因)
+        //        订阅文件状态: 文件不存在, 文件正常, 文件损坏(损坏原因)
         fun stringify(source: SubscriptionRaw) = Singleton.json.encodeToString(source)
 
         fun parse(source: String): SubscriptionRaw {
