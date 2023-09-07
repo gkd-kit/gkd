@@ -1,12 +1,10 @@
 package li.songe.gkd.util
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import li.songe.gkd.appScope
 import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.data.Rule
@@ -14,7 +12,6 @@ import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.debug.HttpService
 import li.songe.selector.Selector
 
 
@@ -174,7 +171,6 @@ val appIdToRulesFlow by lazy {
                                 excludeActivityIds = excludeActivityIds,
                                 key = ruleRaw.key,
                                 preKeys = ruleRaw.preKeys.toSet(),
-
                                 rule = ruleRaw,
                                 group = groupRaw,
                                 app = appRaw,
@@ -185,7 +181,7 @@ val appIdToRulesFlow by lazy {
                     ruleGroupList.forEachIndexed { index, ruleConfig ->
                         ruleGroupList[index] = ruleConfig.copy(
                             preRules = ruleGroupList.filter {
-                                (it.key != null) && it.preKeys.contains(
+                                (it.key != null) && ruleConfig.preKeys.contains(
                                     it.key
                                 )
                             }.toSet()
