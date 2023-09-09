@@ -8,6 +8,16 @@ import android.view.accessibility.AccessibilityNodeInfo
 import li.songe.selector.Transform
 import li.songe.selector.Selector
 
+val AccessibilityService.safeActiveWindow: AccessibilityNodeInfo?
+    get() = try {
+        // java.lang.SecurityException: Call from user 0 as user -2 without permission INTERACT_ACROSS_USERS or INTERACT_ACROSS_USERS_FULL not allowed.
+        rootInActiveWindow
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+
+
 fun AccessibilityNodeInfo.getIndex(): Int {
     parent?.forEachIndexed { index, accessibilityNodeInfo ->
         if (accessibilityNodeInfo == this) {

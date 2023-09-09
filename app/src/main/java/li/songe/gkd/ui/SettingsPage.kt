@@ -2,6 +2,7 @@ package li.songe.gkd.ui
 
 import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -112,6 +113,9 @@ fun SettingsPage() {
                             toastWhenClick = it
                         )
                     )
+                    if (!Settings.canDrawOverlays(context)) {
+                        ToastUtils.showShort("需要悬浮窗权限")
+                    }
                 })
             Divider()
 
@@ -200,7 +204,8 @@ fun SettingsPage() {
                                 })
                             .padding(horizontal = 16.dp)
                     ) {
-                        RadioButton(selected = (option.second == store.updateSubsInterval),
+                        RadioButton(
+                            selected = (option.second == store.updateSubsInterval),
                             onClick = {
                                 updateStorage(
                                     storeFlow,

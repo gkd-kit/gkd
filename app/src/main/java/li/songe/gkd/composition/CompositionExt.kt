@@ -2,17 +2,11 @@ package li.songe.gkd.composition
 
 import android.app.Activity
 import android.app.Service
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import li.songe.gkd.util.Singleton
 import kotlin.coroutines.CoroutineContext
 
 object CompositionExt {
@@ -21,37 +15,6 @@ object CompositionExt {
         onDestroy { scope.cancel() }
         return scope
     }
-
-    fun Context.useMessage(name: String? = null): Pair<(f: ((InvokeMessage) -> Unit)) -> Unit, (InvokeMessage) -> Unit> {
-        this as CanOnDestroy
-
-        var onMessage: (InvokeMessage) -> Unit = {}
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                val s = intent?.extras?.getString("__invoke") ?: return
-                val message = Singleton.json.decodeFromString<InvokeMessage>(s)!!
-
-                if (name != null && message.name != name) {
-                    return
-                }
-                onMessage(message)
-            }
-        }
-        val filter = IntentFilter(packageName)
-
-        registerReceiver(receiver, filter)
-        val sendMessage: (InvokeMessage) -> Unit = { message ->
-            sendBroadcast(Intent(packageName).apply {
-                putExtra("__invoke", Singleton.json.encodeToString(message))
-            })
-        }
-        onDestroy {
-            unregisterReceiver(receiver)
-        }
-        val setter: ((InvokeMessage) -> Unit) -> Unit = { onMessage = it }
-        return (setter to sendMessage)
-    }
-
 
     fun Context.useLifeCycleLog() {
         val simpleName = this::class.simpleName

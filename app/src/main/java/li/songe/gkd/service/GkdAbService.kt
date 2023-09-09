@@ -82,7 +82,7 @@ class GkdAbService : CompositionAbService({
     onInterrupt { serviceConnected = false }
 
     onAccessibilityEvent { event -> // 根据事件获取 activityId, 概率不准确
-        val appId = rootInActiveWindow?.packageName?.toString() ?: return@onAccessibilityEvent
+        val appId = safeActiveWindow?.packageName?.toString() ?: return@onAccessibilityEvent
         appIdFlow.value = appId
         when (event?.eventType) {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED, AccessibilityEvent.TYPE_WINDOWS_CHANGED -> {
@@ -133,7 +133,7 @@ class GkdAbService : CompositionAbService({
         val currentRules = currentRulesFlow.value
         for (rule in currentRules) {
             if (!isAvailableRule(rule)) continue
-            val target = rule.query(rootInActiveWindow)
+            val target = rule.query(safeActiveWindow)
             val clickResult = target?.click(context)
             if (clickResult != null) {
                 if (storeFlow.value.toastWhenClick) {
@@ -248,7 +248,7 @@ class GkdAbService : CompositionAbService({
 
         val currentAbNode: AccessibilityNodeInfo?
             get() {
-                return service?.rootInActiveWindow
+                return service?.safeActiveWindow
             }
 
         suspend fun currentScreenshot() = service?.run {
