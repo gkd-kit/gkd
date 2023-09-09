@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
-import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,8 +33,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import com.blankj.utilcode.util.RomUtils
 import com.blankj.utilcode.util.ToastUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
@@ -100,21 +99,6 @@ fun DebugPage() {
                 Divider()
             }
 
-            val canDrawOverlays by usePollState { Settings.canDrawOverlays(context) }
-            if (!canDrawOverlays) {
-                AuthCard(
-                    title = "悬浮窗授权",
-                    desc = "用于后台提示,主动保存快照等功能",
-                    onAuthClick = {
-                        val intent = Intent(
-                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        )
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        context.startActivity(intent)
-                    })
-                Divider()
-            }
-
             val httpServerRunning by usePollState { HttpService.isRunning() }
             TextSwitch(
                 name = "HTTP服务",
@@ -122,8 +106,12 @@ fun DebugPage() {
                     Ext.getIpAddressInLocalNetwork()
                         .map { host -> "http://${host}:${store.httpServerPort}" }.joinToString(",")
                 }" else "",
-                httpServerRunning
+                checked = httpServerRunning
             ) {
+                if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+                    ToastUtils.showShort("需要通知权限")
+                    return@TextSwitch
+                }
                 if (it) {
                     HttpService.start()
                 } else {
@@ -139,13 +127,30 @@ fun DebugPage() {
             }
             Divider()
 
+            TextSwitch(
+                name = "自动清除内存订阅",
+                desc = "当HTTP服务关闭时,清除内存订阅",
+                checked = store.autoClearMemorySubs
+            ) {
+                updateStorage(
+                    storeFlow, store.copy(
+                        autoClearMemorySubs = it
+                    )
+                )
+            }
+            Divider()
+
             // android 11 以上可以使用无障碍服务获取屏幕截图
             // Build.VERSION.SDK_INT < Build.VERSION_CODES.R
             val screenshotRunning by usePollState { ScreenshotService.isRunning() }
             TextSwitch(name = "截屏服务",
                 desc = "生成快照需要获取屏幕截图,Android11无需开启",
-                screenshotRunning,
-                appScope.launchAsFn<Boolean> {
+                checked = screenshotRunning,
+                onCheckedChange = appScope.launchAsFn<Boolean> {
+                    if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+                        ToastUtils.showShort("需要通知权限")
+                        return@launchAsFn
+                    }
                     if (it) {
                         val mediaProjectionManager =
                             context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
@@ -164,21 +169,33 @@ fun DebugPage() {
             val floatingRunning by usePollState {
                 FloatingService.isRunning()
             }
-            TextSwitch(name = "悬浮窗服务", desc = "便于用户主动保存快照", floatingRunning) {
+            TextSwitch(
+                name = "悬浮窗服务",
+                desc = "显示截屏按钮,便于用户主动保存快照",
+                checked = floatingRunning
+            ) {
+                if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+                    ToastUtils.showShort("需要通知权限")
+                    return@TextSwitch
+                }
+
                 if (it) {
-                    if (canDrawOverlays) {
+                    if (Settings.canDrawOverlays(context)) {
                         val intent = Intent(context, FloatingService::class.java)
                         ContextCompat.startForegroundService(context, intent)
                     } else {
-                        ToastUtils.showShort("请先完成悬浮窗授权再开启")
+                        ToastUtils.showShort("需要悬浮窗权限")
                     }
                 } else {
                     FloatingService.stop(context)
                 }
             }
             Divider()
+
             TextSwitch(
-                "按键快照", "当用户按下音量键时,自动保存当前界面的快照", store.captureVolumeKey
+                name = "按键快照",
+                desc = "当用户按下音量键时,自动保存当前界面的快照",
+                checked = store.captureVolumeKey
             ) {
                 updateStorage(
                     storeFlow, store.copy(
@@ -193,7 +210,6 @@ fun DebugPage() {
             })
         }
     })
-
 
     if (showPortDlg) {
         Dialog(onDismissRequest = { showPortDlg = false }) {
