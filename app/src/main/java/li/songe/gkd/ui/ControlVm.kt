@@ -23,9 +23,9 @@ class ControlVm @Inject constructor() : ViewModel() {
     ) { latestRecord, subsIdToRaw, appInfoCache ->
         if (latestRecord == null) return@combine null
         val groupName =
-            subsIdToRaw[latestRecord?.subsId]?.apps?.find { a -> a.id == latestRecord?.appId }?.groups?.find { g -> g.key == latestRecord?.groupKey }?.name
-        val appName = appInfoCache[latestRecord?.appId]?.name
-        val appShowName = appName ?: latestRecord?.appId ?: ""
+            subsIdToRaw[latestRecord.subsId]?.apps?.find { a -> a.id == latestRecord.appId }?.groups?.find { g -> g.key == latestRecord.groupKey }?.name
+        val appName = appInfoCache[latestRecord.appId]?.name
+        val appShowName = appName ?: latestRecord.appId ?: ""
         if (groupName != null) {
             if (groupName.contains(appShowName)) {
                 groupName
