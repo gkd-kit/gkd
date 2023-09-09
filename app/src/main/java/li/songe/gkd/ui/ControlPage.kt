@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
@@ -26,7 +27,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.blankj.utilcode.util.ToastUtils
 import com.ramcosta.composedestinations.navigation.navigate
 import li.songe.gkd.MainActivity
 import li.songe.gkd.service.GkdAbService
@@ -47,7 +50,6 @@ fun ControlPage() {
     val navController = LocalNavController.current
     val vm = hiltViewModel<ControlVm>()
     val latestRecordDesc by vm.latestRecordDescFlow.collectAsState()
-
     val subsStatus by vm.subsStatusFlow.collectAsState()
     val store by storeFlow.collectAsState()
 
@@ -68,31 +70,69 @@ fun ControlPage() {
                 .padding(0.dp, 10.dp)
                 .padding(padding)
         ) {
-            val gkdAccessRunning by usePollState { GkdAbService.isRunning() }
-            if (!gkdAccessRunning) {
-                AuthCard(title = "无障碍授权",
-                    desc = "用于获取屏幕信息,点击屏幕上的控件",
+
+            val notifEnabled by usePollState {
+                NotificationManagerCompat.from(context).areNotificationsEnabled()
+            }
+            if (!notifEnabled) {
+                AuthCard(title = "通知权限",
+                    desc = "用于启动后台服务,展示服务运行状态",
                     onAuthClick = {
-                        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        val intent = Intent()
+                        intent.action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                        intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        intent.putExtra(Settings.EXTRA_CHANNEL_ID, context.applicationInfo.uid)
                         context.startActivity(intent)
                     })
+                Divider()
+            }
+
+            val gkdAccessRunning by usePollState { GkdAbService.isRunning() }
+            if (!gkdAccessRunning) {
+                AuthCard(title = "无障碍权限",
+                    desc = "用于获取屏幕信息,点击屏幕上的控件",
+                    onAuthClick = {
+                        if (notifEnabled) {
+                            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            context.startActivity(intent)
+                        } else {
+                            ToastUtils.showShort("必须先开启[通知权限]")
+                        }
+                    })
+                Divider()
             }
 
 
-            Spacer(modifier = Modifier.height(5.dp))
-            TextSwitch(name = "服务开启",
-                desc = "保持服务开启,根据订阅规则匹配屏幕目标节点",
-                checked = store.enableService,
-                onCheckedChange = {
-                    updateStorage(
-                        storeFlow, store.copy(
-                            enableService = it
+            val canDrawOverlays by usePollState { Settings.canDrawOverlays(context) }
+            if (!canDrawOverlays) {
+                AuthCard(title = "悬浮窗权限",
+                    desc = "用于后台提示,显示保存快照按钮等功能",
+                    onAuthClick = {
+                        val intent = Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                         )
-                    )
-                })
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        context.startActivity(intent)
+                    })
+                Divider()
+            }
 
-            Spacer(modifier = Modifier.height(5.dp))
+
+            if (gkdAccessRunning) {
+                TextSwitch(name = "服务开启",
+                    desc = "保持服务开启,根据订阅规则匹配屏幕目标节点",
+                    checked = store.enableService,
+                    onCheckedChange = {
+                        updateStorage(
+                            storeFlow, store.copy(
+                                enableService = it
+                            )
+                        )
+                    })
+                Divider()
+            }
+
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
@@ -112,7 +152,7 @@ fun ControlPage() {
                         fontSize = 14.sp
                     )
                 }
-                Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = null)
+                Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "")
             }
 
         }
