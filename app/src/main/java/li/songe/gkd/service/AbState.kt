@@ -36,5 +36,10 @@ fun isAvailableRule(rule: Rule): Boolean {
         // 上一个点击的规则不在当前需要点击的列表
         return rule.preRules.any { it == lastTriggerRuleFlow.value }
     }
+    if (rule.delayTriggerTime > 0) {
+        if (rule.delayTriggerTime + rule.delay > System.currentTimeMillis()) {
+            return false // 没有延迟完毕
+        }
+    }
     return true
 }

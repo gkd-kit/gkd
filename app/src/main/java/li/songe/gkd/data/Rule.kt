@@ -16,6 +16,7 @@ data class Rule(
      */
     val preRules: Set<Rule> = emptySet(),
     val cd: Long = defaultMiniCd,
+    val delay: Long = 0,
     val index: Int = 0,
     val appId: String = "",
     val activityIds: Set<String> = emptySet(),
@@ -27,9 +28,17 @@ data class Rule(
     val app: SubscriptionRaw.AppRaw,
     val subsItem: SubsItem,
 ) {
+    var delayTriggerTime = 0L
+    fun triggerDelay() {
+        // 触发延迟, 一段时间内此规则不可利用
+        delayTriggerTime = System.currentTimeMillis()
+    }
+
     private var triggerTime = 0L
     fun trigger() {
         triggerTime = System.currentTimeMillis()
+        // 重置延迟点
+        delayTriggerTime = 0L
         lastTriggerRuleFlow.value = this
     }
 
