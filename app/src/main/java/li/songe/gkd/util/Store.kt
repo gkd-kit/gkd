@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import android.os.Parcelable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,19 +14,22 @@ import li.songe.gkd.app
 import java.util.WeakHashMap
 
 
-private val onReceives by lazy {
-    mutableListOf<(
-        context: Context?,
-        intent: Intent?,
-    ) -> Unit>()
-}
+private val onReceives = mutableListOf<(
+    context: Context?,
+    intent: Intent?,
+) -> Unit>()
+
 private val receiver by lazy {
     object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             onReceives.forEach { fc -> fc(context, intent) }
         }
     }.apply {
-        app.registerReceiver(this, IntentFilter(app.packageName))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            app.registerReceiver(this, IntentFilter(app.packageName), Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            app.registerReceiver(this, IntentFilter(app.packageName))
+        }
     }
 }
 
@@ -77,6 +81,7 @@ data class Store(
     val autoCheckAppUpdate: Boolean = true,
     val toastWhenClick: Boolean = false,
     val clickToast: String = "跳过",
+    val autoClearMemorySubs: Boolean = true,
 ) : Parcelable
 
 val storeFlow by lazy {

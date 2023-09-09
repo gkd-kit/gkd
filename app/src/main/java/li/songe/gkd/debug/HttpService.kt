@@ -144,7 +144,9 @@ class HttpService : CompositionService({
         httpSubsRawFlow.value = null
         scope.launchTry(Dispatchers.IO) {
             server?.stop()
-            httpSubsItem.removeAssets()
+            if (storeFlow.value.autoClearMemorySubs) {
+                httpSubsItem.removeAssets()
+            }
             delay(3000)
             scope.cancel()
         }
@@ -179,10 +181,12 @@ fun clearHttpSubs() {
     if (HttpService.isRunning()) return
     appScope.launchTry(Dispatchers.IO) {
         delay(1000)
-        SubsItem(
-            id = -1L,
-            order = -1,
-            enableUpdate = false,
-        ).removeAssets()
+        if (storeFlow.value.autoClearMemorySubs) {
+            SubsItem(
+                id = -1L,
+                order = -1,
+                enableUpdate = false,
+            ).removeAssets()
+        }
     }
 }
