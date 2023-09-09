@@ -4,7 +4,6 @@ import android.os.Parcelable
 import blue.endless.jankson.Jankson
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
@@ -15,30 +14,30 @@ import li.songe.selector.Selector
 @Parcelize
 @Serializable
 data class SubscriptionRaw(
-    @SerialName("id") val id: Long,
-    @SerialName("name") val name: String,
-    @SerialName("version") val version: Int,
-    @SerialName("author") val author: String? = null,
-    @SerialName("updateUrl") val updateUrl: String? = null,
-    @SerialName("supportUri") val supportUri: String? = null,
-    @SerialName("apps") val apps: List<AppRaw> = emptyList(),
+    val id: Long,
+    val name: String,
+    val version: Int,
+    val author: String? = null,
+    val updateUrl: String? = null,
+    val supportUri: String? = null,
+    val apps: List<AppRaw> = emptyList(),
 ) : Parcelable {
 
     @Parcelize
     @Serializable
     data class NumberFilter(
-        @SerialName("enum") val enum: List<Int>? = null,
-        @SerialName("minimum") val minimum: Int? = null,
-        @SerialName("maximum") val maximum: Int? = null,
+        val enum: List<Int>? = null,
+        val minimum: Int? = null,
+        val maximum: Int? = null,
     ) : Parcelable
 
     @Parcelize
     @Serializable
     data class StringFilter(
-        @SerialName("enum") val enum: List<String>? = null,
-        @SerialName("minLength") val minLength: Int? = null,
-        @SerialName("maxLength") val maxLength: Int? = null,
-        @SerialName("pattern") val pattern: String? = null,
+        val enum: List<String>? = null,
+        val minLength: Int? = null,
+        val maxLength: Int? = null,
+        val pattern: String? = null,
     ) : Parcelable {
 
         @IgnoredOnParcel
@@ -54,26 +53,27 @@ data class SubscriptionRaw(
     @Parcelize
     @Serializable
     data class AppFilter(
-        @SerialName("name") val name: StringFilter? = null,
-        @SerialName("versionName") val versionName: StringFilter? = null,
-        @SerialName("versionCode") val versionCode: NumberFilter? = null,
+        val name: StringFilter? = null,
+        val versionName: StringFilter? = null,
+        val versionCode: NumberFilter? = null,
     ) : Parcelable
 
     @Parcelize
     @Serializable
     data class DeviceFilter(
-        @SerialName("device") val device: StringFilter? = null,
-        @SerialName("model") val model: StringFilter? = null,
-        @SerialName("manufacturer") val manufacturer: StringFilter? = null,
-        @SerialName("brand") val brand: StringFilter? = null,
-        @SerialName("sdkInt") val sdkInt: NumberFilter? = null,
-        @SerialName("release") val release: StringFilter? = null,
+        val device: StringFilter? = null,
+        val model: StringFilter? = null,
+        val manufacturer: StringFilter? = null,
+        val brand: StringFilter? = null,
+        val sdkInt: NumberFilter? = null,
+        val release: StringFilter? = null,
     ) : Parcelable
 
     interface CommonProps {
         val activityIds: List<String>?
         val excludeActivityIds: List<String>?
         val cd: Long?
+        val delay: Long?
         val appFilter: AppFilter?
         val deviceFilter: DeviceFilter?
     }
@@ -81,27 +81,29 @@ data class SubscriptionRaw(
     @Parcelize
     @Serializable
     data class AppRaw(
-        @SerialName("id") val id: String,
-        @SerialName("name") val name: String? = null,
-        @SerialName("cd") override val cd: Long? = null,
-        @SerialName("activityIds") override val activityIds: List<String>? = null,
-        @SerialName("excludeActivityIds") override val excludeActivityIds: List<String>? = null,
-        @SerialName("groups") val groups: List<GroupRaw> = emptyList(),
-        @SerialName("appFilter") override val appFilter: AppFilter? = null,
-        @SerialName("deviceFilter") override val deviceFilter: DeviceFilter? = null,
+        val id: String,
+        val name: String? = null,
+        override val cd: Long? = null,
+        override val delay: Long? = null,
+        override val activityIds: List<String>? = null,
+        override val excludeActivityIds: List<String>? = null,
+        val groups: List<GroupRaw> = emptyList(),
+        override val appFilter: AppFilter? = null,
+        override val deviceFilter: DeviceFilter? = null,
     ) : Parcelable, CommonProps
 
     @Parcelize
     @Serializable
     data class GroupRaw(
-        @SerialName("name") val name: String? = null,
-        @SerialName("desc") val desc: String? = null,
-        @SerialName("enable") val enable: Boolean? = null,
-        @SerialName("key") val key: Int,
-        @SerialName("cd") override val cd: Long? = null,
-        @SerialName("activityIds") override val activityIds: List<String>? = null,
-        @SerialName("excludeActivityIds") override val excludeActivityIds: List<String>? = null,
-        @SerialName("rules") val rules: List<RuleRaw> = emptyList(),
+        val name: String? = null,
+        val desc: String? = null,
+        val enable: Boolean? = null,
+        val key: Int,
+        override val cd: Long? = null,
+        override val delay: Long? = null,
+        override val activityIds: List<String>? = null,
+        override val excludeActivityIds: List<String>? = null,
+        val rules: List<RuleRaw> = emptyList(),
         override val appFilter: AppFilter? = null,
         override val deviceFilter: DeviceFilter? = null,
     ) : Parcelable, CommonProps {
@@ -121,14 +123,15 @@ data class SubscriptionRaw(
     @Parcelize
     @Serializable
     data class RuleRaw(
-        @SerialName("name") val name: String? = null,
-        @SerialName("key") val key: Int? = null,
-        @SerialName("preKeys") val preKeys: List<Int> = emptyList(),
-        @SerialName("cd") override val cd: Long? = null,
-        @SerialName("activityIds") override val activityIds: List<String>? = null,
-        @SerialName("excludeActivityIds") override val excludeActivityIds: List<String>? = null,
-        @SerialName("matches") val matches: List<String> = emptyList(),
-        @SerialName("excludeMatches") val excludeMatches: List<String> = emptyList(),
+        val name: String? = null,
+        val key: Int? = null,
+        val preKeys: List<Int> = emptyList(),
+        override val cd: Long? = null,
+        override val delay: Long? = null,
+        override val activityIds: List<String>? = null,
+        override val excludeActivityIds: List<String>? = null,
+        val matches: List<String> = emptyList(),
+        val excludeMatches: List<String> = emptyList(),
         override val appFilter: AppFilter? = null,
         override val deviceFilter: DeviceFilter? = null,
     ) : Parcelable, CommonProps
@@ -181,7 +184,6 @@ data class SubscriptionRaw(
                 else -> error("Element $p is not a string")
             }
 
-        @Suppress("SameParameterValue")
         private fun getLong(json: JsonObject? = null, key: String): Long? =
             when (val p = json?.get(key)) {
                 JsonNull, null -> null
@@ -223,6 +225,7 @@ data class SubscriptionRaw(
                 activityIds = getStringIArray(rulesJson, "activityIds"),
                 excludeActivityIds = getStringIArray(rulesJson, "excludeActivityIds"),
                 cd = getLong(rulesJson, "cd"),
+                delay = getLong(rulesJson, "delay"),
                 matches = (getStringIArray(
                     rulesJson, "matches"
                 ) ?: emptyList()),
@@ -252,6 +255,7 @@ data class SubscriptionRaw(
                 activityIds = getStringIArray(groupsJson, "activityIds"),
                 excludeActivityIds = getStringIArray(groupsJson, "excludeActivityIds"),
                 cd = getLong(groupsJson, "cd"),
+                delay = getLong(groupsJson, "delay"),
                 name = getString(groupsJson, "name"),
                 desc = getString(groupsJson, "desc"),
                 enable = getBoolean(groupsJson, "enable"),
@@ -277,6 +281,7 @@ data class SubscriptionRaw(
                 activityIds = getStringIArray(appsJson, "activityIds"),
                 excludeActivityIds = getStringIArray(appsJson, "excludeActivityIds"),
                 cd = getLong(appsJson, "cd"),
+                delay = getLong(appsJson, "delay"),
                 id = getString(appsJson, "id") ?: error("miss subscription.apps[$appIndex].id"),
                 name = getString(appsJson, "name"),
                 groups = (when (val groupsJson = appsJson["groups"]) {
@@ -309,31 +314,33 @@ data class SubscriptionRaw(
                 } ?: emptyList())
         }
 
-        //        订阅文件状态: 文件不存在, 文件正常, 文件损坏(损坏原因)
+        //  订阅文件状态: 文件不存在, 文件正常, 文件损坏(损坏原因)
         fun stringify(source: SubscriptionRaw) = Singleton.json.encodeToString(source)
 
         fun parse(source: String): SubscriptionRaw {
-            return jsonToSubscriptionRaw(Singleton.json.parseToJsonElement(source).jsonObject)
+            val obj = jsonToSubscriptionRaw(Singleton.json.parseToJsonElement(source).jsonObject)
 
-//            val duplicatedApps = obj.apps.groupingBy { it }.eachCount().filter { it.value > 1 }.keys
-//            if (duplicatedApps.isNotEmpty()) {
-//                error("duplicated app: ${duplicatedApps.map { it.id }}")
-//            }
-//            obj.apps.forEach { appRaw ->
-//                val duplicatedGroups =
-//                    appRaw.groups.groupingBy { it }.eachCount().filter { it.value > 1 }.keys
-//                if (duplicatedGroups.isNotEmpty()) {
-//                    error("app:${appRaw.id}, duplicated group: ${duplicatedGroups.map { it.key }}")
-//                }
-//                appRaw.groups.forEach { groupRaw ->
-//                    val duplicatedRules =
-//                        groupRaw.rules.mapNotNull { r -> r.key }.groupingBy { it }.eachCount()
-//                            .filter { it.value > 1 }.keys
-//                    if (duplicatedRules.isNotEmpty()) {
-//                        error("app:${appRaw.id}, group:${groupRaw.key},  duplicated rule: $duplicatedRules")
-//                    }
-//                }
-//            }
+            val duplicatedApps = obj.apps.groupingBy { it }.eachCount().filter { it.value > 1 }.keys
+            if (duplicatedApps.isNotEmpty()) {
+                error("duplicated app: ${duplicatedApps.map { it.id }}")
+            }
+            obj.apps.forEach { appRaw ->
+                val duplicatedGroups =
+                    appRaw.groups.groupingBy { it }.eachCount().filter { it.value > 1 }.keys
+                if (duplicatedGroups.isNotEmpty()) {
+                    error("app:${appRaw.id}, duplicated group: ${duplicatedGroups.map { it.key }}")
+                }
+                appRaw.groups.forEach { groupRaw ->
+                    val duplicatedRules =
+                        groupRaw.rules.mapNotNull { r -> r.key }.groupingBy { it }.eachCount()
+                            .filter { it.value > 1 }.keys
+                    if (duplicatedRules.isNotEmpty()) {
+                        error("app:${appRaw.id}, group:${groupRaw.key},  duplicated rule: $duplicatedRules")
+                    }
+                }
+            }
+
+            return obj
         }
 
         fun parse5(source: String): SubscriptionRaw {

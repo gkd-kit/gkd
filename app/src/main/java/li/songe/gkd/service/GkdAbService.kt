@@ -133,8 +133,16 @@ class GkdAbService : CompositionAbService({
         val currentRules = currentRulesFlow.value
         for (rule in currentRules) {
             if (!isAvailableRule(rule)) continue
-            val target = rule.query(safeActiveWindow)
-            val clickResult = target?.click(context)
+            val target = rule.query(safeActiveWindow) ?: continue
+
+            // 开始延迟
+            if (rule.delay > 0 && rule.delayTriggerTime == 0L) {
+                rule.triggerDelay()
+                continue
+            }
+
+            // 如果节点在屏幕外部, click 的结果为 null
+            val clickResult = target.click(context)
             if (clickResult != null) {
                 if (storeFlow.value.toastWhenClick) {
                     val t = System.currentTimeMillis()

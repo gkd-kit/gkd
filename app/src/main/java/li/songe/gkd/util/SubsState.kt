@@ -136,6 +136,7 @@ val appIdToRulesFlow by lazy {
                         val cd = Rule.defaultMiniCd.coerceAtLeast(
                             ruleRaw.cd ?: groupRaw.cd ?: appRaw.cd ?: Rule.defaultMiniCd
                         )
+                        val delay = ruleRaw.delay ?: groupRaw.delay ?: appRaw.delay ?: 0
                         val activityIds =
                             (ruleRaw.activityIds ?: groupRaw.activityIds ?: appRaw.activityIds
                             ?: emptyList()).map { activityId ->
@@ -159,6 +160,7 @@ val appIdToRulesFlow by lazy {
                         ruleGroupList.add(
                             Rule(
                                 cd = cd,
+                                delay = delay,
                                 index = ruleIndex,
                                 matches = ruleRaw.matches.map { Selector.parse(it) },
                                 excludeMatches = ruleRaw.excludeMatches.map {
