@@ -5,6 +5,10 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> <!-- com.tencent.bugly -->
@@ -104,6 +108,7 @@
         <service
             android:name=".service.ManageService"
             android:exported="false"
+            android:foregroundServiceType="dataSync"
             android:process=":remote" />
         <service
             android:name=".debug.ScreenshotService"
@@ -113,14 +118,17 @@
         <service
             android:name=".debug.HttpService"
             android:exported="false"
+            android:foregroundServiceType="dataSync"
             android:process=":remote" />
         <service
             android:name=".debug.FloatingService"
             android:exported="false"
+            android:foregroundServiceType="dataSync"
             android:process=":remote" />
         <service
             android:name=".service.ShizukuService"
             android:exported="false"
+            android:foregroundServiceType="dataSync"
             android:process=":remote" />
 
 

@@ -8,6 +8,7 @@ import com.blankj.utilcode.util.ProcessUtils
 import com.tencent.bugly.crashreport.CrashReport
 import com.tencent.mmkv.MMKV
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import li.songe.gkd.debug.clearHttpSubs
 import li.songe.gkd.notif.initChannel
@@ -16,6 +17,7 @@ import li.songe.gkd.util.initStore
 import li.songe.gkd.util.initSubsState
 import li.songe.gkd.util.initUpgrade
 import li.songe.gkd.util.isMainProcess
+import li.songe.gkd.util.launchTry
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.ShizukuProvider
 
@@ -48,12 +50,14 @@ class App : Application() {
         CrashReport.initCrashReport(applicationContext, "d0ce46b353", false)
 
         if (isMainProcess) {
-            initChannel()
-            initStore()
-            initAppState()
-            initSubsState()
-            initUpgrade()
-            clearHttpSubs()
+            appScope.launchTry(Dispatchers.IO) {
+                initChannel()
+                initStore()
+                initAppState()
+                initSubsState()
+                initUpgrade()
+                clearHttpSubs()
+            }
         }
     }
 }

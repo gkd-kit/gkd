@@ -39,7 +39,7 @@ private val packageReceiver by lazy {
                 addAction(Intent.ACTION_PACKAGE_REPLACED)
                 addAction(Intent.ACTION_PACKAGE_REMOVED)
                 addDataScheme("package")
-            }, Context.RECEIVER_NOT_EXPORTED)
+            }, Context.RECEIVER_EXPORTED)
         } else {
             app.registerReceiver(
                 this,

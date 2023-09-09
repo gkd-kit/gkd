@@ -58,6 +58,7 @@ fun <T : Parcelable> updateStorage(stateFlow: StateFlow<T>, newState: T) {
     val key = stateFlowToKey[stateFlow] ?: error("not found stateFlow key")
     kv.encode(key, newState)
     app.sendBroadcast(Intent(app.packageName).apply {
+        `package` = app.packageName
         putExtra("type", "update_storage")
         putExtra("key", key)
     })
