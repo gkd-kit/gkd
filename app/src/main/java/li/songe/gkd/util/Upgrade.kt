@@ -48,10 +48,11 @@ data class NewVersion(
     val versionName: String,
     val changelog: String,
     val downloadUrl: String,
+    val fileSize: Long? = null,
 ) : Parcelable
 
 sealed class LoadStatus<out T> {
-    data class Loading(val progress: Float) : LoadStatus<Nothing>()
+    data class Loading(val progress: Float = 0f) : LoadStatus<Nothing>()
     data class Failure(val exception: Exception) : LoadStatus<Nothing>()
     data class Success<T>(val result: T) : LoadStatus<T>()
 }
@@ -91,10 +92,13 @@ fun startDownload(newVersion: NewVersion) {
             val channel =
                 Singleton.client.get(URI(UPDATE_URL).resolve(newVersion.downloadUrl).toString()) {
                     onDownload { bytesSentTotal, contentLength ->
-                        if (downloadStatusFlow.value is LoadStatus.Loading) {
-                            downloadStatusFlow.value =
-                                LoadStatus.Loading(bytesSentTotal.toFloat() / contentLength)
-                        } else if (downloadStatusFlow.value is LoadStatus.Failure) {
+                        // contentLength 在某些机型上概率错误
+                        val downloadStatus = downloadStatusFlow.value
+                        if (downloadStatus is LoadStatus.Loading) {
+                            downloadStatusFlow.value = LoadStatus.Loading(
+                                bytesSentTotal.toFloat() / (newVersion.fileSize ?: contentLength)
+                            )
+                        } else if (downloadStatus is LoadStatus.Failure) {
                             // 提前终止下载
                             job?.cancel()
                         }
