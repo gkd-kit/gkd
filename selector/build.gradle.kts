@@ -12,8 +12,7 @@ kotlin {
 //    https://kotlinlang.org/docs/js-to-kotlin-interop.html#kotlin-types-in-javascript
     js(IR) {
         binaries.executable()
-//        useEsModules()
-//        bug example kotlin CharSequence.contains(char: Char) not work with js string.includes(string)
+        useEsModules()
         generateTypeScriptDefinitions()
         browser {}
     }
