@@ -306,7 +306,7 @@ data class SubscriptionRaw(
                 version = getInt(rootJson, "version") ?: error("miss subscription.version"),
                 author = getString(rootJson, "author"),
                 updateUrl = getString(rootJson, "updateUrl"),
-                supportUri = getString(rootJson, "supportUrl"),
+                supportUri = getString(rootJson, "supportUri"),
                 apps = rootJson["apps"]?.jsonArray?.mapIndexed { index, jsonElement ->
                     jsonToAppRaw(
                         jsonElement.jsonObject, index
