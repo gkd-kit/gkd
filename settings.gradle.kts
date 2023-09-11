@@ -28,7 +28,7 @@ dependencyResolutionManagement {
 
     versionCatalogs {
         create("libs") {
-            val kotlinVersion = "1.8.20"
+            val kotlinVersion = "1.9.10"
             // use jdk17
             version("jdkVersion", JavaVersion.VERSION_17.majorVersion)
             version("kotlinVersion", kotlinVersion)
@@ -54,13 +54,13 @@ dependencyResolutionManagement {
 
             // compose 编译器的版本, 需要注意它与 compose 的版本没有关联
             // https://mvnrepository.com/artifact/androidx.compose.compiler/compiler
-            version("compose.compilerVersion", "1.4.6")
-            library("compose.ui", "androidx.compose.ui:ui:1.4.2")
-            library("compose.material", "androidx.compose.material:material:1.4.2")
-            library("compose.preview", "androidx.compose.ui:ui-tooling-preview:1.4.2")
-            library("compose.tooling", "androidx.compose.ui:ui-tooling:1.4.2")
-            library("compose.junit4", "androidx.compose.ui:ui-test-junit4:1.4.2")
-            library("compose.activity", "androidx.activity:activity-compose:1.7.0")
+            version("compose.compilerVersion", "1.5.3")
+            library("compose.ui", "androidx.compose.ui:ui:1.5.1")
+            library("compose.material", "androidx.compose.material:material:1.5.1")
+            library("compose.preview", "androidx.compose.ui:ui-tooling-preview:1.5.1")
+            library("compose.tooling", "androidx.compose.ui:ui-tooling:1.5.1")
+            library("compose.junit4", "androidx.compose.ui:ui-test-junit4:1.5.1")
+            library("compose.activity", "androidx.activity:activity-compose:1.7.2")
 
             // https://github.com/Tencent/MMKV/blob/master/README_CN.md
             library("tencent.mmkv", "com.tencent:mmkv:1.2.13")
@@ -97,23 +97,23 @@ dependencyResolutionManagement {
             library("others.floating.bubble.view", "io.github.torrydo:floating-bubble-view:0.5.6")
 
             library("androidx.appcompat", "androidx.appcompat:appcompat:1.6.1")
-            library("androidx.core.ktx", "androidx.core:core-ktx:1.10.0")
+            library("androidx.core.ktx", "androidx.core:core-ktx:1.12.0")
             library(
-                "androidx.lifecycle.runtime.ktx", "androidx.lifecycle:lifecycle-runtime-ktx:2.6.1"
+                "androidx.lifecycle.runtime.ktx", "androidx.lifecycle:lifecycle-runtime-ktx:2.6.2"
             )
             library("androidx.junit", "androidx.test.ext:junit:1.1.5")
             library("androidx.espresso", "androidx.test.espresso:espresso-core:3.5.1")
 
             // https://developer.android.google.cn/training/data-storage/room?hl=zh-cn
-            library("androidx.room.runtime", "androidx.room:room-runtime:2.5.1")
-            library("androidx.room.compiler", "androidx.room:room-compiler:2.5.1")
-            library("androidx.room.ktx", "androidx.room:room-ktx:2.5.1")
+            library("androidx.room.runtime", "androidx.room:room-runtime:2.5.2")
+            library("androidx.room.compiler", "androidx.room:room-compiler:2.5.2")
+            library("androidx.room.ktx", "androidx.room:room-ktx:2.5.2")
 
             library("androidx.splashscreen", "androidx.core:core-splashscreen:1.0.1")
 
             library(
                 "google.accompanist.drawablepainter",
-                "com.google.accompanist:accompanist-drawablepainter:0.23.1"
+                "com.google.accompanist:accompanist-drawablepainter:0.32.0"
             )
             library(
                 "google.accompanist.placeholder.material",
@@ -123,32 +123,32 @@ dependencyResolutionManagement {
 //            https://google.github.io/accompanist/systemuicontroller/
             library(
                 "google.accompanist.systemuicontroller",
-                "com.google.accompanist:accompanist-systemuicontroller:0.30.1"
+                "com.google.accompanist:accompanist-systemuicontroller:0.32.0"
             )
 
             library("junit", "junit:junit:4.13.2")
 
+            val ktorVersion = "2.3.4"
             // 请注意,当 client 和 server 版本不一致时, 会报错 socket hang up
-            library("ktor.server.core", "io.ktor:ktor-server-core:2.3.1")
-            library("ktor.server.netty", "io.ktor:ktor-server-netty:2.3.1")
-            library("ktor.server.cors", "io.ktor:ktor-server-cors:2.3.1")
+            library("ktor.server.core", "io.ktor:ktor-server-core:$ktorVersion")
+            library("ktor.server.netty", "io.ktor:ktor-server-netty:$ktorVersion")
+            library("ktor.server.cors", "io.ktor:ktor-server-cors:$ktorVersion")
             library(
-                "ktor.server.content.negotiation", "io.ktor:ktor-server-content-negotiation:2.3.1"
+                "ktor.server.content.negotiation", "io.ktor:ktor-server-content-negotiation:$ktorVersion"
             )
-            library("ktor.client.core", "io.ktor:ktor-client-core:2.3.1")
-            library("ktor.client.okhttp", "io.ktor:ktor-client-okhttp:2.3.1")
+            library("ktor.client.core", "io.ktor:ktor-client-core:$ktorVersion")
+            library("ktor.client.okhttp", "io.ktor:ktor-client-okhttp:$ktorVersion")
 //            https://ktor.io/docs/http-client-engines.html#android android 平台使用 android 或者 okhttp 都行
             library(
-                "ktor.client.content.negotiation", "io.ktor:ktor-client-content-negotiation:2.3.1"
+                "ktor.client.content.negotiation", "io.ktor:ktor-client-content-negotiation:$ktorVersion"
             )
-
             library(
-                "ktor.serialization.kotlinx.json", "io.ktor:ktor-serialization-kotlinx-json:2.2.3"
+                "ktor.serialization.kotlinx.json", "io.ktor:ktor-serialization-kotlinx-json:$ktorVersion"
             )
 
             library(
                 "kotlinx.serialization.json",
-                "org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1"
+                "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0"
             )
             // https://github.com/Kotlin/kotlinx.collections.immutable
             library(
@@ -159,11 +159,11 @@ dependencyResolutionManagement {
 //            https://developer.android.com/reference/kotlin/org/json/package-summary
             library("org.json", "org.json:json:20210307")
 
-            plugin("google.ksp", "com.google.devtools.ksp").version("1.8.20-1.0.11")
+            plugin("google.ksp", "com.google.devtools.ksp").version("1.9.10-1.0.13")
 
-            plugin("google.hilt", "com.google.dagger.hilt.android").version("2.44")
-            library("google.hilt.android", "com.google.dagger:hilt-android:2.44")
-            library("google.hilt.android.compiler", "com.google.dagger:hilt-android-compiler:2.44")
+            plugin("google.hilt", "com.google.dagger.hilt.android").version("2.48")
+            library("google.hilt.android", "com.google.dagger:hilt-android:2.48")
+            library("google.hilt.android.compiler", "com.google.dagger:hilt-android-compiler:2.48")
             library(
                 "androidx.hilt.navigation.compose", "androidx.hilt:hilt-navigation-compose:1.0.0"
             )
@@ -173,10 +173,6 @@ dependencyResolutionManagement {
                 "destinations.core", "io.github.raamcosta.compose-destinations:core:1.9.52"
             )
             library("destinations.ksp", "io.github.raamcosta.compose-destinations:ksp:1.9.52")
-//            library(
-//                "destinations.animations",
-//                "io.github.raamcosta.compose-destinations:animations-core:1.9.52"
-//            )
 
 //            https://github.com/aclassen/ComposeReorderable
             library("others.reorderable", "org.burnoutcrew.composereorderable:reorderable:0.9.6")
