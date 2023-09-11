@@ -328,7 +328,7 @@ internal object ParserSet {
             when (source[i]) {
                 '(' -> {
                     if (parserResults.isNotEmpty()) {
-                        val lastToken = parserResults.first()
+                        val lastToken = parserResults.last()
                         if (lastToken.data !is LogicalOperator) {
                             var count = 0
                             while (i - 1 >= count && source[i - 1 - count] in whiteCharParser.prefix) {
