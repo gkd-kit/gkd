@@ -1,7 +1,6 @@
 package li.songe.selector
 
 import junit.framework.TestCase.assertTrue
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.booleanOrNull
@@ -17,6 +16,7 @@ class ParserTest {
     fun test_expression() {
         println(ParserSet.expressionParser("a>1&&b>1&&c>1||d>1", 0).data)
         println(Selector.parse("View[a>1&&b>1&&c>1||d>1&&x^=1] > Button[a>1||b*='zz'||c^=1]"))
+        println(Selector.parse("[id=`com.byted.pangle:id/tt_splash_skip_btn`||(id=`com.hupu.games:id/tv_time`&&text*=`跳过`)]"))
     }
 
     @Test

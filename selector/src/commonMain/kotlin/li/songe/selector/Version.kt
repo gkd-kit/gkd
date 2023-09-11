@@ -5,4 +5,4 @@ import kotlin.js.JsExport
 
 @OptIn(ExperimentalJsExport::class)
 @JsExport
-const val version = "0.0.5"
+const val version = "0.0.6"
