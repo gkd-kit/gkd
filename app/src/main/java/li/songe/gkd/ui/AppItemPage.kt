@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +19,7 @@ import androidx.compose.material.AlertDialog
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Switch
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,14 +33,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.blankj.utilcode.util.ClipboardUtils
+import com.blankj.utilcode.util.ToastUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
+import kotlinx.serialization.encodeToString
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SimpleTopAppBar
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
+import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
 
@@ -147,11 +153,33 @@ fun AppItemPage(
 
 
     showGroupItem?.let { showGroupItemVal ->
-        AlertDialog(onDismissRequest = { showGroupItem = null }, title = {
-            Text(text = showGroupItemVal.name ?: "-")
-        }, text = {
-            Text(text = showGroupItemVal.desc ?: "-")
-        }, buttons = { })
+        AlertDialog(modifier = Modifier.defaultMinSize(300.dp),
+            onDismissRequest = { showGroupItem = null },
+            title = {
+                Text(text = showGroupItemVal.name ?: "-")
+            },
+            text = {
+                Column {
+                    if (showGroupItemVal.enable == false) {
+                        Text(text = "该规则组默认不启用", color = Color.Blue)
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
+                    Text(text = showGroupItemVal.desc ?: "-")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val groupAppText = Singleton.omitJson.encodeToString(
+                        subsApp?.copy(
+                            groups = listOf(showGroupItemVal)
+                        )
+                    )
+                    ClipboardUtils.copyText(groupAppText)
+                    ToastUtils.showShort("复制成功")
+                }) {
+                    Text(text = "复制规则组")
+                }
+            })
     }
 }
 

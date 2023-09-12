@@ -1,6 +1,5 @@
 package li.songe.gkd.util
 
-import blue.endless.jankson.Jankson
 import com.journeyapps.barcodescanner.BarcodeEncoder
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -19,6 +18,13 @@ object Singleton {
             isLenient = true
             ignoreUnknownKeys = true
             encodeDefaults = true
+        }
+    }
+    val omitJson by lazy {
+        Json {
+            isLenient = true
+            ignoreUnknownKeys = true
+            encodeDefaults = false
         }
     }
 
