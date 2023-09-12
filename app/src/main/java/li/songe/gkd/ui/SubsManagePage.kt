@@ -301,8 +301,8 @@ fun SubsManagePage() {
             title = { Text(text = "是否删除 ${subsIdToRaw[deleteSubItemVal.id]?.name}?") },
             confirmButton = {
                 TextButton(onClick = scope.launchAsFn {
-                    deleteSubItemVal.removeAssets()
                     deleteSubItem = null
+                    deleteSubItemVal.removeAssets()
                 }) {
                     Text("是")
                 }
