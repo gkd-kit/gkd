@@ -80,7 +80,7 @@ data class Store(
     val updateSubsInterval: Long = 60 * 60_000,
     val captureVolumeKey: Boolean = false,
     val autoCheckAppUpdate: Boolean = true,
-    val toastWhenClick: Boolean = false,
+    val toastWhenClick: Boolean = true,
     val clickToast: String = "跳过",
     val autoClearMemorySubs: Boolean = true,
 ) : Parcelable
