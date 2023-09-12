@@ -33,6 +33,7 @@ fun SubsAppCard(
     appRaw: SubscriptionRaw.AppRaw,
     appInfo: AppInfo? = null,
     subsConfig: SubsConfig? = null,
+    enableSize: Int = appRaw.groups.count { g -> g.enable ?: true },
     onClick: (() -> Unit)? = null,
     onValueChange: ((Boolean) -> Unit)? = null,
 ) {
@@ -71,8 +72,14 @@ fun SubsAppCard(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth()
             )
+
+            val enableDesc = when (enableSize) {
+                0 -> "${appRaw.groups.size}组规则/${appRaw.groups.size}关闭"
+                appRaw.groups.size -> "${appRaw.groups.size}组规则"
+                else -> "${appRaw.groups.size}组规则/${enableSize}启用/${appRaw.groups.size - enableSize}关闭"
+            }
             Text(
-                text = appRaw.groups.size.toString() + "组规则",
+                text = enableDesc,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,

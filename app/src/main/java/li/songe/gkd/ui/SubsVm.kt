@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import li.songe.gkd.data.Tuple3
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.util.appInfoCacheFlow
@@ -22,22 +23,30 @@ class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
     val subsItemFlow = DbSet.subsItemDao.queryById(args.subsItemId)
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    private val subsConfigsFlow = DbSet.subsConfigDao.queryAppTypeConfig(args.subsItemId)
+    private val appSubsConfigsFlow = DbSet.subsConfigDao.queryAppTypeConfig(args.subsItemId)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    private val groupSubsConfigsFlow = DbSet.subsConfigDao.querySubsGroupTypeConfig(args.subsItemId)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val appAndConfigsFlow = combine(
-        subsItemFlow,
-        subsConfigsFlow,
-        appInfoCacheFlow
-    ) { subsItem, subsConfigs, appInfoCache ->
+        subsItemFlow, appSubsConfigsFlow, appInfoCacheFlow, groupSubsConfigsFlow
+    ) { subsItem, appSubsConfigs, appInfoCache, groupSubsConfigs ->
         if (subsItem == null) return@combine emptyList()
         val apps = (subsIdToRawFlow.value[subsItem.id]?.apps ?: emptyList()).sortedWith { a, b ->
-            Collator.getInstance(Locale.CHINESE)
-                .compare(appInfoCache[a.id]?.name ?: a.id, appInfoCache[b.id]?.name ?: b.id)
+            // 使用 \\uFFFF 确保 id 排在名字后面
+            Collator.getInstance(Locale.CHINESE).compare(
+                appInfoCache[a.id]?.name ?: a.name ?: ("\uFFFF" + a.id),
+                appInfoCache[b.id]?.name ?: b.name ?: ("\uFFFF" + b.id)
+            )
         }
         apps.map { app ->
-            val subsConfig = subsConfigs.find { s -> s.appId == app.id }
-            app to subsConfig
+            val subsConfig = appSubsConfigs.find { s -> s.appId == app.id }
+            val appGroupSubsConfigs = groupSubsConfigs.filter { s -> s.appId == app.id }
+            val enableSize = app.groups.count { g ->
+                appGroupSubsConfigs.find { s -> s.groupKey == g.key }?.enable ?: g.enable ?: true
+            }
+            Tuple3(app, subsConfig, enableSize)
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 

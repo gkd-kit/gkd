@@ -90,11 +90,12 @@ fun SubsPage(
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.padding(padding)
         ) {
-            itemsIndexed(appAndConfigs, { i, a -> i.toString() + a.first.id }) { _, a ->
-                val (appRaw, subsConfig) = a
+            itemsIndexed(appAndConfigs, { i, a -> i.toString() + a.t0.id }) { _, a ->
+                val (appRaw, subsConfig, enableSize) = a
                 SubsAppCard(appRaw = appRaw,
                     appInfo = appInfoCache[appRaw.id],
                     subsConfig = subsConfig,
+                    enableSize=enableSize,
                     onClick = {
                         navController.navigate(AppItemPageDestination(subsItemId, appRaw.id))
                     },

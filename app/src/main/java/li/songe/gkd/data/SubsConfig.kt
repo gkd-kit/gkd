@@ -54,6 +54,9 @@ data class SubsConfig(
         @Query("SELECT * FROM subs_config WHERE type=${AppType} and subs_item_id=:subsItemId")
         fun queryAppTypeConfig(subsItemId: Long): Flow<List<SubsConfig>>
 
+        @Query("SELECT * FROM subs_config WHERE type=${GroupType} and subs_item_id=:subsItemId")
+        fun querySubsGroupTypeConfig(subsItemId: Long,): Flow<List<SubsConfig>>
+
         @Query("SELECT * FROM subs_config WHERE type=${GroupType} and subs_item_id=:subsItemId and app_id=:appId")
         fun queryGroupTypeConfig(subsItemId: Long, appId: String): Flow<List<SubsConfig>>
     }
