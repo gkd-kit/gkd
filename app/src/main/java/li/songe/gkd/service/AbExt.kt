@@ -5,8 +5,8 @@ import android.accessibilityservice.GestureDescription
 import android.graphics.Path
 import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
-import li.songe.selector.Transform
 import li.songe.selector.Selector
+import li.songe.selector.Transform
 
 val AccessibilityService.safeActiveWindow: AccessibilityNodeInfo?
     get() = try {
@@ -80,8 +80,8 @@ fun AccessibilityNodeInfo.getDepth(): Int {
 fun AccessibilityNodeInfo.querySelector(selector: Selector) =
     abTransform.querySelector(this, selector)
 
-fun AccessibilityNodeInfo.querySelectorAll(selector: Selector) =
-    abTransform.querySelectorAll(this, selector)
+//fun AccessibilityNodeInfo.querySelectorAll(selector: Selector) =
+//    abTransform.querySelectorAll(this, selector)
 
 // 不可以在 多线程/不同协程作用域 里同时使用
 private val tempRect = Rect()
@@ -125,6 +125,5 @@ val abTransform = Transform<AccessibilityNodeInfo>(getAttr = { node, name ->
         }
     }
 }, getChild = { node, index -> node.getChild(index) }, getParent = { node -> node.parent })
-
 
 

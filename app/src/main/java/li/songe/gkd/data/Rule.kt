@@ -58,7 +58,10 @@ data class Rule(
         return target
     }
 
+    private val matchAnyActivity = activityIds.isEmpty() && excludeActivityIds.isEmpty()
+
     fun matchActivityId(activityId: String?): Boolean {
+        if (matchAnyActivity) return true
         if (activityId == null) return false
         if (excludeActivityIds.any { activityId.startsWith(it) }) return false
         if (activityIds.isEmpty()) return true

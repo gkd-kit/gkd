@@ -18,9 +18,13 @@ import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.composition.CompositionAbService
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
@@ -31,13 +35,13 @@ import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt
-import li.songe.gkd.shizuku.activityTaskManager
+import li.songe.gkd.shizuku.newActivityTaskManager
 import li.songe.gkd.shizuku.shizukuIsSafeOK
+import li.songe.gkd.shizuku.useShizukuAliveState
 import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.increaseClickCount
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.launchWhile
-import li.songe.gkd.util.launchWhileTry
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
@@ -71,19 +75,25 @@ class GkdAbService : CompositionAbService({
         delay(1000)
     }
 
-    var okShizuku = false
-    scope.launchWhileTry(interval = 500) { // 根据 shizuku 获取 activityId, 准确
-        if (isScreenLock) return@launchWhileTry
-        if (shizukuIsSafeOK()) {
+    val shizukuAliveFlow = useShizukuAliveState()
+    val shizukuGrantFlow = MutableStateFlow(false)
+    scope.launchWhile(IO) {
+        shizukuGrantFlow.value = if (shizukuAliveFlow.value) shizukuIsSafeOK() else false
+        delay(3000)
+    }
+    val activityTaskManagerFlow =
+        combine(shizukuAliveFlow, shizukuGrantFlow) { shizukuAlive, shizukuGrant ->
+            if (shizukuAlive && shizukuGrant) newActivityTaskManager() else null
+        }.flowOn(IO).stateIn(scope, SharingStarted.Eagerly, null)
+
+    fun getActivityIdByShizuku(): String? {
+        try {
             val topActivity =
-                activityTaskManager.getTasks(1, false, true)?.firstOrNull()?.topActivity
-            if (topActivity != null) {
-                topActivityFlow.value = TopActivity(topActivity.packageName, topActivity.className)
-                okShizuku = true
-                return@launchWhileTry
-            }
+                activityTaskManagerFlow.value?.getTasks(1, false, true)?.firstOrNull()?.topActivity
+            return topActivity?.className
+        } catch (_: Exception) {
         }
-        okShizuku = false
+        return null
     }
 
     var lastKeyEventTime = -1L
@@ -108,34 +118,53 @@ class GkdAbService : CompositionAbService({
     onInterrupt { serviceConnected = false }
 
     fun isActivity(appId: String, activityId: String): Boolean {
-        return try {
+        return activityId.startsWith(appId) || (try {
             packageManager.getActivityInfo(ComponentName(appId, activityId), 0)
         } catch (e: PackageManager.NameNotFoundException) {
             null
-        } != null
+        } != null)
     }
 
     onAccessibilityEvent { event -> // 根据事件获取 activityId, 概率不准确
-        if (okShizuku || event == null) return@onAccessibilityEvent
-
+        if (event == null || isScreenLock) return@onAccessibilityEvent
 
         when (event.eventType) {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
-                val rightAppId = safeActiveWindow?.packageName ?: return@onAccessibilityEvent
                 val newAppId = event.packageName?.toString() ?: return@onAccessibilityEvent
+                val rightAppId =
+                    safeActiveWindow?.packageName?.toString() ?: return@onAccessibilityEvent
+                val shizukuActivityId =
+                    getActivityIdByShizuku() ?: topActivityFlow.value?.activityId
+                if (rightAppId != newAppId) {
+                    topActivityFlow.value =
+                        TopActivity(appId = rightAppId, activityId = shizukuActivityId)
+                    return@onAccessibilityEvent
+                }
                 val newActivityId = event.className?.toString() ?: return@onAccessibilityEvent
-                if (rightAppId.contentEquals(newAppId) && (newActivityId.startsWith(newAppId) || isActivity(
-                        newAppId, newActivityId
-                    ))
-                ) {
+
+                if (isActivity(newAppId, newActivityId)) {
                     topActivityFlow.value = TopActivity(newAppId, newActivityId)
                 } else {
-                    topActivityFlow.value =
-                        TopActivity(rightAppId.toString(), topActivityFlow.value?.activityId)
+                    if (newActivityId.startsWith("android.") || newActivityId.startsWith("androidx.") || newActivityId.startsWith(
+                            "com.android."
+                        )
+                    ) {
+                        topActivityFlow.value = topActivityFlow.value?.copy(
+                            appId = rightAppId, activityId = shizukuActivityId, sourceId = null
+                        )
+                    } else {
+                        topActivityFlow.value = topActivityFlow.value?.copy(
+                            appId = rightAppId,
+                            activityId = shizukuActivityId,
+                            sourceId = newActivityId
+                        )
+                    }
                 }
             }
 
-            else -> {}
+            else -> {
+
+            }
         }
     }
 
@@ -144,8 +173,17 @@ class GkdAbService : CompositionAbService({
 
     scope.launchWhile { // 屏幕无障碍信息轮询
         delay(200)
-        if (!serviceConnected) return@launchWhile
-        if (!storeFlow.value.enableService || isScreenLock) return@launchWhile
+        if (!serviceConnected || isScreenLock) return@launchWhile
+
+        val rightAppId = safeActiveWindow?.packageName?.toString()
+        if (rightAppId != null && rightAppId != topActivityFlow.value?.appId) {
+            topActivityFlow.value = topActivityFlow.value?.copy(
+                appId = rightAppId,
+                activityId = getActivityIdByShizuku() ?: topActivityFlow.value?.activityId
+            )
+        }
+
+        if (!storeFlow.value.enableService) return@launchWhile
 
         val currentRules = currentRulesFlow.value
         for (rule in currentRules) {
@@ -243,17 +281,14 @@ class GkdAbService : CompositionAbService({
     scope.launch {
         combine(topActivityFlow, currentRulesFlow) { topActivity, currentRules ->
             topActivity to currentRules
-        }.debounce(100).collect { (topActivity, currentRules) ->
+        }.debounce(300).collect { (topActivity, currentRules) ->
             if (storeFlow.value.enableService) {
                 LogUtils.d(
-                    topActivity?.appId,
-                    topActivity?.activityId,
-                    *currentRules.map { r -> r.rule.matches }.toTypedArray()
+                    topActivity, *currentRules.map { r -> r.rule.matches }.toTypedArray()
                 )
             } else {
                 LogUtils.d(
-                    topActivity?.appId,
-                    topActivity?.activityId,
+                    topActivity
                 )
             }
         }

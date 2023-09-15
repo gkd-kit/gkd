@@ -11,24 +11,17 @@ import li.songe.gkd.util.appIdToRulesFlow
 data class TopActivity(
     val appId: String,
     val activityId: String? = null,
+    val sourceId: String? = null,
 )
 
 val topActivityFlow by lazy {
     MutableStateFlow<TopActivity?>(null)
 }
 
-//val activityIdFlow by lazy {
-//    MutableStateFlow<String?>(null)
-//}
-//
-//val appIdFlow by lazy {
-//    MutableStateFlow<String?>(null)
-//}
-
 val currentRulesFlow by lazy {
     combine(appIdToRulesFlow, topActivityFlow) { appIdToRules, topActivity ->
         (appIdToRules[topActivity?.appId] ?: emptyList()).filter { rule ->
-            rule.matchActivityId(topActivity?.activityId)
+            rule.matchActivityId(topActivity?.activityId) || rule.matchActivityId(topActivity?.sourceId)
         }
     }.stateIn(appScope, SharingStarted.Eagerly, emptyList())
 }

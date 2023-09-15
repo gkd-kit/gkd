@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import android.os.Build
 import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.ProcessUtils
 import com.tencent.bugly.crashreport.CrashReport
 import com.tencent.mmkv.MMKV
 import dagger.hilt.android.HiltAndroidApp
@@ -40,13 +39,15 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         _app = this
-        LogUtils.d("App onCreate", ProcessUtils.getCurrentProcessName())
+
+        ShizukuProvider.enableMultiProcessSupport(isMainProcess)
+
         MMKV.initialize(this)
         LogUtils.getConfig().apply {
             isLog2FileSwitch = true
-            saveDays = 7
+            setConsoleSwitch(BuildConfig.DEBUG)
+            saveDays = 3
         }
-        ShizukuProvider.enableMultiProcessSupport(true)
         CrashReport.initCrashReport(applicationContext, "d0ce46b353", false)
 
         if (isMainProcess) {

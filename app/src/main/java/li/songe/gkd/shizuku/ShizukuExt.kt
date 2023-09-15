@@ -6,7 +6,8 @@ import rikka.shizuku.Shizuku
 fun shizukuIsSafeOK(): Boolean {
     return try {
         Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        e.printStackTrace()
         false
     }
 }
