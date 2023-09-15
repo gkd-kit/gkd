@@ -40,7 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.blankj.utilcode.util.ToastUtils
-import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.util.navigate
 import li.songe.gkd.MainActivity
 import li.songe.gkd.appScope
 import li.songe.gkd.ui.component.SettingItem
@@ -204,8 +204,7 @@ fun SettingsPage() {
                                 })
                             .padding(horizontal = 16.dp)
                     ) {
-                        RadioButton(
-                            selected = (option.second == store.updateSubsInterval),
+                        RadioButton(selected = (option.second == store.updateSubsInterval),
                             onClick = {
                                 updateStorage(
                                     storeFlow,
