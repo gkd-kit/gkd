@@ -10,10 +10,15 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.Switch
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +40,8 @@ fun SubsAppCard(
     subsConfig: SubsConfig? = null,
     enableSize: Int = appRaw.groups.count { g -> g.enable ?: true },
     onClick: (() -> Unit)? = null,
+    showMenu: Boolean = false,
+    onMenuClick: (() -> Unit)? = null,
     onValueChange: ((Boolean) -> Unit)? = null,
 ) {
     Row(
@@ -86,8 +93,20 @@ fun SubsAppCard(
                 modifier = Modifier.fillMaxWidth()
             )
         }
-
         Spacer(modifier = Modifier.width(10.dp))
+
+        if (showMenu) {
+            IconButton(onClick = {
+                onMenuClick?.invoke()
+            }) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "more",
+                    modifier = Modifier.size(30.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+        }
 
         Switch(
             subsConfig?.enable ?: true,

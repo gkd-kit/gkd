@@ -30,10 +30,10 @@ class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val appAndConfigsFlow = combine(
-        subsItemFlow, appSubsConfigsFlow, appInfoCacheFlow, groupSubsConfigsFlow
-    ) { subsItem, appSubsConfigs, appInfoCache, groupSubsConfigs ->
+        subsItemFlow, appSubsConfigsFlow, appInfoCacheFlow, groupSubsConfigsFlow, subsIdToRawFlow
+    ) { subsItem, appSubsConfigs, appInfoCache, groupSubsConfigs, subsIdToRaw ->
         if (subsItem == null) return@combine emptyList()
-        val apps = (subsIdToRawFlow.value[subsItem.id]?.apps ?: emptyList()).sortedWith { a, b ->
+        val apps = (subsIdToRaw[subsItem.id]?.apps ?: emptyList()).sortedWith { a, b ->
             // 使用 \\uFFFF 确保 id 排在名字后面
             Collator.getInstance(Locale.CHINESE).compare(
                 appInfoCache[a.id]?.name ?: a.name ?: ("\uFFFF" + a.id),

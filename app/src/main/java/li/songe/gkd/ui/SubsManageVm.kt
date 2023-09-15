@@ -46,7 +46,7 @@ class SubsManageVm @Inject constructor() : ViewModel() {
                 return@launch
             }
             val newSubsRaw = try {
-                SubscriptionRaw.parse5(text)
+                SubscriptionRaw.parse(text)
             } catch (e: Exception) {
                 e.printStackTrace()
                 ToastUtils.showShort("解析订阅文件失败")
@@ -80,14 +80,13 @@ class SubsManageVm @Inject constructor() : ViewModel() {
     fun refreshSubs() = viewModelScope.launch(Dispatchers.IO) {
         if (refreshingFlow.value) return@launch
         refreshingFlow.value = true
-        val st = System.currentTimeMillis()
         var errorNum = 0
         val oldSubItems = subsItemsFlow.value
         val newSubsItems = oldSubItems.mapNotNull { oldItem ->
             if (oldItem.updateUrl == null) return@mapNotNull null
             val oldSubsRaw = subsIdToRawFlow.value[oldItem.id]
             try {
-                val newSubsRaw = SubscriptionRaw.parse5(
+                val newSubsRaw = SubscriptionRaw.parse(
                     Singleton.client.get(oldItem.updateUrl).bodyAsText()
                 )
                 if (oldSubsRaw != null && newSubsRaw.version <= oldSubsRaw.version) {
