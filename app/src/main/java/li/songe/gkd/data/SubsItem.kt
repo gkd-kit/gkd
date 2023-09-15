@@ -55,7 +55,7 @@ data class SubsItem(
 
     suspend fun removeAssets() {
         DbSet.subsItemDao.delete(this)
-        DbSet.subsConfigDao.deleteSubs(id)
+        DbSet.subsConfigDao.delete(id)
         withContext(IO) {
             subsFile.exists() && subsFile.delete()
         }

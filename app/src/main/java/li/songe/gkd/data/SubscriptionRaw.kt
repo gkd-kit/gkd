@@ -95,7 +95,7 @@ data class SubscriptionRaw(
     @Parcelize
     @Serializable
     data class GroupRaw(
-        val name: String? = null,
+        val name: String,
         val desc: String? = null,
         val enable: Boolean? = null,
         val key: Int,
@@ -245,7 +245,7 @@ data class SubscriptionRaw(
         }
 
 
-        private fun jsonToGroupRaw(groupIndex: Int, groupsRawJson: JsonElement): GroupRaw {
+        private fun jsonToGroupRaw(groupsRawJson: JsonElement, groupIndex: Int): GroupRaw {
             val groupsJson = when (groupsRawJson) {
                 JsonNull -> error("")
                 is JsonObject -> groupsRawJson
@@ -256,7 +256,7 @@ data class SubscriptionRaw(
                 excludeActivityIds = getStringIArray(groupsJson, "excludeActivityIds"),
                 cd = getLong(groupsJson, "cd"),
                 delay = getLong(groupsJson, "delay"),
-                name = getString(groupsJson, "name"),
+                name = getString(groupsJson, "name") ?: error("miss group name"),
                 desc = getString(groupsJson, "desc"),
                 enable = getBoolean(groupsJson, "enable"),
                 key = getInt(groupsJson, "key") ?: groupIndex,
@@ -289,7 +289,7 @@ data class SubscriptionRaw(
                     is JsonPrimitive, is JsonObject -> JsonArray(listOf(groupsJson))
                     is JsonArray -> groupsJson
                 }).mapIndexed { index, jsonElement ->
-                    jsonToGroupRaw(index, jsonElement)
+                    jsonToGroupRaw(jsonElement, index)
                 },
                 deviceFilter = appsJson["deviceFilter"]?.let {
                     Singleton.json.decodeFromJsonElement(it)
@@ -315,10 +315,12 @@ data class SubscriptionRaw(
         }
 
         //  订阅文件状态: 文件不存在, 文件正常, 文件损坏(损坏原因)
-        fun stringify(source: SubscriptionRaw) = Singleton.json.encodeToString(source)
+        fun stringify(source: SubscriptionRaw) = Singleton.omitJson.encodeToString(source)
 
-        fun parse(source: String): SubscriptionRaw {
-            val obj = jsonToSubscriptionRaw(Singleton.json.parseToJsonElement(source).jsonObject)
+        fun parse(source: String, json5: Boolean = true): SubscriptionRaw {
+            val text = if (json5) Jankson.builder().build().load(source).toJson() else source
+
+            val obj = jsonToSubscriptionRaw(Singleton.json.parseToJsonElement(text).jsonObject)
 
             val duplicatedApps = obj.apps.groupingBy { it }.eachCount().filter { it.value > 1 }.keys
             if (duplicatedApps.isNotEmpty()) {
@@ -343,10 +345,14 @@ data class SubscriptionRaw(
             return obj
         }
 
-        fun parse5(source: String): SubscriptionRaw {
-            return parse(
-                Jankson.builder().build().load(source).toJson()
-            )
+        fun parseAppRaw(source: String, json5: Boolean = true): AppRaw {
+            val text = if (json5) Jankson.builder().build().load(source).toJson() else source
+            return jsonToAppRaw(Singleton.json.parseToJsonElement(text).jsonObject, 0)
+        }
+
+        fun parseGroupRaw(source: String, json5: Boolean = true): GroupRaw {
+            val text = if (json5) Jankson.builder().build().load(source).toJson() else source
+            return jsonToGroupRaw(Singleton.json.parseToJsonElement(text).jsonObject, 0)
         }
     }
 

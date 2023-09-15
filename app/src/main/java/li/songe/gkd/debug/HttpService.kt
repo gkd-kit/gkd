@@ -103,7 +103,7 @@ class HttpService : CompositionService({
                     post("/updateSubsApps") {
 
                         val subsStr =
-                            """{"name":"GKD-内存订阅","id":-1,"version":0,"author":"@gkd-kit/inspect","apps":${call.receiveText()}}"""
+                            """{"name":"内存订阅","id":-1,"version":0,"author":"@gkd-kit/inspect","apps":${call.receiveText()}}"""
                         try {
                             val httpSubsRaw = SubscriptionRaw.parse(subsStr)
                             httpSubsItem.subsFile.writeText(SubscriptionRaw.stringify(httpSubsRaw))

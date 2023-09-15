@@ -61,7 +61,7 @@ import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.ToastUtils
 import com.google.zxing.BarcodeFormat
-import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.util.navigate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import li.songe.gkd.data.SubsItem
@@ -203,7 +203,7 @@ fun SubsManagePage() {
                                 onMenuClick = {
                                     menuSubItem = subItem
                                 },
-                                onCheckedChange = scope.launchAsFn<Boolean> {
+                                onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                                     DbSet.subsItemDao.update(subItem.copy(enable = it))
                                 },
                             )
@@ -229,7 +229,7 @@ fun SubsManagePage() {
                     .padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(text = "显示二维码", modifier = Modifier
+                Text(text = "显示链接二维码", modifier = Modifier
                     .clickable {
                         shareSubItem = null
                         scope.launch(Dispatchers.Default) {
@@ -242,7 +242,7 @@ fun SubsManagePage() {
                     }
                     .fillMaxWidth()
                     .padding(8.dp))
-                Text(text = "导出至剪切板", modifier = Modifier
+                Text(text = "复制链接至剪切板", modifier = Modifier
                     .clickable {
                         shareSubItem = null
                         ClipboardUtils.copyText(shareSubItemVal.updateUrl)
@@ -274,7 +274,7 @@ fun SubsManagePage() {
                     .padding(8.dp)
             ) {
                 if (menuSubItemVal.updateUrl != null) {
-                    Text(text = "分享", modifier = Modifier
+                    Text(text = "分享链接", modifier = Modifier
                         .clickable {
                             shareSubItem = menuSubItemVal
                             menuSubItem = null
@@ -283,7 +283,7 @@ fun SubsManagePage() {
                         .padding(8.dp))
                 }
 
-                Text(text = "删除", modifier = Modifier
+                Text(text = "删除订阅", color = Color.Red, modifier = Modifier
                     .clickable {
                         deleteSubItem = menuSubItemVal
                         menuSubItem = null
@@ -304,14 +304,14 @@ fun SubsManagePage() {
                     deleteSubItem = null
                     deleteSubItemVal.removeAssets()
                 }) {
-                    Text("是")
+                    Text(text = "是", color = Color.Red)
                 }
             },
             dismissButton = {
                 TextButton(onClick = {
                     deleteSubItem = null
                 }) {
-                    Text("否")
+                    Text(text = "否")
                 }
             })
     }
@@ -336,7 +336,8 @@ fun SubsManagePage() {
                 }
 
                 Text(
-                    text = "扫描二维码导入", modifier = Modifier
+                    text = "扫描二维码导入",
+                    modifier = Modifier
                         .clickable(onClick = scope.launchAsFn {
                             showAddDialog = false
                             val qrCode = navigateForQrcodeResult()
@@ -382,7 +383,8 @@ fun SubsManagePage() {
                     value = link,
                     onValueChange = { link = it.trim() },
                     maxLines = 2,
-                    textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
+                    textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Row(
                     horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()

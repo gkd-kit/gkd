@@ -9,7 +9,6 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import li.songe.gkd.app
 import li.songe.gkd.appScope
@@ -18,6 +17,7 @@ import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.util.FolderExt
 import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.isMainProcess
+import li.songe.gkd.util.launchTry
 
 object DbSet {
 
@@ -44,24 +44,28 @@ object DbSet {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
                 if (!isMainProcess) return
-                val subsItem = SubsItem(
-                    id = 0,
-                    order = 0,
-                    updateUrl = "https://registry.npmmirror.com/@gkd-kit/subscription/latest/files",
-                    mtime = 0
-                )
-                db.insert("subs_item", SQLiteDatabase.CONFLICT_IGNORE, subsItem.toContentValues())
-                appScope.launch(Dispatchers.IO) {
-                    if (subsItem.updateUrl == null) return@launch
+                appScope.launchTry(Dispatchers.IO) {
+                    val defaultSubsItem = SubsItem(
+                        id = 0,
+                        order = 0,
+                        updateUrl = "https://registry.npmmirror.com/@gkd-kit/subscription/latest/files",
+                        mtime = 0
+                    )
+                    db.insert(
+                        "subs_item",
+                        SQLiteDatabase.CONFLICT_IGNORE,
+                        defaultSubsItem.toContentValues()
+                    )
+                    if (defaultSubsItem.updateUrl == null) return@launchTry
                     try {
                         val s = System.currentTimeMillis()
                         val newSubsRaw = withTimeout(3000) {
-                            SubscriptionRaw.parse5(
-                                Singleton.client.get(subsItem.updateUrl).bodyAsText()
+                            SubscriptionRaw.parse(
+                                Singleton.client.get(defaultSubsItem.updateUrl).bodyAsText()
                             )
                         }
                         delay(1500 - (System.currentTimeMillis() - s))
-                        val newSubsItem = subsItem.copy(mtime = System.currentTimeMillis())
+                        val newSubsItem = defaultSubsItem.copy(mtime = System.currentTimeMillis())
                         newSubsItem.subsFile.writeText(SubscriptionRaw.stringify(newSubsRaw))
                         subsItemDao.update(newSubsItem)
                     } catch (e: Exception) {
