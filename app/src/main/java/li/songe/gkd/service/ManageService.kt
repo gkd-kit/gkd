@@ -14,12 +14,16 @@ import li.songe.gkd.notif.defaultChannel
 import li.songe.gkd.util.appIdToRulesFlow
 import li.songe.gkd.util.clickCountFlow
 import li.songe.gkd.util.storeFlow
+import rikka.shizuku.ShizukuProvider
 
 class ManageService : CompositionService({
     useLifeCycleLog()
     val context = this
     createNotif(context, defaultChannel.id, abNotif)
     val scope = useScope()
+
+
+    ShizukuProvider.requestBinderForNonProviderProcess(this)
 
     scope.launch {
         combine(appIdToRulesFlow, clickCountFlow, storeFlow) { appIdToRules, clickCount, store ->
