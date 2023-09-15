@@ -4,8 +4,8 @@ import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ToastUtils
 import kotlinx.serialization.Serializable
-import li.songe.gkd.service.activityIdFlow
 import li.songe.gkd.service.forEachIndexed
+import li.songe.gkd.service.topActivityFlow
 import java.util.ArrayDeque
 
 @Serializable
@@ -45,7 +45,7 @@ data class NodeInfo(
                     // Failed to allocate a 245237304 byte allocation with 100663296 free bytes and 106MB until OOM
                     ToastUtils.showShort("节点数量至多保留50000,丢弃后续节点")
                     LogUtils.w(
-                        nodeInfo.packageName, activityIdFlow.value, "节点数量过多"
+                        nodeInfo.packageName, topActivityFlow.value?.activityId, "节点数量过多"
                     )
                     break
                 }
