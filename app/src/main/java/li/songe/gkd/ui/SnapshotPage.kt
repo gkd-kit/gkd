@@ -37,7 +37,7 @@ import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
-import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.util.navigate
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
 import li.songe.gkd.data.Snapshot

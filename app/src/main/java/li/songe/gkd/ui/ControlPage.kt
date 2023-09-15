@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.blankj.utilcode.util.ToastUtils
-import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.util.navigate
 import li.songe.gkd.MainActivity
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.ui.component.AuthCard

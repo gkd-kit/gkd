@@ -31,7 +31,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
-import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.util.navigate
 import li.songe.gkd.data.ClickLog
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SimpleTopAppBar
