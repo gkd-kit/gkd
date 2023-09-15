@@ -4,7 +4,7 @@ import com.blankj.utilcode.util.AppUtils
 import com.blankj.utilcode.util.ScreenUtils
 import kotlinx.serialization.Serializable
 import li.songe.gkd.service.GkdAbService
-import li.songe.gkd.service.activityIdFlow
+import li.songe.gkd.service.topActivityFlow
 
 @Serializable
 data class ComplexSnapshot(
@@ -28,7 +28,7 @@ data class ComplexSnapshot(
 fun createComplexSnapshot(): ComplexSnapshot {
     val currentAbNode = GkdAbService.currentAbNode
     val appId = currentAbNode?.packageName?.toString()
-    val currentActivityId = activityIdFlow.value
+    val currentActivityId = topActivityFlow.value?.activityId
     val appInfo = if (appId == null) null else AppUtils.getAppInfo(appId)
 
     return ComplexSnapshot(

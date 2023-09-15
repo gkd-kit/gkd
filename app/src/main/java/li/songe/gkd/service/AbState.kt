@@ -8,18 +8,27 @@ import li.songe.gkd.appScope
 import li.songe.gkd.data.Rule
 import li.songe.gkd.util.appIdToRulesFlow
 
-val activityIdFlow by lazy {
-    MutableStateFlow<String?>(null)
+data class TopActivity(
+    val appId: String,
+    val activityId: String? = null,
+)
+
+val topActivityFlow by lazy {
+    MutableStateFlow<TopActivity?>(null)
 }
 
-val appIdFlow by lazy {
-    MutableStateFlow<String?>(null)
-}
+//val activityIdFlow by lazy {
+//    MutableStateFlow<String?>(null)
+//}
+//
+//val appIdFlow by lazy {
+//    MutableStateFlow<String?>(null)
+//}
 
 val currentRulesFlow by lazy {
-    combine(appIdToRulesFlow, appIdFlow, activityIdFlow) { appIdToRules, appId, activityId ->
-        (appIdToRules[appId] ?: emptyList()).filter { rule ->
-            rule.matchActivityId(activityId)
+    combine(appIdToRulesFlow, topActivityFlow) { appIdToRules, topActivity ->
+        (appIdToRules[topActivity?.appId] ?: emptyList()).filter { rule ->
+            rule.matchActivityId(topActivity?.activityId)
         }
     }.stateIn(appScope, SharingStarted.Eagerly, emptyList())
 }
