@@ -192,19 +192,6 @@ fun DebugPage() {
             }
             Divider()
 
-            TextSwitch(
-                name = "按键快照",
-                desc = "当用户按下音量键时,自动保存当前界面的快照",
-                checked = store.captureVolumeKey
-            ) {
-                updateStorage(
-                    storeFlow, store.copy(
-                        captureVolumeKey = it
-                    )
-                )
-            }
-            Divider()
-
             SettingItem(title = "快照记录", onClick = {
                 navController.navigate(SnapshotPageDestination)
             })

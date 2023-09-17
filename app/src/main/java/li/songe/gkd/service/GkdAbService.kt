@@ -5,7 +5,6 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Build
 import android.view.Display
-import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
@@ -34,7 +33,6 @@ import li.songe.gkd.data.NodeInfo
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.shizuku.newActivityTaskManager
 import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.shizuku.useShizukuAliveState
@@ -95,23 +93,6 @@ class GkdAbService : CompositionAbService({
         }
         return null
     }
-
-    var lastKeyEventTime = -1L
-    onKeyEvent { event -> // 当按下音量键时捕获快照
-        val keyCode = event?.keyCode ?: return@onKeyEvent
-        if (storeFlow.value.captureVolumeKey && (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP)) {
-            val et = System.currentTimeMillis()
-            if (et - lastKeyEventTime > 3000) {
-                lastKeyEventTime = et
-                scope.launchTry(IO) {
-                    val snapshot = SnapshotExt.captureSnapshot()
-                    ToastUtils.showShort("保存快照成功")
-                    LogUtils.d("截屏:保存快照", snapshot.id)
-                }
-            }
-        }
-    }
-
 
     var serviceConnected = false
     onServiceConnected { serviceConnected = true }
