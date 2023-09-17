@@ -22,28 +22,37 @@ data class NodeInfo(
             id: Int = 0,
             pid: Int = -1,
             index: Int = 0,
+            depth: Int = 0,
         ): NodeInfo {
-            return NodeInfo(id, pid, index, nodeInfo?.let { AttrInfo.info2data(nodeInfo) })
+            return NodeInfo(
+                id,
+                pid,
+                index,
+                nodeInfo?.let { AttrInfo.info2data(nodeInfo, index, depth) })
         }
+
+        private const val MAX_KEEP_SIZE = 5000
 
         fun info2nodeList(nodeInfo: AccessibilityNodeInfo?): List<NodeInfo> {
             if (nodeInfo == null) {
                 return emptyList()
             }
-            val stack = ArrayDeque<Pair<Int, AccessibilityNodeInfo?>>()
-            stack.push(0 to nodeInfo)
+            /**
+             * [node, id, depth]
+             */
+            val stack = ArrayDeque<Tuple3<AccessibilityNodeInfo?, Int, Int>>()
+            stack.push(Tuple3(nodeInfo, 0, 0))
             val list = mutableListOf<NodeInfo>()
             list.add(abNodeToNode(nodeInfo, index = 0))
             while (stack.isNotEmpty()) {
                 val top = stack.pop()
-                top.second?.forEachIndexed { index, childNode ->
-                    stack.push(list.size to childNode)
-                    list.add(abNodeToNode(childNode, list.size, top.first, index))
+                top.t0?.forEachIndexed { index, childNode ->
+                    stack.push(Tuple3(childNode, list.size, top.t2 + 1))
+                    list.add(abNodeToNode(childNode, list.size, top.t1, index, top.t2 + 1))
                 }
-                if (list.size > 50000) {
-//                    例子: 汽车之家, 一个界面 110000 节点, 快照文件 30 MB
-                    // Failed to allocate a 245237304 byte allocation with 100663296 free bytes and 106MB until OOM
-                    ToastUtils.showShort("节点数量至多保留50000,丢弃后续节点")
+                if (list.size > MAX_KEEP_SIZE) {
+//                    https://github.com/gkd-kit/gkd/issues/28
+                    ToastUtils.showShort("节点数量至多保留$MAX_KEEP_SIZE,丢弃后续节点")
                     LogUtils.w(
                         nodeInfo.packageName, topActivityFlow.value?.activityId, "节点数量过多"
                     )
