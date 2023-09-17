@@ -3,8 +3,6 @@ package li.songe.gkd.data
 import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.serialization.Serializable
-import li.songe.gkd.service.getDepth
-import li.songe.gkd.service.getIndex
 
 @Serializable
 data class AttrInfo(
@@ -27,9 +25,10 @@ data class AttrInfo(
     val width: Int,
     val height: Int,
 
+    val childCount: Int,
+
     val index: Int,
     val depth: Int,
-    val childCount: Int,
 ) {
     companion object {
         /**
@@ -38,6 +37,8 @@ data class AttrInfo(
         private val rect = Rect()
         fun info2data(
             node: AccessibilityNodeInfo,
+            index: Int,
+            depth: Int,
         ): AttrInfo {
             node.getBoundsInScreen(rect)
             return AttrInfo(
@@ -60,9 +61,10 @@ data class AttrInfo(
                 width = rect.width(),
                 height = rect.height(),
 
-                index = node.getIndex(),
-                depth = node.getDepth(),
                 childCount = node.childCount,
+
+                index = index,
+                depth = depth, //
             )
         }
     }
