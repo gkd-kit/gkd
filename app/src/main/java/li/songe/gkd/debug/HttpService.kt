@@ -32,6 +32,7 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.composition.CompositionService
+import li.songe.gkd.data.ClickAction
 import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubsItem
@@ -43,6 +44,7 @@ import li.songe.gkd.notif.httpChannel
 import li.songe.gkd.notif.httpNotif
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.util.Ext.getIpAddressInLocalNetwork
+import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsItemsFlow
@@ -65,7 +67,7 @@ class HttpService : CompositionService({
         return embeddedServer(Netty, port, configure = { tcpKeepAlive = true }) {
             install(KtorCorsPlugin)
             install(KtorErrorPlugin)
-            install(ContentNegotiation) { json() }
+            install(ContentNegotiation) { json(Singleton.json) }
 
             routing {
                 get("/") { call.respond("hello world") }
@@ -118,8 +120,9 @@ class HttpService : CompositionService({
                         if (!GkdAbService.isRunning()) {
                             throw RpcError("无障碍没有运行")
                         }
-                        val text = call.receive<Value<String>>().value
-                        call.respond(RpcOk(GkdAbService.click(text)))
+                        val clickAction = call.receive<ClickAction>()
+                        LogUtils.d(clickAction)
+                        call.respond(GkdAbService.execClickAction(clickAction))
                     }
                 }
             }
@@ -172,9 +175,6 @@ class HttpService : CompositionService({
 data class RpcOk(
     val message: String? = null,
 )
-
-@Serializable
-data class Value<T>(val value: T)
 
 fun clearHttpSubs() {
     // 如果 app 被直接在任务列表划掉, HTTP订阅会没有清除, 所以在后续的第一次启动时清除

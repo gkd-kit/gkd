@@ -6,7 +6,6 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.view.Display
 import android.view.accessibility.AccessibilityEvent
-import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.NetworkUtils
 import com.blankj.utilcode.util.ScreenUtils
@@ -28,10 +27,15 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.composition.CompositionAbService
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.composition.CompositionExt.useScope
+import li.songe.gkd.data.ActionResult
+import li.songe.gkd.data.ClickAction
 import li.songe.gkd.data.ClickLog
 import li.songe.gkd.data.NodeInfo
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubscriptionRaw
+import li.songe.gkd.data.click
+import li.songe.gkd.data.clickCenter
+import li.songe.gkd.data.clickNode
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.shizuku.newActivityTaskManager
 import li.songe.gkd.shizuku.shizukuIsSafeOK
@@ -178,8 +182,9 @@ class GkdAbService : CompositionAbService({
             }
 
             // 如果节点在屏幕外部, click 的结果为 null
-            val clickResult = target.click(context)
-            if (clickResult != null) {
+
+            val actionResult = rule.performAction(context, target)
+            if (actionResult.result) {
                 if (storeFlow.value.toastWhenClick) {
                     val t = System.currentTimeMillis()
                     if (t - lastToastTime > 3000) {
@@ -189,7 +194,7 @@ class GkdAbService : CompositionAbService({
                 }
                 rule.trigger()
                 LogUtils.d(
-                    *rule.matches.toTypedArray(), NodeInfo.abNodeToNode(target).attr, clickResult
+                    *rule.matches.toTypedArray(), NodeInfo.abNodeToNode(target).attr, actionResult
                 )
                 scope.launchTry(IO) {
                     val clickLog = ClickLog(
@@ -278,24 +283,28 @@ class GkdAbService : CompositionAbService({
 }) {
 
     companion object {
-        private var service: GkdAbService? = null
+        var service: GkdAbService? = null
         fun isRunning() = ServiceUtils.isServiceRunning(GkdAbService::class.java)
 
-        fun click(source: String): String? {
+        fun execClickAction(clickAction: ClickAction): ActionResult {
             val serviceVal = service ?: throw RpcError("无障碍没有运行")
             val selector = try {
-                Selector.parse(source)
+                Selector.parse(clickAction.selector)
             } catch (e: Exception) {
                 throw RpcError("非法选择器")
             }
-            return currentAbNode?.querySelector(selector)?.click(serviceVal)
+
+            val targetNode = serviceVal.safeActiveWindow?.querySelector(selector) ?: throw RpcError(
+                "没有选择到节点"
+            )
+
+            return when (clickAction.action) {
+                "clickNode" -> clickNode(serviceVal, targetNode)
+                "clickCenter" -> clickCenter(serviceVal, targetNode)
+                else -> click(serviceVal, targetNode)
+            }
         }
 
-
-        val currentAbNode: AccessibilityNodeInfo?
-            get() {
-                return service?.safeActiveWindow
-            }
 
         suspend fun currentScreenshot() = service?.run {
             suspendCoroutine {

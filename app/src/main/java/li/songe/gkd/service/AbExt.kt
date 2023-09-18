@@ -1,8 +1,6 @@
 package li.songe.gkd.service
 
 import android.accessibilityservice.AccessibilityService
-import android.accessibilityservice.GestureDescription
-import android.graphics.Path
 import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
 import li.songe.selector.Selector
@@ -37,30 +35,11 @@ inline fun AccessibilityNodeInfo.forEachIndexed(action: (index: Int, childNode: 
     }
 }
 
-fun AccessibilityNodeInfo.click(service: AccessibilityService) = when {
-    this.isClickable -> {
-        this.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-        "self"
-    }
-
-    else -> {
-        val react = Rect()
-        this.getBoundsInScreen(react)
-        val x = react.left + 50f / 100f * (react.right - react.left)
-        val y = react.top + 50f / 100f * (react.bottom - react.top)
-        if (x >= 0 && y >= 0) {
-            val gestureDescription = GestureDescription.Builder()
-            val path = Path()
-            path.moveTo(x, y)
-            gestureDescription.addStroke(GestureDescription.StrokeDescription(path, 0, 300))
-            service.dispatchGesture(gestureDescription.build(), null, null)
-            "(50%, 50%)"
-        } else {
-            null
-        }
-    }
-}
-
+/**
+ * 此方法小概率造成无限节点片段,底层原因未知
+ *
+ * https://github.com/gkd-kit/gkd/issues/28
+ */
 fun AccessibilityNodeInfo.getDepth(): Int {
     var p: AccessibilityNodeInfo? = this
     var depth = 0

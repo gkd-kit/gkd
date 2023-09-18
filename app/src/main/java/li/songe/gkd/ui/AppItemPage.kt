@@ -45,6 +45,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
+import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ToastUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
@@ -87,7 +88,7 @@ fun AppItemPage(
         )
     }
 
-    val editable = subsItemId == -2L
+    val editable = subsItemId < 0
 
     var showAddDlg by remember { mutableStateOf(false) }
 
@@ -311,8 +312,8 @@ fun AppItemPage(
                         val newGroupRaw = try {
                             SubscriptionRaw.parseGroupRaw(source)
                         } catch (e: Exception) {
-                            e.printStackTrace()
-                            ToastUtils.showShort("非法规则")
+                            LogUtils.d(e)
+                            ToastUtils.showShort("非法规则:${e.message}")
                             return@TextButton
                         }
                         if (newGroupRaw.key != editGroupRaw.key) {
@@ -320,7 +321,7 @@ fun AppItemPage(
                             return@TextButton
                         }
                         if (!newGroupRaw.valid) {
-                            ToastUtils.showShort("非法规则")
+                            ToastUtils.showShort("非法规则:存在非法选择器")
                             return@TextButton
                         }
                         setEditGroupRaw(null)
@@ -384,8 +385,9 @@ fun AppItemPage(
                         val tempGroups = if (newAppRaw == null) {
                             val newGroupRaw = try {
                                 SubscriptionRaw.parseGroupRaw(source)
-                            } catch (_: Exception) {
-                                ToastUtils.showShort("非法规则")
+                            } catch (e: Exception) {
+                                LogUtils.d(e)
+                                ToastUtils.showShort("非法规则:${e.message}")
                                 return@TextButton
                             }
                             listOf(newGroupRaw)
@@ -401,7 +403,7 @@ fun AppItemPage(
                             newAppRaw.groups
                         }
                         if (!tempGroups.all { g -> g.valid }) {
-                            ToastUtils.showShort("存在非法规则")
+                            ToastUtils.showShort("非法规则:存在非法选择器")
                             return@TextButton
                         }
                         tempGroups.forEach { g ->

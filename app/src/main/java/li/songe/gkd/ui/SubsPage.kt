@@ -43,6 +43,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
+import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ToastUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
@@ -84,7 +85,7 @@ fun SubsPage(
     val subsRaw = subsIdToRaw[subsItem?.id]
 
     // 本地订阅
-    val editable = subsItem?.id == -2L
+    val editable = subsItem?.id.let { it != null && it < 0 }
 
     var showDetailDlg by remember {
         mutableStateOf(false)
@@ -240,8 +241,8 @@ fun SubsPage(
                         val newAppRaw = try {
                             SubscriptionRaw.parseAppRaw(source)
                         } catch (e: Exception) {
-                            e.printStackTrace()
-                            ToastUtils.showShort("非法规则")
+                            LogUtils.d(e)
+                            ToastUtils.showShort("非法规则${e.message}")
                             return@TextButton
                         }
                         if (newAppRaw.groups.any { s -> s.name.isBlank() }) {
@@ -344,8 +345,8 @@ fun SubsPage(
                                 ToastUtils.showShort("更新成功")
                             }
                         } catch (e: Exception) {
-                            e.printStackTrace()
-                            ToastUtils.showShort("非法规则")
+                            LogUtils.d(e)
+                            ToastUtils.showShort("非法规则${e.message}")
                         }
                     }, enabled = source.isNotEmpty()) {
                         Text(text = "添加")
