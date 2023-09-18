@@ -13,6 +13,7 @@ import com.blankj.utilcode.util.ServiceUtils
 import com.blankj.utilcode.util.ToastUtils
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -21,7 +22,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.composition.CompositionAbService
@@ -156,9 +156,12 @@ class GkdAbService : CompositionAbService({
 
     var lastToastTime = -1L
 
-    scope.launchWhile { // 屏幕无障碍信息轮询
-        delay(200)
-        if (!serviceConnected || isScreenLock) return@launchWhile
+    scope.launchWhile(Dispatchers.Default) { // 屏幕无障碍信息轮询
+        delay(150)
+        if (isScreenLock || !serviceConnected) {
+            delay(1000)
+            return@launchWhile
+        }
 
         val rightAppId = safeActiveWindow?.packageName?.toString()
         if (rightAppId != null && rightAppId != topActivityFlow.value?.appId) {
@@ -213,27 +216,21 @@ class GkdAbService : CompositionAbService({
         }
     }
 
-    scope.launchTry {
-        storeFlow.map { s -> s.updateSubsInterval }.collect { updateSubsInterval ->
-            if (updateSubsInterval <= 0) {
-                // clear
-            } else {
-                // new task
-                updateSubsInterval.coerceAtLeast(60 * 60_000)
-            }
-        }
-    }
-
     var lastUpdateSubsTime = System.currentTimeMillis()
     scope.launchWhile(IO) { // 自动从网络更新订阅文件
-        delay(60_000)
-        if (!NetworkUtils.isAvailable() || storeFlow.value.updateSubsInterval <= 0 || isScreenLock) return@launchWhile
-        if (System.currentTimeMillis() - lastUpdateSubsTime < storeFlow.value.updateSubsInterval.coerceAtLeast(
+        delay(30 * 60_000)
+        if (isScreenLock // 锁屏
+            || storeFlow.value.updateSubsInterval <= 0 // 暂停更新
+            || System.currentTimeMillis() - lastUpdateSubsTime < storeFlow.value.updateSubsInterval.coerceAtLeast(
                 60 * 60_000
-            )
+            ) // 距离上次更新的时间小于更新间隔
         ) {
             return@launchWhile
         }
+        if (!NetworkUtils.isAvailable()) {// 产生 io
+            return@launchWhile
+        }
+
         subsItemsFlow.value.forEach { subsItem ->
             if (subsItem.updateUrl == null) return@forEach
             try {
