@@ -159,13 +159,15 @@ fun AppItemPage(
                                         maxLines = 1,
                                         softWrap = false,
                                         overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier.fillMaxWidth(),
+                                        fontSize = 14.sp
                                     )
                                 } else {
                                     Text(
                                         text = "规则组损坏",
                                         color = Color.Red,
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier.fillMaxWidth(),
+                                        fontSize = 14.sp
                                     )
                                 }
                             }
