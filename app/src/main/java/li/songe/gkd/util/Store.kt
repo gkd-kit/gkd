@@ -77,7 +77,7 @@ data class Store(
     val excludeFromRecents: Boolean = false,
     val captureScreenshot: Boolean = false,
     val httpServerPort: Int = 8888,
-    val updateSubsInterval: Long = 60 * 60_000,
+    val updateSubsInterval: Long = 6 * 60 * 60_000L,
     @Deprecated("https://github.com/gkd-kit/gkd/issues/26") val captureVolumeKey: Boolean = false,
     val autoCheckAppUpdate: Boolean = true,
     val toastWhenClick: Boolean = true,

@@ -204,7 +204,8 @@ fun SettingsPage() {
                                 })
                             .padding(horizontal = 16.dp)
                     ) {
-                        RadioButton(selected = (option.second == store.updateSubsInterval),
+                        RadioButton(
+                            selected = (option.second == store.updateSubsInterval),
                             onClick = {
                                 updateStorage(
                                     storeFlow,
@@ -267,6 +268,7 @@ fun SettingsPage() {
 val radioOptions = listOf(
     "暂停" to -1L,
     "每小时" to 60 * 60_000L,
+    "每6小时" to 6 * 60 * 60_000L,
     "每12小时" to 12 * 60 * 60_000L,
     "每天" to 24 * 60 * 60_000L
 )
