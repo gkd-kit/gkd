@@ -57,7 +57,7 @@ class SubsManageVm @Inject constructor() : ViewModel() {
                 return@launch
             }
             if (newSubsRaw.id < 0) {
-                ToastUtils.showShort("订阅id不可小于0")
+                ToastUtils.showShort("订阅id不可为${newSubsRaw.id}\n负数id为内部使用")
                 return@launch
             }
             val newItem = SubsItem(

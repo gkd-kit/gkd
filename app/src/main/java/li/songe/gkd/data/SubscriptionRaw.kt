@@ -126,6 +126,7 @@ data class SubscriptionRaw(
         val name: String? = null,
         val key: Int? = null,
         val preKeys: List<Int> = emptyList(),
+        val action: String? = null,
         override val cd: Long? = null,
         override val delay: Long? = null,
         override val activityIds: List<String>? = null,
@@ -241,6 +242,7 @@ data class SubscriptionRaw(
                 appFilter = rulesJson["appFilter"]?.let {
                     Singleton.json.decodeFromJsonElement(it)
                 },
+                action = getString(rulesJson, "action")
             )
         }
 

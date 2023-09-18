@@ -1,6 +1,11 @@
 package li.songe.gkd.data
 
+import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.GestureDescription
+import android.graphics.Path
+import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
+import kotlinx.serialization.Serializable
 import li.songe.gkd.service.lastTriggerRuleFlow
 import li.songe.gkd.service.querySelector
 import li.songe.selector.Selector
@@ -18,11 +23,14 @@ data class Rule(
     val cd: Long = defaultMiniCd,
     val delay: Long = 0,
     val index: Int = 0,
+
     val appId: String = "",
     val activityIds: Set<String> = emptySet(),
     val excludeActivityIds: Set<String> = emptySet(),
+
     val key: Int? = null,
     val preKeys: Set<Int> = emptySet(),
+
     val rule: SubscriptionRaw.RuleRaw,
     val group: SubscriptionRaw.GroupRaw,
     val app: SubscriptionRaw.AppRaw,
@@ -68,7 +76,59 @@ data class Rule(
         return activityIds.any { activityId.startsWith(it) }
     }
 
+    val performAction: ActionFc = when (rule.action) {
+        "clickNode" -> clickNode
+        "clickCenter" -> clickCenter
+        else -> click
+    }
+
     companion object {
         const val defaultMiniCd = 1000L
     }
+}
+
+typealias ActionFc = (context: AccessibilityService, node: AccessibilityNodeInfo) -> ActionResult
+
+
+@Serializable
+data class ClickAction(
+    val selector: String,
+    val action: String? = null,
+)
+
+
+@Serializable
+data class ActionResult(
+    val action: String,
+    val result: Boolean,
+)
+
+val click: ActionFc = { context, node ->
+    if (node.isClickable) clickNode(context, node) else clickCenter(context, node)
+}
+
+val clickNode: ActionFc = { _, node ->
+    ActionResult(
+        action = "clickNode", result = node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+    )
+}
+
+val clickCenter: ActionFc = { context, node ->
+    val react = Rect()
+    node.getBoundsInScreen(react)
+    val x = react.left + 50f / 100f * (react.right - react.left)
+    val y = react.top + 50f / 100f * (react.bottom - react.top)
+    ActionResult(
+        action = "clickCenter", result = if (x >= 0 && y >= 0) {
+            val gestureDescription = GestureDescription.Builder()
+            val path = Path()
+            path.moveTo(x, y)
+            gestureDescription.addStroke(GestureDescription.StrokeDescription(path, 0, 300))
+            context.dispatchGesture(gestureDescription.build(), null, null)
+            true
+        } else {
+            false
+        }
+    )
+
 }
