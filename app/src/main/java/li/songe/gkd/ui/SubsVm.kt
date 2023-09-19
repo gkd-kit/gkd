@@ -34,11 +34,12 @@ class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
     ) { subsItem, appSubsConfigs, appInfoCache, groupSubsConfigs, subsIdToRaw ->
         if (subsItem == null) return@combine emptyList()
         val apps = (subsIdToRaw[subsItem.id]?.apps ?: emptyList()).sortedWith { a, b ->
-            // 使用 \\uFFFF 确保 id 排在名字后面
-            Collator.getInstance(Locale.CHINESE).compare(
-                appInfoCache[a.id]?.name ?: a.name ?: ("\uFFFF" + a.id),
-                appInfoCache[b.id]?.name ?: b.name ?: ("\uFFFF" + b.id)
-            )
+            // 顺序: 已安装(有名字->无名字)->未安装(有名字(来自订阅)->无名字)
+            Collator.getInstance(Locale.CHINESE)
+                .compare(appInfoCache[a.id]?.name ?: a.name?.let { "\uFFFF" + it }
+                ?: ("\uFFFF\uFFFF" + a.id),
+                    appInfoCache[b.id]?.name ?: b.name?.let { "\uFFFF" + it }
+                    ?: ("\uFFFF\uFFFF" + b.id))
         }
         apps.map { app ->
             val subsConfig = appSubsConfigs.find { s -> s.appId == app.id }
