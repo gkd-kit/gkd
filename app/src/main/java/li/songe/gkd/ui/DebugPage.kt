@@ -23,6 +23,7 @@ import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,12 +40,13 @@ import com.blankj.utilcode.util.ToastUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
-import li.songe.gkd.util.navigate
+import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.MainActivity
 import li.songe.gkd.appScope
 import li.songe.gkd.debug.FloatingService
 import li.songe.gkd.debug.HttpService
 import li.songe.gkd.debug.ScreenshotService
+import li.songe.gkd.shizuku.newActivityTaskManager
 import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
@@ -56,6 +58,8 @@ import li.songe.gkd.util.LocalLauncher
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.navigate
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.updateStorage
 import li.songe.gkd.util.usePollState
@@ -86,9 +90,17 @@ fun DebugPage() {
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             val shizukuIsOk by usePollState { shizukuIsSafeOK() }
+            LaunchedEffect(key1 = shizukuIsOk, block = {
+                if (shizukuIsOk) {
+//                    check method type
+                    appScope.launchTry(Dispatchers.IO) {
+                        newActivityTaskManager()
+                    }
+                }
+            })
             if (!shizukuIsOk) {
                 AuthCard(title = "Shizuku授权",
-                    desc = "高级运行模式,能更准确识别界面活动ID",
+                    desc = "高级运行模式,能更准确识别界面活动ID\nAndroid14暂无法使用",
                     onAuthClick = {
                         try {
                             Shizuku.requestPermission(Activity.RESULT_OK)

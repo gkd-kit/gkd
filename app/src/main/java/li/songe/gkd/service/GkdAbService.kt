@@ -93,6 +93,9 @@ class GkdAbService : CompositionAbService({
             val topActivity =
                 activityTaskManagerFlow.value?.getTasks(1, false, true)?.firstOrNull()?.topActivity
             return topActivity?.className
+        } catch (_: NoSuchMethodError) {
+            // java.lang.NoSuchMethodError
+            // 貌似不同手机的方法签名不一样
         } catch (_: Exception) {
         }
         return null
