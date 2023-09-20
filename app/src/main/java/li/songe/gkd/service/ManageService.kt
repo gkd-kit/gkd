@@ -2,6 +2,7 @@ package li.songe.gkd.service
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import li.songe.gkd.app
@@ -22,8 +23,10 @@ class ManageService : CompositionService({
     createNotif(context, defaultChannel.id, abNotif)
     val scope = useScope()
 
-
-    ShizukuProvider.requestBinderForNonProviderProcess(this)
+    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.TIRAMISU) {
+        // https://github.com/RikkaApps/Shizuku-API/issues/54
+        ShizukuProvider.requestBinderForNonProviderProcess(this)
+    }
 
     scope.launch {
         combine(appIdToRulesFlow, clickCountFlow, storeFlow) { appIdToRules, clickCount, store ->

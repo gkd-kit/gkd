@@ -75,8 +75,8 @@ dependencyResolutionManagement {
             library("rikka.runtime", "dev.rikka.tools.refine:runtime:4.3.0")
 
             // https://github.com/RikkaApps/Shizuku-API
-            library("rikka.shizuku.api", "dev.rikka.shizuku:api:13.1.2")
-            library("rikka.shizuku.provider", "dev.rikka.shizuku:provider:13.1.2")
+            library("rikka.shizuku.api", "dev.rikka.shizuku:api:13.1.4")
+            library("rikka.shizuku.provider", "dev.rikka.shizuku:provider:13.1.4")
 
             // https://github.com/LSPosed/AndroidHiddenApiBypass
             library("lsposed.hiddenapibypass", "org.lsposed.hiddenapibypass:hiddenapibypass:4.3")
