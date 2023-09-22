@@ -72,10 +72,9 @@ class ParserTest {
     }
 
     @Test
-    fun check_query(){
+    fun check_query() {
         val projectCwd = File("../").absolutePath
-        val text =
-            "@TextView[text^='跳过'] + LinearLayout TextView[text*=`跳转`]"
+        val text = "@TextView[text^='跳过'] + LinearLayout TextView[text*=`跳转`]"
         val selector = Selector.parse(text)
         println("selector: $selector")
         println(selector.trackIndex)
@@ -94,8 +93,8 @@ class ParserTest {
             }
         }
         val transform = Transform<TestNode>(getAttr = { node, name ->
-            if (name=="_id") return@Transform  node.id
-            if (name=="_pid") return@Transform  node.pid
+            if (name == "_id") return@Transform node.id
+            if (name == "_pid") return@Transform node.pid
             val value = node.attr[name] ?: return@Transform null
             if (value is JsonNull) return@Transform null
             value.intOrNull ?: value.booleanOrNull ?: value.content
@@ -105,5 +104,12 @@ class ParserTest {
         val targets = transform.querySelectorAll(nodes.first(), selector).toList()
         println("target_size: " + targets.size)
         println(targets.firstOrNull())
+    }
+
+    @Test
+    fun check_quote() {
+//        https://github.com/gkd-kit/inspect/issues/7
+        val selector = Selector.parse("a[a=''] ")
+        println("check_quote:$selector")
     }
 }

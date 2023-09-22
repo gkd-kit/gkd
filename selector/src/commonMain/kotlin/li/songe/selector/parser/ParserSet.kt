@@ -198,9 +198,12 @@ internal object ParserSet {
         ExtSyntaxError.assert(source, i, prefix)
         val startChar = source[i]
         i++
+        if (i >= source.length) {
+            ExtSyntaxError.throwError(source, i, "any char")
+        }
         var data = ""
         while (source[i] != startChar) {
-            if (i == source.length - 1) {
+            if (i >= source.length - 1) {
                 ExtSyntaxError.assert(source, i, startChar.toString())
                 break
             }
@@ -442,7 +445,10 @@ internal object ParserSet {
         val selectorList = mutableListOf<Pair<ConnectSegment, PropertySegment>>()
         while (i < source.length && whiteCharParser.prefix.contains(source[i])) {
             i += whiteCharStrictParser(source, i).length
-            val combinator = if (combinatorParser.prefix.contains((source[i]))) {
+            if (i >= source.length) {
+                break
+            }
+            val combinator = if (combinatorParser.prefix.contains(source[i])) {
                 val combinatorResult = combinatorParser(source, i)
                 i += combinatorResult.length
                 i += whiteCharStrictParser(source, i).length
