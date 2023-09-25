@@ -17,12 +17,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.composition.CompositionAbService
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
@@ -37,9 +33,7 @@ import li.songe.gkd.data.click
 import li.songe.gkd.data.clickCenter
 import li.songe.gkd.data.clickNode
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.shizuku.newActivityTaskManager
-import li.songe.gkd.shizuku.shizukuIsSafeOK
-import li.songe.gkd.shizuku.useShizukuAliveState
+import li.songe.gkd.shizuku.useSafeGetTasksFc
 import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.increaseClickCount
 import li.songe.gkd.util.launchTry
@@ -50,6 +44,7 @@ import li.songe.gkd.util.subsItemsFlow
 import li.songe.selector.Selector
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+
 
 @OptIn(FlowPreview::class)
 class GkdAbService : CompositionAbService({
@@ -77,33 +72,13 @@ class GkdAbService : CompositionAbService({
         delay(1000)
     }
 
-    val shizukuAliveFlow = useShizukuAliveState()
-    val shizukuGrantFlow = MutableStateFlow(false)
-    scope.launchWhile(IO) {
-        shizukuGrantFlow.value = if (shizukuAliveFlow.value) shizukuIsSafeOK() else false
-        delay(3000)
-    }
-    val activityTaskManagerFlow =
-        combine(shizukuAliveFlow, shizukuGrantFlow) { shizukuAlive, shizukuGrant ->
-            if (shizukuAlive && shizukuGrant) newActivityTaskManager() else null
-        }.flowOn(IO).stateIn(scope, SharingStarted.Eagerly, null)
-
-    fun getActivityIdByShizuku(): String? {
-        try {
-            val topActivity =
-                activityTaskManagerFlow.value?.getTasks(1, false, true)?.firstOrNull()?.topActivity
-            return topActivity?.className
-        } catch (_: NoSuchMethodError) {
-            // java.lang.NoSuchMethodError
-            // 貌似不同手机的方法签名不一样
-        } catch (_: Exception) {
-        }
-        return null
-    }
-
     var serviceConnected = false
     onServiceConnected { serviceConnected = true }
-    onInterrupt { serviceConnected = false }
+
+    val safeGetTasksFc = useSafeGetTasksFc(scope)
+    fun getActivityIdByShizuku(): String? {
+        return safeGetTasksFc()?.lastOrNull()?.topActivity?.className
+    }
 
     fun isActivity(appId: String, activityId: String): Boolean {
         return activityId.startsWith(appId) || (try {
@@ -114,7 +89,7 @@ class GkdAbService : CompositionAbService({
     }
 
     onAccessibilityEvent { event -> // 根据事件获取 activityId, 概率不准确
-        if (event == null || isScreenLock) return@onAccessibilityEvent
+        if (event == null) return@onAccessibilityEvent
 
         when (event.eventType) {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
@@ -221,7 +196,7 @@ class GkdAbService : CompositionAbService({
 
     var lastUpdateSubsTime = System.currentTimeMillis()
     scope.launchWhile(IO) { // 自动从网络更新订阅文件
-        delay(30 * 60_000)
+        delay(10 * 60_000) // 每 10 分钟检查一次
         if (isScreenLock // 锁屏
             || storeFlow.value.updateSubsInterval <= 0 // 暂停更新
             || System.currentTimeMillis() - lastUpdateSubsTime < storeFlow.value.updateSubsInterval.coerceAtLeast(

@@ -1,0 +1,104 @@
+package li.songe.gkd.shizuku
+
+
+import android.app.ActivityManager
+import android.app.IActivityTaskManager
+import android.os.Build
+import com.blankj.utilcode.util.LogUtils
+import com.blankj.utilcode.util.RomUtils
+import com.blankj.utilcode.util.ToastUtils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
+import li.songe.gkd.composition.CanOnDestroy
+import li.songe.gkd.data.DeviceInfo
+import li.songe.gkd.util.launchWhile
+import rikka.shizuku.Shizuku
+import rikka.shizuku.ShizukuBinderWrapper
+import rikka.shizuku.SystemServiceHelper
+import kotlin.reflect.full.declaredMemberFunctions
+import kotlin.reflect.typeOf
+
+/**
+ * https://github.com/gkd-kit/gkd/issues/44
+ */
+
+val skipShizuku by lazy {
+    Build.VERSION.SDK_INT == Build.VERSION_CODES.P && RomUtils.isVivo()
+}
+
+fun newActivityTaskManager(): IActivityTaskManager? {
+    return SystemServiceHelper.getSystemService("activity_task").let(::ShizukuBinderWrapper)
+        .let(IActivityTaskManager.Stub::asInterface)
+}
+
+/**
+ * -1: invalid fc
+ * 1: (int) -> List<Task>
+ * 3: (int, boolean, boolean) -> List<Task>
+ */
+private var getTasksFcType: Int? = null
+
+fun IActivityTaskManager.safeGetTasks(): List<ActivityManager.RunningTaskInfo>? {
+    if (getTasksFcType == null) {
+        val fcs = this::class.declaredMemberFunctions
+        val parameters = fcs.find { d -> d.name == "getTasks" }?.parameters
+        if (parameters != null) {
+            if (parameters.size == 4 && parameters[1].type == typeOf<Int>() && parameters[2].type == typeOf<Boolean>() && parameters[3].type == typeOf<Boolean>()) {
+                getTasksFcType = 3
+            } else if (parameters.size == 2 && parameters[1].type == typeOf<Int>()) {
+                getTasksFcType = 1
+            } else {
+                getTasksFcType = -1
+                LogUtils.d(DeviceInfo.instance)
+                LogUtils.d(fcs)
+                ToastUtils.showShort("Shizuku获取方法签名错误,[设置-问题反馈]可反应此问题")
+            }
+        }
+    }
+    if (getTasksFcType == 1) {
+        return this.getTasks(1)
+    } else if (getTasksFcType == 3) {
+        return this.getTasks(1, false, true)
+    }
+    return null
+}
+
+
+fun CanOnDestroy.useShizukuAliveState(): StateFlow<Boolean> {
+    val shizukuAliveFlow = MutableStateFlow(Shizuku.pingBinder())
+    val receivedListener = Shizuku.OnBinderReceivedListener { shizukuAliveFlow.value = true }
+    val deadListener = Shizuku.OnBinderDeadListener { shizukuAliveFlow.value = false }
+    Shizuku.addBinderReceivedListener(receivedListener)
+    Shizuku.addBinderDeadListener(deadListener)
+    onDestroy {
+        Shizuku.removeBinderReceivedListener(receivedListener)
+        Shizuku.removeBinderDeadListener(deadListener)
+    }
+    return shizukuAliveFlow
+}
+
+fun CanOnDestroy.useSafeGetTasksFc(scope: CoroutineScope): () -> List<ActivityManager.RunningTaskInfo>? {
+    if (skipShizuku) {
+        return { null }
+    }
+    val shizukuAliveFlow = useShizukuAliveState()
+    val shizukuGrantFlow = MutableStateFlow(false)
+    scope.launchWhile(Dispatchers.IO) {
+        shizukuGrantFlow.value = if (shizukuAliveFlow.value) shizukuIsSafeOK() else false
+        delay(3000)
+    }
+    val activityTaskManagerFlow =
+        combine(shizukuAliveFlow, shizukuGrantFlow) { shizukuAlive, shizukuGrant ->
+            if (shizukuAlive && shizukuGrant) newActivityTaskManager() else null
+        }.flowOn(Dispatchers.IO).stateIn(scope, SharingStarted.Lazily, null)
+    return {
+        activityTaskManagerFlow.value?.safeGetTasks()
+    }
+}

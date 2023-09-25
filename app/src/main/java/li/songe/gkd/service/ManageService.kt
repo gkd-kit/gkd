@@ -2,7 +2,6 @@ package li.songe.gkd.service
 
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import li.songe.gkd.app
@@ -15,7 +14,6 @@ import li.songe.gkd.notif.defaultChannel
 import li.songe.gkd.util.appIdToRulesFlow
 import li.songe.gkd.util.clickCountFlow
 import li.songe.gkd.util.storeFlow
-import rikka.shizuku.ShizukuProvider
 
 class ManageService : CompositionService({
     useLifeCycleLog()
@@ -23,17 +21,11 @@ class ManageService : CompositionService({
     createNotif(context, defaultChannel.id, abNotif)
     val scope = useScope()
 
-    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.TIRAMISU) {
-        // https://github.com/RikkaApps/Shizuku-API/issues/54
-        ShizukuProvider.requestBinderForNonProviderProcess(this)
-    }
-
     scope.launch {
         combine(appIdToRulesFlow, clickCountFlow, storeFlow) { appIdToRules, clickCount, store ->
             if (!store.enableService) return@combine "服务已暂停"
             val appSize = appIdToRules.keys.size
-            val groupSize =
-                appIdToRules.values.flatten().map { r -> r.group.hashCode() }.toSet().size
+            val groupSize = appIdToRules.values.sumOf { r -> r.size }
             (if (groupSize > 0) {
                 "${appSize}应用/${groupSize}规则组"
             } else {
