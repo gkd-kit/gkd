@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ToastUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
@@ -47,6 +48,7 @@ import li.songe.gkd.debug.FloatingService
 import li.songe.gkd.debug.HttpService
 import li.songe.gkd.debug.ScreenshotService
 import li.songe.gkd.shizuku.newActivityTaskManager
+import li.songe.gkd.shizuku.safeGetTasks
 import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
@@ -94,13 +96,14 @@ fun DebugPage() {
                 if (shizukuIsOk) {
 //                    check method type
                     appScope.launchTry(Dispatchers.IO) {
-                        newActivityTaskManager()
+                        LogUtils.d(newActivityTaskManager()?.safeGetTasks()
+                            ?.map { t -> t.topActivity?.className })
                     }
                 }
             })
             if (!shizukuIsOk) {
                 AuthCard(title = "Shizuku授权",
-                    desc = "高级运行模式,能更准确识别界面活动ID\nAndroid14暂无法使用",
+                    desc = "高级运行模式,能更准确识别界面活动ID",
                     onAuthClick = {
                         try {
                             Shizuku.requestPermission(Activity.RESULT_OK)

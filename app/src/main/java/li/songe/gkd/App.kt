@@ -40,16 +40,17 @@ class App : Application() {
         super.onCreate()
         _app = this
 
-        ShizukuProvider.enableMultiProcessSupport(isMainProcess)
-
+        CrashReport.initCrashReport(applicationContext, "d0ce46b353", false)
         MMKV.initialize(this)
         LogUtils.getConfig().apply {
             isLog2FileSwitch = true
             setConsoleSwitch(BuildConfig.DEBUG)
             saveDays = 3
         }
-        CrashReport.initCrashReport(applicationContext, "d0ce46b353", false)
-
+        ShizukuProvider.enableMultiProcessSupport(isMainProcess)
+        if (!isMainProcess) {
+            ShizukuProvider.requestBinderForNonProviderProcess(this)
+        }
         if (isMainProcess) {
             appScope.launchTry(Dispatchers.IO) {
                 initChannel()
