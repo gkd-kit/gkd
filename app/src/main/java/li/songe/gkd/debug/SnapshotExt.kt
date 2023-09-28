@@ -1,6 +1,8 @@
 package li.songe.gkd.debug
 
 import android.graphics.Bitmap
+import androidx.core.graphics.set
+import com.blankj.utilcode.util.BarUtils
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.blankj.utilcode.util.ZipUtils
@@ -19,7 +21,10 @@ import li.songe.gkd.data.toSnapshot
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.util.Singleton
+import li.songe.gkd.util.snapshotZipDir
+import li.songe.gkd.util.storeFlow
 import java.io.File
+import kotlin.math.min
 
 object SnapshotExt {
     private val snapshotDir by lazy {
@@ -42,15 +47,16 @@ object SnapshotExt {
         "${getSnapshotParentPath(snapshotId)}/${snapshotId}.png"
 
     suspend fun getSnapshotZipFile(snapshotId: Long): File {
-        val file = File(getSnapshotParentPath(snapshotId) + "/${snapshotId}.zip")
-        if (!file.exists()) {
-            withContext(Dispatchers.IO) {
-                ZipUtils.zipFiles(
-                    listOf(
-                        getSnapshotPath(snapshotId), getScreenshotPath(snapshotId)
-                    ), file.absolutePath
-                )
-            }
+        val file = File(snapshotZipDir.absolutePath + "/${snapshotId}.zip")
+        if (file.exists()) {
+            file.delete()
+        }
+        withContext(Dispatchers.IO) {
+            ZipUtils.zipFiles(
+                listOf(
+                    getSnapshotPath(snapshotId), getScreenshotPath(snapshotId)
+                ), file.absolutePath
+            )
         }
         return file
     }
@@ -63,7 +69,7 @@ object SnapshotExt {
         }
     }
 
-   private val captureLoading = MutableStateFlow(false)
+    private val captureLoading = MutableStateFlow(false)
 
     suspend fun captureSnapshot(): ComplexSnapshot {
         if (captureLoading.value) {
@@ -90,7 +96,15 @@ object SnapshotExt {
                 }
             }
 
-            val bitmap = bitmapDef.await()
+            var bitmap = bitmapDef.await()
+            if (storeFlow.value.hideSnapshotStatusBar) {
+                bitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
+                for (x in 0 until bitmap.width) {
+                    for (y in 0 until min(BarUtils.getStatusBarHeight(), bitmap.height)) {
+                        bitmap[x, y] = 0
+                    }
+                }
+            }
             val snapshot = snapshotDef.await()
 
             withContext(Dispatchers.IO) {
