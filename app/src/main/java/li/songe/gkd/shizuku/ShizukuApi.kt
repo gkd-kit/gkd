@@ -4,6 +4,7 @@ package li.songe.gkd.shizuku
 import android.app.ActivityManager
 import android.app.IActivityTaskManager
 import android.os.Build
+import android.view.Display
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.RomUtils
 import com.blankj.utilcode.util.ToastUtils
@@ -42,6 +43,7 @@ fun newActivityTaskManager(): IActivityTaskManager? {
  * -1: invalid fc
  * 1: (int) -> List<Task>
  * 3: (int, boolean, boolean) -> List<Task>
+ * 4: (int, boolean, boolean, int) -> List<Task>
  */
 private var getTasksFcType: Int? = null
 
@@ -50,7 +52,9 @@ fun IActivityTaskManager.safeGetTasks(): List<ActivityManager.RunningTaskInfo>? 
         val fcs = this::class.declaredMemberFunctions
         val parameters = fcs.find { d -> d.name == "getTasks" }?.parameters
         if (parameters != null) {
-            if (parameters.size == 4 && parameters[1].type == typeOf<Int>() && parameters[2].type == typeOf<Boolean>() && parameters[3].type == typeOf<Boolean>()) {
+            if (parameters.size == 5 && parameters[1].type == typeOf<Int>() && parameters[2].type == typeOf<Boolean>() && parameters[3].type == typeOf<Boolean>() && parameters[4].type == typeOf<Int>()) {
+                getTasksFcType = 4
+            } else if (parameters.size == 4 && parameters[1].type == typeOf<Int>() && parameters[2].type == typeOf<Boolean>() && parameters[3].type == typeOf<Boolean>()) {
                 getTasksFcType = 3
             } else if (parameters.size == 2 && parameters[1].type == typeOf<Int>()) {
                 getTasksFcType = 1
@@ -62,12 +66,12 @@ fun IActivityTaskManager.safeGetTasks(): List<ActivityManager.RunningTaskInfo>? 
             }
         }
     }
-    if (getTasksFcType == 1) {
-        return this.getTasks(1)
-    } else if (getTasksFcType == 3) {
-        return this.getTasks(1, false, true)
+    return when (getTasksFcType) {
+        1 -> this.getTasks(1)
+        3 -> this.getTasks(1, false, true)
+        4 -> this.getTasks(1, false, true, Display.DEFAULT_DISPLAY)
+        else -> null
     }
-    return null
 }
 
 

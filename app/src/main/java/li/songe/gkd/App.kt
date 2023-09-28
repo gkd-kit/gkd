@@ -45,12 +45,11 @@ class App : Application() {
         LogUtils.getConfig().apply {
             isLog2FileSwitch = true
             setConsoleSwitch(BuildConfig.DEBUG)
-            saveDays = 3
+            saveDays = 7
         }
         ShizukuProvider.enableMultiProcessSupport(isMainProcess)
-        if (!isMainProcess) {
-            ShizukuProvider.requestBinderForNonProviderProcess(this)
-        }
+        ShizukuProvider.requestBinderForNonProviderProcess(this)
+
         if (isMainProcess) {
             appScope.launchTry(Dispatchers.IO) {
                 initChannel()
