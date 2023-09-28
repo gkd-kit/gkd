@@ -36,7 +36,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ToastUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
@@ -96,8 +95,7 @@ fun DebugPage() {
                 if (shizukuIsOk) {
 //                    check method type
                     appScope.launchTry(Dispatchers.IO) {
-                        LogUtils.d(newActivityTaskManager()?.safeGetTasks()
-                            ?.map { t -> t.topActivity?.className })
+                        newActivityTaskManager()?.safeGetTasks()
                     }
                 }
             })
@@ -204,6 +202,18 @@ fun DebugPage() {
                 } else {
                     FloatingService.stop(context)
                 }
+            }
+            Divider()
+            TextSwitch(
+                name = "隐藏快照状态栏",
+                desc = "当保存快照时,隐藏截图里的顶部状态栏高度区域",
+                checked = store.hideSnapshotStatusBar
+            ) {
+                updateStorage(
+                    storeFlow, store.copy(
+                        hideSnapshotStatusBar = it
+                    )
+                )
             }
             Divider()
 
