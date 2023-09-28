@@ -1,6 +1,9 @@
 package li.songe.gkd.ui
 
+import android.Manifest
 import android.content.Intent
+import android.graphics.Bitmap
+import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -35,9 +38,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewModelScope
+import com.blankj.utilcode.util.ImageUtils
+import com.blankj.utilcode.util.ToastUtils
+import com.blankj.utilcode.util.UriUtils
+import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
-import li.songe.gkd.util.navigate
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
 import li.songe.gkd.data.Snapshot
@@ -46,9 +53,12 @@ import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.ui.component.SimpleTopAppBar
 import li.songe.gkd.ui.destinations.ImagePreviewPageDestination
 import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.util.LocalPickContentLauncher
+import li.songe.gkd.util.LocalRequestPermissionLauncher
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.format
 import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.navigate
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
@@ -57,6 +67,9 @@ fun SnapshotPage() {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current as ComponentActivity
     val navController = LocalNavController.current
+
+    val pickContentLauncher = LocalPickContentLauncher.current
+    val requestPermissionLauncher = LocalRequestPermissionLauncher.current
 
     val vm = hiltViewModel<SnapshotVm>()
     val snapshots by vm.snapshotsState.collectAsState()
@@ -105,7 +118,7 @@ fun SnapshotPage() {
         }
     })
 
-    selectedSnapshot?.let { snapshot ->
+    selectedSnapshot?.let { snapshotVal ->
         Dialog(onDismissRequest = { selectedSnapshot = null }) {
             Box(
                 Modifier
@@ -122,7 +135,7 @@ fun SnapshotPage() {
                             .clickable(onClick = scope.launchAsFn {
                                 navController.navigate(
                                     ImagePreviewPageDestination(
-                                        filePath = snapshot.screenshotFile.absolutePath
+                                        filePath = snapshotVal.screenshotFile.absolutePath
                                     )
                                 )
                                 selectedSnapshot = null
@@ -130,9 +143,10 @@ fun SnapshotPage() {
                             .then(modifier)
                     )
                     Text(
-                        text = "分享", modifier = Modifier
-                            .clickable(onClick = scope.launchAsFn {
-                                val zipFile = SnapshotExt.getSnapshotZipFile(snapshot.id)
+                        text = "分享(注意隐私信息)",
+                        modifier = Modifier
+                            .clickable(onClick = vm.viewModelScope.launchAsFn {
+                                val zipFile = SnapshotExt.getSnapshotZipFile(snapshotVal.id)
                                 val uri = FileProvider.getUriForFile(
                                     context, "${context.packageName}.provider", zipFile
                                 )
@@ -144,15 +158,59 @@ fun SnapshotPage() {
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 }
                                 context.startActivity(Intent.createChooser(intent, "分享zip文件"))
+                                selectedSnapshot = null
+                            })
+                            .then(modifier)
+                    )
+                    Text(
+                        text = "保存截图到相册",
+                        modifier = Modifier
+                            .clickable(onClick = vm.viewModelScope.launchAsFn {
+                                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                                    val isGranted =
+                                        requestPermissionLauncher.launchForResult(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                                    if (!isGranted) {
+                                        ToastUtils.showShort("保存失败,暂无权限")
+                                        return@launchAsFn
+                                    }
+                                }
+                                ImageUtils.save2Album(
+                                    ImageUtils.getBitmap(snapshotVal.screenshotFile),
+                                    Bitmap.CompressFormat.PNG,
+                                    true
+                                )
+                                ToastUtils.showShort("保存成功")
+                                selectedSnapshot = null
+                            })
+                            .then(modifier)
+                    )
+                    Text(
+                        text = "从相册替换截图",
+                        modifier = Modifier
+                            .clickable(onClick = vm.viewModelScope.launchAsFn {
+                                val uri = pickContentLauncher.launchForImageResult()
+                                withContext(IO) {
+                                    val oldBitmap = ImageUtils.getBitmap(snapshotVal.screenshotFile)
+                                    val newBytes = UriUtils.uri2Bytes(uri)
+                                    val newBitmap = ImageUtils.getBitmap(newBytes, 0)
+                                    if (oldBitmap.width == newBitmap.width && oldBitmap.height == newBitmap.height) {
+                                        snapshotVal.screenshotFile.writeBytes(newBytes)
+                                    } else {
+                                        ToastUtils.showShort("截图尺寸不一致,无法替换")
+                                        return@withContext
+                                    }
+                                }
+                                ToastUtils.showShort("替换成功")
+                                selectedSnapshot = null
                             })
                             .then(modifier)
                     )
                     Text(
                         text = "删除", modifier = Modifier
                             .clickable(onClick = scope.launchAsFn {
-                                DbSet.snapshotDao.delete(snapshot)
+                                DbSet.snapshotDao.delete(snapshotVal)
                                 withContext(IO) {
-                                    SnapshotExt.remove(snapshot.id)
+                                    SnapshotExt.remove(snapshotVal.id)
                                 }
                                 selectedSnapshot = null
                             })

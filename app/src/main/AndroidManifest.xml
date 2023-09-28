@@ -24,6 +24,12 @@
     <!-- update self -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- save image to album -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+
     <!--
     APP 有两个进程, 主进程 + :remote 进程
     主进程: 主要是 activity 的前端界面
