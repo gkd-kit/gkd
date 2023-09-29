@@ -38,7 +38,9 @@ sealed class CompareOperator(val key: String) {
     }
 
     object NotStart : CompareOperator("!^=") {
-        override fun compare(left: Any?, right: Any?) = !Start.compare(left, right)
+        override fun compare(left: Any?, right: Any?): Boolean {
+            return if (left is CharSequence && right is CharSequence) !left.startsWith(right) else false
+        }
     }
 
     object Include : CompareOperator("*=") {
@@ -48,7 +50,9 @@ sealed class CompareOperator(val key: String) {
     }
 
     object NotInclude : CompareOperator("!*=") {
-        override fun compare(left: Any?, right: Any?) = !Include.compare(left, right)
+        override fun compare(left: Any?, right: Any?): Boolean {
+            return if (left is CharSequence && right is CharSequence) !left.contains(right) else false
+        }
     }
 
     object End : CompareOperator("$=") {
@@ -58,7 +62,9 @@ sealed class CompareOperator(val key: String) {
     }
 
     object NotEnd : CompareOperator("!$=") {
-        override fun compare(left: Any?, right: Any?) = !End.compare(left, right)
+        override fun compare(left: Any?, right: Any?): Boolean {
+            return if (left is CharSequence && right is CharSequence) !left.endsWith(right) else false
+        }
     }
 
     object Less : CompareOperator("<") {
