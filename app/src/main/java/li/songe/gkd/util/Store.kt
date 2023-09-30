@@ -14,10 +14,12 @@ import li.songe.gkd.app
 import java.util.WeakHashMap
 
 
-private val onReceives = mutableListOf<(
-    context: Context?,
-    intent: Intent?,
-) -> Unit>()
+private val onReceives by lazy {
+    mutableListOf<(
+        context: Context?,
+        intent: Intent?,
+    ) -> Unit>()
+}
 
 private val receiver by lazy {
     object : BroadcastReceiver() {
@@ -39,8 +41,8 @@ private inline fun <reified T : Parcelable> createStorageFlow(
     key: String,
     crossinline init: () -> T,
 ): StateFlow<T> {
-    val stateFlow = MutableStateFlow(kv.decodeParcelable(key, T::class.java) ?: init())
     receiver
+    val stateFlow = MutableStateFlow(kv.decodeParcelable(key, T::class.java) ?: init())
     onReceives.add { _, intent ->
         val extras = intent?.extras ?: return@add
         val type = extras.getString("type") ?: return@add
