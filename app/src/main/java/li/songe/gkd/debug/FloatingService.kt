@@ -40,13 +40,13 @@ class FloatingService : CompositionFbService({
             Icon(painter = painterResource(SafeR.ic_capture),
                 contentDescription = "capture",
                 modifier = Modifier
-                    .clickable(indication = null,
-                        interactionSource = remember { MutableInteractionSource() }) {
-                        appScope.launchTry(Dispatchers.IO) {
-                            SnapshotExt.captureSnapshot()
-                            ToastUtils.showShort("快照成功")
-                        }
-                    }
+//                    .clickable(indication = null,
+//                        interactionSource = remember { MutableInteractionSource() }) {
+//                        appScope.launchTry(Dispatchers.IO) {
+//                            SnapshotExt.captureSnapshot()
+//                            ToastUtils.showShort("快照成功")
+//                        }
+//                    }
                     .size(40.dp),
                 tint = Color.Red)
         }.enableCloseBubble(false).enableAnimateToEdge(false)
