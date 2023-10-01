@@ -25,8 +25,12 @@ import li.songe.gkd.notif.floatingChannel
 import li.songe.gkd.notif.floatingNotif
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.launchTry
+import kotlin.math.abs
+
 
 class FloatingService : CompositionFbService({
+    var lastX: Float = 0.0F
+    var lastY: Float = 0.0F
     useLifeCycleLog()
     setupBubble { _, resolve ->
         val builder = FloatingBubble.Builder(this).bubble {
@@ -43,6 +47,19 @@ class FloatingService : CompositionFbService({
                     .size(40.dp),
                 tint = Color.Red)
         }.enableCloseBubble(false).enableAnimateToEdge(false)
+            .addFloatingBubbleListener(object : FloatingBubble.Listener {
+                override fun onUp(x: Float, y: Float) {
+                    appScope.launchTry(Dispatchers.IO) {
+                        ToastUtils.showShort("x:$x ,y:$y ,${abs((lastX - x) + (lastY - y))}")
+                        if (abs(((lastX - x) + lastY) - y) < 50) {
+                            SnapshotExt.captureSnapshot()
+                            ToastUtils.showShort("快照成功")
+                        }
+                        lastX = x
+                        lastY = y
+                    }
+                }   // ..., when finger release from bubble
+            })
         resolve(builder)
     }
 }) {

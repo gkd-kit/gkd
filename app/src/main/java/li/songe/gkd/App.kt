@@ -17,6 +17,7 @@ import li.songe.gkd.util.initSubsState
 import li.songe.gkd.util.initUpgrade
 import li.songe.gkd.util.isMainProcess
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.BuildConfig
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.ShizukuProvider
 

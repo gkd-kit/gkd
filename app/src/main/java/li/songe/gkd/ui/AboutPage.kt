@@ -14,10 +14,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
-import li.songe.gkd.BuildConfig
 import li.songe.gkd.ui.component.SimpleTopAppBar
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
+import li.songe.gkd.BuildConfig
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
