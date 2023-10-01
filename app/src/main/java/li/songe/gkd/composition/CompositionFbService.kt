@@ -1,11 +1,15 @@
 package li.songe.gkd.composition
 
-import com.torrydo.floatingbubbleview.FloatingBubble
-import com.torrydo.floatingbubbleview.FloatingBubbleService
+import com.torrydo.floatingbubbleview.service.expandable.BubbleBuilder
+import com.torrydo.floatingbubbleview.service.expandable.ExpandableBubbleService
 
 open class CompositionFbService(
     private val block: CompositionFbService.() -> Unit,
-) : FloatingBubbleService(), CanOnDestroy, CanSetupBubble {
+) : ExpandableBubbleService(), CanOnDestroy, CanConfigBubble {
+
+
+    override fun configExpandedBubble() = null
+
     override fun onCreate() {
         block()
         super.onCreate()
@@ -18,21 +22,20 @@ open class CompositionFbService(
         destroyHooks.forEach { f -> f() }
     }
 
-    override fun setupBubble(action: FloatingBubble.Action): FloatingBubble.Builder {
-        var result: FloatingBubble.Builder? = null
 
-        setupBubbleHooks.forEach { f ->
-            f(action) {
+    private val configBubbleHooks by lazy { linkedSetOf<ConfigBubbleHook>() }
+    override fun configBubble(f: ConfigBubbleHook) {
+        configBubbleHooks.add(f)
+    }
+
+    override fun configBubble(): BubbleBuilder? {
+        var result: BubbleBuilder? = null
+        configBubbleHooks.forEach { f ->
+            f {
                 result = it
             }
         }
-        return result ?: throw error("setupBubble result must be resolved")
+        return result
     }
-
-    private val setupBubbleHooks by lazy { linkedSetOf<SetupBubbleHook>() }
-    override fun setupBubble(f: SetupBubbleHook) {
-        setupBubbleHooks.add(f)
-    }
-
 
 }

@@ -1,64 +1,88 @@
 package li.songe.gkd.debug
 
-import android.app.Notification
 import android.content.Context
 import android.content.Intent
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import android.view.ViewConfiguration
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Icon
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.core.app.NotificationCompat
 import com.blankj.utilcode.util.ServiceUtils
 import com.blankj.utilcode.util.ToastUtils
-import com.torrydo.floatingbubbleview.FloatingBubble
+import com.torrydo.floatingbubbleview.FloatingBubbleListener
+import com.torrydo.floatingbubbleview.service.expandable.BubbleBuilder
 import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.composition.CompositionFbService
+import li.songe.gkd.data.Tuple3
+import li.songe.gkd.notif.createNotif
 import li.songe.gkd.notif.floatingChannel
 import li.songe.gkd.notif.floatingNotif
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.launchTry
+import kotlin.math.sqrt
 
 class FloatingService : CompositionFbService({
     useLifeCycleLog()
-    setupBubble { _, resolve ->
-        val builder = FloatingBubble.Builder(this).bubble {
-            Icon(painter = painterResource(SafeR.ic_capture),
+
+    configBubble { resolve ->
+        val builder = BubbleBuilder(this).bubbleCompose {
+            Icon(
+                painter = painterResource(SafeR.ic_capture),
                 contentDescription = "capture",
-                modifier = Modifier
-                    .clickable(indication = null,
-                        interactionSource = remember { MutableInteractionSource() }) {
-                        appScope.launchTry(Dispatchers.IO) {
-                            SnapshotExt.captureSnapshot()
-                            ToastUtils.showShort("快照成功")
-                        }
+                modifier = Modifier.size(40.dp),
+                tint = Color.Red
+            )
+        }.enableAnimateToEdge(false)
+
+        // https://github.com/gkd-kit/gkd/issues/62
+        // https://github.com/gkd-kit/gkd/issues/61
+        val defaultFingerData = Tuple3(0L, 0f, 0f)
+        var fingerDownData = defaultFingerData
+        val maxDistanceOffset = 50
+        builder.addFloatingBubbleListener(object : FloatingBubbleListener {
+            override fun onFingerDown(x: Float, y: Float) {
+                fingerDownData = Tuple3(System.currentTimeMillis(), x, y)
+            }
+
+            override fun onFingerMove(x: Float, y: Float) {
+                if (fingerDownData === defaultFingerData) {
+                    return
+                }
+                val dx = fingerDownData.t1 - x
+                val dy = fingerDownData.t2 - y
+                val distance = sqrt(dx * dx + dy * dy)
+                if (distance > maxDistanceOffset) {
+                    // reset
+                    fingerDownData = defaultFingerData
+                }
+            }
+
+            override fun onFingerUp(x: Float, y: Float) {
+                if (System.currentTimeMillis() - fingerDownData.t0 < ViewConfiguration.getTapTimeout()) {
+                    // is onClick
+                    appScope.launchTry(Dispatchers.IO) {
+                        SnapshotExt.captureSnapshot()
+                        ToastUtils.showShort("快照成功")
                     }
-                    .size(40.dp),
-                tint = Color.Red)
-        }.enableCloseBubble(false).enableAnimateToEdge(false)
+                }
+            }
+        })
         resolve(builder)
     }
 }) {
 
-
-    override fun initialNotification(): Notification {
-        return NotificationCompat.Builder(this, floatingChannel.id).setOngoing(true)
-            .setSmallIcon(SafeR.ic_launcher).setContentTitle(floatingNotif.title)
-            .setContentText(floatingNotif.text).setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setCategory(Notification.CATEGORY_SERVICE).build()
+    override fun onCreate() {
+        super.onCreate()
+        minimize()
     }
 
-    override fun notificationId() = floatingNotif.id
-
-    override fun createNotificationChannel(channelId: String, channelName: String) {
-//        by app init
+    override fun startNotificationForeground() {
+        createNotif(this, floatingChannel.id, floatingNotif)
     }
 
     companion object {
