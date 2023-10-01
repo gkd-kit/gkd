@@ -17,6 +17,8 @@ import com.blankj.utilcode.util.ServiceUtils
 import com.blankj.utilcode.util.ToastUtils
 import com.torrydo.floatingbubbleview.FloatingBubble
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
@@ -31,6 +33,7 @@ import kotlin.math.sqrt
 class FloatingService : CompositionFbService({
     var lastX = 0.0F
     var lastY = 0.0F
+    var downTime = 0L
     useLifeCycleLog()
     setupBubble { _, resolve ->
         val builder = FloatingBubble.Builder(this).bubble {
@@ -49,14 +52,19 @@ class FloatingService : CompositionFbService({
         }.enableCloseBubble(false).enableAnimateToEdge(false)
             .addFloatingBubbleListener(object : FloatingBubble.Listener {
                 override fun onUp(x: Float, y: Float) {
+                    val now = System.currentTimeMillis()
                     appScope.launchTry(Dispatchers.IO) {
-                        if (sqrt((lastX - x) *(lastX - x) + (lastY - y)*(lastY - y)) < 50) { // 计算移动距离是否小于50像素
+                        if (now - downTime < 300 && sqrt((lastX - x) * (lastX - x) + (lastY - y) * (lastY - y)) < 50) { // 计算移动距离是否小于50像素
                             SnapshotExt.captureSnapshot()
                             ToastUtils.showShort("快照成功")
                         }
                         lastX = x
                         lastY = y
                     }
+                }
+
+                override fun onDown(x: Float, y: Float) {
+                    downTime = System.currentTimeMillis()
                 }
             })
         resolve(builder)
