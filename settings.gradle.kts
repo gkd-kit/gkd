@@ -94,7 +94,7 @@ dependencyResolutionManagement {
             // https://github.com/journeyapps/zxing-android-embedded
             library("others.zxing.android.embedded", "com.journeyapps:zxing-android-embedded:4.3.0")
             // https://github.com/TorryDo/Floating-Bubble-View
-            library("others.floating.bubble.view", "io.github.torrydo:floating-bubble-view:0.5.6")
+            library("others.floating.bubble.view", "io.github.torrydo:floating-bubble-view:0.6.1")
 
             library("androidx.appcompat", "androidx.appcompat:appcompat:1.6.1")
             library("androidx.core.ktx", "androidx.core:core-ktx:1.12.0")
