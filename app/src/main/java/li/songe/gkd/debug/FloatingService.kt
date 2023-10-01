@@ -25,7 +25,7 @@ import li.songe.gkd.notif.floatingChannel
 import li.songe.gkd.notif.floatingNotif
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.launchTry
-import kotlin.math.abs
+import kotlin.math.sqrt
 
 
 class FloatingService : CompositionFbService({
@@ -50,15 +50,14 @@ class FloatingService : CompositionFbService({
             .addFloatingBubbleListener(object : FloatingBubble.Listener {
                 override fun onUp(x: Float, y: Float) {
                     appScope.launchTry(Dispatchers.IO) {
-                        ToastUtils.showShort("x:$x ,y:$y ,${abs((lastX - x) + (lastY - y))}")
-                        if (abs(((lastX - x) + lastY) - y) < 50) {
+                        if (sqrt((lastX - x) *(lastX - x) + (lastY - y)*(lastY - y)) < 50) { // 计算移动距离是否小于50像素
                             SnapshotExt.captureSnapshot()
                             ToastUtils.showShort("快照成功")
                         }
                         lastX = x
                         lastY = y
                     }
-                }   // ..., when finger release from bubble
+                }
             })
         resolve(builder)
     }
