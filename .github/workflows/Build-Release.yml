@@ -62,5 +62,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: app-release.apk
-          asset_name: app-release-${{ github.ref_name }}.apk
+          asset_name: gkd-${{ github.ref_name }}.apk
           asset_content_type: application/vnd.android.package-archive
