@@ -47,7 +47,7 @@ object SnapshotExt {
         "${getSnapshotParentPath(snapshotId)}/${snapshotId}.png"
 
     suspend fun getSnapshotZipFile(snapshotId: Long): File {
-        val file = File(snapshotZipDir.absolutePath + "/${snapshotId}.zip")
+        val file = File(snapshotZipDir, "${snapshotId}.zip")
         if (file.exists()) {
             file.delete()
         }
