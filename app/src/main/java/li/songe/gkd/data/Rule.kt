@@ -4,9 +4,12 @@ import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
 import android.graphics.Rect
+import android.view.ViewConfiguration
 import android.view.accessibility.AccessibilityNodeInfo
+import com.blankj.utilcode.util.ScreenUtils
 import kotlinx.serialization.Serializable
 import li.songe.gkd.service.lastTriggerRuleFlow
+import li.songe.gkd.service.launcherActivityIdFlow
 import li.songe.gkd.service.querySelector
 import li.songe.selector.Selector
 
@@ -22,15 +25,17 @@ data class Rule(
     val preRules: Set<Rule> = emptySet(),
     val cd: Long = defaultMiniCd,
     val delay: Long = 0,
-    val index: Int = 0,
+    val matchLauncher: Boolean = false,
+    val quickFind: Boolean = false,
 
-    val appId: String = "",
+    val appId: String,
     val activityIds: Set<String> = emptySet(),
     val excludeActivityIds: Set<String> = emptySet(),
 
     val key: Int? = null,
     val preKeys: Set<Int> = emptySet(),
 
+    val index: Int = 0,
     val rule: SubscriptionRaw.RuleRaw,
     val group: SubscriptionRaw.GroupRaw,
     val app: SubscriptionRaw.AppRaw,
@@ -53,15 +58,14 @@ data class Rule(
     val active: Boolean
         get() = triggerTime + cd < System.currentTimeMillis()
 
-
     fun query(nodeInfo: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
         if (nodeInfo == null) return null
         var target: AccessibilityNodeInfo? = null
         for (selector in matches) {
-            target = nodeInfo.querySelector(selector) ?: return null
+            target = nodeInfo.querySelector(selector, quickFind) ?: return null
         }
         for (selector in excludeMatches) {
-            if (nodeInfo.querySelector(selector) != null) return null
+            if (nodeInfo.querySelector(selector, quickFind) != null) return null
         }
         return target
     }
@@ -73,6 +77,9 @@ data class Rule(
         if (activityId == null) return false
         if (excludeActivityIds.any { activityId.startsWith(it) }) return false
         if (activityIds.isEmpty()) return true
+        if (matchLauncher && launcherActivityIdFlow.value == activityId) {
+            return true
+        }
         return activityIds.any { activityId.startsWith(it) }
     }
 
@@ -93,6 +100,7 @@ typealias ActionFc = (context: AccessibilityService, node: AccessibilityNodeInfo
 @Serializable
 data class ClickAction(
     val selector: String,
+    val quickFind: Boolean = false,
     val action: String? = null,
 )
 
@@ -116,14 +124,19 @@ val clickNode: ActionFc = { _, node ->
 val clickCenter: ActionFc = { context, node ->
     val react = Rect()
     node.getBoundsInScreen(react)
-    val x = react.left + 50f / 100f * (react.right - react.left)
-    val y = react.top + 50f / 100f * (react.bottom - react.top)
+    val x = (react.right + react.left) / 2f
+    val y = (react.bottom + react.top) / 2f
     ActionResult(
-        action = "clickCenter", result = if (x >= 0 && y >= 0) {
+        action = "clickCenter",
+        result = if (0 <= x && 0 <= y && x <= ScreenUtils.getScreenWidth() && y <= ScreenUtils.getScreenHeight()) {
             val gestureDescription = GestureDescription.Builder()
             val path = Path()
             path.moveTo(x, y)
-            gestureDescription.addStroke(GestureDescription.StrokeDescription(path, 0, 300))
+            gestureDescription.addStroke(
+                GestureDescription.StrokeDescription(
+                    path, 0, ViewConfiguration.getTapTimeout().toLong()
+                )
+            )
             context.dispatchGesture(gestureDescription.build(), null, null)
             true
         } else {

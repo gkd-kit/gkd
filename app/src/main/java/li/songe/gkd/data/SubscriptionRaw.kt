@@ -74,6 +74,8 @@ data class SubscriptionRaw(
         val excludeActivityIds: List<String>?
         val cd: Long?
         val delay: Long?
+        val matchLauncher: Boolean?
+        val quickFind: Boolean?
         val appFilter: AppFilter?
         val deviceFilter: DeviceFilter?
     }
@@ -85,6 +87,8 @@ data class SubscriptionRaw(
         val name: String? = null,
         override val cd: Long? = null,
         override val delay: Long? = null,
+        override val matchLauncher: Boolean?,
+        override val quickFind: Boolean?,
         override val activityIds: List<String>? = null,
         override val excludeActivityIds: List<String>? = null,
         val groups: List<GroupRaw> = emptyList(),
@@ -101,6 +105,8 @@ data class SubscriptionRaw(
         val key: Int,
         override val cd: Long? = null,
         override val delay: Long? = null,
+        override val matchLauncher: Boolean?,
+        override val quickFind: Boolean?,
         override val activityIds: List<String>? = null,
         override val excludeActivityIds: List<String>? = null,
         val rules: List<RuleRaw> = emptyList(),
@@ -129,6 +135,8 @@ data class SubscriptionRaw(
         val action: String? = null,
         override val cd: Long? = null,
         override val delay: Long? = null,
+        override val matchLauncher: Boolean?,
+        override val quickFind: Boolean?,
         override val activityIds: List<String>? = null,
         override val excludeActivityIds: List<String>? = null,
         val matches: List<String> = emptyList(),
@@ -242,7 +250,9 @@ data class SubscriptionRaw(
                 appFilter = rulesJson["appFilter"]?.let {
                     Singleton.json.decodeFromJsonElement(it)
                 },
-                action = getString(rulesJson, "action")
+                action = getString(rulesJson, "action"),
+                matchLauncher = getBoolean(rulesJson, "matchLauncher"),
+                quickFind = getBoolean(rulesJson, "quickFind"),
             )
         }
 
@@ -275,6 +285,8 @@ data class SubscriptionRaw(
                 appFilter = groupsJson["appFilter"]?.let {
                     Singleton.json.decodeFromJsonElement(it)
                 },
+                matchLauncher = getBoolean(groupsJson, "matchLauncher"),
+                quickFind = getBoolean(groupsJson, "quickFind"),
             )
         }
 
@@ -299,6 +311,8 @@ data class SubscriptionRaw(
                 appFilter = appsJson["appFilter"]?.let {
                     Singleton.json.decodeFromJsonElement(it)
                 },
+                matchLauncher = getBoolean(appsJson, "matchLauncher"),
+                quickFind = getBoolean(appsJson, "quickFind"),
             )
         }
 

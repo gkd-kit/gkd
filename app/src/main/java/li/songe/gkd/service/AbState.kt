@@ -8,6 +8,10 @@ import li.songe.gkd.appScope
 import li.songe.gkd.data.Rule
 import li.songe.gkd.util.appIdToRulesFlow
 
+val launcherActivityIdFlow by lazy {
+    MutableStateFlow<String?>(null)
+}
+
 data class TopActivity(
     val appId: String,
     val activityId: String? = null,
