@@ -22,12 +22,12 @@ val appInfoCacheFlow: StateFlow<Map<String, AppInfo>>
 private val packageReceiver by lazy {
     object : BroadcastReceiver() {
         /**
-         * 小米应用商店更新应用产生连续3个事件: PACKAGE_REMOVED->PACKAGE_ADDED->PACKAGE_REPLACED
+         * 例: 小米应用商店更新应用产生连续 3个事件: PACKAGE_REMOVED->PACKAGE_ADDED->PACKAGE_REPLACED
          *
          */
         override fun onReceive(context: Context?, intent: Intent?) {
             val appId = intent?.data?.schemeSpecificPart ?: return
-            if (intent.action == Intent.ACTION_PACKAGE_ADDED || intent.action == Intent.ACTION_PACKAGE_REPLACED) {
+            if (intent.action == Intent.ACTION_PACKAGE_ADDED || intent.action == Intent.ACTION_PACKAGE_REPLACED || intent.action == Intent.ACTION_PACKAGE_REMOVED) {
                 // update
                 updateAppInfo(appId)
             }
@@ -77,15 +77,14 @@ private fun getAppInfo(id: String): AppInfo? {
 
 fun updateAppInfo(vararg appIds: String) {
     val newMap = _appInfoCacheFlow.value.toMutableMap()
-    var changed = false
     appIds.forEach { appId ->
         val newAppInfo = getAppInfo(appId)
-        if (newAppInfo != null && newMap[appId] != newAppInfo) {
+        if (newAppInfo != null) {
             newMap[appId] = newAppInfo
-            changed = true
+        } else {
+            newMap.remove(appId)
         }
     }
-    if (!changed) return
     _appInfoCacheFlow.value = newMap
 }
 
