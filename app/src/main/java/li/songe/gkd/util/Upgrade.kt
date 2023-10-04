@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.blankj.utilcode.util.AppUtils
-import com.blankj.utilcode.util.PathUtils
 import io.ktor.client.call.body
 import io.ktor.client.plugins.onDownload
 import io.ktor.client.request.get
@@ -51,12 +50,6 @@ data class NewVersion(
     val fileSize: Long? = null,
 ) : Parcelable
 
-sealed class LoadStatus<out T> {
-    data class Loading(val progress: Float = 0f) : LoadStatus<Nothing>()
-    data class Failure(val exception: Exception) : LoadStatus<Nothing>()
-    data class Success<T>(val result: T) : LoadStatus<T>()
-}
-
 private const val UPDATE_URL = "https://registry.npmmirror.com/@gkd-kit/app/latest/files/index.json"
 
 val checkUpdatingFlow by lazy { MutableStateFlow(false) }
@@ -82,7 +75,7 @@ suspend fun checkUpdate(): NewVersion? {
 fun startDownload(newVersion: NewVersion) {
     if (downloadStatusFlow.value is LoadStatus.Loading) return
     downloadStatusFlow.value = LoadStatus.Loading(0f)
-    val newApkFile = File(PathUtils.getExternalAppCachePath() + "/v${newVersion.versionCode}.apk")
+    val newApkFile = File(newVersionApkDir, "v${newVersion.versionCode}.apk")
     if (newApkFile.exists()) {
         newApkFile.delete()
     }
@@ -217,7 +210,7 @@ fun UpgradeDialog() {
 }
 
 fun initUpgrade() {
-    if (storeFlow.value.autoCheckAppUpdate) {
+    if (storeFlow.value.autoCheckAppUpdate && isMainProcess) {
         appScope.launch {
             try {
                 checkUpdate()

@@ -4,11 +4,18 @@ import com.blankj.utilcode.util.PathUtils
 import java.io.File
 
 private val cacheParentDir by lazy {
-    PathUtils.getExternalAppCachePath()
+    File(PathUtils.getExternalAppCachePath())
 }
 
 val snapshotZipDir by lazy {
-    File(cacheParentDir.plus("/snapshotZip")).apply {
+    File(cacheParentDir, "snapshotZip").apply {
+        if (!exists()) {
+            mkdirs()
+        }
+    }
+}
+val newVersionApkDir by lazy {
+    File(cacheParentDir, "newVersionApk").apply {
         if (!exists()) {
             mkdirs()
         }
