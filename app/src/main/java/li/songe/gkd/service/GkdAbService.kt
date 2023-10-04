@@ -1,6 +1,9 @@
 package li.songe.gkd.service
 
+import android.app.KeyguardManager
 import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Build
@@ -10,11 +13,9 @@ import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.NetworkUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.blankj.utilcode.util.ServiceUtils
-import com.blankj.utilcode.util.ToastUtils
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
@@ -66,15 +67,6 @@ class GkdAbService : CompositionAbService({
     }
 
 
-    var isScreenLock = false
-    scope.launchWhile(IO) {
-        isScreenLock = ScreenUtils.isScreenLock()
-        delay(1000)
-    }
-
-    var serviceConnected = false
-    onServiceConnected { serviceConnected = true }
-
     val safeGetTasksFc = useSafeGetTasksFc(scope)
     fun getActivityIdByShizuku(): String? {
         return safeGetTasksFc()?.lastOrNull()?.topActivity?.className
@@ -91,20 +83,16 @@ class GkdAbService : CompositionAbService({
     onAccessibilityEvent { event -> // 根据事件获取 activityId, 概率不准确
         if (event == null) return@onAccessibilityEvent
 
-        when (event.eventType) {
-            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
-                val newAppId = event.packageName?.toString() ?: return@onAccessibilityEvent
-                val rightAppId =
-                    safeActiveWindow?.packageName?.toString() ?: return@onAccessibilityEvent
-                val shizukuActivityId =
-                    getActivityIdByShizuku() ?: topActivityFlow.value?.activityId
-                if (rightAppId != newAppId) {
-                    topActivityFlow.value =
-                        TopActivity(appId = rightAppId, activityId = shizukuActivityId)
-                    return@onAccessibilityEvent
-                }
-                val newActivityId = event.className?.toString() ?: return@onAccessibilityEvent
-
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            val newAppId = event.packageName?.toString() ?: return@onAccessibilityEvent
+            val newActivityId = event.className?.toString() ?: return@onAccessibilityEvent
+            val rightAppId =
+                safeActiveWindow?.packageName?.toString() ?: return@onAccessibilityEvent
+            val shizukuActivityId = getActivityIdByShizuku() ?: topActivityFlow.value?.activityId
+            if (rightAppId != newAppId) {
+                topActivityFlow.value =
+                    TopActivity(appId = rightAppId, activityId = shizukuActivityId)
+            } else {
                 if (isActivity(newAppId, newActivityId)) {
                     topActivityFlow.value = TopActivity(newAppId, newActivityId)
                 } else {
@@ -124,20 +112,23 @@ class GkdAbService : CompositionAbService({
                     }
                 }
             }
-
-            else -> {
-
-            }
         }
     }
 
+    scope.launchWhile(Dispatchers.IO) {
+        val intent = Intent(Intent.ACTION_MAIN)
+        intent.addCategory(Intent.CATEGORY_HOME)
+        val info = context.packageManager.resolveActivity(intent, 0)
+        launcherActivityIdFlow.value = info?.activityInfo?.name
+        delay(10 * 60_000)
+    }
 
-    var lastToastTime = -1L
+    val km = context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager?
 
     scope.launchWhile(Dispatchers.Default) { // 屏幕无障碍信息轮询
-        delay(150)
-        if (isScreenLock || !serviceConnected) {
-            delay(1000)
+        delay(200)
+
+        if (km?.isKeyguardLocked == true) { // isScreenLock
             return@launchWhile
         }
 
@@ -166,18 +157,14 @@ class GkdAbService : CompositionAbService({
 
             val actionResult = rule.performAction(context, target)
             if (actionResult.result) {
-                if (storeFlow.value.toastWhenClick) {
-                    val t = System.currentTimeMillis()
-                    if (t - lastToastTime > 3000) {
-                        ToastUtils.showShort(storeFlow.value.clickToast)
-                        lastToastTime = t
-                    }
-                }
+                toastClickTip()
                 rule.trigger()
-                LogUtils.d(
-                    *rule.matches.toTypedArray(), NodeInfo.abNodeToNode(target).attr, actionResult
-                )
-                scope.launchTry(IO) {
+                scope.launchTry(Dispatchers.IO) {
+                    LogUtils.d(
+                        *rule.matches.toTypedArray(),
+                        NodeInfo.abNodeToNode(target).attr,
+                        actionResult
+                    )
                     val clickLog = ClickLog(
                         appId = topActivityFlow.value?.appId,
                         activityId = topActivityFlow.value?.activityId,
@@ -192,12 +179,13 @@ class GkdAbService : CompositionAbService({
             }
             if (currentRules !== currentRulesFlow.value) break
         }
+
     }
 
     var lastUpdateSubsTime = System.currentTimeMillis()
-    scope.launchWhile(IO) { // 自动从网络更新订阅文件
+    scope.launchWhile(Dispatchers.IO) { // 自动从网络更新订阅文件
         delay(10 * 60_000) // 每 10 分钟检查一次
-        if (isScreenLock // 锁屏
+        if (ScreenUtils.isScreenLock() // 锁屏
             || storeFlow.value.updateSubsInterval <= 0 // 暂停更新
             || System.currentTimeMillis() - lastUpdateSubsTime < storeFlow.value.updateSubsInterval.coerceAtLeast(
                 60 * 60_000
@@ -269,9 +257,9 @@ class GkdAbService : CompositionAbService({
                 throw RpcError("非法选择器")
             }
 
-            val targetNode = serviceVal.safeActiveWindow?.querySelector(selector) ?: throw RpcError(
-                "没有选择到节点"
-            )
+            val targetNode =
+                serviceVal.safeActiveWindow?.querySelector(selector, clickAction.quickFind)
+                    ?: throw RpcError("没有选择到节点")
 
             return when (clickAction.action) {
                 "clickNode" -> clickNode(serviceVal, targetNode)

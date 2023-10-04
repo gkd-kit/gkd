@@ -3,6 +3,8 @@ package li.songe.gkd.service
 import android.accessibilityservice.AccessibilityService
 import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
+import com.blankj.utilcode.util.ToastUtils
+import li.songe.gkd.util.storeFlow
 import li.songe.selector.Selector
 import li.songe.selector.Transform
 
@@ -56,11 +58,36 @@ fun AccessibilityNodeInfo.getDepth(): Int {
 }
 
 
-fun AccessibilityNodeInfo.querySelector(selector: Selector) =
-    abTransform.querySelector(this, selector)
-
-//fun AccessibilityNodeInfo.querySelectorAll(selector: Selector) =
-//    abTransform.querySelectorAll(this, selector)
+fun AccessibilityNodeInfo.querySelector(
+    selector: Selector,
+    quickFind: Boolean = false,
+): AccessibilityNodeInfo? {
+    if (selector.isMatchRoot) {
+        if (parent == null) {
+            val trackNodes = mutableListOf<AccessibilityNodeInfo>()
+            return selector.match(this, abTransform, trackNodes)
+        }
+        return null
+    }
+    if (quickFind) {
+        val canQuickFind = selector.canQuickFind
+        if (canQuickFind != null) {
+            // 使用 findAccessibilityNodeInfosByXX 无法查询深层次节点
+            val trackNodes = mutableListOf<AccessibilityNodeInfo>()
+            (if (selector.canQuickFind!!.first) {
+                findAccessibilityNodeInfosByViewId(canQuickFind.second)
+            } else {
+                findAccessibilityNodeInfosByText(canQuickFind.second)
+            }).forEach { childNode ->
+                val targetNode = selector.match(childNode, abTransform, trackNodes)
+                if (targetNode != null) return targetNode
+            }
+            return null
+        }
+    }
+    // 在一些开屏广告的界面会造成1-2s的阻塞
+    return abTransform.querySelector(this, selector)
+}
 
 // 不可以在 多线程/不同协程作用域 里同时使用
 private val tempRect = Rect()
@@ -69,40 +96,56 @@ private fun AccessibilityNodeInfo.getTempRect(): Rect {
     return tempRect
 }
 
-val abTransform = Transform<AccessibilityNodeInfo>(getAttr = { node, name ->
-    when (name) {
-        "id" -> node.viewIdResourceName
-        "name" -> node.className
-        "text" -> node.text
-        "text.length" -> node.text?.length
-        "desc" -> node.contentDescription
-        "desc.length" -> node.contentDescription?.length
+val abTransform = Transform<AccessibilityNodeInfo>(
+    getAttr = { node, name ->
+        when (name) {
+            "id" -> node.viewIdResourceName
+            "name" -> node.className
+            "text" -> node.text
+            "text.length" -> node.text?.length
+            "desc" -> node.contentDescription
+            "desc.length" -> node.contentDescription?.length
 
-        "clickable" -> node.isClickable
-        "checkable" -> node.isCheckable
-        "checked" -> node.isChecked
-        "focusable" -> node.isFocusable
-        "visibleToUser" -> node.isVisibleToUser
+            "clickable" -> node.isClickable
+            "checkable" -> node.isCheckable
+            "checked" -> node.isChecked
+            "focusable" -> node.isFocusable
+            "visibleToUser" -> node.isVisibleToUser
 
-        "left" -> node.getTempRect().left
-        "top" -> node.getTempRect().top
-        "right" -> node.getTempRect().right
-        "bottom" -> node.getTempRect().bottom
+            "left" -> node.getTempRect().left
+            "top" -> node.getTempRect().top
+            "right" -> node.getTempRect().right
+            "bottom" -> node.getTempRect().bottom
 
-        "width" -> node.getTempRect().width()
-        "height" -> node.getTempRect().height()
+            "width" -> node.getTempRect().width()
+            "height" -> node.getTempRect().height()
 
-        "index" -> node.getIndex()
-        "depth" -> node.getDepth()
-        "childCount" -> node.childCount
-        else -> null
-    }
-}, getName = { node -> node.className }, getChildren = { node ->
-    sequence {
-        repeat(node.childCount) { i ->
-            yield(node.getChild(i))
+            "index" -> node.getIndex()
+            "depth" -> node.getDepth()
+            "childCount" -> node.childCount
+            else -> null
+        }
+    },
+    getName = { node -> node.className },
+    getChildren = { node ->
+        sequence {
+            repeat(node.childCount) { i ->
+                yield(node.getChild(i))
+            }
+        }
+    },
+    getChild = { node, index -> node.getChild(index) },
+    getParent = { node -> node.parent },
+)
+
+private var lastToastTime = -1L
+fun toastClickTip() {
+    if (storeFlow.value.toastWhenClick) {
+        val t = System.currentTimeMillis()
+        if (t - lastToastTime > 3000) {
+            ToastUtils.showShort(storeFlow.value.clickToast)
+            lastToastTime = t
         }
     }
-}, getChild = { node, index -> node.getChild(index) }, getParent = { node -> node.parent })
-
+}
 
