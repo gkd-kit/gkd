@@ -23,7 +23,6 @@ import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -91,14 +90,6 @@ fun DebugPage() {
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             val shizukuIsOk by usePollState { shizukuIsSafeOK() }
-            LaunchedEffect(key1 = shizukuIsOk, block = {
-                if (shizukuIsOk) {
-//                    check method type
-                    appScope.launchTry(Dispatchers.IO) {
-                        newActivityTaskManager()?.safeGetTasks()
-                    }
-                }
-            })
             if (!shizukuIsOk) {
                 AuthCard(title = "Shizuku授权",
                     desc = "高级运行模式,能更准确识别界面活动ID",
@@ -108,6 +99,33 @@ fun DebugPage() {
                         } catch (e: Exception) {
                             ToastUtils.showShort("Shizuku可能没有运行")
                         }
+                    })
+                Divider()
+            } else {
+                TextSwitch(name = "Shizuku模式",
+                    desc = "高级运行模式,能更准确识别界面活动ID",
+                    checked = store.enableShizuku,
+                    onCheckedChange = { enableShizuku ->
+                        if (enableShizuku) {
+                            appScope.launchTry(Dispatchers.IO) {
+                                // 检验方法是否适配, 再允许使用 shizuku
+                                val tasks = newActivityTaskManager()?.safeGetTasks()?.firstOrNull()
+                                if (tasks != null) {
+                                    updateStorage(
+                                        storeFlow, store.copy(
+                                            enableShizuku = true
+                                        )
+                                    )
+                                }
+                            }
+                        } else {
+                            updateStorage(
+                                storeFlow, store.copy(
+                                    enableShizuku = false
+                                )
+                            )
+                        }
+
                     })
                 Divider()
             }

@@ -3,10 +3,8 @@ package li.songe.gkd.shizuku
 
 import android.app.ActivityManager
 import android.app.IActivityTaskManager
-import android.os.Build
 import android.view.Display
 import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.RomUtils
 import com.blankj.utilcode.util.ToastUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,10 +14,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.composition.CanOnDestroy
 import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.util.launchWhile
+import li.songe.gkd.util.storeFlow
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
@@ -30,9 +30,6 @@ import kotlin.reflect.typeOf
  * https://github.com/gkd-kit/gkd/issues/44
  */
 
-val skipShizuku by lazy {
-    Build.VERSION.SDK_INT == Build.VERSION_CODES.P && RomUtils.isVivo()
-}
 
 fun newActivityTaskManager(): IActivityTaskManager? {
     return SystemServiceHelper.getSystemService("activity_task").let(::ShizukuBinderWrapper)
@@ -89,19 +86,18 @@ fun CanOnDestroy.useShizukuAliveState(): StateFlow<Boolean> {
 }
 
 fun CanOnDestroy.useSafeGetTasksFc(scope: CoroutineScope): () -> List<ActivityManager.RunningTaskInfo>? {
-    if (skipShizuku) {
-        return { null }
-    }
     val shizukuAliveFlow = useShizukuAliveState()
     val shizukuGrantFlow = MutableStateFlow(false)
     scope.launchWhile(Dispatchers.IO) {
         shizukuGrantFlow.value = if (shizukuAliveFlow.value) shizukuIsSafeOK() else false
         delay(3000)
     }
-    val activityTaskManagerFlow =
-        combine(shizukuAliveFlow, shizukuGrantFlow) { shizukuAlive, shizukuGrant ->
-            if (shizukuAlive && shizukuGrant) newActivityTaskManager() else null
-        }.flowOn(Dispatchers.IO).stateIn(scope, SharingStarted.Lazily, null)
+    val activityTaskManagerFlow = combine(
+        shizukuAliveFlow,
+        shizukuGrantFlow,
+        storeFlow.map { s -> s.enableShizuku }) { shizukuAlive, shizukuGrant, enableShizuku ->
+        if (enableShizuku && shizukuAlive && shizukuGrant) newActivityTaskManager() else null
+    }.flowOn(Dispatchers.IO).stateIn(scope, SharingStarted.Lazily, null)
     return {
         activityTaskManagerFlow.value?.safeGetTasks()
     }
