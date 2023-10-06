@@ -66,9 +66,9 @@ class GkdAbService : CompositionAbService({
         ManageService.stop(context)
     }
 
-
     val safeGetTasksFc = useSafeGetTasksFc(scope)
     fun getActivityIdByShizuku(): String? {
+        if (!storeFlow.value.enableShizuku) return null
         return safeGetTasksFc()?.lastOrNull()?.topActivity?.className
     }
 

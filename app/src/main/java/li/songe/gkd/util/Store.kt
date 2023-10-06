@@ -86,6 +86,7 @@ data class Store(
     val clickToast: String = "跳过",
     val autoClearMemorySubs: Boolean = true,
     val hideSnapshotStatusBar: Boolean = false,
+    val enableShizuku: Boolean = false,
 ) : Parcelable
 
 val storeFlow by lazy {
