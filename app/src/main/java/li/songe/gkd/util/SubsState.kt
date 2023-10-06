@@ -82,10 +82,10 @@ val appIdToRulesFlow by lazy {
         val appIdToRules = mutableMapOf<String, MutableList<Rule>>()
         subsItems.filter { it.enable }.forEach { subsItem ->
             (subsIdToRaw[subsItem.id]?.apps ?: emptyList()).filter { appRaw ->
-                // 筛选当前启用的 app 订阅规则
-                appSubsConfigs.find { subsConfig ->
+                // 筛选 已经安装的 APP 和 当前启用的 app 订阅规则
+                appInfoCache.containsKey(appRaw.id) && (appSubsConfigs.find { subsConfig ->
                     subsConfig.subsItemId == subsItem.id && subsConfig.appId == appRaw.id
-                }?.enable ?: true
+                }?.enable ?: true)
             }.forEach { appRaw ->
                 val rules = appIdToRules[appRaw.id] ?: mutableListOf()
                 appIdToRules[appRaw.id] = rules
