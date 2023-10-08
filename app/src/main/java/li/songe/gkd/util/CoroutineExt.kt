@@ -1,16 +1,14 @@
 package li.songe.gkd.util
 
+import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ToastUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-import kotlin.coroutines.coroutineContext
 
 
 fun CoroutineScope.launchWhile(
@@ -20,23 +18,6 @@ fun CoroutineScope.launchWhile(
 ) = launch(context, start) {
     while (isActive) {
         block()
-    }
-}
-
-
-fun CoroutineScope.launchWhileTry(
-    context: CoroutineContext = EmptyCoroutineContext,
-    start: CoroutineStart = CoroutineStart.DEFAULT,
-    interval: Long = 0,
-    block: suspend CoroutineScope.() -> Unit,
-) = launch(context, start) {
-    while (isActive) {
-        try {
-            block()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        delay(interval)
     }
 }
 
@@ -51,6 +32,7 @@ fun CoroutineScope.launchTry(
         e.printStackTrace()
     } catch (e: Exception) {
         e.printStackTrace()
+        LogUtils.d(e)
         ToastUtils.showShort(e.message)
     }
 }
@@ -89,11 +71,5 @@ fun <T> CoroutineScope.launchAsFn(
             }
         }
     }
-}
-
-suspend fun stopJob(): Nothing {
-    coroutineContext[Job]?.cancel()
-    delay(1)
-    error("stop failed")
 }
 
