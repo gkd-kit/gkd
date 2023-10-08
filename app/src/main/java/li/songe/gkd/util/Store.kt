@@ -80,7 +80,7 @@ data class Store(
     val captureScreenshot: Boolean = false,
     val httpServerPort: Int = 8888,
     val updateSubsInterval: Long = 6 * 60 * 60_000L,
-    @Deprecated("https://github.com/gkd-kit/gkd/issues/26") val captureVolumeKey: Boolean = false,
+    val captureVolumeChange: Boolean = false,
     val autoCheckAppUpdate: Boolean = true,
     val toastWhenClick: Boolean = true,
     val clickToast: String = "跳过",
@@ -96,6 +96,7 @@ val storeFlow by lazy {
 @Parcelize
 data class RecordStore(
     val clickCount: Int = 0,
+    val snapshotIdMap: Map<Long, Int> = emptyMap(),
 ) : Parcelable
 
 val recordStoreFlow by lazy {
