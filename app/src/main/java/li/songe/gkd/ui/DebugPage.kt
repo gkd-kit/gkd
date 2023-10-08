@@ -223,6 +223,18 @@ fun DebugPage() {
             }
             Divider()
             TextSwitch(
+                name = "音量快照",
+                desc = "当音量变化时,生成快照,如果悬浮窗按钮不工作,可以使用这个",
+                checked = store.captureVolumeChange
+            ) {
+                updateStorage(
+                    storeFlow, store.copy(
+                        captureVolumeChange = it
+                    )
+                )
+            }
+            Divider()
+            TextSwitch(
                 name = "隐藏快照状态栏",
                 desc = "当保存快照时,隐藏截图里的顶部状态栏高度区域",
                 checked = store.hideSnapshotStatusBar
