@@ -1,12 +1,10 @@
 package li.songe.gkd
 
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.rememberNavController
-import com.blankj.utilcode.util.LogUtils
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.RequestPermissionLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
@@ -21,7 +19,6 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.LocalPickContentLauncher
 import li.songe.gkd.util.LocalRequestPermissionLauncher
 import li.songe.gkd.util.UpgradeDialog
-import li.songe.gkd.util.storeFlow
 
 @AndroidEntryPoint
 class MainActivity : CompositionActivity({
@@ -32,15 +29,6 @@ class MainActivity : CompositionActivity({
     val pickContentLauncher = PickContentLauncher(this)
     val requestPermissionLauncher = RequestPermissionLauncher(this)
 
-    onFinish { fs ->
-        if (storeFlow.value.excludeFromRecents) {
-            finishAndRemoveTask() // 会让miui桌面回退动画失效
-            LogUtils.d("finishAndRemoveTask")
-        } else {
-            fs()
-        }
-    }
-
     //    https://juejin.cn/post/7169147194400833572
 //    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
 //        window.attributes.layoutInDisplayCutoutMode =
@@ -50,13 +38,6 @@ class MainActivity : CompositionActivity({
     setContent {
         UpgradeDialog()
         val navController = rememberNavController()
-        BackHandler {
-            if (navController.currentBackStack.value.size <= 2) {
-                finish()
-            } else {
-                navController.popBackStack()
-            }
-        }
         AppTheme(false) {
             CompositionLocalProvider(
                 LocalLauncher provides launcher,
