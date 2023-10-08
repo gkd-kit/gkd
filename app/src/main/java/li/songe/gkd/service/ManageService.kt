@@ -46,23 +46,30 @@ class ManageService : CompositionService({
             }
         }
     }
+    var registered = false
     scope.launchTry(Dispatchers.IO) {
         storeFlow.map { s -> s.captureVolumeChange }.collect {
-            if (it) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    context.registerReceiver(
-                        receiver, IntentFilter(VOLUME_CHANGED_ACTION), Context.RECEIVER_EXPORTED
-                    )
-                } else {
-                    context.registerReceiver(receiver, IntentFilter(VOLUME_CHANGED_ACTION))
+            registered = if (it) {
+                if (!registered) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        context.registerReceiver(
+                            receiver, IntentFilter(VOLUME_CHANGED_ACTION), Context.RECEIVER_EXPORTED
+                        )
+                    } else {
+                        context.registerReceiver(receiver, IntentFilter(VOLUME_CHANGED_ACTION))
+                    }
                 }
+                true
             } else {
-                context.unregisterReceiver(receiver)
+                if (registered) {
+                    context.unregisterReceiver(receiver)
+                }
+                false
             }
         }
     }
     onDestroy {
-        if (storeFlow.value.captureVolumeChange) {
+        if (storeFlow.value.captureVolumeChange && registered) {
             context.unregisterReceiver(receiver)
         }
     }
