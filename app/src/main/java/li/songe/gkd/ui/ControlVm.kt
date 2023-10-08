@@ -15,8 +15,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ControlVm @Inject constructor() : ViewModel() {
-    private val latestRecordFlow = DbSet.clickLogDb.clickLogDao().queryLatest()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    private val latestRecordFlow =
+        DbSet.clickLogDao.queryLatest().stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val latestRecordDescFlow = combine(
         latestRecordFlow, subsIdToRawFlow, appInfoCacheFlow

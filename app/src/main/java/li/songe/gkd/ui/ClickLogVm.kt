@@ -14,11 +14,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ClickLogVm @Inject constructor() : ViewModel() {
-    val clickLogsFlow = DbSet.clickLogDb.clickLogDao().query()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val clickLogsFlow =
+        DbSet.clickLogDao.query().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    val clickLogCountFlow = DbSet.clickLogDb.clickLogDao().count()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+    val clickLogCountFlow =
+        DbSet.clickLogDao.count().stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
     fun getGroup(clickLog: ClickLog): SubscriptionRaw.GroupRaw? {
         val subsItem = subsItemsFlow.value.find { s -> s.id == clickLog.subsId } ?: return null

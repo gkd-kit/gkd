@@ -173,7 +173,7 @@ class GkdAbService : CompositionAbService({
                         ruleIndex = rule.index,
                         ruleKey = rule.key
                     )
-                    DbSet.clickLogDb.clickLogDao().insert(clickLog)
+                    DbSet.clickLogDao.insert(clickLog)
                     increaseClickCount()
                 }
             }

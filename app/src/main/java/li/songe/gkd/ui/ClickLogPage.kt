@@ -138,9 +138,7 @@ fun ClickLogPage() {
                 Text(text = "删除", modifier = Modifier
                     .clickable(onClick = scope.launchAsFn {
                         previewClickLog = null
-                        DbSet.clickLogDb
-                            .clickLogDao()
-                            .delete(previewTriggerLogVal)
+                        DbSet.clickLogDao.delete(previewTriggerLogVal)
                     })
                     .fillMaxWidth()
                     .padding(10.dp))
