@@ -3,8 +3,10 @@ package li.songe.gkd.ui
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,8 +17,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
+import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.RadioButton
@@ -39,21 +43,32 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.content.FileProvider
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewModelScope
+import com.blankj.utilcode.util.ClipboardUtils
+import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ToastUtils
-import li.songe.gkd.util.navigate
+import com.blankj.utilcode.util.ZipUtils
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.MainActivity
 import li.songe.gkd.appScope
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.AboutPageDestination
 import li.songe.gkd.ui.destinations.DebugPageDestination
+import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.checkUpdatingFlow
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.logZipDir
+import li.songe.gkd.util.navigate
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.updateStorage
+import java.io.File
 
 val settingsNav = BottomNavItem(
     label = "设置", icon = SafeR.ic_cog, route = "settings"
@@ -64,6 +79,8 @@ fun SettingsPage() {
     val context = LocalContext.current as MainActivity
     val navController = LocalNavController.current
     val store by storeFlow.collectAsState()
+    val vm = hiltViewModel<HomePageVm>()
+    val uploadStatus by vm.uploadStatusFlow.collectAsState()
 
     var showSubsIntervalDlg by remember {
         mutableStateOf(false)
@@ -71,6 +88,11 @@ fun SettingsPage() {
     var showToastInputDlg by remember {
         mutableStateOf(false)
     }
+
+    var showShareLogDlg by remember {
+        mutableStateOf(false)
+    }
+
     val checkUpdating by checkUpdatingFlow.collectAsState()
 
     Scaffold(topBar = {
@@ -171,6 +193,17 @@ fun SettingsPage() {
                 )
             })
             Divider()
+            SettingItem(title = "分享日志", onClick = {
+                vm.viewModelScope.launchTry(Dispatchers.IO) {
+                    val logFiles = LogUtils.getLogFiles()
+                    if (logFiles.isNotEmpty()) {
+                        showShareLogDlg = true
+                    } else {
+                        ToastUtils.showShort("暂无日志")
+                    }
+                }
+            })
+            Divider()
             SettingItem(title = "高级模式", onClick = {
                 navController.navigate(DebugPageDestination)
             })
@@ -194,8 +227,7 @@ fun SettingsPage() {
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .selectable(
-                                selected = (option.second == store.updateSubsInterval),
+                            .selectable(selected = (option.second == store.updateSubsInterval),
                                 onClick = {
                                     updateStorage(
                                         storeFlow,
@@ -222,6 +254,7 @@ fun SettingsPage() {
             }
         }
     }
+
     if (showToastInputDlg) {
         Dialog(onDismissRequest = { showToastInputDlg = false }) {
             var value by remember {
@@ -262,6 +295,136 @@ fun SettingsPage() {
                 }
             }
         }
+    }
+
+    if (showShareLogDlg) {
+        Dialog(onDismissRequest = { showShareLogDlg = false }) {
+            Box(
+                Modifier
+                    .width(200.dp)
+                    .background(Color.White)
+                    .padding(8.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                    Text(
+                        text = "调用系统分享", modifier = Modifier
+                            .clickable(onClick = {
+                                showShareLogDlg = false
+                                vm.viewModelScope.launchTry(Dispatchers.IO) {
+                                    val logZipFile = File(logZipDir, "log.zip")
+                                    ZipUtils.zipFiles(LogUtils.getLogFiles(), logZipFile)
+                                    val uri = FileProvider.getUriForFile(
+                                        context, "${context.packageName}.provider", logZipFile
+                                    )
+                                    val intent = Intent().apply {
+                                        action = Intent.ACTION_SEND
+                                        putExtra(Intent.EXTRA_STREAM, uri)
+                                        type = "application/zip"
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    context.startActivity(
+                                        Intent.createChooser(
+                                            intent, "分享日志文件"
+                                        )
+                                    )
+                                }
+                            })
+                            .then(modifier)
+                    )
+                    Text(
+                        text = "上传日志(需科学上网)", modifier = Modifier
+                            .clickable(onClick = {
+                                showShareLogDlg = false
+                                vm.viewModelScope.launchTry(Dispatchers.IO) {
+                                    val logZipFile = File(logZipDir, "log.zip")
+                                    ZipUtils.zipFiles(LogUtils.getLogFiles(), logZipFile)
+                                    vm.uploadZip(logZipFile)
+                                }
+                            })
+                            .then(modifier)
+                    )
+                }
+            }
+        }
+    }
+
+    when (val uploadStatusVal = uploadStatus) {
+        is LoadStatus.Failure -> {
+            AlertDialog(
+                title = { Text(text = "上传失败") },
+                text = {
+                    Text(text = uploadStatusVal.exception.let {
+                        it.message ?: it.toString()
+                    })
+                },
+                onDismissRequest = { vm.uploadStatusFlow.value = null },
+                confirmButton = {
+                    TextButton(onClick = {
+                        vm.uploadStatusFlow.value = null
+                    }) {
+                        Text(text = "关闭")
+                    }
+                },
+            )
+        }
+
+        is LoadStatus.Loading -> {
+            Dialog(onDismissRequest = { }) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "上传文件中,请稍等",
+                        fontSize = 16.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp)
+                    )
+                    Spacer(modifier = Modifier.height(15.dp))
+                    LinearProgressIndicator(progress = uploadStatusVal.progress)
+                    Spacer(modifier = Modifier.height(5.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = {
+                            vm.uploadJob?.cancel(CancellationException("终止上传"))
+                            vm.uploadJob = null
+                        }) {
+                            Text(text = "终止上传", color = Color.Red)
+                        }
+                    }
+                }
+            }
+        }
+
+        is LoadStatus.Success -> {
+            AlertDialog(title = { Text(text = "上传完成") }, text = {
+                Text(text = uploadStatusVal.result.href)
+            }, onDismissRequest = {}, dismissButton = {
+                TextButton(onClick = {
+                    vm.uploadStatusFlow.value = null
+                }) {
+                    Text(text = "关闭")
+                }
+            }, confirmButton = {
+                TextButton(onClick = {
+                    ClipboardUtils.copyText(uploadStatusVal.result.href)
+                    ToastUtils.showShort("复制成功")
+                    vm.uploadStatusFlow.value = null
+                }) {
+                    Text(text = "复制")
+                }
+            })
+        }
+
+        else -> {}
     }
 }
 

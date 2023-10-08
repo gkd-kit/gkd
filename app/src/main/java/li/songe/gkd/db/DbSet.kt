@@ -14,6 +14,7 @@ import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.SubscriptionRaw
+import li.songe.gkd.util.DEFAULT_SUBS_UPDATE_URL
 import li.songe.gkd.util.FolderExt
 import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.isMainProcess
@@ -39,9 +40,7 @@ object DbSet {
                 if (!isMainProcess) return
                 appScope.launchTry(Dispatchers.IO) {
                     val defaultSubsItem = SubsItem(
-                        id = 0, order = 0,
-                        updateUrl = "https://registry.npmmirror.com/@gkd-kit/subscription/latest/files",
-                        mtime = 0
+                        id = 0, order = 0, updateUrl = DEFAULT_SUBS_UPDATE_URL, mtime = 0
                     )
                     db.insert(
                         "subs_item",
