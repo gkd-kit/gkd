@@ -37,6 +37,9 @@ data class ClickLog(
         @Delete
         suspend fun delete(vararg objects: ClickLog): Int
 
+        @Query("DELETE FROM click_log")
+        suspend fun deleteAll()
+
         @Query("SELECT * FROM click_log ORDER BY id DESC LIMIT 1000")
         fun query(): Flow<List<ClickLog>>
 
