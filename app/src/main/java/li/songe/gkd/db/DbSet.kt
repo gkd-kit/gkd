@@ -40,7 +40,10 @@ object DbSet {
                 if (!isMainProcess) return
                 appScope.launchTry(Dispatchers.IO) {
                     val defaultSubsItem = SubsItem(
-                        id = 0, order = 0, updateUrl = DEFAULT_SUBS_UPDATE_URL, mtime = 0
+                        id = 0,
+                        order = 0,
+                        updateUrl = DEFAULT_SUBS_UPDATE_URL,
+                        mtime = System.currentTimeMillis()
                     )
                     db.insert(
                         "subs_item",
