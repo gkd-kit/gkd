@@ -96,47 +96,74 @@ private fun AccessibilityNodeInfo.getTempRect(): Rect {
     return tempRect
 }
 
-val abTransform = Transform<AccessibilityNodeInfo>(
-    getAttr = { node, name ->
-        when (name) {
-            "id" -> node.viewIdResourceName
-            "name" -> node.className
-            "text" -> node.text
-            "text.length" -> node.text?.length
-            "desc" -> node.contentDescription
-            "desc.length" -> node.contentDescription?.length
 
-            "clickable" -> node.isClickable
-            "checkable" -> node.isCheckable
-            "checked" -> node.isChecked
-            "focusable" -> node.isFocusable
-            "visibleToUser" -> node.isVisibleToUser
+// https://github.com/gkd-kit/gkd/issues/115
+private const val MAX_CHILD_SIZE = 256
+private const val MAX_DESCENDANTS_SIZE = 4096
 
-            "left" -> node.getTempRect().left
-            "top" -> node.getTempRect().top
-            "right" -> node.getTempRect().right
-            "bottom" -> node.getTempRect().bottom
-
-            "width" -> node.getTempRect().width()
-            "height" -> node.getTempRect().height()
-
-            "index" -> node.getIndex()
-            "depth" -> node.getDepth()
-            "childCount" -> node.childCount
-            else -> null
+private val getChildren: (AccessibilityNodeInfo) -> Sequence<AccessibilityNodeInfo> = { node ->
+    sequence {
+        repeat(node.childCount.coerceAtMost(MAX_CHILD_SIZE)) { i ->
+            val child = node.getChild(i) ?: return@sequence
+            yield(child)
         }
-    },
+    }
+}
+
+private val getAttr: (AccessibilityNodeInfo, String) -> Any? = { node, name ->
+    when (name) {
+        "id" -> node.viewIdResourceName
+        "name" -> node.className
+        "text" -> node.text
+        "text.length" -> node.text?.length
+        "desc" -> node.contentDescription
+        "desc.length" -> node.contentDescription?.length
+
+        "clickable" -> node.isClickable
+        "checkable" -> node.isCheckable
+        "checked" -> node.isChecked
+        "focusable" -> node.isFocusable
+        "visibleToUser" -> node.isVisibleToUser
+
+        "left" -> node.getTempRect().left
+        "top" -> node.getTempRect().top
+        "right" -> node.getTempRect().right
+        "bottom" -> node.getTempRect().bottom
+
+        "width" -> node.getTempRect().width()
+        "height" -> node.getTempRect().height()
+
+        "index" -> node.getIndex()
+        "depth" -> node.getDepth()
+        "childCount" -> node.childCount
+        else -> null
+    }
+}
+
+val abTransform = Transform(getAttr = getAttr,
     getName = { node -> node.className },
-    getChildren = { node ->
-        sequence {
-            repeat(node.childCount) { i ->
-                yield(node.getChild(i))
-            }
-        }
-    },
+    getChildren = getChildren,
     getChild = { node, index -> node.getChild(index) },
     getParent = { node -> node.parent },
-)
+    getDescendants = { node ->
+        sequence {
+            val stack = mutableListOf(node)
+            val tempNodes = mutableListOf<AccessibilityNodeInfo>()
+            do {
+                val top = stack.removeLast()
+                yield(top)
+                for (childNode in getChildren(top)) {
+                    tempNodes.add(childNode)
+                }
+                if (tempNodes.isNotEmpty()) {
+                    for (i in tempNodes.size - 1 downTo 0) {
+                        stack.add(tempNodes[i])
+                    }
+                    tempNodes.clear()
+                }
+            } while (stack.isNotEmpty())
+        }.take(MAX_DESCENDANTS_SIZE)
+    })
 
 private var lastToastTime = -1L
 fun toastClickTip() {
