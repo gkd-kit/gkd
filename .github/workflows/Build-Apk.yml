@@ -3,6 +3,10 @@ name: Apk-Build
 on:
   workflow_dispatch:
 
+  push:
+    branches:
+      - '**'
+
 jobs:
   build:
     runs-on: ubuntu-latest
