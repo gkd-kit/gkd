@@ -18,26 +18,19 @@ import li.songe.gkd.util.FolderExt
 import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.isMainProcess
 import li.songe.gkd.util.launchTry
+import java.io.File
 
 object DbSet {
-
-    private fun <T : RoomDatabase> getDb(
-        klass: Class<T>, name: String,
-    ): RoomDatabase.Builder<T> {
-        return Room.databaseBuilder(
-            app, klass, FolderExt.dbFolder.absolutePath.plus("/${name}.db")
+    private val appDb by lazy {
+        Room.databaseBuilder(
+            app, AppDb::class.java, File(FolderExt.dbFolder, "gkd.db").absolutePath
         ).fallbackToDestructiveMigration().enableMultiInstanceInvalidation()
+            .addCallback(createCallback()).build()
     }
-
-    private val snapshotDb by lazy { getDb(SnapshotDb::class.java, "snapshot").build() }
-    private val subsConfigDb by lazy { getDb(SubsConfigDb::class.java, "subsConfig").build() }
-    private val subsItemDb by lazy {
-        getDb(SubsItemDb::class.java, "subsItem").addCallback(createCallback()).build()
-    }
-    val clickLogDb by lazy { getDb(ClickLogDb::class.java, "clickLog").build() }
-    val subsItemDao by lazy { subsItemDb.subsItemDao() }
-    val subsConfigDao by lazy { subsConfigDb.subsConfigDao() }
-    val snapshotDao by lazy { snapshotDb.snapshotDao() }
+    val subsItemDao by lazy { appDb.subsItemDao() }
+    val subsConfigDao by lazy { appDb.subsConfigDao() }
+    val snapshotDao by lazy { appDb.snapshotDao() }
+    val clickLogDao by lazy { appDb.clickLogDao() }
 
     private fun createCallback(): RoomDatabase.Callback {
         return object : RoomDatabase.Callback() {
@@ -46,8 +39,7 @@ object DbSet {
                 if (!isMainProcess) return
                 appScope.launchTry(Dispatchers.IO) {
                     val defaultSubsItem = SubsItem(
-                        id = 0,
-                        order = 0,
+                        id = 0, order = 0,
                         updateUrl = "https://registry.npmmirror.com/@gkd-kit/subscription/latest/files",
                         mtime = 0
                     )
@@ -56,12 +48,11 @@ object DbSet {
                         SQLiteDatabase.CONFLICT_IGNORE,
                         defaultSubsItem.toContentValues()
                     )
-                    if (defaultSubsItem.updateUrl == null) return@launchTry
                     try {
                         val s = System.currentTimeMillis()
                         val newSubsRaw = withTimeout(3000) {
                             SubscriptionRaw.parse(
-                                Singleton.client.get(defaultSubsItem.updateUrl).bodyAsText()
+                                Singleton.client.get(defaultSubsItem.updateUrl!!).bodyAsText()
                             )
                         }
                         delay(1500 - (System.currentTimeMillis() - s))

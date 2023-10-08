@@ -31,12 +31,9 @@ android {
             useSupportLibrary = true
         }
 
-        javaCompileOptions {
-            annotationProcessorOptions {
-                arguments += mapOf(
-                    "room.schemaLocation" to "$projectDir/schemas", "room.incremental" to "true"
-                )
-            }
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+            arg("room.incremental", "true")
         }
         val nowTime = System.currentTimeMillis()
         buildConfigField("Long", "BUILD_TIME", jsonStringOf(nowTime) + "L")
@@ -115,10 +112,6 @@ android {
     sourceSets.configureEach {
         kotlin.srcDir("$buildDir/generated/ksp/$name/kotlin/")
     }
-}
-
-kapt {
-    correctErrorTypes = true
 }
 
 dependencies {
