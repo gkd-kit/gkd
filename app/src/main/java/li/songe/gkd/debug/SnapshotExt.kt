@@ -27,14 +27,8 @@ import java.io.File
 import kotlin.math.min
 
 object SnapshotExt {
-    private val snapshotDir by lazy {
+    val snapshotDir by lazy {
         app.getExternalFilesDir("snapshot")!!.apply { if (!exists()) mkdir() }
-    }
-
-    private val emptyBitmap by lazy {
-        Bitmap.createBitmap(
-            ScreenUtils.getScreenWidth(), ScreenUtils.getScreenHeight(), Bitmap.Config.ARGB_8888
-        )
     }
 
     private fun getSnapshotParentPath(snapshotId: Long) =
@@ -90,7 +84,11 @@ object SnapshotExt {
                             return@withTimeoutOrNull null
                         }
                         ScreenshotService.screenshot()
-                    } ?: emptyBitmap.apply {
+                    } ?: Bitmap.createBitmap(
+                        ScreenUtils.getScreenWidth(),
+                        ScreenUtils.getScreenHeight(),
+                        Bitmap.Config.ARGB_8888
+                    ).apply {
                         LogUtils.d("截屏不可用，即将使用空白图片")
                     }
                 }

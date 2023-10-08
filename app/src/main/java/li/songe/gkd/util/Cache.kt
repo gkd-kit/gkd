@@ -21,3 +21,11 @@ val newVersionApkDir by lazy {
         }
     }
 }
+
+val logZipDir by lazy {
+    File(cacheParentDir, "logZip").apply {
+        if (!exists()) {
+            mkdirs()
+        }
+    }
+}

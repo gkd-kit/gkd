@@ -171,7 +171,7 @@ fun SnapshotPage() {
                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 }
-                                context.startActivity(Intent.createChooser(intent, "分享zip文件"))
+                                context.startActivity(Intent.createChooser(intent, "分享快照文件"))
                                 selectedSnapshot = null
                             })
                             .then(modifier)

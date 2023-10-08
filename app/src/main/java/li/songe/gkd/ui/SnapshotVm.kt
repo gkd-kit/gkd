@@ -21,6 +21,7 @@ import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt.getSnapshotZipFile
+import li.songe.gkd.util.FILE_UPLOAD_URL
 import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.launchTry
@@ -28,7 +29,6 @@ import li.songe.gkd.util.recordStoreFlow
 import li.songe.gkd.util.updateStorage
 import javax.inject.Inject
 
-const val FILE_UPLOAD_URL = "https://github-upload-assets.lisonge.workers.dev/"
 
 @HiltViewModel
 class SnapshotVm @Inject constructor() : ViewModel() {
