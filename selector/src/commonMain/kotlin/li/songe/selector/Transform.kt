@@ -4,7 +4,7 @@ package li.songe.selector
 class Transform<T>(
     val getAttr: (T, String) -> Any?,
     val getName: (T) -> CharSequence?,
-    val getChildren: (T) -> Sequence<T?>,
+    val getChildren: (T) -> Sequence<T>,
     val getChild: (T, Int) -> T? = { node, offset -> getChildren(node).elementAtOrNull(offset) },
     val getParent: (T) -> T?,
     val getAncestors: (T) -> Sequence<T> = { node ->
@@ -55,9 +55,7 @@ class Transform<T>(
                 val top = stack.removeLast()
                 yield(top)
                 for (childNode in getChildren(top)) {
-                    if (childNode != null) {
-                        tempNodes.add(childNode)
-                    }
+                    tempNodes.add(childNode)
                 }
                 if (tempNodes.isNotEmpty()) {
                     for (i in tempNodes.size - 1 downTo 0) {
@@ -70,6 +68,7 @@ class Transform<T>(
     },
 
     ) {
+
     val querySelectorAll: (T, Selector) -> Sequence<T> = { node, selector ->
         sequence {
             val trackNodes: MutableList<T> = mutableListOf()
@@ -95,6 +94,8 @@ class Transform<T>(
             }
         }
     }
+
+    @Suppress("UNUSED")
     val querySelectorTrack: (T, Selector) -> List<T>? = { node, selector ->
         querySelectorTrackAll(
             node, selector
