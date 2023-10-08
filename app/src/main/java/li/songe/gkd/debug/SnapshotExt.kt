@@ -49,7 +49,7 @@ object SnapshotExt {
     suspend fun getSnapshotZipFile(snapshotId: Long): File {
         val file = File(snapshotZipDir, "${snapshotId}.zip")
         if (file.exists()) {
-            file.delete()
+            return file
         }
         withContext(Dispatchers.IO) {
             ZipUtils.zipFiles(

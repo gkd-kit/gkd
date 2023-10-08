@@ -21,8 +21,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.AlertDialog
+import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -30,21 +33,25 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.ImageUtils
 import com.blankj.utilcode.util.ToastUtils
 import com.blankj.utilcode.util.UriUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
 import li.songe.gkd.data.Snapshot
@@ -52,6 +59,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.ui.component.SimpleTopAppBar
 import li.songe.gkd.ui.destinations.ImagePreviewPageDestination
+import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.LocalPickContentLauncher
 import li.songe.gkd.util.LocalRequestPermissionLauncher
@@ -59,6 +67,10 @@ import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.format
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.navigate
+import li.songe.gkd.util.recordStoreFlow
+import li.songe.gkd.util.snapshotZipDir
+import li.songe.gkd.util.updateStorage
+import java.io.File
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
@@ -73,6 +85,8 @@ fun SnapshotPage() {
 
     val vm = hiltViewModel<SnapshotVm>()
     val snapshots by vm.snapshotsState.collectAsState()
+    val uploadStatus by vm.uploadStatusFlow.collectAsState()
+    val recordStore by recordStoreFlow.collectAsState()
 
     var selectedSnapshot by remember {
         mutableStateOf<Snapshot?>(null)
@@ -143,7 +157,7 @@ fun SnapshotPage() {
                             .then(modifier)
                     )
                     Text(
-                        text = "分享(注意隐私信息)",
+                        text = "分享",
                         modifier = Modifier
                             .clickable(onClick = vm.viewModelScope.launchAsFn {
                                 val zipFile = SnapshotExt.getSnapshotZipFile(snapshotVal.id)
@@ -162,6 +176,27 @@ fun SnapshotPage() {
                             })
                             .then(modifier)
                     )
+                    if (recordStore.snapshotIdMap.containsKey(snapshotVal.id)) {
+                        Text(
+                            text = "复制链接", modifier = Modifier
+                                .clickable(onClick = {
+                                    selectedSnapshot = null
+                                    ClipboardUtils.copyText("https://gkd-kit.gitee.io/import/" + recordStore.snapshotIdMap[snapshotVal.id])
+                                    ToastUtils.showShort("复制成功")
+                                })
+                                .then(modifier)
+                        )
+                    } else {
+                        Text(
+                            text = "生成链接(需科学上网)", modifier = Modifier
+                                .clickable(onClick = {
+                                    selectedSnapshot = null
+                                    vm.uploadZip(snapshotVal)
+                                })
+                                .then(modifier)
+                        )
+                    }
+
                     Text(
                         text = "保存截图到相册",
                         modifier = Modifier
@@ -185,7 +220,7 @@ fun SnapshotPage() {
                             .then(modifier)
                     )
                     Text(
-                        text = "从相册替换截图",
+                        text = "替换截图(去除隐私)",
                         modifier = Modifier
                             .clickable(onClick = vm.viewModelScope.launchAsFn {
                                 val uri = pickContentLauncher.launchForImageResult()
@@ -195,6 +230,19 @@ fun SnapshotPage() {
                                     val newBitmap = ImageUtils.getBitmap(newBytes, 0)
                                     if (oldBitmap.width == newBitmap.width && oldBitmap.height == newBitmap.height) {
                                         snapshotVal.screenshotFile.writeBytes(newBytes)
+                                        File(snapshotZipDir, "${snapshotVal.id}.zip").apply {
+                                            if (exists()) delete()
+                                        }
+                                        if (recordStore.snapshotIdMap.containsKey(snapshotVal.id)) {
+                                            updateStorage(
+                                                recordStoreFlow,
+                                                recordStore.copy(snapshotIdMap = recordStore.snapshotIdMap
+                                                    .toMutableMap()
+                                                    .apply {
+                                                        remove(snapshotVal.id)
+                                                    })
+                                            )
+                                        }
                                     } else {
                                         ToastUtils.showShort("截图尺寸不一致,无法替换")
                                         return@withContext
@@ -211,6 +259,16 @@ fun SnapshotPage() {
                                 DbSet.snapshotDao.delete(snapshotVal)
                                 withContext(IO) {
                                     SnapshotExt.remove(snapshotVal.id)
+                                    if (recordStore.snapshotIdMap.containsKey(snapshotVal.id)) {
+                                        updateStorage(
+                                            recordStoreFlow,
+                                            recordStore.copy(snapshotIdMap = recordStore.snapshotIdMap
+                                                .toMutableMap()
+                                                .apply {
+                                                    remove(snapshotVal.id)
+                                                })
+                                        )
+                                    }
                                 }
                                 selectedSnapshot = null
                             })
@@ -219,6 +277,81 @@ fun SnapshotPage() {
                 }
             }
         }
+    }
+
+    when (val uploadStatusVal = uploadStatus) {
+        is LoadStatus.Failure -> {
+            AlertDialog(
+                title = { Text(text = "上传失败") },
+                text = {
+                    Text(text = uploadStatusVal.exception.let {
+                        it.message ?: it.toString()
+                    })
+                },
+                onDismissRequest = { vm.uploadStatusFlow.value = null },
+                confirmButton = {
+                    TextButton(onClick = {
+                        vm.uploadStatusFlow.value = null
+                    }) {
+                        Text(text = "关闭")
+                    }
+                },
+            )
+        }
+
+        is LoadStatus.Loading -> {
+            Dialog(onDismissRequest = { }) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "上传文件中,请稍等",
+                        fontSize = 16.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp)
+                    )
+                    Spacer(modifier = Modifier.height(15.dp))
+                    LinearProgressIndicator(progress = uploadStatusVal.progress)
+                    Spacer(modifier = Modifier.height(5.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = {
+                            vm.uploadJob?.cancel(CancellationException("终止上传"))
+                            vm.uploadJob = null
+                        }) {
+                            Text(text = "终止上传", color = Color.Red)
+                        }
+                    }
+                }
+            }
+        }
+
+        is LoadStatus.Success -> {
+            AlertDialog(title = { Text(text = "上传完成") }, text = {
+                Text(text = "https://gkd-kit.gitee.io/import/" + uploadStatusVal.result.id)
+            }, onDismissRequest = {}, dismissButton = {
+                TextButton(onClick = {
+                    vm.uploadStatusFlow.value = null
+                }) {
+                    Text(text = "关闭")
+                }
+            }, confirmButton = {
+                TextButton(onClick = {
+                    ClipboardUtils.copyText("https://gkd-kit.gitee.io/import/" + uploadStatusVal.result.id)
+                    ToastUtils.showShort("复制成功")
+                    vm.uploadStatusFlow.value = null
+                }) {
+                    Text(text = "复制")
+                }
+            })
+        }
+
+        else -> {}
     }
 }
 
