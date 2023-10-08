@@ -55,7 +55,7 @@ object SnapshotExt {
         return file
     }
 
-    fun remove(id: Long) {
+    fun removeAssets(id: Long) {
         File(getSnapshotParentPath(id)).apply {
             if (exists()) {
                 deleteRecursively()

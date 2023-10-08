@@ -52,6 +52,9 @@ data class Snapshot(
         @Insert(onConflict = OnConflictStrategy.IGNORE)
         suspend fun insertOrIgnore(vararg users: Snapshot): List<Long>
 
+        @Query("DELETE FROM snapshot")
+        suspend fun deleteAll()
+
         @Delete
         suspend fun delete(vararg users: Snapshot): Int
 

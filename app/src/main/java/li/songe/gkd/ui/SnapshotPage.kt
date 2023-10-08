@@ -14,18 +14,24 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.AlertDialog
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,7 +58,7 @@ import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.db.DbSet
@@ -92,42 +98,64 @@ fun SnapshotPage() {
         mutableStateOf<Snapshot?>(null)
     }
 
+    var showDeleteDlg by remember {
+        mutableStateOf(false)
+    }
     val scrollState = rememberLazyListState()
 
     Scaffold(topBar = {
-        SimpleTopAppBar(
-            onClickIcon = { navController.popBackStack() },
+        SimpleTopAppBar(onClickIcon = { navController.popBackStack() },
             title = if (snapshots.isEmpty()) "快照记录" else "快照记录-${snapshots.size}",
-        )
-    }, content = { contentPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(10.dp, 0.dp, 10.dp, 0.dp)
-                .padding(contentPadding),
-            state = scrollState,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            items(snapshots, { it.id }) { snapshot ->
-                Column(modifier = Modifier
-                    .fillMaxWidth()
-                    .border(BorderStroke(1.dp, Color.Black))
-                    .clickable {
-                        selectedSnapshot = snapshot
-                    }) {
-                    Row {
-                        Text(
-                            text = snapshot.id.format("yyyy-MM-dd HH:mm:ss"),
-                            fontFamily = FontFamily.Monospace
+            actions = {
+                if (snapshots.isNotEmpty()) {
+                    IconButton(onClick = { showDeleteDlg = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.size(30.dp)
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(text = snapshot.appName ?: "")
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(text = snapshot.activityId ?: "")
+                }
+            })
+    }, content = { contentPadding ->
+        if (snapshots.isNotEmpty()) {
+            LazyColumn(
+                modifier = Modifier
+                    .padding(10.dp, 0.dp, 10.dp, 0.dp)
+                    .padding(contentPadding),
+                state = scrollState,
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                items(snapshots, { it.id }) { snapshot ->
+                    Column(modifier = Modifier
+                        .fillMaxWidth()
+                        .border(BorderStroke(1.dp, Color.Black))
+                        .clickable {
+                            selectedSnapshot = snapshot
+                        }) {
+                        Row {
+                            Text(
+                                text = snapshot.id.format("yyyy-MM-dd HH:mm:ss"),
+                                fontFamily = FontFamily.Monospace
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(text = snapshot.appName ?: "")
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(text = snapshot.activityId ?: "")
+                    }
+                }
+                item {
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
             }
-            item {
-                Spacer(modifier = Modifier.height(10.dp))
+        } else {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Spacer(modifier = Modifier.height(30.dp))
+                Text(text = "暂无记录")
             }
         }
     })
@@ -224,7 +252,7 @@ fun SnapshotPage() {
                         modifier = Modifier
                             .clickable(onClick = vm.viewModelScope.launchAsFn {
                                 val uri = pickContentLauncher.launchForImageResult()
-                                withContext(IO) {
+                                withContext(Dispatchers.IO) {
                                     val oldBitmap = ImageUtils.getBitmap(snapshotVal.screenshotFile)
                                     val newBytes = UriUtils.uri2Bytes(uri)
                                     val newBitmap = ImageUtils.getBitmap(newBytes, 0)
@@ -257,8 +285,8 @@ fun SnapshotPage() {
                         text = "删除", modifier = Modifier
                             .clickable(onClick = scope.launchAsFn {
                                 DbSet.snapshotDao.delete(snapshotVal)
-                                withContext(IO) {
-                                    SnapshotExt.remove(snapshotVal.id)
+                                withContext(Dispatchers.IO) {
+                                    SnapshotExt.removeAssets(snapshotVal.id)
                                     if (recordStore.snapshotIdMap.containsKey(snapshotVal.id)) {
                                         updateStorage(
                                             recordStoreFlow,
@@ -352,6 +380,32 @@ fun SnapshotPage() {
         }
 
         else -> {}
+    }
+
+    if (showDeleteDlg) {
+        AlertDialog(onDismissRequest = { showDeleteDlg = false },
+            title = { Text(text = "是否删除全部快照记录?") },
+            confirmButton = {
+                TextButton(onClick = scope.launchAsFn(Dispatchers.IO) {
+                    showDeleteDlg = false
+                    snapshots.forEach { s ->
+                        SnapshotExt.removeAssets(s.id)
+                    }
+                    DbSet.snapshotDao.deleteAll()
+                    updateStorage(
+                        recordStoreFlow, recordStoreFlow.value.copy(snapshotIdMap = emptyMap())
+                    )
+                }) {
+                    Text(text = "是", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showDeleteDlg = false
+                }) {
+                    Text(text = "否")
+                }
+            })
     }
 }
 
