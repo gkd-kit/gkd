@@ -2,7 +2,10 @@ package li.songe.gkd.util
 
 import li.songe.gkd.R
 
-@Suppress("UNRESOLVED_REFERENCE")
+/**
+ * https://github.com/gkd-kit/gkd/assets/38517192/48c857e6-a384-4008-93ab-b3214ae757eb
+ */
+@Suppress("UNRESOLVED_REFERENCE", "UNUSED")
 object SafeR {
     val ic_capture: Int = R.drawable.ic_capture
     val ic_add: Int = R.drawable.ic_add
