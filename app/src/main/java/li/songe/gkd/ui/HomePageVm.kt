@@ -60,7 +60,7 @@ class HomePageVm @Inject constructor() : ViewModel() {
         }
         appScope.launchTry(Dispatchers.IO) {
             // 迁移快照记录
-            val oldDbFile = File(FolderExt.dbFolder, "snapshot.db-wal")
+            val oldDbFile = File(FolderExt.dbFolder, "snapshot.db")
             if (oldDbFile.exists()) {
                 SnapshotExt.snapshotDir.walk().maxDepth(1).filter { f -> f.isDirectory }
                     .mapNotNull { f -> f.name.toLongOrNull() }.forEach { snapshotId ->
@@ -70,7 +70,7 @@ class HomePageVm @Inject constructor() : ViewModel() {
                             )
                         )
                     }
-                oldDbFile.exists()
+                oldDbFile.delete()
                 LogUtils.d("执行快照迁移")
             }
         }
