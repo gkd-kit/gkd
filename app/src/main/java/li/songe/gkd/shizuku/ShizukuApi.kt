@@ -14,11 +14,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.composition.CanOnDestroy
 import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.util.launchWhile
+import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
@@ -95,7 +95,7 @@ fun CanOnDestroy.useSafeGetTasksFc(scope: CoroutineScope): () -> List<ActivityMa
     val activityTaskManagerFlow = combine(
         shizukuAliveFlow,
         shizukuGrantFlow,
-        storeFlow.map { s -> s.enableShizuku }) { shizukuAlive, shizukuGrant, enableShizuku ->
+        storeFlow.map(scope) { s -> s.enableShizuku }) { shizukuAlive, shizukuGrant, enableShizuku ->
         if (enableShizuku && shizukuAlive && shizukuGrant) newActivityTaskManager() else null
     }.flowOn(Dispatchers.IO).stateIn(scope, SharingStarted.Lazily, null)
     return {

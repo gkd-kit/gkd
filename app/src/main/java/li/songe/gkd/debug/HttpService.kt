@@ -27,7 +27,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import li.songe.gkd.app
 import li.songe.gkd.appScope
@@ -46,6 +45,7 @@ import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.util.Ext.getIpAddressInLocalNetwork
 import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsItemsFlow
 import java.io.File
@@ -131,7 +131,7 @@ class HttpService : CompositionService({
 
     var server: NettyApplicationEngine? = null
     scope.launchTry(Dispatchers.IO) {
-        storeFlow.map { s -> s.httpServerPort }.collect { port ->
+        storeFlow.map(scope) { s -> s.httpServerPort }.collect { port ->
             server?.stop()
             server = createServer(port).apply { start() }
             createNotif(
