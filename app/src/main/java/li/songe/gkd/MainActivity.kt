@@ -1,15 +1,20 @@
 package li.songe.gkd
 
+import android.app.ActivityManager
+import android.content.Context
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.RequestPermissionLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
 import li.songe.gkd.composition.CompositionActivity
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.ui.NavGraphs
@@ -19,6 +24,8 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.LocalPickContentLauncher
 import li.songe.gkd.util.LocalRequestPermissionLauncher
 import li.songe.gkd.util.UpgradeDialog
+import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.storeFlow
 
 @AndroidEntryPoint
 class MainActivity : CompositionActivity({
@@ -29,11 +36,15 @@ class MainActivity : CompositionActivity({
     val pickContentLauncher = PickContentLauncher(this)
     val requestPermissionLauncher = RequestPermissionLauncher(this)
 
-    //    https://juejin.cn/post/7169147194400833572
-//    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-//        window.attributes.layoutInDisplayCutoutMode =
-//            WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-//    }
+    lifecycleScope.launchTry(Dispatchers.IO) {
+        storeFlow.map { s -> s.excludeFromRecents }.collect {
+            (app.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).let { manager ->
+                manager.appTasks.forEach { task ->
+                    task?.setExcludeFromRecents(it)
+                }
+            }
+        }
+    }
 
     setContent {
         UpgradeDialog()

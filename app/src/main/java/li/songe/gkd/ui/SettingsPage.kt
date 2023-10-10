@@ -1,7 +1,5 @@
 package li.songe.gkd.ui
 
-import android.app.ActivityManager
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -55,7 +53,6 @@ import com.blankj.utilcode.util.ZipUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.MainActivity
-import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
@@ -118,12 +115,6 @@ fun SettingsPage() {
                 desc = "在[最近任务]界面中隐藏本应用",
                 checked = store.excludeFromRecents,
                 onCheckedChange = {
-
-                    (app.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).let { manager ->
-                        manager.appTasks.forEach { task ->
-                            task?.setExcludeFromRecents(it)
-                        }
-                    }
                     updateStorage(
                         storeFlow, store.copy(
                             excludeFromRecents = it
