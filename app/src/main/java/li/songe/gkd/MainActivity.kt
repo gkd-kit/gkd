@@ -1,5 +1,9 @@
 package li.songe.gkd
 
+import android.app.Activity
+import android.app.Application.ActivityLifecycleCallbacks
+import android.os.Build
+import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -19,6 +23,8 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.LocalPickContentLauncher
 import li.songe.gkd.util.LocalRequestPermissionLauncher
 import li.songe.gkd.util.UpgradeDialog
+import li.songe.gkd.util.setExcludeFromRecents
+import li.songe.gkd.util.storeFlow
 
 @AndroidEntryPoint
 class MainActivity : CompositionActivity({
@@ -35,6 +41,39 @@ class MainActivity : CompositionActivity({
 //            WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
 //    }
 
+    this.setExcludeFromRecents(storeFlow.value.excludeFromRecents)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            override fun onActivityCreated(p0: Activity, p1: Bundle?) {}
+
+
+            override fun onActivityResumed(p0: Activity) {
+
+            }
+
+            override fun onActivityPaused(p0: Activity) {
+
+            }
+
+            override fun onActivityStopped(p0: Activity) {
+                // 退到后台
+                p0.finishAndRemoveTask()
+            }
+
+            override fun onActivityStarted(p0: Activity) {
+
+            }
+
+            override fun onActivitySaveInstanceState(p0: Activity, p1: Bundle) {
+
+            }
+
+            override fun onActivityDestroyed(p0: Activity) {
+
+            }
+
+        })
+    }
     setContent {
         UpgradeDialog()
         val navController = rememberNavController()
@@ -51,6 +90,8 @@ class MainActivity : CompositionActivity({
             }
         }
     }
+
+
 })
 
 

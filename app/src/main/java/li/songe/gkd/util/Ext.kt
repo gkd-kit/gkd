@@ -1,9 +1,11 @@
 package li.songe.gkd.util
 
+import android.app.ActivityManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
@@ -18,6 +20,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.suspendCancellableCoroutine
 import li.songe.gkd.MainActivity
+import li.songe.gkd.app
 import java.net.NetworkInterface
 import kotlin.coroutines.resume
 
@@ -161,4 +164,12 @@ object Ext {
 
     }
 
+}
+
+fun Context.setExcludeFromRecents(enable: Boolean) {
+    (this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).let { manager ->
+        manager.appTasks.forEach { task ->
+            task?.setExcludeFromRecents(enable)
+        }
+    }
 }

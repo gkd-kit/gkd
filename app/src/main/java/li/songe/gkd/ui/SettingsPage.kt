@@ -69,6 +69,7 @@ import li.songe.gkd.util.checkUpdatingFlow
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.logZipDir
 import li.songe.gkd.util.navigate
+import li.songe.gkd.util.setExcludeFromRecents
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.updateStorage
 import java.io.File
@@ -118,12 +119,7 @@ fun SettingsPage() {
                 desc = "在[最近任务]界面中隐藏本应用",
                 checked = store.excludeFromRecents,
                 onCheckedChange = {
-
-                    (app.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).let { manager ->
-                        manager.appTasks.forEach { task ->
-                            task?.setExcludeFromRecents(it)
-                        }
-                    }
+                    app.setExcludeFromRecents(it)
                     updateStorage(
                         storeFlow, store.copy(
                             excludeFromRecents = it
