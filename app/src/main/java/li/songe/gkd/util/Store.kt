@@ -8,9 +8,9 @@ import android.os.Build
 import android.os.Parcelable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.parcelize.Parcelize
 import li.songe.gkd.app
+import li.songe.gkd.appScope
 import java.util.WeakHashMap
 
 
@@ -104,7 +104,7 @@ val recordStoreFlow by lazy {
 }
 
 val clickCountFlow by lazy {
-    recordStoreFlow.map { r -> r.clickCount }
+    recordStoreFlow.map(appScope) { r -> r.clickCount }
 }
 
 fun increaseClickCount(n: Int = 1) {

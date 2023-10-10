@@ -14,7 +14,6 @@ import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.map
 import li.songe.gkd.composition.CompositionActivity
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.ui.NavGraphs
@@ -25,6 +24,7 @@ import li.songe.gkd.util.LocalPickContentLauncher
 import li.songe.gkd.util.LocalRequestPermissionLauncher
 import li.songe.gkd.util.UpgradeDialog
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
 
 @AndroidEntryPoint
@@ -37,7 +37,7 @@ class MainActivity : CompositionActivity({
     val requestPermissionLauncher = RequestPermissionLauncher(this)
 
     lifecycleScope.launchTry(Dispatchers.IO) {
-        storeFlow.map { s -> s.excludeFromRecents }.collect {
+        storeFlow.map(lifecycleScope) { s -> s.excludeFromRecents }.collect {
             (app.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).let { manager ->
                 manager.appTasks.forEach { task ->
                     task?.setExcludeFromRecents(it)
