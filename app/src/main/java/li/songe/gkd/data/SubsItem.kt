@@ -41,18 +41,6 @@ data class SubsItem(
         File(FolderExt.subsFolder.absolutePath.plus("/${id}.json"))
     }
 
-    fun toContentValues(): ContentValues {
-        val values = ContentValues()
-        values.put("id", id)
-        values.put("ctime", ctime)
-        values.put("mtime", mtime)
-        values.put("enable", enable)
-        values.put("enable_update", enableUpdate)
-        values.put("`order`", order)
-        values.put("update_url", updateUrl)
-        return values
-    }
-
     suspend fun removeAssets() {
         DbSet.subsItemDao.delete(this)
         DbSet.subsConfigDao.delete(id)
