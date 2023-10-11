@@ -140,10 +140,11 @@ private val getAttr: (AccessibilityNodeInfo, String) -> Any? = { node, name ->
     }
 }
 
-val abTransform = Transform(getAttr = getAttr,
+val abTransform = Transform(
+    getAttr = getAttr,
     getName = { node -> node.className },
     getChildren = getChildren,
-    getChild = { node, index -> node.getChild(index) },
+    getChild = { node, index -> if (index in 0..<node.childCount) node.getChild(index) else null },
     getParent = { node -> node.parent },
     getDescendants = { node ->
         sequence {
