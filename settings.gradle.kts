@@ -89,8 +89,9 @@ dependencyResolutionManagement {
                 "others.activityResultLauncher",
                 "com.github.DylanCaiCoding:ActivityResultLauncher:1.1.2"
             )
+            // json5
             // https://github.com/falkreon/Jankson
-            library("others.jankson", "blue.endless:jankson:1.2.1")
+            library("others.jankson", "blue.endless:jankson:1.2.3")
             // https://github.com/journeyapps/zxing-android-embedded
             library("others.zxing.android.embedded", "com.journeyapps:zxing-android-embedded:4.3.0")
             // https://github.com/TorryDo/Floating-Bubble-View
