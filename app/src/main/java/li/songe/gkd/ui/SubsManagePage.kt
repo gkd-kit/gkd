@@ -4,7 +4,6 @@ import android.webkit.URLUtil
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -51,8 +50,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -60,22 +57,20 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.ToastUtils
-import com.google.zxing.BarcodeFormat
-import li.songe.gkd.util.navigate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SubsItemCard
 import li.songe.gkd.ui.destinations.SubsPageDestination
+import li.songe.gkd.util.DEFAULT_SUBS_UPDATE_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
-import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.getImportUrl
 import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.navigate
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
-import li.songe.gkd.util.useNavigateForQrcodeResult
 import org.burnoutcrew.reorderable.ReorderableItem
 import org.burnoutcrew.reorderable.detectReorderAfterLongPress
 import org.burnoutcrew.reorderable.rememberReorderableLazyListState
@@ -90,7 +85,6 @@ val subsNav = BottomNavItem(
 fun SubsManagePage() {
     val scope = rememberCoroutineScope()
     val navController = LocalNavController.current
-    val navigateForQrcodeResult = useNavigateForQrcodeResult()
 
     val vm = hiltViewModel<SubsManageVm>()
     val homeVm = hiltViewModel<HomePageVm>()
@@ -114,8 +108,6 @@ fun SubsManagePage() {
     })
 
 
-    var shareSubItem: SubsItem? by remember { mutableStateOf(null) }
-    var shareQrcode: ImageBitmap? by remember { mutableStateOf(null) }
     var deleteSubItem: SubsItem? by remember { mutableStateOf(null) }
     var menuSubItem: SubsItem? by remember { mutableStateOf(null) }
 
@@ -156,7 +148,13 @@ fun SubsManagePage() {
             })
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showAddDialog = true }) {
+            FloatingActionButton(onClick = {
+                if (subItems.any { it.id == 0L }) {
+                    showAddLinkDialog = true
+                } else {
+                    showAddDialog = true
+                }
+            }) {
                 Icon(
                     imageVector = Icons.Filled.Add,
                     contentDescription = "info",
@@ -220,47 +218,6 @@ fun SubsManagePage() {
     }
 
 
-    shareSubItem?.let { shareSubItemVal ->
-        Dialog(onDismissRequest = { shareSubItem = null }) {
-            Column(
-                modifier = Modifier
-                    .width(250.dp)
-                    .background(Color.White)
-                    .padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(text = "显示链接二维码", modifier = Modifier
-                    .clickable {
-                        shareSubItem = null
-                        scope.launch(Dispatchers.Default) {
-                            shareQrcode = Singleton.barcodeEncoder
-                                .encodeBitmap(
-                                    shareSubItemVal.updateUrl, BarcodeFormat.QR_CODE, 500, 500
-                                )
-                                .asImageBitmap()
-                        }
-                    }
-                    .fillMaxWidth()
-                    .padding(8.dp))
-                Text(text = "复制链接至剪切板", modifier = Modifier
-                    .clickable {
-                        shareSubItem = null
-                        ClipboardUtils.copyText(shareSubItemVal.updateUrl)
-                        ToastUtils.showShort("复制成功")
-                    }
-                    .fillMaxWidth()
-                    .padding(8.dp))
-            }
-        }
-    }
-
-    shareQrcode?.let { shareQrcodeVal ->
-        Dialog(onDismissRequest = { shareQrcode = null }) {
-            Image(
-                bitmap = shareQrcodeVal, contentDescription = null, modifier = Modifier.size(400.dp)
-            )
-        }
-    }
 
     menuSubItem?.let { menuSubItemVal ->
 
@@ -274,10 +231,11 @@ fun SubsManagePage() {
                     .padding(8.dp)
             ) {
                 if (menuSubItemVal.updateUrl != null) {
-                    Text(text = "分享链接", modifier = Modifier
+                    Text(text = "复制链接", modifier = Modifier
                         .clickable {
-                            shareSubItem = menuSubItemVal
                             menuSubItem = null
+                            ClipboardUtils.copyText(menuSubItemVal.updateUrl)
+                            ToastUtils.showShort("复制成功")
                         }
                         .fillMaxWidth()
                         .padding(8.dp))
@@ -325,32 +283,15 @@ fun SubsManagePage() {
                     .padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (subItems.all { it.id != 0L }) {
-                    Text(text = "导入默认订阅", modifier = Modifier
-                        .clickable {
-                            showAddDialog = false
-                            vm.addSubsFromUrl("https://registry.npmmirror.com/@gkd-kit/subscription/latest/files")
-                        }
-                        .fillMaxWidth()
-                        .padding(8.dp))
-                }
+                Text(text = "导入默认订阅", modifier = Modifier
+                    .clickable {
+                        showAddDialog = false
+                        vm.addSubsFromUrl(DEFAULT_SUBS_UPDATE_URL)
+                    }
+                    .fillMaxWidth()
+                    .padding(8.dp))
 
-                Text(
-                    text = "扫描二维码导入",
-                    modifier = Modifier
-                        .clickable(onClick = scope.launchAsFn {
-                            showAddDialog = false
-                            val qrCode = navigateForQrcodeResult()
-                            val contents = qrCode.contents
-                            if (contents != null) {
-                                showAddLinkDialog = true
-                                link = contents
-                            }
-                        })
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                )
-                Text(text = "输入链接导入", modifier = Modifier
+                Text(text = "导入其它订阅", modifier = Modifier
                     .clickable {
                         showAddDialog = false
                         showAddLinkDialog = true

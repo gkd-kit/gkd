@@ -1,6 +1,5 @@
 package li.songe.gkd.util
 
-import com.journeyapps.barcodescanner.BarcodeEncoder
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -38,7 +37,5 @@ object Singleton {
             }
         }
     }
-
-    val barcodeEncoder by lazy { BarcodeEncoder() }
 
 }
