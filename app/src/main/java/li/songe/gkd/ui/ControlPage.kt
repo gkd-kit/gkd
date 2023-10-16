@@ -30,14 +30,17 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.blankj.utilcode.util.ToastUtils
+import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.util.navigate
 import li.songe.gkd.MainActivity
+import li.songe.gkd.appScope
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.ClickLogPageDestination
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.updateStorage
 import li.songe.gkd.util.usePollState
@@ -93,9 +96,13 @@ fun ControlPage() {
                     desc = "用于获取屏幕信息,点击屏幕上的控件",
                     onAuthClick = {
                         if (notifEnabled) {
-                            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            context.startActivity(intent)
+                            appScope.launchTry(Dispatchers.IO) {
+                                val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                // android.content.ActivityNotFoundException
+                                // https://bugly.qq.com/v2/crash-reporting/crashes/d0ce46b353/113010?pid=1
+                                context.startActivity(intent)
+                            }
                         } else {
                             ToastUtils.showShort("必须先开启[通知权限]")
                         }
