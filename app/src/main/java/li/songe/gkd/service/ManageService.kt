@@ -82,7 +82,8 @@ class ManageService : CompositionService({
         combine(appIdToRulesFlow, clickCountFlow, storeFlow) { appIdToRules, clickCount, store ->
             if (!store.enableService) return@combine "服务已暂停"
             val appSize = appIdToRules.keys.size
-            val groupSize = appIdToRules.values.sumOf { r -> r.size }
+            val groupSize =
+                appIdToRules.values.sumOf { rules -> rules.map { r -> r.group.key }.toSet().size }
             (if (groupSize > 0) {
                 "${appSize}应用/${groupSize}规则组"
             } else {
