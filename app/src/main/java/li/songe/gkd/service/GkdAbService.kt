@@ -145,7 +145,8 @@ class GkdAbService : CompositionAbService({
         val currentRules = currentRulesFlow.value
         for (rule in currentRules) {
             if (!isAvailableRule(rule)) continue
-            val target = rule.query(safeActiveWindow) ?: continue
+            val nodeVal = safeActiveWindow ?: continue
+            val target = rule.query(nodeVal) ?: continue
 
             // 开始延迟
             if (rule.delay > 0 && rule.delayTriggerTime == 0L) {
@@ -162,7 +163,7 @@ class GkdAbService : CompositionAbService({
                 scope.launchTry(Dispatchers.IO) {
                     LogUtils.d(
                         *rule.matches.toTypedArray(),
-                        NodeInfo.abNodeToNode(target).attr,
+                        NodeInfo.abNodeToNode(nodeVal, target).attr,
                         actionResult
                     )
                     val clickLog = ClickLog(
