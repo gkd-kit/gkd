@@ -25,7 +25,12 @@ data class PropertySegment(
         object : NodeMatchFc {
             override fun <T> invoke(node: T, transform: Transform<T>): Boolean {
                 val str = transform.getName(node) ?: return false
-                return (str.contentEquals(name) || (str.endsWith(name) && str[str.length - name.length - 1] == '.'))
+                if (str.length == name.length) {
+                    return str.contentEquals(name)
+                } else if (str.length > name.length) {
+                    return str[str.length - name.length - 1] == '.' && str.endsWith(name)
+                }
+                return false
             }
         }
     }
