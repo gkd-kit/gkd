@@ -163,7 +163,6 @@ dependencies {
     implementation(libs.others.jankson)
     implementation(libs.others.utilcodex)
     implementation(libs.others.activityResultLauncher)
-    implementation(libs.others.zxing.android.embedded)
     implementation(libs.others.floating.bubble.view)
 
     implementation(libs.destinations.core)

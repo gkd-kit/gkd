@@ -84,6 +84,7 @@ dependencyResolutionManagement {
             // 工具集合类
             // https://github.com/Blankj/AndroidUtilCode/blob/master/lib/utilcode/README-CN.md
             library("others.utilcodex", "com.blankj:utilcodex:1.31.0")
+
             // https://dylancaicoding.github.io/ActivityResultLauncher/#/
             library(
                 "others.activityResultLauncher",
@@ -92,8 +93,7 @@ dependencyResolutionManagement {
             // json5
             // https://github.com/falkreon/Jankson
             library("others.jankson", "blue.endless:jankson:1.2.3")
-            // https://github.com/journeyapps/zxing-android-embedded
-            library("others.zxing.android.embedded", "com.journeyapps:zxing-android-embedded:4.3.0")
+
             // https://github.com/TorryDo/Floating-Bubble-View
             library("others.floating.bubble.view", "io.github.torrydo:floating-bubble-view:0.6.1")
 
@@ -151,6 +151,7 @@ dependencyResolutionManagement {
                 "kotlinx.serialization.json",
                 "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0"
             )
+
             // https://github.com/Kotlin/kotlinx.collections.immutable
             library(
                 "kotlinx.collections.immutable",
