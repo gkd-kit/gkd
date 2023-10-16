@@ -16,25 +16,27 @@ import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.Singleton
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
+import java.io.File
 import javax.inject.Inject
 
 
 @HiltViewModel
 class SubsManageVm @Inject constructor() : ViewModel() {
 
-    fun addSubsFromUrl(url: String) = viewModelScope.launch {
+    fun addSubsFromUrl(url: String) = viewModelScope.launchTry {
 
-        if (refreshingFlow.value) return@launch
+        if (refreshingFlow.value) return@launchTry
         if (!URLUtil.isNetworkUrl(url)) {
             ToastUtils.showShort("非法链接")
-            return@launch
+            return@launchTry
         }
         val subItems = subsItemsFlow.value
         if (subItems.any { it.updateUrl == url }) {
             ToastUtils.showShort("订阅链接已存在")
-            return@launch
+            return@launchTry
         }
         refreshingFlow.value = true
         try {
@@ -43,22 +45,22 @@ class SubsManageVm @Inject constructor() : ViewModel() {
             } catch (e: Exception) {
                 e.printStackTrace()
                 ToastUtils.showShort("下载订阅文件失败")
-                return@launch
+                return@launchTry
             }
             val newSubsRaw = try {
                 SubscriptionRaw.parse(text)
             } catch (e: Exception) {
                 e.printStackTrace()
                 ToastUtils.showShort("解析订阅文件失败")
-                return@launch
+                return@launchTry
             }
             if (subItems.any { it.id == newSubsRaw.id }) {
                 ToastUtils.showShort("订阅已存在")
-                return@launch
+                return@launchTry
             }
             if (newSubsRaw.id < 0) {
                 ToastUtils.showShort("订阅id不可为${newSubsRaw.id}\n负数id为内部使用")
-                return@launch
+                return@launchTry
             }
             val newItem = SubsItem(
                 id = newSubsRaw.id,
@@ -66,6 +68,15 @@ class SubsManageVm @Inject constructor() : ViewModel() {
                 order = if (subItems.isEmpty()) 1 else (subItems.maxBy { it.order }.order + 1)
             )
             withContext(Dispatchers.IO) {
+                val parentPath = newItem.subsFile.parent
+                if (parentPath != null) {
+                    // https://bugly.qq.com/v2/crash-reporting/crashes/d0ce46b353/109028?pid=1
+                    File(parentPath).apply {
+                        if (!exists()) {
+                            mkdirs()
+                        }
+                    }
+                }
                 newItem.subsFile.writeText(text)
             }
             DbSet.subsItemDao.insert(newItem)
