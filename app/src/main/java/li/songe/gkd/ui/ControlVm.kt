@@ -39,7 +39,8 @@ class ControlVm @Inject constructor() : ViewModel() {
 
     val subsStatusFlow = combine(appIdToRulesFlow, clickCountFlow) { appIdToRules, clickCount ->
         val appSize = appIdToRules.keys.size
-        val groupSize = appIdToRules.values.flatten().map { r -> r.group.hashCode() }.toSet().size
+        val groupSize =
+            appIdToRules.values.sumOf { rules -> rules.map { r -> r.group.key }.toSet().size }
         (if (groupSize > 0) {
             "${appSize}应用/${groupSize}规则组"
         } else {
