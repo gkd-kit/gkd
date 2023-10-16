@@ -186,11 +186,15 @@ fun SettingsPage() {
             })
             Divider()
             SettingItem(title = "问题反馈", onClick = {
-                context.startActivity(
-                    Intent(
-                        Intent.ACTION_VIEW, Uri.parse("https://github.com/gkd-kit/gkd")
+                appScope.launchTry(Dispatchers.IO) {
+                    // ActivityNotFoundException
+                    // https://bugly.qq.com/v2/crash-reporting/crashes/d0ce46b353/117002?pid=1
+                    context.startActivity(
+                        Intent(
+                            Intent.ACTION_VIEW, Uri.parse("https://github.com/gkd-kit/gkd")
+                        )
                     )
-                )
+                }
             })
             Divider()
             SettingItem(title = "分享日志", onClick = {
