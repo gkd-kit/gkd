@@ -197,6 +197,28 @@ fun SettingsPage() {
                 }
             })
             Divider()
+            TextSwitch(name = "保存日志",
+                desc = "保存最近7天的日志",
+                checked = store.log2FileSwitch,
+                onCheckedChange = {
+                    updateStorage(
+                        storeFlow, store.copy(
+                            log2FileSwitch = it
+                        )
+                    )
+                    if (!it) {
+                        appScope.launchTry(Dispatchers.IO) {
+                            val logFiles = LogUtils.getLogFiles()
+                            if (logFiles.isNotEmpty()) {
+                                logFiles.forEach { f ->
+                                    f.delete()
+                                }
+                                ToastUtils.showShort("已删除全部日志")
+                            }
+                        }
+                    }
+                })
+            Divider()
             SettingItem(title = "分享日志", onClick = {
                 vm.viewModelScope.launchTry(Dispatchers.IO) {
                     val logFiles = LogUtils.getLogFiles()

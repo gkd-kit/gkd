@@ -5,10 +5,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
-import android.os.Parcelable
+import com.blankj.utilcode.util.LogUtils
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import java.util.WeakHashMap
@@ -35,20 +37,22 @@ private val receiver by lazy {
     }
 }
 
-private val stateFlowToKey by lazy { WeakHashMap<StateFlow<*>, String>() }
+val stateFlowToKey by lazy { WeakHashMap<StateFlow<*>, String>() }
 
-private inline fun <reified T : Parcelable> createStorageFlow(
+private inline fun <reified T> createStorageFlow(
     key: String,
     crossinline init: () -> T,
 ): StateFlow<T> {
-    receiver
-    val stateFlow = MutableStateFlow(kv.decodeParcelable(key, T::class.java) ?: init())
+    val stateFlow =
+        MutableStateFlow(kv.getString(key, null)?.let { Singleton.json.decodeFromString<T>(it) }
+            ?: init())
     onReceives.add { _, intent ->
         val extras = intent?.extras ?: return@add
         val type = extras.getString("type") ?: return@add
         val itKey = extras.getString("key") ?: return@add
         if (type == "update_storage" && itKey == key) {
-            stateFlow.value = kv.decodeParcelable(key, T::class.java) ?: init()
+            stateFlow.value =
+                kv.getString(key, null)?.let { Singleton.json.decodeFromString<T>(it) } ?: init()
         }
     }
     stateFlowToKey[stateFlow] = key
@@ -56,9 +60,9 @@ private inline fun <reified T : Parcelable> createStorageFlow(
 }
 
 
-fun <T : Parcelable> updateStorage(stateFlow: StateFlow<T>, newState: T) {
+inline fun <reified T> updateStorage(stateFlow: StateFlow<T>, newState: T) {
     val key = stateFlowToKey[stateFlow] ?: error("not found stateFlow key")
-    kv.encode(key, newState)
+    kv.encode(key, Singleton.json.encodeToString(newState))
     app.sendBroadcast(Intent(app.packageName).apply {
         `package` = app.packageName
         putExtra("type", "update_storage")
@@ -67,13 +71,7 @@ fun <T : Parcelable> updateStorage(stateFlow: StateFlow<T>, newState: T) {
 }
 
 
-/**
- * 属性不可删除,注释弃用即可
- * 属性声明顺序不可变动
- * 新增属性必须在尾部声明
- * 否则导致序列化错误
- */
-@Parcelize
+@Serializable
 data class Store(
     val enableService: Boolean = true,
     val excludeFromRecents: Boolean = false,
@@ -87,20 +85,21 @@ data class Store(
     val autoClearMemorySubs: Boolean = true,
     val hideSnapshotStatusBar: Boolean = false,
     val enableShizuku: Boolean = false,
-) : Parcelable
+    val log2FileSwitch: Boolean = true,
+)
 
 val storeFlow by lazy {
-    createStorageFlow("store") { Store() }
+    createStorageFlow("store-v2") { Store() }
 }
 
-@Parcelize
+@Serializable
 data class RecordStore(
     val clickCount: Int = 0,
     val snapshotIdMap: Map<Long, Int> = emptyMap(),
-) : Parcelable
+)
 
 val recordStoreFlow by lazy {
-    createStorageFlow("record_store") { RecordStore() }
+    createStorageFlow("record_store-v2") { RecordStore() }
 }
 
 val clickCountFlow by lazy {
@@ -115,7 +114,13 @@ fun increaseClickCount(n: Int = 1) {
 }
 
 fun initStore() {
+    receiver
     storeFlow.value
     recordStoreFlow.value
+    appScope.launchTry(Dispatchers.IO) {
+        storeFlow.map(appScope) { s -> s.log2FileSwitch }.collect {
+            LogUtils.getConfig().isLog2FileSwitch = it
+        }
+    }
 }
 

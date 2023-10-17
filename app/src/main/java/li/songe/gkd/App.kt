@@ -43,19 +43,18 @@ class App : Application() {
         CrashReport.initCrashReport(applicationContext, "d0ce46b353", false)
         MMKV.initialize(this)
         LogUtils.getConfig().apply {
-            isLog2FileSwitch = true
             setConsoleSwitch(BuildConfig.DEBUG)
             saveDays = 7
         }
         ShizukuProvider.enableMultiProcessSupport(isMainProcess)
         ShizukuProvider.requestBinderForNonProviderProcess(this)
 
-        if (isMainProcess) {
-            appScope.launchTry(Dispatchers.IO) {
+        appScope.launchTry(Dispatchers.IO) {
+            initStore()
+            initAppState()
+            initSubsState()
+            if (isMainProcess) {
                 initChannel()
-                initStore()
-                initAppState()
-                initSubsState()
                 initUpgrade()
                 clearHttpSubs()
             }

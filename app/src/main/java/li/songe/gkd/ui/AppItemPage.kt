@@ -227,7 +227,7 @@ fun AppItemPage(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val groupAppText = Singleton.omitJson.encodeToString(
+                    val groupAppText = Singleton.json.encodeToString(
                         appRaw?.copy(
                             groups = listOf(showGroupItemVal)
                         )
@@ -259,14 +259,13 @@ fun AppItemPage(
                     .clickable {
                         vm.viewModelScope.launchTry(Dispatchers.IO) {
                             val subsRaw = subsIdToRawFlow.value[subsItemId] ?: return@launchTry
-                            val newSubsRaw = subsRaw.copy(
-                                apps = subsRaw.apps
-                                    .toMutableList()
-                                    .apply {
-                                        set(indexOfFirst { a -> a.id == appRawVal.id },
-                                            appRawVal.copy(groups = appRawVal.groups.filter { g -> g.key != menuGroupRaw.key })
-                                        )
-                                    })
+                            val newSubsRaw = subsRaw.copy(apps = subsRaw.apps
+                                .toMutableList()
+                                .apply {
+                                    set(indexOfFirst { a -> a.id == appRawVal.id },
+                                        appRawVal.copy(groups = appRawVal.groups.filter { g -> g.key != menuGroupRaw.key })
+                                    )
+                                })
                             subsItemVal.subsFile.writeText(
                                 Singleton.json.encodeToString(
                                     newSubsRaw
@@ -288,7 +287,7 @@ fun AppItemPage(
 
     if (editGroupRaw != null && appRawVal != null && subsItemVal != null) {
         var source by remember {
-            mutableStateOf(Singleton.omitJson.encodeToString(editGroupRaw))
+            mutableStateOf(Singleton.json.encodeToString(editGroupRaw))
         }
         Dialog(onDismissRequest = { setEditGroupRaw(null) }) {
             Column(

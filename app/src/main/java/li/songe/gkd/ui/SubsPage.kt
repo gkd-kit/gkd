@@ -299,7 +299,7 @@ fun SubsPage(
     val editAppRawVal = editAppRaw
     if (editAppRawVal != null && subsItemVal != null && subsRaw != null) {
         var source by remember {
-            mutableStateOf(Singleton.omitJson.encodeToString(editAppRawVal))
+            mutableStateOf(Singleton.json.encodeToString(editAppRawVal))
         }
         Dialog(onDismissRequest = { editAppRaw = null }) {
             Column(
@@ -369,7 +369,7 @@ fun SubsPage(
                 Text(text = "复制", modifier = Modifier
                     .clickable {
                         ClipboardUtils.copyText(
-                            Singleton.omitJson.encodeToString(
+                            Singleton.json.encodeToString(
                                 menuAppRawVal
                             )
                         )
