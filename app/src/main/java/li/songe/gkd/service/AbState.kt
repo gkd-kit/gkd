@@ -40,7 +40,7 @@ fun isAvailableRule(rule: Rule): Boolean {
     if (rule.preRules.isNotEmpty()) { // 需要提前点击某个规则
         lastTriggerRuleFlow.value ?: return false
         // 上一个点击的规则不在当前需要点击的列表
-        return rule.preRules.any { it == lastTriggerRuleFlow.value }
+        return rule.preRules.any { it === lastTriggerRuleFlow.value }
     }
     if (rule.delayTriggerTime > 0) {
         if (rule.delayTriggerTime + rule.delay > System.currentTimeMillis()) {

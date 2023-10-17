@@ -39,6 +39,7 @@ import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.increaseClickCount
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.launchWhile
+import li.songe.gkd.util.recordStoreFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
@@ -148,6 +149,9 @@ class GkdAbService : CompositionAbService({
             val nodeVal = safeActiveWindow ?: continue
             val target = rule.query(nodeVal) ?: continue
 
+
+            if (currentRules !== currentRulesFlow.value) break
+
             // 开始延迟
             if (rule.delay > 0 && rule.delayTriggerTime == 0L) {
                 rule.triggerDelay()
@@ -176,9 +180,11 @@ class GkdAbService : CompositionAbService({
                     )
                     DbSet.clickLogDao.insert(clickLog)
                     increaseClickCount()
+                    if (recordStoreFlow.value.clickCount % 100 == 0) {
+                        DbSet.clickLogDao.deleteKeepLatest()
+                    }
                 }
             }
-            if (currentRules !== currentRulesFlow.value) break
         }
 
     }
@@ -233,9 +239,9 @@ class GkdAbService : CompositionAbService({
             topActivity to currentRules
         }.debounce(300).collect { (topActivity, currentRules) ->
             if (storeFlow.value.enableService) {
-                LogUtils.d(
-                    topActivity, *currentRules.map { r -> r.rule.matches }.toTypedArray()
-                )
+                LogUtils.d(topActivity,
+                    *currentRules.map { r -> "subsId:${r.subsItem.id}, subsVersion:${subsIdToRawFlow.value[r.subsItem.id]?.version} gKey=${r.group.key}, gName:${r.group.name}, ruleIndex:${r.index}, rKey:${r.key}" }
+                        .toTypedArray())
             } else {
                 LogUtils.d(
                     topActivity
