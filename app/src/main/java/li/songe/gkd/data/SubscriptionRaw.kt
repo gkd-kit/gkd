@@ -331,7 +331,7 @@ data class SubscriptionRaw(
         }
 
         //  订阅文件状态: 文件不存在, 文件正常, 文件损坏(损坏原因)
-        fun stringify(source: SubscriptionRaw) = Singleton.omitJson.encodeToString(source)
+        fun stringify(source: SubscriptionRaw) = Singleton.json.encodeToString(source)
 
         fun parse(source: String, json5: Boolean = true): SubscriptionRaw {
             val text = if (json5) Jankson.builder().build().load(source).toJson() else source
