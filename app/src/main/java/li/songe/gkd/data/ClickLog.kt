@@ -49,5 +49,23 @@ data class ClickLog(
 
         @Query("SELECT * FROM click_log ORDER BY id DESC LIMIT 1")
         fun queryLatest(): Flow<ClickLog?>
+
+
+        @Query(
+            """
+            DELETE FROM click_log
+            WHERE (
+                    SELECT COUNT(*)
+                    FROM click_log
+                ) > 1000
+                AND id <= (
+                    SELECT id
+                    FROM click_log
+                    ORDER BY id DESC
+                    LIMIT 1 OFFSET 1000
+                )
+        """
+        )
+        suspend fun deleteKeepLatest(): Int
     }
 }
