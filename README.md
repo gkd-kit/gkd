@@ -5,7 +5,7 @@
 ## 安装
 
 - [releases](https://github.com/gkd-kit/gkd/releases)
-- [蓝奏云](https://lisonge.lanzouy.com/b06e1zoef) 密码: gkd
+- [蓝奏云](https://lisonge.lanzouy.com/b06e1zoef) 密码: gkd (手机浏览器请使用电脑模式打开)
 
 ## 功能
 
