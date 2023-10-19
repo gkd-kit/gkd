@@ -86,6 +86,7 @@ data class Store(
     val hideSnapshotStatusBar: Boolean = false,
     val enableShizuku: Boolean = false,
     val log2FileSwitch: Boolean = true,
+    val enableDarkTheme: Boolean? = null,
 )
 
 val storeFlow by lazy {

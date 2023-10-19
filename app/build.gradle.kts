@@ -122,7 +122,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
     implementation(libs.compose.ui)
-    implementation(libs.compose.material)
+//    implementation(libs.compose.material)
+    implementation(libs.compose.material3)
     implementation(libs.compose.preview)
     debugImplementation(libs.compose.tooling)
     androidTestImplementation(libs.compose.junit4)

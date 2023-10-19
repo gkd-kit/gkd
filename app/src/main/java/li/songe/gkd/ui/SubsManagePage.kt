@@ -2,42 +2,36 @@ package li.songe.gkd.ui
 
 import android.webkit.URLUtil
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.AlertDialog
-import androidx.compose.material.Card
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.FloatingActionButton
-import androidx.compose.material.Icon
-import androidx.compose.material.LocalTextStyle
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pullrefresh.PullRefreshIndicator
+import androidx.compose.material3.pullrefresh.pullRefresh
+import androidx.compose.material3.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -49,7 +43,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -66,7 +59,6 @@ import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.util.DEFAULT_SUBS_UPDATE_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
-import li.songe.gkd.util.getImportUrl
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.subsIdToRawFlow
@@ -80,25 +72,15 @@ val subsNav = BottomNavItem(
     label = "订阅", icon = SafeR.ic_link, route = "subscription"
 )
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterialApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SubsManagePage() {
     val scope = rememberCoroutineScope()
     val navController = LocalNavController.current
 
     val vm = hiltViewModel<SubsManageVm>()
-    val homeVm = hiltViewModel<HomePageVm>()
     val subItems by subsItemsFlow.collectAsState()
     val subsIdToRaw by subsIdToRawFlow.collectAsState()
-
-    val intent by homeVm.intentFlow.collectAsState()
-    LaunchedEffect(key1 = intent, block = {
-        val importUrl = getImportUrl(intent)
-        if (importUrl != null) {
-
-            homeVm.intentFlow.value = null
-        }
-    })
 
     val orderSubItems = remember {
         mutableStateOf(subItems)
@@ -141,9 +123,9 @@ fun SubsManagePage() {
 
     Scaffold(
         topBar = {
-            TopAppBar(backgroundColor = Color(0xfff8f9f9), title = {
+            TopAppBar(title = {
                 Text(
-                    text = "订阅", color = Color.Black
+                    text = "订阅",
                 )
             })
         },
@@ -190,8 +172,6 @@ fun SubsManagePage() {
                                 .clickable {
                                     navController.navigate(SubsPageDestination(subItem.id))
                                 },
-                            elevation = 0.dp,
-                            border = BorderStroke(1.dp, Color(0xfff6f6f6)),
                             shape = RoundedCornerShape(8.dp),
                         ) {
                             SubsItemCard(
@@ -217,38 +197,34 @@ fun SubsManagePage() {
         }
     }
 
-
-
     menuSubItem?.let { menuSubItemVal ->
 
         Dialog(onDismissRequest = { menuSubItem = null }) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            Card(
                 modifier = Modifier
-                    .width(200.dp)
-                    .wrapContentHeight()
-                    .background(Color.White)
-                    .padding(8.dp)
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
             ) {
-                if (menuSubItemVal.updateUrl != null) {
-                    Text(text = "复制链接", modifier = Modifier
+                Column {
+                    if (menuSubItemVal.updateUrl != null) {
+                        Text(text = "复制链接", modifier = Modifier
+                            .clickable {
+                                menuSubItem = null
+                                ClipboardUtils.copyText(menuSubItemVal.updateUrl)
+                                ToastUtils.showShort("复制成功")
+                            }
+                            .fillMaxWidth()
+                            .padding(16.dp))
+                    }
+                    Text(text = "删除订阅", modifier = Modifier
                         .clickable {
+                            deleteSubItem = menuSubItemVal
                             menuSubItem = null
-                            ClipboardUtils.copyText(menuSubItemVal.updateUrl)
-                            ToastUtils.showShort("复制成功")
                         }
                         .fillMaxWidth()
-                        .padding(8.dp))
+                        .padding(16.dp), color = MaterialTheme.colorScheme.error)
                 }
-
-                Text(text = "删除订阅", color = Color.Red, modifier = Modifier
-                    .clickable {
-                        deleteSubItem = menuSubItemVal
-                        menuSubItem = null
-                    }
-                    .fillMaxWidth()
-                    .padding(8.dp))
-
             }
         }
     }
@@ -262,7 +238,7 @@ fun SubsManagePage() {
                     deleteSubItem = null
                     deleteSubItemVal.removeAssets()
                 }) {
-                    Text(text = "是", color = Color.Red)
+                    Text(text = "是", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
@@ -276,28 +252,29 @@ fun SubsManagePage() {
 
     if (showAddDialog) {
         Dialog(onDismissRequest = { showAddDialog = false }) {
-            Column(
+            Card(
                 modifier = Modifier
-                    .width(250.dp)
-                    .background(Color.White)
-                    .padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
             ) {
-                Text(text = "导入默认订阅", modifier = Modifier
-                    .clickable {
-                        showAddDialog = false
-                        vm.addSubsFromUrl(DEFAULT_SUBS_UPDATE_URL)
-                    }
-                    .fillMaxWidth()
-                    .padding(8.dp))
+                Column {
+                    Text(text = "导入默认订阅", modifier = Modifier
+                        .clickable {
+                            showAddDialog = false
+                            vm.addSubsFromUrl(DEFAULT_SUBS_UPDATE_URL)
+                        }
+                        .fillMaxWidth()
+                        .padding(16.dp))
 
-                Text(text = "导入其它订阅", modifier = Modifier
-                    .clickable {
-                        showAddDialog = false
-                        showAddLinkDialog = true
-                    }
-                    .fillMaxWidth()
-                    .padding(8.dp))
+                    Text(text = "导入其它订阅", modifier = Modifier
+                        .clickable {
+                            showAddDialog = false
+                            showAddLinkDialog = true
+                        }
+                        .fillMaxWidth()
+                        .padding(16.dp))
+                }
             }
         }
     }
@@ -310,42 +287,29 @@ fun SubsManagePage() {
         }
     }
     if (showAddLinkDialog) {
-        Dialog(onDismissRequest = { showAddLinkDialog = false }) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    .width(300.dp)
-                    .background(Color.White)
-                    .padding(10.dp)
-            ) {
-                Text(text = "请输入订阅链接", fontSize = 20.sp)
-                Spacer(modifier = Modifier.height(2.dp))
-                OutlinedTextField(
-                    value = link,
-                    onValueChange = { link = it.trim() },
-                    maxLines = 2,
-                    textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Row(
-                    horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()
-                ) {
-                    TextButton(onClick = {
-                        if (!URLUtil.isNetworkUrl(link)) {
-                            ToastUtils.showShort("非法链接")
-                            return@TextButton
-                        }
-                        if (subItems.any { s -> s.updateUrl == link }) {
-                            ToastUtils.showShort("链接已存在")
-                            return@TextButton
-                        }
-                        showAddLinkDialog = false
-                        vm.addSubsFromUrl(url = link)
-                    }) {
-                        Text(text = "添加")
-                    }
+        AlertDialog(title = { Text(text = "请输入订阅链接") }, text = {
+            OutlinedTextField(
+                value = link,
+                onValueChange = { link = it.trim() },
+                maxLines = 2,
+                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }, onDismissRequest = { showAddLinkDialog = false }, confirmButton = {
+            TextButton(onClick = {
+                if (!URLUtil.isNetworkUrl(link)) {
+                    ToastUtils.showShort("非法链接")
+                    return@TextButton
                 }
+                if (subItems.any { s -> s.updateUrl == link }) {
+                    ToastUtils.showShort("链接已存在")
+                    return@TextButton
+                }
+                showAddLinkDialog = false
+                vm.addSubsFromUrl(url = link)
+            }) {
+                Text(text = "添加")
             }
-        }
+        })
     }
 }

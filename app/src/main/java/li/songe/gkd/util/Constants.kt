@@ -6,3 +6,11 @@ const val FILE_UPLOAD_URL = "https://github-upload-assets.lisonge.workers.dev/"
 
 const val DEFAULT_SUBS_UPDATE_URL =
     "https://registry.npmmirror.com/@gkd-kit/subscription/latest/files"
+
+val safeRemoteBaseUrls = arrayOf(
+    "https://registry.npmmirror.com/@gkd-kit/",
+    "https://cdn.jsdelivr.net/npm/@gkd-kit/",
+    "https://unpkg.com/@gkd-kit/",
+    "https://github.com/gkd-kit/",
+    "https://raw.githubusercontent.com/gkd-kit/"
+)

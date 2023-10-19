@@ -47,11 +47,6 @@
         android:usesCleartextTraffic="true">
 
         <activity
-            android:name="com.journeyapps.barcodescanner.CaptureActivity"
-            android:screenOrientation="fullSensor"
-            tools:replace="screenOrientation" />
-
-        <activity
             android:name="li.songe.gkd.MainActivity"
             android:configChanges="uiMode|screenSize|orientation|keyboardHidden|touchscreen|smallestScreenSize|screenLayout|navigation|mnc|mcc|locale|layoutDirection|keyboard|fontWeightAdjustment|fontScale|density|colorMode"
             android:exported="true"

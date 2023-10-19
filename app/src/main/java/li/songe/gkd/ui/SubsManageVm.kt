@@ -26,7 +26,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SubsManageVm @Inject constructor() : ViewModel() {
 
-    fun addSubsFromUrl(url: String) = viewModelScope.launchTry {
+    fun addSubsFromUrl(url: String) = viewModelScope.launchTry(Dispatchers.IO) {
 
         if (refreshingFlow.value) return@launchTry
         if (!URLUtil.isNetworkUrl(url)) {

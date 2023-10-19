@@ -10,31 +10,23 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Surface
-import androidx.compose.material.Switch
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.util.formatTimeAgo
+import li.songe.gkd.util.safeRemoteBaseUrls
 
-val safeRemoteBaseUrls = arrayOf(
-    "https://registry.npmmirror.com/@gkd-kit/",
-    "https://cdn.jsdelivr.net/npm/@gkd-kit/",
-    "https://unpkg.com/@gkd-kit/",
-    "https://github.com/gkd-kit/",
-    "https://raw.githubusercontent.com/gkd-kit/"
-)
 
 @Composable
 fun SubsItemCard(
@@ -131,19 +123,5 @@ fun SubsItemCard(
                 onCheckedChange = onCheckedChange,
             )
         }
-    }
-}
-
-@Preview
-@Composable
-fun PreviewSubscriptionItemCard() {
-    Surface(modifier = Modifier.width(400.dp)) {
-        SubsItemCard(
-            SubsItem(
-                id = 0,
-                order = 1,
-                updateUrl = "https://registry.npmmirror.com/@gkd-kit/subscription/latest/files",
-            ), subscriptionRaw = null, index = 1
-        )
     }
 }

@@ -47,9 +47,9 @@ class MainActivity : CompositionActivity({
     }
 
     setContent {
-        UpgradeDialog()
         val navController = rememberNavController()
-        AppTheme(false) {
+        AppTheme {
+            UpgradeDialog()
             CompositionLocalProvider(
                 LocalLauncher provides launcher,
                 LocalPickContentLauncher provides pickContentLauncher,

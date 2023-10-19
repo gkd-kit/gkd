@@ -5,12 +5,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Build
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,16 +17,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.AlertDialog
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,11 +39,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -85,6 +81,7 @@ fun SnapshotPage() {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current as ComponentActivity
     val navController = LocalNavController.current
+    val colorScheme = MaterialTheme.colorScheme
 
     val pickContentLauncher = LocalPickContentLauncher.current
     val requestPermissionLauncher = LocalRequestPermissionLauncher.current
@@ -101,7 +98,6 @@ fun SnapshotPage() {
     var showDeleteDlg by remember {
         mutableStateOf(false)
     }
-    val scrollState = rememberLazyListState()
 
     Scaffold(topBar = {
         SimpleTopAppBar(onClickIcon = { navController.popBackStack() },
@@ -120,22 +116,18 @@ fun SnapshotPage() {
     }, content = { contentPadding ->
         if (snapshots.isNotEmpty()) {
             LazyColumn(
-                modifier = Modifier
-                    .padding(10.dp, 0.dp, 10.dp, 0.dp)
-                    .padding(contentPadding),
-                state = scrollState,
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.padding(contentPadding),
             ) {
                 items(snapshots, { it.id }) { snapshot ->
                     Column(modifier = Modifier
                         .fillMaxWidth()
-                        .border(BorderStroke(1.dp, Color.Black))
                         .clickable {
                             selectedSnapshot = snapshot
-                        }) {
+                        }
+                        .padding(10.dp)) {
                         Row {
                             Text(
-                                text = snapshot.id.format("yyyy-MM-dd HH:mm:ss"),
+                                text = snapshot.id.format("MM-dd HH:mm:ss"),
                                 fontFamily = FontFamily.Monospace
                             )
                             Spacer(modifier = Modifier.width(10.dp))
@@ -144,6 +136,7 @@ fun SnapshotPage() {
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(text = snapshot.activityId ?: "")
                     }
+                    Divider()
                 }
                 item {
                     Spacer(modifier = Modifier.height(10.dp))
@@ -162,16 +155,16 @@ fun SnapshotPage() {
 
     selectedSnapshot?.let { snapshotVal ->
         Dialog(onDismissRequest = { selectedSnapshot = null }) {
-            Box(
-                Modifier
-                    .width(200.dp)
-                    .background(Color.White)
-                    .padding(8.dp)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column {
                     val modifier = Modifier
                         .fillMaxWidth()
-                        .padding(8.dp)
+                        .padding(16.dp)
                     Text(
                         text = "查看", modifier = Modifier
                             .clickable(onClick = scope.launchAsFn {
@@ -184,6 +177,7 @@ fun SnapshotPage() {
                             })
                             .then(modifier)
                     )
+                    Divider()
                     Text(
                         text = "分享",
                         modifier = Modifier
@@ -199,11 +193,16 @@ fun SnapshotPage() {
                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 }
-                                context.startActivity(Intent.createChooser(intent, "分享快照文件"))
+                                context.startActivity(
+                                    Intent.createChooser(
+                                        intent, "分享快照文件"
+                                    )
+                                )
                                 selectedSnapshot = null
                             })
                             .then(modifier)
                     )
+                    Divider()
                     if (recordStore.snapshotIdMap.containsKey(snapshotVal.id)) {
                         Text(
                             text = "复制链接", modifier = Modifier
@@ -224,6 +223,7 @@ fun SnapshotPage() {
                                 .then(modifier)
                         )
                     }
+                    Divider()
 
                     Text(
                         text = "保存截图到相册",
@@ -247,6 +247,7 @@ fun SnapshotPage() {
                             })
                             .then(modifier)
                     )
+                    Divider()
                     Text(
                         text = "替换截图(去除隐私)",
                         modifier = Modifier
@@ -281,6 +282,7 @@ fun SnapshotPage() {
                             })
                             .then(modifier)
                     )
+                    Divider()
                     Text(
                         text = "删除", modifier = Modifier
                             .clickable(onClick = scope.launchAsFn {
@@ -300,7 +302,7 @@ fun SnapshotPage() {
                                 }
                                 selectedSnapshot = null
                             })
-                            .then(modifier)
+                            .then(modifier), color = colorScheme.error
                     )
                 }
             }
@@ -328,35 +330,21 @@ fun SnapshotPage() {
         }
 
         is LoadStatus.Loading -> {
-            Dialog(onDismissRequest = { }) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "上传文件中,请稍等",
-                        fontSize = 16.sp,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(10.dp)
-                    )
-                    Spacer(modifier = Modifier.height(15.dp))
+            AlertDialog(
+                title = { Text(text = "上传文件中") },
+                text = {
                     LinearProgressIndicator(progress = uploadStatusVal.progress)
-                    Spacer(modifier = Modifier.height(5.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End
-                    ) {
-                        TextButton(onClick = {
-                            vm.uploadJob?.cancel(CancellationException("终止上传"))
-                            vm.uploadJob = null
-                        }) {
-                            Text(text = "终止上传", color = Color.Red)
-                        }
+                },
+                onDismissRequest = { },
+                confirmButton = {
+                    TextButton(onClick = {
+                        vm.uploadJob?.cancel(CancellationException("终止上传"))
+                        vm.uploadJob = null
+                    }) {
+                        Text(text = "终止上传")
                     }
-                }
-            }
+                },
+            )
         }
 
         is LoadStatus.Success -> {
@@ -386,17 +374,19 @@ fun SnapshotPage() {
         AlertDialog(onDismissRequest = { showDeleteDlg = false },
             title = { Text(text = "是否删除全部快照记录?") },
             confirmButton = {
-                TextButton(onClick = scope.launchAsFn(Dispatchers.IO) {
-                    showDeleteDlg = false
-                    snapshots.forEach { s ->
-                        SnapshotExt.removeAssets(s.id)
-                    }
-                    DbSet.snapshotDao.deleteAll()
-                    updateStorage(
-                        recordStoreFlow, recordStoreFlow.value.copy(snapshotIdMap = emptyMap())
-                    )
-                }) {
-                    Text(text = "是", color = Color.Red)
+                TextButton(
+                    onClick = scope.launchAsFn(Dispatchers.IO) {
+                        showDeleteDlg = false
+                        snapshots.forEach { s ->
+                            SnapshotExt.removeAssets(s.id)
+                        }
+                        DbSet.snapshotDao.deleteAll()
+                        updateStorage(
+                            recordStoreFlow, recordStoreFlow.value.copy(snapshotIdMap = emptyMap())
+                        )
+                    },
+                ) {
+                    Text(text = "是", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {

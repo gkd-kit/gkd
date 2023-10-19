@@ -5,26 +5,26 @@ import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.AlertDialog
-import androidx.compose.material.FloatingActionButton
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -34,11 +34,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
@@ -217,83 +215,74 @@ fun SubsPage(
         var source by remember {
             mutableStateOf("")
         }
-        Dialog(onDismissRequest = { showAddDlg = false }) {
-            Column(
-                modifier = Modifier.defaultMinSize(minWidth = 300.dp),
-            ) {
-                Text(text = "添加APP规则", fontSize = 18.sp, modifier = Modifier.padding(10.dp))
-                OutlinedTextField(
-                    value = source,
-                    onValueChange = { source = it },
-                    maxLines = 8,
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .fillMaxWidth(),
-                    placeholder = { Text(text = "请输入规则\n若APP规则已经存在则追加") },
-                )
-                Row(
-                    horizontalArrangement = Arrangement.End,
-                    modifier = Modifier
-                        .padding(start = 10.dp, end = 10.dp)
-                        .fillMaxWidth()
-                ) {
-                    TextButton(onClick = {
-                        val newAppRaw = try {
-                            SubscriptionRaw.parseAppRaw(source)
-                        } catch (e: Exception) {
-                            LogUtils.d(e)
-                            ToastUtils.showShort("非法规则${e.message}")
+        AlertDialog(title = { Text(text = "添加APP规则") }, text = {
+            OutlinedTextField(
+                value = source,
+                onValueChange = { source = it },
+                maxLines = 8,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text(text = "请输入规则\n若APP规则已经存在则追加") },
+            )
+        }, onDismissRequest = { showAddDlg = false }, confirmButton = {
+            TextButton(onClick = {
+                val newAppRaw = try {
+                    SubscriptionRaw.parseAppRaw(source)
+                } catch (e: Exception) {
+                    LogUtils.d(e)
+                    ToastUtils.showShort("非法规则${e.message}")
+                    return@TextButton
+                }
+                if (newAppRaw.groups.any { s -> s.name.isBlank() }) {
+                    ToastUtils.showShort("不允许添加空白名规则组,请先命名")
+                    return@TextButton
+                }
+                val oldAppRawIndex = subsRaw.apps.indexOfFirst { a -> a.id == newAppRaw.id }
+                val oldAppRaw = subsRaw.apps.getOrNull(oldAppRawIndex)
+                if (oldAppRaw != null) {
+                    // check same group name
+                    newAppRaw.groups.forEach { g ->
+                        if (oldAppRaw.groups.any { g0 -> g0.name == g.name }) {
+                            ToastUtils.showShort("已经存在同名规则[${g.name}]\n请修改名称后再添加")
                             return@TextButton
                         }
-                        if (newAppRaw.groups.any { s -> s.name.isBlank() }) {
-                            ToastUtils.showShort("不允许添加空白名规则组,请先命名")
-                            return@TextButton
-                        }
-                        val oldAppRawIndex = subsRaw.apps.indexOfFirst { a -> a.id == newAppRaw.id }
-                        val oldAppRaw = subsRaw.apps.getOrNull(oldAppRawIndex)
-                        if (oldAppRaw != null) {
-                            // check same group name
-                            newAppRaw.groups.forEach { g ->
-                                if (oldAppRaw.groups.any { g0 -> g0.name == g.name }) {
-                                    ToastUtils.showShort("已经存在同名规则[${g.name}]\n请修改名称后再添加")
-                                    return@TextButton
-                                }
-                            }
-                        }
-                        val newApps = if (oldAppRaw != null) {
-                            val oldKey = oldAppRaw.groups.maxBy { g -> g.key }.key + 1
-                            val finalAppRaw =
-                                newAppRaw.copy(groups = oldAppRaw.groups + newAppRaw.groups.mapIndexed { i, g ->
-                                    g.copy(
-                                        key = oldKey + i
-                                    )
-                                })
-                            subsRaw.apps.toMutableList().apply {
-                                set(oldAppRawIndex, finalAppRaw)
-                            }
-                        } else {
-                            subsRaw.apps.toMutableList().apply {
-                                add(newAppRaw)
-                            }
-                        }
-                        vm.viewModelScope.launchTry {
-                            subsItemVal.subsFile.writeText(
-                                SubscriptionRaw.stringify(
-                                    subsRaw.copy(
-                                        apps = newApps, version = subsRaw.version + 1
-                                    )
-                                )
-                            )
-                            DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
-                            showAddDlg = false
-                            ToastUtils.showShort("添加成功")
-                        }
-                    }, enabled = source.isNotEmpty()) {
-                        Text(text = "添加")
                     }
                 }
+                val newApps = if (oldAppRaw != null) {
+                    val oldKey = oldAppRaw.groups.maxBy { g -> g.key }.key + 1
+                    val finalAppRaw =
+                        newAppRaw.copy(groups = oldAppRaw.groups + newAppRaw.groups.mapIndexed { i, g ->
+                            g.copy(
+                                key = oldKey + i
+                            )
+                        })
+                    subsRaw.apps.toMutableList().apply {
+                        set(oldAppRawIndex, finalAppRaw)
+                    }
+                } else {
+                    subsRaw.apps.toMutableList().apply {
+                        add(newAppRaw)
+                    }
+                }
+                vm.viewModelScope.launchTry {
+                    subsItemVal.subsFile.writeText(
+                        SubscriptionRaw.stringify(
+                            subsRaw.copy(
+                                apps = newApps, version = subsRaw.version + 1
+                            )
+                        )
+                    )
+                    DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
+                    showAddDlg = false
+                    ToastUtils.showShort("添加成功")
+                }
+            }, enabled = source.isNotEmpty()) {
+                Text(text = "添加")
             }
-        }
+        }, dismissButton = {
+            TextButton(onClick = { showAddDlg = false }) {
+                Text(text = "取消")
+            }
+        })
     }
 
     val editAppRawVal = editAppRaw
@@ -301,100 +290,92 @@ fun SubsPage(
         var source by remember {
             mutableStateOf(Singleton.json.encodeToString(editAppRawVal))
         }
-        Dialog(onDismissRequest = { editAppRaw = null }) {
-            Column(
-                modifier = Modifier.defaultMinSize(minWidth = 300.dp),
-            ) {
-                Text(text = "编辑本地APP规则", fontSize = 18.sp, modifier = Modifier.padding(10.dp))
-                OutlinedTextField(
-                    value = source,
-                    onValueChange = { source = it },
-                    maxLines = 8,
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .fillMaxWidth(),
-                    placeholder = { Text(text = "请输入规则") },
-                )
-                Row(
-                    horizontalArrangement = Arrangement.End,
-                    modifier = Modifier
-                        .padding(start = 10.dp, end = 10.dp)
-                        .fillMaxWidth()
-                ) {
-                    TextButton(onClick = {
-                        try {
-                            val newAppRaw = SubscriptionRaw.parseAppRaw(source)
-                            if (newAppRaw.id != editAppRawVal.id) {
-                                ToastUtils.showShort("不允许修改规则id")
-                                return@TextButton
-                            }
-                            val oldAppRawIndex =
-                                subsRaw.apps.indexOfFirst { a -> a.id == editAppRawVal.id }
-                            vm.viewModelScope.launchTry {
-                                subsItemVal.subsFile.writeText(
-                                    SubscriptionRaw.stringify(
-                                        subsRaw.copy(
-                                            apps = subsRaw.apps.toMutableList().apply {
-                                                set(oldAppRawIndex, newAppRaw)
-                                            }, version = subsRaw.version + 1
-                                        )
-                                    )
-                                )
-                                DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
-                                editAppRaw = null
-                                ToastUtils.showShort("更新成功")
-                            }
-                        } catch (e: Exception) {
-                            LogUtils.d(e)
-                            ToastUtils.showShort("非法规则${e.message}")
-                        }
-                    }, enabled = source.isNotEmpty()) {
-                        Text(text = "添加")
+        AlertDialog(title = { Text(text = "编辑本地APP规则") }, text = {
+            OutlinedTextField(
+                value = source,
+                onValueChange = { source = it },
+                maxLines = 8,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text(text = "请输入规则") },
+            )
+        }, onDismissRequest = { editAppRaw = null }, confirmButton = {
+            TextButton(onClick = {
+                try {
+                    val newAppRaw = SubscriptionRaw.parseAppRaw(source)
+                    if (newAppRaw.id != editAppRawVal.id) {
+                        ToastUtils.showShort("不允许修改规则id")
+                        return@TextButton
                     }
+                    val oldAppRawIndex = subsRaw.apps.indexOfFirst { a -> a.id == editAppRawVal.id }
+                    vm.viewModelScope.launchTry {
+                        subsItemVal.subsFile.writeText(
+                            SubscriptionRaw.stringify(
+                                subsRaw.copy(
+                                    apps = subsRaw.apps.toMutableList().apply {
+                                        set(oldAppRawIndex, newAppRaw)
+                                    }, version = subsRaw.version + 1
+                                )
+                            )
+                        )
+                        DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
+                        editAppRaw = null
+                        ToastUtils.showShort("更新成功")
+                    }
+                } catch (e: Exception) {
+                    LogUtils.d(e)
+                    ToastUtils.showShort("非法规则${e.message}")
                 }
+            }, enabled = source.isNotEmpty()) {
+                Text(text = "添加")
             }
-        }
+        }, dismissButton = {
+            TextButton(onClick = { editAppRaw = null }) {
+                Text(text = "取消")
+            }
+        })
     }
 
 
     val menuAppRawVal = menuAppRaw
     if (menuAppRawVal != null && subsItemVal != null && subsRaw != null) {
         Dialog(onDismissRequest = { menuAppRaw = null }) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+            Card(
                 modifier = Modifier
-                    .padding(10.dp)
-                    .width(200.dp)
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
             ) {
-                Text(text = "复制", modifier = Modifier
-                    .clickable {
-                        ClipboardUtils.copyText(
-                            Singleton.json.encodeToString(
-                                menuAppRawVal
-                            )
-                        )
-                        ToastUtils.showShort("复制成功")
-                        menuAppRaw = null
-                    }
-                    .padding(10.dp)
-                    .fillMaxWidth())
-                Text(text = "删除", color = Color.Red, modifier = Modifier
-                    .clickable {
-                        // 也许需要二次确认
-                        vm.viewModelScope.launchTry(Dispatchers.IO) {
-                            subsItemVal.subsFile.writeText(
+                Column {
+                    Text(text = "复制", modifier = Modifier
+                        .clickable {
+                            ClipboardUtils.copyText(
                                 Singleton.json.encodeToString(
-                                    subsRaw.copy(apps = subsRaw.apps.filter { a -> a.id != menuAppRawVal.id })
+                                    menuAppRawVal
                                 )
                             )
-                            DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
-                            DbSet.subsConfigDao.delete(subsItemVal.id, menuAppRawVal.id)
-                            ToastUtils.showShort("删除成功")
+                            ToastUtils.showShort("复制成功")
+                            menuAppRaw = null
                         }
-                        menuAppRaw = null
-                    }
-                    .padding(10.dp)
-                    .fillMaxWidth())
+                        .fillMaxWidth()
+                        .padding(16.dp))
+                    Text(text = "删除", modifier = Modifier
+                        .clickable {
+                            // 也许需要二次确认
+                            vm.viewModelScope.launchTry(Dispatchers.IO) {
+                                subsItemVal.subsFile.writeText(
+                                    Singleton.json.encodeToString(
+                                        subsRaw.copy(apps = subsRaw.apps.filter { a -> a.id != menuAppRawVal.id })
+                                    )
+                                )
+                                DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
+                                DbSet.subsConfigDao.delete(subsItemVal.id, menuAppRawVal.id)
+                                ToastUtils.showShort("删除成功")
+                            }
+                            menuAppRaw = null
+                        }
+                        .fillMaxWidth()
+                        .padding(16.dp), color = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }

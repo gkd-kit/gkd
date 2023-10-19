@@ -57,6 +57,7 @@ dependencyResolutionManagement {
             version("compose.compilerVersion", "1.5.3")
             library("compose.ui", "androidx.compose.ui:ui:1.5.1")
             library("compose.material", "androidx.compose.material:material:1.5.1")
+            library("compose.material3", "androidx.compose.material3:material3:1.1.2")
             library("compose.preview", "androidx.compose.ui:ui-tooling-preview:1.5.1")
             library("compose.tooling", "androidx.compose.ui:ui-tooling:1.5.1")
             library("compose.junit4", "androidx.compose.ui:ui-test-junit4:1.5.1")

@@ -1,18 +1,14 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="AppTheme" parent="Theme.AppCompat">
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:background">@android:color/white</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowBackground">@android:color/transparent</item>
-    </style>
+    <style name="AppTheme" parent="android:Theme.Material.NoActionBar"></style>
+
     <style name="SplashScreenTheme" parent="Theme.SplashScreen">
         <item name="windowSplashScreenAnimatedIcon">
             @drawable/ic_launcher_circle
         </item>
-        <item name="windowSplashScreenBackground">@android:color/white</item>
         <item name="windowSplashScreenAnimationDuration">1000</item>
         <!-- postSplashScreenTheme must invoke installSplashScreen -->
         <item name="postSplashScreenTheme">@style/AppTheme</item>
     </style>
+
 </resources>
