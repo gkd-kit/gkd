@@ -2,26 +2,19 @@ package li.songe.gkd.util
 
 import android.os.Parcelable
 import android.util.Log
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.AlertDialog
-import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import com.blankj.utilcode.util.AppUtils
 import io.ktor.client.call.body
 import io.ktor.client.plugins.onDownload
@@ -116,7 +109,14 @@ fun UpgradeDialog() {
         AlertDialog(title = {
             Text(text = "检测到新版本")
         }, text = {
-            Text(text = "v${BuildConfig.VERSION_NAME} -> v${newVersionVal.versionName}\n\n${newVersionVal.changelog}".trimEnd())
+            Text(
+                text = "v${BuildConfig.VERSION_NAME} -> v${newVersionVal.versionName}\n\n${newVersionVal.changelog}\n${newVersionVal.changelog}".trimEnd(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp)
+                    .verticalScroll(rememberScrollState())
+            )
+
         }, onDismissRequest = { }, confirmButton = {
             TextButton(onClick = {
                 newVersionFlow.value = null
@@ -135,42 +135,27 @@ fun UpgradeDialog() {
     downloadStatus?.let { downloadStatusVal ->
         when (downloadStatusVal) {
             is LoadStatus.Loading -> {
-                Dialog(onDismissRequest = { }) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(10.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "下载新版本中,稍等片刻",
-                            fontSize = 16.sp,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(10.dp)
-                        )
-                        Spacer(modifier = Modifier.height(15.dp))
+                AlertDialog(
+                    title = { Text(text = "下载新版本中") },
+                    text = {
                         LinearProgressIndicator(progress = downloadStatusVal.progress)
-                        Spacer(modifier = Modifier.height(5.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            TextButton(onClick = {
-                                downloadStatusFlow.value = LoadStatus.Failure(
-                                    Exception("终止下载")
-                                )
-                            }) {
-                                Text(text = "终止下载", color = Color.Red)
-                            }
+                    },
+                    onDismissRequest = {},
+                    confirmButton = {
+                        TextButton(onClick = {
+                            downloadStatusFlow.value = LoadStatus.Failure(
+                                Exception("终止下载")
+                            )
+                        }) {
+                            Text(text = "终止下载")
                         }
-                    }
-                }
+                    },
+                )
             }
 
             is LoadStatus.Failure -> {
                 AlertDialog(
-                    title = { Text(text = "安装包下载失败") },
+                    title = { Text(text = "新版本下载失败") },
                     text = {
                         Text(text = downloadStatusVal.exception.let {
                             it.message ?: it.toString()

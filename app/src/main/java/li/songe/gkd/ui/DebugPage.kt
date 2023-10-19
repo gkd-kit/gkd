@@ -7,24 +7,20 @@ import android.media.projection.MediaProjectionManager
 import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Divider
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Divider
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -263,46 +259,41 @@ fun DebugPage() {
             var value by remember {
                 mutableStateOf(store.httpServerPort.toString())
             }
-            Column(
-                modifier = Modifier.padding(10.dp)
-            ) {
-                Text(text = "请输入新端口", style = MaterialTheme.typography.h6)
-                Spacer(modifier = Modifier.height(10.dp))
+            AlertDialog(title = { Text(text = "请输入新端口") }, text = {
                 OutlinedTextField(
                     value = value,
-                    onValueChange = { value = it.trim() },
+                    onValueChange = {
+                        value = it.trim().let { s -> if (s.length > 5) s.substring(0..4) else s }
+                    },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
-                Row(
-                    horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()
-                ) {
-                    TextButton(onClick = { showPortDlg = false }) {
-                        Text(
-                            text = "取消", modifier = Modifier
-                        )
+            }, onDismissRequest = { showPortDlg = false }, confirmButton = {
+                TextButton(onClick = {
+                    val newPort = value.toIntOrNull()
+                    if (newPort == null || !(5000 <= newPort && newPort <= 65535)) {
+                        ToastUtils.showShort("请输入在 5000~65535 的任意数字")
+                        return@TextButton
                     }
-                    Spacer(modifier = Modifier.width(5.dp))
-                    TextButton(onClick = {
-                        val newPort = value.toIntOrNull()
-                        if (newPort == null || !(5000 <= newPort && newPort <= 65535)) {
-                            ToastUtils.showShort("请输入在 5000~65535 的任意数字")
-                            return@TextButton
-                        }
-                        updateStorage(
-                            storeFlow, store.copy(
-                                httpServerPort = newPort
-                            )
+                    updateStorage(
+                        storeFlow, store.copy(
+                            httpServerPort = newPort
                         )
-                        showPortDlg = false
-                    }) {
-                        Text(
-                            text = "确认", modifier = Modifier
-                        )
-                    }
+                    )
+                    showPortDlg = false
+                }) {
+                    Text(
+                        text = "确认", modifier = Modifier
+                    )
                 }
-            }
+            }, dismissButton = {
+                TextButton(onClick = { showPortDlg = false }) {
+                    Text(
+                        text = "取消"
+                    )
+                }
+            })
         }
     }
 }

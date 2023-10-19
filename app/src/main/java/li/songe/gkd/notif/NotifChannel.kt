@@ -10,7 +10,7 @@ data class NotifChannel(
 
 val defaultChannel by lazy {
     NotifChannel(
-        id = "default", name = "搞快点", desc = "显示服务运行状态"
+        id = "default", name = "GKD", desc = "显示服务运行状态"
     )
 }
 

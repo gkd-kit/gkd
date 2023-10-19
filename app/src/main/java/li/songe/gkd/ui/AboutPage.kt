@@ -1,16 +1,12 @@
 package li.songe.gkd.ui
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
@@ -23,18 +19,6 @@ import li.songe.gkd.util.ProfileTransitions
 @Destination(style = ProfileTransitions::class)
 @Composable
 fun AboutPage() {
-    //    val systemUiController = rememberSystemUiController()
-    //    val context = LocalContext.current as ComponentActivity
-    //    DisposableEffect(systemUiController) {
-    //        val oldVisible = systemUiController.isStatusBarVisible
-    //        systemUiController.isStatusBarVisible = false
-    //        WindowCompat.setDecorFitsSystemWindows(context.window, false)
-    //        onDispose {
-    //            systemUiController.isStatusBarVisible = oldVisible
-    //            WindowCompat.setDecorFitsSystemWindows(context.window, true)
-    //        }
-    //    }
-    val context = LocalContext.current
     val navController = LocalNavController.current
     Scaffold(topBar = {
         SimpleTopAppBar(onClickIcon = { navController.popBackStack() }, title = "关于")

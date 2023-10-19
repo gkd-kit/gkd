@@ -3,10 +3,8 @@ package li.songe.gkd.ui
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,20 +14,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.AlertDialog
-import androidx.compose.material.Divider
-import androidx.compose.material.Icon
-import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.RadioButton
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -38,7 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -74,6 +73,7 @@ val settingsNav = BottomNavItem(
     label = "设置", icon = SafeR.ic_cog, route = "settings"
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsPage() {
     val context = LocalContext.current as MainActivity
@@ -83,6 +83,9 @@ fun SettingsPage() {
     val uploadStatus by vm.uploadStatusFlow.collectAsState()
 
     var showSubsIntervalDlg by remember {
+        mutableStateOf(false)
+    }
+    var showDarkThemeDlg by remember {
         mutableStateOf(false)
     }
     var showToastInputDlg by remember {
@@ -96,9 +99,9 @@ fun SettingsPage() {
     val checkUpdating by checkUpdatingFlow.collectAsState()
 
     Scaffold(topBar = {
-        TopAppBar(backgroundColor = Color(0xfff8f9f9), title = {
+        TopAppBar(title = {
             Text(
-                text = "设置", color = Color.Black
+                text = "设置"
             )
         })
     }, content = { contentPadding ->
@@ -112,33 +115,33 @@ fun SettingsPage() {
         ) {
 
             TextSwitch(name = "后台隐藏",
-                desc = "在[最近任务]界面中隐藏本应用",
-                checked = store.excludeFromRecents,
-                onCheckedChange = {
-                    updateStorage(
-                        storeFlow, store.copy(
-                            excludeFromRecents = it
-                        )
-                    )
-                })
+                       desc = "在[最近任务]界面中隐藏本应用",
+                       checked = store.excludeFromRecents,
+                       onCheckedChange = {
+                           updateStorage(
+                               storeFlow, store.copy(
+                                   excludeFromRecents = it
+                               )
+                           )
+                       })
             Divider()
 
             TextSwitch(name = "点击提示",
-                desc = "触发点击时提示:[${store.clickToast}]",
-                checked = store.toastWhenClick,
-                modifier = Modifier.clickable {
-                    showToastInputDlg = true
-                },
-                onCheckedChange = {
-                    updateStorage(
-                        storeFlow, store.copy(
-                            toastWhenClick = it
-                        )
-                    )
-                    if (!Settings.canDrawOverlays(context)) {
-                        ToastUtils.showShort("需要悬浮窗权限")
-                    }
-                })
+                       desc = "触发点击时提示:[${store.clickToast}]",
+                       checked = store.toastWhenClick,
+                       modifier = Modifier.clickable {
+                           showToastInputDlg = true
+                       },
+                       onCheckedChange = {
+                           updateStorage(
+                               storeFlow, store.copy(
+                                   toastWhenClick = it
+                               )
+                           )
+                           if (it && !Settings.canDrawOverlays(context)) {
+                               ToastUtils.showShort("需要悬浮窗权限")
+                           }
+                       })
             Divider()
 
             Row(modifier = Modifier
@@ -153,7 +156,7 @@ fun SettingsPage() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = radioOptions.find { it.second == store.updateSubsInterval }?.first
+                        text = updateTimeRadioOptions.find { it.second == store.updateSubsInterval }?.first
                             ?: store.updateSubsInterval.toString(), fontSize = 14.sp
                     )
                     Icon(
@@ -161,18 +164,18 @@ fun SettingsPage() {
                     )
                 }
             }
-
             Divider()
+
             TextSwitch(name = "自动更新应用",
-                desc = "打开应用时自动检测是否存在新版本",
-                checked = store.autoCheckAppUpdate,
-                onCheckedChange = {
-                    updateStorage(
-                        storeFlow, store.copy(
-                            autoCheckAppUpdate = it
-                        )
-                    )
-                })
+                       desc = "打开应用时自动检测是否存在新版本",
+                       checked = store.autoCheckAppUpdate,
+                       onCheckedChange = {
+                           updateStorage(
+                               storeFlow, store.copy(
+                                   autoCheckAppUpdate = it
+                               )
+                           )
+                       })
             Divider()
 
             SettingItem(title = if (checkUpdating) "检查更新ing" else "检查更新", onClick = {
@@ -185,6 +188,29 @@ fun SettingsPage() {
                 }
             })
             Divider()
+
+            Row(modifier = Modifier
+                .clickable {
+                    showDarkThemeDlg = true
+                }
+                .padding(10.dp, 15.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    modifier = Modifier.weight(1f), text = "深色模式", fontSize = 18.sp
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = darkThemeRadioOptions.find { it.second == store.enableDarkTheme }?.first
+                            ?: store.enableDarkTheme.toString(), fontSize = 14.sp
+                    )
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "more"
+                    )
+                }
+            }
+            Divider()
+
             SettingItem(title = "问题反馈", onClick = {
                 appScope.launchTry(Dispatchers.IO) {
                     // ActivityNotFoundException
@@ -197,28 +223,30 @@ fun SettingsPage() {
                 }
             })
             Divider()
+
             TextSwitch(name = "保存日志",
-                desc = "保存最近7天的日志",
-                checked = store.log2FileSwitch,
-                onCheckedChange = {
-                    updateStorage(
-                        storeFlow, store.copy(
-                            log2FileSwitch = it
-                        )
-                    )
-                    if (!it) {
-                        appScope.launchTry(Dispatchers.IO) {
-                            val logFiles = LogUtils.getLogFiles()
-                            if (logFiles.isNotEmpty()) {
-                                logFiles.forEach { f ->
-                                    f.delete()
-                                }
-                                ToastUtils.showShort("已删除全部日志")
-                            }
-                        }
-                    }
-                })
+                       desc = "保存最近7天的日志",
+                       checked = store.log2FileSwitch,
+                       onCheckedChange = {
+                           updateStorage(
+                               storeFlow, store.copy(
+                                   log2FileSwitch = it
+                               )
+                           )
+                           if (!it) {
+                               appScope.launchTry(Dispatchers.IO) {
+                                   val logFiles = LogUtils.getLogFiles()
+                                   if (logFiles.isNotEmpty()) {
+                                       logFiles.forEach { f ->
+                                           f.delete()
+                                       }
+                                       ToastUtils.showShort("已删除全部日志")
+                                   }
+                               }
+                           }
+                       })
             Divider()
+
             SettingItem(title = "分享日志", onClick = {
                 vm.viewModelScope.launchTry(Dispatchers.IO) {
                     val logFiles = LogUtils.getLogFiles()
@@ -230,6 +258,7 @@ fun SettingsPage() {
                 }
             })
             Divider()
+
             SettingItem(title = "高级模式", onClick = {
                 navController.navigate(DebugPageDestination)
             })
@@ -245,36 +274,81 @@ fun SettingsPage() {
 
     if (showSubsIntervalDlg) {
         Dialog(onDismissRequest = { showSubsIntervalDlg = false }) {
-            Column(
+            Card(
                 modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
             ) {
-                radioOptions.forEach { option ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(selected = (option.second == store.updateSubsInterval),
+                Column {
+                    updateTimeRadioOptions.forEach { option ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(selected = (option.second == store.updateSubsInterval),
+                                            onClick = {
+                                                updateStorage(
+                                                    storeFlow,
+                                                    storeFlow.value.copy(updateSubsInterval = option.second)
+                                                )
+                                            })
+                                .padding(horizontal = 16.dp)
+                        ) {
+                            RadioButton(
+                                selected = (option.second == store.updateSubsInterval),
                                 onClick = {
                                     updateStorage(
                                         storeFlow,
                                         storeFlow.value.copy(updateSubsInterval = option.second)
                                     )
                                 })
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        RadioButton(
-                            selected = (option.second == store.updateSubsInterval),
-                            onClick = {
-                                updateStorage(
-                                    storeFlow,
-                                    storeFlow.value.copy(updateSubsInterval = option.second)
-                                )
-                            })
-                        Text(
-                            text = option.first,
-                            style = MaterialTheme.typography.body1.merge(),
-                            modifier = Modifier.padding(start = 16.dp)
-                        )
+                            Text(
+                                text = option.first, modifier = Modifier.padding(start = 16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showDarkThemeDlg) {
+        Dialog(onDismissRequest = { showDarkThemeDlg = false }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Column {
+                    darkThemeRadioOptions.forEach { option ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = (option.second == store.enableDarkTheme),
+                                    onClick = {
+                                        updateStorage(
+                                            storeFlow,
+                                            storeFlow.value.copy(enableDarkTheme = option.second)
+                                        )
+                                    })
+                                .padding(horizontal = 16.dp)
+                        ) {
+                            RadioButton(
+                                selected = (option.second == store.enableDarkTheme),
+                                onClick = {
+                                    updateStorage(
+                                        storeFlow,
+                                        storeFlow.value.copy(enableDarkTheme = option.second)
+                                    )
+                                })
+                            Text(
+                                text = option.first, modifier = Modifier.padding(start = 16.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -286,37 +360,46 @@ fun SettingsPage() {
             var value by remember {
                 mutableStateOf(store.clickToast)
             }
-            Column(
-                modifier = Modifier.padding(10.dp)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
             ) {
-                Text(text = "请输入提示文字", style = MaterialTheme.typography.h6)
-                Spacer(modifier = Modifier.height(10.dp))
-                OutlinedTextField(
-                    value = value,
-                    onValueChange = { value = it },
-                    singleLine = true,
-                    modifier = Modifier,
-                )
-                Row(
-                    horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()
+                Column(
+                    modifier = Modifier.padding(10.dp)
                 ) {
-                    TextButton(onClick = { showToastInputDlg = false }) {
-                        Text(
-                            text = "取消", modifier = Modifier
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(5.dp))
-                    TextButton(onClick = {
-                        updateStorage(
-                            storeFlow, store.copy(
-                                clickToast = value
+                    Text(text = "请输入提示文字")
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = value,
+                        onValueChange = { value = it },
+                        singleLine = true,
+                        modifier = Modifier,
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()
+                    ) {
+                        TextButton(onClick = { showToastInputDlg = false }) {
+                            Text(
+                                text = "取消", modifier = Modifier
                             )
-                        )
-                        showToastInputDlg = false
-                    }) {
-                        Text(
-                            text = "确认", modifier = Modifier
-                        )
+                        }
+                        Spacer(modifier = Modifier.width(5.dp))
+                        TextButton(onClick = {
+                            updateStorage(
+                                storeFlow, store.copy(
+                                    clickToast = value
+                                )
+                            )
+                            showToastInputDlg = false
+                        }) {
+                            Text(
+                                text = "确认", modifier = Modifier
+                            )
+                        }
                     }
                 }
             }
@@ -325,16 +408,16 @@ fun SettingsPage() {
 
     if (showShareLogDlg) {
         Dialog(onDismissRequest = { showShareLogDlg = false }) {
-            Box(
-                Modifier
-                    .width(200.dp)
-                    .background(Color.White)
-                    .padding(8.dp)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column {
                     val modifier = Modifier
                         .fillMaxWidth()
-                        .padding(8.dp)
+                        .padding(16.dp)
                     Text(
                         text = "调用系统分享", modifier = Modifier
                             .clickable(onClick = {
@@ -399,35 +482,21 @@ fun SettingsPage() {
         }
 
         is LoadStatus.Loading -> {
-            Dialog(onDismissRequest = { }) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "上传文件中,请稍等",
-                        fontSize = 16.sp,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(10.dp)
-                    )
-                    Spacer(modifier = Modifier.height(15.dp))
+            AlertDialog(
+                title = { Text(text = "上传文件中") },
+                text = {
                     LinearProgressIndicator(progress = uploadStatusVal.progress)
-                    Spacer(modifier = Modifier.height(5.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End
-                    ) {
-                        TextButton(onClick = {
-                            vm.uploadJob?.cancel(CancellationException("终止上传"))
-                            vm.uploadJob = null
-                        }) {
-                            Text(text = "终止上传", color = Color.Red)
-                        }
+                },
+                onDismissRequest = { },
+                confirmButton = {
+                    TextButton(onClick = {
+                        vm.uploadJob?.cancel(CancellationException("终止上传"))
+                        vm.uploadJob = null
+                    }) {
+                        Text(text = "终止上传")
                     }
-                }
-            }
+                },
+            )
         }
 
         is LoadStatus.Success -> {
@@ -454,10 +523,16 @@ fun SettingsPage() {
     }
 }
 
-val radioOptions = listOf(
+private val updateTimeRadioOptions = listOf(
     "暂停" to -1L,
     "每小时" to 60 * 60_000L,
     "每6小时" to 6 * 60 * 60_000L,
     "每12小时" to 12 * 60 * 60_000L,
     "每天" to 24 * 60 * 60_000L
+)
+
+private val darkThemeRadioOptions = listOf(
+    "跟随系统" to null,
+    "启用" to true,
+    "关闭" to false,
 )

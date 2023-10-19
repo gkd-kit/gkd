@@ -1,6 +1,5 @@
 package li.songe.gkd.ui
 
-import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.LogUtils
@@ -35,7 +34,6 @@ import javax.inject.Inject
 @HiltViewModel
 class HomePageVm @Inject constructor() : ViewModel() {
     val tabFlow = MutableStateFlow(controlNav)
-    val intentFlow = MutableStateFlow<Intent?>(null)
 
     init {
         appScope.launchTry(Dispatchers.IO) {
