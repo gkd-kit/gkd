@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.app.NotificationManagerCompat
@@ -93,41 +94,42 @@ fun DebugPage() {
             val shizukuIsOk by usePollState { shizukuIsSafeOK() }
             if (!shizukuIsOk) {
                 AuthCard(title = "Shizuku授权",
-                    desc = "高级运行模式,能更准确识别界面活动ID",
-                    onAuthClick = {
-                        try {
-                            Shizuku.requestPermission(Activity.RESULT_OK)
-                        } catch (e: Exception) {
-                            ToastUtils.showShort("Shizuku可能没有运行")
-                        }
-                    })
+                         desc = "高级运行模式,能更准确识别界面活动ID",
+                         onAuthClick = {
+                             try {
+                                 Shizuku.requestPermission(Activity.RESULT_OK)
+                             } catch (e: Exception) {
+                                 ToastUtils.showShort("Shizuku可能没有运行")
+                             }
+                         })
                 Divider()
             } else {
                 TextSwitch(name = "Shizuku模式",
-                    desc = "高级运行模式,能更准确识别界面活动ID",
-                    checked = store.enableShizuku,
-                    onCheckedChange = { enableShizuku ->
-                        if (enableShizuku) {
-                            appScope.launchTry(Dispatchers.IO) {
-                                // 检验方法是否适配, 再允许使用 shizuku
-                                val tasks = newActivityTaskManager()?.safeGetTasks()?.firstOrNull()
-                                if (tasks != null) {
-                                    updateStorage(
-                                        storeFlow, store.copy(
-                                            enableShizuku = true
-                                        )
-                                    )
-                                }
-                            }
-                        } else {
-                            updateStorage(
-                                storeFlow, store.copy(
-                                    enableShizuku = false
-                                )
-                            )
-                        }
+                           desc = "高级运行模式,能更准确识别界面活动ID",
+                           checked = store.enableShizuku,
+                           onCheckedChange = { enableShizuku ->
+                               if (enableShizuku) {
+                                   appScope.launchTry(Dispatchers.IO) {
+                                       // 检验方法是否适配, 再允许使用 shizuku
+                                       val tasks =
+                                           newActivityTaskManager()?.safeGetTasks()?.firstOrNull()
+                                       if (tasks != null) {
+                                           updateStorage(
+                                               storeFlow, store.copy(
+                                                   enableShizuku = true
+                                               )
+                                           )
+                                       }
+                                   }
+                               } else {
+                                   updateStorage(
+                                       storeFlow, store.copy(
+                                           enableShizuku = false
+                                       )
+                                   )
+                               }
 
-                    })
+                           })
                 Divider()
             }
 
@@ -176,25 +178,25 @@ fun DebugPage() {
             // Build.VERSION.SDK_INT < Build.VERSION_CODES.R
             val screenshotRunning by usePollState { ScreenshotService.isRunning() }
             TextSwitch(name = "截屏服务",
-                desc = "生成快照需要获取屏幕截图,Android11无需开启",
-                checked = screenshotRunning,
-                onCheckedChange = appScope.launchAsFn<Boolean> {
-                    if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) {
-                        ToastUtils.showShort("需要通知权限")
-                        return@launchAsFn
-                    }
-                    if (it) {
-                        val mediaProjectionManager =
-                            context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-                        val activityResult =
-                            launcher.launchForResult(mediaProjectionManager.createScreenCaptureIntent())
-                        if (activityResult.resultCode == Activity.RESULT_OK && activityResult.data != null) {
-                            ScreenshotService.start(intent = activityResult.data!!)
-                        }
-                    } else {
-                        ScreenshotService.stop()
-                    }
-                })
+                       desc = "生成快照需要获取屏幕截图,Android11无需开启",
+                       checked = screenshotRunning,
+                       onCheckedChange = appScope.launchAsFn<Boolean> {
+                           if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+                               ToastUtils.showShort("需要通知权限")
+                               return@launchAsFn
+                           }
+                           if (it) {
+                               val mediaProjectionManager =
+                                   context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+                               val activityResult =
+                                   launcher.launchForResult(mediaProjectionManager.createScreenCaptureIntent())
+                               if (activityResult.resultCode == Activity.RESULT_OK && activityResult.data != null) {
+                                   ScreenshotService.start(intent = activityResult.data!!)
+                               }
+                           } else {
+                               ScreenshotService.stop()
+                           }
+                       })
             Divider()
 
 
@@ -263,11 +265,18 @@ fun DebugPage() {
                 OutlinedTextField(
                     value = value,
                     onValueChange = {
-                        value = it.trim().let { s -> if (s.length > 5) s.substring(0..4) else s }
+                        value = it.filter { c -> c.isDigit() }.take(5)
                     },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    supportingText = {
+                        Text(
+                            text = "${value.length} / 5",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End,
+                        )
+                    },
                 )
             }, onDismissRequest = { showPortDlg = false }, confirmButton = {
                 TextButton(onClick = {

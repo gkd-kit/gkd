@@ -45,22 +45,30 @@ dependencyResolutionManagement {
             // 当前 android 项目 kotlin 的版本
             library("kotlin.gradle.plugin", "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
             library("kotlin.serialization", "org.jetbrains.kotlin:kotlin-serialization:$kotlinVersion")
-            library("kotlin.stdlib.common", "org.jetbrains.kotlin:kotlin-stdlib-common:$kotlinVersion")
-            plugin("kotlin.serialization", "org.jetbrains.kotlin.plugin.serialization").version(kotlinVersion)
-            plugin("kotlin.parcelize", "org.jetbrains.kotlin.plugin.parcelize").version(kotlinVersion)
+            library(
+                "kotlin.stdlib.common",
+                "org.jetbrains.kotlin:kotlin-stdlib-common:$kotlinVersion"
+            )
+            plugin("kotlin.serialization", "org.jetbrains.kotlin.plugin.serialization").version(
+                kotlinVersion
+            )
+            plugin("kotlin.parcelize", "org.jetbrains.kotlin.plugin.parcelize").version(
+                kotlinVersion
+            )
             plugin("kotlin.kapt", "org.jetbrains.kotlin.kapt").version(kotlinVersion)
-            plugin("kotlin.multiplatform", "org.jetbrains.kotlin.multiplatform").version(kotlinVersion)
+            plugin("kotlin.multiplatform", "org.jetbrains.kotlin.multiplatform").version(
+                kotlinVersion
+            )
             plugin("kotlin.android", "org.jetbrains.kotlin.android").version(kotlinVersion)
 
             // compose 编译器的版本, 需要注意它与 compose 的版本没有关联
             // https://mvnrepository.com/artifact/androidx.compose.compiler/compiler
             version("compose.compilerVersion", "1.5.3")
-            library("compose.ui", "androidx.compose.ui:ui:1.5.1")
-            library("compose.material", "androidx.compose.material:material:1.5.1")
+            library("compose.ui", "androidx.compose.ui:ui:1.5.3")
+            library("compose.preview", "androidx.compose.ui:ui-tooling-preview:1.5.3")
+            library("compose.tooling", "androidx.compose.ui:ui-tooling:1.5.3")
+            library("compose.junit4", "androidx.compose.ui:ui-test-junit4:1.5.3")
             library("compose.material3", "androidx.compose.material3:material3:1.1.2")
-            library("compose.preview", "androidx.compose.ui:ui-tooling-preview:1.5.1")
-            library("compose.tooling", "androidx.compose.ui:ui-tooling:1.5.1")
-            library("compose.junit4", "androidx.compose.ui:ui-test-junit4:1.5.1")
             library("compose.activity", "androidx.activity:activity-compose:1.7.2")
 
             // https://github.com/Tencent/MMKV/blob/master/README_CN.md
@@ -117,16 +125,6 @@ dependencyResolutionManagement {
                 "google.accompanist.drawablepainter",
                 "com.google.accompanist:accompanist-drawablepainter:0.32.0"
             )
-            library(
-                "google.accompanist.placeholder.material",
-                "com.google.accompanist:accompanist-placeholder-material:0.23.1"
-            )
-
-//            https://google.github.io/accompanist/systemuicontroller/
-            library(
-                "google.accompanist.systemuicontroller",
-                "com.google.accompanist:accompanist-systemuicontroller:0.32.0"
-            )
 
             library("junit", "junit:junit:4.13.2")
 
@@ -156,7 +154,7 @@ dependencyResolutionManagement {
             // https://github.com/Kotlin/kotlinx.collections.immutable
             library(
                 "kotlinx.collections.immutable",
-                "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5"
+                "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.6"
             )
 
 //            https://developer.android.com/reference/kotlin/org/json/package-summary
@@ -171,11 +169,11 @@ dependencyResolutionManagement {
                 "androidx.hilt.navigation.compose", "androidx.hilt:hilt-navigation-compose:1.0.0"
             )
 
-//            https://composedestinations.rafaelcosta.xyz/setup
+//            https://github.com/raamcosta/compose-destinations
             library(
-                "destinations.core", "io.github.raamcosta.compose-destinations:core:1.9.52"
+                "destinations.core", "io.github.raamcosta.compose-destinations:core:1.9.54"
             )
-            library("destinations.ksp", "io.github.raamcosta.compose-destinations:ksp:1.9.52")
+            library("destinations.ksp", "io.github.raamcosta.compose-destinations:ksp:1.9.54")
 
 //            https://github.com/aclassen/ComposeReorderable
             library("others.reorderable", "org.burnoutcrew.composereorderable:reorderable:0.9.6")

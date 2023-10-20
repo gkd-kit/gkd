@@ -122,7 +122,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
     implementation(libs.compose.ui)
-//    implementation(libs.compose.material)
     implementation(libs.compose.material3)
     implementation(libs.compose.preview)
     debugImplementation(libs.compose.tooling)
@@ -155,8 +154,6 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
 
     implementation(libs.google.accompanist.drawablepainter)
-    implementation(libs.google.accompanist.placeholder.material)
-    implementation(libs.google.accompanist.systemuicontroller)
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.collections.immutable)
