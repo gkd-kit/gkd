@@ -47,7 +47,7 @@
         android:usesCleartextTraffic="true">
 
         <activity
-            android:name="li.songe.gkd.MainActivity"
+            android:name=".MainActivity"
             android:configChanges="uiMode|screenSize|orientation|keyboardHidden|touchscreen|smallestScreenSize|screenLayout|navigation|mnc|mcc|locale|layoutDirection|keyboard|fontWeightAdjustment|fontScale|density|colorMode"
             android:exported="true"
             android:theme="@style/SplashScreenTheme">
@@ -132,6 +132,18 @@
             android:exported="false"
             android:foregroundServiceType="dataSync"
             android:process=":remote" />
+        <service
+            android:name=".debug.SnapshotTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_capture"
+            android:label="@string/capture_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:process=":remote">
+
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
 
     </application>

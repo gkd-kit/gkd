@@ -34,7 +34,6 @@ fun createNotif(context: Service, channelId: String, notif: Notif) {
         .setAutoCancel(notif.autoCancel)
 
     val notification = builder.build()
-    val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         context.startForeground(
             notif.id, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST
