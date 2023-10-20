@@ -4,14 +4,12 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -224,18 +223,19 @@ fun SettingsPage() {
             })
             Divider()
 
-            TextSwitch(name = "保存日志",
-                       desc = "保存最近7天的日志",
-                       checked = store.log2FileSwitch,
-                       onCheckedChange = {
-                           updateStorage(
-                               storeFlow, store.copy(
-                                   log2FileSwitch = it
-                               )
-                           )
-                           if (!it) {
-                               appScope.launchTry(Dispatchers.IO) {
-                                   val logFiles = LogUtils.getLogFiles()
+            TextSwitch(
+                name = "保存日志",
+                desc = "保存最近7天的日志,大概占用您5M的空间",
+                checked = store.log2FileSwitch,
+                onCheckedChange = {
+                    updateStorage(
+                        storeFlow, store.copy(
+                            log2FileSwitch = it
+                        )
+                    )
+                    if (!it) {
+                        appScope.launchTry(Dispatchers.IO) {
+                            val logFiles = LogUtils.getLogFiles()
                                    if (logFiles.isNotEmpty()) {
                                        logFiles.forEach { f ->
                                            f.delete()
@@ -327,14 +327,13 @@ fun SettingsPage() {
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .selectable(
-                                    selected = (option.second == store.enableDarkTheme),
-                                    onClick = {
-                                        updateStorage(
-                                            storeFlow,
-                                            storeFlow.value.copy(enableDarkTheme = option.second)
-                                        )
-                                    })
+                                .selectable(selected = (option.second == store.enableDarkTheme),
+                                            onClick = {
+                                                updateStorage(
+                                                    storeFlow,
+                                                    storeFlow.value.copy(enableDarkTheme = option.second)
+                                                )
+                                            })
                                 .padding(horizontal = 16.dp)
                         ) {
                             RadioButton(
@@ -356,54 +355,45 @@ fun SettingsPage() {
     }
 
     if (showToastInputDlg) {
-        Dialog(onDismissRequest = { showToastInputDlg = false }) {
-            var value by remember {
-                mutableStateOf(store.clickToast)
-            }
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                Column(
-                    modifier = Modifier.padding(10.dp)
-                ) {
-                    Text(text = "请输入提示文字")
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    OutlinedTextField(
-                        value = value,
-                        onValueChange = { value = it },
-                        singleLine = true,
-                        modifier = Modifier,
-                    )
-                    Row(
-                        horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()
-                    ) {
-                        TextButton(onClick = { showToastInputDlg = false }) {
-                            Text(
-                                text = "取消", modifier = Modifier
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(5.dp))
-                        TextButton(onClick = {
-                            updateStorage(
-                                storeFlow, store.copy(
-                                    clickToast = value
-                                )
-                            )
-                            showToastInputDlg = false
-                        }) {
-                            Text(
-                                text = "确认", modifier = Modifier
-                            )
-                        }
-                    }
-                }
-            }
+        var value by remember {
+            mutableStateOf(store.clickToast)
         }
+        val maxCharLen = 32
+        AlertDialog(title = { Text(text = "请输入提示文字") }, text = {
+            OutlinedTextField(
+                value = value,
+                onValueChange = {
+                    value = it.take(maxCharLen)
+                },
+                singleLine = true,
+                supportingText = {
+                    Text(
+                        text = "${value.length} / $maxCharLen",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.End,
+                    )
+                },
+            )
+        }, onDismissRequest = { showToastInputDlg = false }, confirmButton = {
+            TextButton(onClick = {
+                updateStorage(
+                    storeFlow, store.copy(
+                        clickToast = value
+                    )
+                )
+                showToastInputDlg = false
+            }) {
+                Text(
+                    text = "确认", modifier = Modifier
+                )
+            }
+        }, dismissButton = {
+            TextButton(onClick = { showToastInputDlg = false }) {
+                Text(
+                    text = "取消", modifier = Modifier
+                )
+            }
+        })
     }
 
     if (showShareLogDlg) {
