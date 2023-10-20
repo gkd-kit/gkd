@@ -5,6 +5,7 @@ import androidx.core.graphics.set
 import com.blankj.utilcode.util.BarUtils
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
+import com.blankj.utilcode.util.ToastUtils
 import com.blankj.utilcode.util.ZipUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -66,15 +67,16 @@ object SnapshotExt {
     private val captureLoading = MutableStateFlow(false)
 
     suspend fun captureSnapshot(): ComplexSnapshot {
+        if (!GkdAbService.isRunning()) {
+            throw RpcError("无障碍不可用")
+        }
         if (captureLoading.value) {
             throw RpcError("正在截屏,不可重复截屏")
         }
         captureLoading.value = true
+        ToastUtils.showShort("正在捕获快照...")
 
         try {
-            if (!GkdAbService.isRunning()) {
-                throw RpcError("无障碍不可用")
-            }
 
             val snapshotDef = coroutineScope { async(Dispatchers.IO) { createComplexSnapshot() } }
             val bitmapDef = coroutineScope {
@@ -114,6 +116,7 @@ object SnapshotExt {
                 File(getSnapshotPath(snapshot.id)).writeText(text)
                 DbSet.snapshotDao.insert(snapshot.toSnapshot())
             }
+            ToastUtils.showShort("快照捕获成功")
             return snapshot
         } finally {
             captureLoading.value = false
