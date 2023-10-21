@@ -6,8 +6,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.PixelFormat
 import android.os.Build
 import android.view.Display
+import android.view.View
+import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.NetworkUtils
@@ -21,6 +24,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import li.songe.gkd.composition.CompositionAbService
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.composition.CompositionExt.useScope
@@ -39,6 +43,7 @@ import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.increaseClickCount
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.launchWhile
+import li.songe.gkd.util.map
 import li.songe.gkd.util.recordStoreFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
@@ -73,9 +78,16 @@ class GkdAbService : CompositionAbService({
         return safeGetTasksFc()?.lastOrNull()?.topActivity?.className
     }
 
-    fun isActivity(appId: String, activityId: String): Boolean {
+    fun isActivity(
+        appId: String,
+        activityId: String,
+    ): Boolean {
         return activityId.startsWith(appId) || (try {
-            packageManager.getActivityInfo(ComponentName(appId, activityId), 0)
+            packageManager.getActivityInfo(
+                ComponentName(
+                    appId, activityId
+                ), 0
+            )
         } catch (e: PackageManager.NameNotFoundException) {
             null
         } != null)
@@ -91,13 +103,18 @@ class GkdAbService : CompositionAbService({
                 safeActiveWindow?.packageName?.toString() ?: return@onAccessibilityEvent
             val shizukuActivityId = getActivityIdByShizuku() ?: topActivityFlow.value?.activityId
             if (rightAppId != newAppId) {
-                topActivityFlow.value =
-                    TopActivity(appId = rightAppId, activityId = shizukuActivityId)
+                topActivityFlow.value = TopActivity(
+                    appId = rightAppId, activityId = shizukuActivityId
+                )
             } else {
                 if (isActivity(newAppId, newActivityId)) {
-                    topActivityFlow.value = TopActivity(newAppId, newActivityId)
+                    topActivityFlow.value = TopActivity(
+                        newAppId, newActivityId
+                    )
                 } else {
-                    if (newActivityId.startsWith("android.") || newActivityId.startsWith("androidx.") || newActivityId.startsWith(
+                    if (newActivityId.startsWith("android.") || newActivityId.startsWith(
+                            "androidx."
+                        ) || newActivityId.startsWith(
                             "com.android."
                         )
                     ) {
@@ -106,8 +123,7 @@ class GkdAbService : CompositionAbService({
                         )
                     } else {
                         topActivityFlow.value = topActivityFlow.value?.copy(
-                            appId = rightAppId,
-                            activityId = shizukuActivityId,
+                            appId = rightAppId, activityId = shizukuActivityId,
                             sourceId = newActivityId
                         )
                     }
@@ -119,7 +135,9 @@ class GkdAbService : CompositionAbService({
     scope.launchWhile(Dispatchers.IO) {
         val intent = Intent(Intent.ACTION_MAIN)
         intent.addCategory(Intent.CATEGORY_HOME)
-        val info = context.packageManager.resolveActivity(intent, 0)
+        val info = context.packageManager.resolveActivity(
+            intent, 0
+        )
         launcherActivityIdFlow.value = info?.activityInfo?.name
         delay(10 * 60_000)
     }
@@ -166,9 +184,9 @@ class GkdAbService : CompositionAbService({
                 rule.trigger()
                 scope.launchTry(Dispatchers.IO) {
                     LogUtils.d(
-                        *rule.matches.toTypedArray(),
-                        NodeInfo.abNodeToNode(nodeVal, target).attr,
-                        actionResult
+                        *rule.matches.toTypedArray(), NodeInfo.abNodeToNode(
+                            nodeVal, target
+                        ).attr, actionResult
                     )
                     val clickLog = ClickLog(
                         appId = topActivityFlow.value?.appId,
@@ -207,8 +225,9 @@ class GkdAbService : CompositionAbService({
         subsItemsFlow.value.forEach { subsItem ->
             if (subsItem.updateUrl == null) return@forEach
             try {
-                val newSubsRaw =
-                    SubscriptionRaw.parse(Singleton.client.get(subsItem.updateUrl).bodyAsText())
+                val newSubsRaw = SubscriptionRaw.parse(
+                    Singleton.client.get(subsItem.updateUrl).bodyAsText()
+                )
                 if (newSubsRaw.id != subsItem.id) {
                     return@forEach
                 }
@@ -235,7 +254,9 @@ class GkdAbService : CompositionAbService({
     }
 
     scope.launch {
-        combine(topActivityFlow, currentRulesFlow) { topActivity, currentRules ->
+        combine(
+            topActivityFlow, currentRulesFlow
+        ) { topActivity, currentRules ->
             topActivity to currentRules
         }.debounce(300).collect { (topActivity, currentRules) ->
             if (storeFlow.value.enableService) {
@@ -250,6 +271,40 @@ class GkdAbService : CompositionAbService({
         }
     }
 
+    var aliveView: View? = null
+    val wm by lazy { context.getSystemService(WINDOW_SERVICE) as WindowManager }
+    onServiceConnected {
+        scope.launchTry {
+            storeFlow.map(scope) { s -> s.enableAbFloatWindow }.collect {
+                if (aliveView != null) {
+                    withContext(Dispatchers.Main) {
+                        wm.removeView(aliveView)
+                    }
+                }
+                if (it) {
+                    aliveView = View(context)
+                    val lp = WindowManager.LayoutParams().apply {
+                        type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+                        format = PixelFormat.TRANSLUCENT
+                        flags =
+                            flags or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                        width = 1
+                        height = 1
+                    }
+                    withContext(Dispatchers.Main) {
+                        wm.addView(aliveView, lp)
+                    }
+                } else {
+                    aliveView = null
+                }
+            }
+        }
+    }
+    onDestroy {
+        if (aliveView != null) {
+            wm.removeView(aliveView)
+        }
+    }
 }) {
 
     companion object {

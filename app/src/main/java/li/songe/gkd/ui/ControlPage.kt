@@ -79,33 +79,35 @@ fun ControlPage() {
                 NotificationManagerCompat.from(context).areNotificationsEnabled()
             }
             if (!notifEnabled) {
-                AuthCard(title = "通知权限", desc = "用于启动后台服务,展示服务运行状态", onAuthClick = {
-                    val intent = Intent()
-                    intent.action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
-                    intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                    intent.putExtra(Settings.EXTRA_CHANNEL_ID, context.applicationInfo.uid)
-                    context.startActivity(intent)
-                })
+                AuthCard(title = "通知权限",
+                    desc = "用于启动后台服务,展示服务运行状态",
+                    onAuthClick = {
+                        val intent = Intent()
+                        intent.action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                        intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        intent.putExtra(Settings.EXTRA_CHANNEL_ID, context.applicationInfo.uid)
+                        context.startActivity(intent)
+                    })
                 Divider()
             }
 
             val gkdAccessRunning by usePollState { GkdAbService.isRunning() }
             if (!gkdAccessRunning) {
                 AuthCard(title = "无障碍权限",
-                         desc = "用于获取屏幕信息,点击屏幕上的控件",
-                         onAuthClick = {
-                             if (notifEnabled) {
-                                 appScope.launchTry(Dispatchers.IO) {
-                                     val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                     // android.content.ActivityNotFoundException
-                                     // https://bugly.qq.com/v2/crash-reporting/crashes/d0ce46b353/113010?pid=1
-                                     context.startActivity(intent)
-                                 }
-                             } else {
-                                 ToastUtils.showShort("必须先开启[通知权限]")
-                             }
-                         })
+                    desc = "用于获取屏幕信息,点击屏幕上的控件",
+                    onAuthClick = {
+                        if (notifEnabled) {
+                            appScope.launchTry(Dispatchers.IO) {
+                                val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                // android.content.ActivityNotFoundException
+                                // https://bugly.qq.com/v2/crash-reporting/crashes/d0ce46b353/113010?pid=1
+                                context.startActivity(intent)
+                            }
+                        } else {
+                            ToastUtils.showShort("必须先开启[通知权限]")
+                        }
+                    })
                 Divider()
             }
 
@@ -113,29 +115,40 @@ fun ControlPage() {
             val canDrawOverlays by usePollState { Settings.canDrawOverlays(context) }
             if (!canDrawOverlays) {
                 AuthCard(title = "悬浮窗权限",
-                         desc = "用于后台提示,显示保存快照按钮等功能",
-                         onAuthClick = {
-                             val intent = Intent(
-                                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                             )
-                             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                             context.startActivity(intent)
-                         })
+                    desc = "用于后台提示,显示保存快照按钮等功能",
+                    onAuthClick = {
+                        val intent = Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        )
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        context.startActivity(intent)
+                    })
                 Divider()
             }
 
-
             if (gkdAccessRunning) {
                 TextSwitch(name = "服务开启",
-                           desc = "保持服务开启,根据订阅规则匹配屏幕目标节点",
-                           checked = store.enableService,
-                           onCheckedChange = {
-                               updateStorage(
-                                   storeFlow, store.copy(
-                                       enableService = it
-                                   )
-                               )
-                           })
+                    desc = "保持服务开启,根据订阅规则匹配屏幕目标节点",
+                    checked = store.enableService,
+                    onCheckedChange = {
+                        updateStorage(
+                            storeFlow, store.copy(
+                                enableService = it
+                            )
+                        )
+                    })
+                Divider()
+
+                TextSwitch(name = "无障碍前台",
+                    desc = "某些机型需添加前台悬浮窗才能正常工作",
+                    checked = store.enableAbFloatWindow,
+                    onCheckedChange = {
+                        updateStorage(
+                            storeFlow, store.copy(
+                                enableAbFloatWindow = it
+                            )
+                        )
+                    })
                 Divider()
             }
 
