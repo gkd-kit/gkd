@@ -15,7 +15,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun AuthCard(title: String, desc: String, onAuthClick: () -> Unit) {
+fun AuthCard(
+    title: String,
+    desc: String,
+    onAuthClick: () -> Unit,
+) {
     Row(
         modifier = Modifier.padding(10.dp, 5.dp), verticalAlignment = Alignment.CenterVertically
     ) {
