@@ -84,7 +84,10 @@ fun SettingsPage() {
     var showSubsIntervalDlg by remember {
         mutableStateOf(false)
     }
-    var showDarkThemeDlg by remember {
+    var showEnableDarkThemeDlg by remember {
+        mutableStateOf(false)
+    }
+    var showEnableGroupDlg by remember {
         mutableStateOf(false)
     }
     var showToastInputDlg by remember {
@@ -114,33 +117,45 @@ fun SettingsPage() {
         ) {
 
             TextSwitch(name = "后台隐藏",
-                       desc = "在[最近任务]界面中隐藏本应用",
-                       checked = store.excludeFromRecents,
-                       onCheckedChange = {
-                           updateStorage(
-                               storeFlow, store.copy(
-                                   excludeFromRecents = it
-                               )
-                           )
-                       })
+                desc = "在[最近任务]界面中隐藏本应用",
+                checked = store.excludeFromRecents,
+                onCheckedChange = {
+                    updateStorage(
+                        storeFlow, store.copy(
+                            excludeFromRecents = it
+                        )
+                    )
+                })
+            Divider()
+
+            TextSwitch(name = "无障碍前台",
+                desc = "某些机型需添加前台悬浮窗才能正常工作",
+                checked = store.enableAbFloatWindow,
+                onCheckedChange = {
+                    updateStorage(
+                        storeFlow, store.copy(
+                            enableAbFloatWindow = it
+                        )
+                    )
+                })
             Divider()
 
             TextSwitch(name = "点击提示",
-                       desc = "触发点击时提示:[${store.clickToast}]",
-                       checked = store.toastWhenClick,
-                       modifier = Modifier.clickable {
-                           showToastInputDlg = true
-                       },
-                       onCheckedChange = {
-                           updateStorage(
-                               storeFlow, store.copy(
-                                   toastWhenClick = it
-                               )
-                           )
-                           if (it && !Settings.canDrawOverlays(context)) {
-                               ToastUtils.showShort("需要悬浮窗权限")
-                           }
-                       })
+                desc = "触发点击时提示:[${store.clickToast}]",
+                checked = store.toastWhenClick,
+                modifier = Modifier.clickable {
+                    showToastInputDlg = true
+                },
+                onCheckedChange = {
+                    updateStorage(
+                        storeFlow, store.copy(
+                            toastWhenClick = it
+                        )
+                    )
+                    if (it && !Settings.canDrawOverlays(context)) {
+                        ToastUtils.showShort("需要悬浮窗权限")
+                    }
+                })
             Divider()
 
             Row(modifier = Modifier
@@ -166,15 +181,15 @@ fun SettingsPage() {
             Divider()
 
             TextSwitch(name = "自动更新应用",
-                       desc = "打开应用时自动检测是否存在新版本",
-                       checked = store.autoCheckAppUpdate,
-                       onCheckedChange = {
-                           updateStorage(
-                               storeFlow, store.copy(
-                                   autoCheckAppUpdate = it
-                               )
-                           )
-                       })
+                desc = "打开应用时自动检测是否存在新版本",
+                checked = store.autoCheckAppUpdate,
+                onCheckedChange = {
+                    updateStorage(
+                        storeFlow, store.copy(
+                            autoCheckAppUpdate = it
+                        )
+                    )
+                })
             Divider()
 
             SettingItem(title = if (checkUpdating) "检查更新ing" else "检查更新", onClick = {
@@ -190,7 +205,7 @@ fun SettingsPage() {
 
             Row(modifier = Modifier
                 .clickable {
-                    showDarkThemeDlg = true
+                    showEnableDarkThemeDlg = true
                 }
                 .padding(10.dp, 15.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -202,6 +217,27 @@ fun SettingsPage() {
                     Text(
                         text = darkThemeRadioOptions.find { it.second == store.enableDarkTheme }?.first
                             ?: store.enableDarkTheme.toString(), fontSize = 14.sp
+                    )
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "more"
+                    )
+                }
+            }
+            Divider()
+            Row(modifier = Modifier
+                .clickable {
+                    showEnableGroupDlg = true
+                }
+                .padding(10.dp, 15.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    modifier = Modifier.weight(1f), text = "规则启用", fontSize = 18.sp
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = enableGroupRadioOptions.find { it.second == store.enableGroup }?.first
+                            ?: store.enableGroup.toString(), fontSize = 14.sp
                     )
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "more"
@@ -223,8 +259,7 @@ fun SettingsPage() {
             })
             Divider()
 
-            TextSwitch(
-                name = "保存日志",
+            TextSwitch(name = "保存日志",
                 desc = "保存最近7天的日志,大概占用您5M的空间",
                 checked = store.log2FileSwitch,
                 onCheckedChange = {
@@ -236,15 +271,15 @@ fun SettingsPage() {
                     if (!it) {
                         appScope.launchTry(Dispatchers.IO) {
                             val logFiles = LogUtils.getLogFiles()
-                                   if (logFiles.isNotEmpty()) {
-                                       logFiles.forEach { f ->
-                                           f.delete()
-                                       }
-                                       ToastUtils.showShort("已删除全部日志")
-                                   }
-                               }
-                           }
-                       })
+                            if (logFiles.isNotEmpty()) {
+                                logFiles.forEach { f ->
+                                    f.delete()
+                                }
+                                ToastUtils.showShort("已删除全部日志")
+                            }
+                        }
+                    }
+                })
             Divider()
 
             SettingItem(title = "分享日志", onClick = {
@@ -287,12 +322,12 @@ fun SettingsPage() {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .selectable(selected = (option.second == store.updateSubsInterval),
-                                            onClick = {
-                                                updateStorage(
-                                                    storeFlow,
-                                                    storeFlow.value.copy(updateSubsInterval = option.second)
-                                                )
-                                            })
+                                    onClick = {
+                                        updateStorage(
+                                            storeFlow,
+                                            storeFlow.value.copy(updateSubsInterval = option.second)
+                                        )
+                                    })
                                 .padding(horizontal = 16.dp)
                         ) {
                             RadioButton(
@@ -313,8 +348,8 @@ fun SettingsPage() {
         }
     }
 
-    if (showDarkThemeDlg) {
-        Dialog(onDismissRequest = { showDarkThemeDlg = false }) {
+    if (showEnableDarkThemeDlg) {
+        Dialog(onDismissRequest = { showEnableDarkThemeDlg = false }) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -328,12 +363,12 @@ fun SettingsPage() {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .selectable(selected = (option.second == store.enableDarkTheme),
-                                            onClick = {
-                                                updateStorage(
-                                                    storeFlow,
-                                                    storeFlow.value.copy(enableDarkTheme = option.second)
-                                                )
-                                            })
+                                    onClick = {
+                                        updateStorage(
+                                            storeFlow,
+                                            storeFlow.value.copy(enableDarkTheme = option.second)
+                                        )
+                                    })
                                 .padding(horizontal = 16.dp)
                         ) {
                             RadioButton(
@@ -344,6 +379,43 @@ fun SettingsPage() {
                                         storeFlow.value.copy(enableDarkTheme = option.second)
                                     )
                                 })
+                            Text(
+                                text = option.first, modifier = Modifier.padding(start = 16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (showEnableGroupDlg) {
+        Dialog(onDismissRequest = { showEnableGroupDlg = false }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Column {
+                    enableGroupRadioOptions.forEach { option ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(selected = (option.second == store.enableGroup),
+                                    onClick = {
+                                        updateStorage(
+                                            storeFlow,
+                                            storeFlow.value.copy(enableGroup = option.second)
+                                        )
+                                    })
+                                .padding(horizontal = 16.dp)
+                        ) {
+                            RadioButton(selected = (option.second == store.enableGroup), onClick = {
+                                updateStorage(
+                                    storeFlow, storeFlow.value.copy(enableGroup = option.second)
+                                )
+                            })
                             Text(
                                 text = option.first, modifier = Modifier.padding(start = 16.dp)
                             )
@@ -523,6 +595,11 @@ private val updateTimeRadioOptions = listOf(
 
 private val darkThemeRadioOptions = listOf(
     "跟随系统" to null,
+    "启用" to true,
+    "关闭" to false,
+)
+private val enableGroupRadioOptions = listOf(
+    "跟随订阅" to null,
     "启用" to true,
     "关闭" to false,
 )

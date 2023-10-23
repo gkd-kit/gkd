@@ -138,18 +138,6 @@ fun ControlPage() {
                         )
                     })
                 Divider()
-
-                TextSwitch(name = "无障碍前台",
-                    desc = "某些机型需添加前台悬浮窗才能正常工作",
-                    checked = store.enableAbFloatWindow,
-                    onCheckedChange = {
-                        updateStorage(
-                            storeFlow, store.copy(
-                                enableAbFloatWindow = it
-                            )
-                        )
-                    })
-                Divider()
             }
 
             Row(
