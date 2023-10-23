@@ -83,11 +83,7 @@ data class Rule(
         return activityIds.any { activityId.startsWith(it) }
     }
 
-    val performAction: ActionFc = when (rule.action) {
-        "clickNode" -> clickNode
-        "clickCenter" -> clickCenter
-        else -> click
-    }
+    val performAction = getActionFc(rule.action)
 
     companion object {
         const val defaultMiniCd = 1000L
@@ -98,7 +94,7 @@ typealias ActionFc = (context: AccessibilityService, node: AccessibilityNodeInfo
 
 
 @Serializable
-data class ClickAction(
+data class GkdAction(
     val selector: String,
     val quickFind: Boolean = false,
     val action: String? = null,
@@ -144,4 +140,20 @@ val clickCenter: ActionFc = { context, node ->
         }
     )
 
+}
+
+val backFc: ActionFc = { context, _ ->
+    ActionResult(
+        action = "back",
+        result = context.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
+    )
+}
+
+fun getActionFc(action: String?): ActionFc {
+    return when (action) {
+        "clickNode" -> clickNode
+        "clickCenter" -> clickCenter
+        "back" -> backFc
+        else -> click
+    }
 }

@@ -31,7 +31,7 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.composition.CompositionService
-import li.songe.gkd.data.ClickAction
+import li.songe.gkd.data.GkdAction
 import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubsItem
@@ -120,9 +120,9 @@ class HttpService : CompositionService({
                         if (!GkdAbService.isRunning()) {
                             throw RpcError("无障碍没有运行")
                         }
-                        val clickAction = call.receive<ClickAction>()
-                        LogUtils.d(clickAction)
-                        call.respond(GkdAbService.execClickAction(clickAction))
+                        val gkdAction = call.receive<GkdAction>()
+                        LogUtils.d(gkdAction)
+                        call.respond(GkdAbService.execAction(gkdAction))
                     }
                 }
             }

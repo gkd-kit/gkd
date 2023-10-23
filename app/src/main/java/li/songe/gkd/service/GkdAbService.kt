@@ -29,14 +29,12 @@ import li.songe.gkd.composition.CompositionAbService
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.composition.CompositionExt.useScope
 import li.songe.gkd.data.ActionResult
-import li.songe.gkd.data.ClickAction
 import li.songe.gkd.data.ClickLog
+import li.songe.gkd.data.GkdAction
 import li.songe.gkd.data.NodeInfo
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubscriptionRaw
-import li.songe.gkd.data.click
-import li.songe.gkd.data.clickCenter
-import li.songe.gkd.data.clickNode
+import li.songe.gkd.data.getActionFc
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.shizuku.useSafeGetTasksFc
 import li.songe.gkd.util.Singleton
@@ -123,7 +121,8 @@ class GkdAbService : CompositionAbService({
                         )
                     } else {
                         topActivityFlow.value = topActivityFlow.value?.copy(
-                            appId = rightAppId, activityId = shizukuActivityId,
+                            appId = rightAppId,
+                            activityId = shizukuActivityId,
                             sourceId = newActivityId
                         )
                     }
@@ -311,23 +310,19 @@ class GkdAbService : CompositionAbService({
         var service: GkdAbService? = null
         fun isRunning() = ServiceUtils.isServiceRunning(GkdAbService::class.java)
 
-        fun execClickAction(clickAction: ClickAction): ActionResult {
+        fun execAction(gkdAction: GkdAction): ActionResult {
             val serviceVal = service ?: throw RpcError("无障碍没有运行")
             val selector = try {
-                Selector.parse(clickAction.selector)
+                Selector.parse(gkdAction.selector)
             } catch (e: Exception) {
                 throw RpcError("非法选择器")
             }
 
             val targetNode =
-                serviceVal.safeActiveWindow?.querySelector(selector, clickAction.quickFind)
+                serviceVal.safeActiveWindow?.querySelector(selector, gkdAction.quickFind)
                     ?: throw RpcError("没有选择到节点")
 
-            return when (clickAction.action) {
-                "clickNode" -> clickNode(serviceVal, targetNode)
-                "clickCenter" -> clickCenter(serviceVal, targetNode)
-                else -> click(serviceVal, targetNode)
-            }
+            return getActionFc(gkdAction.action)(serviceVal, targetNode)
         }
 
 
