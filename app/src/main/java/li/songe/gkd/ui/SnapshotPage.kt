@@ -204,12 +204,32 @@ fun SnapshotPage() {
                     )
                     Divider()
                     if (recordStore.snapshotIdMap.containsKey(snapshotVal.id)) {
+                        val url =
+                            "https://i.gkd.li/import/" + recordStore.snapshotIdMap[snapshotVal.id]
                         Text(
                             text = "复制链接", modifier = Modifier
                                 .clickable(onClick = {
                                     selectedSnapshot = null
-                                    ClipboardUtils.copyText("https://gkd-kit.gitee.io/import/" + recordStore.snapshotIdMap[snapshotVal.id])
+                                    ClipboardUtils.copyText(url)
                                     ToastUtils.showShort("复制成功")
+                                })
+                                .then(modifier)
+                        )
+                        Divider()
+                        Text(
+                            text = "分享链接", modifier = Modifier
+                                .clickable(onClick = {
+                                    selectedSnapshot = null
+                                    val intent = Intent().apply {
+                                        action = Intent.ACTION_SEND
+                                        putExtra(Intent.EXTRA_TEXT, url)
+                                        type = "text/plain"
+                                    }
+                                    context.startActivity(
+                                        Intent.createChooser(
+                                            intent, "分享链接"
+                                        )
+                                    )
                                 })
                                 .then(modifier)
                         )
