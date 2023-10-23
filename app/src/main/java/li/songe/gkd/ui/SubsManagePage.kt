@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -217,6 +218,7 @@ fun SubsManagePage() {
                             .fillMaxWidth()
                             .padding(16.dp))
                     }
+                    Divider()
                     Text(text = "删除订阅", modifier = Modifier
                         .clickable {
                             deleteSubItem = menuSubItemVal
@@ -266,7 +268,7 @@ fun SubsManagePage() {
                         }
                         .fillMaxWidth()
                         .padding(16.dp))
-
+                    Divider()
                     Text(text = "导入其它订阅", modifier = Modifier
                         .clickable {
                             showAddDialog = false

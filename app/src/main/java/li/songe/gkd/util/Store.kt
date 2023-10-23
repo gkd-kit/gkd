@@ -60,14 +60,19 @@ private inline fun <reified T> createStorageFlow(
 }
 
 
-inline fun <reified T> updateStorage(stateFlow: StateFlow<T>, newState: T) {
-    val key = stateFlowToKey[stateFlow] ?: error("not found stateFlow key")
-    kv.encode(key, Singleton.json.encodeToString(newState))
+fun sendStorageBroadcast(key: String) {
     app.sendBroadcast(Intent(app.packageName).apply {
         `package` = app.packageName
         putExtra("type", "update_storage")
         putExtra("key", key)
     })
+}
+
+inline fun <reified T> updateStorage(stateFlow: StateFlow<T>, newState: T) {
+    if (stateFlow.value == newState) return
+    val key = stateFlowToKey[stateFlow] ?: error("not found stateFlow key")
+    kv.encode(key, Singleton.json.encodeToString(newState))
+    sendStorageBroadcast(key)
 }
 
 
@@ -87,7 +92,8 @@ data class Store(
     val enableShizuku: Boolean = false,
     val log2FileSwitch: Boolean = true,
     val enableDarkTheme: Boolean? = null,
-    val enableAbFloatWindow: Boolean = false,
+    val enableAbFloatWindow: Boolean = true,
+    val enableGroup: Boolean? = null,
 )
 
 val storeFlow by lazy {

@@ -74,9 +74,11 @@ val subsConfigsFlow by lazy {
 }
 
 val appIdToRulesFlow by lazy {
-    combine(
-        subsItemsFlow, subsIdToRawFlow, subsConfigsFlow, appInfoCacheFlow
-    ) { subsItems, subsIdToRaw, subsConfigs, appInfoCache ->
+    combine(subsItemsFlow,
+        subsIdToRawFlow,
+        subsConfigsFlow,
+        appInfoCacheFlow,
+        storeFlow.map(appScope) { s -> s.enableGroup }) { subsItems, subsIdToRaw, subsConfigs, appInfoCache, enableGroup ->
         val appSubsConfigs = subsConfigs.filter { it.type == SubsConfig.AppType }
         val groupSubsConfigs = subsConfigs.filter { it.type == SubsConfig.GroupType }
         val appIdToRules = mutableMapOf<String, MutableList<Rule>>()
@@ -93,7 +95,7 @@ val appIdToRulesFlow by lazy {
                     // 筛选已经启用的规则组
                     groupSubsConfigs.find { subsConfig ->
                         subsConfig.subsItemId == subsItem.id && subsConfig.appId == appRaw.id && subsConfig.groupKey == groupRaw.key
-                    }?.enable ?: groupRaw.enable ?: true
+                    }?.enable ?: enableGroup ?: groupRaw.enable ?: true
                 }.filter { groupRaw ->
                     // 筛选合法选择器的规则组, 如果一个规则组内某个选择器语法错误, 则禁用/丢弃此规则组
                     groupRaw.valid
@@ -201,7 +203,7 @@ val appIdToRulesFlow by lazy {
                 }
             }
         }
-        appIdToRules
+        appIdToRules.filter { it.value.isNotEmpty() }
     }.stateIn<Map<String, List<Rule>>>(appScope, SharingStarted.Eagerly, emptyMap())
 }
 

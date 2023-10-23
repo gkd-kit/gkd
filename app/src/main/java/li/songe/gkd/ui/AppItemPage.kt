@@ -64,6 +64,7 @@ import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 
 @RootNavGraph
@@ -81,6 +82,7 @@ fun AppItemPage(
     val subsConfigs by vm.subsConfigsFlow.collectAsState()
     val appRaw by vm.subsAppFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
+    val store by storeFlow.collectAsState()
 
     val appRawVal = appRaw
     val subsItemVal = subsItem
@@ -187,18 +189,19 @@ fun AppItemPage(
                         }
 
                         val subsConfig = subsConfigs.find { it.groupKey == group.key }
-                        Switch(checked = (subsConfig?.enable ?: group.enable) ?: true,
-                               modifier = Modifier,
-                               onCheckedChange = scope.launchAsFn { enable ->
-                                   val newItem = (subsConfig?.copy(enable = enable) ?: SubsConfig(
-                                       type = SubsConfig.GroupType,
-                                       subsItemId = subsItemId,
-                                       appId = appId,
-                                       groupKey = group.key,
-                                       enable = enable
-                                   ))
-                                   DbSet.subsConfigDao.insert(newItem)
-                               })
+                        Switch(checked = (subsConfig?.enable ?: store.enableGroup ?: group.enable
+                        ?: true),
+                            modifier = Modifier,
+                            onCheckedChange = scope.launchAsFn { enable ->
+                                val newItem = (subsConfig?.copy(enable = enable) ?: SubsConfig(
+                                    type = SubsConfig.GroupType,
+                                    subsItemId = subsItemId,
+                                    appId = appId,
+                                    groupKey = group.key,
+                                    enable = enable
+                                ))
+                                DbSet.subsConfigDao.insert(newItem)
+                            })
                     }
                 }
             }
@@ -212,32 +215,32 @@ fun AppItemPage(
 
     showGroupItem?.let { showGroupItemVal ->
         AlertDialog(modifier = Modifier.defaultMinSize(300.dp),
-                    onDismissRequest = { setShowGroupItem(null) },
-                    title = {
-                        Text(text = showGroupItemVal.name)
-                    },
-                    text = {
-                        Column {
-                            if (showGroupItemVal.enable == false) {
-                                Text(text = "该规则组默认不启用")
-                                Spacer(modifier = Modifier.height(10.dp))
-                            }
-                            Text(text = showGroupItemVal.desc ?: "-")
-                        }
-                    },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            val groupAppText = Singleton.json.encodeToString(
-                                appRaw?.copy(
-                                    groups = listOf(showGroupItemVal)
-                                )
-                            )
-                            ClipboardUtils.copyText(groupAppText)
-                            ToastUtils.showShort("复制成功")
-                        }) {
-                            Text(text = "复制规则组")
-                        }
-                    })
+            onDismissRequest = { setShowGroupItem(null) },
+            title = {
+                Text(text = showGroupItemVal.name)
+            },
+            text = {
+                Column {
+                    if (showGroupItemVal.enable == false) {
+                        Text(text = "该规则组默认不启用")
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
+                    Text(text = showGroupItemVal.desc ?: "-")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val groupAppText = Singleton.json.encodeToString(
+                        appRaw?.copy(
+                            groups = listOf(showGroupItemVal)
+                        )
+                    )
+                    ClipboardUtils.copyText(groupAppText)
+                    ToastUtils.showShort("复制成功")
+                }) {
+                    Text(text = "复制规则组")
+                }
+            })
     }
 
     if (menuGroupRaw != null && appRawVal != null && subsItemVal != null) {

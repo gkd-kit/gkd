@@ -1,6 +1,5 @@
 package li.songe.gkd.data
 
-import android.content.ContentValues
 import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Dao
@@ -42,11 +41,12 @@ data class SubsItem(
     }
 
     suspend fun removeAssets() {
-        DbSet.subsItemDao.delete(this)
-        DbSet.subsConfigDao.delete(id)
         withContext(IO) {
             subsFile.exists() && subsFile.delete()
         }
+        DbSet.subsItemDao.delete(this)
+        DbSet.subsConfigDao.delete(id)
+        DbSet.clickLogDao.deleteBySubsId(id)
     }
 
     companion object {
