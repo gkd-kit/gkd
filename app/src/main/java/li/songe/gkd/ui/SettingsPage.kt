@@ -129,7 +129,7 @@ fun SettingsPage() {
             Divider()
 
             TextSwitch(name = "无障碍前台",
-                desc = "某些机型需添加前台悬浮窗才能正常工作",
+                desc = "添加前台透明悬浮窗,关闭可能导致不工作",
                 checked = store.enableAbFloatWindow,
                 onCheckedChange = {
                     updateStorage(
@@ -600,6 +600,6 @@ private val darkThemeRadioOptions = listOf(
 )
 private val enableGroupRadioOptions = listOf(
     "跟随订阅" to null,
-    "启用" to true,
-    "关闭" to false,
+    "默认启用" to true,
+    "默认关闭" to false,
 )

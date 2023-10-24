@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -57,6 +58,12 @@ fun ControlPage() {
     val subsStatus by vm.subsStatusFlow.collectAsState()
     val store by storeFlow.collectAsState()
 
+    val gkdAccessRunning by usePollState { GkdAbService.isRunning() }
+    val notifEnabled by usePollState {
+        NotificationManagerCompat.from(context).areNotificationsEnabled()
+    }
+    val canDrawOverlays by usePollState { Settings.canDrawOverlays(context) }
+
     Scaffold(
         topBar = {
             TopAppBar(title = {
@@ -71,13 +78,8 @@ fun ControlPage() {
                 .verticalScroll(
                     state = rememberScrollState()
                 )
-                .padding(0.dp, 10.dp)
                 .padding(padding)
         ) {
-
-            val notifEnabled by usePollState {
-                NotificationManagerCompat.from(context).areNotificationsEnabled()
-            }
             if (!notifEnabled) {
                 AuthCard(title = "通知权限",
                     desc = "用于启动后台服务,展示服务运行状态",
@@ -91,7 +93,6 @@ fun ControlPage() {
                 Divider()
             }
 
-            val gkdAccessRunning by usePollState { GkdAbService.isRunning() }
             if (!gkdAccessRunning) {
                 AuthCard(title = "无障碍权限",
                     desc = "用于获取屏幕信息,点击屏幕上的控件",
@@ -111,8 +112,6 @@ fun ControlPage() {
                 Divider()
             }
 
-
-            val canDrawOverlays by usePollState { Settings.canDrawOverlays(context) }
             if (!canDrawOverlays) {
                 AuthCard(title = "悬浮窗权限",
                     desc = "用于后台提示,显示保存快照按钮等功能",
@@ -151,15 +150,28 @@ fun ControlPage() {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = subsStatus, fontSize = 18.sp
+                        text = "点击记录", fontSize = 18.sp
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = if (latestRecordDesc != null) "最近点击: $latestRecordDesc" else "暂无记录",
-                        fontSize = 14.sp
+                        text = "如误触可在此快速定位关闭规则", fontSize = 14.sp
                     )
                 }
-                Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "")
+                Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = null)
+            }
+            Divider()
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp, 5.dp)
+            ) {
+                Text(text = subsStatus, fontSize = 18.sp)
+                if (latestRecordDesc != null) {
+                    Text(
+                        text = "最近点击: $latestRecordDesc", fontSize = 14.sp
+                    )
+                }
             }
 
         }
