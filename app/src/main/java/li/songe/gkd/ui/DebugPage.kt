@@ -14,13 +14,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,7 +54,6 @@ import li.songe.gkd.shizuku.safeGetTasks
 import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
-import li.songe.gkd.ui.component.SimpleTopAppBar
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.SnapshotPageDestination
 import li.songe.gkd.util.Ext
@@ -79,9 +82,16 @@ fun DebugPage() {
     }
 
     Scaffold(topBar = {
-        SimpleTopAppBar(
-            onClickIcon = { navController.popBackStack() }, title = "高级模式"
-        )
+        TopAppBar(navigationIcon = {
+            IconButton(onClick = {
+                navController.popBackStack()
+            }) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = null,
+                )
+            }
+        }, title = { Text(text = "高级模式") }, actions = {})
     }, content = { contentPadding ->
         Column(
             modifier = Modifier
@@ -94,42 +104,41 @@ fun DebugPage() {
             val shizukuIsOk by usePollState { shizukuIsSafeOK() }
             if (!shizukuIsOk) {
                 AuthCard(title = "Shizuku授权",
-                         desc = "高级运行模式,能更准确识别界面活动ID",
-                         onAuthClick = {
-                             try {
-                                 Shizuku.requestPermission(Activity.RESULT_OK)
-                             } catch (e: Exception) {
-                                 ToastUtils.showShort("Shizuku可能没有运行")
-                             }
-                         })
+                    desc = "高级运行模式,能更准确识别界面活动ID",
+                    onAuthClick = {
+                        try {
+                            Shizuku.requestPermission(Activity.RESULT_OK)
+                        } catch (e: Exception) {
+                            ToastUtils.showShort("Shizuku可能没有运行")
+                        }
+                    })
                 Divider()
             } else {
                 TextSwitch(name = "Shizuku模式",
-                           desc = "高级运行模式,能更准确识别界面活动ID",
-                           checked = store.enableShizuku,
-                           onCheckedChange = { enableShizuku ->
-                               if (enableShizuku) {
-                                   appScope.launchTry(Dispatchers.IO) {
-                                       // 检验方法是否适配, 再允许使用 shizuku
-                                       val tasks =
-                                           newActivityTaskManager()?.safeGetTasks()?.firstOrNull()
-                                       if (tasks != null) {
-                                           updateStorage(
-                                               storeFlow, store.copy(
-                                                   enableShizuku = true
-                                               )
-                                           )
-                                       }
-                                   }
-                               } else {
-                                   updateStorage(
-                                       storeFlow, store.copy(
-                                           enableShizuku = false
-                                       )
-                                   )
-                               }
+                    desc = "高级运行模式,能更准确识别界面活动ID",
+                    checked = store.enableShizuku,
+                    onCheckedChange = { enableShizuku ->
+                        if (enableShizuku) {
+                            appScope.launchTry(Dispatchers.IO) {
+                                // 检验方法是否适配, 再允许使用 shizuku
+                                val tasks = newActivityTaskManager()?.safeGetTasks()?.firstOrNull()
+                                if (tasks != null) {
+                                    updateStorage(
+                                        storeFlow, store.copy(
+                                            enableShizuku = true
+                                        )
+                                    )
+                                }
+                            }
+                        } else {
+                            updateStorage(
+                                storeFlow, store.copy(
+                                    enableShizuku = false
+                                )
+                            )
+                        }
 
-                           })
+                    })
                 Divider()
             }
 
@@ -178,25 +187,25 @@ fun DebugPage() {
             // Build.VERSION.SDK_INT < Build.VERSION_CODES.R
             val screenshotRunning by usePollState { ScreenshotService.isRunning() }
             TextSwitch(name = "截屏服务",
-                       desc = "生成快照需要获取屏幕截图,Android11无需开启",
-                       checked = screenshotRunning,
-                       onCheckedChange = appScope.launchAsFn<Boolean> {
-                           if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) {
-                               ToastUtils.showShort("需要通知权限")
-                               return@launchAsFn
-                           }
-                           if (it) {
-                               val mediaProjectionManager =
-                                   context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-                               val activityResult =
-                                   launcher.launchForResult(mediaProjectionManager.createScreenCaptureIntent())
-                               if (activityResult.resultCode == Activity.RESULT_OK && activityResult.data != null) {
-                                   ScreenshotService.start(intent = activityResult.data!!)
-                               }
-                           } else {
-                               ScreenshotService.stop()
-                           }
-                       })
+                desc = "生成快照需要获取屏幕截图,Android11无需开启",
+                checked = screenshotRunning,
+                onCheckedChange = appScope.launchAsFn<Boolean> {
+                    if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+                        ToastUtils.showShort("需要通知权限")
+                        return@launchAsFn
+                    }
+                    if (it) {
+                        val mediaProjectionManager =
+                            context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+                        val activityResult =
+                            launcher.launchForResult(mediaProjectionManager.createScreenCaptureIntent())
+                        if (activityResult.resultCode == Activity.RESULT_OK && activityResult.data != null) {
+                            ScreenshotService.start(intent = activityResult.data!!)
+                        }
+                    } else {
+                        ScreenshotService.stop()
+                    }
+                })
             Divider()
 
 
