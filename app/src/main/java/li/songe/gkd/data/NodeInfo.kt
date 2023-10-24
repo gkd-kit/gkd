@@ -32,7 +32,7 @@ data class NodeInfo(
             quickFind: Boolean?,
         ): Boolean? {
             // 如果父节点是无法查找的, 则所有子节点都是无法查找的
-            // 如果一个节点是可查找的, 则所有兄弟节点都是可查找的(如果满足条件)
+            // 如果一个节点是可查找的, 则所有兄弟节点及其祖先节点都是可查找的(如果满足条件)
             return if (nodeInfo != null) {
                 val viewId = nodeInfo.viewIdResourceName
                 if (viewId != null && viewId.isNotEmpty()) { // id='' 不满足查找

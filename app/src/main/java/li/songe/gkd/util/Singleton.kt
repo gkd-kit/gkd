@@ -20,6 +20,14 @@ object Singleton {
         }
     }
 
+    val keepNullJson by lazy {
+        Json {
+            isLenient = true
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+        }
+    }
+
     val client by lazy {
         HttpClient(OkHttp) {
             install(ContentNegotiation) {

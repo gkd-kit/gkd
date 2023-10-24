@@ -112,7 +112,7 @@ object SnapshotExt {
                 val stream = File(getScreenshotPath(snapshot.id)).outputStream()
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
                 stream.close()
-                val text = Singleton.json.encodeToString(snapshot)
+                val text = Singleton.keepNullJson.encodeToString(snapshot)
                 File(getSnapshotPath(snapshot.id)).writeText(text)
                 DbSet.snapshotDao.insert(snapshot.toSnapshot())
             }
