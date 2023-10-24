@@ -1,8 +1,9 @@
 package li.songe.gkd.ui
 
+import android.content.Intent
+import android.net.Uri
 import android.webkit.URLUtil
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
@@ -44,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -54,12 +54,14 @@ import com.blankj.utilcode.util.ToastUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import li.songe.gkd.data.SubsItem
+import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SubsItemCard
 import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.util.DEFAULT_SUBS_UPDATE_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
+import li.songe.gkd.util.formatTimeAgo
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.subsIdToRawFlow
@@ -73,9 +75,9 @@ val subsNav = BottomNavItem(
     label = "订阅", icon = SafeR.ic_link, route = "subscription"
 )
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SubsManagePage() {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val navController = LocalNavController.current
 
@@ -97,6 +99,10 @@ fun SubsManagePage() {
     var showAddDialog by remember { mutableStateOf(false) }
     var showAddLinkDialog by remember { mutableStateOf(false) }
     var link by remember { mutableStateOf("") }
+
+    val (showSubsRaw, setShowSubsRaw) = remember {
+        mutableStateOf<SubscriptionRaw?>(null)
+    }
 
 
     val refreshing by vm.refreshingFlow.collectAsState()
@@ -141,7 +147,6 @@ fun SubsManagePage() {
                 Icon(
                     imageVector = Icons.Filled.Add,
                     contentDescription = "info",
-                    modifier = Modifier.size(30.dp)
                 )
             }
         },
@@ -208,6 +213,17 @@ fun SubsManagePage() {
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Column {
+                    val subsRawVal = subsIdToRaw[menuSubItemVal.id]
+                    if (subsRawVal != null) {
+                        Text(text = "查看详情", modifier = Modifier
+                            .clickable {
+                                menuSubItem = null
+                                setShowSubsRaw(subsRawVal)
+                            }
+                            .fillMaxWidth()
+                            .padding(16.dp))
+                        Divider()
+                    }
                     if (menuSubItemVal.updateUrl != null) {
                         Text(text = "复制链接", modifier = Modifier
                             .clickable {
@@ -217,8 +233,8 @@ fun SubsManagePage() {
                             }
                             .fillMaxWidth()
                             .padding(16.dp))
+                        Divider()
                     }
-                    Divider()
                     Text(text = "删除订阅", modifier = Modifier
                         .clickable {
                             deleteSubItem = menuSubItemVal
@@ -311,6 +327,45 @@ fun SubsManagePage() {
                 vm.addSubsFromUrl(url = link)
             }) {
                 Text(text = "添加")
+            }
+        })
+    }
+
+    if (showSubsRaw != null) {
+        AlertDialog(onDismissRequest = { setShowSubsRaw(null) }, title = {
+            Text(text = "订阅详情")
+        }, text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier
+            ) {
+                Text(text = "名称: " + showSubsRaw.name)
+                Text(text = "版本: " + showSubsRaw.version)
+                if (showSubsRaw.author != null) {
+                    Text(text = "作者: " + showSubsRaw.author)
+                }
+                val apps = showSubsRaw.apps
+                val groupsSize = apps.sumOf { it.groups.size }
+                if (groupsSize > 0) {
+                    Text(text = "规则: ${apps.size}应用/${groupsSize}规则组")
+                }
+
+                Text(
+                    text = "更新: " + formatTimeAgo(
+                        subItems.find { s -> s.id == showSubsRaw.id }?.mtime ?: 0
+                    )
+                )
+            }
+        }, confirmButton = {
+            if (showSubsRaw.supportUri != null) {
+                TextButton(onClick = {
+                    context.startActivity(
+                        Intent(
+                            Intent.ACTION_VIEW, Uri.parse(showSubsRaw.supportUri)
+                        )
+                    )
+                }) {
+                    Text(text = "问题反馈")
+                }
             }
         })
     }

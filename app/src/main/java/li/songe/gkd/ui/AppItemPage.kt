@@ -12,13 +12,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -31,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -57,7 +58,6 @@ import kotlinx.serialization.encodeToString
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.ui.component.SimpleTopAppBar
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.Singleton
@@ -105,18 +105,27 @@ fun AppItemPage(
     }
 
     Scaffold(topBar = {
-        SimpleTopAppBar(
-            onClickIcon = { navController.popBackStack() },
-            title = if (subsItem == null) "订阅文件缺失" else (appInfoCache[appRaw?.id]?.name
-                ?: appRaw?.name ?: appRaw?.id ?: "")
-        )
+        TopAppBar(navigationIcon = {
+            IconButton(onClick = {
+                navController.popBackStack()
+            }) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = null,
+                )
+            }
+        }, title = {
+            Text(
+                text = if (subsItem == null) "订阅文件缺失" else (appInfoCache[appRaw?.id]?.name
+                    ?: appRaw?.name ?: appRaw?.id ?: "")
+            )
+        }, actions = {})
     }, floatingActionButton = {
         if (editable) {
             FloatingActionButton(onClick = { showAddDlg = true }) {
                 Icon(
                     imageVector = Icons.Filled.Add,
                     contentDescription = "add",
-                    modifier = Modifier.size(30.dp)
                 )
             }
         }
@@ -182,7 +191,6 @@ fun AppItemPage(
                                 Icon(
                                     imageVector = Icons.Default.MoreVert,
                                     contentDescription = "more",
-                                    modifier = Modifier.size(30.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.width(10.dp))
