@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
@@ -44,7 +45,9 @@ class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    val appAndConfigsFlow = combine(appsFlow,
+    val searchStrFlow = MutableStateFlow("")
+
+    private val appAndConfigsFlow = combine(appsFlow,
         appSubsConfigsFlow,
         groupSubsConfigsFlow,
         storeFlow.map(viewModelScope) { s -> s.enableGroup }) { apps, appSubsConfigs, groupSubsConfigs, enableGroup ->
@@ -59,5 +62,18 @@ class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    val filterAppAndConfigsFlow = combine(
+        appAndConfigsFlow, searchStrFlow, appInfoCacheFlow
+    ) { appAndConfigs, searchStr, appInfoCache ->
+        if (searchStr.isBlank()) {
+            appAndConfigs
+        } else {
+            appAndConfigs.filter { a ->
+                (appInfoCache[a.t0.id]?.name ?: a.t0.name ?: a.t0.id).contains(
+                    searchStr
+                )
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
 }
