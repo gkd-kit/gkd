@@ -112,7 +112,6 @@ fun SubsItemCard(
                     Icon(
                         imageVector = Icons.Default.MoreVert,
                         contentDescription = "more",
-                        modifier = Modifier.size(30.dp)
                     )
                 }
             }
