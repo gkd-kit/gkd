@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -102,7 +101,6 @@ fun SubsAppCard(
                 Icon(
                     imageVector = Icons.Default.MoreVert,
                     contentDescription = "more",
-                    modifier = Modifier.size(30.dp)
                 )
             }
             Spacer(modifier = Modifier.width(10.dp))
