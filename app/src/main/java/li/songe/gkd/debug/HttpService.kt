@@ -67,7 +67,7 @@ class HttpService : CompositionService({
         return embeddedServer(Netty, port, configure = { tcpKeepAlive = true }) {
             install(KtorCorsPlugin)
             install(KtorErrorPlugin)
-            install(ContentNegotiation) { json(Singleton.json) }
+            install(ContentNegotiation) { json(Singleton.keepNullJson) }
 
             routing {
                 get("/") { call.respond("hello world") }

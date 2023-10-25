@@ -62,6 +62,7 @@ import li.songe.gkd.data.Snapshot
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.ui.destinations.ImagePreviewPageDestination
+import li.songe.gkd.util.IMPORT_BASE_URL
 import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.LocalPickContentLauncher
@@ -228,24 +229,6 @@ fun SnapshotPage() {
                                 })
                                 .then(modifier)
                         )
-                        Divider()
-                        Text(
-                            text = "分享链接", modifier = Modifier
-                                .clickable(onClick = {
-                                    selectedSnapshot = null
-                                    val intent = Intent().apply {
-                                        action = Intent.ACTION_SEND
-                                        putExtra(Intent.EXTRA_TEXT, url)
-                                        type = "text/plain"
-                                    }
-                                    context.startActivity(
-                                        Intent.createChooser(
-                                            intent, "分享链接"
-                                        )
-                                    )
-                                })
-                                .then(modifier)
-                        )
                     } else {
                         Text(
                             text = "生成链接(需科学上网)", modifier = Modifier
@@ -382,7 +365,7 @@ fun SnapshotPage() {
 
         is LoadStatus.Success -> {
             AlertDialog(title = { Text(text = "上传完成") }, text = {
-                Text(text = "https://gkd-kit.gitee.io/import/" + uploadStatusVal.result.id)
+                Text(text = IMPORT_BASE_URL + uploadStatusVal.result.id)
             }, onDismissRequest = {}, dismissButton = {
                 TextButton(onClick = {
                     vm.uploadStatusFlow.value = null
@@ -391,7 +374,7 @@ fun SnapshotPage() {
                 }
             }, confirmButton = {
                 TextButton(onClick = {
-                    ClipboardUtils.copyText("https://gkd-kit.gitee.io/import/" + uploadStatusVal.result.id)
+                    ClipboardUtils.copyText(IMPORT_BASE_URL + uploadStatusVal.result.id)
                     ToastUtils.showShort("复制成功")
                     vm.uploadStatusFlow.value = null
                 }) {

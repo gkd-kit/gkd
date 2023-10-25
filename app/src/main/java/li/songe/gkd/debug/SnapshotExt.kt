@@ -109,9 +109,9 @@ object SnapshotExt {
 
             withContext(Dispatchers.IO) {
                 File(getSnapshotParentPath(snapshot.id)).apply { if (!exists()) mkdirs() }
-                val stream = File(getScreenshotPath(snapshot.id)).outputStream()
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-                stream.close()
+                File(getScreenshotPath(snapshot.id)).outputStream().use { stream ->
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                }
                 val text = Singleton.keepNullJson.encodeToString(snapshot)
                 File(getSnapshotPath(snapshot.id)).writeText(text)
                 DbSet.snapshotDao.insert(snapshot.toSnapshot())
