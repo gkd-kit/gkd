@@ -23,10 +23,14 @@ data class Rule(
      * 任意一个元素是上次点击过的
      */
     val preRules: Set<Rule> = emptySet(),
-    val cd: Long = defaultMiniCd,
-    val delay: Long = 0,
+    val actionCd: Long = defaultMiniCd,
+    val actionDelay: Long = 0,
     val matchLauncher: Boolean = false,
     val quickFind: Boolean = false,
+
+    val matchDelay: Long?,
+    val matchTime: Long?,
+    val actionMaximum: Int?,
 
     val appId: String,
     val activityIds: Set<String> = emptySet(),
@@ -41,22 +45,30 @@ data class Rule(
     val app: SubscriptionRaw.AppRaw,
     val subsItem: SubsItem,
 ) {
-    var delayTriggerTime = 0L
+    var actionDelayTriggerTime = 0L
     fun triggerDelay() {
         // 触发延迟, 一段时间内此规则不可利用
-        delayTriggerTime = System.currentTimeMillis()
+        actionDelayTriggerTime = System.currentTimeMillis()
     }
 
     private var triggerTime = 0L
     fun trigger() {
         triggerTime = System.currentTimeMillis()
         // 重置延迟点
-        delayTriggerTime = 0L
+        actionDelayTriggerTime = 0L
+        actionCount++
         lastTriggerRuleFlow.value = this
     }
 
-    val active: Boolean
-        get() = triggerTime + cd < System.currentTimeMillis()
+    val notInCd: Boolean
+        get() = triggerTime + actionCd < System.currentTimeMillis()
+
+    var actionCount = 0
+
+    var activityIdChangeTime = 0L
+
+    val matchAllTime = (matchTime ?: 0) + (matchDelay ?: 0)
+
 
     fun query(nodeInfo: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
         if (nodeInfo == null) return null

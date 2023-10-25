@@ -110,22 +110,9 @@ class GkdAbService : CompositionAbService({
                         newAppId, newActivityId
                     )
                 } else {
-                    if (newActivityId.startsWith("android.") || newActivityId.startsWith(
-                            "androidx."
-                        ) || newActivityId.startsWith(
-                            "com.android."
-                        )
-                    ) {
-                        topActivityFlow.value = topActivityFlow.value?.copy(
-                            appId = rightAppId, activityId = shizukuActivityId, sourceId = null
-                        )
-                    } else {
-                        topActivityFlow.value = topActivityFlow.value?.copy(
-                            appId = rightAppId,
-                            activityId = shizukuActivityId,
-                            sourceId = newActivityId
-                        )
-                    }
+                    topActivityFlow.value = topActivityFlow.value?.copy(
+                        appId = rightAppId, activityId = shizukuActivityId,
+                    )
                 }
             }
         }
@@ -169,8 +156,8 @@ class GkdAbService : CompositionAbService({
 
             if (currentRules !== currentRulesFlow.value) break
 
-            // 开始延迟
-            if (rule.delay > 0 && rule.delayTriggerTime == 0L) {
+            // 开始 action 延迟
+            if (rule.actionDelay > 0 && rule.actionDelayTriggerTime == 0L) {
                 rule.triggerDelay()
                 continue
             }
@@ -203,7 +190,6 @@ class GkdAbService : CompositionAbService({
                 }
             }
         }
-
     }
 
     var lastUpdateSubsTime = System.currentTimeMillis()
@@ -252,7 +238,7 @@ class GkdAbService : CompositionAbService({
         lastUpdateSubsTime = System.currentTimeMillis()
     }
 
-    scope.launch {
+    scope.launch(Dispatchers.IO) {
         combine(
             topActivityFlow, currentRulesFlow
         ) { topActivity, currentRules ->
