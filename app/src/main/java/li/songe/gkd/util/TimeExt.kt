@@ -35,3 +35,14 @@ fun Long.format(formatStr: String): String {
     }
     return df.format(this)
 }
+
+fun useThrottle(interval: Long = 1000L): (fn: () -> Unit) -> Unit {
+    var lastTriggerTime = 0L
+    return { fn ->
+        val t = System.currentTimeMillis()
+        if (t - lastTriggerTime > interval) {
+            lastTriggerTime = t
+            fn()
+        }
+    }
+}

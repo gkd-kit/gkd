@@ -10,15 +10,12 @@ import com.ramcosta.composedestinations.spec.Direction
 val LocalNavController =
     compositionLocalOf<NavHostController> { error("not found DestinationsNavigator") }
 
-private var lastNavigateTime = -1L
+private val navThrottle = useThrottle()
 fun NavController.navigate(
     direction: Direction,
     navOptionsBuilder: NavOptionsBuilder.() -> Unit = {},
 ) {
-    val t = System.currentTimeMillis()
-    if (t - lastNavigateTime < 1000) {
-        return
+    navThrottle {
+        navigate(direction.route, navOptionsBuilder)
     }
-    lastNavigateTime = t
-    navigate(direction.route, navOptionsBuilder)
 }
