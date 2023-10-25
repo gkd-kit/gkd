@@ -1,9 +1,7 @@
 package li.songe.gkd.data
 
-import android.os.Parcelable
 import blue.endless.jankson.Jankson
 import kotlinx.parcelize.IgnoredOnParcel
-import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
@@ -11,7 +9,6 @@ import li.songe.gkd.util.Singleton
 import li.songe.selector.Selector
 
 
-@Parcelize
 @Serializable
 data class SubscriptionRaw(
     val id: Long,
@@ -21,98 +18,53 @@ data class SubscriptionRaw(
     val updateUrl: String? = null,
     val supportUri: String? = null,
     val apps: List<AppRaw> = emptyList(),
-) : Parcelable {
-
-    @Parcelize
-    @Serializable
-    data class NumberFilter(
-        val enum: List<Int>? = null,
-        val minimum: Int? = null,
-        val maximum: Int? = null,
-    ) : Parcelable
-
-    @Parcelize
-    @Serializable
-    data class StringFilter(
-        val enum: List<String>? = null,
-        val minLength: Int? = null,
-        val maxLength: Int? = null,
-        val pattern: String? = null,
-    ) : Parcelable {
-
-        @IgnoredOnParcel
-        val patternRegex by lazy {
-            if (pattern != null) try {
-                Regex(pattern)
-            } catch (e: Exception) {
-                null
-            } else null
-        }
-    }
-
-    @Parcelize
-    @Serializable
-    data class AppFilter(
-        val name: StringFilter? = null,
-        val versionName: StringFilter? = null,
-        val versionCode: NumberFilter? = null,
-    ) : Parcelable
-
-    @Parcelize
-    @Serializable
-    data class DeviceFilter(
-        val device: StringFilter? = null,
-        val model: StringFilter? = null,
-        val manufacturer: StringFilter? = null,
-        val brand: StringFilter? = null,
-        val sdkInt: NumberFilter? = null,
-        val release: StringFilter? = null,
-    ) : Parcelable
+) {
 
     interface CommonProps {
         val activityIds: List<String>?
         val excludeActivityIds: List<String>?
-        val cd: Long?
-        val delay: Long?
+        val actionCd: Long?
+        val actionDelay: Long?
         val matchLauncher: Boolean?
         val quickFind: Boolean?
-        val appFilter: AppFilter?
-        val deviceFilter: DeviceFilter?
+        val matchDelay: Long?
+        val matchTime: Long?
+        val actionMaximum: Int?
     }
 
-    @Parcelize
     @Serializable
     data class AppRaw(
         val id: String,
         val name: String? = null,
-        override val cd: Long? = null,
-        override val delay: Long? = null,
+        override val actionCd: Long? = null,
+        override val actionDelay: Long? = null,
         override val matchLauncher: Boolean? = null,
         override val quickFind: Boolean? = null,
+        override val actionMaximum: Int?,
+        override val matchDelay: Long?,
+        override val matchTime: Long?,
         override val activityIds: List<String>? = null,
         override val excludeActivityIds: List<String>? = null,
         val groups: List<GroupRaw> = emptyList(),
-        override val appFilter: AppFilter? = null,
-        override val deviceFilter: DeviceFilter? = null,
-    ) : Parcelable, CommonProps
+    ) : CommonProps
 
-    @Parcelize
     @Serializable
     data class GroupRaw(
         val name: String,
         val desc: String? = null,
         val enable: Boolean? = null,
         val key: Int,
-        override val cd: Long? = null,
-        override val delay: Long? = null,
+        override val actionCd: Long? = null,
+        override val actionDelay: Long? = null,
         override val matchLauncher: Boolean? = null,
         override val quickFind: Boolean? = null,
+        override val actionMaximum: Int?,
+        override val matchDelay: Long?,
+        override val matchTime: Long?,
         override val activityIds: List<String>? = null,
         override val excludeActivityIds: List<String>? = null,
         val rules: List<RuleRaw> = emptyList(),
-        override val appFilter: AppFilter? = null,
-        override val deviceFilter: DeviceFilter? = null,
-    ) : Parcelable, CommonProps {
+    ) : CommonProps {
 
         @IgnoredOnParcel
         val valid by lazy {
@@ -126,24 +78,24 @@ data class SubscriptionRaw(
         }
     }
 
-    @Parcelize
     @Serializable
     data class RuleRaw(
         val name: String? = null,
         val key: Int? = null,
         val preKeys: List<Int> = emptyList(),
         val action: String? = null,
-        override val cd: Long? = null,
-        override val delay: Long? = null,
+        override val actionCd: Long? = null,
+        override val actionDelay: Long? = null,
         override val matchLauncher: Boolean? = null,
         override val quickFind: Boolean? = null,
+        override val actionMaximum: Int?,
+        override val matchDelay: Long?,
+        override val matchTime: Long?,
         override val activityIds: List<String>? = null,
         override val excludeActivityIds: List<String>? = null,
         val matches: List<String> = emptyList(),
         val excludeMatches: List<String> = emptyList(),
-        override val appFilter: AppFilter? = null,
-        override val deviceFilter: DeviceFilter? = null,
-    ) : Parcelable, CommonProps
+    ) : CommonProps
 
     companion object {
 
@@ -233,8 +185,8 @@ data class SubscriptionRaw(
             return RuleRaw(
                 activityIds = getStringIArray(rulesJson, "activityIds"),
                 excludeActivityIds = getStringIArray(rulesJson, "excludeActivityIds"),
-                cd = getLong(rulesJson, "cd"),
-                delay = getLong(rulesJson, "delay"),
+                actionCd = getLong(rulesJson, "actionCd") ?: getLong(rulesJson, "cd"),
+                actionDelay = getLong(rulesJson, "actionDelay") ?: getLong(rulesJson, "delay"),
                 matches = (getStringIArray(
                     rulesJson, "matches"
                 ) ?: emptyList()),
@@ -244,15 +196,12 @@ data class SubscriptionRaw(
                 key = getInt(rulesJson, "key"),
                 name = getString(rulesJson, "name"),
                 preKeys = getIntIArray(rulesJson, "preKeys") ?: emptyList(),
-                deviceFilter = rulesJson["deviceFilter"]?.let {
-                    Singleton.json.decodeFromJsonElement(it)
-                },
-                appFilter = rulesJson["appFilter"]?.let {
-                    Singleton.json.decodeFromJsonElement(it)
-                },
                 action = getString(rulesJson, "action"),
                 matchLauncher = getBoolean(rulesJson, "matchLauncher"),
                 quickFind = getBoolean(rulesJson, "quickFind"),
+                actionMaximum = getInt(rulesJson, "actionMaximum"),
+                matchDelay = getLong(rulesJson, "matchDelay"),
+                matchTime = getLong(rulesJson, "matchTime")
             )
         }
 
@@ -266,8 +215,8 @@ data class SubscriptionRaw(
             return GroupRaw(
                 activityIds = getStringIArray(groupsJson, "activityIds"),
                 excludeActivityIds = getStringIArray(groupsJson, "excludeActivityIds"),
-                cd = getLong(groupsJson, "cd"),
-                delay = getLong(groupsJson, "delay"),
+                actionCd = getLong(groupsJson, "actionCd") ?: getLong(groupsJson, "cd"),
+                actionDelay = getLong(groupsJson, "actionDelay") ?: getLong(groupsJson, "delay"),
                 name = getString(groupsJson, "name") ?: error("miss group name"),
                 desc = getString(groupsJson, "desc"),
                 enable = getBoolean(groupsJson, "enable"),
@@ -279,14 +228,11 @@ data class SubscriptionRaw(
                 }.map {
                     jsonToRuleRaw(it)
                 },
-                deviceFilter = groupsJson["deviceFilter"]?.let {
-                    Singleton.json.decodeFromJsonElement(it)
-                },
-                appFilter = groupsJson["appFilter"]?.let {
-                    Singleton.json.decodeFromJsonElement(it)
-                },
                 matchLauncher = getBoolean(groupsJson, "matchLauncher"),
                 quickFind = getBoolean(groupsJson, "quickFind"),
+                actionMaximum = getInt(groupsJson, "actionMaximum"),
+                matchDelay = getLong(groupsJson, "matchDelay"),
+                matchTime = getLong(groupsJson, "matchTime")
             )
         }
 
@@ -294,8 +240,8 @@ data class SubscriptionRaw(
             return AppRaw(
                 activityIds = getStringIArray(appsJson, "activityIds"),
                 excludeActivityIds = getStringIArray(appsJson, "excludeActivityIds"),
-                cd = getLong(appsJson, "cd"),
-                delay = getLong(appsJson, "delay"),
+                actionCd = getLong(appsJson, "actionCd") ?: getLong(appsJson, "cd"),
+                actionDelay = getLong(appsJson, "actionDelay") ?: getLong(appsJson, "delay"),
                 id = getString(appsJson, "id") ?: error("miss subscription.apps[$appIndex].id"),
                 name = getString(appsJson, "name"),
                 groups = (when (val groupsJson = appsJson["groups"]) {
@@ -305,14 +251,11 @@ data class SubscriptionRaw(
                 }).mapIndexed { index, jsonElement ->
                     jsonToGroupRaw(jsonElement, index)
                 },
-                deviceFilter = appsJson["deviceFilter"]?.let {
-                    Singleton.json.decodeFromJsonElement(it)
-                },
-                appFilter = appsJson["appFilter"]?.let {
-                    Singleton.json.decodeFromJsonElement(it)
-                },
                 matchLauncher = getBoolean(appsJson, "matchLauncher"),
                 quickFind = getBoolean(appsJson, "quickFind"),
+                actionMaximum = getInt(appsJson, "actionMaximum"),
+                matchDelay = getLong(appsJson, "matchDelay"),
+                matchTime = getLong(appsJson, "matchTime")
             )
         }
 

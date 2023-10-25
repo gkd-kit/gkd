@@ -6,47 +6,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.appScope
-import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.data.Rule
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubsItem
-import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.selector.Selector
-
-
-fun SubscriptionRaw.NumberFilter?.match(value: Int?): Boolean {
-    value ?: return true
-    this ?: return true
-    enum?.apply {
-        return contains(value)
-    }
-    if (minimum != null && minimum > value) {
-        return false
-    }
-    if (maximum != null && maximum < value) {
-        return false
-    }
-    return true
-}
-
-fun SubscriptionRaw.StringFilter?.match(value: String?): Boolean {
-    value ?: return true
-    this ?: return true
-    enum?.apply {
-        return contains(value)
-    }
-    if (minLength != null && minLength > value.length) {
-        return false
-    }
-    if (maxLength != null && maxLength < value.length) {
-        return false
-    }
-    patternRegex?.apply {
-        return match(value)
-    }
-    return true
-}
 
 val subsItemsFlow by lazy {
     DbSet.subsItemDao.query().stateIn(appScope, SharingStarted.Eagerly, emptyList())
@@ -102,43 +66,12 @@ val appIdToRulesFlow by lazy {
                 }.forEach { groupRaw ->
                     val ruleGroupList = mutableListOf<Rule>()
                     groupRaw.rules.forEachIndexed { ruleIndex, ruleRaw ->
-
-                        // 根据设备信息筛选
-                        val deviceFilter =
-                            ruleRaw.deviceFilter ?: groupRaw.deviceFilter ?: appRaw.deviceFilter
-                        if (deviceFilter != null) {
-                            val deviceInfo = DeviceInfo.instance
-                            if (deviceFilter.device?.match(deviceInfo.device) == false ||
-
-                                deviceFilter.model?.match(deviceInfo.model) == false ||
-
-                                deviceFilter.manufacturer?.match(deviceInfo.manufacturer) == false ||
-
-                                deviceFilter.brand?.match(deviceInfo.brand) == false ||
-
-                                deviceFilter.sdkInt?.match(deviceInfo.sdkInt) == false ||
-
-                                deviceFilter.release?.match(deviceInfo.release) == false
-                            ) return@forEachIndexed
-                        }
-
-                        // 根据当前设备安装的 app 信息筛选
-                        val appInfo = appInfoCache[appRaw.id]
-                        val appFilter = ruleRaw.appFilter ?: groupRaw.appFilter ?: appRaw.appFilter
-                        if (appFilter != null && appInfo != null) {
-                            if (appFilter.name?.match(appInfo.name) == false ||
-
-                                appFilter.versionCode?.match(appInfo.versionCode) == false ||
-
-                                appFilter.versionName?.match(appInfo.versionName) == false
-                            ) return@forEachIndexed
-                        }
-
-
-                        val cd = Rule.defaultMiniCd.coerceAtLeast(
-                            ruleRaw.cd ?: groupRaw.cd ?: appRaw.cd ?: Rule.defaultMiniCd
+                        val actionCd = Rule.defaultMiniCd.coerceAtLeast(
+                            ruleRaw.actionCd ?: groupRaw.actionCd ?: appRaw.actionCd
+                            ?: Rule.defaultMiniCd
                         )
-                        val delay = ruleRaw.delay ?: groupRaw.delay ?: appRaw.delay ?: 0
+                        val delay =
+                            ruleRaw.actionDelay ?: groupRaw.actionDelay ?: appRaw.actionDelay ?: 0
                         val activityIds =
                             (ruleRaw.activityIds ?: groupRaw.activityIds ?: appRaw.activityIds
                             ?: emptyList()).map { activityId ->
@@ -165,12 +98,18 @@ val appIdToRulesFlow by lazy {
                         val quickFind =
                             ruleRaw.quickFind ?: groupRaw.quickFind ?: appRaw.quickFind ?: false
 
+                        val matchDelay =
+                            ruleRaw.matchDelay ?: groupRaw.matchDelay ?: appRaw.matchDelay
+                        val matchTime = ruleRaw.matchTime ?: groupRaw.matchTime ?: appRaw.matchTime
+                        val actionMaximum =
+                            ruleRaw.actionMaximum ?: groupRaw.actionMaximum ?: appRaw.actionMaximum
+
                         ruleGroupList.add(
                             Rule(
                                 matchLauncher = matchLauncher,
                                 quickFind = quickFind,
-                                cd = cd,
-                                delay = delay,
+                                actionCd = actionCd,
+                                actionDelay = delay,
                                 index = ruleIndex,
                                 matches = ruleRaw.matches.map { Selector.parse(it) },
                                 excludeMatches = ruleRaw.excludeMatches.map {
@@ -178,6 +117,9 @@ val appIdToRulesFlow by lazy {
                                         it
                                     )
                                 },
+                                matchDelay = matchDelay,
+                                matchTime = matchTime,
+                                actionMaximum = actionMaximum,
                                 appId = appRaw.id,
                                 activityIds = activityIds,
                                 excludeActivityIds = excludeActivityIds,
