@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.os.Build
+import android.util.Log
 import android.view.Display
 import android.view.View
 import android.view.WindowManager
@@ -72,7 +73,6 @@ class GkdAbService : CompositionAbService({
 
     val safeGetTasksFc = useSafeGetTasksFc(scope)
     fun getActivityIdByShizuku(): String? {
-        if (!storeFlow.value.enableShizuku) return null
         return safeGetTasksFc()?.lastOrNull()?.topActivity?.className
     }
 
@@ -80,7 +80,7 @@ class GkdAbService : CompositionAbService({
         appId: String,
         activityId: String,
     ): Boolean {
-        return activityId.startsWith(appId) || (try {
+        val r = (try {
             packageManager.getActivityInfo(
                 ComponentName(
                     appId, activityId
@@ -89,32 +89,47 @@ class GkdAbService : CompositionAbService({
         } catch (e: PackageManager.NameNotFoundException) {
             null
         } != null)
+        Log.d("isActivity", "$appId, $activityId, $r")
+        return r
     }
 
+    var lastTriggerShizukuTime = 0L
     onAccessibilityEvent { event -> // 根据事件获取 activityId, 概率不准确
         if (event == null) return@onAccessibilityEvent
-
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
             val newAppId = event.packageName?.toString() ?: return@onAccessibilityEvent
             val newActivityId = event.className?.toString() ?: return@onAccessibilityEvent
             val rightAppId =
                 safeActiveWindow?.packageName?.toString() ?: return@onAccessibilityEvent
-            val shizukuActivityId = getActivityIdByShizuku() ?: topActivityFlow.value?.activityId
-            if (rightAppId != newAppId) {
-                topActivityFlow.value = TopActivity(
-                    appId = rightAppId, activityId = shizukuActivityId
-                )
-            } else {
+            if (rightAppId != newAppId) return@onAccessibilityEvent
+
+            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+                // tv.danmaku.bili, com.miui.home, com.miui.home.launcher.Launcher
                 if (isActivity(newAppId, newActivityId)) {
                     topActivityFlow.value = TopActivity(
                         newAppId, newActivityId
                     )
-                } else {
-                    topActivityFlow.value = topActivityFlow.value?.copy(
-                        appId = rightAppId, activityId = shizukuActivityId,
-                    )
+                    activityChangeTimeFlow.value = System.currentTimeMillis()
+                    return@onAccessibilityEvent
                 }
             }
+            lastTriggerShizukuTime =
+                if (newActivityId.startsWith("android.view.") || newActivityId.startsWith("android.widget.")) {
+                    val t = System.currentTimeMillis()
+                    if (t - lastTriggerShizukuTime < 100) {
+                        return@onAccessibilityEvent
+                    }
+                    t
+                } else {
+                    0L
+                }
+            val shizukuActivityId = getActivityIdByShizuku() ?: return@onAccessibilityEvent
+            if (shizukuActivityId == newActivityId) {
+                activityChangeTimeFlow.value = System.currentTimeMillis()
+            }
+            topActivityFlow.value = TopActivity(
+                rightAppId, shizukuActivityId
+            )
         }
     }
 
@@ -138,27 +153,42 @@ class GkdAbService : CompositionAbService({
         }
 
         val rightAppId = safeActiveWindow?.packageName?.toString()
-        if (rightAppId != null && rightAppId != topActivityFlow.value?.appId) {
-            topActivityFlow.value = topActivityFlow.value?.copy(
-                appId = rightAppId,
-                activityId = getActivityIdByShizuku() ?: topActivityFlow.value?.activityId
-            )
+        if (rightAppId != null) {
+            if (rightAppId != topActivityFlow.value?.appId) {
+                topActivityFlow.value = topActivityFlow.value?.copy(
+                    appId = rightAppId,
+                    activityId = getActivityIdByShizuku() ?: topActivityFlow.value?.activityId
+                )
+                return@launchWhile
+            } else if (topActivityFlow.value?.activityId == null) {
+                val rightId = getActivityIdByShizuku()
+                if (rightId != null) {
+                    topActivityFlow.value = topActivityFlow.value?.copy(
+                        appId = rightAppId, activityId = rightId
+                    )
+                    return@launchWhile
+                }
+            }
         }
 
         if (!storeFlow.value.enableService) return@launchWhile
 
         val currentRules = currentRulesFlow.value
+        val topActivity = topActivityFlow.value
         for (rule in currentRules) {
             if (!isAvailableRule(rule)) continue
             val nodeVal = safeActiveWindow ?: continue
             val target = rule.query(nodeVal) ?: continue
 
-
-            if (currentRules !== currentRulesFlow.value) break
+            if (currentRules !== currentRulesFlow.value || topActivity != topActivityFlow.value) break
 
             // 开始 action 延迟
             if (rule.actionDelay > 0 && rule.actionDelayTriggerTime == 0L) {
                 rule.triggerDelay()
+                LogUtils.d(
+                    "触发延迟",
+                    "subsId:${rule.subsItem.id}, gKey=${rule.group.key}, gName:${rule.group.name}, ruleIndex:${rule.index}, rKey:${rule.key}, delay:${rule.actionDelay}"
+                )
                 continue
             }
 
@@ -245,9 +275,11 @@ class GkdAbService : CompositionAbService({
             topActivity to currentRules
         }.debounce(300).collect { (topActivity, currentRules) ->
             if (storeFlow.value.enableService) {
-                LogUtils.d(topActivity,
-                    *currentRules.map { r -> "subsId:${r.subsItem.id}, subsVersion:${subsIdToRawFlow.value[r.subsItem.id]?.version} gKey=${r.group.key}, gName:${r.group.name}, ruleIndex:${r.index}, rKey:${r.key}" }
-                        .toTypedArray())
+                LogUtils.d(topActivity, *currentRules.map { r ->
+                    "subsId:${r.subsItem.id}, gKey=${r.group.key}, gName:${r.group.name}, ruleIndex:${r.index}, rKey:${r.key}, active:${
+                        isAvailableRule(r)
+                    }"
+                }.toTypedArray())
             } else {
                 LogUtils.d(
                     topActivity

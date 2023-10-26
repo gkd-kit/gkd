@@ -97,7 +97,7 @@ fun CanOnDestroy.useSafeGetTasksFc(scope: CoroutineScope): () -> List<ActivityMa
         shizukuGrantFlow,
         storeFlow.map(scope) { s -> s.enableShizuku }) { shizukuAlive, shizukuGrant, enableShizuku ->
         if (enableShizuku && shizukuAlive && shizukuGrant) newActivityTaskManager() else null
-    }.flowOn(Dispatchers.IO).stateIn(scope, SharingStarted.Lazily, null)
+    }.flowOn(Dispatchers.IO).stateIn(scope, SharingStarted.Eagerly, null)
     return {
         activityTaskManagerFlow.value?.safeGetTasks()
     }
