@@ -30,6 +30,7 @@ data class SubscriptionRaw(
         val matchDelay: Long?
         val matchTime: Long?
         val actionMaximum: Int?
+        val resetMatch: String?
     }
 
     @Serializable
@@ -43,6 +44,7 @@ data class SubscriptionRaw(
         override val actionMaximum: Int?,
         override val matchDelay: Long?,
         override val matchTime: Long?,
+        override val resetMatch: String?,
         override val activityIds: List<String>? = null,
         override val excludeActivityIds: List<String>? = null,
         val groups: List<GroupRaw> = emptyList(),
@@ -61,6 +63,7 @@ data class SubscriptionRaw(
         override val actionMaximum: Int?,
         override val matchDelay: Long?,
         override val matchTime: Long?,
+        override val resetMatch: String?,
         override val activityIds: List<String>? = null,
         override val excludeActivityIds: List<String>? = null,
         val rules: List<RuleRaw> = emptyList(),
@@ -91,6 +94,7 @@ data class SubscriptionRaw(
         override val actionMaximum: Int?,
         override val matchDelay: Long?,
         override val matchTime: Long?,
+        override val resetMatch: String?,
         override val activityIds: List<String>? = null,
         override val excludeActivityIds: List<String>? = null,
         val matches: List<String> = emptyList(),
@@ -201,7 +205,8 @@ data class SubscriptionRaw(
                 quickFind = getBoolean(rulesJson, "quickFind"),
                 actionMaximum = getInt(rulesJson, "actionMaximum"),
                 matchDelay = getLong(rulesJson, "matchDelay"),
-                matchTime = getLong(rulesJson, "matchTime")
+                matchTime = getLong(rulesJson, "matchTime"),
+                resetMatch = getString(rulesJson, "resetMatch")
             )
         }
 
@@ -232,7 +237,8 @@ data class SubscriptionRaw(
                 quickFind = getBoolean(groupsJson, "quickFind"),
                 actionMaximum = getInt(groupsJson, "actionMaximum"),
                 matchDelay = getLong(groupsJson, "matchDelay"),
-                matchTime = getLong(groupsJson, "matchTime")
+                matchTime = getLong(groupsJson, "matchTime"),
+                resetMatch = getString(groupsJson, "resetMatch")
             )
         }
 
@@ -255,7 +261,8 @@ data class SubscriptionRaw(
                 quickFind = getBoolean(appsJson, "quickFind"),
                 actionMaximum = getInt(appsJson, "actionMaximum"),
                 matchDelay = getLong(appsJson, "matchDelay"),
-                matchTime = getLong(appsJson, "matchTime")
+                matchTime = getLong(appsJson, "matchTime"),
+                resetMatch = getString(appsJson, "resetMatch")
             )
         }
 

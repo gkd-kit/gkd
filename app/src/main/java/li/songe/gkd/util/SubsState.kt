@@ -66,12 +66,6 @@ val appIdToRulesFlow by lazy {
                 }.forEach { groupRaw ->
                     val ruleGroupList = mutableListOf<Rule>()
                     groupRaw.rules.forEachIndexed { ruleIndex, ruleRaw ->
-                        val actionCd = Rule.defaultMiniCd.coerceAtLeast(
-                            ruleRaw.actionCd ?: groupRaw.actionCd ?: appRaw.actionCd
-                            ?: Rule.defaultMiniCd
-                        )
-                        val delay =
-                            ruleRaw.actionDelay ?: groupRaw.actionDelay ?: appRaw.actionDelay ?: 0
                         val activityIds =
                             (ruleRaw.activityIds ?: groupRaw.activityIds ?: appRaw.activityIds
                             ?: emptyList()).map { activityId ->
@@ -103,13 +97,21 @@ val appIdToRulesFlow by lazy {
                         val matchTime = ruleRaw.matchTime ?: groupRaw.matchTime ?: appRaw.matchTime
                         val actionMaximum =
                             ruleRaw.actionMaximum ?: groupRaw.actionMaximum ?: appRaw.actionMaximum
+                        val resetMatch =
+                            ruleRaw.resetMatch ?: groupRaw.resetMatch ?: appRaw.resetMatch
+                        val actionCd = Rule.defaultMiniCd.coerceAtLeast(
+                            ruleRaw.actionCd ?: groupRaw.actionCd ?: appRaw.actionCd
+                            ?: Rule.defaultMiniCd
+                        )
+                        val actionDelay =
+                            ruleRaw.actionDelay ?: groupRaw.actionDelay ?: appRaw.actionDelay ?: 0
 
                         ruleGroupList.add(
                             Rule(
                                 matchLauncher = matchLauncher,
                                 quickFind = quickFind,
                                 actionCd = actionCd,
-                                actionDelay = delay,
+                                actionDelay = actionDelay,
                                 index = ruleIndex,
                                 matches = ruleRaw.matches.map { Selector.parse(it) },
                                 excludeMatches = ruleRaw.excludeMatches.map {
@@ -128,7 +130,8 @@ val appIdToRulesFlow by lazy {
                                 rule = ruleRaw,
                                 group = groupRaw,
                                 app = appRaw,
-                                subsItem = subsItem
+                                subsItem = subsItem,
+                                resetMatch = resetMatch,
                             )
                         )
                     }

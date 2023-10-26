@@ -31,6 +31,7 @@ data class Rule(
     val matchDelay: Long?,
     val matchTime: Long?,
     val actionMaximum: Int?,
+    val resetMatch: String?,
 
     val appId: String,
     val activityIds: Set<String> = emptySet(),
@@ -51,23 +52,26 @@ data class Rule(
         actionDelayTriggerTime = System.currentTimeMillis()
     }
 
-    private var triggerTime = 0L
+    var actionTriggerTime = 0L
     fun trigger() {
-        triggerTime = System.currentTimeMillis()
+        actionTriggerTime = System.currentTimeMillis()
         // 重置延迟点
         actionDelayTriggerTime = 0L
         actionCount++
         lastTriggerRuleFlow.value = this
     }
 
-    val notInCd: Boolean
-        get() = triggerTime + actionCd < System.currentTimeMillis()
-
     var actionCount = 0
 
-    var activityIdChangeTime = 0L
+    var matchChangeTime = 0L
 
     val matchAllTime = (matchTime ?: 0) + (matchDelay ?: 0)
+
+    val resetMatchTypeWhenActivity = when (resetMatch) {
+        "app" -> false
+        "activity" -> true
+        else -> true
+    }
 
 
     fun query(nodeInfo: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
