@@ -1,6 +1,5 @@
 package li.songe.gkd.util
 
-import android.os.Parcelable
 import android.util.Log
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -26,7 +25,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 import li.songe.gkd.BuildConfig
 import li.songe.gkd.appScope
@@ -34,16 +32,21 @@ import java.io.File
 import java.net.URI
 
 @Serializable
-@Parcelize
 data class NewVersion(
     val versionCode: Int,
     val versionName: String,
     val changelog: String,
     val downloadUrl: String,
+    val versionLogs: List<VersionLog> = emptyList(),
     val fileSize: Long? = null,
-) : Parcelable
+)
 
-private const val UPDATE_URL = "https://registry.npmmirror.com/@gkd-kit/app/latest/files/index.json"
+@Serializable
+data class VersionLog(
+    val name: String,
+    val code: Int,
+    val desc: String,
+)
 
 val checkUpdatingFlow by lazy { MutableStateFlow(false) }
 val newVersionFlow by lazy { MutableStateFlow<NewVersion?>(null) }
@@ -54,7 +57,8 @@ suspend fun checkUpdate(): NewVersion? {
     try {
         val newVersion = Singleton.client.get(UPDATE_URL).body<NewVersion>()
         if (newVersion.versionCode > BuildConfig.VERSION_CODE) {
-            newVersionFlow.value = newVersion
+            newVersionFlow.value =
+                newVersion.copy(versionLogs = newVersion.versionLogs.takeWhile { v -> v.code > BuildConfig.VERSION_CODE })
             return newVersion
         } else {
             Log.d("Upgrade", "no new version")
@@ -106,16 +110,23 @@ fun startDownload(newVersion: NewVersion) {
 fun UpgradeDialog() {
     val newVersion by newVersionFlow.collectAsState()
     newVersion?.let { newVersionVal ->
+
         AlertDialog(title = {
             Text(text = "检测到新版本")
         }, text = {
-            Text(
-                text = "v${BuildConfig.VERSION_NAME} -> v${newVersionVal.versionName}\n\n${newVersionVal.changelog}\n${newVersionVal.changelog}".trimEnd(),
+            Text(text = "v${BuildConfig.VERSION_NAME} -> v${newVersionVal.versionName}\n\n${
+                if (newVersionVal.versionLogs.size > 1) {
+                    newVersionVal.versionLogs.joinToString("\n\n") { v -> "v${v.name}\n${v.desc}" }
+                } else if (newVersionVal.versionLogs.isNotEmpty()) {
+                    newVersionVal.versionLogs.first().desc
+                } else {
+                    ""
+                }
+            }".trimEnd(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 400.dp)
-                    .verticalScroll(rememberScrollState())
-            )
+                    .verticalScroll(rememberScrollState()))
 
         }, onDismissRequest = { }, confirmButton = {
             TextButton(onClick = {
@@ -189,18 +200,6 @@ fun UpgradeDialog() {
                             Text(text = "安装")
                         }
                     })
-            }
-        }
-    }
-}
-
-fun initUpgrade() {
-    if (storeFlow.value.autoCheckAppUpdate && isMainProcess) {
-        appScope.launch {
-            try {
-                checkUpdate()
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
         }
     }

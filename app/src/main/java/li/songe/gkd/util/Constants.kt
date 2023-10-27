@@ -9,6 +9,8 @@ const val DEFAULT_SUBS_UPDATE_URL =
 
 const val IMPORT_BASE_URL = "https://i.gkd.li/import/"
 
+const val UPDATE_URL = "https://registry.npmmirror.com/@gkd-kit/app/latest/files/index.json"
+
 val safeRemoteBaseUrls = arrayOf(
     "https://registry.npmmirror.com/@gkd-kit/",
     "https://cdn.jsdelivr.net/npm/@gkd-kit/",
