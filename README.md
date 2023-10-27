@@ -5,7 +5,7 @@
 ## 安装
 
 - [releases](https://github.com/gkd-kit/gkd/releases)
-- [123云盘](https://www.123pan.com/s/IRA1jv-IJU9A.html)
+- [123 云盘](https://www.123pan.com/s/IRA1jv-IJU9A.html)
 
 ## 功能
 
@@ -15,10 +15,10 @@
 - 点击跳过任意开屏广告/点击关闭应用内部任意弹窗广告, 如关闭百度贴吧帖子广告卡片/知乎回答底部推荐广告卡片
 - 一些快捷操作, 如微信电脑登录自动同意/微信扫描登录自动同意/微信自动领取红包
 
-|                                                                                               |                                                                                               |                                                                                               |                                                                                               |
-| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| ![image](https://github.com/gkd-kit/gkd/assets/38517192/65df91a7-fe9a-4701-914b-2b52723b01c9) | ![image](https://github.com/gkd-kit/gkd/assets/38517192/29b7c72a-b19a-4806-87e2-ece7719688f6) | ![image](https://github.com/gkd-kit/gkd/assets/38517192/b5764948-8b79-4230-b37b-5427112d48ce) | ![image](https://github.com/gkd-kit/gkd/assets/38517192/ebded716-ce90-47eb-bae1-7720697a2a14) |
-| ![image](https://github.com/gkd-kit/gkd/assets/38517192/2cc4f2e9-9241-4f49-aec6-9f7b43ea61c0) | ![image](https://github.com/gkd-kit/gkd/assets/38517192/ba30ef9a-83ae-4be2-8802-e150aacaf140) | ![image](https://github.com/gkd-kit/gkd/assets/38517192/ac41a57e-a498-46d1-a2cc-369103f8896a) | ![image](https://github.com/gkd-kit/gkd/assets/38517192/ca3323c2-436d-4571-bc5d-e72e5b7fcf6f) |
+|                                                                                             |                                                                                             |                                                                                             |                                                                                             |
+|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| ![img](https://github.com/gkd-kit/gkd/assets/38517192/be0c270e-7074-42c1-8397-23ecf8a71a8b) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/396bb5d6-fa97-48f8-bcaa-d250ba5a597f) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/98024866-7d4c-4034-9993-78fb2ad975c0) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/c20ba677-d801-439c-9813-62442ca45222) |
+| ![img](https://github.com/gkd-kit/gkd/assets/38517192/d941c828-ea5c-4f65-9feb-bda40a2a5569) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/821024c8-e852-4417-bc64-126a1c766971) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/b619e7c6-6c05-4a3d-b9b0-ec51371f5d18) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/85b31e8f-5580-4650-b5a8-132a159a762a) |
 
 ## 效果
 
