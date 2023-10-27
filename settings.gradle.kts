@@ -38,16 +38,21 @@ dependencyResolutionManagement {
             version("android.buildToolsVersion", "34.0.0")
             version("android.minSdk", "26")
 
-            library("android.gradle", "com.android.tools.build:gradle:8.1.0")
-            plugin("android.library", "com.android.library").version("8.1.0")
-            plugin("android.application", "com.android.application").version("8.1.0")
+            library("android.gradle", "com.android.tools.build:gradle:8.1.2")
+            plugin("android.library", "com.android.library").version("8.1.2")
+            plugin("android.application", "com.android.application").version("8.1.2")
 
             // 当前 android 项目 kotlin 的版本
-            library("kotlin.gradle.plugin", "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-            library("kotlin.serialization", "org.jetbrains.kotlin:kotlin-serialization:$kotlinVersion")
             library(
-                "kotlin.stdlib.common",
-                "org.jetbrains.kotlin:kotlin-stdlib-common:$kotlinVersion"
+                "kotlin.gradle.plugin",
+                "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+            )
+            library(
+                "kotlin.serialization",
+                "org.jetbrains.kotlin:kotlin-serialization:$kotlinVersion"
+            )
+            library(
+                "kotlin.stdlib.common", "org.jetbrains.kotlin:kotlin-stdlib-common:$kotlinVersion"
             )
             plugin("kotlin.serialization", "org.jetbrains.kotlin.plugin.serialization").version(
                 kotlinVersion
@@ -64,24 +69,26 @@ dependencyResolutionManagement {
             // compose 编译器的版本, 需要注意它与 compose 的版本没有关联
             // https://mvnrepository.com/artifact/androidx.compose.compiler/compiler
             version("compose.compilerVersion", "1.5.3")
-            library("compose.ui", "androidx.compose.ui:ui:1.5.3")
-            library("compose.preview", "androidx.compose.ui:ui-tooling-preview:1.5.3")
-            library("compose.tooling", "androidx.compose.ui:ui-tooling:1.5.3")
-            library("compose.junit4", "androidx.compose.ui:ui-test-junit4:1.5.3")
+            val composeVersion = "1.5.4"
+            library("compose.ui", "androidx.compose.ui:ui:$composeVersion")
+            library("compose.preview", "androidx.compose.ui:ui-tooling-preview:$composeVersion")
+            library("compose.tooling", "androidx.compose.ui:ui-tooling:$composeVersion")
+            library("compose.junit4", "androidx.compose.ui:ui-test-junit4:$composeVersion")
             library("compose.material3", "androidx.compose.material3:material3:1.1.2")
             library("compose.activity", "androidx.activity:activity-compose:1.7.2")
 
             // https://github.com/Tencent/MMKV/blob/master/README_CN.md
-            library("tencent.mmkv", "com.tencent:mmkv:1.2.13")
+            library("tencent.mmkv", "com.tencent:mmkv:1.3.1")
             // https://bugly.qq.com/docs/user-guide/instruction-manual-android/
-            library("tencent.bugly", "com.tencent.bugly:crashreport:4.0.4")
+            library("tencent.bugly", "com.tencent.bugly:crashreport:4.1.9.2")
 
             // https://github.com/RikkaApps/HiddenApiRefinePlugin
-            plugin("rikka.refine", "dev.rikka.tools.refine").version("4.3.0")
-            library("rikka.gradle", "dev.rikka.tools.refine:gradle-plugin:4.3.0")
-            library("rikka.processor", "dev.rikka.tools.refine:annotation-processor:4.3.0")
-            library("rikka.annotation", "dev.rikka.tools.refine:annotation:4.3.0")
-            library("rikka.runtime", "dev.rikka.tools.refine:runtime:4.3.0")
+            val rikkaVersion = "4.4.0"
+            plugin("rikka.refine", "dev.rikka.tools.refine").version(rikkaVersion)
+            library("rikka.gradle", "dev.rikka.tools.refine:gradle-plugin:$rikkaVersion")
+            library("rikka.processor", "dev.rikka.tools.refine:annotation-processor:$rikkaVersion")
+            library("rikka.annotation", "dev.rikka.tools.refine:annotation:$rikkaVersion")
+            library("rikka.runtime", "dev.rikka.tools.refine:runtime:$rikkaVersion")
 
             // https://github.com/RikkaApps/Shizuku-API
             library("rikka.shizuku.api", "dev.rikka.shizuku:api:13.1.5")
@@ -92,7 +99,7 @@ dependencyResolutionManagement {
 
             // 工具集合类
             // https://github.com/Blankj/AndroidUtilCode/blob/master/lib/utilcode/README-CN.md
-            library("others.utilcodex", "com.blankj:utilcodex:1.31.0")
+            library("others.utilcodex", "com.blankj:utilcodex:1.31.1")
 
             // https://dylancaicoding.github.io/ActivityResultLauncher/#/
             library(
@@ -104,7 +111,7 @@ dependencyResolutionManagement {
             library("others.jankson", "blue.endless:jankson:1.2.3")
 
             // https://github.com/TorryDo/Floating-Bubble-View
-            library("others.floating.bubble.view", "io.github.torrydo:floating-bubble-view:0.6.1")
+            library("others.floating.bubble.view", "io.github.torrydo:floating-bubble-view:0.6.3")
 
             library("androidx.appcompat", "androidx.appcompat:appcompat:1.6.1")
             library("androidx.core.ktx", "androidx.core:core-ktx:1.12.0")
@@ -114,10 +121,11 @@ dependencyResolutionManagement {
             library("androidx.junit", "androidx.test.ext:junit:1.1.5")
             library("androidx.espresso", "androidx.test.espresso:espresso-core:3.5.1")
 
-            // https://developer.android.google.cn/training/data-storage/room?hl=zh-cn
-            library("androidx.room.runtime", "androidx.room:room-runtime:2.5.2")
-            library("androidx.room.compiler", "androidx.room:room-compiler:2.5.2")
-            library("androidx.room.ktx", "androidx.room:room-ktx:2.5.2")
+            // https://developer.android.com/jetpack/androidx/releases/room
+            val roomVersion = "2.6.0"
+            library("androidx.room.runtime", "androidx.room:room-runtime:$roomVersion")
+            library("androidx.room.compiler", "androidx.room:room-compiler:$roomVersion")
+            library("androidx.room.ktx", "androidx.room:room-ktx:$roomVersion")
 
             library("androidx.splashscreen", "androidx.core:core-splashscreen:1.0.1")
 
@@ -128,7 +136,7 @@ dependencyResolutionManagement {
 
             library("junit", "junit:junit:4.13.2")
 
-            val ktorVersion = "2.3.4"
+            val ktorVersion = "2.3.5"
             // 请注意,当 client 和 server 版本不一致时, 会报错 socket hang up
             library("ktor.server.core", "io.ktor:ktor-server-core:$ktorVersion")
             library("ktor.server.netty", "io.ktor:ktor-server-netty:$ktorVersion")
@@ -162,9 +170,12 @@ dependencyResolutionManagement {
 
             plugin("google.ksp", "com.google.devtools.ksp").version("1.9.10-1.0.13")
 
-            plugin("google.hilt", "com.google.dagger.hilt.android").version("2.48")
-            library("google.hilt.android", "com.google.dagger:hilt-android:2.48")
-            library("google.hilt.android.compiler", "com.google.dagger:hilt-android-compiler:2.48")
+            plugin("google.hilt", "com.google.dagger.hilt.android").version("2.48.1")
+            library("google.hilt.android", "com.google.dagger:hilt-android:2.48.1")
+            library(
+                "google.hilt.android.compiler",
+                "com.google.dagger:hilt-android-compiler:2.48.1"
+            )
             library(
                 "androidx.hilt.navigation.compose", "androidx.hilt:hilt-navigation-compose:1.0.0"
             )
