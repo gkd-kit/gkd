@@ -1,7 +1,6 @@
 package li.songe.gkd.ui
 
 import android.Manifest
-import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Build
 import androidx.activity.ComponentActivity
@@ -45,7 +44,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
@@ -71,6 +69,7 @@ import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.format
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.navigate
+import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.snapshotZipDir
 import java.io.File
 
@@ -194,21 +193,7 @@ fun SnapshotPage() {
                         modifier = Modifier
                             .clickable(onClick = vm.viewModelScope.launchAsFn {
                                 val zipFile = SnapshotExt.getSnapshotZipFile(snapshotVal.id)
-                                val uri = FileProvider.getUriForFile(
-                                    context, "${context.packageName}.provider", zipFile
-                                )
-                                val intent = Intent().apply {
-                                    action = Intent.ACTION_SEND
-                                    putExtra(Intent.EXTRA_STREAM, uri)
-                                    type = "application/zip"
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                context.startActivity(
-                                    Intent.createChooser(
-                                        intent, "分享快照文件"
-                                    )
-                                )
+                                context.shareFile(zipFile, "分享快照文件")
                                 selectedSnapshot = null
                             })
                             .then(modifier)

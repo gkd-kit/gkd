@@ -64,6 +64,7 @@ import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.formatTimeAgo
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.navigate
+import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 import org.burnoutcrew.reorderable.ReorderableItem
@@ -224,6 +225,16 @@ fun SubsManagePage() {
                             .padding(16.dp))
                         Divider()
                     }
+                    if (menuSubItemVal.id < 0 && subsRawVal != null && menuSubItemVal.subsFile.exists()) {
+                        Text(text = "分享文件", modifier = Modifier
+                            .clickable {
+                                menuSubItem = null
+                                context.shareFile(menuSubItemVal.subsFile, "分享订阅文件")
+                            }
+                            .fillMaxWidth()
+                            .padding(16.dp))
+                        Divider()
+                    }
                     if (menuSubItemVal.updateUrl != null) {
                         Text(text = "复制链接", modifier = Modifier
                             .clickable {
@@ -235,13 +246,17 @@ fun SubsManagePage() {
                             .padding(16.dp))
                         Divider()
                     }
-                    Text(text = "删除订阅", modifier = Modifier
-                        .clickable {
-                            deleteSubItem = menuSubItemVal
-                            menuSubItem = null
-                        }
-                        .fillMaxWidth()
-                        .padding(16.dp), color = MaterialTheme.colorScheme.error)
+                    if (menuSubItemVal.id != -2L) {
+                        Text(text = "删除订阅",
+                            modifier = Modifier
+                                .clickable {
+                                    deleteSubItem = menuSubItemVal
+                                    menuSubItem = null
+                                }
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            color = MaterialTheme.colorScheme.error)
+                    }
                 }
             }
         }

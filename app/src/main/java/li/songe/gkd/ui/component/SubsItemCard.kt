@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -92,7 +91,7 @@ fun SubsItemCard(
                             )
                         } else {
                             Text(
-                                text = "无规则", fontSize = 14.sp
+                                text = "暂无规则", fontSize = 14.sp
                             )
                         }
                     }
@@ -107,13 +106,11 @@ fun SubsItemCard(
             }
             Spacer(modifier = Modifier.width(5.dp))
 
-            if (subsItem.id != -2L) { // 本地订阅不要显示菜单按钮
-                IconButton(onClick = { onMenuClick?.invoke() }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "more",
-                    )
-                }
+            IconButton(onClick = { onMenuClick?.invoke() }) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "more",
+                )
             }
 
             Spacer(modifier = Modifier.width(10.dp))
