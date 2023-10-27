@@ -3,6 +3,7 @@ package li.songe.gkd.data
 import com.blankj.utilcode.util.AppUtils
 import com.blankj.utilcode.util.ScreenUtils
 import kotlinx.serialization.Serializable
+import li.songe.gkd.BuildConfig
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.service.safeActiveWindow
 import li.songe.gkd.service.topActivityFlow
@@ -20,6 +21,8 @@ data class ComplexSnapshot(
     override val screenHeight: Int,
     override val screenWidth: Int,
     override val isLandscape: Boolean,
+
+    val gkdVersionCode: Int = BuildConfig.VERSION_CODE,
 
     val device: DeviceInfo,
     val nodes: List<NodeInfo>,

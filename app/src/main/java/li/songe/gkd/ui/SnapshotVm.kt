@@ -25,8 +25,6 @@ import li.songe.gkd.util.FILE_UPLOAD_URL
 import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.recordStoreFlow
-import li.songe.gkd.util.updateStorage
 import javax.inject.Inject
 
 
@@ -60,13 +58,7 @@ class SnapshotVm @Inject constructor() : ViewModel() {
                 if (response.headers["X_RPC_OK"] == "true") {
                     val policiesAsset = response.body<GithubPoliciesAsset>()
                     uploadStatusFlow.value = LoadStatus.Success(policiesAsset)
-                    updateStorage(
-                        recordStoreFlow,
-                        recordStoreFlow.value.copy(snapshotIdMap = recordStoreFlow.value.snapshotIdMap.toMutableMap()
-                            .apply {
-                                set(snapshot.id, policiesAsset.id)
-                            })
-                    )
+                    DbSet.snapshotDao.update(snapshot.copy(githubAssetId = policiesAsset.id))
                 } else if (response.headers["X_RPC_OK"] == "false") {
                     uploadStatusFlow.value = LoadStatus.Failure(response.body<RpcError>())
                 } else {
