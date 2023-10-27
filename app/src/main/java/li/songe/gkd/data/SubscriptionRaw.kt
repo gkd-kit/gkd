@@ -36,43 +36,46 @@ data class SubscriptionRaw(
     @Serializable
     data class AppRaw(
         val id: String,
-        val name: String? = null,
-        override val actionCd: Long? = null,
-        override val actionDelay: Long? = null,
-        override val matchLauncher: Boolean? = null,
-        override val quickFind: Boolean? = null,
+        val name: String?,
+        override val actionCd: Long?,
+        override val actionDelay: Long?,
+        override val matchLauncher: Boolean?,
+        override val quickFind: Boolean?,
         override val actionMaximum: Int?,
         override val matchDelay: Long?,
         override val matchTime: Long?,
         override val resetMatch: String?,
-        override val activityIds: List<String>? = null,
-        override val excludeActivityIds: List<String>? = null,
+        override val activityIds: List<String>?,
+        override val excludeActivityIds: List<String>?,
         val groups: List<GroupRaw> = emptyList(),
     ) : CommonProps
 
     @Serializable
     data class GroupRaw(
         val name: String,
-        val desc: String? = null,
-        val enable: Boolean? = null,
         val key: Int,
-        override val actionCd: Long? = null,
-        override val actionDelay: Long? = null,
-        override val matchLauncher: Boolean? = null,
-        override val quickFind: Boolean? = null,
+        val desc: String?,
+        val enable: Boolean?,
+        override val actionCd: Long?,
+        override val actionDelay: Long?,
+        override val matchLauncher: Boolean?,
+        override val quickFind: Boolean?,
         override val actionMaximum: Int?,
         override val matchDelay: Long?,
         override val matchTime: Long?,
         override val resetMatch: String?,
-        override val activityIds: List<String>? = null,
-        override val excludeActivityIds: List<String>? = null,
+        override val activityIds: List<String>?,
+        override val excludeActivityIds: List<String>?,
         val rules: List<RuleRaw> = emptyList(),
+        val snapshotUrls: List<String>?,
+        val exampleUrls: List<String>?,
     ) : CommonProps {
 
         @IgnoredOnParcel
         val valid by lazy {
             rules.all { r ->
-                r.matches.all { s -> Selector.check(s) } && r.excludeMatches.all { s ->
+                r.matches.all { s -> Selector.check(s) } && (r.excludeMatches
+                    ?: emptyList()).all { s ->
                     Selector.check(
                         s
                     )
@@ -83,22 +86,24 @@ data class SubscriptionRaw(
 
     @Serializable
     data class RuleRaw(
-        val name: String? = null,
-        val key: Int? = null,
-        val preKeys: List<Int> = emptyList(),
-        val action: String? = null,
-        override val actionCd: Long? = null,
-        override val actionDelay: Long? = null,
-        override val matchLauncher: Boolean? = null,
-        override val quickFind: Boolean? = null,
+        val name: String?,
+        val key: Int?,
+        val preKeys: List<Int>?,
+        val action: String?,
+        override val actionCd: Long?,
+        override val actionDelay: Long?,
+        override val matchLauncher: Boolean?,
+        override val quickFind: Boolean?,
         override val actionMaximum: Int?,
         override val matchDelay: Long?,
         override val matchTime: Long?,
         override val resetMatch: String?,
-        override val activityIds: List<String>? = null,
-        override val excludeActivityIds: List<String>? = null,
-        val matches: List<String> = emptyList(),
-        val excludeMatches: List<String> = emptyList(),
+        override val activityIds: List<String>?,
+        override val excludeActivityIds: List<String>?,
+        val matches: List<String>,
+        val excludeMatches: List<String>?,
+        val snapshotUrls: List<String>?,
+        val exampleUrls: List<String>?,
     ) : CommonProps
 
     companion object {
@@ -206,7 +211,9 @@ data class SubscriptionRaw(
                 actionMaximum = getInt(rulesJson, "actionMaximum"),
                 matchDelay = getLong(rulesJson, "matchDelay"),
                 matchTime = getLong(rulesJson, "matchTime"),
-                resetMatch = getString(rulesJson, "resetMatch")
+                resetMatch = getString(rulesJson, "resetMatch"),
+                snapshotUrls = getStringIArray(rulesJson, "snapshotUrls"),
+                exampleUrls = getStringIArray(rulesJson, "exampleUrls"),
             )
         }
 
@@ -238,7 +245,9 @@ data class SubscriptionRaw(
                 actionMaximum = getInt(groupsJson, "actionMaximum"),
                 matchDelay = getLong(groupsJson, "matchDelay"),
                 matchTime = getLong(groupsJson, "matchTime"),
-                resetMatch = getString(groupsJson, "resetMatch")
+                resetMatch = getString(groupsJson, "resetMatch"),
+                snapshotUrls = getStringIArray(groupsJson, "snapshotUrls"),
+                exampleUrls = getStringIArray(groupsJson, "exampleUrls"),
             )
         }
 
