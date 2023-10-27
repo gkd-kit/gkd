@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import li.songe.gkd.appScope
 import li.songe.gkd.data.GithubPoliciesAsset
@@ -27,7 +28,9 @@ import li.songe.gkd.util.FILE_UPLOAD_URL
 import li.songe.gkd.util.FolderExt
 import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.Singleton
+import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.storeFlow
 import java.io.File
 import javax.inject.Inject
 
@@ -70,6 +73,16 @@ class HomePageVm @Inject constructor() : ViewModel() {
                     }
                 oldDbFile.delete()
                 LogUtils.d("执行快照迁移")
+            }
+        }
+
+        if (storeFlow.value.autoCheckAppUpdate) {
+            appScope.launch {
+                try {
+                    checkUpdate()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }

@@ -14,7 +14,6 @@ import li.songe.gkd.notif.initChannel
 import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initStore
 import li.songe.gkd.util.initSubsState
-import li.songe.gkd.util.initUpgrade
 import li.songe.gkd.util.isMainProcess
 import li.songe.gkd.util.launchTry
 import org.lsposed.hiddenapibypass.HiddenApiBypass
@@ -55,7 +54,6 @@ class App : Application() {
             initSubsState()
             if (isMainProcess) {
                 initChannel()
-                initUpgrade()
                 clearHttpSubs()
             }
         }
