@@ -116,7 +116,7 @@ class GkdAbService : CompositionAbService({
             lastTriggerShizukuTime =
                 if (newActivityId.startsWith("android.view.") || newActivityId.startsWith("android.widget.")) {
                     val t = System.currentTimeMillis()
-                    if (t - lastTriggerShizukuTime < if (currentRulesFlow.value.isNotEmpty()) 100 else 200) {
+                    if (t - lastTriggerShizukuTime < if (currentRulesFlow.value.isNotEmpty()) 200 else 400) {
                         return@onAccessibilityEvent
                     }
                     t
@@ -157,7 +157,7 @@ class GkdAbService : CompositionAbService({
             if (rightAppId != topActivityFlow.value?.appId) {
                 topActivityFlow.value = topActivityFlow.value?.copy(
                     appId = rightAppId,
-                    activityId = getActivityIdByShizuku() ?: topActivityFlow.value?.activityId
+                    activityId = getActivityIdByShizuku() ?: launcherActivityIdFlow.value
                 )
                 return@launchWhile
             } else if (topActivityFlow.value?.activityId == null) {
