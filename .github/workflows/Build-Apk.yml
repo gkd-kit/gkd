@@ -9,6 +9,7 @@ on:
 
 jobs:
   build:
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore:') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
