@@ -114,7 +114,7 @@ val appIdToRulesFlow by lazy {
                                 actionDelay = actionDelay,
                                 index = ruleIndex,
                                 matches = ruleRaw.matches.map { Selector.parse(it) },
-                                excludeMatches = ruleRaw.excludeMatches.map {
+                                excludeMatches = (ruleRaw.excludeMatches ?: emptyList()).map {
                                     Selector.parse(
                                         it
                                     )
@@ -126,7 +126,7 @@ val appIdToRulesFlow by lazy {
                                 activityIds = activityIds,
                                 excludeActivityIds = excludeActivityIds,
                                 key = ruleRaw.key,
-                                preKeys = ruleRaw.preKeys.toSet(),
+                                preKeys = (ruleRaw.preKeys ?: emptyList()).toSet(),
                                 rule = ruleRaw,
                                 group = groupRaw,
                                 app = appRaw,

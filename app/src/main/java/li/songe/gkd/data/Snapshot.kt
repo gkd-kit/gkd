@@ -31,6 +31,8 @@ data class Snapshot(
     @ColumnInfo(name = "screen_width") override val screenWidth: Int,
     @ColumnInfo(name = "is_landscape") override val isLandscape: Boolean,
 
+    @ColumnInfo(name = "github_asset_id") val githubAssetId: Int? = null,
+
     ) : BaseSnapshot {
 
     val screenshotFile by lazy {

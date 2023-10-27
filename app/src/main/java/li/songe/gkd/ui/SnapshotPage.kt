@@ -71,9 +71,7 @@ import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.format
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.navigate
-import li.songe.gkd.util.recordStoreFlow
 import li.songe.gkd.util.snapshotZipDir
-import li.songe.gkd.util.updateStorage
 import java.io.File
 
 @RootNavGraph
@@ -91,7 +89,6 @@ fun SnapshotPage() {
     val vm = hiltViewModel<SnapshotVm>()
     val snapshots by vm.snapshotsState.collectAsState()
     val uploadStatus by vm.uploadStatusFlow.collectAsState()
-    val recordStore by recordStoreFlow.collectAsState()
 
     var selectedSnapshot by remember {
         mutableStateOf<Snapshot?>(null)
@@ -217,14 +214,12 @@ fun SnapshotPage() {
                             .then(modifier)
                     )
                     Divider()
-                    if (recordStore.snapshotIdMap.containsKey(snapshotVal.id)) {
-                        val url =
-                            "https://i.gkd.li/import/" + recordStore.snapshotIdMap[snapshotVal.id]
+                    if (snapshotVal.githubAssetId != null) {
                         Text(
                             text = "复制链接", modifier = Modifier
                                 .clickable(onClick = {
                                     selectedSnapshot = null
-                                    ClipboardUtils.copyText(url)
+                                    ClipboardUtils.copyText(IMPORT_BASE_URL + snapshotVal.githubAssetId)
                                     ToastUtils.showShort("复制成功")
                                 })
                                 .then(modifier)
@@ -278,15 +273,9 @@ fun SnapshotPage() {
                                         File(snapshotZipDir, "${snapshotVal.id}.zip").apply {
                                             if (exists()) delete()
                                         }
-                                        if (recordStore.snapshotIdMap.containsKey(snapshotVal.id)) {
-                                            updateStorage(
-                                                recordStoreFlow,
-                                                recordStore.copy(snapshotIdMap = recordStore.snapshotIdMap
-                                                    .toMutableMap()
-                                                    .apply {
-                                                        remove(snapshotVal.id)
-                                                    })
-                                            )
+                                        if (snapshotVal.githubAssetId != null) {
+                                            // 当本地快照变更时, 移除快照链接
+                                            DbSet.snapshotDao.update(snapshotVal.copy(githubAssetId = null))
                                         }
                                     } else {
                                         ToastUtils.showShort("截图尺寸不一致,无法替换")
@@ -305,16 +294,6 @@ fun SnapshotPage() {
                                 DbSet.snapshotDao.delete(snapshotVal)
                                 withContext(Dispatchers.IO) {
                                     SnapshotExt.removeAssets(snapshotVal.id)
-                                    if (recordStore.snapshotIdMap.containsKey(snapshotVal.id)) {
-                                        updateStorage(
-                                            recordStoreFlow,
-                                            recordStore.copy(snapshotIdMap = recordStore.snapshotIdMap
-                                                .toMutableMap()
-                                                .apply {
-                                                    remove(snapshotVal.id)
-                                                })
-                                        )
-                                    }
                                 }
                                 selectedSnapshot = null
                             })
@@ -397,9 +376,6 @@ fun SnapshotPage() {
                             SnapshotExt.removeAssets(s.id)
                         }
                         DbSet.snapshotDao.deleteAll()
-                        updateStorage(
-                            recordStoreFlow, recordStoreFlow.value.copy(snapshotIdMap = emptyMap())
-                        )
                     },
                 ) {
                     Text(text = "是", color = MaterialTheme.colorScheme.error)

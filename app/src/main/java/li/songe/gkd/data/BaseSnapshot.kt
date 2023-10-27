@@ -12,4 +12,5 @@ interface BaseSnapshot {
     val screenHeight: Int
     val screenWidth: Int
     val isLandscape: Boolean
+
 }

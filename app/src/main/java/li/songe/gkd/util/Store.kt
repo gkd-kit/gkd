@@ -103,7 +103,6 @@ val storeFlow by lazy {
 @Serializable
 data class RecordStore(
     val clickCount: Int = 0,
-    val snapshotIdMap: Map<Long, Int> = emptyMap(),
 )
 
 val recordStoreFlow by lazy {

@@ -116,7 +116,7 @@ class GkdAbService : CompositionAbService({
             lastTriggerShizukuTime =
                 if (newActivityId.startsWith("android.view.") || newActivityId.startsWith("android.widget.")) {
                     val t = System.currentTimeMillis()
-                    if (t - lastTriggerShizukuTime < 100) {
+                    if (t - lastTriggerShizukuTime < if (currentRulesFlow.value.isNotEmpty()) 100 else 200) {
                         return@onAccessibilityEvent
                     }
                     t
