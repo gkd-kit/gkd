@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.composition.CanOnDestroy
 import li.songe.gkd.data.DeviceInfo
@@ -92,13 +91,23 @@ fun CanOnDestroy.useSafeGetTasksFc(scope: CoroutineScope): () -> List<ActivityMa
         shizukuGrantFlow.value = if (shizukuAliveFlow.value) shizukuIsSafeOK() else false
         delay(3000)
     }
-    val activityTaskManagerFlow = combine(
+    val shizukuCanUsedFlow = combine(
         shizukuAliveFlow,
         shizukuGrantFlow,
         storeFlow.map(scope) { s -> s.enableShizuku }) { shizukuAlive, shizukuGrant, enableShizuku ->
-        if (enableShizuku && shizukuAlive && shizukuGrant) newActivityTaskManager() else null
-    }.flowOn(Dispatchers.IO).stateIn(scope, SharingStarted.Eagerly, null)
+        enableShizuku && shizukuAlive && shizukuGrant
+    }.stateIn(scope, SharingStarted.Eagerly, false)
+
+    val activityTaskManagerFlow =
+        shizukuCanUsedFlow.map(scope) { if (it) newActivityTaskManager() else null }
+
     return {
-        activityTaskManagerFlow.value?.safeGetTasks()
+        if (shizukuCanUsedFlow.value) {
+            // 避免直接访问方法校验 android.app.IActivityTaskManager 类型
+            // 报错 java.lang.ClassNotFoundException:Didn't find class "android.app.IActivityTaskManager" on path: DexPathList
+            activityTaskManagerFlow.value?.safeGetTasks()
+        } else {
+            null
+        }
     }
 }
