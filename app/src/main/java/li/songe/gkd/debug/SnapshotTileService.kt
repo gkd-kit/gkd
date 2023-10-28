@@ -13,19 +13,21 @@ import li.songe.gkd.util.launchTry
 class SnapshotTileService : TileService() {
     override fun onClick() {
         super.onClick()
-        if (!GkdAbService.isRunning()) {
+        val service = GkdAbService.service
+        if (service == null) {
             ToastUtils.showShort("无障碍没有开启")
             return
         }
-        val service = GkdAbService.service ?: return
         val oldAppId = topActivityFlow.value?.appId
-        service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
         appScope.launchTry {
+            val interval = 500L
+            val waitTime = 3000L
             var i = 0
             while (topActivityFlow.value?.appId == oldAppId) {
-                delay(100)
+                service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
+                delay(interval)
                 i++
-                if (i * 100 > 3000) {
+                if (i * interval > waitTime) {
                     ToastUtils.showShort("没有检测到界面切换,捕获失败")
                     return@launchTry
                 }
