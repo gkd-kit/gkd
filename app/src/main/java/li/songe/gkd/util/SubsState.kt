@@ -64,7 +64,7 @@ val appIdToRulesFlow by lazy {
                     // 筛选合法选择器的规则组, 如果一个规则组内某个选择器语法错误, 则禁用/丢弃此规则组
                     groupRaw.valid
                 }.forEach { groupRaw ->
-                    val ruleGroupList = mutableListOf<Rule>()
+                    val groupRuleList = mutableListOf<Rule>()
                     groupRaw.rules.forEachIndexed { ruleIndex, ruleRaw ->
                         val activityIds =
                             (ruleRaw.activityIds ?: groupRaw.activityIds ?: appRaw.activityIds
@@ -106,7 +106,7 @@ val appIdToRulesFlow by lazy {
                         val actionDelay =
                             ruleRaw.actionDelay ?: groupRaw.actionDelay ?: appRaw.actionDelay ?: 0
 
-                        ruleGroupList.add(
+                        groupRuleList.add(
                             Rule(
                                 matchLauncher = matchLauncher,
                                 quickFind = quickFind,
@@ -135,16 +135,15 @@ val appIdToRulesFlow by lazy {
                             )
                         )
                     }
-                    ruleGroupList.forEachIndexed { index, ruleConfig ->
-                        ruleGroupList[index] = ruleConfig.copy(
-                            preRules = ruleGroupList.filter {
-                                (it.key != null) && ruleConfig.preKeys.contains(
-                                    it.key
-                                )
-                            }.toSet()
-                        )
+                    groupRuleList.forEach { ruleConfig ->
+                        // 保留原始对象引用, 方便判断 lastTriggerRule 时直接使用 ===
+                        ruleConfig.preRules = groupRuleList.filter { otherRule ->
+                            (otherRule.key != null) && ruleConfig.preKeys.contains(
+                                otherRule.key
+                            )
+                        }.toSet()
                     }
-                    rules.addAll(ruleGroupList)
+                    rules.addAll(groupRuleList)
                 }
             }
         }

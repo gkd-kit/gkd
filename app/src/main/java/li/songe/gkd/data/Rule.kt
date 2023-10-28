@@ -19,10 +19,6 @@ data class Rule(
      */
     val matches: List<Selector> = emptyList(),
     val excludeMatches: List<Selector> = emptyList(),
-    /**
-     * 任意一个元素是上次点击过的
-     */
-    val preRules: Set<Rule> = emptySet(),
     val actionCd: Long = defaultMiniCd,
     val actionDelay: Long = 0,
     val matchLauncher: Boolean = false,
@@ -46,6 +42,11 @@ data class Rule(
     val app: SubscriptionRaw.AppRaw,
     val subsItem: SubsItem,
 ) {
+    /**
+     * 任意一个元素是上次点击过的
+     */
+    var preRules: Set<Rule> = emptySet()
+
     var actionDelayTriggerTime = 0L
     fun triggerDelay() {
         // 触发延迟, 一段时间内此规则不可利用
