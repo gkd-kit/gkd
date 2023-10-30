@@ -23,6 +23,7 @@ data class ComplexSnapshot(
     override val isLandscape: Boolean,
 
     val gkdVersionCode: Int = BuildConfig.VERSION_CODE,
+    val gkdVersionName: String = BuildConfig.VERSION_NAME,
 
     val device: DeviceInfo,
     val nodes: List<NodeInfo>,
