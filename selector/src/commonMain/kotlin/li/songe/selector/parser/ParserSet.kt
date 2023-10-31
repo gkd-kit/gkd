@@ -207,14 +207,41 @@ internal object ParserSet {
                 ExtSyntaxError.assert(source, i, startChar.toString())
                 break
             }
+            // https://www.rfc-editor.org/rfc/inline-errata/rfc7159.html
+            if (source[i].code in 0x0000..0x001F) {
+                ExtSyntaxError.throwError(source, i, "0-1f escape char")
+            }
             if (source[i] == '\\') {
                 i++
                 ExtSyntaxError.assert(source, i)
-                if (source[i] == startChar) {
-                    data += source[i]
-                    ExtSyntaxError.assert(source, i + 1)
-                } else {
-                    data += '\\' + source[i].toString()
+                data += when (source[i]) {
+                    '\\' -> '\\'
+                    '\'' -> '\''
+                    '"' -> '"'
+                    '`' -> '`'
+                    'n' -> '\n'
+                    'r' -> '\r'
+                    't' -> '\t'
+                    'b' -> '\b'
+                    'x' -> {
+                        repeat(2) {
+                            i++
+                            ExtSyntaxError.assert(source, i, "0123456789abcdefABCDEF")
+                        }
+                        source.substring(i - 2 + 1, i + 1).toInt(16).toChar()
+                    }
+
+                    'u' -> {
+                        repeat(4) {
+                            i++
+                            ExtSyntaxError.assert(source, i, "0123456789abcdefABCDEF")
+                        }
+                        source.substring(i - 4 + 1, i + 1).toInt(16).toChar()
+                    }
+
+                    else -> {
+                        ExtSyntaxError.throwError(source, i, "escape char")
+                    }
                 }
             } else {
                 data += source[i]
