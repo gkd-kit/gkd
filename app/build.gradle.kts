@@ -44,6 +44,12 @@ android {
                 ).format(nowTime)
             )
         )
+
+        resourceConfigurations.addAll(listOf("zh", "en"))
+        ndk {
+            // noinspection ChromeOsAbiSupport
+            abiFilters += listOf("arm64-v8a", "x86_64")
+        }
     }
 
     lint {
