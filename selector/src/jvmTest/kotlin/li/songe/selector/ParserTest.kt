@@ -112,4 +112,13 @@ class ParserTest {
         val selector = Selector.parse("a[a=''] ")
         println("check_quote:$selector")
     }
+
+    @Test
+    fun check_escape() {
+        val source =
+            "[a='\\\"'][a=\"'\"][a=`\\x20\\n\\uD83D\\uDE04`][a=`\\x20`][a=\"`\u0020\"][a=`\\t\\n\\r\\b\\x00\\x09\\x1d`]"
+        println("source:$source")
+        val selector = Selector.parse(source)
+        println("check_quote:$selector")
+    }
 }
