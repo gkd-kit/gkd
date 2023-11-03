@@ -6,6 +6,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.intOrNull
 import li.songe.selector.parser.ParserSet
+import li.songe.selector.util.filterIndexes
 import org.junit.Test
 import java.io.File
 
@@ -71,37 +72,42 @@ class ParserTest {
         println(Selector.parse("View > Text"))
     }
 
-    @Test
-    fun check_query() {
-        val projectCwd = File("../").absolutePath
-        val text = "@TextView[text^='跳过'] + LinearLayout TextView[text*=`跳转`]"
-        val selector = Selector.parse(text)
-        println("selector: $selector")
-        println(selector.trackIndex)
-        println(selector.tracks.toList())
+    private val json = Json {
+        ignoreUnknownKeys = true
+    }
 
-        val jsonString = File("$projectCwd/_assets/snapshot-1693227637861.json").readText()
-        val json = Json {
-            ignoreUnknownKeys = true
-        }
+    private fun getTreeNode(name: String): TestNode {
+        val jsonString = File("../_assets/$name").readText()
         val nodes = json.decodeFromString<TestSnapshot>(jsonString).nodes
-
         nodes.forEach { node ->
             node.parent = nodes.getOrNull(node.pid)
             node.parent?.apply {
                 children.add(node)
             }
         }
-        val transform = Transform<TestNode>(getAttr = { node, name ->
-            if (name == "_id") return@Transform node.id
-            if (name == "_pid") return@Transform node.pid
-            val value = node.attr[name] ?: return@Transform null
-            if (value is JsonNull) return@Transform null
-            value.intOrNull ?: value.booleanOrNull ?: value.content
-        }, getName = { node -> node.attr["name"]?.content }, getChildren = { node ->
-            node.children.asSequence()
-        }, getParent = { node -> node.parent })
-        val targets = transform.querySelectorAll(nodes.first(), selector).toList()
+        return nodes.first()
+    }
+
+    private val transform = Transform<TestNode>(getAttr = { node, name ->
+        if (name == "_id") return@Transform node.id
+        if (name == "_pid") return@Transform node.pid
+        val value = node.attr[name] ?: return@Transform null
+        if (value is JsonNull) return@Transform null
+        value.intOrNull ?: value.booleanOrNull ?: value.content
+    }, getName = { node -> node.attr["name"]?.content }, getChildren = { node ->
+        node.children.asSequence()
+    }, getParent = { node -> node.parent })
+
+    @Test
+    fun check_query() {
+        val text = "@TextView[text^='跳过'] + LinearLayout TextView[text*=`跳转`]"
+        val selector = Selector.parse(text)
+        println("selector: $selector")
+        println(selector.trackIndex)
+        println(selector.tracks.toList())
+
+        val snapshotNode = getTreeNode("snapshot-1693227637861.json")
+        val targets = transform.querySelectorAll(snapshotNode, selector).toList()
         println("target_size: " + targets.size)
         println(targets.firstOrNull())
     }
@@ -120,5 +126,35 @@ class ParserTest {
         println("source:$source")
         val selector = Selector.parse(source)
         println("check_quote:$selector")
+    }
+
+    @Test
+    fun check_seq() {
+        println(
+            listOf(1, 2, 3, 4, 5, 6, 7, 8).asSequence().filterIndexes(listOf(0, 1, 7, 10)).toList()
+        )
+        println(listOf(0).asSequence().filterIndexes(listOf(0, 1, 7, 10)).toList())
+    }
+
+    @Test
+    fun check_tuple() {
+        val source = "[_id=15] >(1,2,9) X + Z >(7+9n) *"
+        println("source:$source")
+        val selector = Selector.parse(source)
+        println("check_quote:$selector")
+
+        // https://i.gkd.li/import/13247733
+        // 1->3, 3->21
+        // 1,3->24
+        val snapshotNode = getTreeNode("snapshot-1698997584508.json")
+        val (x1, x2) = (1..6).toList().shuffled().subList(0, 2).sorted()
+        val x1N =
+            transform.querySelectorAll(snapshotNode, Selector.parse("[_id=15] >$x1 *")).count()
+        val x2N =
+            transform.querySelectorAll(snapshotNode, Selector.parse("[_id=15] >$x2 *")).count()
+        val x12N = transform.querySelectorAll(snapshotNode, Selector.parse("[_id=15] >($x1,$x2) *"))
+            .count()
+
+        println("$x1->$x1N, $x2->$x2N, ($x1,$x2)->$x12N")
     }
 }
