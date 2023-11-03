@@ -4,6 +4,7 @@ import li.songe.selector.ExtSyntaxError
 import li.songe.selector.Selector
 import li.songe.selector.data.BinaryExpression
 import li.songe.selector.data.CompareOperator
+import li.songe.selector.data.ConnectExpression
 import li.songe.selector.data.ConnectOperator
 import li.songe.selector.data.ConnectSegment
 import li.songe.selector.data.ConnectWrapper
@@ -13,6 +14,7 @@ import li.songe.selector.data.LogicalOperator
 import li.songe.selector.data.PolynomialExpression
 import li.songe.selector.data.PropertySegment
 import li.songe.selector.data.PropertyWrapper
+import li.songe.selector.data.TupleExpression
 
 internal object ParserSet {
     val whiteCharParser = Parser("\u0020\t\r\n") { source, offset, prefix ->
@@ -75,11 +77,17 @@ internal object ParserSet {
             s += source[i]
             i++
         }
-        ParserResult(s.toInt(), i - offset)
+        ParserResult(
+            try {
+                s.toInt()
+            } catch (e: NumberFormatException) {
+                ExtSyntaxError.throwError(source, offset, "valid format number")
+            }, i - offset
+        )
     }
 
 
-    //    [+-][a][n[^b]]
+    //    [+-][a][n]
     val monomialParser = Parser("+-1234567890n") { source, offset, prefix ->
         var i = offset
         ExtSyntaxError.assert(source, i, prefix)
@@ -100,7 +108,7 @@ internal object ParserSet {
             else -> 1
         }
         i += whiteCharParser(source, i).length
-        // [a][n[^b]]
+        // [a][n]
         ExtSyntaxError.assert(source, i, integerParser.prefix + "n")
         val coefficient = if (integerParser.prefix.contains(source[i])) {
             val coefficientResult = integerParser(source, i)
@@ -109,23 +117,19 @@ internal object ParserSet {
         } else {
             1
         } * signal
-        // [n[^b]]
+        // [n]
         if (i < source.length && source[i] == 'n') {
             i++
-            if (i < source.length && source[i] == '^') {
-                i++
-                val powerResult = integerParser(source, i)
-                i += powerResult.length
-                return@Parser ParserResult(Pair(powerResult.data, coefficient), i - offset)
-            } else {
-                return@Parser ParserResult(Pair(1, coefficient), i - offset)
-            }
+            // +-an
+            return@Parser ParserResult(Pair(1, coefficient), i - offset)
         } else {
+            // +-a
             return@Parser ParserResult(Pair(0, coefficient), i - offset)
         }
     }
 
-    //    ([+-][a][n[^b]] [+-][a][n[^b]])
+
+    // (+-an+-b)
     val polynomialExpressionParser = Parser("(0123456789n") { source, offset, prefix ->
         var i = offset
         ExtSyntaxError.assert(source, i, prefix)
@@ -166,17 +170,69 @@ internal object ParserSet {
                 ExtSyntaxError.throwError(source, offset, "power must be 0 or 1")
             }
         }
-        ParserResult(PolynomialExpression(map[1] ?: 0, map[0] ?: 0), i - offset)
+        val polynomialExpression = PolynomialExpression(map[1] ?: 0, map[0] ?: 0)
+        polynomialExpression.apply {
+            if ((a <= 0 && numbers.isEmpty()) || (numbers.isNotEmpty() && numbers.first() <= 0)) {
+                ExtSyntaxError.throwError(source, offset, "valid polynomialExpression")
+            }
+        }
+        ParserResult(polynomialExpression, i - offset)
     }
 
-    //    [+-><](a*n^b)
+    val tupleExpressionParser = Parser { source, offset, _ ->
+        var i = offset
+        ExtSyntaxError.assert(source, i, "(")
+        i++
+        val numbers = mutableListOf<Int>()
+        while (i < source.length && source[i] != ')') {
+            i += whiteCharParser(source, i).length
+            val intResult = integerParser(source, i)
+            if (numbers.isEmpty()) {
+                if (intResult.data <= 0) {
+                    ExtSyntaxError.throwError(source, i, "positive integer")
+                }
+            } else {
+                if (intResult.data <= numbers.last()) {
+                    ExtSyntaxError.throwError(source, i, ">" + numbers.last())
+                }
+            }
+            i += intResult.length
+            numbers.add(intResult.data)
+            i += whiteCharParser(source, i).length
+            if (source.getOrNull(i) == ',') {
+                i++
+                i += whiteCharParser(source, i).length
+                // (1,2,3,) or (1, 2, 6)
+                ExtSyntaxError.assert(source, i, integerParser.prefix + ")")
+            }
+        }
+        ExtSyntaxError.assert(source, i, ")")
+        i++
+        ParserResult(TupleExpression(numbers), i - offset)
+    }
+    private val tupleExpressionReg = Regex("^\\(\\s*\\d+,.*$")
+    val connectExpressionParser = Parser(polynomialExpressionParser.prefix) { source, offset, _ ->
+        var i = offset
+        if (tupleExpressionReg.matches(source.subSequence(offset, source.length))) {
+            val tupleExpressionResult = tupleExpressionParser(source, i)
+            i += tupleExpressionResult.length
+            ParserResult(tupleExpressionResult.data, i - offset)
+        } else {
+            val polynomialExpressionResult = polynomialExpressionParser(source, offset)
+            i += polynomialExpressionResult.length
+            ParserResult(polynomialExpressionResult.data, i - offset)
+        }
+    }
+
+    //    [+-><](a*n+b)
+    //    [+-><](1,2,3,4)
     val combinatorParser = Parser(combinatorOperatorParser.prefix) { source, offset, _ ->
         var i = offset
         val operatorResult = combinatorOperatorParser(source, i)
         i += operatorResult.length
-        var expressionResult: ParserResult<PolynomialExpression>? = null
-        if (i < source.length && polynomialExpressionParser.prefix.contains(source[i])) {
-            expressionResult = polynomialExpressionParser(source, i)
+        var expressionResult: ParserResult<ConnectExpression>? = null
+        if (i < source.length && connectExpressionParser.prefix.contains(source[i])) {
+            expressionResult = connectExpressionParser(source, i)
             i += expressionResult.length
         }
         ParserResult(
@@ -481,7 +537,7 @@ internal object ParserSet {
                 i += whiteCharStrictParser(source, i).length
                 combinatorResult.data
             } else {
-                ConnectSegment(polynomialExpression = PolynomialExpression(1, 0))
+                ConnectSegment(connectExpression = PolynomialExpression(1, 0))
             }
             val selectorResult = selectorUnitParser(source, i)
             i += selectorResult.length
@@ -492,7 +548,7 @@ internal object ParserSet {
 
     val endParser = Parser { source, offset, _ ->
         if (offset != source.length) {
-            ExtSyntaxError.throwError(source, offset, "end")
+            ExtSyntaxError.throwError(source, offset, "EOF")
         }
         ParserResult(Unit, 0)
     }
