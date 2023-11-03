@@ -5,19 +5,19 @@ import li.songe.selector.NodeTraversalFc
 
 data class ConnectSegment(
     val operator: ConnectOperator = ConnectOperator.Ancestor,
-    val polynomialExpression: PolynomialExpression = PolynomialExpression()
+    val connectExpression: ConnectExpression = PolynomialExpression(),
 ) {
     override fun toString(): String {
-        if (operator == ConnectOperator.Ancestor && polynomialExpression.a == 1 && polynomialExpression.b == 0) {
+        if (operator == ConnectOperator.Ancestor && connectExpression is PolynomialExpression && connectExpression.a == 1 && connectExpression.b == 0) {
             return ""
         }
-        return operator.toString() + polynomialExpression.toString()
+        return operator.toString() + connectExpression.toString()
     }
 
-    internal val traversal = if (polynomialExpression.isConstant) {
+    internal val traversal = if (connectExpression.isConstant) {
         object : NodeTraversalFc {
             override fun <T> invoke(node: T, transform: Transform<T>): Sequence<T?> = sequence {
-                val node1 = operator.traversal(node, transform, polynomialExpression.b1)
+                val node1 = operator.traversal(node, transform, connectExpression.minOffset)
                 if (node1 != null) {
                     yield(node1)
                 }
@@ -26,7 +26,7 @@ data class ConnectSegment(
     } else {
         object : NodeTraversalFc {
             override fun <T> invoke(node: T, transform: Transform<T>): Sequence<T?> {
-                return polynomialExpression.traversal(
+                return connectExpression.traversal(
                     operator.traversal(node, transform)
                 )
             }
