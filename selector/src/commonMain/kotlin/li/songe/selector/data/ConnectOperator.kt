@@ -9,10 +9,7 @@ sealed class ConnectOperator(val key: String) {
 
     companion object {
         val allSubClasses = listOf(
-            BeforeBrother,
-            AfterBrother,
-            Ancestor,
-            Child
+            BeforeBrother, AfterBrother, Ancestor, Child, Descendant
         ).sortedBy { -it.key.length }
     }
 
@@ -42,8 +39,7 @@ sealed class ConnectOperator(val key: String) {
      * A > B, A is the ancestor of B
      */
     object Ancestor : ConnectOperator(">") {
-        override fun <T> traversal(node: T, transform: Transform<T>) =
-            transform.getAncestors(node)
+        override fun <T> traversal(node: T, transform: Transform<T>) = transform.getAncestors(node)
 
         override fun <T> traversal(node: T, transform: Transform<T>, offset: Int): T? =
             transform.getAncestor(node, offset)
@@ -53,10 +49,22 @@ sealed class ConnectOperator(val key: String) {
      * A < B, A is the child of B
      */
     object Child : ConnectOperator("<") {
-        override fun <T> traversal(node: T, transform: Transform<T>) =
-            transform.getChildren(node)
+        override fun <T> traversal(node: T, transform: Transform<T>) = transform.getChildren(node)
 
         override fun <T> traversal(node: T, transform: Transform<T>, offset: Int): T? =
             transform.getChild(node, offset)
     }
+
+    /**
+     * A << B, A is the descendant of B
+     */
+    object Descendant : ConnectOperator("<<") {
+        override fun <T> traversal(node: T, transform: Transform<T>) =
+            transform.getDescendants(node)
+
+        override fun <T> traversal(node: T, transform: Transform<T>, offset: Int): T? =
+            transform.getDescendants(node).elementAtOrNull(offset)
+    }
+
+
 }
