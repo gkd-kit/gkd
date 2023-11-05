@@ -157,4 +157,18 @@ class ParserTest {
 
         println("$x1->$x1N, $x2->$x2N, ($x1,$x2)->$x12N")
     }
+
+    @Test
+    fun check_descendant() {
+        // ad_container 符合 quickFind, 目标节点 tt_splash_skip_btn 在其内部但不符合 quickFind
+        val source =
+            "@[id=\"com.byted.pangle.m:id/tt_splash_skip_btn\"] <<n [id=\"com.coolapk.market:id/ad_container\"]"
+        println("source:$source")
+        val selector = Selector.parse(source)
+        println("selector:$selector")
+        // https://i.gkd.li/import/13247610
+        val snapshotNode = getTreeNode("snapshot-1698990932472.json")
+        println("result:" + transform.querySelectorAll(snapshotNode, selector).map { n -> n.id }
+            .toList())
+    }
 }
