@@ -246,6 +246,20 @@ fun SubsManagePage() {
                             .padding(16.dp))
                         Divider()
                     }
+                    if (subsRawVal?.supportUri != null) {
+                        Text(text = "问题反馈", modifier = Modifier
+                            .clickable {
+                                menuSubItem = null
+                                context.startActivity(
+                                    Intent(
+                                        Intent.ACTION_VIEW, Uri.parse(subsRawVal.supportUri)
+                                    )
+                                )
+                            }
+                            .fillMaxWidth()
+                            .padding(16.dp))
+                        Divider()
+                    }
                     if (menuSubItemVal.id != -2L) {
                         Text(text = "删除订阅",
                             modifier = Modifier
@@ -371,16 +385,10 @@ fun SubsManagePage() {
                 )
             }
         }, confirmButton = {
-            if (showSubsRaw.supportUri != null) {
-                TextButton(onClick = {
-                    context.startActivity(
-                        Intent(
-                            Intent.ACTION_VIEW, Uri.parse(showSubsRaw.supportUri)
-                        )
-                    )
-                }) {
-                    Text(text = "问题反馈")
-                }
+            TextButton(onClick = {
+                setShowSubsRaw(null)
+            }) {
+                Text(text = "关闭")
             }
         })
     }

@@ -1,7 +1,6 @@
 package li.songe.gkd.ui
 
 import android.content.Intent
-import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -244,19 +243,6 @@ fun SettingsPage() {
                     )
                 }
             }
-            Divider()
-
-            SettingItem(title = "问题反馈", onClick = {
-                appScope.launchTry(Dispatchers.IO) {
-                    // ActivityNotFoundException
-                    // https://bugly.qq.com/v2/crash-reporting/crashes/d0ce46b353/117002?pid=1
-                    context.startActivity(
-                        Intent(
-                            Intent.ACTION_VIEW, Uri.parse("https://github.com/gkd-kit/gkd")
-                        )
-                    )
-                }
-            })
             Divider()
 
             TextSwitch(name = "保存日志",

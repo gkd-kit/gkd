@@ -58,7 +58,7 @@ fun IActivityTaskManager.safeGetTasks(): List<ActivityManager.RunningTaskInfo>? 
                 getTasksFcType = -1
                 LogUtils.d(DeviceInfo.instance)
                 LogUtils.d(fcs)
-                ToastUtils.showShort("Shizuku获取方法签名错误,[设置-问题反馈]可反应此问题")
+                ToastUtils.showShort("Shizuku获取方法签名错误")
             }
         }
     }
