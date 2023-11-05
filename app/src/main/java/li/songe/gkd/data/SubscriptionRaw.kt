@@ -199,12 +199,10 @@ data class SubscriptionRaw(
                 matches = (getStringIArray(
                     rulesJson, "matches"
                 ) ?: emptyList()),
-                excludeMatches = (getStringIArray(
-                    rulesJson, "excludeMatches"
-                ) ?: emptyList()),
+                excludeMatches = getStringIArray(rulesJson, "excludeMatches"),
                 key = getInt(rulesJson, "key"),
                 name = getString(rulesJson, "name"),
-                preKeys = getIntIArray(rulesJson, "preKeys") ?: emptyList(),
+                preKeys = getIntIArray(rulesJson, "preKeys"),
                 action = getString(rulesJson, "action"),
                 matchLauncher = getBoolean(rulesJson, "matchLauncher"),
                 quickFind = getBoolean(rulesJson, "quickFind"),
