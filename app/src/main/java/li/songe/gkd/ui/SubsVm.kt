@@ -70,7 +70,7 @@ class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
         } else {
             appAndConfigs.filter { a ->
                 (appInfoCache[a.t0.id]?.name ?: a.t0.name ?: a.t0.id).contains(
-                    searchStr
+                    searchStr, true
                 )
             }
         }
