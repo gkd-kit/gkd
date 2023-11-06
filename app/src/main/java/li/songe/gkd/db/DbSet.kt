@@ -24,8 +24,7 @@ object DbSet {
     private val appDb by lazy {
         Room.databaseBuilder(
             app, AppDb::class.java, File(FolderExt.dbFolder, "gkd.db").absolutePath
-        ).addCallback(createCallback()).fallbackToDestructiveMigration()
-            .enableMultiInstanceInvalidation().build()
+        ).addCallback(createCallback()).fallbackToDestructiveMigration().build()
     }
     val subsItemDao by lazy { appDb.subsItemDao() }
     val subsConfigDao by lazy { appDb.subsConfigDao() }

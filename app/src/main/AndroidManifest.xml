@@ -30,12 +30,6 @@
         android:maxSdkVersion="28" />
 
 
-    <!--
-    APP 有两个进程, 主进程 + :remote 进程
-    主进程: 主要是 activity 的前端界面
-    remote进程: 主要是 service
-    -->
-
     <application
         android:name="li.songe.gkd.App"
         android:allowBackup="true"
@@ -98,7 +92,7 @@
             android:exported="false"
             android:label="@string/ab_label"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:process=":remote">
+            android:stopWithTask="false">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
             </intent-filter>
@@ -111,34 +105,34 @@
             android:name=".service.ManageService"
             android:exported="false"
             android:foregroundServiceType="dataSync"
-            android:process=":remote" />
+            android:stopWithTask="false" />
         <service
             android:name=".debug.ScreenshotService"
             android:exported="false"
             android:foregroundServiceType="mediaProjection"
-            android:process=":remote" />
+            android:stopWithTask="false" />
         <service
             android:name=".debug.HttpService"
             android:exported="false"
             android:foregroundServiceType="dataSync"
-            android:process=":remote" />
+            android:stopWithTask="false" />
         <service
             android:name=".debug.FloatingService"
             android:exported="false"
             android:foregroundServiceType="dataSync"
-            android:process=":remote" />
+            android:stopWithTask="false" />
         <service
             android:name=".service.ShizukuService"
             android:exported="false"
             android:foregroundServiceType="dataSync"
-            android:process=":remote" />
+            android:stopWithTask="false" />
         <service
             android:name=".debug.SnapshotTileService"
             android:exported="true"
             android:icon="@drawable/ic_capture"
             android:label="@string/capture_label"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
-            android:process=":remote">
+            android:stopWithTask="false">
 
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
