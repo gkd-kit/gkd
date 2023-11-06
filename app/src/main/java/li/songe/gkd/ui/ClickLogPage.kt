@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -35,14 +34,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
@@ -119,11 +116,27 @@ fun ClickLogPage() {
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
                                 text = appInfoCache[triggerLog.appId]?.name ?: triggerLog.appId
-                                ?: ""
+                                ?: "null"
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
-                        Text(text = triggerLog.activityId ?: "")
+                        val showActivityId = if (triggerLog.activityId != null) {
+                            if (triggerLog.appId != null && triggerLog.activityId.startsWith(
+                                    triggerLog.appId
+                                )
+                            ) {
+                                triggerLog.activityId.substring(triggerLog.appId.length)
+                            } else {
+                                triggerLog.activityId
+                            }
+                        } else {
+                            null
+                        }
+                        Text(
+                            text = showActivityId ?: "null",
+                            overflow = TextOverflow.Ellipsis,
+                            maxLines = 1,
+                        )
                         val group = vm.getGroup(triggerLog)
                         if (group?.name != null) {
                             Spacer(modifier = Modifier.width(10.dp))
@@ -136,6 +149,9 @@ fun ClickLogPage() {
                         if (rule?.name != null) {
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(text = rule.name)
+                        } else if ((group?.rules?.size ?: 0) > 1) {
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(text = (if (triggerLog.ruleKey != null) "key=${triggerLog.ruleKey}, " else "") + "index=${triggerLog.ruleIndex}")
                         }
                     }
                     Divider()
