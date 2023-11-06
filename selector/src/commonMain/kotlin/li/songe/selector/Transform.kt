@@ -46,15 +46,20 @@ class Transform<T>(
         )
     },
 
+    /**
+     * 遍历下面所有子孙节点,不包含自己
+     */
     val getDescendants: (T) -> Sequence<T> = { node ->
         sequence { //            深度优先 先序遍历
             //            https://developer.mozilla.org/zh-CN/docs/Web/API/Document/querySelector
-            val stack = mutableListOf(node)
+            val stack = getChildren(node).toMutableList()
+            stack.reverse()
             val tempNodes = mutableListOf<T>()
             do {
                 val top = stack.removeLast()
                 yield(top)
                 for (childNode in getChildren(top)) {
+                    // 可针对 sequence 优化
                     tempNodes.add(childNode)
                 }
                 if (tempNodes.isNotEmpty()) {
@@ -71,10 +76,13 @@ class Transform<T>(
 
     val querySelectorAll: (T, Selector) -> Sequence<T> = { node, selector ->
         sequence {
+            // cache trackNodes
             val trackNodes: MutableList<T> = mutableListOf()
+            val r0 = selector.match(node, this@Transform, trackNodes)
+            if (r0 != null) yield(r0)
             getDescendants(node).forEach { childNode ->
-                val r = selector.match(childNode, this@Transform, trackNodes)
                 trackNodes.clear()
+                val r = selector.match(childNode, this@Transform, trackNodes)
                 if (r != null) yield(r)
             }
         }
@@ -86,10 +94,10 @@ class Transform<T>(
     }
     val querySelectorTrackAll: (T, Selector) -> Sequence<List<T>> = { node, selector ->
         sequence {
-            val trackNodes: MutableList<T> = mutableListOf()
+            val r0 = selector.matchTracks(node, this@Transform)
+            if (r0 != null) yield(r0)
             getDescendants(node).forEach { childNode ->
-                val r = selector.matchTracks(childNode, this@Transform, trackNodes)?.toList()
-                trackNodes.clear()
+                val r = selector.matchTracks(childNode, this@Transform)
                 if (r != null) yield(r)
             }
         }
