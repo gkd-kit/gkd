@@ -14,10 +14,8 @@ import li.songe.gkd.notif.initChannel
 import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initStore
 import li.songe.gkd.util.initSubsState
-import li.songe.gkd.util.isMainProcess
 import li.songe.gkd.util.launchTry
 import org.lsposed.hiddenapibypass.HiddenApiBypass
-import rikka.shizuku.ShizukuProvider
 
 val appScope by lazy { MainScope() }
 
@@ -45,17 +43,13 @@ class App : Application() {
             setConsoleSwitch(BuildConfig.DEBUG)
             saveDays = 7
         }
-        ShizukuProvider.enableMultiProcessSupport(isMainProcess)
-        ShizukuProvider.requestBinderForNonProviderProcess(this)
 
         appScope.launchTry(Dispatchers.IO) {
             initStore()
             initAppState()
             initSubsState()
-            if (isMainProcess) {
-                initChannel()
-                clearHttpSubs()
-            }
+            initChannel()
+            clearHttpSubs()
         }
     }
 }
