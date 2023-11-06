@@ -148,7 +148,7 @@ val abTransform = Transform(
     getParent = { node -> node.parent },
     getDescendants = { node ->
         sequence {
-            val stack = mutableListOf(node)
+            val stack = getChildren(node).toMutableList()
             val tempNodes = mutableListOf<AccessibilityNodeInfo>()
             do {
                 val top = stack.removeLast()
