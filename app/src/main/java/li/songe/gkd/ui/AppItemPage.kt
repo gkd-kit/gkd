@@ -178,7 +178,8 @@ fun AppItemPage(
                                 Text(
                                     text = "规则组损坏",
                                     modifier = Modifier.fillMaxWidth(),
-                                    fontSize = 14.sp
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.error
                                 )
                             }
                         }
