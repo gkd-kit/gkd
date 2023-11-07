@@ -62,11 +62,17 @@ fun IActivityTaskManager.safeGetTasks(): List<ActivityManager.RunningTaskInfo>? 
             }
         }
     }
-    return when (getTasksFcType) {
-        1 -> this.getTasks(1)
-        3 -> this.getTasks(1, false, true)
-        4 -> this.getTasks(1, false, true, Display.DEFAULT_DISPLAY)
-        else -> null
+    return try {
+        // https://bugly.qq.com/v2/crash-reporting/crashes/d0ce46b353/106137?pid=1
+        // binder haven't been received
+        when (getTasksFcType) {
+            1 -> this.getTasks(1)
+            3 -> this.getTasks(1, false, true)
+            4 -> this.getTasks(1, false, true, Display.DEFAULT_DISPLAY)
+            else -> null
+        }
+    } catch (e: Exception) {
+        null
     }
 }
 
