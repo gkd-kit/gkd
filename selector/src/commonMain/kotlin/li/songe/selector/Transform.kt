@@ -53,6 +53,7 @@ class Transform<T>(
         sequence { //            深度优先 先序遍历
             //            https://developer.mozilla.org/zh-CN/docs/Web/API/Document/querySelector
             val stack = getChildren(node).toMutableList()
+            if (stack.isEmpty()) return@sequence
             stack.reverse()
             val tempNodes = mutableListOf<T>()
             do {
