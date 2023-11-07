@@ -216,10 +216,10 @@ fun SubsManagePage() {
                 Column {
                     val subsRawVal = subsIdToRaw[menuSubItemVal.id]
                     if (subsRawVal != null) {
-                        Text(text = "查看详情", modifier = Modifier
+                        Text(text = "查看规则", modifier = Modifier
                             .clickable {
                                 menuSubItem = null
-                                setShowSubsRaw(subsRawVal)
+                                navController.navigate(SubsPageDestination(subsRawVal.id))
                             }
                             .fillMaxWidth()
                             .padding(16.dp))
