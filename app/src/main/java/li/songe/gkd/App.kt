@@ -9,6 +9,7 @@ import com.tencent.mmkv.MMKV
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
+import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.debug.clearHttpSubs
 import li.songe.gkd.notif.initChannel
 import li.songe.gkd.util.initAppState
@@ -37,7 +38,27 @@ class App : Application() {
         super.onCreate()
         _app = this
 
-        CrashReport.initCrashReport(applicationContext, "d0ce46b353", false)
+        @Suppress("SENSELESS_COMPARISON") if (BuildConfig.BUGLY_TOKEN != null) {
+            CrashReport.setDeviceModel(this, DeviceInfo.instance.model)
+            CrashReport.setIsDevelopmentDevice(this, BuildConfig.DEBUG)
+            CrashReport.initCrashReport(applicationContext,
+                BuildConfig.BUGLY_TOKEN,
+                BuildConfig.DEBUG,
+                CrashReport.UserStrategy(this).apply {
+                    setCrashHandleCallback(object : CrashReport.CrashHandleCallback() {
+                        override fun onCrashHandleStart(
+                            p0: Int,
+                            p1: String?,
+                            p2: String?,
+                            p3: String?,
+                        ): MutableMap<String, String> {
+                            LogUtils.d(p0, p1, p2, p3) // 将报错日志输出到本地
+                            return super.onCrashHandleStart(p0, p1, p2, p3)
+                        }
+                    })
+                })
+        }
+
         MMKV.initialize(this)
         LogUtils.getConfig().apply {
             setConsoleSwitch(BuildConfig.DEBUG)
