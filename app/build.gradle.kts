@@ -44,6 +44,9 @@ android {
                 ).format(nowTime)
             )
         )
+        buildConfigField(
+            "String", "BUGLY_TOKEN", jsonStringOf(System.getenv("BUGLY_TOKEN"))
+        )
 
         resourceConfigurations.addAll(listOf("zh", "en"))
         ndk {

@@ -7,6 +7,9 @@ on:
     branches:
       - '**'
 
+env:
+  BUGLY_TOKEN: ${{ secrets.BUGLY_TOKEN }}
+
 jobs:
   build:
     if: ${{ !startsWith(github.event.head_commit.message, 'chore:') }}

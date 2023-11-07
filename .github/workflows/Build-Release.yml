@@ -5,6 +5,9 @@ on:
     tags:
       - v*
 
+env:
+  BUGLY_TOKEN: ${{ secrets.BUGLY_TOKEN }}
+
 jobs:
   build:
     runs-on: ubuntu-latest

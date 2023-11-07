@@ -80,7 +80,7 @@ dependencyResolutionManagement {
             // https://github.com/Tencent/MMKV/blob/master/README_CN.md
             library("tencent.mmkv", "com.tencent:mmkv:1.3.1")
             // https://bugly.qq.com/docs/user-guide/instruction-manual-android/
-            library("tencent.bugly", "com.tencent.bugly:crashreport:4.1.9.2")
+            library("tencent.bugly", "com.tencent.bugly:crashreport:4.1.9.3")
 
             // https://github.com/RikkaApps/HiddenApiRefinePlugin
             val rikkaVersion = "4.4.0"
