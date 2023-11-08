@@ -16,7 +16,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.util.FolderExt
+import li.songe.gkd.util.subsFolder
 import java.io.File
 
 @Entity(
@@ -37,7 +37,7 @@ data class SubsItem(
 
     @IgnoredOnParcel
     val subsFile by lazy {
-        File(FolderExt.subsFolder.absolutePath.plus("/${id}.json"))
+        File(subsFolder.absolutePath.plus("/${id}.json"))
     }
 
     suspend fun removeAssets() {
@@ -53,7 +53,7 @@ data class SubsItem(
 
         fun getSubscriptionRaw(subsItemId: Long): SubscriptionRaw? {
             return try {
-                val file = File(FolderExt.subsFolder.absolutePath.plus("/${subsItemId}.json"))
+                val file = File(subsFolder.absolutePath.plus("/${subsItemId}.json"))
                 if (!file.exists()) {
                     return null
                 }

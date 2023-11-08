@@ -15,15 +15,15 @@ import li.songe.gkd.appScope
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.util.DEFAULT_SUBS_UPDATE_URL
-import li.songe.gkd.util.FolderExt
 import li.songe.gkd.util.Singleton
+import li.songe.gkd.util.dbFolder
 import li.songe.gkd.util.launchTry
 import java.io.File
 
 object DbSet {
     private val appDb by lazy {
         Room.databaseBuilder(
-            app, AppDb::class.java, File(FolderExt.dbFolder, "gkd.db").absolutePath
+            app, AppDb::class.java, File(dbFolder, "gkd.db").absolutePath
         ).addCallback(createCallback()).fallbackToDestructiveMigration().build()
     }
     val subsItemDao by lazy { appDb.subsItemDao() }

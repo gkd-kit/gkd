@@ -13,6 +13,7 @@ import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.debug.clearHttpSubs
 import li.songe.gkd.notif.initChannel
 import li.songe.gkd.util.initAppState
+import li.songe.gkd.util.initFolder
 import li.songe.gkd.util.initStore
 import li.songe.gkd.util.initSubsState
 import li.songe.gkd.util.launchTry
@@ -65,6 +66,7 @@ class App : Application() {
             saveDays = 7
         }
 
+        initFolder()
         appScope.launchTry(Dispatchers.IO) {
             initStore()
             initAppState()
