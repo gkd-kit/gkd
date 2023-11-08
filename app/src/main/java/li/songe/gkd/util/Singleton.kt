@@ -53,10 +53,7 @@ object Singleton {
                 add(GifDecoder.Factory())
             }
         }.diskCache {
-            app.filesDir
-            app.getExternalFilesDir(null)
-            DiskCache.Builder()
-                .directory((app.externalCacheDir ?: app.cacheDir).resolve("imageCache")).build()
+            DiskCache.Builder().directory(imageCacheDir).build()
         }.build()
     }
 

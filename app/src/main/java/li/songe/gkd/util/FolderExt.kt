@@ -15,10 +15,17 @@ private val cacheDir by lazy {
 val snapshotZipDir by lazy { cacheDir.resolve("snapshotZip") }
 val newVersionApkDir by lazy { cacheDir.resolve("newVersionApk") }
 val logZipDir by lazy { cacheDir.resolve("logZip") }
+val imageCacheDir by lazy { cacheDir.resolve("imageCache") }
 
 fun initFolder() {
     listOf(
-        dbFolder, subsFolder, snapshotFolder, snapshotZipDir, newVersionApkDir, logZipDir
+        dbFolder,
+        subsFolder,
+        snapshotFolder,
+        snapshotZipDir,
+        newVersionApkDir,
+        logZipDir,
+        imageCacheDir
     ).forEach { f ->
         if (!f.exists()) {
             f.mkdirs()
