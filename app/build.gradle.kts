@@ -184,4 +184,7 @@ dependencies {
     implementation(libs.others.reorderable)
 
     implementation(libs.androidx.splashscreen)
+
+    implementation(libs.coil.compose)
+    implementation(libs.coil.gif)
 }

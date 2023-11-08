@@ -15,6 +15,7 @@ import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
+import li.songe.gkd.util.subsItemsFlow
 import java.text.Collator
 import java.util.Locale
 import javax.inject.Inject
@@ -23,8 +24,8 @@ import javax.inject.Inject
 class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
     private val args = SubsPageDestination.argsFrom(stateHandle)
 
-    val subsItemFlow = DbSet.subsItemDao.queryById(args.subsItemId)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    val subsItemFlow =
+        subsItemsFlow.map(viewModelScope) { s -> s.find { v -> v.id == args.subsItemId } }
 
     private val appSubsConfigsFlow = DbSet.subsConfigDao.queryAppTypeConfig(args.subsItemId)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())

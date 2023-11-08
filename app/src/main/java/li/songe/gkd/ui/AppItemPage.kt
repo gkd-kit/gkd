@@ -58,6 +58,7 @@ import kotlinx.serialization.encodeToString
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.destinations.GroupItemPageDestination
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.Singleton
@@ -66,6 +67,7 @@ import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
+import li.songe.gkd.util.navigate
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
@@ -238,16 +240,32 @@ fun AppItemPage(
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    val groupAppText = Singleton.json.encodeToString(
-                        appRaw?.copy(
-                            groups = listOf(showGroupItemVal)
+                Row {
+                    if (showGroupItemVal.allExampleUrls.isNotEmpty()) {
+                        TextButton(onClick = {
+                            setShowGroupItem(null)
+                            navController.navigate(
+                                GroupItemPageDestination(
+                                    subsInt = subsItemId,
+                                    appId = appId,
+                                    groupKey = showGroupItemVal.key
+                                )
+                            )
+                        }) {
+                            Text(text = "查看图片")
+                        }
+                    }
+                    TextButton(onClick = {
+                        val groupAppText = Singleton.json.encodeToString(
+                            appRaw?.copy(
+                                groups = listOf(showGroupItemVal)
+                            )
                         )
-                    )
-                    ClipboardUtils.copyText(groupAppText)
-                    ToastUtils.showShort("复制成功")
-                }) {
-                    Text(text = "复制规则组")
+                        ClipboardUtils.copyText(groupAppText)
+                        ToastUtils.showShort("复制成功")
+                    }) {
+                        Text(text = "复制规则组")
+                    }
                 }
             })
     }

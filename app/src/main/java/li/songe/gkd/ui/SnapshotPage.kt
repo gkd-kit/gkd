@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -139,10 +140,28 @@ fun SnapshotPage() {
                                 fontFamily = FontFamily.Monospace
                             )
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text(text = snapshot.appName ?: "")
+                            Text(
+                                text = snapshot.appName ?: snapshot.appId ?: snapshot.id.toString(),
+                                overflow = TextOverflow.Ellipsis,
+                                maxLines = 1,
+                            )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(text = snapshot.activityId ?: "")
+                        if (snapshot.activityId != null) {
+                            val showActivityId =
+                                if (snapshot.appId != null && snapshot.activityId.startsWith(
+                                        snapshot.appId
+                                    )
+                                ) {
+                                    snapshot.activityId.substring(snapshot.appId.length)
+                                } else {
+                                    snapshot.activityId
+                                }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = showActivityId, overflow = TextOverflow.Ellipsis,
+                                maxLines = 1,
+                            )
+                        }
                     }
                     Divider()
                 }
@@ -180,7 +199,8 @@ fun SnapshotPage() {
                             .clickable(onClick = scope.launchAsFn {
                                 navController.navigate(
                                     ImagePreviewPageDestination(
-                                        filePath = snapshotVal.screenshotFile.absolutePath
+                                        filePath = snapshotVal.screenshotFile.absolutePath,
+                                        title = snapshotVal.appName,
                                     )
                                 )
                                 selectedSnapshot = null
