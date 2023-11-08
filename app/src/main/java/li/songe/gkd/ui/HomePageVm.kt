@@ -25,10 +25,10 @@ import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.util.FILE_UPLOAD_URL
-import li.songe.gkd.util.FolderExt
 import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.checkUpdate
+import li.songe.gkd.util.dbFolder
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.storeFlow
 import java.io.File
@@ -61,7 +61,7 @@ class HomePageVm @Inject constructor() : ViewModel() {
         }
         appScope.launchTry(Dispatchers.IO) {
             // 迁移快照记录
-            val oldDbFile = File(FolderExt.dbFolder, "snapshot.db")
+            val oldDbFile = File(dbFolder, "snapshot.db")
             if (oldDbFile.exists()) {
                 SnapshotExt.snapshotDir.walk().maxDepth(1).filter { f -> f.isDirectory }
                     .mapNotNull { f -> f.name.toLongOrNull() }.forEach { snapshotId ->
