@@ -1,5 +1,6 @@
 package li.songe.gkd.ui
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import android.webkit.URLUtil
@@ -28,7 +29,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pullrefresh.PullRefreshIndicator
 import androidx.compose.material3.pullrefresh.pullRefresh
 import androidx.compose.material3.pullrefresh.rememberPullRefreshState
@@ -76,6 +76,7 @@ val subsNav = BottomNavItem(
     label = "订阅", icon = SafeR.ic_link, route = "subscription"
 )
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun SubsManagePage() {
     val context = LocalContext.current
@@ -130,13 +131,6 @@ fun SubsManagePage() {
     })
 
     Scaffold(
-        topBar = {
-            TopAppBar(title = {
-                Text(
-                    text = "订阅",
-                )
-            })
-        },
         floatingActionButton = {
             FloatingActionButton(onClick = {
                 if (subItems.any { it.id == 0L }) {
@@ -151,11 +145,10 @@ fun SubsManagePage() {
                 )
             }
         },
-    ) { padding ->
+    ) { _ ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .pullRefresh(pullRefreshState, subItems.isNotEmpty())
         ) {
             LazyColumn(
@@ -261,15 +254,13 @@ fun SubsManagePage() {
                         Divider()
                     }
                     if (menuSubItemVal.id != -2L) {
-                        Text(text = "删除订阅",
-                            modifier = Modifier
-                                .clickable {
-                                    deleteSubItem = menuSubItemVal
-                                    menuSubItem = null
-                                }
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            color = MaterialTheme.colorScheme.error)
+                        Text(text = "删除订阅", modifier = Modifier
+                            .clickable {
+                                deleteSubItem = menuSubItemVal
+                                menuSubItem = null
+                            }
+                            .fillMaxWidth()
+                            .padding(16.dp), color = MaterialTheme.colorScheme.error)
                     }
                 }
             }

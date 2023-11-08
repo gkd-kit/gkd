@@ -18,15 +18,12 @@ import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -71,7 +68,6 @@ val settingsNav = BottomNavItem(
     label = "设置", icon = SafeR.ic_cog, route = "settings"
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsPage() {
     val context = LocalContext.current as MainActivity
@@ -99,199 +95,189 @@ fun SettingsPage() {
 
     val checkUpdating by checkUpdatingFlow.collectAsState()
 
-    Scaffold(topBar = {
-        TopAppBar(title = {
-            Text(
-                text = "设置"
-            )
-        })
-    }, content = { contentPadding ->
-        Column(
-            modifier = Modifier
-                .verticalScroll(
-                    state = rememberScrollState()
+
+    Column(
+        modifier = Modifier.verticalScroll(
+            state = rememberScrollState()
+        )
+    ) {
+        TextSwitch(name = "后台隐藏",
+            desc = "在[最近任务]界面中隐藏本应用",
+            checked = store.excludeFromRecents,
+            onCheckedChange = {
+                updateStorage(
+                    storeFlow, store.copy(
+                        excludeFromRecents = it
+                    )
                 )
-                .padding(0.dp, 10.dp)
-                .padding(contentPadding)
-        ) {
+            })
+        Divider()
 
-            TextSwitch(name = "后台隐藏",
-                desc = "在[最近任务]界面中隐藏本应用",
-                checked = store.excludeFromRecents,
-                onCheckedChange = {
-                    updateStorage(
-                        storeFlow, store.copy(
-                            excludeFromRecents = it
-                        )
+        TextSwitch(name = "无障碍前台",
+            desc = "添加前台透明悬浮窗,关闭可能导致不工作",
+            checked = store.enableAbFloatWindow,
+            onCheckedChange = {
+                updateStorage(
+                    storeFlow, store.copy(
+                        enableAbFloatWindow = it
                     )
-                })
-            Divider()
-
-            TextSwitch(name = "无障碍前台",
-                desc = "添加前台透明悬浮窗,关闭可能导致不工作",
-                checked = store.enableAbFloatWindow,
-                onCheckedChange = {
-                    updateStorage(
-                        storeFlow, store.copy(
-                            enableAbFloatWindow = it
-                        )
-                    )
-                })
-            Divider()
-
-            TextSwitch(name = "点击提示",
-                desc = "触发点击时提示:[${store.clickToast}]",
-                checked = store.toastWhenClick,
-                modifier = Modifier.clickable {
-                    showToastInputDlg = true
-                },
-                onCheckedChange = {
-                    updateStorage(
-                        storeFlow, store.copy(
-                            toastWhenClick = it
-                        )
-                    )
-                    if (it && !Settings.canDrawOverlays(context)) {
-                        ToastUtils.showShort("需要悬浮窗权限")
-                    }
-                })
-            Divider()
-
-            Row(modifier = Modifier
-                .clickable {
-                    showSubsIntervalDlg = true
-                }
-                .padding(10.dp, 15.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    modifier = Modifier.weight(1f), text = "自动更新订阅", fontSize = 18.sp
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = updateTimeRadioOptions.find { it.second == store.updateSubsInterval }?.first
-                            ?: store.updateSubsInterval.toString(), fontSize = 14.sp
-                    )
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "more"
-                    )
-                }
-            }
-            Divider()
+            })
+        Divider()
 
-            TextSwitch(name = "自动更新应用",
-                desc = "打开应用时自动检测是否存在新版本",
-                checked = store.autoCheckAppUpdate,
-                onCheckedChange = {
-                    updateStorage(
-                        storeFlow, store.copy(
-                            autoCheckAppUpdate = it
-                        )
+        TextSwitch(name = "点击提示",
+            desc = "触发点击时提示:[${store.clickToast}]",
+            checked = store.toastWhenClick,
+            modifier = Modifier.clickable {
+                showToastInputDlg = true
+            },
+            onCheckedChange = {
+                updateStorage(
+                    storeFlow, store.copy(
+                        toastWhenClick = it
                     )
-                })
-            Divider()
-
-            SettingItem(title = if (checkUpdating) "检查更新ing" else "检查更新", onClick = {
-                appScope.launchTry {
-                    if (checkUpdatingFlow.value) return@launchTry
-                    val newVersion = checkUpdate()
-                    if (newVersion == null) {
-                        ToastUtils.showShort("暂无更新")
-                    }
+                )
+                if (it && !Settings.canDrawOverlays(context)) {
+                    ToastUtils.showShort("需要悬浮窗权限")
                 }
             })
-            Divider()
+        Divider()
 
-            Row(modifier = Modifier
-                .clickable {
-                    showEnableDarkThemeDlg = true
-                }
-                .padding(10.dp, 15.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier
+            .clickable {
+                showSubsIntervalDlg = true
+            }
+            .padding(10.dp, 15.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                modifier = Modifier.weight(1f), text = "自动更新订阅", fontSize = 18.sp
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    modifier = Modifier.weight(1f), text = "深色模式", fontSize = 18.sp
+                    text = updateTimeRadioOptions.find { it.second == store.updateSubsInterval }?.first
+                        ?: store.updateSubsInterval.toString(), fontSize = 14.sp
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = darkThemeRadioOptions.find { it.second == store.enableDarkTheme }?.first
-                            ?: store.enableDarkTheme.toString(), fontSize = 14.sp
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "more"
+                )
+            }
+        }
+        Divider()
+
+        TextSwitch(name = "自动更新应用",
+            desc = "打开应用时自动检测是否存在新版本",
+            checked = store.autoCheckAppUpdate,
+            onCheckedChange = {
+                updateStorage(
+                    storeFlow, store.copy(
+                        autoCheckAppUpdate = it
                     )
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "more"
-                    )
+                )
+            })
+        Divider()
+
+        SettingItem(title = if (checkUpdating) "检查更新ing" else "检查更新", onClick = {
+            appScope.launchTry {
+                if (checkUpdatingFlow.value) return@launchTry
+                val newVersion = checkUpdate()
+                if (newVersion == null) {
+                    ToastUtils.showShort("暂无更新")
                 }
             }
-            Divider()
-            Row(modifier = Modifier
-                .clickable {
-                    showEnableGroupDlg = true
-                }
-                .padding(10.dp, 15.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    modifier = Modifier.weight(1f), text = "规则启用", fontSize = 18.sp
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = enableGroupRadioOptions.find { it.second == store.enableGroup }?.first
-                            ?: store.enableGroup.toString(), fontSize = 14.sp
-                    )
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "more"
-                    )
-                }
-            }
-            Divider()
+        })
+        Divider()
 
-            TextSwitch(name = "保存日志",
-                desc = "保存最近7天的日志,大概占用您5M的空间",
-                checked = store.log2FileSwitch,
-                onCheckedChange = {
-                    updateStorage(
-                        storeFlow, store.copy(
-                            log2FileSwitch = it
-                        )
+        Row(modifier = Modifier
+            .clickable {
+                showEnableDarkThemeDlg = true
+            }
+            .padding(10.dp, 15.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                modifier = Modifier.weight(1f), text = "深色模式", fontSize = 18.sp
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = darkThemeRadioOptions.find { it.second == store.enableDarkTheme }?.first
+                        ?: store.enableDarkTheme.toString(), fontSize = 14.sp
+                )
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "more"
+                )
+            }
+        }
+        Divider()
+        Row(modifier = Modifier
+            .clickable {
+                showEnableGroupDlg = true
+            }
+            .padding(10.dp, 15.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                modifier = Modifier.weight(1f), text = "规则启用", fontSize = 18.sp
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = enableGroupRadioOptions.find { it.second == store.enableGroup }?.first
+                        ?: store.enableGroup.toString(), fontSize = 14.sp
+                )
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "more"
+                )
+            }
+        }
+        Divider()
+
+        TextSwitch(name = "保存日志",
+            desc = "保存最近7天的日志,大概占用您5M的空间",
+            checked = store.log2FileSwitch,
+            onCheckedChange = {
+                updateStorage(
+                    storeFlow, store.copy(
+                        log2FileSwitch = it
                     )
-                    if (!it) {
-                        appScope.launchTry(Dispatchers.IO) {
-                            val logFiles = LogUtils.getLogFiles()
-                            if (logFiles.isNotEmpty()) {
-                                logFiles.forEach { f ->
-                                    f.delete()
-                                }
-                                ToastUtils.showShort("已删除全部日志")
+                )
+                if (!it) {
+                    appScope.launchTry(Dispatchers.IO) {
+                        val logFiles = LogUtils.getLogFiles()
+                        if (logFiles.isNotEmpty()) {
+                            logFiles.forEach { f ->
+                                f.delete()
                             }
+                            ToastUtils.showShort("已删除全部日志")
                         }
                     }
-                })
-            Divider()
-
-            SettingItem(title = "分享日志", onClick = {
-                vm.viewModelScope.launchTry(Dispatchers.IO) {
-                    val logFiles = LogUtils.getLogFiles()
-                    if (logFiles.isNotEmpty()) {
-                        showShareLogDlg = true
-                    } else {
-                        ToastUtils.showShort("暂无日志")
-                    }
                 }
             })
-            Divider()
+        Divider()
 
-            SettingItem(title = "高级模式", onClick = {
-                navController.navigate(DebugPageDestination)
-            })
-            Divider()
+        SettingItem(title = "分享日志", onClick = {
+            vm.viewModelScope.launchTry(Dispatchers.IO) {
+                val logFiles = LogUtils.getLogFiles()
+                if (logFiles.isNotEmpty()) {
+                    showShareLogDlg = true
+                } else {
+                    ToastUtils.showShort("暂无日志")
+                }
+            }
+        })
+        Divider()
 
-            SettingItem(title = "关于", onClick = {
-                navController.navigate(AboutPageDestination)
-            })
+        SettingItem(title = "高级模式", onClick = {
+            navController.navigate(DebugPageDestination)
+        })
+        Divider()
 
-            Spacer(modifier = Modifier.height(40.dp))
-        }
-    })
+        SettingItem(title = "关于", onClick = {
+            navController.navigate(AboutPageDestination)
+        })
+
+        Spacer(modifier = Modifier.height(40.dp))
+    }
+
 
     if (showSubsIntervalDlg) {
         Dialog(onDismissRequest = { showSubsIntervalDlg = false }) {
@@ -348,7 +334,8 @@ fun SettingsPage() {
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .selectable(selected = (option.second == store.enableDarkTheme),
+                                .selectable(
+                                    selected = (option.second == store.enableDarkTheme),
                                     onClick = {
                                         updateStorage(
                                             storeFlow,
@@ -388,7 +375,8 @@ fun SettingsPage() {
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .selectable(selected = (option.second == store.enableGroup),
+                                .selectable(
+                                    selected = (option.second == store.enableGroup),
                                     onClick = {
                                         updateStorage(
                                             storeFlow,

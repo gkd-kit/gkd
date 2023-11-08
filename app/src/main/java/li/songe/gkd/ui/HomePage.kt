@@ -8,6 +8,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,7 +36,13 @@ fun HomePage() {
     val vm = hiltViewModel<HomePageVm>()
     val tab by vm.tabFlow.collectAsState()
 
-    Scaffold(bottomBar = {
+    Scaffold(topBar = {
+        TopAppBar(title = {
+            Text(
+                text = tab.label,
+            )
+        })
+    }, bottomBar = {
         NavigationBar {
             BottomNavItems.forEach { navItem ->
                 NavigationBarItem(selected = tab == navItem, modifier = Modifier, onClick = {

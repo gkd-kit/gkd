@@ -3,6 +3,8 @@ package li.songe.gkd.composition
 import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
 open class CompositionActivity(
     private val block: CompositionActivity.(Bundle?) -> Unit,
@@ -26,6 +28,8 @@ open class CompositionActivity(
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         block(savedInstanceState)
     }

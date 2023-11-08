@@ -75,7 +75,7 @@ dependencyResolutionManagement {
             library("compose.tooling", "androidx.compose.ui:ui-tooling:$composeVersion")
             library("compose.junit4", "androidx.compose.ui:ui-test-junit4:$composeVersion")
             library("compose.material3", "androidx.compose.material3:material3:1.1.2")
-            library("compose.activity", "androidx.activity:activity-compose:1.7.2")
+            library("compose.activity", "androidx.activity:activity-compose:1.8.0-rc01")
 
             // https://github.com/Tencent/MMKV/blob/master/README_CN.md
             library("tencent.mmkv", "com.tencent:mmkv:1.3.1")
@@ -185,6 +185,9 @@ dependencyResolutionManagement {
                 "destinations.core", "io.github.raamcosta.compose-destinations:core:1.9.54"
             )
             library("destinations.ksp", "io.github.raamcosta.compose-destinations:ksp:1.9.54")
+
+            library("coil.compose", "io.coil-kt:coil-compose:2.5.0")
+            library("coil.gif", "io.coil-kt:coil-gif:2.5.0")
 
 //            https://github.com/aclassen/ComposeReorderable
             library("others.reorderable", "org.burnoutcrew.composereorderable:reorderable:0.9.6")

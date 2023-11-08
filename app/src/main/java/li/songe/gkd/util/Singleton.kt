@@ -1,5 +1,10 @@
 package li.songe.gkd.util
 
+import android.os.Build
+import coil.ImageLoader
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
+import coil.disk.DiskCache
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -7,6 +12,7 @@ import io.ktor.http.ContentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
+import li.songe.gkd.app
 
 @OptIn(ExperimentalSerializationApi::class)
 object Singleton {
@@ -37,6 +43,21 @@ object Singleton {
                 clientCacheSize = 0
             }
         }
+    }
+
+    val imageLoader by lazy {
+        ImageLoader.Builder(app).components {
+            if (Build.VERSION.SDK_INT >= 28) {
+                add(ImageDecoderDecoder.Factory())
+            } else {
+                add(GifDecoder.Factory())
+            }
+        }.diskCache {
+            app.filesDir
+            app.getExternalFilesDir(null)
+            DiskCache.Builder()
+                .directory((app.externalCacheDir ?: app.cacheDir).resolve("imageCache")).build()
+        }.build()
     }
 
 }

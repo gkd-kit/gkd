@@ -5,7 +5,6 @@ import android.content.Context
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.dylanc.activityresult.launcher.PickContentLauncher
@@ -29,7 +28,6 @@ import li.songe.gkd.util.storeFlow
 
 @AndroidEntryPoint
 class MainActivity : CompositionActivity({
-    installSplashScreen()
     useLifeCycleLog()
 
     val launcher = StartActivityLauncher(this)
@@ -47,7 +45,8 @@ class MainActivity : CompositionActivity({
     }
 
     setContent {
-        val navController = rememberNavController()
+
+    val navController = rememberNavController()
         AppTheme {
             UpgradeDialog()
             CompositionLocalProvider(

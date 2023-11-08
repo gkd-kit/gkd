@@ -1,57 +1,70 @@
 package li.songe.gkd.ui
 
-import android.graphics.BitmapFactory
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.unit.dp
-import com.blankj.utilcode.util.ToastUtils
+import androidx.compose.ui.zIndex
+import coil.compose.AsyncImage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
-import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.withContext
-import li.songe.gkd.util.LaunchedEffectTry
+import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
 @Composable
 fun ImagePreviewPage(
-    filePath: String?,
+    filePath: String,
+    title: String? = null,
 ) {
-    val (bitmap, setBitmap) = remember {
-        mutableStateOf<ImageBitmap?>(null)
-    }
-    LaunchedEffectTry {
-        if (filePath != null) {
-            setBitmap(withContext(IO) { BitmapFactory.decodeFile(filePath).asImageBitmap() })
-        } else {
-            ToastUtils.showShort("图片加载失败")
-        }
-    }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-    ) {
-        if (bitmap != null) {
-            Image(
-                bitmap = bitmap,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(0.dp)
+    val navController = LocalNavController.current
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        TopAppBar(
+            navigationIcon = {
+                IconButton(onClick = {
+                    navController.popBackStack()
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = null,
+                    )
+                }
+            },
+            title = {
+                if (title != null) {
+                    Text(text = title)
+                }
+            },
+            actions = {},
+            modifier = Modifier.zIndex(1f),
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.5f)
+            )
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
+            AsyncImage(
+                model = filePath, contentDescription = null, modifier = Modifier.fillMaxWidth()
             )
         }
     }
+
 }

@@ -109,7 +109,6 @@ fun SubsPage(
             focusRequester.requestFocus()
         }
     })
-
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -137,8 +136,11 @@ fun SubsPage(
             }, actions = {
                 if (showSearchBar) {
                     IconButton(onClick = {
-                        showSearchBar = false
-                        vm.searchStrFlow.value = ""
+                        if (vm.searchStrFlow.value.isEmpty()) {
+                            showSearchBar = false
+                        } else {
+                            vm.searchStrFlow.value = ""
+                        }
                     }) {
                         Icon(Icons.Outlined.Close, contentDescription = null)
                     }

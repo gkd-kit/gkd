@@ -82,6 +82,20 @@ data class SubscriptionRaw(
                 }
             }
         }
+
+        @IgnoredOnParcel
+        val allExampleUrls by lazy {
+            mutableListOf<String>().apply {
+                if (exampleUrls != null) {
+                    addAll(exampleUrls)
+                }
+                rules.forEach { r ->
+                    if (r.exampleUrls != null) {
+                        addAll(r.exampleUrls)
+                    }
+                }
+            }
+        }
     }
 
     @Serializable
