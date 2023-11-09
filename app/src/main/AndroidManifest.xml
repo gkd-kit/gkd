@@ -139,6 +139,10 @@
             </intent-filter>
         </service>
 
+        <service
+            android:name=".debug.SnapshotActionService"
+            android:exported="true"
+            tools:ignore="ExportedService" />
 
     </application>
 
