@@ -5,7 +5,6 @@
 ## 安装
 
 - [releases](https://github.com/gkd-kit/gkd/releases)
-- [123 云盘](https://www.123pan.com/s/IRA1jv-IJU9A.html)
 
 ## 功能
 
