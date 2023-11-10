@@ -134,20 +134,20 @@ val clickNode: ActionFc = { _, node ->
     )
 }
 
-val clickCenter: ActionFc = { context, node ->
+fun getClickCenterAction(action: String, duration: Long): ActionFc = { context, node ->
     val react = Rect()
     node.getBoundsInScreen(react)
     val x = (react.right + react.left) / 2f
     val y = (react.bottom + react.top) / 2f
     ActionResult(
-        action = "clickCenter",
+        action = action,
         result = if (0 <= x && 0 <= y && x <= ScreenUtils.getScreenWidth() && y <= ScreenUtils.getScreenHeight()) {
             val gestureDescription = GestureDescription.Builder()
             val path = Path()
             path.moveTo(x, y)
             gestureDescription.addStroke(
                 GestureDescription.StrokeDescription(
-                    path, 0, ViewConfiguration.getTapTimeout().toLong()
+                    path, 0, duration
                 )
             )
             context.dispatchGesture(gestureDescription.build(), null, null)
@@ -156,8 +156,11 @@ val clickCenter: ActionFc = { context, node ->
             false
         }
     )
-
 }
+
+val clickCenter = getClickCenterAction("clickCenter", ViewConfiguration.getTapTimeout().toLong())
+
+val longClickCenter = getClickCenterAction("longClickCenter", (ViewConfiguration.getLongPressTimeout() * 1.1).toLong())
 
 val backFc: ActionFc = { context, _ ->
     ActionResult(
@@ -170,6 +173,7 @@ fun getActionFc(action: String?): ActionFc {
     return when (action) {
         "clickNode" -> clickNode
         "clickCenter" -> clickCenter
+        "longClickCenter" -> longClickCenter
         "back" -> backFc
         else -> click
     }
