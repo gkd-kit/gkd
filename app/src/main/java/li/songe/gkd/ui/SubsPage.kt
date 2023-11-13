@@ -60,8 +60,8 @@ import li.songe.gkd.ui.component.SubsAppCard
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
-import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
@@ -293,7 +293,7 @@ fun SubsPage(
     val editAppRawVal = editAppRaw
     if (editAppRawVal != null && subsItemVal != null && subsRaw != null) {
         var source by remember {
-            mutableStateOf(Singleton.json.encodeToString(editAppRawVal))
+            mutableStateOf(json.encodeToString(editAppRawVal))
         }
         AlertDialog(title = { Text(text = "编辑本地APP规则") }, text = {
             OutlinedTextField(
@@ -354,7 +354,7 @@ fun SubsPage(
                     Text(text = "复制", modifier = Modifier
                         .clickable {
                             ClipboardUtils.copyText(
-                                Singleton.json.encodeToString(
+                                json.encodeToString(
                                     menuAppRawVal
                                 )
                             )
@@ -368,7 +368,7 @@ fun SubsPage(
                             // 也许需要二次确认
                             vm.viewModelScope.launchTry(Dispatchers.IO) {
                                 subsItemVal.subsFile.writeText(
-                                    Singleton.json.encodeToString(
+                                    json.encodeToString(
                                         subsRaw.copy(apps = subsRaw.apps.filter { a -> a.id != menuAppRawVal.id })
                                     )
                                 )

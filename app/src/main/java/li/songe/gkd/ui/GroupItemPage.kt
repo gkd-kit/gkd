@@ -31,8 +31,8 @@ import coil.request.ImageRequest
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.Singleton.imageLoader
 import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.imageLoader
 import li.songe.gkd.util.subsIdToRawFlow
 
 

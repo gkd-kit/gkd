@@ -1,5 +1,6 @@
 package li.songe.gkd.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -61,13 +62,13 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.GroupItemPageDestination
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
-import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.navigate
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
-import li.songe.gkd.util.navigate
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
@@ -256,7 +257,7 @@ fun AppItemPage(
                         }
                     }
                     TextButton(onClick = {
-                        val groupAppText = Singleton.json.encodeToString(
+                        val groupAppText = json.encodeToString(
                             appRaw?.copy(
                                 groups = listOf(showGroupItemVal)
                             )
@@ -299,7 +300,7 @@ fun AppItemPage(
                                         )
                                     })
                                 subsItemVal.subsFile.writeText(
-                                    Singleton.json.encodeToString(
+                                    json.encodeToString(
                                         newSubsRaw
                                     )
                                 )
@@ -320,7 +321,7 @@ fun AppItemPage(
 
     if (editGroupRaw != null && appRawVal != null && subsItemVal != null) {
         var source by remember {
-            mutableStateOf(Singleton.json.encodeToString(editGroupRaw))
+            mutableStateOf(json.encodeToString(editGroupRaw))
         }
         val oldSource = remember { source }
         AlertDialog(
@@ -374,7 +375,7 @@ fun AppItemPage(
                     })
                     vm.viewModelScope.launchTry(Dispatchers.IO) {
                         subsItemVal.subsFile.writeText(
-                            Singleton.json.encodeToString(
+                            json.encodeToString(
                                 newSubsRaw
                             )
                         )
@@ -449,7 +450,7 @@ fun AppItemPage(
                     )
                 })
                 vm.viewModelScope.launchTry(Dispatchers.IO) {
-                    subsItemVal.subsFile.writeText(Singleton.json.encodeToString(newSubsRaw))
+                    subsItemVal.subsFile.writeText(json.encodeToString(newSubsRaw))
                     DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
                     showAddDlg = false
                     ToastUtils.showShort("添加成功")

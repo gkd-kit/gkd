@@ -21,7 +21,7 @@ import li.songe.gkd.data.createComplexSnapshot
 import li.songe.gkd.data.toSnapshot
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.service.GkdAbService
-import li.songe.gkd.util.Singleton
+import li.songe.gkd.util.keepNullJson
 import li.songe.gkd.util.snapshotZipDir
 import li.songe.gkd.util.storeFlow
 import java.io.File
@@ -112,7 +112,7 @@ object SnapshotExt {
                 File(getScreenshotPath(snapshot.id)).outputStream().use { stream ->
                     bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
                 }
-                val text = Singleton.keepNullJson.encodeToString(snapshot)
+                val text = keepNullJson.encodeToString(snapshot)
                 File(getSnapshotPath(snapshot.id)).writeText(text)
                 DbSet.snapshotDao.insert(snapshot.toSnapshot())
             }

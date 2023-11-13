@@ -7,7 +7,7 @@ import kotlinx.coroutines.delay
 import li.songe.gkd.appScope
 import li.songe.gkd.debug.SnapshotExt.captureSnapshot
 import li.songe.gkd.service.GkdAbService
-import li.songe.gkd.service.topActivityFlow
+import li.songe.gkd.service.safeActiveWindow
 import li.songe.gkd.util.launchTry
 
 class SnapshotTileService : TileService() {
@@ -18,12 +18,13 @@ class SnapshotTileService : TileService() {
             ToastUtils.showShort("无障碍没有开启")
             return
         }
-        val oldAppId = topActivityFlow.value?.appId
+        val oldAppId = service.safeActiveWindow?.packageName
+            ?: return ToastUtils.showShort("获取界面信息根节点失败")
         appScope.launchTry {
             val interval = 500L
             val waitTime = 3000L
             var i = 0
-            while (topActivityFlow.value?.appId == oldAppId) {
+            while (oldAppId.contentEquals(service.safeActiveWindow?.packageName)) {
                 service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
                 delay(interval)
                 i++

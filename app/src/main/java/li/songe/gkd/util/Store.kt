@@ -18,7 +18,7 @@ private inline fun <reified T> createStorageFlow(
     val str = kv.getString(key, null)
     val initValue = if (str != null) {
         try {
-            Singleton.json.decodeFromString<T>(str)
+            json.decodeFromString<T>(str)
         } catch (e: Exception) {
             e.printStackTrace()
             LogUtils.d(e)
@@ -31,7 +31,7 @@ private inline fun <reified T> createStorageFlow(
     appScope.launch {
         stateFlow.drop(1).collect {
             withContext(Dispatchers.IO) {
-                kv.encode(key, Singleton.json.encodeToString(it))
+                kv.encode(key, json.encodeToString(it))
             }
         }
     }
