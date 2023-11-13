@@ -31,8 +31,8 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.composition.CompositionService
-import li.songe.gkd.data.GkdAction
 import li.songe.gkd.data.DeviceInfo
+import li.songe.gkd.data.GkdAction
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.SubscriptionRaw
@@ -43,7 +43,7 @@ import li.songe.gkd.notif.httpChannel
 import li.songe.gkd.notif.httpNotif
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.util.Ext.getIpAddressInLocalNetwork
-import li.songe.gkd.util.Singleton
+import li.songe.gkd.util.keepNullJson
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
@@ -67,7 +67,7 @@ class HttpService : CompositionService({
         return embeddedServer(Netty, port, configure = { tcpKeepAlive = true }) {
             install(KtorCorsPlugin)
             install(KtorErrorPlugin)
-            install(ContentNegotiation) { json(Singleton.keepNullJson) }
+            install(ContentNegotiation) { json(keepNullJson) }
 
             routing {
                 get("/") { call.respond("hello world") }

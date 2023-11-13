@@ -55,7 +55,7 @@ suspend fun checkUpdate(): NewVersion? {
     if (checkUpdatingFlow.value) return null
     checkUpdatingFlow.value = true
     try {
-        val newVersion = Singleton.client.get(UPDATE_URL).body<NewVersion>()
+        val newVersion = client.get(UPDATE_URL).body<NewVersion>()
         if (newVersion.versionCode > BuildConfig.VERSION_CODE) {
             newVersionFlow.value =
                 newVersion.copy(versionLogs = newVersion.versionLogs.takeWhile { v -> v.code > BuildConfig.VERSION_CODE })
@@ -79,18 +79,17 @@ fun startDownload(newVersion: NewVersion) {
     var job: Job? = null
     job = appScope.launch(Dispatchers.IO) {
         try {
-            val channel =
-                Singleton.client.get(URI(UPDATE_URL).resolve(newVersion.downloadUrl).toString()) {
-                    onDownload { bytesSentTotal, contentLength ->
-                        // contentLength 在某些机型上概率错误
-                        val downloadStatus = downloadStatusFlow.value
-                        if (downloadStatus is LoadStatus.Loading) {
-                            downloadStatusFlow.value = LoadStatus.Loading(
-                                bytesSentTotal.toFloat() / (newVersion.fileSize ?: contentLength)
-                            )
-                        } else if (downloadStatus is LoadStatus.Failure) {
-                            // 提前终止下载
-                            job?.cancel()
+            val channel = client.get(URI(UPDATE_URL).resolve(newVersion.downloadUrl).toString()) {
+                onDownload { bytesSentTotal, contentLength ->
+                    // contentLength 在某些机型上概率错误
+                    val downloadStatus = downloadStatusFlow.value
+                    if (downloadStatus is LoadStatus.Loading) {
+                        downloadStatusFlow.value = LoadStatus.Loading(
+                            bytesSentTotal.toFloat() / (newVersion.fileSize ?: contentLength)
+                        )
+                    } else if (downloadStatus is LoadStatus.Failure) {
+                        // 提前终止下载
+                        job?.cancel()
                         }
                     }
                 }.bodyAsChannel()

@@ -5,7 +5,7 @@ import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
-import li.songe.gkd.util.Singleton
+import li.songe.gkd.util.json
 import li.songe.selector.Selector
 
 
@@ -302,12 +302,12 @@ data class SubscriptionRaw(
         }
 
         //  订阅文件状态: 文件不存在, 文件正常, 文件损坏(损坏原因)
-        fun stringify(source: SubscriptionRaw) = Singleton.json.encodeToString(source)
+        fun stringify(source: SubscriptionRaw) = json.encodeToString(source)
 
         fun parse(source: String, json5: Boolean = true): SubscriptionRaw {
             val text = if (json5) Jankson.builder().build().load(source).toJson() else source
 
-            val obj = jsonToSubscriptionRaw(Singleton.json.parseToJsonElement(text).jsonObject)
+            val obj = jsonToSubscriptionRaw(json.parseToJsonElement(text).jsonObject)
 
             val duplicatedApps = obj.apps.groupingBy { it }.eachCount().filter { it.value > 1 }.keys
             if (duplicatedApps.isNotEmpty()) {
@@ -334,12 +334,12 @@ data class SubscriptionRaw(
 
         fun parseAppRaw(source: String, json5: Boolean = true): AppRaw {
             val text = if (json5) Jankson.builder().build().load(source).toJson() else source
-            return jsonToAppRaw(Singleton.json.parseToJsonElement(text).jsonObject, 0)
+            return jsonToAppRaw(json.parseToJsonElement(text).jsonObject, 0)
         }
 
         fun parseGroupRaw(source: String, json5: Boolean = true): GroupRaw {
             val text = if (json5) Jankson.builder().build().load(source).toJson() else source
-            return jsonToGroupRaw(Singleton.json.parseToJsonElement(text).jsonObject, 0)
+            return jsonToGroupRaw(json.parseToJsonElement(text).jsonObject, 0)
         }
     }
 

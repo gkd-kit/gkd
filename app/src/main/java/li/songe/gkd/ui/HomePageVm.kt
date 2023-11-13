@@ -26,9 +26,10 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.util.FILE_UPLOAD_URL
 import li.songe.gkd.util.LoadStatus
-import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.checkUpdate
+import li.songe.gkd.util.client
 import li.songe.gkd.util.dbFolder
+import li.songe.gkd.util.json
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.storeFlow
 import java.io.File
@@ -48,7 +49,7 @@ class HomePageVm @Inject constructor() : ViewModel() {
             }
             if (!localSubsItem.subsFile.exists()) {
                 localSubsItem.subsFile.writeText(
-                    Singleton.json.encodeToString(
+                    json.encodeToString(
                         SubscriptionRaw(
                             id = localSubsItem.id,
                             name = "本地订阅",
@@ -66,7 +67,7 @@ class HomePageVm @Inject constructor() : ViewModel() {
                 SnapshotExt.snapshotDir.walk().maxDepth(1).filter { f -> f.isDirectory }
                     .mapNotNull { f -> f.name.toLongOrNull() }.forEach { snapshotId ->
                         DbSet.snapshotDao.insertOrIgnore(
-                            Singleton.json.decodeFromString(
+                            json.decodeFromString(
                                 File(SnapshotExt.getSnapshotPath(snapshotId)).readText()
                             )
                         )
@@ -94,17 +95,16 @@ class HomePageVm @Inject constructor() : ViewModel() {
         uploadJob = viewModelScope.launchTry(Dispatchers.IO) {
             uploadStatusFlow.value = LoadStatus.Loading()
             try {
-                val response = Singleton.client.submitFormWithBinaryData(
-                    url = FILE_UPLOAD_URL,
-                    formData = formData {
+                val response =
+                    client.submitFormWithBinaryData(url = FILE_UPLOAD_URL, formData = formData {
                         append("\"file\"", zipFile.readBytes(), Headers.build {
                             append(HttpHeaders.ContentType, "application/x-zip-compressed")
                             append(HttpHeaders.ContentDisposition, "filename=\"file.zip\"")
                         })
                     }) {
-                    onUpload { bytesSentTotal, contentLength ->
-                        if (uploadStatusFlow.value is LoadStatus.Loading) {
-                            uploadStatusFlow.value =
+                        onUpload { bytesSentTotal, contentLength ->
+                            if (uploadStatusFlow.value is LoadStatus.Loading) {
+                                uploadStatusFlow.value =
                                 LoadStatus.Loading(bytesSentTotal / contentLength.toFloat())
                         }
                     }
