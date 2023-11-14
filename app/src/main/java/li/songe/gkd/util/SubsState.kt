@@ -86,9 +86,6 @@ val appIdToRulesFlow by lazy {
                                 }
                             }.toSet()
 
-                        val matchLauncher =
-                            ruleRaw.matchLauncher ?: groupRaw.matchLauncher ?: appRaw.matchLauncher
-                            ?: false
                         val quickFind =
                             ruleRaw.quickFind ?: groupRaw.quickFind ?: appRaw.quickFind ?: false
 
@@ -108,7 +105,6 @@ val appIdToRulesFlow by lazy {
 
                         groupRuleList.add(
                             Rule(
-                                matchLauncher = matchLauncher,
                                 quickFind = quickFind,
                                 actionCd = actionCd,
                                 actionDelay = actionDelay,
