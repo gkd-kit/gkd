@@ -25,7 +25,6 @@ data class SubscriptionRaw(
         val excludeActivityIds: List<String>?
         val actionCd: Long?
         val actionDelay: Long?
-        val matchLauncher: Boolean?
         val quickFind: Boolean?
         val matchDelay: Long?
         val matchTime: Long?
@@ -39,7 +38,6 @@ data class SubscriptionRaw(
         val name: String?,
         override val actionCd: Long?,
         override val actionDelay: Long?,
-        override val matchLauncher: Boolean?,
         override val quickFind: Boolean?,
         override val actionMaximum: Int?,
         override val matchDelay: Long?,
@@ -58,7 +56,6 @@ data class SubscriptionRaw(
         val enable: Boolean?,
         override val actionCd: Long?,
         override val actionDelay: Long?,
-        override val matchLauncher: Boolean?,
         override val quickFind: Boolean?,
         override val actionMaximum: Int?,
         override val matchDelay: Long?,
@@ -106,7 +103,6 @@ data class SubscriptionRaw(
         val action: String?,
         override val actionCd: Long?,
         override val actionDelay: Long?,
-        override val matchLauncher: Boolean?,
         override val quickFind: Boolean?,
         override val actionMaximum: Int?,
         override val matchDelay: Long?,
@@ -218,7 +214,6 @@ data class SubscriptionRaw(
                 name = getString(rulesJson, "name"),
                 preKeys = getIntIArray(rulesJson, "preKeys"),
                 action = getString(rulesJson, "action"),
-                matchLauncher = getBoolean(rulesJson, "matchLauncher"),
                 quickFind = getBoolean(rulesJson, "quickFind"),
                 actionMaximum = getInt(rulesJson, "actionMaximum"),
                 matchDelay = getLong(rulesJson, "matchDelay"),
@@ -252,7 +247,6 @@ data class SubscriptionRaw(
                 }.map {
                     jsonToRuleRaw(it)
                 },
-                matchLauncher = getBoolean(groupsJson, "matchLauncher"),
                 quickFind = getBoolean(groupsJson, "quickFind"),
                 actionMaximum = getInt(groupsJson, "actionMaximum"),
                 matchDelay = getLong(groupsJson, "matchDelay"),
@@ -278,7 +272,6 @@ data class SubscriptionRaw(
                 }).mapIndexed { index, jsonElement ->
                     jsonToGroupRaw(jsonElement, index)
                 },
-                matchLauncher = getBoolean(appsJson, "matchLauncher"),
                 quickFind = getBoolean(appsJson, "quickFind"),
                 actionMaximum = getInt(appsJson, "actionMaximum"),
                 matchDelay = getLong(appsJson, "matchDelay"),

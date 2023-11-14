@@ -22,7 +22,6 @@ data class Rule(
     val excludeMatches: List<Selector> = emptyList(),
     val actionCd: Long = defaultMiniCd,
     val actionDelay: Long = 0,
-    val matchLauncher: Boolean = false,
     val quickFind: Boolean = false,
 
     val matchDelay: Long?,
@@ -104,13 +103,7 @@ data class Rule(
     private val matchAnyActivity = activityIds.isEmpty() && excludeActivityIds.isEmpty()
 
     fun matchActivityId(activityId: String?): Boolean {
-        if (matchAnyActivity) return true
-        if (activityId == null) {
-            if (matchLauncher) {
-                return true
-            }
-            return false
-        }
+        if (matchAnyActivity || activityId == null) return true
         if (excludeActivityIds.any { activityId.startsWith(it) }) return false
         if (activityIds.isEmpty()) return true
 
