@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">GKD</string>
+    <string name="app_desc">基于无障碍 + 高级选择器 + 订阅规则的自定义屏幕点击应用。</string>
     <string name="ab_label">GKD</string>
     <string name="ab_desc">基于规则匹配的无障碍速点服务\n强大的自定义规则能帮助你实现点击关闭各种广告\n自定义快捷操作等高级功能</string>
     <string name="capture_label">捕获快照</string>
+
+    <string name="about">关于</string>
+    <string name="version_code">版本代码: </string>
+    <string name="version_name">版本名称: </string>
+    <string name="build_date">构建时间: </string>
+    <string name="build_type">构建类型: </string>
 </resources>
