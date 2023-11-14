@@ -93,13 +93,12 @@ class GkdAbService : CompositionAbService({
     var lastTriggerShizukuTime = 0L
     var lastContentEventTime = 0L
     var job: Job? = null
-    val logs = mutableListOf<Long>()
     onAccessibilityEvent { event ->
         if (event == null) return@onAccessibilityEvent
         if (!(event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)) return@onAccessibilityEvent
 
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-            if (event.eventTime - appChangeTime > 5_000) {
+            if (event.eventTime - appChangeTime > 10_000) {
                 if (event.eventTime - lastContentEventTime < 100) {
                     return@onAccessibilityEvent
                 }
@@ -150,15 +149,7 @@ class GkdAbService : CompositionAbService({
         if (evAppId != rightAppId) return@onAccessibilityEvent
         if (!storeFlow.value.enableService) return@onAccessibilityEvent
         if (job?.isActive == true) return@onAccessibilityEvent
-        Log.d(
-            "event",
-            "e:${event.eventType}, evId:${evAppId}, evCls:${evActivityId}, okId:${rightAppId}"
-        )
-        logs.add(System.currentTimeMillis())
-        if (logs.size > 20) {
-            LogUtils.d(logs.map { i -> i - logs[0] }.average())
-            logs.clear()
-        }
+
         job = scope.launchTry(Dispatchers.Default) {
             val activityRule = getCurrentRules()
 
