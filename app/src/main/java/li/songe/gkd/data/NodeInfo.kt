@@ -18,7 +18,8 @@ data class NodeInfo(
      * - true: 可查找的
      * - false: 不可查找的
      */
-    val quickFind: Boolean?,
+    val idQf: Boolean?, // id 的可查找性
+    val textQf: Boolean?,// text 的可查找性
     /**
      * null: when getChild(i) return null
      */
@@ -26,36 +27,36 @@ data class NodeInfo(
 ) {
     companion object {
 
-        private fun getQuickFind(
-            rootNodeInfo: AccessibilityNodeInfo,
-            nodeInfo: AccessibilityNodeInfo?,
-            quickFind: Boolean?,
+        private fun getIdQf(
+            parent: AccessibilityNodeInfo,
+            node: AccessibilityNodeInfo,
+            idQf: Boolean?,
+            textQf: Boolean?,
         ): Boolean? {
-            // 如果父节点是无法查找的, 则所有子节点都是无法查找的
-            // 如果一个节点是可查找的, 则所有兄弟节点及其祖先节点都是可查找的(如果满足条件)
-            return if (nodeInfo != null) {
-                val viewId = nodeInfo.viewIdResourceName
-                if (viewId != null && viewId.isNotEmpty()) { // id='' 不满足查找
-                    quickFind ?: rootNodeInfo.findAccessibilityNodeInfosByViewId(viewId)
-                        .any { n -> n == nodeInfo }
-                } else {
-                    val viewText = nodeInfo.text
-                    if (viewText != null && viewText.isNotEmpty()) { // text='' 不满足查找
-                        quickFind
-                            ?: rootNodeInfo.findAccessibilityNodeInfosByText(viewText.toString())
-                                .any { n -> n == nodeInfo }
-                    } else {
-                        null
-                    }
-                }
-            } else {
-                null
-            }
+            val viewId = node.viewIdResourceName
+            if (viewId == null || viewId.isEmpty()) return null
+            if (idQf == false) return false
+            if (textQf == false) return false
+            return parent.findAccessibilityNodeInfosByViewId(viewId).any { n -> n == node }
+        }
+
+        private fun getTextQf(
+            parent: AccessibilityNodeInfo,
+            node: AccessibilityNodeInfo,
+            selfIdQf: Boolean?,
+            textQf: Boolean?,
+        ): Boolean? {
+            val viewText = node.text
+            if (viewText == null || viewText.isEmpty()) return null
+            if (selfIdQf == true) return true
+            if (textQf == false) return false
+            return parent.findAccessibilityNodeInfosByText(viewText.toString())
+                .any { n -> n == node }
         }
 
         fun abNodeToNode(
-            rootNodeInfo: AccessibilityNodeInfo,
-            nodeInfo: AccessibilityNodeInfo?,
+            parentAbNode: AccessibilityNodeInfo,
+            abNode: AccessibilityNodeInfo,
             id: Int = 0,
             pid: Int = -1,
             index: Int = 0,
@@ -65,13 +66,22 @@ data class NodeInfo(
         ): NodeInfo {
             // 如果父节点是不可查找的, 则下面所有子节点都是不可查找的
             // 兄弟节点的可查找性一致
-            return NodeInfo(id = id, pid = pid, index = index, quickFind = getQuickFind(
-                rootNodeInfo, nodeInfo, if (parent?.quickFind == false) {
-                    false
-                } else {
-                    brother?.quickFind
-                }
-            ), attr = nodeInfo?.let { AttrInfo.info2data(nodeInfo, index, depth) })
+            // 一般情况下 如果 id 可查找, 那么 text 也可查找
+            // 在极少数情况下(如百度贴吧 https://i.gkd.li/import/13347004 ), 它的所有控件的 id 都一样, id 无法使用 quickFind
+            // 但是 text 仍然可以使用 quickFind
+            val idQf = getIdQf(
+                parentAbNode,
+                abNode,
+                if (parent?.idQf == false) false else brother?.idQf,
+                if (parent?.textQf == false) false else brother?.textQf,
+            )
+            return NodeInfo(
+                id = id, pid = pid, index = index, idQf = idQf, textQf = getTextQf(
+                    parentAbNode, abNode,
+                    idQf,
+                    if (parent?.textQf == false) false else brother?.textQf,
+                ), attr = AttrInfo.info2data(abNode, index, depth)
+            )
         }
 
         private const val MAX_KEEP_SIZE = 5000
@@ -95,13 +105,14 @@ data class NodeInfo(
                 val childDepth = top.t2 + 1
                 var brother: NodeInfo? = null
                 top.t0?.forEachIndexed { index, childNode ->
+                    if (childNode == null) return@forEachIndexed
                     val id = list.size
                     stack.push(Tuple3(childNode, id, childDepth))
                     val simpleNode = abNodeToNode(
-                        rootNodeInfo, childNode, id, pid, index, childDepth, list[pid], brother
+                        top.t0, childNode, id, pid, index, childDepth, list[pid], brother
                     )
                     list.add(simpleNode)
-                    brother = if (simpleNode.quickFind != null) {
+                    brother = if (simpleNode.idQf != null) {
                         simpleNode
                     } else {
                         brother
