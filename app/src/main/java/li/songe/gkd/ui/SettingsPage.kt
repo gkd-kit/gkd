@@ -334,8 +334,7 @@ fun SettingsPage() {
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .selectable(
-                                    selected = (option.second == store.enableDarkTheme),
+                                .selectable(selected = (option.second == store.enableDarkTheme),
                                     onClick = {
                                         updateStorage(
                                             storeFlow,
@@ -375,8 +374,7 @@ fun SettingsPage() {
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .selectable(
-                                    selected = (option.second == store.enableGroup),
+                                .selectable(selected = (option.second == store.enableGroup),
                                     onClick = {
                                         updateStorage(
                                             storeFlow,
@@ -481,7 +479,7 @@ fun SettingsPage() {
                             .then(modifier)
                     )
                     Text(
-                        text = "上传日志(需科学上网)", modifier = Modifier
+                        text = "生成链接(需科学上网)", modifier = Modifier
                             .clickable(onClick = {
                                 showShareLogDlg = false
                                 vm.viewModelScope.launchTry(Dispatchers.IO) {
