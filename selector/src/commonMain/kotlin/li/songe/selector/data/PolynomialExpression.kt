@@ -1,7 +1,6 @@
 package li.songe.selector.data
 
 import li.songe.selector.NodeSequenceFc
-import li.songe.selector.util.filterIndexes
 
 /**
  * an+b
@@ -65,15 +64,15 @@ data class PolynomialExpression(val a: Int = 0, val b: Int = 1) : ConnectExpress
     override val isConstant = numbers.size == 1
     override val minOffset = (numbers.firstOrNull() ?: 1) - 1
     private val b1 = b - 1
-    private val indexes = numbers.map { x -> x - 1 }
+    private val maxAb = a + b // when a<=0
 
     override val traversal = object : NodeSequenceFc {
         override fun <T> invoke(sq: Sequence<T?>): Sequence<T?> {
-            return if (a > 0) {
-                sq.filterIndexed { x, _ -> (x - b1) % a == 0 && (x - b1) / a > 0 }
+            return (if (a > 0) {
+                sq
             } else {
-                sq.filterIndexes(indexes)
-            }
+                sq.take(maxAb)
+            }).filterIndexed { x, _ -> (x - b1) % a == 0 && (x - b1) / a > 0 }
         }
     }
 
