@@ -26,7 +26,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pullrefresh.PullRefreshIndicator
@@ -56,6 +55,7 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.PageScaffold
 import li.songe.gkd.ui.component.SubsItemCard
 import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.util.DEFAULT_SUBS_UPDATE_URL
@@ -130,7 +130,7 @@ fun SubsManagePage() {
         }
     })
 
-    Scaffold(
+    PageScaffold(
         floatingActionButton = {
             FloatingActionButton(onClick = {
                 if (subItems.any { it.id == 0L }) {
@@ -145,57 +145,58 @@ fun SubsManagePage() {
                 )
             }
         },
-    ) { _ ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pullRefresh(pullRefreshState, subItems.isNotEmpty())
-        ) {
-            LazyColumn(
-                state = state.listState,
+        content = { _ ->
+            Box(
                 modifier = Modifier
-                    .reorderable(state)
-                    .detectReorderAfterLongPress(state)
-                    .fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                    .fillMaxSize()
+                    .pullRefresh(pullRefreshState, subItems.isNotEmpty())
             ) {
-                itemsIndexed(orderSubItems.value, { _, subItem -> subItem.id }) { index, subItem ->
-                    ReorderableItem(state, key = subItem.id) { isDragging ->
-                        val elevation = animateDpAsState(
-                            if (isDragging) 16.dp else 0.dp, label = ""
-                        )
-                        Card(
-                            modifier = Modifier
-                                .shadow(elevation.value)
-                                .animateItemPlacement()
-                                .padding(vertical = 3.dp, horizontal = 8.dp)
-                                .clickable {
-                                    navController.navigate(SubsPageDestination(subItem.id))
-                                },
-                            shape = RoundedCornerShape(8.dp),
-                        ) {
-                            SubsItemCard(
-                                subsItem = subItem,
-                                subscriptionRaw = subsIdToRaw[subItem.id],
-                                index = index + 1,
-                                onMenuClick = {
-                                    menuSubItem = subItem
-                                },
-                                onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
-                                    DbSet.subsItemDao.update(subItem.copy(enable = it))
-                                },
+                LazyColumn(
+                    state = state.listState,
+                    modifier = Modifier
+                        .reorderable(state)
+                        .detectReorderAfterLongPress(state)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    itemsIndexed(orderSubItems.value, { _, subItem -> subItem.id }) { index, subItem ->
+                        ReorderableItem(state, key = subItem.id) { isDragging ->
+                            val elevation = animateDpAsState(
+                                if (isDragging) 16.dp else 0.dp, label = ""
                             )
+                            Card(
+                                modifier = Modifier
+                                    .shadow(elevation.value)
+                                    .animateItemPlacement()
+                                    .padding(vertical = 3.dp, horizontal = 8.dp)
+                                    .clickable {
+                                        navController.navigate(SubsPageDestination(subItem.id))
+                                    },
+                                shape = RoundedCornerShape(8.dp),
+                            ) {
+                                SubsItemCard(
+                                    subsItem = subItem,
+                                    subscriptionRaw = subsIdToRaw[subItem.id],
+                                    index = index + 1,
+                                    onMenuClick = {
+                                        menuSubItem = subItem
+                                    },
+                                    onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
+                                        DbSet.subsItemDao.update(subItem.copy(enable = it))
+                                    },
+                                )
+                            }
                         }
                     }
                 }
+                PullRefreshIndicator(
+                    refreshing = refreshing,
+                    state = pullRefreshState,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                )
             }
-            PullRefreshIndicator(
-                refreshing = refreshing,
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
-            )
-        }
-    }
+        },
+    )
 
     menuSubItem?.let { menuSubItemVal ->
 

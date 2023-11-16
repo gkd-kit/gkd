@@ -25,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -60,6 +59,7 @@ import kotlinx.coroutines.withContext
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt
+import li.songe.gkd.ui.component.PageScaffold
 import li.songe.gkd.ui.destinations.ImagePreviewPageDestination
 import li.songe.gkd.util.IMPORT_BASE_URL
 import li.songe.gkd.util.LoadStatus
@@ -99,7 +99,7 @@ fun SnapshotPage() {
     }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
+    PageScaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         TopAppBar(scrollBehavior = scrollBehavior,
             navigationIcon = {
                 IconButton(onClick = {

@@ -27,7 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -58,6 +57,7 @@ import kotlinx.serialization.encodeToString
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.PageScaffold
 import li.songe.gkd.ui.destinations.GroupItemPageDestination
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
@@ -65,9 +65,9 @@ import li.songe.gkd.util.Singleton
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.navigate
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
-import li.songe.gkd.util.navigate
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
@@ -106,7 +106,7 @@ fun AppItemPage(
         mutableStateOf<SubscriptionRaw.GroupRaw?>(null)
     }
 
-    Scaffold(topBar = {
+    PageScaffold(topBar = {
         TopAppBar(navigationIcon = {
             IconButton(onClick = {
                 navController.popBackStack()

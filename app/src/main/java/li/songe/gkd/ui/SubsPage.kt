@@ -22,7 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -56,6 +55,7 @@ import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AppBarTextField
+import li.songe.gkd.ui.component.PageScaffold
 import li.songe.gkd.ui.component.SubsAppCard
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.util.LocalNavController
@@ -110,7 +110,7 @@ fun SubsPage(
         }
     })
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    Scaffold(
+    PageScaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
@@ -163,56 +163,57 @@ fun SubsPage(
                 }
             }
         },
-    ) { padding ->
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.padding(padding)
-        ) {
-            itemsIndexed(appAndConfigs, { i, a -> i.toString() + a.t0.id }) { _, a ->
-                val (appRaw, subsConfig, enableSize) = a
-                SubsAppCard(appRaw = appRaw,
-                    appInfo = appInfoCache[appRaw.id],
-                    subsConfig = subsConfig,
-                    enableSize = enableSize,
-                    onClick = {
-                        navController.navigate(AppItemPageDestination(subsItemId, appRaw.id))
-                    },
-                    onValueChange = scope.launchAsFn { enable ->
-                        val newItem = subsConfig?.copy(
-                            enable = enable
-                        ) ?: SubsConfig(
-                            enable = enable,
-                            type = SubsConfig.AppType,
-                            subsItemId = subsItemId,
-                            appId = appRaw.id,
-                        )
-                        DbSet.subsConfigDao.insert(newItem)
-                    },
-                    showMenu = editable,
-                    onMenuClick = {
-                        menuAppRaw = appRaw
-                    })
-            }
-            item {
-                if (appAndConfigs.isEmpty()) {
-                    Spacer(modifier = Modifier.height(40.dp))
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        if (searchStr.isNotEmpty()) {
-                            Text(text = "暂无搜索结果")
-                        } else {
-                            Text(text = "此订阅暂无规则")
+        content =  { padding ->
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.padding(padding)
+            ) {
+                itemsIndexed(appAndConfigs, { i, a -> i.toString() + a.t0.id }) { _, a ->
+                    val (appRaw, subsConfig, enableSize) = a
+                    SubsAppCard(appRaw = appRaw,
+                        appInfo = appInfoCache[appRaw.id],
+                        subsConfig = subsConfig,
+                        enableSize = enableSize,
+                        onClick = {
+                            navController.navigate(AppItemPageDestination(subsItemId, appRaw.id))
+                        },
+                        onValueChange = scope.launchAsFn { enable ->
+                            val newItem = subsConfig?.copy(
+                                enable = enable
+                            ) ?: SubsConfig(
+                                enable = enable,
+                                type = SubsConfig.AppType,
+                                subsItemId = subsItemId,
+                                appId = appRaw.id,
+                            )
+                            DbSet.subsConfigDao.insert(newItem)
+                        },
+                        showMenu = editable,
+                        onMenuClick = {
+                            menuAppRaw = appRaw
+                        })
+                }
+                item {
+                    if (appAndConfigs.isEmpty()) {
+                        Spacer(modifier = Modifier.height(40.dp))
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            if (searchStr.isNotEmpty()) {
+                                Text(text = "暂无搜索结果")
+                            } else {
+                                Text(text = "此订阅暂无规则")
+                            }
                         }
                     }
                 }
-            }
-            item {
-                Spacer(modifier = Modifier.height(20.dp))
-            }
+                item {
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
 
-        }
-    }
+            }
+        },
+    )
 
     val subsItemVal = subsItem
 

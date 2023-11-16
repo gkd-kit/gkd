@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.dylanc.activityresult.launcher.PickContentLauncher
@@ -44,9 +45,10 @@ class MainActivity : CompositionActivity({
         }
     }
 
-    setContent {
+    WindowCompat.setDecorFitsSystemWindows(window,false)
 
-    val navController = rememberNavController()
+    setContent {
+        val navController = rememberNavController()
         AppTheme {
             UpgradeDialog()
             CompositionLocalProvider(
@@ -62,7 +64,3 @@ class MainActivity : CompositionActivity({
         }
     }
 })
-
-
-
-

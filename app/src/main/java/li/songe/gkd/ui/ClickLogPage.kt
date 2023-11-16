@@ -20,7 +20,6 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -45,6 +44,7 @@ import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.data.ClickLog
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.PageScaffold
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
@@ -73,7 +73,7 @@ fun ClickLogPage() {
     }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
+    PageScaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         TopAppBar(scrollBehavior = scrollBehavior,
             navigationIcon = {
                 IconButton(onClick = {

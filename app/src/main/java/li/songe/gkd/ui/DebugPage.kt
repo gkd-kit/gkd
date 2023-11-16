@@ -21,7 +21,6 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -53,6 +52,7 @@ import li.songe.gkd.shizuku.newActivityTaskManager
 import li.songe.gkd.shizuku.safeGetTasks
 import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.ui.component.AuthCard
+import li.songe.gkd.ui.component.PageScaffold
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.SnapshotPageDestination
@@ -81,7 +81,7 @@ fun DebugPage() {
         mutableStateOf(false)
     }
 
-    Scaffold(topBar = {
+    PageScaffold(topBar = {
         TopAppBar(navigationIcon = {
             IconButton(onClick = {
                 navController.popBackStack()
