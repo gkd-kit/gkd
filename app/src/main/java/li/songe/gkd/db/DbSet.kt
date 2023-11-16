@@ -15,7 +15,7 @@ import li.songe.gkd.appScope
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.util.DEFAULT_SUBS_UPDATE_URL
-import li.songe.gkd.util.Singleton
+import li.songe.gkd.util.client
 import li.songe.gkd.util.dbFolder
 import li.songe.gkd.util.launchTry
 import java.io.File
@@ -50,7 +50,7 @@ object DbSet {
                     val newSubsRaw = try {
                         withTimeout(3000) {
                             SubscriptionRaw.parse(
-                                Singleton.client.get(defaultSubsItem.updateUrl!!).bodyAsText()
+                                client.get(defaultSubsItem.updateUrl!!).bodyAsText()
                             )
                         }
                     } catch (e: Exception) {

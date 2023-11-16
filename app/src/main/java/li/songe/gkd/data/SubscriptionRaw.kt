@@ -5,7 +5,7 @@ import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
-import li.songe.gkd.util.Singleton
+import li.songe.gkd.util.json
 import li.songe.selector.Selector
 
 
@@ -25,7 +25,6 @@ data class SubscriptionRaw(
         val excludeActivityIds: List<String>?
         val actionCd: Long?
         val actionDelay: Long?
-        val matchLauncher: Boolean?
         val quickFind: Boolean?
         val matchDelay: Long?
         val matchTime: Long?
@@ -39,7 +38,6 @@ data class SubscriptionRaw(
         val name: String?,
         override val actionCd: Long?,
         override val actionDelay: Long?,
-        override val matchLauncher: Boolean?,
         override val quickFind: Boolean?,
         override val actionMaximum: Int?,
         override val matchDelay: Long?,
@@ -58,7 +56,6 @@ data class SubscriptionRaw(
         val enable: Boolean?,
         override val actionCd: Long?,
         override val actionDelay: Long?,
-        override val matchLauncher: Boolean?,
         override val quickFind: Boolean?,
         override val actionMaximum: Int?,
         override val matchDelay: Long?,
@@ -106,7 +103,6 @@ data class SubscriptionRaw(
         val action: String?,
         override val actionCd: Long?,
         override val actionDelay: Long?,
-        override val matchLauncher: Boolean?,
         override val quickFind: Boolean?,
         override val actionMaximum: Int?,
         override val matchDelay: Long?,
@@ -218,7 +214,6 @@ data class SubscriptionRaw(
                 name = getString(rulesJson, "name"),
                 preKeys = getIntIArray(rulesJson, "preKeys"),
                 action = getString(rulesJson, "action"),
-                matchLauncher = getBoolean(rulesJson, "matchLauncher"),
                 quickFind = getBoolean(rulesJson, "quickFind"),
                 actionMaximum = getInt(rulesJson, "actionMaximum"),
                 matchDelay = getLong(rulesJson, "matchDelay"),
@@ -252,7 +247,6 @@ data class SubscriptionRaw(
                 }.map {
                     jsonToRuleRaw(it)
                 },
-                matchLauncher = getBoolean(groupsJson, "matchLauncher"),
                 quickFind = getBoolean(groupsJson, "quickFind"),
                 actionMaximum = getInt(groupsJson, "actionMaximum"),
                 matchDelay = getLong(groupsJson, "matchDelay"),
@@ -278,7 +272,6 @@ data class SubscriptionRaw(
                 }).mapIndexed { index, jsonElement ->
                     jsonToGroupRaw(jsonElement, index)
                 },
-                matchLauncher = getBoolean(appsJson, "matchLauncher"),
                 quickFind = getBoolean(appsJson, "quickFind"),
                 actionMaximum = getInt(appsJson, "actionMaximum"),
                 matchDelay = getLong(appsJson, "matchDelay"),
@@ -302,12 +295,12 @@ data class SubscriptionRaw(
         }
 
         //  订阅文件状态: 文件不存在, 文件正常, 文件损坏(损坏原因)
-        fun stringify(source: SubscriptionRaw) = Singleton.json.encodeToString(source)
+        fun stringify(source: SubscriptionRaw) = json.encodeToString(source)
 
         fun parse(source: String, json5: Boolean = true): SubscriptionRaw {
             val text = if (json5) Jankson.builder().build().load(source).toJson() else source
 
-            val obj = jsonToSubscriptionRaw(Singleton.json.parseToJsonElement(text).jsonObject)
+            val obj = jsonToSubscriptionRaw(json.parseToJsonElement(text).jsonObject)
 
             val duplicatedApps = obj.apps.groupingBy { it }.eachCount().filter { it.value > 1 }.keys
             if (duplicatedApps.isNotEmpty()) {
@@ -334,12 +327,12 @@ data class SubscriptionRaw(
 
         fun parseAppRaw(source: String, json5: Boolean = true): AppRaw {
             val text = if (json5) Jankson.builder().build().load(source).toJson() else source
-            return jsonToAppRaw(Singleton.json.parseToJsonElement(text).jsonObject, 0)
+            return jsonToAppRaw(json.parseToJsonElement(text).jsonObject, 0)
         }
 
         fun parseGroupRaw(source: String, json5: Boolean = true): GroupRaw {
             val text = if (json5) Jankson.builder().build().load(source).toJson() else source
-            return jsonToGroupRaw(Singleton.json.parseToJsonElement(text).jsonObject, 0)
+            return jsonToGroupRaw(json.parseToJsonElement(text).jsonObject, 0)
         }
     }
 

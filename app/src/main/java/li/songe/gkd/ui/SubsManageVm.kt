@@ -15,7 +15,7 @@ import kotlinx.coroutines.withContext
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.util.Singleton
+import li.songe.gkd.util.client
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
@@ -41,7 +41,7 @@ class SubsManageVm @Inject constructor() : ViewModel() {
         refreshingFlow.value = true
         try {
             val text = try {
-                Singleton.client.get(url).bodyAsText()
+                client.get(url).bodyAsText()
             } catch (e: Exception) {
                 e.printStackTrace()
                 ToastUtils.showShort("下载订阅文件失败")
@@ -98,7 +98,7 @@ class SubsManageVm @Inject constructor() : ViewModel() {
             val oldSubsRaw = subsIdToRawFlow.value[oldItem.id]
             try {
                 val newSubsRaw = SubscriptionRaw.parse(
-                    Singleton.client.get(oldItem.updateUrl).bodyAsText()
+                    client.get(oldItem.updateUrl).bodyAsText()
                 )
                 if (oldSubsRaw != null && newSubsRaw.version <= oldSubsRaw.version) {
                     return@mapNotNull null

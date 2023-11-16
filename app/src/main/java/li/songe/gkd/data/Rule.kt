@@ -6,10 +6,11 @@ import android.graphics.Path
 import android.graphics.Rect
 import android.view.ViewConfiguration
 import android.view.accessibility.AccessibilityNodeInfo
+import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
 import kotlinx.serialization.Serializable
-import li.songe.gkd.service.lastTriggerRuleFlow
-import li.songe.gkd.service.launcherActivityIdFlow
+import li.songe.gkd.service.lastTriggerRule
+import li.songe.gkd.service.openAdOptimized
 import li.songe.gkd.service.querySelector
 import li.songe.selector.Selector
 
@@ -21,7 +22,6 @@ data class Rule(
     val excludeMatches: List<Selector> = emptyList(),
     val actionCd: Long = defaultMiniCd,
     val actionDelay: Long = 0,
-    val matchLauncher: Boolean = false,
     val quickFind: Boolean = false,
 
     val matchDelay: Long?,
@@ -42,6 +42,12 @@ data class Rule(
     val app: SubscriptionRaw.AppRaw,
     val subsItem: SubsItem,
 ) {
+
+    /**
+     * 优化: 切换 APP 后短时间内, 如果存在开屏广告的规则并且没有一次触发, 则不启用其它规则, 避免过多规则阻塞运行
+     */
+    val isOpenAd = group.name.startsWith("开屏广告")
+
     /**
      * 任意一个元素是上次点击过的
      */
@@ -51,6 +57,10 @@ data class Rule(
     fun triggerDelay() {
         // 触发延迟, 一段时间内此规则不可利用
         actionDelayTriggerTime = System.currentTimeMillis()
+        LogUtils.d(
+            "触发延迟",
+            "subsId:${subsItem.id}, gKey=${group.key}, gName:${group.name}, ruleIndex:${index}, rKey:${key}, delay:${actionDelay}"
+        )
     }
 
     var actionTriggerTime = 0L
@@ -59,7 +69,10 @@ data class Rule(
         // 重置延迟点
         actionDelayTriggerTime = 0L
         actionCount++
-        lastTriggerRuleFlow.value = this
+        lastTriggerRule = this
+        if (isOpenAd && openAdOptimized == true) {
+            openAdOptimized = false
+        }
     }
 
     var actionCount = 0
@@ -90,13 +103,10 @@ data class Rule(
     private val matchAnyActivity = activityIds.isEmpty() && excludeActivityIds.isEmpty()
 
     fun matchActivityId(activityId: String?): Boolean {
-        if (matchAnyActivity) return true
-        if (activityId == null) return false
+        if (matchAnyActivity || activityId == null) return true
         if (excludeActivityIds.any { activityId.startsWith(it) }) return false
         if (activityIds.isEmpty()) return true
-        if (matchLauncher && launcherActivityIdFlow.value == activityId) {
-            return true
-        }
+
         return activityIds.any { activityId.startsWith(it) }
     }
 
