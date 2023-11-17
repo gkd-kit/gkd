@@ -330,11 +330,15 @@ class GkdAbService : CompositionAbService({
                         application.mainExecutor,
                         object : TakeScreenshotCallback {
                             override fun onSuccess(screenshot: ScreenshotResult) {
-                                it.resume(
-                                    Bitmap.wrapHardwareBuffer(
-                                        screenshot.hardwareBuffer, screenshot.colorSpace
+                                try {
+                                    it.resume(
+                                        Bitmap.wrapHardwareBuffer(
+                                            screenshot.hardwareBuffer, screenshot.colorSpace
+                                        )
                                     )
-                                )
+                                } finally {
+                                    screenshot.hardwareBuffer.close()
+                                }
                             }
 
                             override fun onFailure(errorCode: Int) = it.resume(null)
