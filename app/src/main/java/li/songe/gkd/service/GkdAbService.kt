@@ -15,10 +15,14 @@ import com.blankj.utilcode.util.ServiceUtils
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.composition.CompositionAbService
@@ -44,7 +48,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 
-@OptIn(FlowPreview::class)
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class GkdAbService : CompositionAbService({
     useLifeCycleLog()
 
@@ -93,12 +97,58 @@ class GkdAbService : CompositionAbService({
     var lastTriggerShizukuTime = 0L
     var lastContentEventTime = 0L
     var job: Job? = null
+    val singleThread = Dispatchers.IO.limitedParallelism(1)
+    onDestroy {
+        singleThread.cancel()
+    }
+    val lastQueryTimeFlow = MutableStateFlow(0L)
+    val debounceTime = 500L
+    fun newQueryTask() {
+        job = scope.launchTry(singleThread) {
+            val activityRule = getCurrentRules()
+            for (rule in (activityRule.rules)) {
+                if (!isActive && !rule.isOpenAd) break
+                if (!isAvailableRule(rule)) continue
+                val nodeVal = safeActiveWindow ?: continue
+                val target = rule.query(nodeVal) ?: continue
+                if (activityRule !== getCurrentRules()) break
+
+                // 开始 action 延迟
+                if (rule.actionDelay > 0 && rule.actionDelayTriggerTime == 0L) {
+                    rule.triggerDelay()
+                    // 防止在 actionDelay 时间内没有事件发送导致无法触发
+                    scope.launch(singleThread) {
+                        delay(rule.actionDelay - debounceTime)
+                        lastQueryTimeFlow.value = System.currentTimeMillis()
+                    }
+                    continue
+                }
+
+                // 如果节点在屏幕外部, click 的结果为 null
+                val actionResult = rule.performAction(context, target)
+                if (actionResult.result) {
+                    LogUtils.d(
+                        *rule.matches.toTypedArray(),
+                        NodeInfo.abNodeToNode(nodeVal, target).attr,
+                        actionResult
+                    )
+                    insertClickLog(rule)
+                }
+            }
+        }
+    }
+
+    scope.launch(singleThread) {
+        lastQueryTimeFlow.debounce(debounceTime).collect {
+            newQueryTask()
+        }
+    }
     onAccessibilityEvent { event ->
         if (event == null) return@onAccessibilityEvent
         if (!(event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)) return@onAccessibilityEvent
 
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-            if (event.eventTime - appChangeTime > 10_000) {
+            if (event.eventTime - appChangeTime > 5_000) {
                 if (event.eventTime - lastContentEventTime < 100) {
                     return@onAccessibilityEvent
                 }
@@ -133,7 +183,7 @@ class GkdAbService : CompositionAbService({
         }
 
         if (rightAppId != topActivityFlow.value?.appId) {
-            // 从 锁屏,下拉通知栏 返回等情况
+            // 从 锁屏,下拉通知栏 返回等情况, 应用不会发送事件, 但是系统组件会发送事件
             val shizukuTop = getShizukuTopActivity()
             if (shizukuTop?.appId == rightAppId) {
                 topActivityFlow.value = shizukuTop
@@ -146,39 +196,22 @@ class GkdAbService : CompositionAbService({
             return@onAccessibilityEvent
         }
 
-        if (evAppId != rightAppId) return@onAccessibilityEvent
+        if (evAppId != rightAppId) {
+            return@onAccessibilityEvent
+        }
         if (!storeFlow.value.enableService) return@onAccessibilityEvent
-        if (job?.isActive == true) return@onAccessibilityEvent
-
-        job = scope.launchTry(Dispatchers.Default) {
-            val activityRule = getCurrentRules()
-
-            for (rule in activityRule.rules) {
-                if (!isAvailableRule(rule)) continue
-                val nodeVal = safeActiveWindow ?: continue
-                val target = rule.query(nodeVal) ?: continue
-
-                if (activityRule !== getCurrentRules()) break
-
-                // 开始 action 延迟
-                if (rule.actionDelay > 0 && rule.actionDelayTriggerTime == 0L) {
-                    rule.triggerDelay()
-                    continue
-                }
-
-                // 如果节点在屏幕外部, click 的结果为 null
-                val actionResult = rule.performAction(context, target)
-                if (actionResult.result) {
-                    LogUtils.d(
-                        *rule.matches.toTypedArray(),
-                        NodeInfo.abNodeToNode(nodeVal, target).attr,
-                        actionResult
-                    )
-                    insertClickLog(rule)
-                }
+        val jobVal = job
+        if (jobVal?.isActive == true) {
+            if (openAdOptimized == true) {
+                jobVal.cancel()
+            } else {
+                return@onAccessibilityEvent
             }
         }
 
+        lastQueryTimeFlow.value = event.eventTime
+
+        newQueryTask()
     }
 
 
