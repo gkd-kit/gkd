@@ -74,16 +74,14 @@ var activityChangeTime = 0L
 // null: app 切换过
 // true: 需要执行优化(此界面组需要存在开屏广告)
 // false: 执行优化过了/已经过了优化时间
+@Volatile
 var openAdOptimized: Boolean? = null
 const val openAdOptimizedTime = 5000L
 
 fun isAvailableRule(rule: Rule): Boolean {
     val t = System.currentTimeMillis()
-    if (!rule.isOpenAd && openAdOptimized == true) {
-        if (t - appChangeTime < openAdOptimizedTime) {
-            // app 切换一段时间内, 仅开屏广告可使用
-            return false
-        } else {
+    if (openAdOptimized == true) {
+        if (t - appChangeTime > openAdOptimizedTime) {
             openAdOptimized = false
         }
     }
@@ -146,8 +144,8 @@ fun isAvailableRule(rule: Rule): Boolean {
 }
 
 fun insertClickLog(rule: Rule) {
-    toastClickTip()
     rule.trigger()
+    toastClickTip()
     appScope.launchTry(Dispatchers.IO) {
         val clickLog = ClickLog(
             appId = topActivityFlow.value?.appId,

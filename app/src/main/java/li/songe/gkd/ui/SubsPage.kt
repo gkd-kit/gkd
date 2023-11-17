@@ -238,6 +238,10 @@ fun SubsPage(
                     ToastUtils.showShort("非法规则${e.message}")
                     return@TextButton
                 }
+                if (newAppRaw.groups.isEmpty()) {
+                    ToastUtils.showShort("不允许添加空规则组")
+                    return@TextButton
+                }
                 if (newAppRaw.groups.any { s -> s.name.isBlank() }) {
                     ToastUtils.showShort("不允许添加空白名规则组,请先命名")
                     return@TextButton
@@ -253,20 +257,29 @@ fun SubsPage(
                         }
                     }
                 }
+                // 重写添加的规则的 key
+                val initKey =
+                    ((oldAppRaw?.groups ?: emptyList()).maxByOrNull { g -> g.key }?.key ?: -1) + 1
+                val finalAppRaw = if (oldAppRaw != null) {
+                    newAppRaw.copy(groups = oldAppRaw.groups + newAppRaw.groups.mapIndexed { i, g ->
+                        g.copy(
+                            key = initKey + i
+                        )
+                    })
+                } else {
+                    newAppRaw.copy(groups = newAppRaw.groups.mapIndexed { i, g ->
+                        g.copy(
+                            key = initKey + i
+                        )
+                    })
+                }
                 val newApps = if (oldAppRaw != null) {
-                    val oldKey = oldAppRaw.groups.maxBy { g -> g.key }.key + 1
-                    val finalAppRaw =
-                        newAppRaw.copy(groups = oldAppRaw.groups + newAppRaw.groups.mapIndexed { i, g ->
-                            g.copy(
-                                key = oldKey + i
-                            )
-                        })
                     subsRaw.apps.toMutableList().apply {
                         set(oldAppRawIndex, finalAppRaw)
                     }
                 } else {
                     subsRaw.apps.toMutableList().apply {
-                        add(newAppRaw)
+                        add(finalAppRaw)
                     }
                 }
                 vm.viewModelScope.launchTry {

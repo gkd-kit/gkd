@@ -75,7 +75,7 @@ dependencyResolutionManagement {
             library("compose.tooling", "androidx.compose.ui:ui-tooling:$composeVersion")
             library("compose.junit4", "androidx.compose.ui:ui-test-junit4:$composeVersion")
             library("compose.material3", "androidx.compose.material3:material3:1.1.2")
-            library("compose.activity", "androidx.activity:activity-compose:1.8.0-rc01")
+            library("compose.activity", "androidx.activity:activity-compose:1.8.1")
 
             // https://github.com/Tencent/MMKV/blob/master/README_CN.md
             library("tencent.mmkv", "com.tencent:mmkv:1.3.1")

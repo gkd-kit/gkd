@@ -123,6 +123,7 @@ private val getAttr: (AccessibilityNodeInfo, String) -> Any? = { node, name ->
         "checkable" -> node.isCheckable
         "checked" -> node.isChecked
         "focusable" -> node.isFocusable
+        "longClickable" -> node.isLongClickable
         "visibleToUser" -> node.isVisibleToUser
 
         "left" -> node.getTempRect().left
