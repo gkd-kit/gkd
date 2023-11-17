@@ -31,24 +31,20 @@ data class NodeInfo(
             parent: AccessibilityNodeInfo,
             node: AccessibilityNodeInfo,
             idQf: Boolean?,
-            textQf: Boolean?,
         ): Boolean? {
             val viewId = node.viewIdResourceName
             if (viewId == null || viewId.isEmpty()) return null
             if (idQf == false) return false
-            if (textQf == false) return false
             return parent.findAccessibilityNodeInfosByViewId(viewId).any { n -> n == node }
         }
 
         private fun getTextQf(
             parent: AccessibilityNodeInfo,
             node: AccessibilityNodeInfo,
-            selfIdQf: Boolean?,
             textQf: Boolean?,
         ): Boolean? {
             val viewText = node.text
             if (viewText == null || viewText.isEmpty()) return null
-            if (selfIdQf == true) return true
             if (textQf == false) return false
             return parent.findAccessibilityNodeInfosByText(viewText.toString())
                 .any { n -> n == node }
@@ -66,20 +62,16 @@ data class NodeInfo(
         ): NodeInfo {
             // 如果父节点是不可查找的, 则下面所有子节点都是不可查找的
             // 兄弟节点的可查找性一致
-            // 一般情况下 如果 id 可查找, 那么 text 也可查找
-            // 在极少数情况下(如百度贴吧 https://i.gkd.li/import/13347004 ), 它的所有控件的 id 都一样, id 无法使用 quickFind
-            // 但是 text 仍然可以使用 quickFind
+            // id 和 text 的可查找性独立
             val idQf = getIdQf(
                 parentAbNode,
                 abNode,
                 if (parent?.idQf == false) false else brother?.idQf,
-                if (parent?.textQf == false) false else brother?.textQf,
             )
             return NodeInfo(
                 id = id, pid = pid, index = index, idQf = idQf, textQf = getTextQf(
                     parentAbNode, abNode,
                     idQf,
-                    if (parent?.textQf == false) false else brother?.textQf,
                 ), attr = AttrInfo.info2data(abNode, index, depth)
             )
         }
