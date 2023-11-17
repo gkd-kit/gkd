@@ -143,6 +143,10 @@ val appIdToRulesFlow by lazy {
                 }
             }
         }
+        appIdToRules.values.forEach { rules ->
+            // 让开屏广告类规则全排在最前面
+            rules.sortBy { r -> if (r.isOpenAd) 0 else 1 }
+        }
         appIdToRules.filter { it.value.isNotEmpty() }
     }.stateIn<Map<String, List<Rule>>>(appScope, SharingStarted.Eagerly, emptyMap())
 }
