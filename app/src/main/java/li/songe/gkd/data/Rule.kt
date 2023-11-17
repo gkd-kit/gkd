@@ -14,19 +14,20 @@ import li.songe.gkd.service.openAdOptimized
 import li.songe.gkd.service.querySelector
 import li.songe.selector.Selector
 
+class Value<T>(var value: T)
+
 data class Rule(
     /**
      * length>0
      */
     val matches: List<Selector> = emptyList(),
     val excludeMatches: List<Selector> = emptyList(),
-    val actionCd: Long = defaultMiniCd,
+
     val actionDelay: Long = 0,
     val quickFind: Boolean = false,
 
     val matchDelay: Long?,
     val matchTime: Long?,
-    val actionMaximum: Int?,
     val resetMatch: String?,
 
     val appId: String,
@@ -44,7 +45,7 @@ data class Rule(
 ) {
 
     /**
-     * 优化: 切换 APP 后短时间内, 如果存在开屏广告的规则并且没有一次触发, 则不启用其它规则, 避免过多规则阻塞运行
+     * 优化: 切换 APP 后短时间内, 如果存在开屏广告的规则并且没有一次触发, 则尽量使开屏广告运行
      */
     val isOpenAd = group.name.startsWith("开屏广告")
 
@@ -63,19 +64,34 @@ data class Rule(
         )
     }
 
-    var actionTriggerTime = 0L
+    val actionCd = defaultMiniCd.coerceAtLeast(
+        ((if (rule.actionCdKey != null) {
+            group.rules.find { r -> r.key == rule.actionCdKey }?.actionCd ?: group.actionCd
+            ?: app.actionCd
+        } else {
+            null
+        }) ?: rule.actionCd ?: defaultMiniCd)
+    )
+    var actionTriggerTime = Value(0L)
     fun trigger() {
-        actionTriggerTime = System.currentTimeMillis()
+        actionTriggerTime.value = System.currentTimeMillis()
         // 重置延迟点
         actionDelayTriggerTime = 0L
-        actionCount++
+        actionCount.value++
         lastTriggerRule = this
         if (isOpenAd && openAdOptimized == true) {
             openAdOptimized = false
         }
     }
 
-    var actionCount = 0
+    val actionMaximum = ((if (rule.actionMaximumKey != null) {
+        group.rules.find { r -> r.key == rule.actionMaximumKey }?.actionMaximum
+            ?: group.actionMaximum ?: app.actionMaximum
+    } else {
+        null
+    }) ?: rule.actionMaximum)
+
+    var actionCount = Value(0)
 
     var matchChangeTime = 0L
 

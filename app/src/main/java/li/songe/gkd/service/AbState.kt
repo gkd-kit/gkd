@@ -89,19 +89,19 @@ fun isAvailableRule(rule: Rule): Boolean {
         if (activityChangeTime != rule.matchChangeTime) {
             // 当 界面 更新时, 重置操作延迟点, 重置点击次数
             rule.actionDelayTriggerTime = 0
-            rule.actionCount = 0
+            rule.actionCount.value = 0
             rule.matchChangeTime = activityChangeTime
         }
     } else {
         if (appChangeTime != rule.matchChangeTime) {
             // 当 切换APP 时, 重置点击次数
             rule.actionDelayTriggerTime = 0
-            rule.actionCount = 0
+            rule.actionCount.value = 0
             rule.matchChangeTime = appChangeTime
         }
     }
     if (rule.actionMaximum != null) {
-        if (rule.actionCount >= rule.actionMaximum) {
+        if (rule.actionCount.value >= rule.actionMaximum) {
             return false // 达到最大执行次数
         }
     }
@@ -129,7 +129,7 @@ fun isAvailableRule(rule: Rule): Boolean {
             }
         }
     }
-    if (rule.actionTriggerTime + rule.actionCd > t) return false // 处于冷却时间
+    if (rule.actionTriggerTime.value + rule.actionCd > t) return false // 处于冷却时间
     if (rule.preRules.isNotEmpty()) { // 需要提前点击某个规则
         lastTriggerRule ?: return false
         // 上一个点击的规则不在当前需要点击的列表
