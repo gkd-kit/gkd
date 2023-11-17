@@ -92,21 +92,14 @@ val appIdToRulesFlow by lazy {
                         val matchDelay =
                             ruleRaw.matchDelay ?: groupRaw.matchDelay ?: appRaw.matchDelay
                         val matchTime = ruleRaw.matchTime ?: groupRaw.matchTime ?: appRaw.matchTime
-                        val actionMaximum =
-                            ruleRaw.actionMaximum ?: groupRaw.actionMaximum ?: appRaw.actionMaximum
                         val resetMatch =
                             ruleRaw.resetMatch ?: groupRaw.resetMatch ?: appRaw.resetMatch
-                        val actionCd = Rule.defaultMiniCd.coerceAtLeast(
-                            ruleRaw.actionCd ?: groupRaw.actionCd ?: appRaw.actionCd
-                            ?: Rule.defaultMiniCd
-                        )
                         val actionDelay =
                             ruleRaw.actionDelay ?: groupRaw.actionDelay ?: appRaw.actionDelay ?: 0
 
                         groupRuleList.add(
                             Rule(
                                 quickFind = quickFind,
-                                actionCd = actionCd,
                                 actionDelay = actionDelay,
                                 index = ruleIndex,
                                 matches = ruleRaw.matches.map { Selector.parse(it) },
@@ -117,7 +110,6 @@ val appIdToRulesFlow by lazy {
                                 },
                                 matchDelay = matchDelay,
                                 matchTime = matchTime,
-                                actionMaximum = actionMaximum,
                                 appId = appRaw.id,
                                 activityIds = activityIds,
                                 excludeActivityIds = excludeActivityIds,
@@ -138,6 +130,22 @@ val appIdToRulesFlow by lazy {
                                 otherRule.key
                             )
                         }.toSet()
+                        // 共用次数
+                        val maxKey = ruleConfig.rule.actionMaximumKey
+                        if (maxKey != null) {
+                            val otherRule = groupRuleList.find { r -> r.key == maxKey }
+                            if (otherRule != null) {
+                                ruleConfig.actionCount = otherRule.actionCount
+                            }
+                        }
+                        // 共用 cd
+                        val cdKey = ruleConfig.rule.actionCdKey
+                        if (cdKey != null) {
+                            val otherRule = groupRuleList.find { r -> r.key == cdKey }
+                            if (otherRule != null) {
+                                ruleConfig.actionTriggerTime = otherRule.actionTriggerTime
+                            }
+                        }
                     }
                     rules.addAll(groupRuleList)
                 }

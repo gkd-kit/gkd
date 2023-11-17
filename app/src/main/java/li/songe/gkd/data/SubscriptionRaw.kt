@@ -101,6 +101,8 @@ data class SubscriptionRaw(
         val key: Int?,
         val preKeys: List<Int>?,
         val action: String?,
+        val actionCdKey: Int?,
+        val actionMaximumKey: Int?,
         override val actionCd: Long?,
         override val actionDelay: Long?,
         override val quickFind: Boolean?,
@@ -221,6 +223,8 @@ data class SubscriptionRaw(
                 resetMatch = getString(rulesJson, "resetMatch"),
                 snapshotUrls = getStringIArray(rulesJson, "snapshotUrls"),
                 exampleUrls = getStringIArray(rulesJson, "exampleUrls"),
+                actionMaximumKey = getInt(rulesJson, "actionMaximumKey"),
+                actionCdKey = getInt(rulesJson, "actionCdKey"),
             )
         }
 
