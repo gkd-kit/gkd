@@ -29,6 +29,7 @@ import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.client
 import li.songe.gkd.util.dbFolder
+import li.songe.gkd.util.initFolder
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.storeFlow
@@ -86,6 +87,12 @@ class HomePageVm @Inject constructor() : ViewModel() {
                 }
             }
         }
+
+        viewModelScope.launchTry(Dispatchers.IO) {
+            // 在某些机型由于未知原因创建失败
+            // 在此保证每次重新打开APP都能重新检测创建
+            initFolder()
+        }
     }
 
     val uploadStatusFlow = MutableStateFlow<LoadStatus<GithubPoliciesAsset>?>(null)
@@ -105,10 +112,10 @@ class HomePageVm @Inject constructor() : ViewModel() {
                         onUpload { bytesSentTotal, contentLength ->
                             if (uploadStatusFlow.value is LoadStatus.Loading) {
                                 uploadStatusFlow.value =
-                                LoadStatus.Loading(bytesSentTotal / contentLength.toFloat())
+                                    LoadStatus.Loading(bytesSentTotal / contentLength.toFloat())
+                            }
                         }
                     }
-                }
                 if (response.headers["X_RPC_OK"] == "true") {
                     val policiesAsset = response.body<GithubPoliciesAsset>()
                     uploadStatusFlow.value = LoadStatus.Success(policiesAsset)
