@@ -1,4 +1,4 @@
-name: Apk-Build
+name: Build-Apk
 
 on:
   workflow_dispatch:
@@ -35,8 +35,7 @@ jobs:
       - run: chmod 777 ./gradlew
       - run: ./gradlew build
 
-      - name: Archive artifacts
-        uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
-          name: build-outputs-apk.zip
-          path: app/build/outputs/apk
+          name: outputs.zip
+          path: app/build/outputs
