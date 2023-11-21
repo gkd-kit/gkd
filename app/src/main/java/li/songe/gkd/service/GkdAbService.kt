@@ -148,9 +148,13 @@ class GkdAbService : CompositionAbService({
         if (!(event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)) return@onAccessibilityEvent
 
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-            if (event.eventTime - appChangeTime > 5_000) {
+            if (event.eventTime - appChangeTime > 5_000) { // app 启动 5s 内关闭限制
                 if (event.eventTime - lastContentEventTime < 100) {
-                    return@onAccessibilityEvent
+                    if (event.eventTime - (lastTriggerRule?.actionTriggerTime?.value
+                            ?: 0) > 1000
+                    ) { // 规则刚刚触发后 1s 内关闭限制
+                        return@onAccessibilityEvent
+                    }
                 }
             }
             lastContentEventTime = event.eventTime
