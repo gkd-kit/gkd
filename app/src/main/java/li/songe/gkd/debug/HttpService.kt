@@ -8,9 +8,9 @@ import io.ktor.http.CacheControl
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.call
 import io.ktor.server.application.install
+import io.ktor.server.cio.CIO
+import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
-import io.ktor.server.netty.NettyApplicationEngine
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveText
@@ -63,8 +63,8 @@ class HttpService : CompositionService({
     )
 
     val httpSubsRawFlow = MutableStateFlow<SubscriptionRaw?>(null)
-    fun createServer(port: Int): NettyApplicationEngine {
-        return embeddedServer(Netty, port, configure = { tcpKeepAlive = true }) {
+    fun createServer(port: Int): CIOApplicationEngine {
+        return embeddedServer(CIO, port) {
             install(KtorCorsPlugin)
             install(KtorErrorPlugin)
             install(ContentNegotiation) { json(keepNullJson) }
@@ -129,7 +129,7 @@ class HttpService : CompositionService({
         }
     }
 
-    var server: NettyApplicationEngine? = null
+    var server: CIOApplicationEngine? = null
     scope.launchTry(Dispatchers.IO) {
         storeFlow.map(scope) { s -> s.httpServerPort }.collect { port ->
             server?.stop()
