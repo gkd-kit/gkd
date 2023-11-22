@@ -31,10 +31,6 @@ android {
             useSupportLibrary = true
         }
 
-        ksp {
-            arg("room.schemaLocation", "$projectDir/schemas")
-            arg("room.incremental", "true")
-        }
         val nowTime = System.currentTimeMillis()
         buildConfigField("Long", "BUILD_TIME", jsonStringOf(nowTime) + "L")
         buildConfigField(
@@ -70,19 +66,20 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
+            isShrinkResources = true
             setProguardFiles(
                 listOf(
+                    // /sdk/tools/proguard/proguard-android-optimize.txt
                     getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
                 )
             )
-            signingConfig = signingConfigs.getByName("release")
-            manifestPlaceholders["appName"] = "GKD"
         }
         debug {
-            signingConfig = signingConfigs.getByName("release")
-            manifestPlaceholders["appName"] = "GKD-debug"
             applicationIdSuffix = ".debug"
+            signingConfig = signingConfigs.getByName("release")
+            resValue("string", "app_name", "GKD-debug")
         }
     }
     compileOptions {
@@ -103,23 +100,21 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = libs.versions.compose.compilerVersion.get()
     }
-    packaging {
-        resources {
-            // Due to https://github.com/Kotlin/kotlinx.coroutines/issues/2023
-            excludes += "META-INF/INDEX.LIST"
-            excludes += "META-INF/licenses/*"
-            excludes += "**/attach_hotspot_windows.dll"
-            excludes += "META-INF/io.netty.*"
-        }
-    }
-    configurations.all {
-        resolutionStrategy {
-            //    https://github.com/Kotlin/kotlinx.coroutines/issues/2023
-            exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-debug")
-        }
+    packagingOptions.resources.excludes += setOf(
+        // https://github.com/Kotlin/kotlinx.coroutines/issues/2023
+        "META-INF/**", "**/attach_hotspot_windows.dll",
+
+        "**.properties", "**.bin", "**/*.proto"
+    )
+    configurations.configureEach {
+        //    https://github.com/Kotlin/kotlinx.coroutines/issues/2023
+        exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-debug")
     }
 
-//    ksp
+    ksp {
+        arg("room.schemaLocation", "$projectDir/schemas")
+        arg("room.incremental", "true")
+    }
     sourceSets.configureEach {
         kotlin.srcDir("$buildDir/generated/ksp/$name/kotlin/")
     }
@@ -156,7 +151,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.ktor.server.core)
-    implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.cio)
     implementation(libs.ktor.server.content.negotiation)
 
     implementation(libs.ktor.client.core)
