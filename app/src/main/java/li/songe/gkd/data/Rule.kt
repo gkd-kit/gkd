@@ -70,7 +70,7 @@ data class Rule(
             ?: app.actionCd
         } else {
             null
-        }) ?: rule.actionCd ?: defaultMiniCd)
+        }) ?: rule.actionCd ?: group.actionCd ?: app.actionCd ?: defaultMiniCd)
     )
     var actionTriggerTime = Value(0L)
     fun trigger() {
@@ -89,7 +89,7 @@ data class Rule(
             ?: group.actionMaximum ?: app.actionMaximum
     } else {
         null
-    }) ?: rule.actionMaximum)
+    }) ?: rule.actionMaximum ?: group.actionMaximum ?: app.actionMaximum)
 
     var actionCount = Value(0)
 
