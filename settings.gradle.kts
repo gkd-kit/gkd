@@ -136,10 +136,10 @@ dependencyResolutionManagement {
 
             library("junit", "junit:junit:4.13.2")
 
-            val ktorVersion = "2.3.5"
+            val ktorVersion = "2.3.6"
             // 请注意,当 client 和 server 版本不一致时, 会报错 socket hang up
             library("ktor.server.core", "io.ktor:ktor-server-core:$ktorVersion")
-            library("ktor.server.netty", "io.ktor:ktor-server-netty:$ktorVersion")
+            library("ktor.server.cio", "io.ktor:ktor-server-cio:$ktorVersion")
             library("ktor.server.cors", "io.ktor:ktor-server-cors:$ktorVersion")
             library(
                 "ktor.server.content.negotiation", "io.ktor:ktor-server-content-negotiation:$ktorVersion"
