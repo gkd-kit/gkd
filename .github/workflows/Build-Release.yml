@@ -45,6 +45,9 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: outputs
+          path: outputs
+
+      - run: ls -R
 
       - id: create_release
         uses: actions/create-release@v1
