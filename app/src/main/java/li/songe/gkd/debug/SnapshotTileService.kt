@@ -3,6 +3,7 @@ package li.songe.gkd.debug
 import android.accessibilityservice.AccessibilityService
 import android.service.quicksettings.TileService
 import com.blankj.utilcode.util.ToastUtils
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import li.songe.gkd.appScope
 import li.songe.gkd.debug.SnapshotExt.captureSnapshot
@@ -18,9 +19,9 @@ class SnapshotTileService : TileService() {
             ToastUtils.showShort("无障碍没有开启")
             return
         }
-        val oldAppId = service.safeActiveWindow?.packageName
-            ?: return ToastUtils.showShort("获取界面信息根节点失败")
-        appScope.launchTry {
+        appScope.launchTry(Dispatchers.IO) {
+            val oldAppId = service.safeActiveWindow?.packageName
+                ?: return@launchTry ToastUtils.showShort("获取界面信息根节点失败")
             val interval = 500L
             val waitTime = 3000L
             var i = 0
