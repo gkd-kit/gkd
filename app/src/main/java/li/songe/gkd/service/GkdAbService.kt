@@ -98,7 +98,7 @@ class GkdAbService : CompositionAbService({
     var lastContentEventTime = 0L
     var job: Job? = null
     val singleThread = Dispatchers.IO.limitedParallelism(1)
-    val eventThread = Dispatchers.Default.limitedParallelism(1)
+    val eventThread = Dispatchers.IO.limitedParallelism(1)
     onDestroy {
         singleThread.cancel()
     }
@@ -161,13 +161,16 @@ class GkdAbService : CompositionAbService({
             lastContentEventTime = event.eventTime
         }
 
-        scope.launch(eventThread) {
-            val evAppId = event.packageName?.toString() ?: return@launch
-            val evActivityId = event.className?.toString() ?: return@launch
-            val rightAppId = safeActiveWindow?.packageName?.toString() ?: return@launch
+        // AccessibilityEvent 的 clear 方法会在后续时间被系统调用导致内部数据丢失
+        // 因此不要在协程/子线程内传递引用, 此处使用 data class 保存数据
+        val fixedEvent = event.toAbEvent() ?: return@onAccessibilityEvent
+        val evAppId = fixedEvent.packageName
+        val evActivityId = fixedEvent.className
 
+        scope.launch(eventThread) {
+            val rightAppId = safeActiveWindow?.packageName?.toString() ?: return@launch
             if (rightAppId == evAppId) {
-                if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+                if (fixedEvent.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
                     // tv.danmaku.bili, com.miui.home, com.miui.home.launcher.Launcher
                     if (isActivity(evAppId, evActivityId)) {
                         topActivityFlow.value = TopActivity(
@@ -176,7 +179,7 @@ class GkdAbService : CompositionAbService({
                         activityChangeTime = System.currentTimeMillis()
                     }
                 } else {
-                    if (event.eventTime - lastTriggerShizukuTime > 300) {
+                    if (fixedEvent.eventTime - lastTriggerShizukuTime > 300) {
                         val shizukuTop = getShizukuTopActivity()
                         if (shizukuTop != null && shizukuTop.appId == rightAppId) {
                             if (shizukuTop.activityId == evActivityId) {
@@ -184,7 +187,7 @@ class GkdAbService : CompositionAbService({
                             }
                             topActivityFlow.value = shizukuTop
                         }
-                        lastTriggerShizukuTime = event.eventTime
+                        lastTriggerShizukuTime = fixedEvent.eventTime
                     }
                 }
             }
@@ -216,7 +219,7 @@ class GkdAbService : CompositionAbService({
                 }
             }
 
-            lastQueryTimeFlow.value = event.eventTime
+            lastQueryTimeFlow.value = fixedEvent.eventTime
 
             newQueryTask()
         }
@@ -252,6 +255,7 @@ class GkdAbService : CompositionAbService({
                     LogUtils.d("更新磁盘订阅文件:${newSubsRaw.name}")
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    LogUtils.d("更新失败", e)
                 }
             }
             lastUpdateSubsTime = System.currentTimeMillis()
