@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.content.pm.UserInfo
 import android.os.Build
 import com.blankj.utilcode.util.AppUtils
 import kotlinx.coroutines.Dispatchers
@@ -15,8 +16,9 @@ import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
+import li.songe.gkd.shizuku.getUsers
+import li.songe.gkd.shizuku.getAppInfoWithShizuku
 import li.songe.gkd.util.Ext.getApplicationInfoExt
-
 
 private val _appInfoCacheFlow = MutableStateFlow(mapOf<String, AppInfo>())
 
@@ -82,12 +84,21 @@ private fun getAppInfo(id: String): AppInfo? {
 val mutex by lazy { Mutex() }
 
 fun updateAppInfo(vararg appIds: String) {
+    val users: List<UserInfo> = if (storeFlow.value.enableShizuku) {
+        getUsers(excludePartial = true, excludeDying = true, excludePreCreated = true)
+    } else {
+        emptyList()
+    }
     if (appIds.isEmpty()) return
     appScope.launchTry(Dispatchers.IO) {
         mutex.withLock {
             val newMap = _appInfoCacheFlow.value.toMutableMap()
             appIds.forEach { appId ->
-                val newAppInfo = getAppInfo(appId)
+                val newAppInfo = if (storeFlow.value.enableShizuku) {
+                    getAppInfoWithShizuku(appId, users)
+                } else {
+                    getAppInfo(appId)
+                }
                 if (newAppInfo != null) {
                     newMap[appId] = newAppInfo
                 } else {

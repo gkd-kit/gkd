@@ -3,6 +3,13 @@ package li.songe.gkd.shizuku
 
 import android.app.ActivityManager
 import android.app.IActivityTaskManager
+import android.content.Context
+import android.content.pm.IPackageManager
+import android.content.pm.PackageManager
+import android.content.pm.UserInfo
+import android.os.Build
+import android.os.IUserManager
+import android.os.RemoteException
 import android.view.Display
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ToastUtils
@@ -14,7 +21,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import li.songe.gkd.app
 import li.songe.gkd.composition.CanOnDestroy
+import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.util.launchWhile
 import li.songe.gkd.util.map
@@ -24,6 +33,7 @@ import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
 import kotlin.reflect.full.declaredMemberFunctions
 import kotlin.reflect.typeOf
+
 
 /**
  * https://github.com/gkd-kit/gkd/issues/44
@@ -116,4 +126,58 @@ fun CanOnDestroy.useSafeGetTasksFc(scope: CoroutineScope): () -> List<ActivityMa
             null
         }
     }
+}
+
+val userManager: IUserManager by lazy {
+    SystemServiceHelper.getSystemService(Context.USER_SERVICE)
+        .let(::ShizukuBinderWrapper)
+        .let(IUserManager.Stub::asInterface)
+}
+
+fun getUsers(
+    excludePartial: Boolean,
+    excludeDying: Boolean,
+    excludePreCreated: Boolean
+): List<UserInfo> {
+    return if (Build.VERSION.SDK_INT >= 30) {
+        userManager.getUsers(excludePartial, excludeDying, excludePreCreated)
+    } else {
+        try {
+            userManager.getUsers(excludeDying)
+        } catch (e: NoSuchFieldError) {
+            userManager.getUsers(excludePartial, excludeDying, excludePreCreated)
+        }
+    }
+}
+
+val packageManager: IPackageManager by lazy {
+    SystemServiceHelper.getSystemService("package")
+        .let(::ShizukuBinderWrapper)
+        .let(IPackageManager.Stub::asInterface)
+}
+
+fun getAppInfoWithShizuku(id: String, users: List<UserInfo>): AppInfo? {
+    for (user in users) {
+        try {
+            val info = packageManager.getPackageInfo(
+                id,
+                PackageManager.GET_META_DATA.toLong(), user.id
+            ) ?: continue
+            val rawInfo =
+                packageManager.getApplicationInfo(
+                    id,
+                    PackageManager.GET_META_DATA.toLong(), user.id
+                ) ?: continue
+            return AppInfo(
+                id = id,
+                name = app.packageManager.getApplicationLabel(rawInfo).toString(),
+                icon = app.packageManager.getApplicationIcon(rawInfo),
+                versionCode = info.versionCode,
+                versionName = info.versionName
+            )
+        } catch (e: RemoteException) {
+            return null
+        }
+    }
+    return null
 }
