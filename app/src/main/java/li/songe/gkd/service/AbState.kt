@@ -28,15 +28,18 @@ data class ActivityRule(
 
 val activityRuleFlow by lazy { MutableStateFlow(ActivityRule()) }
 
-private val lastActivityIdCacheMap by lazy { mutableMapOf<String, String>() }
+private var lastTopActivity: TopActivity? = null
 
 private fun getFixTopActivity(): TopActivity? {
     val top = topActivityFlow.value ?: return null
     if (top.activityId == null) {
-        topActivityFlow.value = top.copy(activityId = lastActivityIdCacheMap[top.appId])
+        if (lastTopActivity?.appId == top.appId) {
+            // 当从通知栏上拉返回应用等时, activityId 的无障碍事件不会触发, 此时复用上一次获得的 activityId 填充
+            topActivityFlow.value = lastTopActivity
+        }
     } else {
-        // 当从通知栏上拉返回应用等时, activityId 的无障碍事件不会触发, 此时使用上一次获得的 activityId 填充
-        lastActivityIdCacheMap[top.appId] = top.activityId
+        // 仅保留最近的有 activityId 的单个 TopActivity
+        lastTopActivity = top
     }
     return topActivityFlow.value
 }
