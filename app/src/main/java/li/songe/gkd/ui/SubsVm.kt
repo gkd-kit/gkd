@@ -7,7 +7,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
+import li.songe.gkd.data.SubsConfig
+import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.data.Tuple3
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.SubsPageDestination
@@ -36,17 +39,20 @@ class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
     private val appsFlow = combine(
         subsItemFlow, subsIdToRawFlow, appInfoCacheFlow
     ) { subsItem, subsIdToRaw, appInfoCache ->
+        val collator = Collator.getInstance(Locale.CHINESE)
         (subsIdToRaw[subsItem?.id]?.apps ?: emptyList()).sortedWith { a, b ->
             // 顺序: 已安装(有名字->无名字)->未安装(有名字(来自订阅)->无名字)
-            Collator.getInstance(Locale.CHINESE)
-                .compare(appInfoCache[a.id]?.name ?: a.name?.let { "\uFFFF" + it }
-                ?: ("\uFFFF\uFFFF" + a.id),
-                    appInfoCache[b.id]?.name ?: b.name?.let { "\uFFFF" + it }
-                    ?: ("\uFFFF\uFFFF" + b.id))
+            collator.compare(appInfoCache[a.id]?.name ?: a.name?.let { "\uFFFF" + it }
+            ?: ("\uFFFF\uFFFF" + a.id),
+                appInfoCache[b.id]?.name ?: b.name?.let { "\uFFFF" + it }
+                ?: ("\uFFFF\uFFFF" + b.id))
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val searchStrFlow = MutableStateFlow("")
+
+    private val debounceSearchStr = searchStrFlow.debounce(200)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, searchStrFlow.value)
 
     private val appAndConfigsFlow = combine(appsFlow,
         appSubsConfigsFlow,
@@ -64,16 +70,40 @@ class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val filterAppAndConfigsFlow = combine(
-        appAndConfigsFlow, searchStrFlow, appInfoCacheFlow
+        appAndConfigsFlow, debounceSearchStr, appInfoCacheFlow
     ) { appAndConfigs, searchStr, appInfoCache ->
         if (searchStr.isBlank()) {
             appAndConfigs
         } else {
-            appAndConfigs.filter { a ->
-                (appInfoCache[a.t0.id]?.name ?: a.t0.name ?: a.t0.id).contains(
-                    searchStr, true
-                )
+            val results = mutableListOf<Tuple3<SubscriptionRaw.AppRaw, SubsConfig?, Int>>()
+            val remnantList = appAndConfigs.toMutableList()
+            //1. 搜索已安装应用名称
+            remnantList.toList().apply { remnantList.clear() }.forEach { a ->
+                val name = appInfoCache[a.t0.id]?.name
+                if (name?.contains(searchStr, true) == true) {
+                    results.add(a)
+                } else {
+                    remnantList.add(a)
+                }
             }
+            //2. 搜索未安装应用名称
+            remnantList.toList().apply { remnantList.clear() }.forEach { a ->
+                val name = a.t0.name
+                if (appInfoCache[a.t0.id] == null && name?.contains(searchStr, true) == true) {
+                    results.add(a)
+                } else {
+                    remnantList.add(a)
+                }
+            }
+            //3. 搜索应用 id
+            remnantList.toList().apply { remnantList.clear() }.forEach { a ->
+                if (a.t0.id.contains(searchStr, true)) {
+                    results.add(a)
+                } else {
+                    remnantList.add(a)
+                }
+            }
+            results
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
