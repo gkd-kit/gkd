@@ -201,13 +201,15 @@ class GkdAbService : CompositionAbService({
                 }
             }
 
+            if (getCurrentRules().rules.isEmpty()) {
+                // 放在 evAppId != rightAppId 的前面使得 TopActivity 能借助 lastTopActivity 恢复
+                return@launch
+            }
+
             if (evAppId != rightAppId) {
                 return@launch
             }
 
-            if (getCurrentRules().rules.isEmpty()) {
-                return@launch
-            }
 
             if (!storeFlow.value.enableService) return@launch
             val jobVal = job
