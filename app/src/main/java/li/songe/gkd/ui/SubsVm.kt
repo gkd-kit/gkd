@@ -70,9 +70,12 @@ class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
             appAndConfigs
         } else {
             appAndConfigs.filter { a ->
-                (appInfoCache[a.t0.id]?.name ?: a.t0.name ?: a.t0.id).contains(
-                    searchStr, true
-                )
+                val cachedName = appInfoCache[a.t0.id]?.name
+                val name = a.t0.name
+                val id = a.t0.id
+                (cachedName?.contains(searchStr, true) == true) ||
+                        (name?.contains(searchStr, true) == true) ||
+                        (id.contains(searchStr, true))
             }
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
