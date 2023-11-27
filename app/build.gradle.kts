@@ -7,7 +7,6 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.google.ksp)
     alias(libs.plugins.google.hilt)
     alias(libs.plugins.rikka.refine)
@@ -174,7 +173,7 @@ dependencies {
     ksp(libs.destinations.ksp)
 
     implementation(libs.google.hilt.android)
-    kapt(libs.google.hilt.android.compiler)
+    ksp(libs.google.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 
     implementation(libs.others.reorderable)

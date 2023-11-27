@@ -58,7 +58,6 @@ dependencyResolutionManagement {
             plugin("kotlin.parcelize", "org.jetbrains.kotlin.plugin.parcelize").version(
                 kotlinVersion
             )
-            plugin("kotlin.kapt", "org.jetbrains.kotlin.kapt").version(kotlinVersion)
             plugin("kotlin.multiplatform", "org.jetbrains.kotlin.multiplatform").version(
                 kotlinVersion
             )
