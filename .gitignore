@@ -16,3 +16,6 @@ local.properties
 .idea
 /kotlin-js-store
 .vscode
+
+*.jks
+*.keystore
