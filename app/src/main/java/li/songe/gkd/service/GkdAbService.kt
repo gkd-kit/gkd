@@ -12,6 +12,7 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ServiceUtils
+import com.blankj.utilcode.util.ToastUtils
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
@@ -302,7 +303,12 @@ class GkdAbService : CompositionAbService({
                         height = 1
                     }
                     withContext(Dispatchers.Main) {
-                        wm.addView(aliveView, lp)
+                        try {
+                            wm.addView(aliveView, lp)
+                        } catch (e: Exception) {
+                            LogUtils.d(e)
+                            ToastUtils.showShort("创建无障碍悬浮窗失败!")
+                        }
                     }
                 } else {
                     aliveView = null
