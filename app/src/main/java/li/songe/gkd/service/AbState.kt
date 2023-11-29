@@ -6,10 +6,11 @@ import li.songe.gkd.appScope
 import li.songe.gkd.data.ClickLog
 import li.songe.gkd.data.Rule
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.util.appIdToRulesFlow
+import li.songe.gkd.util.appRuleFlow
 import li.songe.gkd.util.increaseClickCount
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.recordStoreFlow
+import li.songe.gkd.util.storeFlow
 
 data class TopActivity(
     val appId: String,
@@ -47,7 +48,11 @@ private fun getFixTopActivity(): TopActivity? {
 fun getCurrentRules(): ActivityRule {
     val topActivity = getFixTopActivity()
     val activityRule = activityRuleFlow.value
-    val appIdToRules = appIdToRulesFlow.value
+    val appIdToRules = if (storeFlow.value.matchUnknownApp) {
+        appRuleFlow.value.allMap
+    } else {
+        appRuleFlow.value.visibleMap
+    }
     val idChanged = topActivity?.appId != activityRule.topActivity?.appId
     val topChanged = activityRule.topActivity != topActivity
     if (topChanged || activityRule.appIdToRules !== appIdToRules) {
