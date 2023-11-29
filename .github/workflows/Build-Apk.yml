@@ -7,9 +7,6 @@ on:
     branches:
       - '**'
 
-env:
-  BUGLY_TOKEN: ${{ secrets.BUGLY_TOKEN }}
-
 jobs:
   build:
     if: ${{ !startsWith(github.event.head_commit.message, 'chore:') }}
@@ -31,6 +28,15 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+
+      - name: write secrets info
+        run: |
+          echo GKD_BUGLY_APP_ID='${{ secrets.GKD_BUGLY_APP_ID }}' >> gradle.properties
+          echo ${{ secrets.GKD_STORE_FILE_BASE64 }} | base64 --decode > ${{ github.workspace }}/key.jks
+          echo GKD_STORE_FILE='${{ github.workspace }}/key.jks' >> gradle.properties
+          echo GKD_STORE_PASSWORD='${{ secrets.GKD_STORE_PASSWORD }}' >> gradle.properties
+          echo GKD_KEY_ALIAS='${{ secrets.GKD_KEY_ALIAS }}' >> gradle.properties
+          echo GKD_KEY_PASSWORD='${{ secrets.GKD_KEY_PASSWORD }}' >> gradle.properties
 
       - run: chmod 777 ./gradlew
       - run: ./gradlew build

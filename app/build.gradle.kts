@@ -40,7 +40,7 @@ android {
             )
         )
         buildConfigField(
-            "String", "BUGLY_TOKEN", jsonStringOf(System.getenv("BUGLY_TOKEN"))
+            "String", "GKD_BUGLY_APP_ID", jsonStringOf(project.properties["GKD_BUGLY_APP_ID"])
         )
 
         resourceConfigurations.addAll(listOf("zh", "en"))
@@ -54,18 +54,22 @@ android {
         disable.add("ModifierFactoryUnreferencedReceiver")
     }
 
-    signingConfigs {
-        create("release") {
-            storeFile = file("./android.jks")
-            storePassword = "KdMQ6pqiNSJ6Sype"
-            keyAlias = "key0"
-            keyPassword = "KdMQ6pqiNSJ6Sype"
+    val currentSigning = if (project.hasProperty("GKD_STORE_FILE")) {
+        signingConfigs.create("release") {
+            storeFile = file(project.properties["GKD_STORE_FILE"] as String)
+            storePassword = project.properties["GKD_STORE_PASSWORD"] as String
+            keyAlias = project.properties["GKD_KEY_ALIAS"] as String
+            keyPassword = project.properties["GKD_KEY_PASSWORD"] as String
         }
+    } else {
+        signingConfigs.getByName("debug")
     }
 
     buildTypes {
+        all {
+            signingConfig = currentSigning
+        }
         release {
-            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             setProguardFiles(
@@ -77,7 +81,6 @@ android {
         }
         debug {
             applicationIdSuffix = ".debug"
-            signingConfig = signingConfigs.getByName("release")
             resValue("string", "app_name", "GKD-debug")
         }
     }

@@ -39,11 +39,11 @@ class App : Application() {
         super.onCreate()
         _app = this
 
-        @Suppress("SENSELESS_COMPARISON") if (BuildConfig.BUGLY_TOKEN != null) {
+        @Suppress("SENSELESS_COMPARISON") if (BuildConfig.GKD_BUGLY_APP_ID != null) {
             CrashReport.setDeviceModel(this, DeviceInfo.instance.model)
             CrashReport.setIsDevelopmentDevice(this, BuildConfig.DEBUG)
             CrashReport.initCrashReport(applicationContext,
-                BuildConfig.BUGLY_TOKEN,
+                BuildConfig.GKD_BUGLY_APP_ID,
                 BuildConfig.DEBUG,
                 CrashReport.UserStrategy(this).apply {
                     setCrashHandleCallback(object : CrashReport.CrashHandleCallback() {
