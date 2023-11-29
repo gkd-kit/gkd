@@ -21,7 +21,7 @@ import li.songe.gkd.notif.abNotif
 import li.songe.gkd.notif.createNotif
 import li.songe.gkd.notif.defaultChannel
 import li.songe.gkd.util.VOLUME_CHANGED_ACTION
-import li.songe.gkd.util.appIdToRulesFlow
+import li.songe.gkd.util.appRuleFlow
 import li.songe.gkd.util.clickCountFlow
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
@@ -79,11 +79,12 @@ class ManageService : CompositionService({
     }
 
     scope.launch {
-        combine(appIdToRulesFlow, clickCountFlow, storeFlow) { appIdToRules, clickCount, store ->
+        combine(appRuleFlow, clickCountFlow, storeFlow) { appRule, clickCount, store ->
             if (!store.enableService) return@combine "服务已暂停"
-            val appSize = appIdToRules.keys.size
-            val groupSize =
-                appIdToRules.values.sumOf { rules -> rules.map { r -> r.group.key }.toSet().size }
+            val appSize = appRule.visibleMap.keys.size
+            val groupSize = appRule.visibleMap.values.sumOf { rules ->
+                rules.map { r -> r.group.key }.toSet().size
+            }
             (if (groupSize > 0) {
                 "${appSize}应用/${groupSize}规则组"
             } else {

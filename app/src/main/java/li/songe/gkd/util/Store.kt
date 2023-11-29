@@ -60,6 +60,7 @@ data class Store(
     val enableDarkTheme: Boolean? = null,
     val enableAbFloatWindow: Boolean = true,
     val enableGroup: Boolean? = null,
+    val matchUnknownApp: Boolean = false,
 )
 
 val storeFlow by lazy {

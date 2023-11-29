@@ -142,6 +142,19 @@ fun DebugPage() {
                 Divider()
             }
 
+            TextSwitch(
+                name = "匹配未知应用",
+                desc = "匹配不在安装列表中(其它用户空间)的应用",
+                checked = store.matchUnknownApp
+            ) {
+                updateStorage(
+                    storeFlow, store.copy(
+                        matchUnknownApp = it
+                    )
+                )
+            }
+            Divider()
+
             val httpServerRunning by usePollState { HttpService.isRunning() }
             TextSwitch(
                 name = "HTTP服务",

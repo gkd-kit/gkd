@@ -37,19 +37,18 @@ val subsConfigsFlow by lazy {
     DbSet.subsConfigDao.query().stateIn(appScope, SharingStarted.Eagerly, emptyList())
 }
 
-val appIdToRulesFlow by lazy {
+private val appIdToRulesFlow by lazy {
     combine(subsItemsFlow,
         subsIdToRawFlow,
         subsConfigsFlow,
-        appInfoCacheFlow,
-        storeFlow.map(appScope) { s -> s.enableGroup }) { subsItems, subsIdToRaw, subsConfigs, appInfoCache, enableGroup ->
+        storeFlow.map(appScope) { s -> s.enableGroup }) { subsItems, subsIdToRaw, subsConfigs, enableGroup ->
         val appSubsConfigs = subsConfigs.filter { it.type == SubsConfig.AppType }
         val groupSubsConfigs = subsConfigs.filter { it.type == SubsConfig.GroupType }
         val appIdToRules = mutableMapOf<String, MutableList<Rule>>()
         subsItems.filter { it.enable }.forEach { subsItem ->
             (subsIdToRaw[subsItem.id]?.apps ?: emptyList()).filter { appRaw ->
-                // 筛选 已经安装的 APP 和 当前启用的 app 订阅规则
-                appInfoCache.containsKey(appRaw.id) && (appSubsConfigs.find { subsConfig ->
+                // 筛选 当前启用的 app 订阅规则
+                (appSubsConfigs.find { subsConfig ->
                     subsConfig.subsItemId == subsItem.id && subsConfig.appId == appRaw.id
                 }?.enable ?: true)
             }.forEach { appRaw ->
@@ -157,6 +156,29 @@ val appIdToRulesFlow by lazy {
         }
         appIdToRules.filter { it.value.isNotEmpty() }
     }.stateIn<Map<String, List<Rule>>>(appScope, SharingStarted.Eagerly, emptyMap())
+}
+
+data class AppRule(
+    val visibleMap: Map<String, List<Rule>> = emptyMap(),
+    val unVisibleMap: Map<String, List<Rule>> = emptyMap(),
+    val allMap: Map<String, List<Rule>> = emptyMap(),
+)
+
+val appRuleFlow by lazy {
+    combine(appIdToRulesFlow, appInfoCacheFlow) { appIdToRules, appInfoCache ->
+        val visibleMap = mutableMapOf<String, List<Rule>>()
+        val unVisibleMap = mutableMapOf<String, List<Rule>>()
+        appIdToRules.forEach { (appId, rules) ->
+            if (appInfoCache.containsKey(appId)) {
+                visibleMap[appId] = rules
+            } else {
+                unVisibleMap[appId] = rules
+            }
+        }
+        AppRule(
+            visibleMap = visibleMap, unVisibleMap = unVisibleMap, allMap = appIdToRules
+        )
+    }.stateIn(appScope, SharingStarted.Eagerly, AppRule())
 }
 
 
