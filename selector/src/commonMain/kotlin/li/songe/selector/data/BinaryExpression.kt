@@ -9,7 +9,7 @@ data class BinaryExpression(val name: String, val operator: CompareOperator, val
 
     override fun toString() = "${name}${operator}${
         if (value is String) {
-            val wrapChar = '\''
+            val wrapChar = '"'
             val sb = StringBuilder()
             sb.append(wrapChar)
             value.forEach { c ->
