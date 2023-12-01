@@ -45,8 +45,8 @@ class MainActivity : CompositionActivity({
     }
 
     setContent {
+        val navController = rememberNavController()
 
-    val navController = rememberNavController()
         AppTheme {
             UpgradeDialog()
             CompositionLocalProvider(
