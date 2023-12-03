@@ -5,6 +5,7 @@ import android.content.Intent
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ServiceUtils
 import io.ktor.http.CacheControl
+import io.ktor.http.ContentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.call
 import io.ktor.server.application.install
@@ -17,6 +18,7 @@ import io.ktor.server.request.receiveText
 import io.ktor.server.response.cacheControl
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondFile
+import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
@@ -43,6 +45,7 @@ import li.songe.gkd.notif.httpChannel
 import li.songe.gkd.notif.httpNotif
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.util.Ext.getIpAddressInLocalNetwork
+import li.songe.gkd.util.SERVER_SCRIPT_URL
 import li.songe.gkd.util.keepNullJson
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
@@ -70,7 +73,7 @@ class HttpService : CompositionService({
             install(ContentNegotiation) { json(keepNullJson) }
 
             routing {
-                get("/") { call.respond("hello world") }
+                get("/") { call.respondText(ContentType.Text.Html) { "<script type='module' src='$SERVER_SCRIPT_URL'></script>" } }
                 route("/api") {
                     get("/device") { call.respond(DeviceInfo.instance) }
                     get("/snapshot") {
