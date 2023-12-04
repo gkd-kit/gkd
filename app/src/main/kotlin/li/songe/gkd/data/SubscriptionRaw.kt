@@ -4,7 +4,16 @@ import blue.endless.jankson.Jankson
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.long
 import li.songe.gkd.util.json
 import li.songe.selector.Selector
 
@@ -17,6 +26,7 @@ data class SubscriptionRaw(
     val author: String? = null,
     val updateUrl: String? = null,
     val supportUri: String? = null,
+    val checkUpdateUrl: String? = null,
     val apps: List<AppRaw> = emptyList(),
 ) {
 
@@ -63,7 +73,7 @@ data class SubscriptionRaw(
         override val resetMatch: String?,
         override val activityIds: List<String>?,
         override val excludeActivityIds: List<String>?,
-        val rules: List<RuleRaw> = emptyList(),
+        val rules: List<RuleRaw>,
         val snapshotUrls: List<String>?,
         val exampleUrls: List<String>?,
     ) : CommonProps {
@@ -291,6 +301,7 @@ data class SubscriptionRaw(
                 author = getString(rootJson, "author"),
                 updateUrl = getString(rootJson, "updateUrl"),
                 supportUri = getString(rootJson, "supportUri"),
+                checkUpdateUrl = getString(rootJson, "checkUpdateUrl"),
                 apps = rootJson["apps"]?.jsonArray?.mapIndexed { index, jsonElement ->
                     jsonToAppRaw(
                         jsonElement.jsonObject, index

@@ -13,6 +13,7 @@ import android.view.accessibility.AccessibilityEvent
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ServiceUtils
 import com.blankj.utilcode.util.ToastUtils
+import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +34,7 @@ import li.songe.gkd.data.ActionResult
 import li.songe.gkd.data.GkdAction
 import li.songe.gkd.data.NodeInfo
 import li.songe.gkd.data.RpcError
+import li.songe.gkd.data.SubsVersion
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.data.getActionFc
 import li.songe.gkd.db.DbSet
@@ -54,6 +56,8 @@ class GkdAbService : CompositionAbService({
     useLifeCycleLog()
 
     val context = this as GkdAbService
+
+    context.resources
 
     val scope = useScope()
 
@@ -235,13 +239,25 @@ class GkdAbService : CompositionAbService({
             subsItemsFlow.value.forEach { subsItem ->
                 if (subsItem.updateUrl == null) return@forEach
                 try {
+                    val oldSubsRaw = subsIdToRawFlow.value[subsItem.id]
+                    if (oldSubsRaw?.checkUpdateUrl != null) {
+                        try {
+                            val subsVersion =
+                                client.get(oldSubsRaw.checkUpdateUrl).body<SubsVersion>()
+                            LogUtils.d("快速检测更新成功", subsVersion)
+                            if (subsVersion.id == oldSubsRaw.id && subsVersion.version <= oldSubsRaw.version) {
+                                return@forEach
+                            }
+                        } catch (e: Exception) {
+                            LogUtils.d("快速检测更新失败", subsItem, e)
+                        }
+                    }
                     val newSubsRaw = SubscriptionRaw.parse(
                         client.get(subsItem.updateUrl).bodyAsText()
                     )
                     if (newSubsRaw.id != subsItem.id) {
                         return@forEach
                     }
-                    val oldSubsRaw = subsIdToRawFlow.value[subsItem.id]
                     if (oldSubsRaw != null && newSubsRaw.version <= oldSubsRaw.version) {
                         return@forEach
                     }
@@ -258,7 +274,7 @@ class GkdAbService : CompositionAbService({
                     LogUtils.d("更新磁盘订阅文件:${newSubsRaw.name}")
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    LogUtils.d("更新失败", e)
+                    LogUtils.d("检测更新失败", e)
                 }
             }
             lastUpdateSubsTime = System.currentTimeMillis()
