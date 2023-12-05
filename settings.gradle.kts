@@ -65,7 +65,7 @@ dependencyResolutionManagement {
 
             // compose 编译器的版本, 需要注意它与 compose 的版本没有关联
             // https://mvnrepository.com/artifact/androidx.compose.compiler/compiler
-            version("compose.compilerVersion", "1.5.4")
+            version("compose.compilerVersion", "1.5.5")
             val composeVersion = "1.5.4"
             library("compose.ui", "androidx.compose.ui:ui:$composeVersion")
             library("compose.preview", "androidx.compose.ui:ui-tooling-preview:$composeVersion")
