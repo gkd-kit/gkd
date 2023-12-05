@@ -41,7 +41,6 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.shizuku.useSafeGetTasksFc
 import li.songe.gkd.util.client
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.launchWhile
 import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
@@ -232,10 +231,9 @@ class GkdAbService : CompositionAbService({
         }
     }
 
-
-    var lastUpdateSubsTime = 0L
-    scope.launchWhile(Dispatchers.IO) { // 自动从网络更新订阅文件
-        if (storeFlow.value.updateSubsInterval > 0 && System.currentTimeMillis() - lastUpdateSubsTime < storeFlow.value.updateSubsInterval) {
+    fun checkSubsUpdate() {
+        scope.launchTry(Dispatchers.IO) { // 自动从网络更新订阅文件
+            LogUtils.d("开始自动检测更新")
             subsItemsFlow.value.forEach { subsItem ->
                 if (subsItem.updateUrl == null) return@forEach
                 try {
@@ -277,9 +275,20 @@ class GkdAbService : CompositionAbService({
                     LogUtils.d("检测更新失败", e)
                 }
             }
-            lastUpdateSubsTime = System.currentTimeMillis()
         }
-        delay(30 * 60_000) // 每 30 分钟检查一次
+    }
+
+    var lastUpdateSubsTime = 0L
+    onAccessibilityEvent {
+        if (it?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {// 筛选降低判断频率
+            // 借助 无障碍事件 触发自动检测更新
+            val i = storeFlow.value.updateSubsInterval
+            val t = System.currentTimeMillis()
+            if (i > 0 && t - lastUpdateSubsTime > i.coerceAtLeast(60 * 60_000)) {
+                lastUpdateSubsTime = t
+                checkSubsUpdate()
+            }
+        }
     }
 
     scope.launch(Dispatchers.IO) {
