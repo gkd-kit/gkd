@@ -19,13 +19,14 @@ data class BinaryExpression(val name: String, val operator: CompareOperator, val
                     '\r' -> 'r'
                     '\t' -> 't'
                     '\b' -> 'b'
+                    '\\' -> '\\'
                     else -> null
                 }
                 if (escapeChar != null) {
                     sb.append("\\" + escapeChar)
                 } else {
                     when (c.code) {
-                        in 0..9 -> {
+                        in 0..0xf -> {
                             sb.append("\\x0" + c.code.toString(16))
                         }
 
