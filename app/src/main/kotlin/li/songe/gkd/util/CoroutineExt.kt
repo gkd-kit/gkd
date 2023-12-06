@@ -33,7 +33,7 @@ fun CoroutineScope.launchTry(
     } catch (e: Exception) {
         e.printStackTrace()
         LogUtils.d(e)
-        ToastUtils.showShort(e.message)
+        ToastUtils.showShort(e.message ?: e.stackTraceToString())
     }
 }
 
