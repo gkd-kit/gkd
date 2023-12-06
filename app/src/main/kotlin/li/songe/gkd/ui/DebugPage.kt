@@ -120,7 +120,7 @@ fun DebugPage() {
                     onCheckedChange = { enableShizuku ->
                         if (enableShizuku) {
                             appScope.launchTry(Dispatchers.IO) {
-                                // 检验方法是否适配, 再允许使用 shizuku
+                                // 校验方法是否适配, 再允许使用 shizuku
                                 val tasks = newActivityTaskManager()?.safeGetTasks()?.firstOrNull()
                                 if (tasks != null) {
                                     updateStorage(
@@ -128,6 +128,8 @@ fun DebugPage() {
                                             enableShizuku = true
                                         )
                                     )
+                                } else {
+                                    ToastUtils.showShort("Shizuku方法校验失败,无法使用")
                                 }
                             }
                         } else {
