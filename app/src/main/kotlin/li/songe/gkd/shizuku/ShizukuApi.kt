@@ -31,7 +31,12 @@ import kotlin.reflect.typeOf
 
 
 fun newActivityTaskManager(): IActivityTaskManager? {
-    return SystemServiceHelper.getSystemService("activity_task").let(::ShizukuBinderWrapper)
+    val service = SystemServiceHelper.getSystemService("activity_task")
+    if (service == null) {
+        LogUtils.d("shizuku 无法获取 activity_task")
+        return null
+    }
+    return service.let(::ShizukuBinderWrapper)
         .let(IActivityTaskManager.Stub::asInterface)
 }
 
