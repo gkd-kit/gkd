@@ -1,6 +1,5 @@
 package li.songe.gkd.ui
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -63,6 +62,7 @@ import li.songe.gkd.ui.destinations.GroupItemPageDestination
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.encodeToJson5String
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
@@ -257,7 +257,7 @@ fun AppItemPage(
                         }
                     }
                     TextButton(onClick = {
-                        val groupAppText = json.encodeToString(
+                        val groupAppText = json.encodeToJson5String(
                             appRaw?.copy(
                                 groups = listOf(showGroupItemVal)
                             )
@@ -291,14 +291,15 @@ fun AppItemPage(
                         .clickable {
                             vm.viewModelScope.launchTry(Dispatchers.IO) {
                                 val subsRaw = subsIdToRawFlow.value[subsItemId] ?: return@launchTry
-                                val newSubsRaw = subsRaw.copy(apps = subsRaw.apps
-                                    .toMutableList()
-                                    .apply {
-                                        set(
-                                            indexOfFirst { a -> a.id == appRawVal.id },
-                                            appRawVal.copy(groups = appRawVal.groups.filter { g -> g.key != menuGroupRaw.key })
-                                        )
-                                    })
+                                val newSubsRaw = subsRaw.copy(
+                                    apps = subsRaw.apps
+                                        .toMutableList()
+                                        .apply {
+                                            set(
+                                                indexOfFirst { a -> a.id == appRawVal.id },
+                                                appRawVal.copy(groups = appRawVal.groups.filter { g -> g.key != menuGroupRaw.key })
+                                            )
+                                        })
                                 subsItemVal.subsFile.writeText(
                                     json.encodeToString(
                                         newSubsRaw
@@ -321,7 +322,7 @@ fun AppItemPage(
 
     if (editGroupRaw != null && appRawVal != null && subsItemVal != null) {
         var source by remember {
-            mutableStateOf(json.encodeToString(editGroupRaw))
+            mutableStateOf(json.encodeToJson5String(editGroupRaw))
         }
         val oldSource = remember { source }
         AlertDialog(
@@ -365,7 +366,8 @@ fun AppItemPage(
                     setEditGroupRaw(null)
                     val subsRaw = subsIdToRawFlow.value[subsItemId] ?: return@TextButton
                     val newSubsRaw = subsRaw.copy(apps = subsRaw.apps.toMutableList().apply {
-                        set(indexOfFirst { a -> a.id == appRawVal.id },
+                        set(
+                            indexOfFirst { a -> a.id == appRawVal.id },
                             appRawVal.copy(groups = appRawVal.groups.toMutableList().apply {
                                 set(
                                     indexOfFirst { g -> g.key == newGroupRaw.key }, newGroupRaw
@@ -441,7 +443,8 @@ fun AppItemPage(
                 val newKey = appRawVal.groups.maxBy { g -> g.key }.key + 1
                 val subsRaw = subsIdToRawFlow.value[subsItemId] ?: return@TextButton
                 val newSubsRaw = subsRaw.copy(apps = subsRaw.apps.toMutableList().apply {
-                    set(indexOfFirst { a -> a.id == appRawVal.id },
+                    set(
+                        indexOfFirst { a -> a.id == appRawVal.id },
                         appRawVal.copy(groups = appRawVal.groups + tempGroups.mapIndexed { i, g ->
                             g.copy(
                                 key = newKey + i
