@@ -115,7 +115,7 @@ class ParserTest {
     @Test
     fun check_quote() {
 //        https://github.com/gkd-kit/inspect/issues/7
-        val selector = Selector.parse("a[a=''] ")
+        val selector = Selector.parse("a[a='\\\\'] ")
         println("check_quote:$selector")
     }
 
