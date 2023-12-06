@@ -28,30 +28,30 @@ data class NodeInfo(
     companion object {
 
         private fun getIdQf(
-            parent: AccessibilityNodeInfo,
+            root: AccessibilityNodeInfo,
             node: AccessibilityNodeInfo,
             idQf: Boolean?,
         ): Boolean? {
             val viewId = node.viewIdResourceName
             if (viewId == null || viewId.isEmpty()) return null
             if (idQf == false) return false
-            return parent.findAccessibilityNodeInfosByViewId(viewId).any { n -> n == node }
+            return root.findAccessibilityNodeInfosByViewId(viewId).any { n -> n == node }
         }
 
         private fun getTextQf(
-            parent: AccessibilityNodeInfo,
+            root: AccessibilityNodeInfo,
             node: AccessibilityNodeInfo,
             textQf: Boolean?,
         ): Boolean? {
             val viewText = node.text
             if (viewText == null || viewText.isEmpty()) return null
             if (textQf == false) return false
-            return parent.findAccessibilityNodeInfosByText(viewText.toString())
+            return root.findAccessibilityNodeInfosByText(viewText.toString())
                 .any { n -> n == node }
         }
 
         fun abNodeToNode(
-            parentAbNode: AccessibilityNodeInfo,
+            rootNodeInfo: AccessibilityNodeInfo,
             abNode: AccessibilityNodeInfo,
             id: Int = 0,
             pid: Int = -1,
@@ -64,13 +64,13 @@ data class NodeInfo(
             // 兄弟节点的可查找性一致
             // id 和 text 的可查找性独立
             val idQf = getIdQf(
-                parentAbNode,
+                rootNodeInfo,
                 abNode,
                 if (parent?.idQf == false) false else brother?.idQf,
             )
             return NodeInfo(
                 id = id, pid = pid, index = index, idQf = idQf, textQf = getTextQf(
-                    parentAbNode, abNode,
+                    rootNodeInfo, abNode,
                     idQf,
                 ), attr = AttrInfo.info2data(abNode, index, depth)
             )
@@ -101,7 +101,7 @@ data class NodeInfo(
                     val id = list.size
                     stack.push(Tuple3(childNode, id, childDepth))
                     val simpleNode = abNodeToNode(
-                        top.t0, childNode, id, pid, index, childDepth, list[pid], brother
+                        rootNodeInfo, childNode, id, pid, index, childDepth, list[pid], brother
                     )
                     list.add(simpleNode)
                     brother = if (simpleNode.idQf != null) {
