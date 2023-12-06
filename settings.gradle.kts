@@ -130,6 +130,10 @@ dependencyResolutionManagement {
                 "google.accompanist.drawablepainter",
                 "com.google.accompanist:accompanist-drawablepainter:0.32.0"
             )
+            library(
+                "google.accompanist.permissions",
+                "com.google.accompanist:accompanist-permissions:0.32.0"
+            )
 
             library("junit", "junit:junit:4.13.2")
 
