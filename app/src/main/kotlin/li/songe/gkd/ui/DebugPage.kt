@@ -260,6 +260,20 @@ fun DebugPage() {
                     )
                 )
             }
+
+            Divider()
+            TextSwitch(
+                name = "截屏快照",
+                desc = "当用户截屏时保存快照(需手动替换快照图片),仅支持MIUI14",
+                checked = store.captureScreenshot
+            ) {
+                updateStorage(
+                    storeFlow, store.copy(
+                        captureScreenshot = it
+                    )
+                )
+            }
+
             Divider()
             TextSwitch(
                 name = "隐藏快照状态栏",
