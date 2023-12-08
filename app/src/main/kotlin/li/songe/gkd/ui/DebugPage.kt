@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ToastUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
@@ -109,6 +110,7 @@ fun DebugPage() {
                         try {
                             Shizuku.requestPermission(Activity.RESULT_OK)
                         } catch (e: Exception) {
+                            LogUtils.d("Shizuku授权错误", e)
                             ToastUtils.showShort("Shizuku可能没有运行")
                         }
                     })
