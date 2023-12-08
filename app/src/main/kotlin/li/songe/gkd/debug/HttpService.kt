@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ServiceUtils
-import io.ktor.http.CacheControl
 import io.ktor.http.ContentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.call
@@ -15,7 +14,6 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveText
-import io.ktor.server.response.cacheControl
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondFile
 import io.ktor.server.response.respondText
@@ -83,7 +81,6 @@ class HttpService : CompositionService({
                         if (!fp.exists()) {
                             throw RpcError("对应快照不存在")
                         }
-                        call.response.cacheControl(CacheControl.MaxAge(3600 * 24 * 7))
                         call.respondFile(fp)
                     }
                     get("/screenshot") {
@@ -93,7 +90,6 @@ class HttpService : CompositionService({
                         if (!fp.exists()) {
                             throw RpcError("对应截图不存在")
                         }
-                        call.response.cacheControl(CacheControl.MaxAge(3600 * 24 * 7))
                         call.respondFile(fp)
                     }
                     get("/captureSnapshot") {
