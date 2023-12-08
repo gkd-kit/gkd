@@ -38,6 +38,7 @@ import li.songe.gkd.data.SubsVersion
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.data.getActionFc
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.shizuku.useSafeGetTasksFc
 import li.songe.gkd.util.client
 import li.songe.gkd.util.launchTry
@@ -148,9 +149,12 @@ class GkdAbService : CompositionAbService({
             newQueryTask()
         }
     }
+    val skipAppIds = setOf("com.android.systemui")
     onAccessibilityEvent { event ->
-        if (event == null) return@onAccessibilityEvent
+        if (event == null || event.packageName == null) return@onAccessibilityEvent
         if (!(event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)) return@onAccessibilityEvent
+
+        if (skipAppIds.any { id -> id.contentEquals(event.packageName) }) return@onAccessibilityEvent
 
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
             if (event.eventTime - appChangeTime > 5_000) { // app 启动 5s 内关闭限制
@@ -344,6 +348,24 @@ class GkdAbService : CompositionAbService({
     onDestroy {
         if (aliveView != null) {
             wm.removeView(aliveView)
+        }
+    }
+
+    onAccessibilityEvent { e ->
+        if (!storeFlow.value.captureScreenshot) return@onAccessibilityEvent
+        e ?: return@onAccessibilityEvent
+        val appId = e.packageName ?: return@onAccessibilityEvent
+        val appCls = e.className ?: return@onAccessibilityEvent
+        if (appId.contentEquals("com.miui.screenshot") &&
+            e.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
+            !e.isFullScreen &&
+            appCls.contentEquals("android.widget.RelativeLayout") &&
+            e.text.firstOrNull()?.contentEquals("截屏缩略图") == true // [截屏缩略图, 截长屏, 发送]
+        ) {
+            LogUtils.d("captureScreenshot", e)
+            scope.launchTry(Dispatchers.IO) {
+                SnapshotExt.captureSnapshot(skipScreenshot = true)
+            }
         }
     }
 }) {

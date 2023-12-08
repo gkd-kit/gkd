@@ -66,32 +66,40 @@ object SnapshotExt {
 
     private val captureLoading = MutableStateFlow(false)
 
-    suspend fun captureSnapshot(): ComplexSnapshot {
+    suspend fun captureSnapshot(skipScreenshot: Boolean = false): ComplexSnapshot {
         if (!GkdAbService.isRunning()) {
             throw RpcError("无障碍不可用")
         }
         if (captureLoading.value) {
-            throw RpcError("正在截屏,不可重复截屏")
+            throw RpcError("正在保存快照,不可重复操作")
         }
         captureLoading.value = true
-        ToastUtils.showShort("正在捕获快照...")
+        ToastUtils.showShort("正在保存快照...")
 
         try {
-
             val snapshotDef = coroutineScope { async(Dispatchers.IO) { createComplexSnapshot() } }
-            val bitmapDef = coroutineScope {
+            val bitmapDef = coroutineScope {// TODO 也许在分屏模式下可能需要处理
                 async(Dispatchers.IO) {
-                    GkdAbService.currentScreenshot() ?: withTimeoutOrNull(3_000) {
-                        if (!ScreenshotService.isRunning()) {
-                            return@withTimeoutOrNull null
+                    if (skipScreenshot) {
+                        LogUtils.d("跳过截屏，即将使用空白图片")
+                        Bitmap.createBitmap(
+                            ScreenUtils.getScreenWidth(),
+                            ScreenUtils.getScreenHeight(),
+                            Bitmap.Config.ARGB_8888
+                        )
+                    } else {
+                        GkdAbService.currentScreenshot() ?: withTimeoutOrNull(3_000) {
+                            if (!ScreenshotService.isRunning()) {
+                                return@withTimeoutOrNull null
+                            }
+                            ScreenshotService.screenshot()
+                        } ?: Bitmap.createBitmap(
+                            ScreenUtils.getScreenWidth(),
+                            ScreenUtils.getScreenHeight(),
+                            Bitmap.Config.ARGB_8888
+                        ).apply {
+                            LogUtils.d("截屏不可用，即将使用空白图片")
                         }
-                        ScreenshotService.screenshot()
-                    } ?: Bitmap.createBitmap(
-                        ScreenUtils.getScreenWidth(),
-                        ScreenUtils.getScreenHeight(),
-                        Bitmap.Config.ARGB_8888
-                    ).apply {
-                        LogUtils.d("截屏不可用，即将使用空白图片")
                     }
                 }
             }
