@@ -57,7 +57,6 @@ fun AccessibilityNodeInfo.getDepth(): Int {
     return depth
 }
 
-
 fun AccessibilityNodeInfo.querySelector(
     selector: Selector,
     quickFind: Boolean = false,
@@ -69,21 +68,27 @@ fun AccessibilityNodeInfo.querySelector(
         }
         return null
     }
-    if (quickFind) {
-        val canQuickFind = selector.canQuickFind
-        if (canQuickFind != null) {
-            // 使用 findAccessibilityNodeInfosByXX 无法查询深层次节点
+    if (quickFind && selector.canQf) {
+        val qfIdValue = selector.qfIdValue
+        val qfVidValue = selector.qfVidValue
+        val qfTextValue = selector.qfTextValue
+        val nodes = (if (qfIdValue != null) {
+            findAccessibilityNodeInfosByViewId(qfIdValue)
+        } else if (qfVidValue != null) {
+            findAccessibilityNodeInfosByViewId("$packageName:id/$qfVidValue")
+        } else if (qfTextValue != null) {
+            findAccessibilityNodeInfosByText(qfTextValue)
+        } else {
+            emptyList()
+        })
+        if (nodes.isNotEmpty()) {
             val trackNodes = mutableListOf<AccessibilityNodeInfo>()
-            (if (selector.canQuickFind!!.first) {
-                findAccessibilityNodeInfosByViewId(canQuickFind.second)
-            } else {
-                findAccessibilityNodeInfosByText(canQuickFind.second)
-            }).forEach { childNode ->
+            nodes.forEach { childNode ->
                 val targetNode = selector.match(childNode, abTransform, trackNodes)
                 if (targetNode != null) return targetNode
             }
-            return null
         }
+        return null
     }
     // 在一些开屏广告的界面会造成1-2s的阻塞
     return abTransform.querySelector(this, selector)
@@ -113,6 +118,13 @@ private val getChildren: (AccessibilityNodeInfo) -> Sequence<AccessibilityNodeIn
 private val getAttr: (AccessibilityNodeInfo, String) -> Any? = { node, name ->
     when (name) {
         "id" -> node.viewIdResourceName
+        "vid" -> node.viewIdResourceName?.let { id ->
+            id.subSequence(
+                (node.packageName?.length ?: 0) + ":id/".length,
+                id.length
+            )
+        }
+
         "name" -> node.className
         "text" -> node.text
         "text.length" -> node.text?.length
