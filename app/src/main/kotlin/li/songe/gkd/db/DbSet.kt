@@ -30,6 +30,7 @@ object DbSet {
     val subsConfigDao by lazy { appDb.subsConfigDao() }
     val snapshotDao by lazy { appDb.snapshotDao() }
     val clickLogDao by lazy { appDb.clickLogDao() }
+    val categoryConfigDao by lazy { appDb.categoryConfigDao() }
 
     private fun createCallback(): RoomDatabase.Callback {
         return object : RoomDatabase.Callback() {

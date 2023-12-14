@@ -82,9 +82,6 @@ fun SettingsPage() {
     var showEnableDarkThemeDlg by remember {
         mutableStateOf(false)
     }
-    var showEnableGroupDlg by remember {
-        mutableStateOf(false)
-    }
     var showToastInputDlg by remember {
         mutableStateOf(false)
     }
@@ -202,27 +199,6 @@ fun SettingsPage() {
                 Text(
                     text = darkThemeRadioOptions.find { it.second == store.enableDarkTheme }?.first
                         ?: store.enableDarkTheme.toString(), fontSize = 14.sp
-                )
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "more"
-                )
-            }
-        }
-        Divider()
-        Row(modifier = Modifier
-            .clickable {
-                showEnableGroupDlg = true
-            }
-            .padding(10.dp, 15.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                modifier = Modifier.weight(1f), text = "规则启用", fontSize = 18.sp
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = enableGroupRadioOptions.find { it.second == store.enableGroup }?.first
-                        ?: store.enableGroup.toString(), fontSize = 14.sp
                 )
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "more"
@@ -351,43 +327,6 @@ fun SettingsPage() {
                                         storeFlow.value.copy(enableDarkTheme = option.second)
                                     )
                                 })
-                            Text(
-                                text = option.first, modifier = Modifier.padding(start = 16.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-    if (showEnableGroupDlg) {
-        Dialog(onDismissRequest = { showEnableGroupDlg = false }) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                Column {
-                    enableGroupRadioOptions.forEach { option ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .selectable(selected = (option.second == store.enableGroup),
-                                    onClick = {
-                                        updateStorage(
-                                            storeFlow,
-                                            storeFlow.value.copy(enableGroup = option.second)
-                                        )
-                                    })
-                                .padding(horizontal = 16.dp)
-                        ) {
-                            RadioButton(selected = (option.second == store.enableGroup), onClick = {
-                                updateStorage(
-                                    storeFlow, storeFlow.value.copy(enableGroup = option.second)
-                                )
-                            })
                             Text(
                                 text = option.first, modifier = Modifier.padding(start = 16.dp)
                             )
@@ -570,8 +509,8 @@ private val darkThemeRadioOptions = listOf(
     "启用" to true,
     "关闭" to false,
 )
-private val enableGroupRadioOptions = listOf(
+val enableGroupRadioOptions = listOf(
     "跟随订阅" to null,
-    "默认启用" to true,
-    "默认关闭" to false,
+    "全部启用" to true,
+    "全部关闭" to false,
 )

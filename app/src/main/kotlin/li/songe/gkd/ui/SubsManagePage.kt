@@ -57,6 +57,7 @@ import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SubsItemCard
+import li.songe.gkd.ui.destinations.CategoryPageDestination
 import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.util.DEFAULT_SUBS_UPDATE_URL
 import li.songe.gkd.util.LocalNavController
@@ -213,6 +214,14 @@ fun SubsManagePage() {
                             .clickable {
                                 menuSubItem = null
                                 navController.navigate(SubsPageDestination(subsRawVal.id))
+                            }
+                            .fillMaxWidth()
+                            .padding(16.dp))
+                        Divider()
+                        Text(text = "查看类别", modifier = Modifier
+                            .clickable {
+                                menuSubItem = null
+                                navController.navigate(CategoryPageDestination(subsRawVal.id))
                             }
                             .fillMaxWidth()
                             .padding(16.dp))

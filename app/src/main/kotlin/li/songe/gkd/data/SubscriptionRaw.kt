@@ -28,7 +28,33 @@ data class SubscriptionRaw(
     val supportUri: String? = null,
     val checkUpdateUrl: String? = null,
     val apps: List<AppRaw> = emptyList(),
+    val categories: List<Category> = emptyList(),
 ) {
+
+    @IgnoredOnParcel
+    val categoriesGroups by lazy {
+        val allAppGroups =
+            apps.flatMap { a -> a.groups.map { g -> g to a } }
+        allAppGroups.groupBy { g ->
+            categories.find { c -> g.first.name.startsWith(c.name) }
+        }
+    }
+
+    @IgnoredOnParcel
+    val groupToCategoryMap by lazy {
+        val map = mutableMapOf<GroupRaw, Category>()
+        categoriesGroups.forEach { (key, value) ->
+            value.forEach { (g) ->
+                if (key != null) {
+                    map[g] = key
+                }
+            }
+        }
+        map
+    }
+
+    @Serializable
+    data class Category(val key: Int, val name: String, val enable: Boolean?)
 
     interface CommonProps {
         val activityIds: List<String>?
@@ -306,7 +332,17 @@ data class SubscriptionRaw(
                     jsonToAppRaw(
                         jsonElement.jsonObject, index
                     )
-                } ?: emptyList())
+                } ?: emptyList(),
+                categories = rootJson["categories"]?.jsonArray?.mapIndexed { index, jsonElement ->
+                    Category(
+                        key = getInt(jsonElement.jsonObject, "key")
+                            ?: error("miss categories[$index].key"),
+                        name = getString(jsonElement.jsonObject, "name")
+                            ?: error("miss categories[$index].name"),
+                        enable = getBoolean(jsonElement.jsonObject, "enable"),
+                    )
+                } ?: emptyList()
+            )
         }
 
         //  订阅文件状态: 文件不存在, 文件正常, 文件损坏(损坏原因)
@@ -314,19 +350,26 @@ data class SubscriptionRaw(
 
         fun parse(source: String, json5: Boolean = true): SubscriptionRaw {
             val text = if (json5) Jankson.builder().build().load(source).toJson() else source
-
             val obj = jsonToSubscriptionRaw(json.parseToJsonElement(text).jsonObject)
-
+            // 校验 category 不重复
+            obj.categories.forEach { c ->
+                if (obj.categories.find { c2 -> c2 !== c && c2.key == c.key } != null) {
+                    error("duplicated category: key:${c.key} ")
+                }
+            }
+            // 校验 appId 不重复
             val duplicatedApps = obj.apps.groupingBy { it }.eachCount().filter { it.value > 1 }.keys
             if (duplicatedApps.isNotEmpty()) {
                 error("duplicated app: ${duplicatedApps.map { it.id }}")
             }
             obj.apps.forEach { appRaw ->
+                // 校验 group key 不重复
                 val duplicatedGroups =
                     appRaw.groups.groupingBy { it }.eachCount().filter { it.value > 1 }.keys
                 if (duplicatedGroups.isNotEmpty()) {
                     error("app:${appRaw.id}, duplicated group: ${duplicatedGroups.map { it.key }}")
                 }
+                // 校验 rule key 不重复
                 appRaw.groups.forEach { groupRaw ->
                     val duplicatedRules =
                         groupRaw.rules.mapNotNull { r -> r.key }.groupingBy { it }.eachCount()
@@ -336,7 +379,6 @@ data class SubscriptionRaw(
                     }
                 }
             }
-
             return obj
         }
 

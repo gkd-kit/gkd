@@ -63,12 +63,11 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.encodeToJson5String
+import li.songe.gkd.util.getGroupRawEnable
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
-import li.songe.gkd.util.storeFlow
-import li.songe.gkd.util.subsIdToRawFlow
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
@@ -82,13 +81,15 @@ fun AppItemPage(
     val navController = LocalNavController.current
     val vm = hiltViewModel<AppItemVm>()
     val subsItem by vm.subsItemFlow.collectAsState()
+    val subsRaw = vm.subsRawFlow.collectAsState().value
     val subsConfigs by vm.subsConfigsFlow.collectAsState()
+    val categoryConfigs by vm.categoryConfigsFlow.collectAsState()
     val appRaw by vm.subsAppFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
-    val store by storeFlow.collectAsState()
 
     val appRawVal = appRaw
     val subsItemVal = subsItem
+    val groupToCategoryMap = subsRaw?.groupToCategoryMap ?: emptyMap()
 
     val (showGroupItem, setShowGroupItem) = remember {
         mutableStateOf<SubscriptionRaw.GroupRaw?>(
@@ -118,10 +119,12 @@ fun AppItemPage(
                 )
             }
         }, title = {
-            Text(
-                text = if (subsItem == null) "订阅文件缺失" else (appInfoCache[appRaw?.id]?.name
-                    ?: appRaw?.name ?: appRaw?.id ?: "")
-            )
+            val text = if (subsRaw == null) {
+                "订阅文件缺失"
+            } else {
+                "${subsRaw.name}/${appInfoCache[appRaw?.id]?.name ?: appRaw?.name ?: appRaw?.id}"
+            }
+            Text(text = text)
         }, actions = {})
     }, floatingActionButton = {
         if (editable) {
@@ -200,10 +203,14 @@ fun AppItemPage(
                             Spacer(modifier = Modifier.width(10.dp))
                         }
 
+                        val groupEnable = getGroupRawEnable(
+                            group,
+                            subsConfigs,
+                            groupToCategoryMap[group],
+                            categoryConfigs
+                        )
                         val subsConfig = subsConfigs.find { it.groupKey == group.key }
-                        Switch(checked = (subsConfig?.enable ?: store.enableGroup ?: group.enable
-                        ?: true),
-                            modifier = Modifier,
+                        Switch(checked = groupEnable, modifier = Modifier,
                             onCheckedChange = scope.launchAsFn { enable ->
                                 val newItem = (subsConfig?.copy(enable = enable) ?: SubsConfig(
                                     type = SubsConfig.GroupType,
@@ -290,7 +297,7 @@ fun AppItemPage(
                     Text(text = "删除", modifier = Modifier
                         .clickable {
                             vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val subsRaw = subsIdToRawFlow.value[subsItemId] ?: return@launchTry
+                                subsRaw ?: return@launchTry
                                 val newSubsRaw = subsRaw.copy(
                                     apps = subsRaw.apps
                                         .toMutableList()
@@ -364,7 +371,7 @@ fun AppItemPage(
                         return@TextButton
                     }
                     setEditGroupRaw(null)
-                    val subsRaw = subsIdToRawFlow.value[subsItemId] ?: return@TextButton
+                    subsRaw ?: return@TextButton
                     val newSubsRaw = subsRaw.copy(apps = subsRaw.apps.toMutableList().apply {
                         set(
                             indexOfFirst { a -> a.id == appRawVal.id },
@@ -441,7 +448,7 @@ fun AppItemPage(
                     }
                 }
                 val newKey = appRawVal.groups.maxBy { g -> g.key }.key + 1
-                val subsRaw = subsIdToRawFlow.value[subsItemId] ?: return@TextButton
+                subsRaw ?: return@TextButton
                 val newSubsRaw = subsRaw.copy(apps = subsRaw.apps.toMutableList().apply {
                     set(
                         indexOfFirst { a -> a.id == appRawVal.id },

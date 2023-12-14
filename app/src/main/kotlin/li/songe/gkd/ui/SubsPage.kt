@@ -66,7 +66,6 @@ import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
-import li.songe.gkd.util.subsIdToRawFlow
 
 
 @RootNavGraph
@@ -80,12 +79,11 @@ fun SubsPage(
 
     val vm = hiltViewModel<SubsVm>()
     val subsItem by vm.subsItemFlow.collectAsState()
-    val subsIdToRaw by subsIdToRawFlow.collectAsState()
     val appAndConfigs by vm.filterAppAndConfigsFlow.collectAsState()
     val searchStr by vm.searchStrFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
 
-    val subsRaw = subsIdToRaw[subsItem?.id]
+    val subsRaw = vm.subsRawFlow.collectAsState().value
 
     // 本地订阅
     val editable = subsItem?.id.let { it != null && it < 0 }
