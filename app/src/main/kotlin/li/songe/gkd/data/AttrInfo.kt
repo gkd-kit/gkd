@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AttrInfo(
     val id: String?,
+    val vid: String?,
     val name: String?,
     val text: String?,
     val desc: String?,
@@ -42,8 +43,18 @@ data class AttrInfo(
             depth: Int,
         ): AttrInfo {
             node.getBoundsInScreen(rect)
+            val appId = node.packageName?.toString() ?: ""
+            val id: String? = node.viewIdResourceName
+            val idPrefix = "$appId:id/"
+            val vid = if (id != null && id.startsWith(idPrefix)) {
+                id.substring(idPrefix.length)
+            } else {
+                // 此处不使用 id 是因为某些节点的 id 没有 appId:id/ 前缀
+                null
+            }
             return AttrInfo(
-                id = node.viewIdResourceName,
+                id = id,
+                vid = vid,
                 name = node.className?.toString(),
                 text = node.text?.toString(),
                 desc = node.contentDescription?.toString(),
@@ -66,7 +77,7 @@ data class AttrInfo(
                 childCount = node.childCount,
 
                 index = index,
-                depth = depth, //
+                depth = depth,
             )
         }
     }
