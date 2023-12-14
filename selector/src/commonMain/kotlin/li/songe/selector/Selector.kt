@@ -40,20 +40,31 @@ class Selector internal constructor(private val propertyWrapper: PropertyWrapper
         return propertyWrapper.matchTracks(node, transform, trackNodes)
     }
 
-    // true: use findById, false: use findByText
-    val canQuickFind = propertyWrapper.propertySegment.expressions.firstOrNull().let { e ->
-        if (e is BinaryExpression && e.value is String) {
-            if (e.name == "id" && e.operator == CompareOperator.Equal) {
-                true to e.value
-            } else if (e.name == "text" && (e.operator == CompareOperator.Equal || e.operator == CompareOperator.Start || e.operator == CompareOperator.Include || e.operator == CompareOperator.End)) {
-                false to e.value
-            } else {
-                null
-            }
+    val qfIdValue = propertyWrapper.propertySegment.expressions.firstOrNull().let { e ->
+        if (e is BinaryExpression && e.name == "id" && e.operator == CompareOperator.Equal && e.value is String) {
+            e.value
         } else {
             null
         }
     }
+
+    val qfVidValue = propertyWrapper.propertySegment.expressions.firstOrNull().let { e ->
+        if (e is BinaryExpression && e.name == "vid" && e.operator == CompareOperator.Equal && e.value is String) {
+            e.value
+        } else {
+            null
+        }
+    }
+
+    val qfTextValue = propertyWrapper.propertySegment.expressions.firstOrNull().let { e ->
+        if (e is BinaryExpression && e.name == "id" && (e.operator == CompareOperator.Equal || e.operator == CompareOperator.Start || e.operator == CompareOperator.Include || e.operator == CompareOperator.End) && e.value is String) {
+            e.value
+        } else {
+            null
+        }
+    }
+
+    val canQf = qfIdValue != null || qfVidValue != null || qfTextValue != null
 
     // 主动查询
     val isMatchRoot = propertyWrapper.propertySegment.expressions.firstOrNull().let { e ->
