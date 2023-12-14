@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.AppItemPageDestination
+import li.songe.gkd.util.map
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 import javax.inject.Inject
@@ -17,12 +18,16 @@ import javax.inject.Inject
 class AppItemVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
     private val args = AppItemPageDestination.argsFrom(stateHandle)
 
-
     val subsItemFlow =
         subsItemsFlow.map { subsItems -> subsItems.find { s -> s.id == args.subsItemId } }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    val subsRawFlow = subsIdToRawFlow.map(viewModelScope) { s -> s[args.subsItemId] }
+
     val subsConfigsFlow = DbSet.subsConfigDao.queryGroupTypeConfig(args.subsItemId, args.appId)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(args.subsItemId)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val subsAppFlow =

@@ -1,6 +1,5 @@
 package li.songe.gkd.data
 
-import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Delete
@@ -13,8 +12,6 @@ import androidx.room.Update
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import kotlinx.parcelize.IgnoredOnParcel
-import kotlinx.parcelize.Parcelize
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.subsFolder
 import java.io.File
@@ -22,7 +19,6 @@ import java.io.File
 @Entity(
     tableName = "subs_item",
 )
-@Parcelize
 data class SubsItem(
     @PrimaryKey @ColumnInfo(name = "id") val id: Long,
 
@@ -33,9 +29,8 @@ data class SubsItem(
     @ColumnInfo(name = "order") val order: Int,
     @ColumnInfo(name = "update_url") val updateUrl: String? = null,
 
-    ) : Parcelable {
+    ) {
 
-    @IgnoredOnParcel
     val subsFile by lazy {
         File(subsFolder.absolutePath.plus("/${id}.json"))
     }
@@ -47,6 +42,7 @@ data class SubsItem(
         DbSet.subsItemDao.delete(this)
         DbSet.subsConfigDao.delete(id)
         DbSet.clickLogDao.deleteBySubsId(id)
+        DbSet.categoryConfigDao.deleteBySubsItemId(id)
     }
 
     companion object {
@@ -76,6 +72,9 @@ data class SubsItem(
 
         @Delete
         suspend fun delete(vararg users: SubsItem): Int
+
+        @Query("UPDATE subs_item SET mtime=:mtime WHERE id=:id")
+        suspend fun updateMtime(id: Long, mtime: Long): Int
 
         @Query("SELECT * FROM subs_item ORDER BY `order`")
         fun query(): Flow<List<SubsItem>>

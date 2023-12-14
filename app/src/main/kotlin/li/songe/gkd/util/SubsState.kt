@@ -1,14 +1,18 @@
 package li.songe.gkd.util
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.withContext
 import li.songe.gkd.appScope
+import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.Rule
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubsItem
+import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.selector.Selector
 
@@ -17,48 +21,67 @@ val subsItemsFlow by lazy {
 }
 
 private val subsIdToMtimeFlow by lazy {
-    DbSet.subsItemDao.query().map { it.sortedBy { s -> s.id }.associate { s -> s.id to s.mtime } }
+    subsItemsFlow.map { it.sortedBy { s -> s.id }.associate { s -> s.id to s.mtime } }
         .stateIn(appScope, SharingStarted.Eagerly, emptyMap())
 }
 
 val subsIdToRawFlow by lazy {
-    subsIdToMtimeFlow.map { subsIdToMtime ->
-        subsIdToMtime.map { entry ->
-            entry.key to SubsItem.getSubscriptionRaw(entry.key)
-        }.toMap()
-    }.onEach { rawMap ->
-        updateAppInfo(*rawMap.values.map { subsRaw ->
-            subsRaw?.apps?.map { a -> a.id }
-        }.flatMap { it ?: emptyList() }.toTypedArray())
-    }.stateIn(appScope, SharingStarted.Eagerly, emptyMap())
+    MutableStateFlow<Map<Long, SubscriptionRaw?>>(emptyMap())
 }
 
-val subsConfigsFlow by lazy {
-    DbSet.subsConfigDao.query().stateIn(appScope, SharingStarted.Eagerly, emptyList())
+fun getGroupRawEnable(
+    groupRaw: SubscriptionRaw.GroupRaw,
+    subsConfigs: List<SubsConfig>,
+    category: SubscriptionRaw.Category?,
+    categoryConfigs: List<CategoryConfig>
+): Boolean {
+    // 优先级: 规则用户配置 > 批量配置 > 批量默认 > 规则默认
+    val groupConfig = subsConfigs.find { c -> c.groupKey == groupRaw.key }
+    // 1.规则用户配置
+    return groupConfig?.enable ?: if (category != null) {// 这个规则被批量配置捕获
+        val categoryConfig = categoryConfigs.find { c -> c.categoryKey == category.key }
+        val enable = if (categoryConfig != null) {
+            // 2.批量配置
+            categoryConfig.enable
+        } else {
+            // 3.批量默认
+            category.enable
+        }
+        enable
+    } else {
+        null
+    } ?: groupRaw.enable ?: true
 }
 
 private val appIdToRulesFlow by lazy {
-    combine(subsItemsFlow,
+    combine(
+        subsItemsFlow,
         subsIdToRawFlow,
-        subsConfigsFlow,
-        storeFlow.map(appScope) { s -> s.enableGroup }) { subsItems, subsIdToRaw, subsConfigs, enableGroup ->
-        val appSubsConfigs = subsConfigs.filter { it.type == SubsConfig.AppType }
-        val groupSubsConfigs = subsConfigs.filter { it.type == SubsConfig.GroupType }
+        DbSet.subsConfigDao.query(),
+        DbSet.categoryConfigDao.query(),
+    ) { subsItems, subsIdToRaw, subsConfigs, categoryConfigs ->
+        val appSubsConfigs = subsConfigs.filter { c -> c.type == SubsConfig.AppType }
+        val groupSubsConfigs = subsConfigs.filter { c -> c.type == SubsConfig.GroupType }
         val appIdToRules = mutableMapOf<String, MutableList<Rule>>()
         subsItems.filter { it.enable }.forEach { subsItem ->
-            (subsIdToRaw[subsItem.id]?.apps ?: emptyList()).filter { appRaw ->
+            val subsRaw = subsIdToRaw[subsItem.id] ?: return@forEach
+            val subAppSubsConfigs = appSubsConfigs.filter { c -> c.subsItemId == subsItem.id }
+            val subGroupSubsConfigs = groupSubsConfigs.filter { c -> c.subsItemId == subsItem.id }
+            val subCategoryConfigs = categoryConfigs.filter { c -> c.subsItemId == subsItem.id }
+            subsRaw.apps.filter { appRaw ->
                 // 筛选 当前启用的 app 订阅规则
-                (appSubsConfigs.find { subsConfig ->
-                    subsConfig.subsItemId == subsItem.id && subsConfig.appId == appRaw.id
-                }?.enable ?: true)
+                (subAppSubsConfigs.find { c -> c.appId == appRaw.id }?.enable ?: true)
             }.forEach { appRaw ->
+                val appGroupConfigs = subGroupSubsConfigs.filter { c -> c.appId == appRaw.id }
                 val rules = appIdToRules[appRaw.id] ?: mutableListOf()
                 appIdToRules[appRaw.id] = rules
                 appRaw.groups.filter { groupRaw ->
-                    // 筛选已经启用的规则组
-                    groupSubsConfigs.find { subsConfig ->
-                        subsConfig.subsItemId == subsItem.id && subsConfig.appId == appRaw.id && subsConfig.groupKey == groupRaw.key
-                    }?.enable ?: enableGroup ?: groupRaw.enable ?: true
+                    getGroupRawEnable(
+                        groupRaw,
+                        appGroupConfigs,
+                        subsRaw.groupToCategoryMap[groupRaw],
+                        subCategoryConfigs
+                    )
                 }.filter { groupRaw ->
                     // 筛选合法选择器的规则组, 如果一个规则组内某个选择器语法错误, 则禁用/丢弃此规则组
                     groupRaw.valid
@@ -155,7 +178,7 @@ private val appIdToRulesFlow by lazy {
             rules.sortBy { r -> if (r.isOpenAd) 0 else 1 }
         }
         appIdToRules.filter { it.value.isNotEmpty() }
-    }.stateIn<Map<String, List<Rule>>>(appScope, SharingStarted.Eagerly, emptyMap())
+    }.stateIn(appScope, SharingStarted.Eagerly, emptyMap<String, List<Rule>>())
 }
 
 data class AppRule(
@@ -184,7 +207,26 @@ val appRuleFlow by lazy {
 
 fun initSubsState() {
     subsItemsFlow.value
-    subsIdToMtimeFlow.value
     subsIdToRawFlow.value
-    subsConfigsFlow.value
+    appScope.launchTry {
+        // reload subsRaw file by diff
+        var oldSubsIdToMtime = emptyMap<Long, Long>()
+        subsIdToMtimeFlow.collect { subsIdToMtime ->
+            val commonMap = subsIdToMtime.filter { e -> oldSubsIdToMtime[e.key] == e.value }
+            oldSubsIdToMtime = subsIdToMtime
+            val oldSubsIdToRaw = subsIdToRawFlow.value
+            subsIdToRawFlow.value = subsIdToMtime.map { entry ->
+                if (commonMap.containsKey(entry.key)) {
+                    entry.key to oldSubsIdToRaw[entry.key]
+                } else {
+                    val newSubsRaw =
+                        withContext(Dispatchers.IO) { SubsItem.getSubscriptionRaw(entry.key) }
+                    newSubsRaw?.apps?.apply {
+                        updateAppInfo(*map { a -> a.id }.toTypedArray())
+                    }
+                    entry.key to newSubsRaw
+                }
+            }.toMap()
+        }
+    }
 }

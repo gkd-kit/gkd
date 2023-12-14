@@ -15,8 +15,8 @@ import li.songe.gkd.data.Tuple3
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.getGroupRawEnable
 import li.songe.gkd.util.map
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 import java.text.Collator
@@ -30,17 +30,22 @@ class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
     val subsItemFlow =
         subsItemsFlow.map(viewModelScope) { s -> s.find { v -> v.id == args.subsItemId } }
 
+    val subsRawFlow = subsIdToRawFlow.map(viewModelScope) { s -> s[args.subsItemId] }
+
     private val appSubsConfigsFlow = DbSet.subsConfigDao.queryAppTypeConfig(args.subsItemId)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val groupSubsConfigsFlow = DbSet.subsConfigDao.querySubsGroupTypeConfig(args.subsItemId)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    private val appsFlow = combine(
-        subsItemFlow, subsIdToRawFlow, appInfoCacheFlow
-    ) { subsItem, subsIdToRaw, appInfoCache ->
+    private val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(args.subsItemId)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    private val sortAppsFlow = combine(
+        subsRawFlow, appInfoCacheFlow
+    ) { subsRaw, appInfoCache ->
         val collator = Collator.getInstance(Locale.CHINESE)
-        (subsIdToRaw[subsItem?.id]?.apps ?: emptyList()).sortedWith { a, b ->
+        (subsRaw?.apps ?: emptyList()).sortedWith { a, b ->
             // 顺序: 已安装(有名字->无名字)->未安装(有名字(来自订阅)->无名字)
             collator.compare(appInfoCache[a.id]?.name ?: a.name?.let { "\uFFFF" + it }
             ?: ("\uFFFF\uFFFF" + a.id),
@@ -54,18 +59,20 @@ class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
     private val debounceSearchStr = searchStrFlow.debounce(200)
         .stateIn(viewModelScope, SharingStarted.Eagerly, searchStrFlow.value)
 
-    private val appAndConfigsFlow = combine(appsFlow,
+    private val appAndConfigsFlow = combine(
+        subsRawFlow,
+        sortAppsFlow,
+        categoryConfigsFlow,
         appSubsConfigsFlow,
         groupSubsConfigsFlow,
-        storeFlow.map(viewModelScope) { s -> s.enableGroup }) { apps, appSubsConfigs, groupSubsConfigs, enableGroup ->
+    ) { subsRaw, apps, categoryConfigs, appSubsConfigs, groupSubsConfigs ->
+        val groupToCategoryMap = subsRaw?.groupToCategoryMap ?: emptyMap()
         apps.map { app ->
-            val subsConfig = appSubsConfigs.find { s -> s.appId == app.id }
             val appGroupSubsConfigs = groupSubsConfigs.filter { s -> s.appId == app.id }
             val enableSize = app.groups.count { g ->
-                appGroupSubsConfigs.find { s -> s.groupKey == g.key }?.enable ?: enableGroup
-                ?: g.enable ?: true
+                getGroupRawEnable(g, appGroupSubsConfigs, groupToCategoryMap[g], categoryConfigs)
             }
-            Tuple3(app, subsConfig, enableSize)
+            Tuple3(app, appSubsConfigs.find { s -> s.appId == app.id }, enableSize)
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
