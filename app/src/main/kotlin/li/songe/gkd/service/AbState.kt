@@ -95,16 +95,18 @@ fun isAvailableRule(rule: Rule): Boolean {
     }
     if (rule.resetMatchTypeWhenActivity) {
         if (activityChangeTime != rule.matchChangeTime) {
-            // 当 界面 更新时, 重置操作延迟点, 重置点击次数
+            // 当 界面 更新时, 重置操作延迟点, 重置点击次数, 重置第一次匹配时间
             rule.actionDelayTriggerTime = 0
             rule.actionCount.value = 0
+            rule.firstMatchTime = t,
             rule.matchChangeTime = activityChangeTime
         }
     } else {
         if (appChangeTime != rule.matchChangeTime) {
-            // 当 切换APP 时, 重置点击次数
+            // 当 切换APP 时, 重置点击次数, 重置第一次匹配时间
             rule.actionDelayTriggerTime = 0
             rule.actionCount.value = 0
+            rule.firstMatchTime = t,
             rule.matchChangeTime = appChangeTime
         }
     }
@@ -115,26 +117,14 @@ fun isAvailableRule(rule: Rule): Boolean {
     }
     if (rule.matchDelay != null) {
         // 处于匹配延迟中
-        if (rule.resetMatchTypeWhenActivity) {
-            if (t - activityChangeTime < rule.matchDelay) {
-                return false
-            }
-        } else {
-            if (t - appChangeTime < rule.matchDelay) {
-                return false
-            }
+        if (t - firstMatchTime < rule.matchDelay) {
+            return false
         }
     }
     if (rule.matchTime != null) {
         // 超出了匹配时间
-        if (rule.resetMatchTypeWhenActivity) {
-            if (t - activityChangeTime > rule.matchAllTime) {
-                return false
-            }
-        } else {
-            if (t - appChangeTime > rule.matchAllTime) {
-                return false
-            }
+        if (t - firstMatchTime > rule.matchAllTime) {
+            return false
         }
     }
     if (rule.actionTriggerTime.value + rule.actionCd > t) return false // 处于冷却时间
