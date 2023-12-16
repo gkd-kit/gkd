@@ -98,7 +98,7 @@ fun isAvailableRule(rule: Rule): Boolean {
             // 当 界面 更新时, 重置操作延迟点, 重置点击次数, 重置第一次匹配时间
             rule.actionDelayTriggerTime = 0
             rule.actionCount.value = 0
-            rule.firstMatchTime = t,
+            rule.matchTimeStart = t,
             rule.matchChangeTime = activityChangeTime
         }
     } else {
@@ -106,7 +106,7 @@ fun isAvailableRule(rule: Rule): Boolean {
             // 当 切换APP 时, 重置点击次数, 重置第一次匹配时间
             rule.actionDelayTriggerTime = 0
             rule.actionCount.value = 0
-            rule.firstMatchTime = t,
+            rule.matchTimeStart = t,
             rule.matchChangeTime = appChangeTime
         }
     }
@@ -117,13 +117,13 @@ fun isAvailableRule(rule: Rule): Boolean {
     }
     if (rule.matchDelay != null) {
         // 处于匹配延迟中
-        if (t - firstMatchTime < rule.matchDelay) {
+        if (t - matchTimeStart < rule.matchDelay) {
             return false
         }
     }
     if (rule.matchTime != null) {
         // 超出了匹配时间
-        if (t - firstMatchTime > rule.matchAllTime) {
+        if (t - matchTimeStart > rule.matchAllTime) {
             return false
         }
     }

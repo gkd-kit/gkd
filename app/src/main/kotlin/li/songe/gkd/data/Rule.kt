@@ -93,8 +93,8 @@ data class Rule(
 
     var actionCount = Value(0)
 
-    var firstMatchTime = 0L
-    
+    var matchTimeStart = 0L
+
     var matchChangeTime = 0L
 
     val matchAllTime = (matchTime ?: 0) + (matchDelay ?: 0)
