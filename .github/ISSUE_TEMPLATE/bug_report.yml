@@ -15,8 +15,7 @@ body:
         - label: 搜索检查是否已经存在请求相同功能的问题/讨论，以避免重复创建问题
           required: true
         - label: |
-            检查这个问题是属于 [规则](https://github.com/gkd-kit/subscription) 还是属于 GKD 本身\
-            大多数情况下也许你应该去 [subscription/issues](https://github.com/gkd-kit/subscription/issues) 提交问题
+            检查这个问题是属于 [规则](https://github.com/gkd-kit/subscription) 还是属于 GKD 本身, 也许你应该去 [subscription/issues](https://github.com/gkd-kit/subscription/issues) 提交问题
           required: true
   - type: textarea
     id: log-file
