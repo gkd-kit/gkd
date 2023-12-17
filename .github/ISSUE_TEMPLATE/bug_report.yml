@@ -1,0 +1,41 @@
+name: Bug report
+description: Report an issue with GKD
+labels: [pending triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢您花时间填写这个 Bug 报告
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: 一些验证
+      description: 在提交问题之前，请确保您完成以下操作
+      options:
+        - label: 搜索检查是否已经存在请求相同功能的问题/讨论，以避免重复创建问题
+          required: true
+        - label: |
+            检查这个问题是属于 [规则](https://github.com/gkd-kit/subscription) 还是属于 GKD 本身\
+            大多数情况下也许你应该去 [subscription/issues](https://github.com/gkd-kit/subscription/issues) 提交问题
+          required: true
+  - type: textarea
+    id: log-file
+    attributes:
+      label: |
+        日志文件
+      description: |
+        主页-设置-日志, 上传日志文件或者生成链接并粘贴到下面的输入框\
+        请注意, 没有日志的问题将会被直接关闭
+    validations:
+      required: true
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: |
+        Bug 描述
+      description: |
+        关于bug是什么的清晰而简洁的描述, 例如: 我在使用 GKD 时遇到了..., 我期望的行为是..., 实际的行为是...\
+        请使用准确的描述, 否则你的问题将会被直接关闭
+    validations:
+      required: true
+
