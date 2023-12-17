@@ -97,7 +97,7 @@ fun SubsItemCard(
                     }
                 } else {
                     Text(
-                        text = "本地无订阅文件,请刷新",
+                        text = "本地无订阅文件,请下拉刷新",
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis
