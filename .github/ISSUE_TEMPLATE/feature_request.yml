@@ -1,0 +1,25 @@
+name: New feature proposal
+description: Propose a new feature to be added to GKD
+labels: ['enhancement: pending triage']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢您对该项目的兴趣，并花点时间填写此功能请求报告
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: 一些验证
+      description: 在提交问题之前，请确保您完成以下操作
+      options:
+        - label: 搜索检查是否已经存在请求相同功能的问题/讨论，以避免重复创建问题
+          required: true
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: |
+        清晰而简洁的问题描述, 例如: 我希望在 GKD 中的什么页面添加什么功能, 以及这个功能的作用是什么\
+        或者在规则定义中添加某个字段, 以及这个字段的作用是什么\
+        请使用准确的描述, 否则你的问题将会被直接关闭
+    validations:
+      required: true
