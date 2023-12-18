@@ -61,7 +61,7 @@ fun ClickLogPage() {
     val navController = LocalNavController.current
 
     val vm = hiltViewModel<ClickLogVm>()
-    val clickLogs by vm.clickLogsFlow.collectAsState()
+    val clickDataList by vm.clickDataListFlow.collectAsState()
     val clickLogCount by vm.clickLogCountFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
 
@@ -87,7 +87,7 @@ fun ClickLogPage() {
             },
             title = { Text(text = "点击记录" + if (clickLogCount <= 0) "" else ("-$clickLogCount")) },
             actions = {
-                if (clickLogs.isNotEmpty()) {
+                if (clickDataList.isNotEmpty()) {
                     IconButton(onClick = { showDeleteDlg = true }) {
                         Icon(
                             imageVector = Icons.Outlined.Delete,
@@ -97,37 +97,36 @@ fun ClickLogPage() {
                 }
             })
     }, content = { contentPadding ->
-        if (clickLogs.isNotEmpty()) {
+        if (clickDataList.isNotEmpty()) {
             LazyColumn(
                 modifier = Modifier.padding(contentPadding),
             ) {
-                items(clickLogs, { triggerLog -> triggerLog.id }) { triggerLog ->
+                items(clickDataList, { it.t0.id }) { (clickLog, group, rule) ->
                     Column(modifier = Modifier
                         .clickable {
-                            previewClickLog = triggerLog
+                            previewClickLog = clickLog
                         }
                         .fillMaxWidth()
                         .padding(10.dp)) {
                         Row {
                             Text(
-                                text = triggerLog.id.format("MM-dd HH:mm:ss"),
+                                text = clickLog.id.format("MM-dd HH:mm:ss"),
                                 fontFamily = FontFamily.Monospace
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = appInfoCache[triggerLog.appId]?.name ?: triggerLog.appId
-                                ?: "null"
+                                text = appInfoCache[clickLog.appId]?.name ?: clickLog.appId ?: ""
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
-                        val showActivityId = if (triggerLog.activityId != null) {
-                            if (triggerLog.appId != null && triggerLog.activityId.startsWith(
-                                    triggerLog.appId
+                        val showActivityId = if (clickLog.activityId != null) {
+                            if (clickLog.appId != null && clickLog.activityId.startsWith(
+                                    clickLog.appId
                                 )
                             ) {
-                                triggerLog.activityId.substring(triggerLog.appId.length)
+                                clickLog.activityId.substring(clickLog.appId.length)
                             } else {
-                                triggerLog.activityId
+                                clickLog.activityId
                             }
                         } else {
                             null
@@ -137,21 +136,16 @@ fun ClickLogPage() {
                             overflow = TextOverflow.Ellipsis,
                             maxLines = 1,
                         )
-                        val group = vm.getGroup(triggerLog)
                         if (group?.name != null) {
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(text = group.name)
-                        }
-                        val rule = group?.rules?.run {
-                            find { r -> r.key == triggerLog.ruleKey }
-                                ?: getOrNull(triggerLog.ruleIndex)
                         }
                         if (rule?.name != null) {
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(text = rule.name)
                         } else if ((group?.rules?.size ?: 0) > 1) {
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text(text = (if (triggerLog.ruleKey != null) "key=${triggerLog.ruleKey}, " else "") + "index=${triggerLog.ruleIndex}")
+                            Text(text = (if (clickLog.ruleKey != null) "key=${clickLog.ruleKey}, " else "") + "index=${clickLog.ruleIndex}")
                         }
                     }
                     Divider()
