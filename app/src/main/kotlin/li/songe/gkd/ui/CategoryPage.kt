@@ -47,14 +47,13 @@ import com.blankj.utilcode.util.ToastUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
-import kotlinx.serialization.encodeToString
 import li.songe.gkd.data.CategoryConfig
-import li.songe.gkd.data.SubscriptionRaw
+import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
-import li.songe.gkd.util.json
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.updateSubscription
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
@@ -71,17 +70,17 @@ fun CategoryPage(subsItemId: Long) {
         mutableStateOf(false)
     }
     val (menuCategory, setMenuCategory) = remember {
-        mutableStateOf<SubscriptionRaw.Category?>(null)
+        mutableStateOf<RawSubscription.RawCategory?>(null)
     }
     var editEnableCategory by remember {
-        mutableStateOf<SubscriptionRaw.Category?>(null)
+        mutableStateOf<RawSubscription.RawCategory?>(null)
     }
     val (editNameCategory, setEditNameCategory) = remember {
-        mutableStateOf<SubscriptionRaw.Category?>(null)
+        mutableStateOf<RawSubscription.RawCategory?>(null)
     }
 
     val categories = subsRaw?.categories ?: emptyList()
-    val categoriesGroups = subsRaw?.categoriesGroups ?: emptyMap()
+    val categoriesGroups = subsRaw?.categoryToGroupsMap ?: emptyMap()
 
     Scaffold(topBar = {
         TopAppBar(navigationIcon = {
@@ -93,7 +92,7 @@ fun CategoryPage(subsItemId: Long) {
                     contentDescription = null,
                 )
             }
-        }, title = { Text(text = subsRaw?.name ?: subsItemId.toString()) }, actions = {})
+        }, title = { Text(text = "${subsRaw?.name ?: subsItemId}/规则类别") }, actions = {})
     }, floatingActionButton = {
         if (editable) {
             FloatingActionButton(onClick = { showAddDlg = true }) {
@@ -158,7 +157,7 @@ fun CategoryPage(subsItemId: Long) {
                 if (categories.isEmpty()) {
                     Spacer(modifier = Modifier.height(40.dp))
                     Text(
-                        text = "此订阅暂无类别",
+                        text = "暂无类别",
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -250,7 +249,7 @@ fun CategoryPage(subsItemId: Long) {
                         }
                         vm.viewModelScope.launchTry(Dispatchers.IO) {
                             subsItem?.apply {
-                                subsFile.writeText(json.encodeToString(subsRawVal.copy(
+                                updateSubscription(subsRawVal.copy(
                                     categories = categories.toMutableList().apply {
                                         val i =
                                             categories.indexOfFirst { c -> c.key == editNameCategory.key }
@@ -258,7 +257,7 @@ fun CategoryPage(subsItemId: Long) {
                                             set(i, editNameCategory.copy(name = source))
                                         }
                                     }
-                                )))
+                                ))
                                 DbSet.subsItemDao.update(copy(mtime = System.currentTimeMillis()))
                             }
                             ToastUtils.showShort("修改成功")
@@ -300,15 +299,15 @@ fun CategoryPage(subsItemId: Long) {
                     showAddDlg = false
                     vm.viewModelScope.launchTry(Dispatchers.IO) {
                         subsItem?.apply {
-                            subsFile.writeText(json.encodeToString(subsRawVal.copy(
+                            updateSubscription(subsRawVal.copy(
                                 categories = categories.toMutableList().apply {
-                                    add(SubscriptionRaw.Category(
+                                    add(RawSubscription.RawCategory(
                                         key = (categories.maxOfOrNull { c -> c.key } ?: -1) + 1,
                                         name = source,
                                         enable = null
                                     ))
                                 }
-                            )))
+                            ))
                             DbSet.subsItemDao.update(copy(mtime = System.currentTimeMillis()))
                             ToastUtils.showShort("添加成功")
                         }
@@ -340,9 +339,9 @@ fun CategoryPage(subsItemId: Long) {
                         .clickable {
                             vm.viewModelScope.launchTry(Dispatchers.IO) {
                                 subsItem?.apply {
-                                    subsFile.writeText(json.encodeToString(subsRawVal.copy(
+                                    updateSubscription(subsRawVal.copy(
                                         categories = subsRawVal.categories.filter { c -> c.key != menuCategory.key }
-                                    )))
+                                    ))
                                     DbSet.subsItemDao.update(copy(mtime = System.currentTimeMillis()))
                                 }
                                 DbSet.categoryConfigDao.deleteByCategoryKey(

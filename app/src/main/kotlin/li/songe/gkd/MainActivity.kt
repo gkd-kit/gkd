@@ -12,29 +12,29 @@ import com.dylanc.activityresult.launcher.RequestPermissionLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import li.songe.gkd.composition.CompositionActivity
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.ui.NavGraphs
+import li.songe.gkd.ui.component.ConfirmDialog
 import li.songe.gkd.ui.theme.AppTheme
+import li.songe.gkd.util.AuthDialog
 import li.songe.gkd.util.LocalLauncher
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.LocalPickContentLauncher
 import li.songe.gkd.util.LocalRequestPermissionLauncher
 import li.songe.gkd.util.UpgradeDialog
-import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
 
 @AndroidEntryPoint
 class MainActivity : CompositionActivity({
     useLifeCycleLog()
-
     val launcher = StartActivityLauncher(this)
     val pickContentLauncher = PickContentLauncher(this)
     val requestPermissionLauncher = RequestPermissionLauncher(this)
 
-    lifecycleScope.launchTry(Dispatchers.IO) {
+    lifecycleScope.launch {
         storeFlow.map(lifecycleScope) { s -> s.excludeFromRecents }.collect {
             (app.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).let { manager ->
                 manager.appTasks.forEach { task ->
@@ -48,6 +48,8 @@ class MainActivity : CompositionActivity({
         val navController = rememberNavController()
 
         AppTheme {
+            ConfirmDialog()
+            AuthDialog()
             UpgradeDialog()
             CompositionLocalProvider(
                 LocalLauncher provides launcher,

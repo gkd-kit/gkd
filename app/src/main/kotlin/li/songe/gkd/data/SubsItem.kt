@@ -9,12 +9,9 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
-import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.withContext
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.util.subsFolder
-import java.io.File
+import li.songe.gkd.util.deleteSubscription
 
 @Entity(
     tableName = "subs_item",
@@ -31,36 +28,13 @@ data class SubsItem(
 
     ) {
 
-    val subsFile by lazy {
-        File(subsFolder.absolutePath.plus("/${id}.json"))
-    }
-
     suspend fun removeAssets() {
-        withContext(IO) {
-            subsFile.exists() && subsFile.delete()
-        }
+        deleteSubscription(id)
         DbSet.subsItemDao.delete(this)
         DbSet.subsConfigDao.delete(id)
         DbSet.clickLogDao.deleteBySubsId(id)
         DbSet.categoryConfigDao.deleteBySubsItemId(id)
     }
-
-    companion object {
-
-        fun getSubscriptionRaw(subsItemId: Long): SubscriptionRaw? {
-            return try {
-                val file = File(subsFolder.absolutePath.plus("/${subsItemId}.json"))
-                if (!file.exists()) {
-                    return null
-                }
-                return SubscriptionRaw.parse(file.readText())
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        }
-    }
-
 
     @Dao
     interface SubsItemDao {
@@ -74,7 +48,7 @@ data class SubsItem(
         suspend fun delete(vararg users: SubsItem): Int
 
         @Query("UPDATE subs_item SET mtime=:mtime WHERE id=:id")
-        suspend fun updateMtime(id: Long, mtime: Long): Int
+        suspend fun updateMtime(id: Long, mtime: Long = System.currentTimeMillis()): Int
 
         @Query("SELECT * FROM subs_item ORDER BY `order`")
         fun query(): Flow<List<SubsItem>>

@@ -53,19 +53,22 @@ import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.ToastUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
-import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SubsItemCard
 import li.songe.gkd.ui.destinations.CategoryPageDestination
+import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.util.DEFAULT_SUBS_UPDATE_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.formatTimeAgo
 import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.shareFile
+import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 import org.burnoutcrew.reorderable.ReorderableItem
@@ -104,7 +107,7 @@ fun SubsManagePage() {
     var link by remember { mutableStateOf("") }
 
     val (showSubsRaw, setShowSubsRaw) = remember {
-        mutableStateOf<SubscriptionRaw?>(null)
+        mutableStateOf<RawSubscription?>(null)
     }
 
 
@@ -171,17 +174,14 @@ fun SubsManagePage() {
                                 .animateItemPlacement()
                                 .padding(vertical = 3.dp, horizontal = 8.dp)
                                 .clickable {
-                                    navController.navigate(SubsPageDestination(subItem.id))
+                                    menuSubItem = subItem
                                 },
                             shape = RoundedCornerShape(8.dp),
                         ) {
                             SubsItemCard(
                                 subsItem = subItem,
-                                subscriptionRaw = subsIdToRaw[subItem.id],
+                                rawSubscription = subsIdToRaw[subItem.id],
                                 index = index + 1,
-                                onMenuClick = {
-                                    menuSubItem = subItem
-                                },
                                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                                     DbSet.subsItemDao.update(subItem.copy(enable = it))
                                 },
@@ -210,7 +210,7 @@ fun SubsManagePage() {
                 Column {
                     val subsRawVal = subsIdToRaw[menuSubItemVal.id]
                     if (subsRawVal != null) {
-                        Text(text = "查看规则", modifier = Modifier
+                        Text(text = "应用规则", modifier = Modifier
                             .clickable {
                                 menuSubItem = null
                                 navController.navigate(SubsPageDestination(subsRawVal.id))
@@ -226,12 +226,23 @@ fun SubsManagePage() {
                             .fillMaxWidth()
                             .padding(16.dp))
                         Divider()
+                        Text(text = "全局规则", modifier = Modifier
+                            .clickable {
+                                menuSubItem = null
+                                navController.navigate(GlobalRulePageDestination(subsRawVal.id))
+                            }
+                            .fillMaxWidth()
+                            .padding(16.dp))
+                        Divider()
                     }
-                    if (menuSubItemVal.id < 0 && subsRawVal != null && menuSubItemVal.subsFile.exists()) {
+                    if (menuSubItemVal.id < 0 && subsRawVal != null) {
                         Text(text = "分享文件", modifier = Modifier
                             .clickable {
                                 menuSubItem = null
-                                context.shareFile(menuSubItemVal.subsFile, "分享订阅文件")
+                                vm.viewModelScope.launchTry {
+                                    val subsFile = subsFolder.resolve("${menuSubItemVal.id}.json")
+                                    context.shareFile(subsFile, "分享订阅文件")
+                                }
                             }
                             .fillMaxWidth()
                             .padding(16.dp))

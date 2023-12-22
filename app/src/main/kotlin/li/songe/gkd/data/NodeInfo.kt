@@ -115,7 +115,7 @@ data class NodeInfo(
 //                    https://github.com/gkd-kit/gkd/issues/28
                     ToastUtils.showShort("节点数量至多保留$MAX_KEEP_SIZE,丢弃后续节点")
                     LogUtils.w(
-                        rootNodeInfo.packageName, topActivityFlow.value?.activityId, "节点数量过多"
+                        rootNodeInfo.packageName, topActivityFlow.value.activityId, "节点数量过多"
                     )
                     break
                 }

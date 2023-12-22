@@ -27,17 +27,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import li.songe.gkd.data.AppInfo
+import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.util.SafeR
 
 
 @Composable
 fun SubsAppCard(
-    appRaw: SubscriptionRaw.AppRaw,
+    rawApp: RawSubscription.RawApp,
     appInfo: AppInfo? = null,
     subsConfig: SubsConfig? = null,
-    enableSize: Int = appRaw.groups.count { g -> g.enable ?: true },
+    enableSize: Int = rawApp.groups.count { g -> g.enable ?: true },
     onClick: (() -> Unit)? = null,
     showMenu: Boolean = false,
     onMenuClick: (() -> Unit)? = null,
@@ -72,7 +72,7 @@ fun SubsAppCard(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = appInfo?.name ?: appRaw.name ?: appRaw.id,
+                text = appInfo?.name ?: rawApp.name ?: rawApp.id,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,
@@ -80,9 +80,9 @@ fun SubsAppCard(
             )
 
             val enableDesc = when (enableSize) {
-                0 -> "${appRaw.groups.size}组规则/${appRaw.groups.size}关闭"
-                appRaw.groups.size -> "${appRaw.groups.size}组规则"
-                else -> "${appRaw.groups.size}组规则/${enableSize}启用/${appRaw.groups.size - enableSize}关闭"
+                0 -> "${rawApp.groups.size}组规则/${rawApp.groups.size}关闭"
+                rawApp.groups.size -> "${rawApp.groups.size}组规则"
+                else -> "${rawApp.groups.size}组规则/${enableSize}启用/${rawApp.groups.size - enableSize}关闭"
             }
             Text(
                 text = enableDesc,
@@ -107,7 +107,7 @@ fun SubsAppCard(
         }
 
         Switch(
-            subsConfig?.enable ?: true,
+            subsConfig?.enable ?: (appInfo != null),
             onValueChange,
         )
     }

@@ -12,14 +12,14 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 
-data class DialogParams(
+private data class DialogParams(
     val title: String,
     val text: String? = null,
     val resolve: () -> Unit,
     val reject: () -> Unit
 )
 
-val dialogParamsFlow = MutableStateFlow<DialogParams?>(null)
+private val dialogParamsFlow = MutableStateFlow<DialogParams?>(null)
 
 @Composable
 fun ConfirmDialog() {

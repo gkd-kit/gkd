@@ -19,7 +19,7 @@ val abNotif by lazy {
         title = "GKD",
         text = "无障碍正在运行",
         ongoing = true,
-        autoCancel = false
+        autoCancel = false,
     )
 }
 val screenshotNotif by lazy {
@@ -29,7 +29,7 @@ val screenshotNotif by lazy {
         title = "GKD",
         text = "截屏服务正在运行",
         ongoing = true,
-        autoCancel = false
+        autoCancel = false,
     )
 }
 
@@ -40,9 +40,10 @@ val floatingNotif by lazy {
         title = "GKD",
         text = "悬浮窗按钮正在显示",
         ongoing = true,
-        autoCancel = false
+        autoCancel = false,
     )
 }
+
 val httpNotif by lazy {
     Notif(
         id = 103,
@@ -50,6 +51,6 @@ val httpNotif by lazy {
         title = "GKD",
         text = "HTTP服务正在运行",
         ongoing = true,
-        autoCancel = false
+        autoCancel = false,
     )
 }

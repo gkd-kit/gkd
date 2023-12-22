@@ -21,7 +21,9 @@ data class ClickLog(
     @ColumnInfo(name = "app_id") val appId: String? = null,
     @ColumnInfo(name = "activity_id") val activityId: String? = null,
     @ColumnInfo(name = "subs_id") val subsId: Long,
+    @ColumnInfo(name = "subs_version", defaultValue = "0") val subsVersion: Int,
     @ColumnInfo(name = "group_key") val groupKey: Int,
+    @ColumnInfo(name = "group_type", defaultValue = "2") val groupType: Int,
     @ColumnInfo(name = "rule_index") val ruleIndex: Int,
     @ColumnInfo(name = "rule_key") val ruleKey: Int? = null,
 ) : Parcelable {

@@ -13,7 +13,7 @@ import androidx.core.app.NotificationManagerCompat
 import li.songe.gkd.MainActivity
 
 fun createChannel(context: Context, notifChannel: NotifChannel) {
-    val importance = NotificationManager.IMPORTANCE_DEFAULT
+    val importance = NotificationManager.IMPORTANCE_LOW
     val channel = NotificationChannel(notifChannel.id, notifChannel.name, importance)
     channel.description = notifChannel.desc
     val notificationManager = NotificationManagerCompat.from(context)
@@ -24,8 +24,8 @@ fun createNotif(context: Service, channelId: String, notif: Notif) {
     val intent = Intent(context, MainActivity::class.java).apply {
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
     }
-    val pendingIntent: PendingIntent = PendingIntent.getActivity(
-        context, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+    val pendingIntent = PendingIntent.getActivity(
+        context, notif.id, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
 
     val builder = NotificationCompat.Builder(context, channelId).setSmallIcon(notif.icon)

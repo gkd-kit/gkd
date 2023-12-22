@@ -51,9 +51,8 @@ import com.blankj.utilcode.util.ToastUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
-import kotlinx.serialization.encodeToString
+import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.SubsAppCard
@@ -66,6 +65,7 @@ import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
+import li.songe.gkd.util.updateSubscription
 
 
 @RootNavGraph
@@ -92,11 +92,11 @@ fun SubsPage(
         mutableStateOf(false)
     }
 
-    var menuAppRaw by remember {
-        mutableStateOf<SubscriptionRaw.AppRaw?>(null)
+    var menuRawApp by remember {
+        mutableStateOf<RawSubscription.RawApp?>(null)
     }
-    var editAppRaw by remember {
-        mutableStateOf<SubscriptionRaw.AppRaw?>(null)
+    var editRawApp by remember {
+        mutableStateOf<RawSubscription.RawApp?>(null)
     }
 
     var showSearchBar by rememberSaveable {
@@ -130,7 +130,7 @@ fun SubsPage(
                         modifier = Modifier.focusRequester(focusRequester)
                     )
                 } else {
-                    Text(text = subsRaw?.name ?: subsItem?.id.toString())
+                    Text(text = "${subsRaw?.name ?: subsItemId}/应用规则")
                 }
             }, actions = {
                 if (showSearchBar) {
@@ -168,7 +168,8 @@ fun SubsPage(
         ) {
             itemsIndexed(appAndConfigs, { i, a -> i.toString() + a.t0.id }) { _, a ->
                 val (appRaw, subsConfig, enableSize) = a
-                SubsAppCard(appRaw = appRaw,
+                SubsAppCard(
+                    rawApp = appRaw,
                     appInfo = appInfoCache[appRaw.id],
                     subsConfig = subsConfig,
                     enableSize = enableSize,
@@ -188,7 +189,7 @@ fun SubsPage(
                     },
                     showMenu = editable,
                     onMenuClick = {
-                        menuAppRaw = appRaw
+                        menuRawApp = appRaw
                     })
             }
             item {
@@ -201,7 +202,7 @@ fun SubsPage(
                         if (searchStr.isNotEmpty()) {
                             Text(text = "暂无搜索结果")
                         } else {
-                            Text(text = "此订阅暂无规则")
+                            Text(text = "暂无规则")
                         }
                     }
                 }
@@ -230,7 +231,7 @@ fun SubsPage(
         }, onDismissRequest = { showAddDlg = false }, confirmButton = {
             TextButton(onClick = {
                 val newAppRaw = try {
-                    SubscriptionRaw.parseAppRaw(source)
+                    RawSubscription.parseRawApp(source)
                 } catch (e: Exception) {
                     LogUtils.d(e)
                     ToastUtils.showShort("非法规则${e.message}")
@@ -281,11 +282,9 @@ fun SubsPage(
                     }
                 }
                 vm.viewModelScope.launchTry {
-                    subsItemVal.subsFile.writeText(
-                        SubscriptionRaw.stringify(
-                            subsRaw.copy(
-                                apps = newApps, version = subsRaw.version + 1
-                            )
+                    updateSubscription(
+                        subsRaw.copy(
+                            apps = newApps, version = subsRaw.version + 1
                         )
                     )
                     DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
@@ -302,7 +301,7 @@ fun SubsPage(
         })
     }
 
-    val editAppRawVal = editAppRaw
+    val editAppRawVal = editRawApp
     if (editAppRawVal != null && subsItemVal != null && subsRaw != null) {
         var source by remember {
             mutableStateOf(json.encodeToJson5String(editAppRawVal))
@@ -315,27 +314,25 @@ fun SubsPage(
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text(text = "请输入规则") },
             )
-        }, onDismissRequest = { editAppRaw = null }, confirmButton = {
+        }, onDismissRequest = { editRawApp = null }, confirmButton = {
             TextButton(onClick = {
                 try {
-                    val newAppRaw = SubscriptionRaw.parseAppRaw(source)
+                    val newAppRaw = RawSubscription.parseRawApp(source)
                     if (newAppRaw.id != editAppRawVal.id) {
                         ToastUtils.showShort("不允许修改规则id")
                         return@TextButton
                     }
                     val oldAppRawIndex = subsRaw.apps.indexOfFirst { a -> a.id == editAppRawVal.id }
                     vm.viewModelScope.launchTry {
-                        subsItemVal.subsFile.writeText(
-                            SubscriptionRaw.stringify(
-                                subsRaw.copy(
-                                    apps = subsRaw.apps.toMutableList().apply {
-                                        set(oldAppRawIndex, newAppRaw)
-                                    }, version = subsRaw.version + 1
-                                )
+                        updateSubscription(
+                            subsRaw.copy(
+                                apps = subsRaw.apps.toMutableList().apply {
+                                    set(oldAppRawIndex, newAppRaw)
+                                }, version = subsRaw.version + 1
                             )
                         )
                         DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
-                        editAppRaw = null
+                        editRawApp = null
                         ToastUtils.showShort("更新成功")
                     }
                 } catch (e: Exception) {
@@ -346,16 +343,16 @@ fun SubsPage(
                 Text(text = "添加")
             }
         }, dismissButton = {
-            TextButton(onClick = { editAppRaw = null }) {
+            TextButton(onClick = { editRawApp = null }) {
                 Text(text = "取消")
             }
         })
     }
 
 
-    val menuAppRawVal = menuAppRaw
+    val menuAppRawVal = menuRawApp
     if (menuAppRawVal != null && subsItemVal != null && subsRaw != null) {
-        Dialog(onDismissRequest = { menuAppRaw = null }) {
+        Dialog(onDismissRequest = { menuRawApp = null }) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -363,33 +360,31 @@ fun SubsPage(
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Column {
-                    Text(text = "复制", modifier = Modifier
-                        .clickable {
-                            ClipboardUtils.copyText(
-                                json.encodeToJson5String(menuAppRawVal)
-                            )
-                            ToastUtils.showShort("复制成功")
-                            menuAppRaw = null
-                        }
-                        .fillMaxWidth()
-                        .padding(16.dp))
-                    Text(text = "删除", modifier = Modifier
-                        .clickable {
-                            // 也许需要二次确认
-                            vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                subsItemVal.subsFile.writeText(
-                                    json.encodeToString(
-                                        subsRaw.copy(apps = subsRaw.apps.filter { a -> a.id != menuAppRawVal.id })
-                                    )
+                    Text(
+                        text = "复制", modifier = Modifier
+                            .clickable {
+                                ClipboardUtils.copyText(
+                                    json.encodeToJson5String(menuAppRawVal)
                                 )
-                                DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
-                                DbSet.subsConfigDao.delete(subsItemVal.id, menuAppRawVal.id)
-                                ToastUtils.showShort("删除成功")
+                                ToastUtils.showShort("复制成功")
+                                menuRawApp = null
                             }
-                            menuAppRaw = null
-                        }
-                        .fillMaxWidth()
-                        .padding(16.dp), color = MaterialTheme.colorScheme.error)
+                            .fillMaxWidth()
+                            .padding(16.dp))
+                    Text(
+                        text = "删除", modifier = Modifier
+                            .clickable {
+                                // 也许需要二次确认
+                                vm.viewModelScope.launchTry(Dispatchers.IO) {
+                                    updateSubscription(subsRaw.copy(apps = subsRaw.apps.filter { a -> a.id != menuAppRawVal.id }))
+                                    DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
+                                    DbSet.subsConfigDao.delete(subsItemVal.id, menuAppRawVal.id)
+                                    ToastUtils.showShort("删除成功")
+                                }
+                                menuRawApp = null
+                            }
+                            .fillMaxWidth()
+                            .padding(16.dp), color = MaterialTheme.colorScheme.error)
                 }
             }
         }

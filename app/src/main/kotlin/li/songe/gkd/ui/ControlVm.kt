@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.util.allRulesFlow
 import li.songe.gkd.util.appInfoCacheFlow
-import li.songe.gkd.util.appRuleFlow
 import li.songe.gkd.util.clickCountFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import javax.inject.Inject
@@ -37,12 +37,13 @@ class ControlVm @Inject constructor() : ViewModel() {
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    val subsStatusFlow = combine(appRuleFlow, clickCountFlow) { appRule, clickCount ->
-        val appSize = appRule.visibleMap.keys.size
-        val groupSize =
-            appRule.visibleMap.values.sumOf { rules -> rules.map { r -> r.group.key }.toSet().size }
-        (if (groupSize > 0) {
-            "${appSize}应用/${groupSize}规则组"
+    val subsStatusFlow = combine(allRulesFlow, clickCountFlow) { allRules, clickCount ->
+        (if (allRules.allGroupSize > 0) {
+            if (allRules.appSize > 0) {
+                "${allRules.appSize}应用/${allRules.allGroupSize}规则组"
+            } else {
+                "${allRules.allGroupSize}规则组"
+            }
         } else {
             "暂无规则"
         }) + if (clickCount > 0) "/${clickCount}点击" else ""

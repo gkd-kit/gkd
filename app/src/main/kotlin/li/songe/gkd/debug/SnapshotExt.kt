@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.encodeToString
-import li.songe.gkd.app
 import li.songe.gkd.data.ComplexSnapshot
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.createComplexSnapshot
@@ -22,18 +21,16 @@ import li.songe.gkd.data.toSnapshot
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.util.keepNullJson
+import li.songe.gkd.util.snapshotFolder
 import li.songe.gkd.util.snapshotZipDir
 import li.songe.gkd.util.storeFlow
 import java.io.File
 import kotlin.math.min
 
 object SnapshotExt {
-    val snapshotDir by lazy {
-        app.getExternalFilesDir("snapshot")!!.apply { if (!exists()) mkdir() }
-    }
 
     private fun getSnapshotParentPath(snapshotId: Long) =
-        "${snapshotDir.absolutePath}/${snapshotId}"
+        "${snapshotFolder.absolutePath}/${snapshotId}"
 
     fun getSnapshotPath(snapshotId: Long) =
         "${getSnapshotParentPath(snapshotId)}/${snapshotId}.json"
@@ -67,7 +64,7 @@ object SnapshotExt {
     private val captureLoading = MutableStateFlow(false)
 
     suspend fun captureSnapshot(skipScreenshot: Boolean = false): ComplexSnapshot {
-        if (!GkdAbService.isRunning()) {
+        if (!GkdAbService.isRunning.value) {
             throw RpcError("无障碍不可用")
         }
         if (captureLoading.value) {
@@ -89,7 +86,7 @@ object SnapshotExt {
                         )
                     } else {
                         GkdAbService.currentScreenshot() ?: withTimeoutOrNull(3_000) {
-                            if (!ScreenshotService.isRunning()) {
+                            if (!ScreenshotService.isRunning.value) {
                                 return@withTimeoutOrNull null
                             }
                             ScreenshotService.screenshot()

@@ -9,11 +9,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.blankj.utilcode.util.ServiceUtils
 import com.blankj.utilcode.util.ToastUtils
 import com.torrydo.floatingbubbleview.FloatingBubbleListener
 import com.torrydo.floatingbubbleview.service.expandable.BubbleBuilder
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
@@ -74,6 +74,11 @@ class FloatingService : CompositionFbService({
         })
         resolve(builder)
     }
+
+    isRunning.value = true
+    onDestroy {
+        isRunning.value = false
+    }
 }) {
 
     override fun onCreate() {
@@ -86,11 +91,9 @@ class FloatingService : CompositionFbService({
     }
 
     companion object {
-        fun isRunning() = ServiceUtils.isServiceRunning(FloatingService::class.java)
+        val isRunning = MutableStateFlow(false)
         fun stop(context: Context = app) {
-            if (isRunning()) {
-                context.stopService(Intent(context, FloatingService::class.java))
-            }
+            context.stopService(Intent(context, FloatingService::class.java))
         }
     }
 }

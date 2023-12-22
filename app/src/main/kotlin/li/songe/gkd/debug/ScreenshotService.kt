@@ -5,7 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.ServiceUtils
+import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.app
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.composition.CompositionService
@@ -28,6 +28,11 @@ class ScreenshotService : CompositionService({
         screenshotUtil?.destroy()
         screenshotUtil = null
     }
+
+    isRunning.value = true
+    onDestroy {
+        isRunning.value = false
+    }
 }) {
     companion object {
         suspend fun screenshot() = screenshotUtil?.execute()
@@ -40,11 +45,9 @@ class ScreenshotService : CompositionService({
             context.startForegroundService(intent)
         }
 
-        fun isRunning() = ServiceUtils.isServiceRunning(ScreenshotService::class.java)
+        val isRunning = MutableStateFlow(false)
         fun stop(context: Context = app) {
-            if (isRunning()) {
-                context.stopService(Intent(context, ScreenshotService::class.java))
-            }
+            context.stopService(Intent(context, ScreenshotService::class.java))
         }
     }
 }

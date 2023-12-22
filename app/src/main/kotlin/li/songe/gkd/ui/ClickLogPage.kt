@@ -44,8 +44,10 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.data.ClickLog
+import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.AppItemPageDestination
+import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
@@ -142,7 +144,7 @@ fun ClickLogPage() {
                         }
                         if (rule?.name != null) {
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text(text = rule.name)
+                            Text(text = rule.name ?: "")
                         } else if ((group?.rules?.size ?: 0) > 1) {
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(text = (if (clickLog.ruleKey != null) "key=${clickLog.ruleKey}, " else "") + "index=${clickLog.ruleIndex}")
@@ -179,13 +181,22 @@ fun ClickLogPage() {
                     Text(text = "查看规则组", modifier = Modifier
                         .clickable {
                             previewTriggerLogVal.appId ?: return@clickable
-                            navController.navigate(
-                                AppItemPageDestination(
-                                    previewTriggerLogVal.subsId,
-                                    previewTriggerLogVal.appId,
-                                    previewTriggerLogVal.groupKey
+                            if (previewTriggerLogVal.groupType == SubsConfig.AppGroupType) {
+                                navController.navigate(
+                                    AppItemPageDestination(
+                                        previewTriggerLogVal.subsId,
+                                        previewTriggerLogVal.appId,
+                                        previewTriggerLogVal.groupKey
+                                    )
                                 )
-                            )
+                            } else if (previewTriggerLogVal.groupType == SubsConfig.GlobalGroupType) {
+                                navController.navigate(
+                                    GlobalRulePageDestination(
+                                        previewTriggerLogVal.subsId,
+                                        previewTriggerLogVal.groupKey
+                                    )
+                                )
+                            }
                             previewClickLog = null
                         }
                         .fillMaxWidth()
