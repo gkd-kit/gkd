@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.os.Build
+import android.util.LruCache
 import android.view.Display
 import android.view.View
 import android.view.WindowManager
@@ -98,20 +99,25 @@ class GkdAbService : CompositionAbService({
         return TopActivity(appId = top.packageName, activityId = top.className)
     }
 
+    val activityCache = object : LruCache<Pair<String, String>, Boolean>(128) {
+        override fun create(key: Pair<String, String>): Boolean {
+            return kotlin.runCatching {
+                packageManager.getActivityInfo(
+                    ComponentName(
+                        key.first, key.second
+                    ), 0
+                )
+            }.getOrNull() != null
+        }
+    }
+
     fun isActivity(
         appId: String,
         activityId: String,
     ): Boolean {
-        if (appId == topActivityFlow.value.appId && activityId == topActivityFlow.value.activityId) return true
-        val r = (try {
-            packageManager.getActivityInfo(
-                ComponentName(
-                    appId, activityId
-                ), 0
-            )
-        } catch (e: PackageManager.NameNotFoundException) {
-            null
-        } != null)
+        if (appId == topActivityFlow.value.appId && activityId == topActivityFlow.value?.activityId) return true
+        val cacheKey = Pair(appId, activityId)
+        val r = activityCache.get(cacheKey)
         return r
     }
 
