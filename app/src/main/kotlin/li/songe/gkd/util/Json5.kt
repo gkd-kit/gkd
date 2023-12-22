@@ -1,5 +1,6 @@
 package li.songe.gkd.util
 
+import blue.endless.jankson.Jankson
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -48,7 +49,8 @@ private fun escapeString(value: String): String {
     return sb.toString()
 }
 
-fun convertJsonElementToJson5(element: JsonElement): String {
+fun convertJsonElementToJson5(element: JsonElement, indent: Int = 2): String {
+    val spaces = "\u0020".repeat(indent)
     return when (element) {
         is JsonPrimitive -> {
             val content = element.content
@@ -61,24 +63,30 @@ fun convertJsonElementToJson5(element: JsonElement): String {
 
         is JsonObject -> {
             // Handle JSON objects
-            val entries = element.entries.joinToString(",") { (key, value) ->
+            val entries = element.entries.joinToString(",\n") { (key, value) ->
                 // If key is a valid identifier, no quotes are needed
                 if (key.matches(json5IdentifierReg)) {
-                    "$key:${convertJsonElementToJson5(value)}"
+                    "$key: ${convertJsonElementToJson5(value, indent)}"
                 } else {
-                    "${escapeString(key)}:${convertJsonElementToJson5(value)}"
+                    "${escapeString(key)}: ${convertJsonElementToJson5(value, indent)}"
                 }
-            }
-            "{$entries}"
+            }.lineSequence().map { l -> spaces + l }.joinToString("\n")
+            "{\n$entries\n}"
         }
 
         is JsonArray -> {
-            val elements = element.joinToString(",") { convertJsonElementToJson5(it) }
-            "[$elements]"
+            val elements =
+                element.joinToString(",\n") { convertJsonElementToJson5(it, indent) }
+                    .lineSequence().map { l -> spaces + l }.joinToString("\n")
+            "[\n$elements\n]"
         }
     }
 }
 
 inline fun <reified T> Json.encodeToJson5String(value: T): String {
     return convertJsonElementToJson5(encodeToJsonElement(serializersModule.serializer(), value))
+}
+
+fun json5ToJson(source: String): String {
+    return Jankson.builder().build().load(source).toJson()
 }

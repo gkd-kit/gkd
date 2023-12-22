@@ -39,7 +39,6 @@
 
         <activity
             android:name=".MainActivity"
-            android:configChanges="uiMode|screenSize|orientation|keyboardHidden|touchscreen|smallestScreenSize|screenLayout|navigation|mnc|mcc|locale|layoutDirection|keyboard|fontWeightAdjustment|fontScale|density|colorMode"
             android:exported="true"
             android:theme="@style/SplashScreenTheme">
 

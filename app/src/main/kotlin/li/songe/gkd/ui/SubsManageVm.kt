@@ -13,16 +13,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.SubsVersion
-import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.client
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
-import java.io.File
+import li.songe.gkd.util.updateSubscription
 import javax.inject.Inject
 
 
@@ -51,7 +50,7 @@ class SubsManageVm @Inject constructor() : ViewModel() {
                 return@launchTry
             }
             val newSubsRaw = try {
-                SubscriptionRaw.parse(text)
+                RawSubscription.parse(text)
             } catch (e: Exception) {
                 e.printStackTrace()
                 ToastUtils.showShort("解析订阅文件失败")
@@ -70,18 +69,7 @@ class SubsManageVm @Inject constructor() : ViewModel() {
                 updateUrl = newSubsRaw.updateUrl ?: url,
                 order = if (subItems.isEmpty()) 1 else (subItems.maxBy { it.order }.order + 1)
             )
-            withContext(Dispatchers.IO) {
-                val parentPath = newItem.subsFile.parent
-                if (parentPath != null) {
-                    // https://bugly.qq.com/v2/crash-reporting/crashes/d0ce46b353/109028?pid=1
-                    File(parentPath).apply {
-                        if (!exists()) {
-                            mkdirs()
-                        }
-                    }
-                }
-                newItem.subsFile.writeText(text)
-            }
+            updateSubscription(newSubsRaw)
             DbSet.subsItemDao.insert(newItem)
             ToastUtils.showShort("成功添加订阅")
         } finally {
@@ -112,7 +100,7 @@ class SubsManageVm @Inject constructor() : ViewModel() {
                         LogUtils.d("快速检测更新失败", oldItem, e)
                     }
                 }
-                val newSubsRaw = SubscriptionRaw.parse(
+                val newSubsRaw = RawSubscription.parse(
                     client.get(oldItem.updateUrl).bodyAsText()
                 )
                 if (oldSubsRaw != null && newSubsRaw.version <= oldSubsRaw.version) {
@@ -122,13 +110,7 @@ class SubsManageVm @Inject constructor() : ViewModel() {
                     updateUrl = newSubsRaw.updateUrl ?: oldItem.updateUrl,
                     mtime = System.currentTimeMillis(),
                 )
-                withContext(Dispatchers.IO) {
-                    newItem.subsFile.writeText(
-                        SubscriptionRaw.stringify(
-                            newSubsRaw
-                        )
-                    )
-                }
+                updateSubscription(newSubsRaw)
                 newItem
             } catch (e: Exception) {
                 e.printStackTrace()

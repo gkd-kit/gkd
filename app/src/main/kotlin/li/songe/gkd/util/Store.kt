@@ -59,7 +59,6 @@ data class Store(
     val log2FileSwitch: Boolean = true,
     val enableDarkTheme: Boolean? = null,
     val enableAbFloatWindow: Boolean = true,
-    val matchUnknownApp: Boolean = false,
 )
 
 val storeFlow by lazy {

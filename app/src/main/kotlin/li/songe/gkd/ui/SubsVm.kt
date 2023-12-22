@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
+import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.data.Tuple3
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.SubsPageDestination
@@ -82,7 +82,7 @@ class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
         if (searchStr.isBlank()) {
             appAndConfigs
         } else {
-            val results = mutableListOf<Tuple3<SubscriptionRaw.AppRaw, SubsConfig?, Int>>()
+            val results = mutableListOf<Tuple3<RawSubscription.RawApp, SubsConfig?, Int>>()
             val remnantList = appAndConfigs.toMutableList()
             //1. 搜索已安装应用名称
             remnantList.toList().apply { remnantList.clear() }.forEach { a ->

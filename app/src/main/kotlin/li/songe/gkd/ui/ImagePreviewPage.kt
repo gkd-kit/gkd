@@ -31,7 +31,6 @@ fun ImagePreviewPage(
     title: String? = null,
 ) {
     val navController = LocalNavController.current
-
     Box(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             navigationIcon = {

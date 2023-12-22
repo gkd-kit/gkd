@@ -2,7 +2,6 @@ package li.songe.gkd.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.blankj.utilcode.util.LogUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.ktor.client.call.body
 import io.ktor.client.plugins.onUpload
@@ -16,22 +15,21 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
 import li.songe.gkd.appScope
 import li.songe.gkd.data.GithubPoliciesAsset
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubsItem
-import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.util.FILE_UPLOAD_URL
 import li.songe.gkd.util.LoadStatus
+import li.songe.gkd.util.authActionFlow
 import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.client
-import li.songe.gkd.util.dbFolder
 import li.songe.gkd.util.initFolder
-import li.songe.gkd.util.json
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.logZipDir
+import li.songe.gkd.util.newVersionApkDir
+import li.songe.gkd.util.snapshotZipDir
 import li.songe.gkd.util.storeFlow
 import java.io.File
 import javax.inject.Inject
@@ -48,34 +46,6 @@ class HomePageVm @Inject constructor() : ViewModel() {
             if (!DbSet.subsItemDao.query().first().any { s -> s.id == localSubsItem.id }) {
                 DbSet.subsItemDao.insert(localSubsItem)
             }
-            if (!localSubsItem.subsFile.exists()) {
-                localSubsItem.subsFile.writeText(
-                    json.encodeToString(
-                        SubscriptionRaw(
-                            id = localSubsItem.id,
-                            name = "本地订阅",
-                            version = 0,
-                            author = "gkd",
-                        )
-                    )
-                )
-            }
-        }
-        appScope.launchTry(Dispatchers.IO) {
-            // 迁移快照记录
-            val oldDbFile = File(dbFolder, "snapshot.db")
-            if (oldDbFile.exists()) {
-                SnapshotExt.snapshotDir.walk().maxDepth(1).filter { f -> f.isDirectory }
-                    .mapNotNull { f -> f.name.toLongOrNull() }.forEach { snapshotId ->
-                        DbSet.snapshotDao.insertOrIgnore(
-                            json.decodeFromString(
-                                File(SnapshotExt.getSnapshotPath(snapshotId)).readText()
-                            )
-                        )
-                    }
-                oldDbFile.delete()
-                LogUtils.d("执行快照迁移")
-            }
         }
 
         if (storeFlow.value.autoCheckAppUpdate) {
@@ -84,6 +54,19 @@ class HomePageVm @Inject constructor() : ViewModel() {
                     checkUpdate()
                 } catch (e: Exception) {
                     e.printStackTrace()
+                }
+            }
+        }
+
+        viewModelScope.launchTry(Dispatchers.IO) {
+            // 每次进入删除缓存
+            listOf(snapshotZipDir, newVersionApkDir, logZipDir).forEach { dir ->
+                if (dir.isDirectory && dir.exists()) {
+                    dir.listFiles()?.forEach { file ->
+                        if (file.isFile) {
+                            file.delete()
+                        }
+                    }
                 }
             }
         }
@@ -128,5 +111,10 @@ class HomePageVm @Inject constructor() : ViewModel() {
                 uploadStatusFlow.value = LoadStatus.Failure(e)
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        authActionFlow.value = null
     }
 }

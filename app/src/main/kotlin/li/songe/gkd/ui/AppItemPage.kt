@@ -54,9 +54,8 @@ import com.blankj.utilcode.util.ToastUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
-import kotlinx.serialization.encodeToString
+import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.GroupItemPageDestination
 import li.songe.gkd.util.LocalNavController
@@ -68,6 +67,7 @@ import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
+import li.songe.gkd.util.updateSubscription
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
@@ -92,7 +92,7 @@ fun AppItemPage(
     val groupToCategoryMap = subsRaw?.groupToCategoryMap ?: emptyMap()
 
     val (showGroupItem, setShowGroupItem) = remember {
-        mutableStateOf<SubscriptionRaw.GroupRaw?>(
+        mutableStateOf<RawSubscription.RawAppGroup?>(
             null
         )
     }
@@ -102,10 +102,10 @@ fun AppItemPage(
     var showAddDlg by remember { mutableStateOf(false) }
 
     val (menuGroupRaw, setMenuGroupRaw) = remember {
-        mutableStateOf<SubscriptionRaw.GroupRaw?>(null)
+        mutableStateOf<RawSubscription.RawAppGroup?>(null)
     }
     val (editGroupRaw, setEditGroupRaw) = remember {
-        mutableStateOf<SubscriptionRaw.GroupRaw?>(null)
+        mutableStateOf<RawSubscription.RawAppGroup?>(null)
     }
 
     Scaffold(topBar = {
@@ -173,7 +173,7 @@ fun AppItemPage(
                             )
                             if (group.valid) {
                                 Text(
-                                    text = group.desc ?: "-",
+                                    text = group.desc ?: "",
                                     maxLines = 1,
                                     softWrap = false,
                                     overflow = TextOverflow.Ellipsis,
@@ -213,7 +213,7 @@ fun AppItemPage(
                         Switch(checked = groupEnable, modifier = Modifier,
                             onCheckedChange = scope.launchAsFn { enable ->
                                 val newItem = (subsConfig?.copy(enable = enable) ?: SubsConfig(
-                                    type = SubsConfig.GroupType,
+                                    type = SubsConfig.AppGroupType,
                                     subsItemId = subsItemId,
                                     appId = appId,
                                     groupKey = group.key,
@@ -244,7 +244,7 @@ fun AppItemPage(
                         Text(text = "该规则组默认不启用")
                         Spacer(modifier = Modifier.height(10.dp))
                     }
-                    Text(text = showGroupItemVal.desc ?: "-")
+                    Text(text = showGroupItemVal.desc ?: "")
                 }
             },
             confirmButton = {
@@ -255,8 +255,8 @@ fun AppItemPage(
                             navController.navigate(
                                 GroupItemPageDestination(
                                     subsInt = subsItemId,
+                                    groupKey = showGroupItemVal.key,
                                     appId = appId,
-                                    groupKey = showGroupItemVal.key
                                 )
                             )
                         }) {
@@ -307,11 +307,7 @@ fun AppItemPage(
                                                 appRawVal.copy(groups = appRawVal.groups.filter { g -> g.key != menuGroupRaw.key })
                                             )
                                         })
-                                subsItemVal.subsFile.writeText(
-                                    json.encodeToString(
-                                        newSubsRaw
-                                    )
-                                )
+                                updateSubscription(newSubsRaw)
                                 DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
                                 DbSet.subsConfigDao.delete(
                                     subsItemVal.id, appRawVal.id, menuGroupRaw.key
@@ -356,7 +352,7 @@ fun AppItemPage(
                         return@TextButton
                     }
                     val newGroupRaw = try {
-                        SubscriptionRaw.parseGroupRaw(source)
+                        RawSubscription.parseRawGroup(source)
                     } catch (e: Exception) {
                         LogUtils.d(e)
                         ToastUtils.showShort("非法规则:${e.message}")
@@ -383,11 +379,7 @@ fun AppItemPage(
                         )
                     })
                     vm.viewModelScope.launchTry(Dispatchers.IO) {
-                        subsItemVal.subsFile.writeText(
-                            json.encodeToString(
-                                newSubsRaw
-                            )
-                        )
+                        updateSubscription(newSubsRaw)
                         DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
                         ToastUtils.showShort("更新成功")
                     }
@@ -413,13 +405,13 @@ fun AppItemPage(
         }, onDismissRequest = { showAddDlg = false }, confirmButton = {
             TextButton(onClick = {
                 val newAppRaw = try {
-                    SubscriptionRaw.parseAppRaw(source)
+                    RawSubscription.parseRawApp(source)
                 } catch (_: Exception) {
                     null
                 }
                 val tempGroups = if (newAppRaw == null) {
                     val newGroupRaw = try {
-                        SubscriptionRaw.parseGroupRaw(source)
+                        RawSubscription.parseRawGroup(source)
                     } catch (e: Exception) {
                         LogUtils.d(e)
                         ToastUtils.showShort("非法规则:${e.message}")
@@ -460,8 +452,8 @@ fun AppItemPage(
                     )
                 })
                 vm.viewModelScope.launchTry(Dispatchers.IO) {
-                    subsItemVal.subsFile.writeText(json.encodeToString(newSubsRaw))
                     DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
+                    updateSubscription(newSubsRaw)
                     showAddDlg = false
                     ToastUtils.showShort("添加成功")
                 }

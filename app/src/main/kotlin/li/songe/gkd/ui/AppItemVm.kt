@@ -24,7 +24,7 @@ class AppItemVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel()
 
     val subsRawFlow = subsIdToRawFlow.map(viewModelScope) { s -> s[args.subsItemId] }
 
-    val subsConfigsFlow = DbSet.subsConfigDao.queryGroupTypeConfig(args.subsItemId, args.appId)
+    val subsConfigsFlow = DbSet.subsConfigDao.queryAppGroupTypeConfig(args.subsItemId, args.appId)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(args.subsItemId)

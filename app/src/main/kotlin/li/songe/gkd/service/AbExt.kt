@@ -12,6 +12,7 @@ val AccessibilityService.safeActiveWindow: AccessibilityNodeInfo?
     get() = try {
         // java.lang.SecurityException: Call from user 0 as user -2 without permission INTERACT_ACROSS_USERS or INTERACT_ACROSS_USERS_FULL not allowed.
         rootInActiveWindow
+        // 在主线程调用会阻塞界面导致卡顿
     } catch (e: Exception) {
         e.printStackTrace()
         null
@@ -132,9 +133,10 @@ private val getAttr: (AccessibilityNodeInfo, String) -> Any? = { node, name ->
         "desc.length" -> node.contentDescription?.length
 
         "clickable" -> node.isClickable
+        "focusable" -> node.isFocusable
         "checkable" -> node.isCheckable
         "checked" -> node.isChecked
-        "focusable" -> node.isFocusable
+        "editable" -> node.isEditable
         "longClickable" -> node.isLongClickable
         "visibleToUser" -> node.isVisibleToUser
 

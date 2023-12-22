@@ -1,17 +1,20 @@
 package li.songe.gkd.service
 
+import android.content.BroadcastReceiver
 import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.os.Build
-import android.util.Log
 import android.view.Display
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.ServiceUtils
+import com.blankj.utilcode.util.ScreenUtils
 import com.blankj.utilcode.util.ToastUtils
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -19,12 +22,10 @@ import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.composition.CompositionAbService
@@ -33,43 +34,35 @@ import li.songe.gkd.composition.CompositionExt.useScope
 import li.songe.gkd.data.ActionResult
 import li.songe.gkd.data.GkdAction
 import li.songe.gkd.data.NodeInfo
+import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubsVersion
-import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.data.getActionFc
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.shizuku.useSafeGetTasksFc
+import li.songe.gkd.util.VOLUME_CHANGED_ACTION
 import li.songe.gkd.util.client
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
+import li.songe.gkd.util.updateSubscription
 import li.songe.selector.Selector
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
-
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class GkdAbService : CompositionAbService({
     useLifeCycleLog()
 
     val context = this as GkdAbService
-
-    context.resources
-
     val scope = useScope()
 
     service = context
     onDestroy {
         service = null
-        topActivityFlow.value = null
-    }
-
-    ManageService.start(context)
-    onDestroy {
-        ManageService.stop(context)
     }
 
     val safeGetTasksFc = useSafeGetTasksFc(scope)
@@ -85,7 +78,7 @@ class GkdAbService : CompositionAbService({
         appId: String,
         activityId: String,
     ): Boolean {
-        if (appId == topActivityFlow.value?.appId && activityId == topActivityFlow.value?.activityId) return true
+        if (appId == topActivityFlow.value.appId && activityId == topActivityFlow.value.activityId) return true
         val r = (try {
             packageManager.getActivityInfo(
                 ComponentName(
@@ -95,42 +88,40 @@ class GkdAbService : CompositionAbService({
         } catch (e: PackageManager.NameNotFoundException) {
             null
         } != null)
-        Log.d("isActivity", "$appId, $activityId, $r")
         return r
     }
 
     var lastTriggerShizukuTime = 0L
     var lastContentEventTime = 0L
-    var job: Job? = null
     val singleThread = Dispatchers.IO.limitedParallelism(1)
     val eventThread = Dispatchers.IO.limitedParallelism(1)
     onDestroy {
         singleThread.cancel()
     }
-    val lastQueryTimeFlow = MutableStateFlow(0L)
-    val debounceTime = 500L
     fun newQueryTask() {
-        job = scope.launchTry(singleThread) {
+        scope.launchTry(singleThread) {
             val activityRule = getCurrentRules()
-            for (rule in (activityRule.rules)) {
-                if (!isActive && !rule.isOpenAd) break
-                if (!isAvailableRule(rule)) continue
+            for (rule in (activityRule.currentRules)) {
+                val statusCode = rule.statusCode
+                if (statusCode == 4 && rule.matchDelayJob == null) {
+                    rule.matchDelayJob = scope.launch {
+                        delay(rule.matchDelay)
+                        rule.matchDelayJob = null
+                        newQueryTask()
+                    }
+                }
+                if (statusCode != 0) continue
                 val nodeVal = safeActiveWindow ?: continue
                 val target = rule.query(nodeVal) ?: continue
                 if (activityRule !== getCurrentRules()) break
-
-                // 开始 action 延迟
-                if (rule.actionDelay > 0 && rule.actionDelayTriggerTime == 0L) {
-                    rule.triggerDelay()
-                    // 防止在 actionDelay 时间内没有事件发送导致无法触发
-                    scope.launch(singleThread) {
-                        delay(rule.actionDelay - debounceTime)
-                        lastQueryTimeFlow.value = System.currentTimeMillis()
+                if (rule.checkDelay() && rule.actionDelayJob == null) {
+                    rule.actionDelayJob = scope.launch {
+                        delay(rule.actionDelay)
+                        rule.actionDelayJob = null
+                        newQueryTask()
                     }
                     continue
                 }
-
-                // 如果节点在屏幕外部, click 的结果为 null
                 val actionResult = rule.performAction(context, target)
                 if (actionResult.result) {
                     LogUtils.d(
@@ -144,27 +135,24 @@ class GkdAbService : CompositionAbService({
         }
     }
 
-    scope.launch(singleThread) {
-        lastQueryTimeFlow.debounce(debounceTime).collect {
-            newQueryTask()
-        }
-    }
-    val skipAppIds = setOf("com.android.systemui")
+    val skipAppIds = listOf("com.android.systemui")
     onAccessibilityEvent { event ->
         if (event == null || event.packageName == null) return@onAccessibilityEvent
         if (!(event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)) return@onAccessibilityEvent
 
-        if (skipAppIds.any { id -> id.contentEquals(event.packageName) }) return@onAccessibilityEvent
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
+            skipAppIds.any { id ->
+                id.contentEquals(
+                    event.packageName
+                )
+            }
+        ) {
+            return@onAccessibilityEvent
+        }
 
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-            if (event.eventTime - appChangeTime > 5_000) { // app 启动 5s 内关闭限制
-                if (event.eventTime - lastContentEventTime < 100) {
-                    if (event.eventTime - (lastTriggerRule?.actionTriggerTime?.value
-                            ?: 0) > 1000
-                    ) { // 规则刚刚触发后 1s 内关闭限制
-                        return@onAccessibilityEvent
-                    }
-                }
+            if (event.eventTime - lastContentEventTime < 100 && event.eventTime - appChangeTime > 5000) {
+                return@onAccessibilityEvent
             }
             lastContentEventTime = event.eventTime
         }
@@ -182,16 +170,17 @@ class GkdAbService : CompositionAbService({
                     // tv.danmaku.bili, com.miui.home, com.miui.home.launcher.Launcher
                     if (isActivity(evAppId, evActivityId)) {
                         topActivityFlow.value = TopActivity(
-                            evAppId, evActivityId
+                            evAppId, evActivityId, topActivityFlow.value.number + 1
                         )
-                        activityChangeTime = System.currentTimeMillis()
                     }
                 } else {
                     if (fixedEvent.eventTime - lastTriggerShizukuTime > 300) {
                         val shizukuTop = getShizukuTopActivity()
                         if (shizukuTop != null && shizukuTop.appId == rightAppId) {
                             if (shizukuTop.activityId == evActivityId) {
-                                activityChangeTime = System.currentTimeMillis()
+                                topActivityFlow.value = TopActivity(
+                                    evAppId, evActivityId, topActivityFlow.value.number + 1
+                                )
                             }
                             topActivityFlow.value = shizukuTop
                         }
@@ -199,7 +188,7 @@ class GkdAbService : CompositionAbService({
                     }
                 }
             }
-            if (rightAppId != topActivityFlow.value?.appId) {
+            if (rightAppId != topActivityFlow.value.appId) {
                 // 从 锁屏,下拉通知栏 返回等情况, 应用不会发送事件, 但是系统组件会发送事件
                 val shizukuTop = getShizukuTopActivity()
                 if (shizukuTop?.appId == rightAppId) {
@@ -209,7 +198,7 @@ class GkdAbService : CompositionAbService({
                 }
             }
 
-            if (getCurrentRules().rules.isEmpty()) {
+            if (getCurrentRules().currentRules.isEmpty()) {
                 // 放在 evAppId != rightAppId 的前面使得 TopActivity 能借助 lastTopActivity 恢复
                 return@launch
             }
@@ -218,18 +207,7 @@ class GkdAbService : CompositionAbService({
                 return@launch
             }
 
-
             if (!storeFlow.value.enableService) return@launch
-            val jobVal = job
-            if (jobVal?.isActive == true) {
-                if (openAdOptimized == true) {
-                    jobVal.cancel()
-                } else {
-                    return@launch
-                }
-            }
-
-            lastQueryTimeFlow.value = fixedEvent.eventTime
 
             newQueryTask()
         }
@@ -254,7 +232,7 @@ class GkdAbService : CompositionAbService({
                             LogUtils.d("快速检测更新失败", subsItem, e)
                         }
                     }
-                    val newSubsRaw = SubscriptionRaw.parse(
+                    val newSubsRaw = RawSubscription.parse(
                         client.get(subsItem.updateUrl).bodyAsText()
                     )
                     if (newSubsRaw.id != subsItem.id) {
@@ -263,11 +241,7 @@ class GkdAbService : CompositionAbService({
                     if (oldSubsRaw != null && newSubsRaw.version <= oldSubsRaw.version) {
                         return@forEach
                     }
-                    subsItem.subsFile.writeText(
-                        SubscriptionRaw.stringify(
-                            newSubsRaw
-                        )
-                    )
+                    updateSubscription(newSubsRaw)
                     val newItem = subsItem.copy(
                         updateUrl = newSubsRaw.updateUrl ?: subsItem.updateUrl,
                         mtime = System.currentTimeMillis()
@@ -298,9 +272,9 @@ class GkdAbService : CompositionAbService({
     scope.launch(Dispatchers.IO) {
         activityRuleFlow.debounce(300).collect {
             if (storeFlow.value.enableService) {
-                LogUtils.d(it.topActivity, *it.rules.map { r ->
-                    "subsId:${r.subsItem.id}, gKey=${r.group.key}, gName:${r.group.name}, ruleIndex:${r.index}, rKey:${r.key}, active:${
-                        isAvailableRule(r)
+                LogUtils.d(it.topActivity, *it.currentRules.map { r ->
+                    "id:${r.subsItem.id}, v:${r.rawSubs.version}, gKey=${r.group.key}, gName:${r.group.name}, rIndex:${r.index}, rKey:${r.key}, rCode:${
+                        r.statusCode
                     }"
                 }.toTypedArray())
             } else {
@@ -351,6 +325,52 @@ class GkdAbService : CompositionAbService({
         }
     }
 
+
+    fun createReceiver(): BroadcastReceiver {
+        return object : BroadcastReceiver() {
+            var lastTriggerTime = -1L
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == VOLUME_CHANGED_ACTION) {
+                    val t = System.currentTimeMillis()
+                    if (t - lastTriggerTime > 3000 && !ScreenUtils.isScreenLock()) {
+                        lastTriggerTime = t
+                        scope.launchTry(Dispatchers.IO) {
+                            SnapshotExt.captureSnapshot()
+                            ToastUtils.showShort("快照成功")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    var captureVolumeReceiver: BroadcastReceiver? = null
+    scope.launch {
+        storeFlow.map(scope) { s -> s.captureVolumeChange }.collect {
+            if (captureVolumeReceiver != null) {
+                context.unregisterReceiver(captureVolumeReceiver)
+            }
+            captureVolumeReceiver = if (it) {
+                createReceiver().apply {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        context.registerReceiver(
+                            this, IntentFilter(VOLUME_CHANGED_ACTION), Context.RECEIVER_EXPORTED
+                        )
+                    } else {
+                        context.registerReceiver(this, IntentFilter(VOLUME_CHANGED_ACTION))
+                    }
+                }
+            } else {
+                null
+            }
+        }
+    }
+    onDestroy {
+        if (captureVolumeReceiver != null) {
+            context.unregisterReceiver(captureVolumeReceiver)
+        }
+    }
+
     onAccessibilityEvent { e ->
         if (!storeFlow.value.captureScreenshot) return@onAccessibilityEvent
         e ?: return@onAccessibilityEvent
@@ -368,11 +388,18 @@ class GkdAbService : CompositionAbService({
             }
         }
     }
+
+
+    isRunning.value = true
+    onDestroy {
+        isRunning.value = false
+    }
 }) {
 
     companion object {
         var service: GkdAbService? = null
-        fun isRunning() = ServiceUtils.isServiceRunning(GkdAbService::class.java)
+
+        val isRunning = MutableStateFlow(false)
 
         fun execAction(gkdAction: GkdAction): ActionResult {
             val serviceVal = service ?: throw RpcError("无障碍没有运行")

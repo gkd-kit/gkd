@@ -7,8 +7,10 @@ import android.media.projection.MediaProjectionManager
 import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -37,7 +39,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ToastUtils
@@ -61,6 +62,9 @@ import li.songe.gkd.util.Ext
 import li.songe.gkd.util.LocalLauncher
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
+import li.songe.gkd.util.authActionFlow
+import li.songe.gkd.util.canDrawOverlaysAuthAction
+import li.songe.gkd.util.checkOrRequestNotifPermission
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
@@ -146,20 +150,7 @@ fun DebugPage() {
                 Divider()
             }
 
-            TextSwitch(
-                name = "匹配未知应用",
-                desc = "匹配不在安装列表中(其它用户空间)的应用",
-                checked = store.matchUnknownApp
-            ) {
-                updateStorage(
-                    storeFlow, store.copy(
-                        matchUnknownApp = it
-                    )
-                )
-            }
-            Divider()
-
-            val httpServerRunning by usePollState { HttpService.isRunning() }
+            val httpServerRunning by HttpService.isRunning.collectAsState()
             TextSwitch(
                 name = "HTTP服务",
                 desc = "开启HTTP服务, 以便在同一局域网下传递数据" + if (httpServerRunning) "\n${
@@ -168,8 +159,7 @@ fun DebugPage() {
                 }" else "",
                 checked = httpServerRunning
             ) {
-                if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) {
-                    ToastUtils.showShort("需要通知权限")
+                if (!checkOrRequestNotifPermission(context)) {
                     return@TextSwitch
                 }
                 if (it) {
@@ -200,15 +190,18 @@ fun DebugPage() {
             }
             Divider()
 
-            // android 11 以上可以使用无障碍服务获取屏幕截图
-            // Build.VERSION.SDK_INT < Build.VERSION_CODES.R
-            val screenshotRunning by usePollState { ScreenshotService.isRunning() }
-            TextSwitch(name = "截屏服务",
+            SettingItem(title = "快照记录", onClick = {
+                navController.navigate(SnapshotPageDestination)
+            })
+            Divider()
+
+            val screenshotRunning by ScreenshotService.isRunning.collectAsState()
+            TextSwitch(
+                name = "截屏服务",
                 desc = "生成快照需要获取屏幕截图,Android11无需开启",
                 checked = screenshotRunning,
                 onCheckedChange = appScope.launchAsFn<Boolean> {
-                    if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) {
-                        ToastUtils.showShort("需要通知权限")
+                    if (!checkOrRequestNotifPermission(context)) {
                         return@launchAsFn
                     }
                     if (it) {
@@ -225,26 +218,21 @@ fun DebugPage() {
                 })
             Divider()
 
-
-            val floatingRunning by usePollState {
-                FloatingService.isRunning()
-            }
+            val floatingRunning by FloatingService.isRunning.collectAsState()
             TextSwitch(
                 name = "悬浮窗服务",
                 desc = "显示截屏按钮,便于用户主动保存快照",
                 checked = floatingRunning
             ) {
-                if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) {
-                    ToastUtils.showShort("需要通知权限")
+                if (!checkOrRequestNotifPermission(context)) {
                     return@TextSwitch
                 }
-
                 if (it) {
                     if (Settings.canDrawOverlays(context)) {
                         val intent = Intent(context, FloatingService::class.java)
                         ContextCompat.startForegroundService(context, intent)
                     } else {
-                        ToastUtils.showShort("需要悬浮窗权限")
+                        authActionFlow.value = canDrawOverlaysAuthAction
                     }
                 } else {
                     FloatingService.stop(context)
@@ -266,7 +254,7 @@ fun DebugPage() {
             Divider()
             TextSwitch(
                 name = "截屏快照",
-                desc = "当用户截屏时保存快照(需手动替换快照图片),仅支持MIUI14",
+                desc = "当用户截屏时保存快照(需手动替换快照图片),仅支持部分MIUI14",
                 checked = store.captureScreenshot
             ) {
                 updateStorage(
@@ -288,11 +276,8 @@ fun DebugPage() {
                     )
                 )
             }
-            Divider()
 
-            SettingItem(title = "快照记录", onClick = {
-                navController.navigate(SnapshotPageDestination)
-            })
+            Spacer(modifier = Modifier.height(40.dp))
         }
     })
 

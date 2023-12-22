@@ -12,12 +12,13 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withTimeout
 import li.songe.gkd.app
 import li.songe.gkd.appScope
+import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
-import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.util.DEFAULT_SUBS_UPDATE_URL
 import li.songe.gkd.util.client
 import li.songe.gkd.util.dbFolder
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.updateSubscription
 import java.io.File
 
 object DbSet {
@@ -50,7 +51,7 @@ object DbSet {
                     subsItemDao.insert(defaultSubsItem)
                     val newSubsRaw = try {
                         withTimeout(3000) {
-                            SubscriptionRaw.parse(
+                            RawSubscription.parse(
                                 client.get(defaultSubsItem.updateUrl!!).bodyAsText()
                             )
                         }
@@ -59,7 +60,7 @@ object DbSet {
                         LogUtils.d(e)
                         return@launchTry
                     }
-                    defaultSubsItem.subsFile.writeText(SubscriptionRaw.stringify(newSubsRaw))
+                    updateSubscription(newSubsRaw)
                     subsItemDao.update(defaultSubsItem.copy(mtime = System.currentTimeMillis()))
                 }
             }

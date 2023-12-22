@@ -55,6 +55,8 @@ import li.songe.gkd.ui.destinations.DebugPageDestination
 import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
+import li.songe.gkd.util.authActionFlow
+import li.songe.gkd.util.canDrawOverlaysAuthAction
 import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.checkUpdatingFlow
 import li.songe.gkd.util.launchTry
@@ -110,8 +112,8 @@ fun SettingsPage() {
             })
         Divider()
 
-        TextSwitch(name = "无障碍前台",
-            desc = "添加前台透明悬浮窗,关闭可能导致不工作",
+        TextSwitch(name = "前台悬浮窗",
+            desc = "添加前台透明悬浮窗,关闭可能导致不点击/点击缓慢",
             checked = store.enableAbFloatWindow,
             onCheckedChange = {
                 updateStorage(
@@ -129,14 +131,15 @@ fun SettingsPage() {
                 showToastInputDlg = true
             },
             onCheckedChange = {
+                if (it && !Settings.canDrawOverlays(context)) {
+                    authActionFlow.value = canDrawOverlaysAuthAction
+                    return@TextSwitch
+                }
                 updateStorage(
                     storeFlow, store.copy(
                         toastWhenClick = it
                     )
                 )
-                if (it && !Settings.canDrawOverlays(context)) {
-                    ToastUtils.showShort("需要悬浮窗权限")
-                }
             })
         Divider()
 

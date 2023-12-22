@@ -29,7 +29,8 @@ data class SubsConfig(
 
     companion object {
         const val AppType = 1
-        const val GroupType = 2
+        const val AppGroupType = 2
+        const val GlobalGroupType = 3
     }
 
     @Dao
@@ -57,14 +58,17 @@ data class SubsConfig(
         fun query(): Flow<List<SubsConfig>>
 
 
-        @Query("SELECT * FROM subs_config WHERE type=${AppType} and subs_item_id=:subsItemId")
+        @Query("SELECT * FROM subs_config WHERE type=${AppType} AND subs_item_id=:subsItemId")
         fun queryAppTypeConfig(subsItemId: Long): Flow<List<SubsConfig>>
 
-        @Query("SELECT * FROM subs_config WHERE type=${GroupType} and subs_item_id=:subsItemId")
+        @Query("SELECT * FROM subs_config WHERE type=${AppGroupType} AND subs_item_id=:subsItemId")
         fun querySubsGroupTypeConfig(subsItemId: Long): Flow<List<SubsConfig>>
 
-        @Query("SELECT * FROM subs_config WHERE type=${GroupType} and subs_item_id=:subsItemId and app_id=:appId")
-        fun queryGroupTypeConfig(subsItemId: Long, appId: String): Flow<List<SubsConfig>>
+        @Query("SELECT * FROM subs_config WHERE type=${AppGroupType} AND subs_item_id=:subsItemId AND app_id=:appId")
+        fun queryAppGroupTypeConfig(subsItemId: Long, appId: String): Flow<List<SubsConfig>>
+
+        @Query("SELECT * FROM subs_config WHERE type=${GlobalGroupType} AND subs_item_id=:subsItemId")
+        fun queryGlobalGroupTypeConfig(subsItemId: Long): Flow<List<SubsConfig>>
     }
 
 }

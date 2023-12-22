@@ -28,6 +28,7 @@ fun initFolder() {
         imageCacheDir
     ).forEach { f ->
         if (!f.exists()) {
+            // TODO 在某些机型上无法创建目录 用户反馈重启手机后解决 是否存在其它解决方式?
             f.mkdirs()
         }
     }

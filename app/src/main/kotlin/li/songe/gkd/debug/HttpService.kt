@@ -3,7 +3,7 @@ package li.songe.gkd.debug
 import android.content.Context
 import android.content.Intent
 import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.ServiceUtils
+import com.blankj.utilcode.util.ToastUtils
 import io.ktor.http.ContentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.call
@@ -33,9 +33,9 @@ import li.songe.gkd.appScope
 import li.songe.gkd.composition.CompositionService
 import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.data.GkdAction
+import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubsItem
-import li.songe.gkd.data.SubscriptionRaw
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt.captureSnapshot
 import li.songe.gkd.notif.createNotif
@@ -49,6 +49,7 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsItemsFlow
+import li.songe.gkd.util.updateSubscription
 import java.io.File
 
 
@@ -56,14 +57,13 @@ class HttpService : CompositionService({
     val context = this
     val scope = CoroutineScope(Dispatchers.IO)
 
-
     val httpSubsItem = SubsItem(
         id = -1L,
         order = -1,
         enableUpdate = false,
     )
 
-    val httpSubsRawFlow = MutableStateFlow<SubscriptionRaw?>(null)
+    val httpSubsRawFlow = MutableStateFlow<RawSubscription?>(null)
     fun createServer(port: Int): CIOApplicationEngine {
         return embeddedServer(CIO, port) {
             install(KtorCorsPlugin)
@@ -106,8 +106,8 @@ class HttpService : CompositionService({
                         val subsStr =
                             """{"name":"内存订阅","id":-1,"version":0,"author":"@gkd-kit/inspect","apps":${call.receiveText()}}"""
                         try {
-                            val httpSubsRaw = SubscriptionRaw.parse(subsStr)
-                            httpSubsItem.subsFile.writeText(SubscriptionRaw.stringify(httpSubsRaw))
+                            val httpSubsRaw = RawSubscription.parse(subsStr)
+                            updateSubscription(httpSubsRaw)
                             DbSet.subsItemDao.insert((subsItemsFlow.value.find { s -> s.id == httpSubsItem.id }
                                 ?: httpSubsItem).copy(mtime = System.currentTimeMillis()))
                         } catch (e: Exception) {
@@ -116,7 +116,7 @@ class HttpService : CompositionService({
                         call.respond(RpcOk())
                     }
                     post("/execSelector") {
-                        if (!GkdAbService.isRunning()) {
+                        if (!GkdAbService.isRunning.value) {
                             throw RpcError("无障碍没有运行")
                         }
                         val gkdAction = call.receive<GkdAction>()
@@ -132,7 +132,17 @@ class HttpService : CompositionService({
     scope.launchTry(Dispatchers.IO) {
         storeFlow.map(scope) { s -> s.httpServerPort }.collect { port ->
             server?.stop()
-            server = createServer(port).apply { start() }
+            server = try {
+                createServer(port).apply { start() }
+            } catch (e: Exception) {
+                LogUtils.d("HTTP服务启动失败", e)
+                null
+            }
+            if (server == null) {
+                ToastUtils.showShort("HTTP服务启动失败,您可以尝试切换端口后重新启动")
+                stopSelf()
+                return@collect
+            }
             createNotif(
                 context, httpChannel.id, httpNotif.copy(text = "HTTP服务正在运行-端口$port")
             )
@@ -153,14 +163,16 @@ class HttpService : CompositionService({
             scope.cancel()
         }
     }
+
+    isRunning.value = true
+    onDestroy {
+        isRunning.value = false
+    }
 }) {
     companion object {
-
-        fun isRunning() = ServiceUtils.isServiceRunning(HttpService::class.java)
+        val isRunning = MutableStateFlow(false)
         fun stop(context: Context = app) {
-            if (isRunning()) {
-                context.stopService(Intent(context, HttpService::class.java))
-            }
+            context.stopService(Intent(context, HttpService::class.java))
         }
 
         fun start(context: Context = app) {
@@ -177,7 +189,7 @@ data class RpcOk(
 
 fun clearHttpSubs() {
     // 如果 app 被直接在任务列表划掉, HTTP订阅会没有清除, 所以在后续的第一次启动时清除
-    if (HttpService.isRunning()) return
+    if (HttpService.isRunning.value) return
     appScope.launchTry(Dispatchers.IO) {
         delay(1000)
         if (storeFlow.value.autoClearMemorySubs) {

@@ -9,7 +9,6 @@ import android.os.Build
 import com.blankj.utilcode.util.AppUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.app
@@ -17,11 +16,7 @@ import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.util.Ext.getApplicationInfoExt
 
-
-private val _appInfoCacheFlow = MutableStateFlow(mapOf<String, AppInfo>())
-
-val appInfoCacheFlow: StateFlow<Map<String, AppInfo>>
-    get() = _appInfoCacheFlow
+val appInfoCacheFlow = MutableStateFlow(mapOf<String, AppInfo>())
 
 private val packageReceiver by lazy {
     object : BroadcastReceiver() {
@@ -33,7 +28,7 @@ private val packageReceiver by lazy {
             val appId = intent?.data?.schemeSpecificPart ?: return
             if (intent.action == Intent.ACTION_PACKAGE_ADDED || intent.action == Intent.ACTION_PACKAGE_REPLACED || intent.action == Intent.ACTION_PACKAGE_REMOVED) {
                 // update
-                updateAppInfo(appId)
+                updateAppInfo(listOf(appId))
             }
         }
     }.apply {
@@ -79,13 +74,13 @@ private fun getAppInfo(id: String): AppInfo? {
     return info
 }
 
-val mutex by lazy { Mutex() }
+private val updateAppMutex by lazy { Mutex() }
 
-fun updateAppInfo(vararg appIds: String) {
+fun updateAppInfo(appIds: List<String>) {
     if (appIds.isEmpty()) return
     appScope.launchTry(Dispatchers.IO) {
-        mutex.withLock {
-            val newMap = _appInfoCacheFlow.value.toMutableMap()
+        updateAppMutex.withLock {
+            val newMap = appInfoCacheFlow.value.toMutableMap()
             appIds.forEach { appId ->
                 val newAppInfo = getAppInfo(appId)
                 if (newAppInfo != null) {
@@ -94,7 +89,7 @@ fun updateAppInfo(vararg appIds: String) {
                     newMap.remove(appId)
                 }
             }
-            _appInfoCacheFlow.value = newMap
+            appInfoCacheFlow.value = newMap
         }
     }
 }
