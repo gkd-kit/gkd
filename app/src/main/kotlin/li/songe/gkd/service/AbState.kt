@@ -98,7 +98,8 @@ fun getCurrentRules(): ActivityRule {
     return activityRuleFlow.value
 }
 
-var lastTriggerAppRule: ResolvedRule? = null
+var lastTriggerRule: ResolvedRule? = null
+var lastTriggerTime = 0L
 var appChangeTime = 0L
 
 fun insertClickLog(appRule: ResolvedRule) {

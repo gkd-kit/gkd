@@ -3,7 +3,8 @@ package li.songe.gkd.data
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Job
 import li.songe.gkd.service.TopActivity
-import li.songe.gkd.service.lastTriggerAppRule
+import li.songe.gkd.service.lastTriggerRule
+import li.songe.gkd.service.lastTriggerTime
 import li.songe.gkd.service.querySelector
 import li.songe.selector.Selector
 
@@ -47,10 +48,11 @@ sealed class ResolvedRule(
     var actionTriggerTime = Value(0L)
     fun trigger() {
         actionTriggerTime.value = System.currentTimeMillis()
+        lastTriggerTime = actionTriggerTime.value
         // 重置延迟点
         actionDelayTriggerTime = 0L
         actionCount.value++
-        lastTriggerAppRule = this
+        lastTriggerRule = this
     }
 
     val actionMaximum = ((if (rule.actionMaximumKey != null) {
@@ -96,8 +98,8 @@ sealed class ResolvedRule(
                 }
             }
             if (preAppRules.isNotEmpty()) { // 需要提前点击某个规则
-                lastTriggerAppRule ?: return 2
-                return if (preAppRules.any { it === lastTriggerAppRule }) {
+                lastTriggerRule ?: return 2
+                return if (preAppRules.any { it === lastTriggerRule }) {
                     0
                 } else {
                     3 // 上一个点击的规则不在当前需要点击的列表

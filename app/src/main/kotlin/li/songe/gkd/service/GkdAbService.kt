@@ -13,6 +13,7 @@ import android.view.Display
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.blankj.utilcode.util.ToastUtils
@@ -32,8 +33,8 @@ import li.songe.gkd.composition.CompositionAbService
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.composition.CompositionExt.useScope
 import li.songe.gkd.data.ActionResult
+import li.songe.gkd.data.AttrInfo
 import li.songe.gkd.data.GkdAction
-import li.songe.gkd.data.NodeInfo
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubsVersion
@@ -98,8 +99,14 @@ class GkdAbService : CompositionAbService({
     onDestroy {
         singleThread.cancel()
     }
-    fun newQueryTask() {
-        scope.launchTry(singleThread) {
+    val loopCheckTask = MutableStateFlow(0)
+    fun newQueryTask(eventNode: AccessibilityNodeInfo? = null) {
+        val ctx = if (System.currentTimeMillis() - appChangeTime < 5000L) {
+            Dispatchers.IO
+        } else {
+            singleThread
+        }
+        scope.launchTry(ctx) {
             val activityRule = getCurrentRules()
             for (rule in (activityRule.currentRules)) {
                 val statusCode = rule.statusCode
@@ -111,7 +118,7 @@ class GkdAbService : CompositionAbService({
                     }
                 }
                 if (statusCode != 0) continue
-                val nodeVal = safeActiveWindow ?: continue
+                val nodeVal = (eventNode ?: safeActiveWindow) ?: continue
                 val target = rule.query(nodeVal) ?: continue
                 if (activityRule !== getCurrentRules()) break
                 if (rule.checkDelay() && rule.actionDelayJob == null) {
@@ -122,16 +129,27 @@ class GkdAbService : CompositionAbService({
                     }
                     continue
                 }
-                val actionResult = rule.performAction(context, target)
-                if (actionResult.result) {
-                    LogUtils.d(
-                        *rule.matches.toTypedArray(),
-                        NodeInfo.abNodeToNode(nodeVal, target).attr,
-                        actionResult
-                    )
-                    insertClickLog(rule)
+                scope.launch(singleThread) {
+                    if (rule.statusCode != 0) return@launch
+                    val actionResult = rule.performAction(context, target)
+                    if (actionResult.result) {
+                        insertClickLog(rule)
+                        LogUtils.d(
+                            *rule.matches.toTypedArray(),
+                            AttrInfo.info2data(nodeVal, 0, 0),
+                            actionResult
+                        )
+                    }
                 }
             }
+            if (activityRule.currentRules.any { r -> r.statusCode != 5 }) {
+                loopCheckTask.value++
+            }
+        }
+    }
+    scope.launch(singleThread) {
+        loopCheckTask.debounce(5000).collect {
+            newQueryTask()
         }
     }
 
@@ -141,32 +159,35 @@ class GkdAbService : CompositionAbService({
         if (!(event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)) return@onAccessibilityEvent
 
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
-            skipAppIds.any { id ->
-                id.contentEquals(
-                    event.packageName
-                )
-            }
+            skipAppIds.contains(event.packageName.toString())
         ) {
             return@onAccessibilityEvent
         }
 
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-            if (event.eventTime - lastContentEventTime < 100 && event.eventTime - appChangeTime > 5000) {
+        val fixedEvent = event.toAbEvent() ?: return@onAccessibilityEvent
+        if (fixedEvent.type == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+            if (fixedEvent.time - lastContentEventTime < 100 && fixedEvent.time - appChangeTime > 5000 && fixedEvent.time - lastTriggerTime > 3000) {
                 return@onAccessibilityEvent
             }
-            lastContentEventTime = event.eventTime
+            lastContentEventTime = fixedEvent.time
         }
 
         // AccessibilityEvent 的 clear 方法会在后续时间被系统调用导致内部数据丢失
         // 因此不要在协程/子线程内传递引用, 此处使用 data class 保存数据
-        val fixedEvent = event.toAbEvent() ?: return@onAccessibilityEvent
-        val evAppId = fixedEvent.packageName
+        val evAppId = fixedEvent.appId
         val evActivityId = fixedEvent.className
 
+
         scope.launch(eventThread) {
-            val rightAppId = safeActiveWindow?.packageName?.toString() ?: return@launch
+            val eventNode = event.source ?: return@launch
+            val oldAppId = topActivityFlow.value.appId
+            val rightAppId = if (oldAppId == evAppId) {
+                oldAppId
+            } else {
+                safeActiveWindow?.packageName?.toString() ?: return@launch
+            }
             if (rightAppId == evAppId) {
-                if (fixedEvent.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+                if (fixedEvent.type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
                     // tv.danmaku.bili, com.miui.home, com.miui.home.launcher.Launcher
                     if (isActivity(evAppId, evActivityId)) {
                         topActivityFlow.value = TopActivity(
@@ -174,7 +195,7 @@ class GkdAbService : CompositionAbService({
                         )
                     }
                 } else {
-                    if (fixedEvent.eventTime - lastTriggerShizukuTime > 300) {
+                    if (fixedEvent.time - lastTriggerShizukuTime > 300) {
                         val shizukuTop = getShizukuTopActivity()
                         if (shizukuTop != null && shizukuTop.appId == rightAppId) {
                             if (shizukuTop.activityId == evActivityId) {
@@ -184,7 +205,7 @@ class GkdAbService : CompositionAbService({
                             }
                             topActivityFlow.value = shizukuTop
                         }
-                        lastTriggerShizukuTime = fixedEvent.eventTime
+                        lastTriggerShizukuTime = fixedEvent.time
                     }
                 }
             }
@@ -209,7 +230,7 @@ class GkdAbService : CompositionAbService({
 
             if (!storeFlow.value.enableService) return@launch
 
-            newQueryTask()
+            newQueryTask(eventNode)
         }
     }
 
