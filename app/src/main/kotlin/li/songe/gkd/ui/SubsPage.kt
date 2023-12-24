@@ -224,7 +224,7 @@ fun SubsPage(
             OutlinedTextField(
                 value = source,
                 onValueChange = { source = it },
-                maxLines = 8,
+                maxLines = 10,
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text(text = "请输入规则\n若APP规则已经存在则追加") },
             )
@@ -310,7 +310,7 @@ fun SubsPage(
             OutlinedTextField(
                 value = source,
                 onValueChange = { source = it },
-                maxLines = 8,
+                maxLines = 10,
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text(text = "请输入规则") },
             )
