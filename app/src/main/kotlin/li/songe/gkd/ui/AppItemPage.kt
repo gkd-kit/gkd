@@ -182,7 +182,7 @@ fun AppItemPage(
                                 )
                             } else {
                                 Text(
-                                    text = "规则组损坏",
+                                    text = "非法选择器",
                                     modifier = Modifier.fillMaxWidth(),
                                     fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.error
