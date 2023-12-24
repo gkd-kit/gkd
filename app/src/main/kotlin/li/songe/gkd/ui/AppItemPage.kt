@@ -336,7 +336,7 @@ fun AppItemPage(
                     onValueChange = { source = it },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(text = "请输入规则组") },
-                    maxLines = 8,
+                    maxLines = 10,
                 )
             },
             onDismissRequest = { setEditGroupRaw(null) },
@@ -400,7 +400,7 @@ fun AppItemPage(
                 onValueChange = { source = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text(text = "请输入规则组\n可以是APP规则\n也可以是单个规则组") },
-                maxLines = 8,
+                maxLines = 10,
             )
         }, onDismissRequest = { showAddDlg = false }, confirmButton = {
             TextButton(onClick = {
@@ -439,7 +439,7 @@ fun AppItemPage(
                         return@TextButton
                     }
                 }
-                val newKey = appRawVal.groups.maxBy { g -> g.key }.key + 1
+                val newKey = (appRawVal.groups.maxByOrNull { g -> g.key }?.key ?: -1) + 1
                 subsRaw ?: return@TextButton
                 val newSubsRaw = subsRaw.copy(apps = subsRaw.apps.toMutableList().apply {
                     set(

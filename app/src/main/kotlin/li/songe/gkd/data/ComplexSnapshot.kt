@@ -33,7 +33,7 @@ data class ComplexSnapshot(
 fun createComplexSnapshot(): ComplexSnapshot {
     val currentAbNode = GkdAbService.service?.safeActiveWindow
     val appId = currentAbNode?.packageName?.toString()
-    val currentActivityId = getCurrentRules().topActivity?.activityId
+    val currentActivityId = getCurrentRules().topActivity.activityId
     val appInfo = if (appId == null) null else AppUtils.getAppInfo(appId)
 
     return ComplexSnapshot(

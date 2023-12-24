@@ -217,7 +217,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                 onValueChange = { source = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text(text = "请输入规则组") },
-                maxLines = 8,
+                maxLines = 10,
             )
         }, onDismissRequest = { showAddDlg = false }, confirmButton = {
             TextButton(onClick = {
@@ -305,7 +305,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                     onValueChange = { source = it },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(text = "请输入规则组") },
-                    maxLines = 8,
+                    maxLines = 10,
                 )
             },
             onDismissRequest = { setEditGroupRaw(null) },

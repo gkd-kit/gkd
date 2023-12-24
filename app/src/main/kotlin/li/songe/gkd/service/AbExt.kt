@@ -107,7 +107,7 @@ private fun AccessibilityNodeInfo.getTempRect(): Rect {
 private const val MAX_CHILD_SIZE = 256
 private const val MAX_DESCENDANTS_SIZE = 4096
 
-private val getChildren: (AccessibilityNodeInfo) -> Sequence<AccessibilityNodeInfo> = { node ->
+val getChildren: (AccessibilityNodeInfo) -> Sequence<AccessibilityNodeInfo> = { node ->
     sequence {
         repeat(node.childCount.coerceAtMost(MAX_CHILD_SIZE)) { i ->
             val child = node.getChild(i) ?: return@sequence

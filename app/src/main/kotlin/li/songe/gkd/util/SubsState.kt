@@ -33,7 +33,11 @@ fun updateSubscription(subscription: RawSubscription) {
     appScope.launchTry {
         updateSubsFileMutex.withLock {
             val newMap = subsIdToRawFlow.value.toMutableMap()
-            newMap[subscription.id] = subscription
+            if (subscription.id < 0 && newMap[subscription.id]?.version == subscription.version) {
+                newMap[subscription.id] = subscription.copy(version = subscription.version + 1)
+            } else {
+                newMap[subscription.id] = subscription
+            }
             subsIdToRawFlow.value = newMap
             withContext(Dispatchers.IO) {
                 subsFolder.resolve("${subscription.id}.json")
