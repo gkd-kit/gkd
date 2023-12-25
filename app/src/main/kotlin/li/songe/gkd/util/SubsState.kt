@@ -153,7 +153,7 @@ val allRulesFlow by lazy {
                         )
                     }
 
-                    val matchAnyApp = ruleRaw.matchAnyApp ?: groupRaw.matchAnyApp ?: false
+                    val matchAnyApp = ruleRaw.matchAnyApp ?: groupRaw.matchAnyApp ?: true
 
                     val quickFind =
                         ruleRaw.quickFind ?: groupRaw.quickFind ?: false
