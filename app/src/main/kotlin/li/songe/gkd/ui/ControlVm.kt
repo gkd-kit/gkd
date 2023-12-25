@@ -38,15 +38,11 @@ class ControlVm @Inject constructor() : ViewModel() {
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val subsStatusFlow = combine(allRulesFlow, clickCountFlow) { allRules, clickCount ->
-        (if (allRules.allGroupSize > 0) {
-            if (allRules.appSize > 0) {
-                "${allRules.appSize}应用/${allRules.allGroupSize}规则组"
-            } else {
-                "${allRules.allGroupSize}规则组"
-            }
+        allRules.numText + if (clickCount > 0) {
+            "/${clickCount}点击"
         } else {
-            "暂无规则"
-        }) + if (clickCount > 0) "/${clickCount}点击" else ""
+            ""
+        }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
 }

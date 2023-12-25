@@ -97,8 +97,26 @@ data class AllRules(
     val appIdToRules: Map<String, List<AppRule>> = emptyMap(),
     val appIdToGroups: Map<String, List<RawSubscription.RawAppGroup>> = emptyMap(),
 ) {
-    val appSize = appIdToRules.keys.size
-    val allGroupSize = globalGroups.size + appIdToGroups.values.sumOf { s -> s.size }
+    private val appSize = appIdToRules.keys.size
+    private val appGroupSize = appIdToGroups.values.sumOf { s -> s.size }
+
+    val numText = if (globalGroups.size + appGroupSize > 0) {
+        if (globalGroups.isNotEmpty()) {
+            "${globalGroups.size}全局" + if (appGroupSize > 0) {
+                "/"
+            } else {
+                ""
+            }
+        } else {
+            ""
+        } + if (appGroupSize > 0) {
+            "${appSize}应用/${appGroupSize}规则组"
+        } else {
+            ""
+        }
+    } else {
+        "暂无规则"
+    }
 }
 
 val allRulesFlow by lazy {
