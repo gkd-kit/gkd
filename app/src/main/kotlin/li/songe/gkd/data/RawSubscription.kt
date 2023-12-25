@@ -25,9 +25,9 @@ data class RawSubscription(
     val updateUrl: String? = null,
     val supportUri: String? = null,
     val checkUpdateUrl: String? = null,
-    val apps: List<RawApp> = emptyList(),
-    val categories: List<RawCategory> = emptyList(),
     val globalGroups: List<RawGlobalGroup> = emptyList(),
+    val categories: List<RawCategory> = emptyList(),
+    val apps: List<RawApp> = emptyList(),
 ) {
 
     @IgnoredOnParcel
@@ -137,9 +137,9 @@ data class RawSubscription(
     data class RawGlobalApp(
         val id: String,
         val enable: Boolean?,
-        val activityIds: List<String>?,
-        val excludeActivityIds: List<String>?,
-    )
+        override val activityIds: List<String>?,
+        override val excludeActivityIds: List<String>?,
+    ) : RawAppRuleProps
 
 
     @Serializable
