@@ -43,6 +43,9 @@ class GlobalRule(
     subsItem = subsItem,
     rawSubs = rawSubs,
 ) {
+
+    override val type = "global"
+
     private val excludeAppIds = apps.filter { e -> !e.value.enable }.keys
     override fun matchActivity(topActivity: TopActivity?): Boolean {
         topActivity ?: return false

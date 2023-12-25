@@ -41,7 +41,9 @@ import li.songe.gkd.data.SubsVersion
 import li.songe.gkd.data.getActionFc
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt
+import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.shizuku.useSafeGetTasksFc
+import li.songe.gkd.shizuku.useShizukuAliveState
 import li.songe.gkd.util.VOLUME_CHANGED_ACTION
 import li.songe.gkd.util.client
 import li.songe.gkd.util.launchTry
@@ -66,7 +68,25 @@ class GkdAbService : CompositionAbService({
         service = null
     }
 
-    val safeGetTasksFc = useSafeGetTasksFc(scope)
+    val shizukuAliveFlow = useShizukuAliveState()
+    val shizukuGrantFlow = MutableStateFlow(false)
+    var lastCheckShizukuTime = 0L
+    onAccessibilityEvent { // 借助无障碍轮询校验 shizuku 权限
+        if (storeFlow.value.enableService && it?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {// 筛选降低判断频率
+            val t = System.currentTimeMillis()
+            if (t - lastCheckShizukuTime > 5000L) {
+                lastCheckShizukuTime = t
+                scope.launchTry(Dispatchers.IO) {
+                    shizukuGrantFlow.value = if (shizukuAliveFlow.value) {
+                        shizukuIsSafeOK()
+                    } else {
+                        false
+                    }
+                }
+            }
+        }
+    }
+    val safeGetTasksFc = useSafeGetTasksFc(scope, shizukuGrantFlow, shizukuAliveFlow)
 
     // 当锁屏/上拉通知栏时, safeActiveWindow 没有 activityId, 但是此时 shizuku 获取到是前台 app 的 appId 和 activityId
     fun getShizukuTopActivity(): TopActivity? {
@@ -135,7 +155,7 @@ class GkdAbService : CompositionAbService({
                     if (actionResult.result) {
                         insertClickLog(rule)
                         LogUtils.d(
-                            *rule.matches.toTypedArray(),
+                            rule.statusText(),
                             AttrInfo.info2data(nodeVal, 0, 0),
                             actionResult
                         )
@@ -158,8 +178,9 @@ class GkdAbService : CompositionAbService({
         if (event == null || event.packageName == null) return@onAccessibilityEvent
         if (!(event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)) return@onAccessibilityEvent
 
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
-            skipAppIds.contains(event.packageName.toString())
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED && skipAppIds.contains(
+                event.packageName.toString()
+            )
         ) {
             return@onAccessibilityEvent
         }
@@ -294,9 +315,7 @@ class GkdAbService : CompositionAbService({
         activityRuleFlow.debounce(300).collect {
             if (storeFlow.value.enableService) {
                 LogUtils.d(it.topActivity, *it.currentRules.map { r ->
-                    "id:${r.subsItem.id}, v:${r.rawSubs.version}, gKey=${r.group.key}, gName:${r.group.name}, rIndex:${r.index}, rKey:${r.key}, rCode:${
-                        r.statusCode
-                    }"
+                    r.statusText()
                 }.toTypedArray())
             } else {
                 LogUtils.d(
@@ -397,11 +416,9 @@ class GkdAbService : CompositionAbService({
         e ?: return@onAccessibilityEvent
         val appId = e.packageName ?: return@onAccessibilityEvent
         val appCls = e.className ?: return@onAccessibilityEvent
-        if (appId.contentEquals("com.miui.screenshot") &&
-            e.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
-            !e.isFullScreen &&
-            appCls.contentEquals("android.widget.RelativeLayout") &&
-            e.text.firstOrNull()?.contentEquals("截屏缩略图") == true // [截屏缩略图, 截长屏, 发送]
+        if (appId.contentEquals("com.miui.screenshot") && e.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && !e.isFullScreen && appCls.contentEquals(
+                "android.widget.RelativeLayout"
+            ) && e.text.firstOrNull()?.contentEquals("截屏缩略图") == true // [截屏缩略图, 截长屏, 发送]
         ) {
             LogUtils.d("captureScreenshot", e)
             scope.launchTry(Dispatchers.IO) {
@@ -409,7 +426,6 @@ class GkdAbService : CompositionAbService({
             }
         }
     }
-
 
     isRunning.value = true
     onDestroy {
