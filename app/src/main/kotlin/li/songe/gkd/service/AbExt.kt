@@ -120,10 +120,15 @@ private val getAttr: (AccessibilityNodeInfo, String) -> Any? = { node, name ->
     when (name) {
         "id" -> node.viewIdResourceName
         "vid" -> node.viewIdResourceName?.let { id ->
-            id.subSequence(
-                (node.packageName?.length ?: 0) + ":id/".length,
-                id.length
-            )
+            val appId = node.packageName
+            if (appId != null && id.startsWith(appId) && id.startsWith(":id/", appId.length)) {
+                id.subSequence(
+                    appId.length + ":id/".length,
+                    id.length
+                )
+            } else {
+                null
+            }
         }
 
         "name" -> node.className
