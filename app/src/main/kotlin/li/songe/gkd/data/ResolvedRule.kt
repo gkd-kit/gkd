@@ -39,11 +39,13 @@ sealed class ResolvedRule(
         return false
     }
 
-    val actionCd = (if (rule.actionCdKey != null) {
-        group.rules.find { r -> r.key == rule.actionCdKey }?.actionCd ?: group.actionCd
+    val actionCdKey = rule.actionCdKey ?: group.actionCdKey
+    val actionCd = rule.actionCd ?: (if (actionCdKey != null) {
+        group.rules.find { r -> r.key == actionCdKey }?.actionCd
+            ?: group.actionCd
     } else {
         null
-    } ?: rule.actionCd ?: group.actionCd ?: 1000L)
+    } ?: group.actionCd ?: 1000L)
 
     var actionTriggerTime = Value(0L)
     fun trigger() {
@@ -55,12 +57,13 @@ sealed class ResolvedRule(
         lastTriggerRule = this
     }
 
-    val actionMaximum = ((if (rule.actionMaximumKey != null) {
-        group.rules.find { r -> r.key == rule.actionMaximumKey }?.actionMaximum
+    val actionMaximumKey = rule.actionMaximumKey ?: group.actionMaximumKey
+    val actionMaximum = rule.actionMaximum ?: ((if (actionMaximumKey != null) {
+        group.rules.find { r -> r.key == actionMaximumKey }?.actionMaximum
             ?: group.actionMaximum
     } else {
         null
-    }) ?: rule.actionMaximum ?: group.actionMaximum)
+    }) ?: group.actionMaximum)
 
     var actionCount = Value(0)
 
@@ -122,8 +125,14 @@ sealed class ResolvedRule(
             }
             return 0
         }
-
+    abstract val type: String
     abstract fun matchActivity(topActivity: TopActivity?): Boolean
+
+    fun statusText(): String {
+        return "id:${subsItem.id}, v:${rawSubs.version}, rType:${type}, gKey=${group.key}, gName:${group.name}, rIndex:${index}, rKey:${key}, rCode:${
+            statusCode
+        }"
+    }
 
 }
 

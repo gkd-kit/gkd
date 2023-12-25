@@ -5,21 +5,9 @@ import com.blankj.utilcode.util.ToastUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-
-
-fun CoroutineScope.launchWhile(
-    context: CoroutineContext = EmptyCoroutineContext,
-    start: CoroutineStart = CoroutineStart.DEFAULT,
-    block: suspend CoroutineScope.() -> Unit,
-) = launch(context, start) {
-    while (isActive) {
-        block()
-    }
-}
 
 fun CoroutineScope.launchTry(
     context: CoroutineContext = EmptyCoroutineContext,

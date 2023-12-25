@@ -38,6 +38,8 @@ class AppRule(
     subsItem = subsItem,
     rawSubs = rawSubs,
 ) {
+
+    override val type = "app"
     override fun matchActivity(topActivity: TopActivity?): Boolean {
         topActivity ?: return false
         topActivity.activityId ?: return true
