@@ -57,8 +57,27 @@ data class RawSubscription(
     }
 
     @IgnoredOnParcel
-    val allGroupSize by lazy {
-        globalGroups.size + appGroups.size
+    val numText by lazy {
+        val appsSize = apps.size
+        val appGroupsSize = appGroups.size
+        val globalGroupSize = globalGroups.size
+        if (appGroupsSize + globalGroupSize > 0) {
+            if (globalGroupSize > 0) {
+                "${globalGroupSize}全局" + if (appGroupsSize > 0) {
+                    "/"
+                } else {
+                    ""
+                }
+            } else {
+                ""
+            } + if (appGroupsSize > 0) {
+                "${appsSize}应用/${appGroupsSize}规则组"
+            } else {
+                ""
+            }
+        } else {
+            "暂无规则"
+        }
     }
 
     @Serializable

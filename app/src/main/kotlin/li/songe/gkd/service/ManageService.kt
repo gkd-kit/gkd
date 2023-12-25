@@ -33,15 +33,11 @@ class ManageService : CompositionService({
         ) { allRules, clickCount, enableService, abRunning ->
             if (!abRunning) return@combine "无障碍未授权"
             if (!enableService) return@combine "服务已暂停"
-            (if (allRules.allGroupSize > 0) {
-                if (allRules.appSize > 0) {
-                    "${allRules.appSize}应用/${allRules.allGroupSize}规则组"
-                } else {
-                    "${allRules.allGroupSize}规则组"
-                }
+            allRules.numText + if (clickCount > 0) {
+                "/${clickCount}点击"
             } else {
-                "暂无规则"
-            }) + if (clickCount > 0) "/${clickCount}点击" else ""
+                ""
+            }
         }.stateIn(scope, SharingStarted.Eagerly, "").collect { text ->
             createNotif(
                 context, defaultChannel.id, abNotif.copy(
