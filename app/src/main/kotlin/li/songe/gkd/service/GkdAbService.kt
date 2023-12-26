@@ -75,7 +75,7 @@ class GkdAbService : CompositionAbService({
     val shizukuGrantFlow = MutableStateFlow(false)
     var lastCheckShizukuTime = 0L
     onAccessibilityEvent { // 借助无障碍轮询校验 shizuku 权限
-        if (storeFlow.value.enableService && it?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {// 筛选降低判断频率
+        if (storeFlow.value.enableService && it.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {// 筛选降低判断频率
             val t = System.currentTimeMillis()
             if (t - lastCheckShizukuTime > 5000L) {
                 lastCheckShizukuTime = t
@@ -181,12 +181,8 @@ class GkdAbService : CompositionAbService({
 
     val skipAppIds = listOf("com.android.systemui")
     onAccessibilityEvent { event ->
-        if (event?.packageName == null) return@onAccessibilityEvent
-        if (!(event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)) return@onAccessibilityEvent
-
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED && skipAppIds.contains(
-                event.packageName.toString()
-            )
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
+            skipAppIds.contains(event.packageName.toString())
         ) {
             return@onAccessibilityEvent
         }
@@ -302,7 +298,7 @@ class GkdAbService : CompositionAbService({
 
     var lastUpdateSubsTime = 0L
     onAccessibilityEvent {
-        if (it?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {// 筛选降低判断频率
+        if (it.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {// 筛选降低判断频率
             // 借助 无障碍事件 触发自动检测更新
             val i = storeFlow.value.updateSubsInterval
             val t = System.currentTimeMillis()
@@ -421,7 +417,6 @@ class GkdAbService : CompositionAbService({
 
     onAccessibilityEvent { e ->
         if (!storeFlow.value.captureScreenshot) return@onAccessibilityEvent
-        e ?: return@onAccessibilityEvent
         val appId = e.packageName ?: return@onAccessibilityEvent
         val appCls = e.className ?: return@onAccessibilityEvent
         if (appId.contentEquals("com.miui.screenshot") && e.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && !e.isFullScreen && appCls.contentEquals(
