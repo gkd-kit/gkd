@@ -28,15 +28,15 @@ open class CompositionAbService(
         destroyHooks.forEach { f -> f() }
     }
 
-    private val onAccessibilityEventHooks by lazy { linkedSetOf<(AccessibilityEvent?) -> Unit>() }
+    private val onAccessibilityEventHooks by lazy { linkedSetOf<(AccessibilityEvent) -> Unit>() }
     private val interestedEvents =
         AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
 
-    override fun onAccessibilityEvent(f: (AccessibilityEvent?) -> Unit) =
+    override fun onAccessibilityEvent(f: (AccessibilityEvent) -> Unit) =
         onAccessibilityEventHooks.add(f)
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event?.eventType?.and(interestedEvents) != 0) {
+        if (event != null && event.eventType.and(interestedEvents) != 0) {
             onAccessibilityEventHooks.forEach { f -> f(event) }
         }
     }
