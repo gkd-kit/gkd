@@ -17,6 +17,7 @@ import li.songe.gkd.composition.CompositionActivity
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.ui.NavGraphs
 import li.songe.gkd.ui.component.ConfirmDialog
+import li.songe.gkd.util.StatusBar
 import li.songe.gkd.ui.theme.AppTheme
 import li.songe.gkd.util.AuthDialog
 import li.songe.gkd.util.LocalLauncher
@@ -46,7 +47,7 @@ class MainActivity : CompositionActivity({
 
     setContent {
         val navController = rememberNavController()
-
+        StatusBar()
         AppTheme {
             ConfirmDialog()
             AuthDialog()
