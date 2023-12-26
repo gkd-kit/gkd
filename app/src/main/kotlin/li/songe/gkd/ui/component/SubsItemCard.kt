@@ -76,19 +76,9 @@ fun SubsItemCard(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                     }
-                    val apps = rawSubscription.apps
-                    val groupsSize = rawSubscription.allGroupSize
-                    val ruleNumText = if (groupsSize > 0) {
-                        if (apps.isNotEmpty()) {
-                            "${apps.size}应用/${groupsSize}规则组"
-                        } else {
-                            "${groupsSize}规则组"
-                        }
-                    } else {
-                        "暂无规则"
-                    }
+
                     Text(
-                        text = ruleNumText,
+                        text = rawSubscription.numText,
                         fontSize = 14.sp
                     )
                 }

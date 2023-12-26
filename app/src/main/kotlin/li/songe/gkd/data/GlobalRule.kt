@@ -1,7 +1,6 @@
 package li.songe.gkd.data
 
 import li.songe.gkd.service.TopActivity
-import li.songe.selector.Selector
 
 data class GlobalApp(
     val id: String,
@@ -11,38 +10,31 @@ data class GlobalApp(
 )
 
 class GlobalRule(
-    matches: List<Selector>,
-    excludeMatches: List<Selector>,
-    actionDelay: Long,
-    quickFind: Boolean,
-    matchDelay: Long,
-    matchTime: Long?,
-    resetMatch: String?,
-    key: Int?,
-    preKeys: Set<Int>,
-    index: Int,
     subsItem: SubsItem,
     rule: RawSubscription.RawGlobalRule,
     group: RawSubscription.RawGlobalGroup,
     rawSubs: RawSubscription,
-    val apps: Map<String, GlobalApp>,
-    val matchAnyApp: Boolean,
 ) : ResolvedRule(
-    matches = matches,
-    excludeMatches = excludeMatches,
-    actionDelay = actionDelay,
-    quickFind = quickFind,
-    matchDelay = matchDelay,
-    matchTime = matchTime,
-    resetMatch = resetMatch,
-    key = key,
-    preKeys = preKeys,
-    index = index,
     rule = rule,
     group = group,
     subsItem = subsItem,
     rawSubs = rawSubs,
 ) {
+
+    val matchAnyApp = rule.matchAnyApp ?: group.matchAnyApp ?: true
+    val apps = mutableMapOf<String, GlobalApp>().apply {
+        (rule.apps ?: group.apps ?: emptyList()).forEach { a ->
+            this[a.id] = GlobalApp(
+                id = a.id,
+                enable = a.enable ?: true,
+                activityIds = getFixActivityIds(a.id, a.activityIds),
+                excludeActivityIds = getFixActivityIds(a.id, a.excludeActivityIds)
+            )
+        }
+    }
+
+    override val type = "global"
+
     private val excludeAppIds = apps.filter { e -> !e.value.enable }.keys
     override fun matchActivity(topActivity: TopActivity?): Boolean {
         topActivity ?: return false

@@ -7,8 +7,6 @@ import android.view.Display
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ToastUtils
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +14,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.composition.CanOnDestroy
 import li.songe.gkd.data.DeviceInfo
-import li.songe.gkd.util.launchWhile
 import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
 import rikka.shizuku.Shizuku
@@ -95,13 +92,11 @@ fun CanOnDestroy.useShizukuAliveState(): StateFlow<Boolean> {
     return shizukuAliveFlow
 }
 
-fun CanOnDestroy.useSafeGetTasksFc(scope: CoroutineScope): () -> List<ActivityManager.RunningTaskInfo>? {
-    val shizukuAliveFlow = useShizukuAliveState()
-    val shizukuGrantFlow = MutableStateFlow(false)
-    scope.launchWhile(Dispatchers.IO) {
-        shizukuGrantFlow.value = if (shizukuAliveFlow.value) shizukuIsSafeOK() else false
-        delay(3000)
-    }
+fun useSafeGetTasksFc(
+    scope: CoroutineScope,
+    shizukuGrantFlow: StateFlow<Boolean>,
+    shizukuAliveFlow: StateFlow<Boolean>
+): () -> List<ActivityManager.RunningTaskInfo>? {
     val shizukuCanUsedFlow = combine(
         shizukuAliveFlow,
         shizukuGrantFlow,

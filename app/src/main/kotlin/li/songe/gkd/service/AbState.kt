@@ -102,22 +102,20 @@ var lastTriggerRule: ResolvedRule? = null
 var lastTriggerTime = 0L
 var appChangeTime = 0L
 
-fun insertClickLog(appRule: ResolvedRule) {
-    appRule.trigger()
-    toastClickTip()
+fun insertClickLog(rule: ResolvedRule) {
     appScope.launchTry(Dispatchers.IO) {
         val clickLog = ClickLog(
             appId = topActivityFlow.value.appId,
             activityId = topActivityFlow.value.activityId,
-            subsId = appRule.subsItem.id,
-            subsVersion = appRule.rawSubs.version,
-            groupKey = appRule.group.key,
-            groupType = when (appRule) {
+            subsId = rule.subsItem.id,
+            subsVersion = rule.rawSubs.version,
+            groupKey = rule.group.key,
+            groupType = when (rule) {
                 is AppRule -> SubsConfig.AppGroupType
                 is GlobalRule -> SubsConfig.GlobalGroupType
             },
-            ruleIndex = appRule.index,
-            ruleKey = appRule.key,
+            ruleIndex = rule.index,
+            ruleKey = rule.key,
         )
         DbSet.clickLogDao.insert(clickLog)
         increaseClickCount()

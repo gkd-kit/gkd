@@ -25,9 +25,9 @@ data class RawSubscription(
     val updateUrl: String? = null,
     val supportUri: String? = null,
     val checkUpdateUrl: String? = null,
-    val apps: List<RawApp> = emptyList(),
-    val categories: List<RawCategory> = emptyList(),
     val globalGroups: List<RawGlobalGroup> = emptyList(),
+    val categories: List<RawCategory> = emptyList(),
+    val apps: List<RawApp> = emptyList(),
 ) {
 
     @IgnoredOnParcel
@@ -57,8 +57,27 @@ data class RawSubscription(
     }
 
     @IgnoredOnParcel
-    val allGroupSize by lazy {
-        globalGroups.size + appGroups.size
+    val numText by lazy {
+        val appsSize = apps.size
+        val appGroupsSize = appGroups.size
+        val globalGroupSize = globalGroups.size
+        if (appGroupsSize + globalGroupSize > 0) {
+            if (globalGroupSize > 0) {
+                "${globalGroupSize}全局" + if (appGroupsSize > 0) {
+                    "/"
+                } else {
+                    ""
+                }
+            } else {
+                ""
+            } + if (appGroupsSize > 0) {
+                "${appsSize}应用/${appGroupsSize}规则组"
+            } else {
+                ""
+            }
+        } else {
+            "暂无规则"
+        }
     }
 
     @Serializable
@@ -118,9 +137,9 @@ data class RawSubscription(
     data class RawGlobalApp(
         val id: String,
         val enable: Boolean?,
-        val activityIds: List<String>?,
-        val excludeActivityIds: List<String>?,
-    )
+        override val activityIds: List<String>?,
+        override val excludeActivityIds: List<String>?,
+    ) : RawAppRuleProps
 
 
     @Serializable
