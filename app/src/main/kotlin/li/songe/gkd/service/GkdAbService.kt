@@ -121,6 +121,7 @@ class GkdAbService : CompositionAbService({
     }
     val loopCheckTask = MutableStateFlow(0)
     fun newQueryTask(eventNode: AccessibilityNodeInfo? = null) {
+        if (!storeFlow.value.enableService) return
         val ctx = if (System.currentTimeMillis() - appChangeTime < 5000L) {
             Dispatchers.IO
         } else {
@@ -248,8 +249,6 @@ class GkdAbService : CompositionAbService({
             if (evAppId != rightAppId) {
                 return@launch
             }
-
-            if (!storeFlow.value.enableService) return@launch
 
             newQueryTask(eventNode)
         }
