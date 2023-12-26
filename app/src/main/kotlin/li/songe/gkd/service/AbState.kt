@@ -103,8 +103,6 @@ var lastTriggerTime = 0L
 var appChangeTime = 0L
 
 fun insertClickLog(rule: ResolvedRule) {
-    rule.trigger()
-    toastClickTip()
     appScope.launchTry(Dispatchers.IO) {
         val clickLog = ClickLog(
             appId = topActivityFlow.value.appId,

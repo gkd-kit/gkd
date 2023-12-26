@@ -13,12 +13,10 @@ import kotlinx.serialization.encodeToString
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppRule
 import li.songe.gkd.data.CategoryConfig
-import li.songe.gkd.data.GlobalApp
 import li.songe.gkd.data.GlobalRule
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
-import li.songe.selector.Selector
 
 val subsItemsFlow by lazy {
     DbSet.subsItemDao.query().stateIn(appScope, SharingStarted.Eagerly, emptyList())
@@ -77,20 +75,6 @@ fun getGroupRawEnable(
     } ?: rawGroup.enable ?: true
 }
 
-private fun getFixActivityIds(
-    appId: String,
-    activityIds: List<String>?,
-): List<String> {
-    activityIds ?: return emptyList()
-    return activityIds.map { activityId ->
-        if (activityId.startsWith('.')) { // .a.b.c -> com.x.y.x.a.b.c
-            appId + activityId
-        } else {
-            activityId
-        }
-    }
-}
-
 data class AllRules(
     val globalRules: List<GlobalRule> = emptyList(),
     val globalGroups: List<RawSubscription.RawGlobalGroup> = emptyList(),
@@ -142,76 +126,16 @@ val allRulesFlow by lazy {
                     ?: g.enable ?: true)
             }.forEach { groupRaw ->
                 globalGroups.add(groupRaw)
-                val subRules = groupRaw.rules.mapIndexed { ruleIndex, ruleRaw ->
-                    val apps = mutableMapOf<String, GlobalApp>()
-                    (ruleRaw.apps ?: groupRaw.apps ?: emptyList()).forEach { a ->
-                        apps[a.id] = GlobalApp(
-                            id = a.id,
-                            enable = a.enable ?: true,
-                            activityIds = a.activityIds ?: emptyList(),
-                            excludeActivityIds = a.excludeActivityIds ?: emptyList()
-                        )
-                    }
-
-                    val matchAnyApp = ruleRaw.matchAnyApp ?: groupRaw.matchAnyApp ?: true
-
-                    val quickFind =
-                        ruleRaw.quickFind ?: groupRaw.quickFind ?: false
-                    val matchDelay =
-                        ruleRaw.matchDelay ?: groupRaw.matchDelay ?: 0
-                    val matchTime = ruleRaw.matchTime ?: groupRaw.matchTime
-                    val resetMatch =
-                        ruleRaw.resetMatch ?: groupRaw.resetMatch
-                    val actionDelay =
-                        ruleRaw.actionDelay ?: groupRaw.actionDelay ?: 0
-
+                val subRules = groupRaw.rules.map { ruleRaw ->
                     GlobalRule(
-                        quickFind = quickFind,
-                        actionDelay = actionDelay,
-                        index = ruleIndex,
-                        matches = ruleRaw.matches.map { Selector.parse(it) },
-                        excludeMatches = (ruleRaw.excludeMatches ?: emptyList()).map {
-                            Selector.parse(
-                                it
-                            )
-                        },
-                        matchDelay = matchDelay,
-                        matchTime = matchTime,
-                        key = ruleRaw.key,
-                        preKeys = (ruleRaw.preKeys ?: emptyList()).toSet(),
                         rule = ruleRaw,
                         group = groupRaw,
-                        subsItem = subsItem,
-                        resetMatch = resetMatch,
-                        matchAnyApp = matchAnyApp,
-                        apps = apps,
                         rawSubs = rawSubs,
+                        subsItem = subsItem,
                     )
                 }
-                subRules.forEach { ruleConfig ->
-                    // 保留原始对象引用, 方便判断 lastTriggerRule 时直接使用 ===
-                    ruleConfig.preAppRules = subRules.filter { otherRule ->
-                        (otherRule.key != null) && ruleConfig.preKeys.contains(
-                            otherRule.key
-                        )
-                    }.toSet()
-                    // 共用次数
-                    val maxKey =
-                        ruleConfig.rule.actionMaximumKey ?: ruleConfig.group.actionMaximumKey
-                    if (maxKey != null) {
-                        val otherRule = subRules.find { r -> r.key == maxKey }
-                        if (otherRule != null) {
-                            ruleConfig.actionCount = otherRule.actionCount
-                        }
-                    }
-                    // 共用 cd
-                    val cdKey = ruleConfig.rule.actionCdKey ?: ruleConfig.group.actionCdKey
-                    if (cdKey != null) {
-                        val otherRule = subRules.find { r -> r.key == cdKey }
-                        if (otherRule != null) {
-                            ruleConfig.actionTriggerTime = otherRule.actionTriggerTime
-                        }
-                    }
+                subRules.forEach { r ->
+                    r.groupRules = subRules
                 }
                 globalRules.addAll(subRules)
             }
@@ -234,79 +158,17 @@ val allRulesFlow by lazy {
                     )
                 }.forEach { groupRaw ->
                     subAppGroups.add(groupRaw)
-                    val subRules = groupRaw.rules.mapIndexed { ruleIndex, ruleRaw ->
-                        val activityIds =
-                            getFixActivityIds(
-                                appRaw.id,
-                                ruleRaw.activityIds ?: groupRaw.activityIds
-                            )
-
-                        val excludeActivityIds = getFixActivityIds(
-                            appRaw.id,
-                            ruleRaw.excludeActivityIds ?: groupRaw.excludeActivityIds,
-                        )
-
-                        val quickFind =
-                            ruleRaw.quickFind ?: groupRaw.quickFind ?: false
-
-                        val matchDelay =
-                            ruleRaw.matchDelay ?: groupRaw.matchDelay ?: 0
-                        val matchTime = ruleRaw.matchTime ?: groupRaw.matchTime
-                        val resetMatch =
-                            ruleRaw.resetMatch ?: groupRaw.resetMatch
-                        val actionDelay =
-                            ruleRaw.actionDelay ?: groupRaw.actionDelay ?: 0
-
+                    val subRules = groupRaw.rules.map { ruleRaw ->
                         AppRule(
-                            quickFind = quickFind,
-                            actionDelay = actionDelay,
-                            index = ruleIndex,
-                            matches = ruleRaw.matches.map { Selector.parse(it) },
-                            excludeMatches = (ruleRaw.excludeMatches ?: emptyList()).map {
-                                Selector.parse(
-                                    it
-                                )
-                            },
-                            matchDelay = matchDelay,
-                            matchTime = matchTime,
-                            appId = appRaw.id,
-                            activityIds = activityIds,
-                            excludeActivityIds = excludeActivityIds,
-                            key = ruleRaw.key,
-                            preKeys = (ruleRaw.preKeys ?: emptyList()).toSet(),
                             rule = ruleRaw,
                             group = groupRaw,
                             app = appRaw,
-                            subsItem = subsItem,
-                            resetMatch = resetMatch,
                             rawSubs = rawSubs,
+                            subsItem = subsItem,
                         )
-
                     }
-                    subRules.forEach { ruleConfig ->
-                        // 保留原始对象引用, 方便判断 lastTriggerRule 时直接使用 ===
-                        ruleConfig.preAppRules = subRules.filter { otherRule ->
-                            (otherRule.key != null) && ruleConfig.preKeys.contains(
-                                otherRule.key
-                            )
-                        }.toSet()
-                        // 共用次数
-                        val maxKey =
-                            ruleConfig.rule.actionMaximumKey ?: ruleConfig.group.actionMaximumKey
-                        if (maxKey != null) {
-                            val otherRule = subRules.find { r -> r.key == maxKey }
-                            if (otherRule != null) {
-                                ruleConfig.actionCount = otherRule.actionCount
-                            }
-                        }
-                        // 共用 cd
-                        val cdKey = ruleConfig.rule.actionCdKey ?: ruleConfig.group.actionCdKey
-                        if (cdKey != null) {
-                            val otherRule = subRules.find { r -> r.key == cdKey }
-                            if (otherRule != null) {
-                                ruleConfig.actionTriggerTime = otherRule.actionTriggerTime
-                            }
-                        }
+                    subRules.forEach { r ->
+                        r.groupRules = subRules
                     }
                     if (subRules.isNotEmpty()) {
                         val rules = appRules[appRaw.id] ?: mutableListOf()
