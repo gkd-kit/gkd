@@ -113,7 +113,7 @@ fun SettingsPage() {
         Divider()
 
         TextSwitch(name = "前台悬浮窗",
-            desc = "添加前台透明悬浮窗,关闭可能导致不点击/点击缓慢",
+            desc = "添加透明悬浮窗,关闭可能导致不点击/点击缓慢",
             checked = store.enableAbFloatWindow,
             onCheckedChange = {
                 updateStorage(

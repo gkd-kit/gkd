@@ -153,10 +153,10 @@ fun DebugPage() {
             val httpServerRunning by HttpService.isRunning.collectAsState()
             TextSwitch(
                 name = "HTTP服务",
-                desc = "开启HTTP服务, 以便在同一局域网下传递数据" + if (httpServerRunning) "\n${
+                desc = if (httpServerRunning) "浏览器打开下面任意链接即可自动连接\n${
                     Ext.getIpAddressInLocalNetwork()
-                        .map { host -> "http://${host}:${store.httpServerPort}" }.joinToString(",")
-                }" else "",
+                        .map { host -> "http://${host}:${store.httpServerPort}" }.joinToString("\n")
+                }" else "开启HTTP服务在同一局域网下连接调试工具",
                 checked = httpServerRunning
             ) {
                 if (!checkOrRequestNotifPermission(context)) {
