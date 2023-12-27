@@ -75,7 +75,7 @@ class GkdAbService : CompositionAbService({
     val shizukuGrantFlow = MutableStateFlow(false)
     var lastCheckShizukuTime = 0L
     onAccessibilityEvent { // 借助无障碍轮询校验 shizuku 权限
-        if (storeFlow.value.enableService && it.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {// 筛选降低判断频率
+        if (storeFlow.value.enableShizuku && it.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {// 筛选降低判断频率
             val t = System.currentTimeMillis()
             if (t - lastCheckShizukuTime > 5000L) {
                 lastCheckShizukuTime = t
@@ -93,6 +93,7 @@ class GkdAbService : CompositionAbService({
 
     // 当锁屏/上拉通知栏时, safeActiveWindow 没有 activityId, 但是此时 shizuku 获取到是前台 app 的 appId 和 activityId
     fun getShizukuTopActivity(): TopActivity? {
+        if (!storeFlow.value.enableShizuku) return null
         // 平均耗时 5 ms
         val top = safeGetTasksFc()?.lastOrNull()?.topActivity ?: return null
         return TopActivity(appId = top.packageName, activityId = top.className)
@@ -218,7 +219,7 @@ class GkdAbService : CompositionAbService({
                         )
                     }
                 } else {
-                    if (fixedEvent.time - lastTriggerShizukuTime > 300) {
+                    if (storeFlow.value.enableShizuku && fixedEvent.time - lastTriggerShizukuTime > 300) {
                         val shizukuTop = getShizukuTopActivity()
                         if (shizukuTop != null && shizukuTop.appId == rightAppId) {
                             if (shizukuTop.activityId == evActivityId) {
@@ -297,12 +298,12 @@ class GkdAbService : CompositionAbService({
     }
 
     var lastUpdateSubsTime = 0L
-    onAccessibilityEvent {
+    onAccessibilityEvent {// 借助 无障碍事件 触发自动检测更新
         if (it.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {// 筛选降低判断频率
-            // 借助 无障碍事件 触发自动检测更新
             val i = storeFlow.value.updateSubsInterval
+            if (i <= 0) return@onAccessibilityEvent
             val t = System.currentTimeMillis()
-            if (i > 0 && t - lastUpdateSubsTime > i.coerceAtLeast(60 * 60_000)) {
+            if (t - lastUpdateSubsTime > i.coerceAtLeast(60 * 60_000)) {
                 lastUpdateSubsTime = t
                 checkSubsUpdate()
             }
