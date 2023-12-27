@@ -5,7 +5,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.os.Build
@@ -117,10 +116,9 @@ class GkdAbService : CompositionAbService({
         appId: String,
         activityId: String,
     ): Boolean {
-        if (appId == topActivityFlow.value.appId && activityId == topActivityFlow.value?.activityId) return true
+        if (appId == topActivityFlow.value.appId && activityId == topActivityFlow.value.activityId) return true
         val cacheKey = Pair(appId, activityId)
-        val r = activityCache.get(cacheKey)
-        return r
+        return activityCache.get(cacheKey)
     }
 
     var lastTriggerShizukuTime = 0L
