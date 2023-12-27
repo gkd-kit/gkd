@@ -170,6 +170,7 @@ val abTransform = Transform(
         sequence {
             val stack = getChildren(node).toMutableList()
             if (stack.isEmpty()) return@sequence
+            stack.reverse()
             val tempNodes = mutableListOf<AccessibilityNodeInfo>()
             do {
                 val top = stack.removeLast()
