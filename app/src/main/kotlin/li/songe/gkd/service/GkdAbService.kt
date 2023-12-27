@@ -57,6 +57,7 @@ import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.updateStorage
 import li.songe.gkd.util.updateSubscription
 import li.songe.selector.Selector
+import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -124,7 +125,7 @@ class GkdAbService : CompositionAbService({
     var lastTriggerShizukuTime = 0L
     var lastContentEventTime = 0L
     val queryThread = Dispatchers.IO.limitedParallelism(1)
-    val eventThread = Dispatchers.IO.limitedParallelism(1)
+    val eventExecutor = Executors.newSingleThreadExecutor()
     onDestroy {
         queryThread.cancel()
     }
@@ -207,7 +208,7 @@ class GkdAbService : CompositionAbService({
         val evActivityId = fixedEvent.className
 
 
-        scope.launch(eventThread) {
+        eventExecutor.execute launch@{
             val eventNode = event.source ?: return@launch
             val oldAppId = topActivityFlow.value.appId
             val rightAppId = if (oldAppId == evAppId) {
