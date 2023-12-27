@@ -570,11 +570,11 @@ data class RawSubscription(
             }
             subscription.apps.forEach { a ->
                 a.groups.findDuplicatedItem { v -> v.key }?.let { v ->
-                    error("duplicated app group: key=${v.key}")
+                    error("duplicated app group: key=${v.key}, appId=${a.id}")
                 }
                 a.groups.forEach { g ->
                     g.rules.findDuplicatedItem { v -> v.key }?.let { v ->
-                        error("duplicated app rule: key=${v.key}, groupKey=${g.key}, appId=${a.id} ")
+                        error("duplicated app rule: key=${v.key}, groupKey=${g.key}, appId=${a.id}")
                     }
                 }
             }
