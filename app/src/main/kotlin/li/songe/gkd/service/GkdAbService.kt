@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.os.Build
+import android.util.LruCache
 import android.view.Display
 import android.view.View
 import android.view.WindowManager
@@ -56,6 +57,7 @@ import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.updateStorage
 import li.songe.gkd.util.updateSubscription
 import li.songe.selector.Selector
+import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -99,27 +101,32 @@ class GkdAbService : CompositionAbService({
         return TopActivity(appId = top.packageName, activityId = top.className)
     }
 
+    val activityCache = object : LruCache<Pair<String, String>, Boolean>(128) {
+        override fun create(key: Pair<String, String>): Boolean {
+            return kotlin.runCatching {
+                packageManager.getActivityInfo(
+                    ComponentName(
+                        key.first, key.second
+                    ), 0
+                )
+            }.getOrNull() != null
+        }
+    }
+
     fun isActivity(
         appId: String,
         activityId: String,
     ): Boolean {
-        if (appId == topActivityFlow.value.appId && activityId == topActivityFlow.value.activityId) return true
-        val r = (try {
-            packageManager.getActivityInfo(
-                ComponentName(
-                    appId, activityId
-                ), 0
-            )
-        } catch (e: PackageManager.NameNotFoundException) {
-            null
-        } != null)
+        if (appId == topActivityFlow.value.appId && activityId == topActivityFlow.value?.activityId) return true
+        val cacheKey = Pair(appId, activityId)
+        val r = activityCache.get(cacheKey)
         return r
     }
 
     var lastTriggerShizukuTime = 0L
     var lastContentEventTime = 0L
     val queryThread = Dispatchers.IO.limitedParallelism(1)
-    val eventThread = Dispatchers.IO.limitedParallelism(1)
+    val eventExecutor = Executors.newSingleThreadExecutor()
     onDestroy {
         queryThread.cancel()
     }
@@ -202,7 +209,7 @@ class GkdAbService : CompositionAbService({
         val evActivityId = fixedEvent.className
 
 
-        scope.launch(eventThread) {
+        eventExecutor.execute launch@{
             val eventNode = event.source ?: return@launch
             val oldAppId = topActivityFlow.value.appId
             val rightAppId = if (oldAppId == evAppId) {
