@@ -2,6 +2,8 @@ package li.songe.gkd.service
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppRule
 import li.songe.gkd.data.ClickLog
@@ -102,25 +104,28 @@ var lastTriggerRule: ResolvedRule? = null
 var lastTriggerTime = 0L
 var appChangeTime = 0L
 
+val clickLogMutex = Mutex()
 fun insertClickLog(rule: ResolvedRule) {
     appScope.launchTry(Dispatchers.IO) {
-        val clickLog = ClickLog(
-            appId = topActivityFlow.value.appId,
-            activityId = topActivityFlow.value.activityId,
-            subsId = rule.subsItem.id,
-            subsVersion = rule.rawSubs.version,
-            groupKey = rule.group.key,
-            groupType = when (rule) {
-                is AppRule -> SubsConfig.AppGroupType
-                is GlobalRule -> SubsConfig.GlobalGroupType
-            },
-            ruleIndex = rule.index,
-            ruleKey = rule.key,
-        )
-        DbSet.clickLogDao.insert(clickLog)
-        increaseClickCount()
-        if (recordStoreFlow.value.clickCount % 100 == 0) {
-            DbSet.clickLogDao.deleteKeepLatest()
+        clickLogMutex.withLock {
+            increaseClickCount()
+            val clickLog = ClickLog(
+                appId = topActivityFlow.value.appId,
+                activityId = topActivityFlow.value.activityId,
+                subsId = rule.subsItem.id,
+                subsVersion = rule.rawSubs.version,
+                groupKey = rule.group.key,
+                groupType = when (rule) {
+                    is AppRule -> SubsConfig.AppGroupType
+                    is GlobalRule -> SubsConfig.GlobalGroupType
+                },
+                ruleIndex = rule.index,
+                ruleKey = rule.key,
+            )
+            DbSet.clickLogDao.insert(clickLog)
+            if (recordStoreFlow.value.clickCount % 100 == 0) {
+                DbSet.clickLogDao.deleteKeepLatest()
+            }
         }
     }
 }
