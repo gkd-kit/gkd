@@ -208,7 +208,11 @@ class GkdAbService : CompositionAbService({
 
 
         eventExecutor.execute launch@{
-            val eventNode = event.source ?: return@launch
+            val eventNode = if (event.className == null) {
+                null // https://github.com/gkd-kit/gkd/issues/426 event.clear 已被系统调用
+            } else {
+                event.source
+            }
             val oldAppId = topActivityFlow.value.appId
             val rightAppId = if (oldAppId == evAppId) {
                 oldAppId
