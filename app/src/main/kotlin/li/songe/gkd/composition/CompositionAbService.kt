@@ -36,7 +36,11 @@ open class CompositionAbService(
         onAccessibilityEventHooks.add(f)
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event != null && event.eventType.and(interestedEvents) != 0) {
+        if (event != null &&
+            event.packageName != null &&
+            event.className != null &&
+            event.eventType.and(interestedEvents) != 0
+        ) {
             onAccessibilityEventHooks.forEach { f -> f(event) }
         }
     }
