@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.os.Build
+import android.provider.Settings
 import android.util.LruCache
 import android.view.Display
 import android.view.View
@@ -46,6 +47,7 @@ import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.shizuku.useSafeGetTasksFc
 import li.songe.gkd.shizuku.useShizukuAliveState
+import li.songe.gkd.util.Ext.getDefaultLauncher
 import li.songe.gkd.util.VOLUME_CHANGED_ACTION
 import li.songe.gkd.util.client
 import li.songe.gkd.util.launchTry
@@ -185,7 +187,12 @@ class GkdAbService : CompositionAbService({
         }
     }
 
-    val skipAppIds = listOf("com.android.systemui")
+    val skipAppIds = mutableSetOf("com.android.systemui")
+    // 默认桌面和输入法不处理广告
+    packageManager.getDefaultLauncher()?.let { skipAppIds.add(it) }
+    Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD)?.let {
+        ComponentName.unflattenFromString(it)?.let { comp-> skipAppIds.add(comp.packageName) }
+    }
     onAccessibilityEvent { event ->
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
             skipAppIds.contains(event.packageName.toString())
