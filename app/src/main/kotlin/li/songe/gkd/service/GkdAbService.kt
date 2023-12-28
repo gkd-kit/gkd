@@ -211,7 +211,13 @@ class GkdAbService : CompositionAbService({
             val eventNode = if (event.className == null) {
                 null // https://github.com/gkd-kit/gkd/issues/426 event.clear 已被系统调用
             } else {
-                event.source
+                try {
+                    // 仍然报错 Cannot perform this action on a not sealed instance.
+                    // TODO 原因未知
+                    event.source
+                } catch (e: Exception) {
+                    null
+                }
             }
             val oldAppId = topActivityFlow.value.appId
             val rightAppId = if (oldAppId == evAppId) {
