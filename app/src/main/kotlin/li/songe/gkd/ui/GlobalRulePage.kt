@@ -281,6 +281,11 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                                         globalGroups = rawSubs.globalGroups.filter { g -> g.key != menuGroupRaw.key }
                                     )
                                 )
+                                val subsConfig =
+                                    subsConfigs.find { it.groupKey == menuGroupRaw.key }
+                                if (subsConfig != null) {
+                                    DbSet.subsConfigDao.delete(subsConfig)
+                                }
                                 DbSet.subsItemDao.updateMtime(rawSubs.id)
                             }
                         }
