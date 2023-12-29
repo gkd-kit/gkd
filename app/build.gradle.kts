@@ -117,9 +117,10 @@ android {
     ksp {
         arg("room.schemaLocation", "$projectDir/schemas")
         arg("room.incremental", "true")
+        arg("room.generateKotlin", "true")
     }
     sourceSets.configureEach {
-        kotlin.srcDir("$buildDir/generated/ksp/$name/kotlin/")
+        kotlin.srcDir("${layout.buildDirectory.asFile.get()}/generated/ksp/$name/kotlin/")
     }
 }
 
