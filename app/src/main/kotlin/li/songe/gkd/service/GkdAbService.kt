@@ -79,7 +79,7 @@ class GkdAbService : CompositionAbService({
     onAccessibilityEvent { // 借助无障碍轮询校验 shizuku 权限
         if (storeFlow.value.enableShizuku && it.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {// 筛选降低判断频率
             val t = System.currentTimeMillis()
-            if (t - lastCheckShizukuTime > 5000L) {
+            if (t - lastCheckShizukuTime > 30_000L) {
                 lastCheckShizukuTime = t
                 scope.launchTry(Dispatchers.IO) {
                     shizukuGrantFlow.value = if (shizukuAliveFlow.value) {
