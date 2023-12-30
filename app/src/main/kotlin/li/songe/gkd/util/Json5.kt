@@ -62,23 +62,30 @@ fun convertJsonElementToJson5(element: JsonElement, indent: Int = 2): String {
         }
 
         is JsonObject -> {
-            // Handle JSON objects
-            val entries = element.entries.joinToString(",\n") { (key, value) ->
-                // If key is a valid identifier, no quotes are needed
-                if (key.matches(json5IdentifierReg)) {
-                    "$key: ${convertJsonElementToJson5(value, indent)}"
-                } else {
-                    "${escapeString(key)}: ${convertJsonElementToJson5(value, indent)}"
-                }
-            }.lineSequence().map { l -> spaces + l }.joinToString("\n")
-            "{\n$entries\n}"
+            if (element.isEmpty()) {
+                "{}"
+            } else {
+                val entries = element.entries.joinToString(",\n") { (key, value) ->
+                    // If key is a valid identifier, no quotes are needed
+                    if (key.matches(json5IdentifierReg)) {
+                        "$key: ${convertJsonElementToJson5(value, indent)}"
+                    } else {
+                        "${escapeString(key)}: ${convertJsonElementToJson5(value, indent)}"
+                    }
+                }.lineSequence().map { l -> spaces + l }.joinToString("\n")
+                "{\n$entries\n}"
+            }
         }
 
         is JsonArray -> {
-            val elements =
-                element.joinToString(",\n") { convertJsonElementToJson5(it, indent) }
-                    .lineSequence().map { l -> spaces + l }.joinToString("\n")
-            "[\n$elements\n]"
+            if (element.isEmpty()) {
+                "[]"
+            } else {
+                val elements =
+                    element.joinToString(",\n") { convertJsonElementToJson5(it, indent) }
+                        .lineSequence().map { l -> spaces + l }.joinToString("\n")
+                "[\n$elements\n]"
+            }
         }
     }
 }
