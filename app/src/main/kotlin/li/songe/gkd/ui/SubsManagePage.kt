@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
@@ -62,7 +63,6 @@ import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.util.DEFAULT_SUBS_UPDATE_URL
 import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.formatTimeAgo
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
@@ -77,7 +77,7 @@ import org.burnoutcrew.reorderable.rememberReorderableLazyListState
 import org.burnoutcrew.reorderable.reorderable
 
 val subsNav = BottomNavItem(
-    label = "订阅", icon = SafeR.ic_link, route = "subscription"
+    label = "订阅", icon = Icons.Default.FormatListBulleted
 )
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
