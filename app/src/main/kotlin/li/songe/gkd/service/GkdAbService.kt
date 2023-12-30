@@ -14,6 +14,7 @@ import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.core.app.NotificationManagerCompat
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.blankj.utilcode.util.ToastUtils
@@ -449,6 +450,19 @@ class GkdAbService : CompositionAbService({
     isRunning.value = true
     onDestroy {
         isRunning.value = false
+    }
+
+    // 在[系统重启]/[被其它高权限应用重启]时自动打开通知栏状态服务
+    if (storeFlow.value.enableStatusService &&
+        NotificationManagerCompat.from(context).areNotificationsEnabled() &&
+        !ManageService.isRunning.value
+    ) {
+        ManageService.start(context)
+    }
+    onDestroy {
+        if (!storeFlow.value.enableStatusService && ManageService.isRunning.value) {
+            ManageService.stop()
+        }
     }
 }) {
 

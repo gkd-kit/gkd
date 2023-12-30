@@ -91,14 +91,24 @@ fun ControlPage() {
         TextSwitch(
             name = "常驻通知栏",
             desc = "在通知栏显示服务运行状态,避免被某些系统回收",
-            checked = manageRunning,
+            checked = manageRunning && store.enableStatusService,
             onCheckedChange = {
                 if (it) {
                     if (!checkOrRequestNotifPermission(context)) {
                         return@TextSwitch
                     }
+                    updateStorage(
+                        storeFlow, store.copy(
+                            enableStatusService = true
+                        )
+                    )
                     ManageService.start(context)
                 } else {
+                    updateStorage(
+                        storeFlow, store.copy(
+                            enableStatusService = false
+                        )
+                    )
                     ManageService.stop(context)
                 }
             })
