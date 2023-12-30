@@ -45,6 +45,7 @@ fun <T> updateStorage(stateFlow: StateFlow<T>, newState: T) {
 @Serializable
 data class Store(
     val enableService: Boolean = true,
+    val enableStatusService: Boolean = true,
     val excludeFromRecents: Boolean = false,
     val captureScreenshot: Boolean = false,
     val httpServerPort: Int = 8888,
