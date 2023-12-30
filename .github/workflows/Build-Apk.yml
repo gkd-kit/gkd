@@ -35,3 +35,13 @@ jobs:
         with:
           name: outputs
           path: app/build/outputs
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: release
+          path: app/build/outputs/apk/release
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: debug
+          path: app/build/outputs/apk/debug
