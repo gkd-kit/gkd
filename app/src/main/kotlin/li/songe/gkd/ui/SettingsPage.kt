@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
@@ -54,7 +55,6 @@ import li.songe.gkd.ui.destinations.AboutPageDestination
 import li.songe.gkd.ui.destinations.DebugPageDestination
 import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.authActionFlow
 import li.songe.gkd.util.canDrawOverlaysAuthAction
 import li.songe.gkd.util.checkUpdate
@@ -67,11 +67,12 @@ import li.songe.gkd.util.updateStorage
 import java.io.File
 
 val settingsNav = BottomNavItem(
-    label = "设置", icon = SafeR.ic_cog, route = "settings"
+    label = "设置", icon = Icons.Default.Settings
 )
 
 @Composable
 fun SettingsPage() {
+    Icons.Default.Settings
     val context = LocalContext.current as MainActivity
     val navController = LocalNavController.current
     val store by storeFlow.collectAsState()

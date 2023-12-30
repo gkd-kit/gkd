@@ -72,6 +72,12 @@ dependencyResolutionManagement {
             library("compose.preview", "androidx.compose.ui:ui-tooling-preview:$composeVersion")
             library("compose.tooling", "androidx.compose.ui:ui-tooling:$composeVersion")
             library("compose.junit4", "androidx.compose.ui:ui-test-junit4:$composeVersion")
+            // https://developer.android.com/reference/kotlin/androidx/compose/material/icons/package-summary
+            // https://fonts.google.com/icons?icon.platform=android
+            library(
+                "compose.icons",
+                "androidx.compose.material:material-icons-extended:$composeVersion"
+            )
             library("compose.material3", "androidx.compose.material3:material3:1.1.2")
             library("compose.activity", "androidx.activity:activity-compose:1.8.2")
 
@@ -140,16 +146,19 @@ dependencyResolutionManagement {
             library("ktor.server.cio", "io.ktor:ktor-server-cio:$ktorVersion")
             library("ktor.server.cors", "io.ktor:ktor-server-cors:$ktorVersion")
             library(
-                "ktor.server.content.negotiation", "io.ktor:ktor-server-content-negotiation:$ktorVersion"
+                "ktor.server.content.negotiation",
+                "io.ktor:ktor-server-content-negotiation:$ktorVersion"
             )
             library("ktor.client.core", "io.ktor:ktor-client-core:$ktorVersion")
             library("ktor.client.okhttp", "io.ktor:ktor-client-okhttp:$ktorVersion")
 //            https://ktor.io/docs/http-client-engines.html#android android 平台使用 android 或者 okhttp 都行
             library(
-                "ktor.client.content.negotiation", "io.ktor:ktor-client-content-negotiation:$ktorVersion"
+                "ktor.client.content.negotiation",
+                "io.ktor:ktor-client-content-negotiation:$ktorVersion"
             )
             library(
-                "ktor.serialization.kotlinx.json", "io.ktor:ktor-serialization-kotlinx-json:$ktorVersion"
+                "ktor.serialization.kotlinx.json",
+                "io.ktor:ktor-serialization-kotlinx-json:$ktorVersion"
             )
 
             library(

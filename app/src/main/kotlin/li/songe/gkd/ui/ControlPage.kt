@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
@@ -34,7 +35,6 @@ import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.ClickLogPageDestination
 import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.checkOrRequestNotifPermission
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
@@ -42,7 +42,7 @@ import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.updateStorage
 import li.songe.gkd.util.usePollState
 
-val controlNav = BottomNavItem(label = "主页", icon = SafeR.ic_home, route = "settings")
+val controlNav = BottomNavItem(label = "主页", icon = Icons.Default.Home)
 
 @Composable
 fun ControlPage() {
