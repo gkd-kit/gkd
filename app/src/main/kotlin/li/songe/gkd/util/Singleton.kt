@@ -14,6 +14,8 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import li.songe.gkd.app
+import okhttp3.OkHttpClient
+import java.time.Duration
 
 
 val kv by lazy { MMKV.mmkvWithID("kv")!! }
@@ -48,14 +50,22 @@ val client by lazy {
 }
 
 val imageLoader by lazy {
-    ImageLoader.Builder(app).components {
-        if (Build.VERSION.SDK_INT >= 28) {
-            add(ImageDecoderDecoder.Factory())
-        } else {
-            add(GifDecoder.Factory())
-        }
-    }.diskCache {
-        DiskCache.Builder().directory(imageCacheDir).build()
-    }.build()
+    ImageLoader.Builder(app)
+        .okHttpClient(
+            OkHttpClient.Builder()
+                .connectTimeout(Duration.ofSeconds(30))
+                .readTimeout(Duration.ofSeconds(30))
+                .writeTimeout(Duration.ofSeconds(30))
+                .build()
+        )
+        .components {
+            if (Build.VERSION.SDK_INT >= 28) {
+                add(ImageDecoderDecoder.Factory())
+            } else {
+                add(GifDecoder.Factory())
+            }
+        }.diskCache {
+            DiskCache.Builder().directory(imageCacheDir).build()
+        }.build()
 }
 

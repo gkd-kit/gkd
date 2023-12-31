@@ -31,15 +31,17 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.imageLoader
 import li.songe.gkd.util.subsIdToRawFlow
 
 
 @RootNavGraph
-@Destination
+@Destination(style = ProfileTransitions::class)
 @Composable
 fun GroupItemPage(subsInt: Long, groupKey: Int, appId: String? = null) {
+    val context = LocalContext.current
     val navController = LocalNavController.current
     val subsIdToRaw by subsIdToRawFlow.collectAsState()
     val rawSubs = subsIdToRaw[subsInt]
@@ -72,8 +74,9 @@ fun GroupItemPage(subsInt: Long, groupKey: Int, appId: String? = null) {
                     is RawSubscription.RawAppGroup -> {
                         Text(
                             text = ((rawSubs?.name
-                                ?: subsInt.toString()) + (appInfoCache[appId]?.name ?: rawApp?.name
-                            ?: appId) + "/" + (group.name))
+                                ?: subsInt.toString()) + "/" + (appInfoCache[appId]?.name
+                                ?: rawApp?.name
+                                ?: appId) + "/" + (group.name))
                         )
                     }
 
@@ -103,7 +106,7 @@ fun GroupItemPage(subsInt: Long, groupKey: Int, appId: String? = null) {
                 val url = allExampleUrls.getOrNull(p)
                 if (url != null) {
                     SubcomposeAsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current).data(url)
+                        model = ImageRequest.Builder(context).data(url)
                             .crossfade(DefaultDurationMillis).build(),
                         contentDescription = null,
                         modifier = Modifier.fillMaxWidth(),
