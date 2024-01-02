@@ -104,7 +104,8 @@ private fun AccessibilityNodeInfo.getTempRect(): Rect {
 
 
 // https://github.com/gkd-kit/gkd/issues/115
-private const val MAX_CHILD_SIZE = 256
+// 限制节点遍历的数量避免内存溢出
+private const val MAX_CHILD_SIZE = 512
 private const val MAX_DESCENDANTS_SIZE = 4096
 
 val getChildren: (AccessibilityNodeInfo) -> Sequence<AccessibilityNodeInfo> = { node ->
