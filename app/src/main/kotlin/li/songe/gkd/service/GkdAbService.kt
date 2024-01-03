@@ -178,7 +178,7 @@ class GkdAbService : CompositionAbService({
                         insertClickLog(rule)
                         LogUtils.d(
                             rule.statusText(),
-                            AttrInfo.info2data(nodeVal, 0, 0),
+                            AttrInfo.info2data(target, 0, 0),
                             actionResult
                         )
                     }
