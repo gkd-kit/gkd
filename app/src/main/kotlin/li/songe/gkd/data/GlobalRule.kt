@@ -1,6 +1,7 @@
 package li.songe.gkd.data
 
 import li.songe.gkd.service.TopActivity
+import li.songe.gkd.service.launcherAppId
 
 data class GlobalApp(
     val id: String,
@@ -24,6 +25,7 @@ class GlobalRule(
 ) {
 
     val matchAnyApp = rule.matchAnyApp ?: group.matchAnyApp ?: true
+    val matchLauncher = rule.matchLauncher ?: group.matchLauncher ?: false
     val apps = mutableMapOf<String, GlobalApp>().apply {
         (rule.apps ?: group.apps ?: emptyList()).forEach { a ->
             this[a.id] = GlobalApp(
@@ -39,6 +41,7 @@ class GlobalRule(
 
     private val excludeAppIds = apps.filter { e -> !e.value.enable }.keys
     override fun matchActivity(topActivity: TopActivity): Boolean {
+        if (!matchLauncher && topActivity.appId == launcherAppId) return false
         if (!super.matchActivity(topActivity)) return false
         if (excludeAppIds.contains(topActivity.appId)) {
             return false

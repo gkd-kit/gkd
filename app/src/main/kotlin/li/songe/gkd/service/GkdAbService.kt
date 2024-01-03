@@ -64,6 +64,7 @@ import kotlin.coroutines.suspendCoroutine
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class GkdAbService : CompositionAbService({
     useLifeCycleLog()
+    updateLauncherAppId()
 
     val context = this as GkdAbService
     val scope = useScope()

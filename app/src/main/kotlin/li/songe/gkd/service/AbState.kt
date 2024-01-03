@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppRule
 import li.songe.gkd.data.ClickLog
@@ -12,6 +13,7 @@ import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.AllRules
+import li.songe.gkd.util.Ext.getDefaultLauncherAppId
 import li.songe.gkd.util.allRulesFlow
 import li.songe.gkd.util.increaseClickCount
 import li.songe.gkd.util.launchTry
@@ -103,6 +105,10 @@ fun getCurrentRules(): ActivityRule {
 var lastTriggerRule: ResolvedRule? = null
 var lastTriggerTime = 0L
 var appChangeTime = 0L
+var launcherAppId = ""
+fun updateLauncherAppId() {
+    launcherAppId = app.packageManager.getDefaultLauncherAppId() ?: ""
+}
 
 val clickLogMutex = Mutex()
 fun insertClickLog(rule: ResolvedRule) {

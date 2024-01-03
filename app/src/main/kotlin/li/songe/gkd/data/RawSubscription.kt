@@ -129,6 +129,7 @@ data class RawSubscription(
 
     interface RawGlobalRuleProps {
         val matchAnyApp: Boolean?
+        val matchLauncher: Boolean?
         val apps: List<RawGlobalApp>?
     }
 
@@ -160,6 +161,7 @@ data class RawSubscription(
         override val snapshotUrls: List<String>?,
         override val exampleUrls: List<String>?,
         override val matchAnyApp: Boolean?,
+        override val matchLauncher: Boolean?,
         override val apps: List<RawGlobalApp>?,
         override val rules: List<RawGlobalRule>,
     ) : RawGroupProps, RawGlobalRuleProps {
@@ -211,6 +213,7 @@ data class RawSubscription(
         override val matches: List<String>,
         override val excludeMatches: List<String>?,
         override val matchAnyApp: Boolean?,
+        override val matchLauncher: Boolean?,
         override val apps: List<RawGlobalApp>?
     ) : RawRuleProps, RawGlobalRuleProps
 
@@ -472,6 +475,7 @@ data class RawSubscription(
                 actionMaximumKey = getInt(jsonObject, "actionMaximumKey"),
                 actionCdKey = getInt(jsonObject, "actionCdKey"),
                 matchAnyApp = getBoolean(jsonObject, "matchAnyApp"),
+                matchLauncher = getBoolean(jsonObject, "matchLauncher"),
                 apps = jsonObject["apps"]?.jsonArray?.mapIndexed { index, jsonElement ->
                     jsonToGlobalApp(
                         jsonElement.jsonObject, index
@@ -502,6 +506,7 @@ data class RawSubscription(
                 actionMaximumKey = getInt(jsonObject, "actionMaximumKey"),
                 actionCdKey = getInt(jsonObject, "actionCdKey"),
                 matchAnyApp = getBoolean(jsonObject, "matchAnyApp"),
+                matchLauncher = getBoolean(jsonObject, "matchLauncher"),
                 apps = jsonObject["apps"]?.jsonArray?.mapIndexed { index, jsonElement ->
                     jsonToGlobalApp(
                         jsonElement.jsonObject, index
