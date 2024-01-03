@@ -53,8 +53,10 @@ import com.blankj.utilcode.util.ToastUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
+import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
+import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.getDialogResult
 import li.songe.gkd.ui.destinations.GroupItemPageDestination
@@ -85,6 +87,9 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
         mutableStateOf<RawSubscription.RawGlobalGroup?>(null)
     }
     val (editGroupRaw, setEditGroupRaw) = remember {
+        mutableStateOf<RawSubscription.RawGlobalGroup?>(null)
+    }
+    val (excludeGroupRaw, setExcludeGroupRaw) = remember {
         mutableStateOf<RawSubscription.RawGlobalGroup?>(null)
     }
     val (showGroupItem, setShowGroupItem) = remember {
@@ -165,22 +170,21 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                         }
                         Spacer(modifier = Modifier.width(10.dp))
 
-                        if (editable) {
-                            IconButton(onClick = {
-                                setMenuGroupRaw(group)
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = null,
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
+                        IconButton(onClick = {
+                            setMenuGroupRaw(group)
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = null,
+                            )
                         }
+                        Spacer(modifier = Modifier.width(10.dp))
 
                         val groupEnable = subsConfigs.find { c -> c.groupKey == group.key }?.enable
                             ?: group.enable ?: true
                         val subsConfig = subsConfigs.find { it.groupKey == group.key }
-                        Switch(checked = groupEnable, modifier = Modifier,
+                        Switch(
+                            checked = groupEnable, modifier = Modifier,
                             onCheckedChange = vm.viewModelScope.launchAsFn { enable ->
                                 val newItem = (subsConfig?.copy(enable = enable) ?: SubsConfig(
                                     type = SubsConfig.GlobalGroupType,
@@ -264,35 +268,44 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Column {
-                    Text(text = "编辑", modifier = Modifier
+                    Text(text = "编辑禁用", modifier = Modifier
                         .clickable {
-                            setEditGroupRaw(menuGroupRaw)
+                            setExcludeGroupRaw(menuGroupRaw)
                             setMenuGroupRaw(null)
                         }
                         .padding(16.dp)
                         .fillMaxWidth())
-                    Text(text = "删除", modifier = Modifier
-                        .clickable {
-                            setMenuGroupRaw(null)
-                            vm.viewModelScope.launchTry {
-                                if (!getDialogResult("是否删除${menuGroupRaw.name}")) return@launchTry
-                                updateSubscription(
-                                    rawSubs.copy(
-                                        globalGroups = rawSubs.globalGroups.filter { g -> g.key != menuGroupRaw.key }
-                                    )
-                                )
-                                val subsConfig =
-                                    subsConfigs.find { it.groupKey == menuGroupRaw.key }
-                                if (subsConfig != null) {
-                                    DbSet.subsConfigDao.delete(subsConfig)
-                                }
-                                DbSet.subsItemDao.updateMtime(rawSubs.id)
+                    if (editable) {
+                        Text(text = "编辑规则组", modifier = Modifier
+                            .clickable {
+                                setEditGroupRaw(menuGroupRaw)
+                                setMenuGroupRaw(null)
                             }
-                        }
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.error
-                    )
+                            .padding(16.dp)
+                            .fillMaxWidth())
+                        Text(text = "删除规则组", modifier = Modifier
+                            .clickable {
+                                setMenuGroupRaw(null)
+                                vm.viewModelScope.launchTry {
+                                    if (!getDialogResult("是否删除${menuGroupRaw.name}")) return@launchTry
+                                    updateSubscription(
+                                        rawSubs.copy(
+                                            globalGroups = rawSubs.globalGroups.filter { g -> g.key != menuGroupRaw.key }
+                                        )
+                                    )
+                                    val subsConfig =
+                                        subsConfigs.find { it.groupKey == menuGroupRaw.key }
+                                    if (subsConfig != null) {
+                                        DbSet.subsConfigDao.delete(subsConfig)
+                                    }
+                                    DbSet.subsItemDao.updateMtime(rawSubs.id)
+                                }
+                            }
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         }
@@ -359,9 +372,63 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
         )
     }
 
+    if (excludeGroupRaw != null && rawSubs != null) {
+        var source by remember {
+            mutableStateOf(
+                ExcludeData.parse(subsConfigs.find { s -> s.groupKey == excludeGroupRaw.key }?.exclude)
+                    .stringify()
+            )
+        }
+        val oldSource = remember { source }
+        AlertDialog(
+            title = { Text(text = "编辑禁用项") },
+            text = {
+                OutlinedTextField(
+                    value = source,
+                    onValueChange = { source = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = {
+                        Text(
+                            fontSize = 12.sp,
+                            text = "请填入需要禁用的 appId/activityId\n以换行或英文逗号分割,示例:\ntv.danmaku.bili 表示在应用内禁用规则\ntv.danmaku.bili/tv.danmaku.bili.MainActivityV2 表示在应用内某页面禁用规则"
+                        )
+                    },
+                    maxLines = 10,
+                )
+            },
+            onDismissRequest = { setExcludeGroupRaw(null) },
+            dismissButton = {
+                TextButton(onClick = { setExcludeGroupRaw(null) }) {
+                    Text(text = "取消")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (oldSource == source) {
+                        ToastUtils.showShort("禁用项无变动")
+                        return@TextButton
+                    }
+                    setExcludeGroupRaw(null)
+                    val newSubsConfig =
+                        (subsConfigs.find { s -> s.groupKey == excludeGroupRaw.key } ?: SubsConfig(
+                            type = SubsConfig.GlobalGroupType,
+                            subsItemId = subsItemId,
+                            groupKey = excludeGroupRaw.key,
+                        )).copy(exclude = ExcludeData.parse(source).stringify())
+                    vm.viewModelScope.launchTry(Dispatchers.IO) {
+                        DbSet.subsConfigDao.insert(newSubsConfig)
+                        ToastUtils.showShort("更新成功")
+                    }
+                }) {
+                    Text(text = "更新")
+                }
+            },
+        )
+    }
 
     if (showGroupItem != null) {
-        AlertDialog(modifier = Modifier.defaultMinSize(300.dp),
+        AlertDialog(
+            modifier = Modifier.defaultMinSize(300.dp),
             onDismissRequest = { setShowGroupItem(null) },
             title = {
                 Text(text = showGroupItem.name)

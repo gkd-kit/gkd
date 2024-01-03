@@ -13,6 +13,7 @@ sealed class ResolvedRule(
     val group: RawSubscription.RawGroupProps,
     val rawSubs: RawSubscription,
     val subsItem: SubsItem,
+    val exclude: String,
 ) {
     val key = rule.key
     val index = group.rules.indexOf(rule)
@@ -150,8 +151,21 @@ sealed class ResolvedRule(
         return "id:${subsItem.id}, v:${rawSubs.version}, type:${type}, gKey=${group.key}, gName:${group.name}, index:${index}, key:${key}, status:${status.name}"
     }
 
+    val excludeData = ExcludeData.parse(exclude)
+
     abstract val type: String
-    abstract fun matchActivity(topActivity: TopActivity?): Boolean
+    open fun matchActivity(topActivity: TopActivity): Boolean {
+        if (excludeData.appIds.contains(topActivity.appId)) {
+            return false
+        }
+        topActivity.activityId ?: return true
+        excludeData.activityMap[topActivity.appId]?.let { activityIds ->
+            if (activityIds.any { a -> topActivity.activityId.startsWith(a) }) {
+                return false
+            }
+        }
+        return true
+    }
 
 }
 
