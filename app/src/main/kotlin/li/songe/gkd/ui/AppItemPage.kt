@@ -54,8 +54,10 @@ import com.blankj.utilcode.util.ToastUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
+import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
+import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.GroupItemPageDestination
 import li.songe.gkd.util.LocalNavController
@@ -105,6 +107,9 @@ fun AppItemPage(
         mutableStateOf<RawSubscription.RawAppGroup?>(null)
     }
     val (editGroupRaw, setEditGroupRaw) = remember {
+        mutableStateOf<RawSubscription.RawAppGroup?>(null)
+    }
+    val (excludeGroupRaw, setExcludeGroupRaw) = remember {
         mutableStateOf<RawSubscription.RawAppGroup?>(null)
     }
 
@@ -191,17 +196,15 @@ fun AppItemPage(
                         }
                         Spacer(modifier = Modifier.width(10.dp))
 
-                        if (editable) {
-                            IconButton(onClick = {
-                                setMenuGroupRaw(group)
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = "more",
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
+                        IconButton(onClick = {
+                            setMenuGroupRaw(group)
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "more",
+                            )
                         }
+                        Spacer(modifier = Modifier.width(10.dp))
 
                         val groupEnable = getGroupRawEnable(
                             group,
@@ -210,7 +213,8 @@ fun AppItemPage(
                             categoryConfigs
                         )
                         val subsConfig = subsConfigs.find { it.groupKey == group.key }
-                        Switch(checked = groupEnable, modifier = Modifier,
+                        Switch(
+                            checked = groupEnable, modifier = Modifier,
                             onCheckedChange = scope.launchAsFn { enable ->
                                 val newItem = (subsConfig?.copy(enable = enable) ?: SubsConfig(
                                     type = SubsConfig.AppGroupType,
@@ -287,37 +291,48 @@ fun AppItemPage(
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Column {
-                    Text(text = "编辑", modifier = Modifier
+                    Text(text = "编辑禁用", modifier = Modifier
                         .clickable {
-                            setEditGroupRaw(menuGroupRaw)
+                            setExcludeGroupRaw(menuGroupRaw)
                             setMenuGroupRaw(null)
                         }
                         .padding(16.dp)
                         .fillMaxWidth())
-                    Text(text = "删除", modifier = Modifier
-                        .clickable {
-                            vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                subsRaw ?: return@launchTry
-                                val newSubsRaw = subsRaw.copy(
-                                    apps = subsRaw.apps
-                                        .toMutableList()
-                                        .apply {
-                                            set(
-                                                indexOfFirst { a -> a.id == appRawVal.id },
-                                                appRawVal.copy(groups = appRawVal.groups.filter { g -> g.key != menuGroupRaw.key })
-                                            )
-                                        })
-                                updateSubscription(newSubsRaw)
-                                DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
-                                DbSet.subsConfigDao.delete(
-                                    subsItemVal.id, appRawVal.id, menuGroupRaw.key
-                                )
-                                ToastUtils.showShort("删除成功")
+                    if (editable) {
+                        Text(text = "编辑规则组", modifier = Modifier
+                            .clickable {
+                                setEditGroupRaw(menuGroupRaw)
                                 setMenuGroupRaw(null)
                             }
-                        }
-                        .padding(16.dp)
-                        .fillMaxWidth(), color = MaterialTheme.colorScheme.error)
+                            .padding(16.dp)
+                            .fillMaxWidth())
+                        Text(text = "删除规则组", modifier = Modifier
+                            .clickable {
+                                vm.viewModelScope.launchTry(Dispatchers.IO) {
+                                    subsRaw ?: return@launchTry
+                                    val newSubsRaw = subsRaw.copy(
+                                        apps = subsRaw.apps
+                                            .toMutableList()
+                                            .apply {
+                                                set(
+                                                    indexOfFirst { a -> a.id == appRawVal.id },
+                                                    appRawVal.copy(groups = appRawVal.groups.filter { g -> g.key != menuGroupRaw.key })
+                                                )
+                                            })
+                                    updateSubscription(newSubsRaw)
+                                    DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
+                                    DbSet.subsConfigDao.delete(
+                                        subsItemVal.id, appRawVal.id, menuGroupRaw.key
+                                    )
+                                    ToastUtils.showShort("删除成功")
+                                    setMenuGroupRaw(null)
+                                }
+                            }
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         }
@@ -384,6 +399,61 @@ fun AppItemPage(
                         ToastUtils.showShort("更新成功")
                     }
                 }, enabled = source.isNotEmpty()) {
+                    Text(text = "更新")
+                }
+            },
+        )
+    }
+
+    if (excludeGroupRaw != null && appRawVal != null && subsItemVal != null) {
+        var source by remember {
+            mutableStateOf(
+                ExcludeData.parse(subsConfigs.find { s -> s.groupKey == excludeGroupRaw.key }?.exclude)
+                    .stringify(appId)
+            )
+        }
+        val oldSource = remember { source }
+        AlertDialog(
+            title = { Text(text = "编辑禁用项") },
+            text = {
+                OutlinedTextField(
+                    value = source,
+                    onValueChange = { source = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = {
+                        Text(
+                            fontSize = 12.sp,
+                            text = "请填入需要禁用的 activityId\n以换行或英文逗号分割"
+                        )
+                    },
+                    maxLines = 10,
+                )
+            },
+            onDismissRequest = { setExcludeGroupRaw(null) },
+            dismissButton = {
+                TextButton(onClick = { setExcludeGroupRaw(null) }) {
+                    Text(text = "取消")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (oldSource == source) {
+                        ToastUtils.showShort("禁用项无变动")
+                        return@TextButton
+                    }
+                    setExcludeGroupRaw(null)
+                    val newSubsConfig =
+                        (subsConfigs.find { s -> s.groupKey == excludeGroupRaw.key } ?: SubsConfig(
+                            type = SubsConfig.AppGroupType,
+                            subsItemId = subsItemId,
+                            appId = appId,
+                            groupKey = excludeGroupRaw.key,
+                        )).copy(exclude = ExcludeData.parse(appId, source).stringify())
+                    vm.viewModelScope.launchTry(Dispatchers.IO) {
+                        DbSet.subsConfigDao.insert(newSubsConfig)
+                        ToastUtils.showShort("更新成功")
+                    }
+                }) {
                     Text(text = "更新")
                 }
             },

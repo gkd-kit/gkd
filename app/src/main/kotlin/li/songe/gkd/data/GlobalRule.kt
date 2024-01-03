@@ -14,11 +14,13 @@ class GlobalRule(
     rule: RawSubscription.RawGlobalRule,
     group: RawSubscription.RawGlobalGroup,
     rawSubs: RawSubscription,
+    exclude: String,
 ) : ResolvedRule(
     rule = rule,
     group = group,
     subsItem = subsItem,
     rawSubs = rawSubs,
+    exclude = exclude,
 ) {
 
     val matchAnyApp = rule.matchAnyApp ?: group.matchAnyApp ?: true
@@ -36,8 +38,8 @@ class GlobalRule(
     override val type = "global"
 
     private val excludeAppIds = apps.filter { e -> !e.value.enable }.keys
-    override fun matchActivity(topActivity: TopActivity?): Boolean {
-        topActivity ?: return false
+    override fun matchActivity(topActivity: TopActivity): Boolean {
+        if (!super.matchActivity(topActivity)) return false
         if (excludeAppIds.contains(topActivity.appId)) {
             return false
         }

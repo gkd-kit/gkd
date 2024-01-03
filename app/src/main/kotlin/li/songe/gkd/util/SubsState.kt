@@ -132,6 +132,8 @@ val allRulesFlow by lazy {
                         group = groupRaw,
                         rawSubs = rawSubs,
                         subsItem = subsItem,
+                        exclude = subGlobalSubsConfigs.find { c -> c.groupKey == groupRaw.key }?.exclude
+                            ?: ""
                     )
                 }
                 subRules.forEach { r ->
@@ -165,6 +167,8 @@ val allRulesFlow by lazy {
                             app = appRaw,
                             rawSubs = rawSubs,
                             subsItem = subsItem,
+                            exclude = appGroupConfigs.find { c -> c.groupKey == groupRaw.key }?.exclude
+                                ?: ""
                         )
                     }
                     subRules.forEach { r ->
