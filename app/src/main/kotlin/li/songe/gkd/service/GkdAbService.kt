@@ -126,9 +126,11 @@ class GkdAbService : CompositionAbService({
     var lastTriggerShizukuTime = 0L
     var lastContentEventTime = 0L
     val queryThread = Dispatchers.IO.limitedParallelism(1)
+    val actionThread = Dispatchers.IO.limitedParallelism(1)
     val eventExecutor = Executors.newSingleThreadExecutor()
     onDestroy {
         queryThread.cancel()
+        actionThread.cancel()
     }
     var queryTaskJob: Job? = null
     fun newQueryTask(eventNode: AccessibilityNodeInfo? = null) {
@@ -161,11 +163,17 @@ class GkdAbService : CompositionAbService({
                     }
                     continue
                 }
-                scope.launch(queryThread) {
+                scope.launch(actionThread) {
                     if (rule.status != RuleStatus.StatusOk) return@launch
                     val actionResult = rule.performAction(context, target)
                     if (actionResult.result) {
                         rule.trigger()
+                        scope.launch(actionThread) {
+                            delay(300)
+                            if (queryTaskJob?.isActive != true) {
+                                newQueryTask()
+                            }
+                        }
                         toastClickTip()
                         insertClickLog(rule)
                         LogUtils.d(
@@ -178,7 +186,7 @@ class GkdAbService : CompositionAbService({
             }
             val t = System.currentTimeMillis()
             if (t - lastTriggerTime < 10_000 || t - appChangeTime < 5_000) {
-                scope.launch(queryThread) {
+                scope.launch(actionThread) {// 在任意规则触发10s内或APP切换5s内使用主动探测查询
                     delay(300)
                     if (queryTaskJob?.isActive != true) {
                         newQueryTask()
