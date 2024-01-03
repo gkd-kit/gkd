@@ -166,14 +166,6 @@ class GkdAbService : CompositionAbService({
                     val actionResult = rule.performAction(context, target)
                     if (actionResult.result) {
                         rule.trigger()
-                        if (rule.hasNext) {
-                            scope.launch(queryThread) {
-                                delay(500L)
-                                if (queryTaskJob?.isActive != true) {
-                                    newQueryTask()
-                                }
-                            }
-                        }
                         toastClickTip()
                         insertClickLog(rule)
                         LogUtils.d(
@@ -181,6 +173,15 @@ class GkdAbService : CompositionAbService({
                             AttrInfo.info2data(nodeVal, 0, 0),
                             actionResult
                         )
+                    }
+                }
+            }
+            val t = System.currentTimeMillis()
+            if (t - lastTriggerTime < 10_000 || t - appChangeTime < 5_000) {
+                scope.launch(queryThread) {
+                    delay(300)
+                    if (queryTaskJob?.isActive != true) {
+                        newQueryTask()
                     }
                 }
             }
