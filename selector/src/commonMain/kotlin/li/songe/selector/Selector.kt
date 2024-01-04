@@ -57,7 +57,7 @@ class Selector internal constructor(private val propertyWrapper: PropertyWrapper
     }
 
     val qfTextValue = propertyWrapper.propertySegment.expressions.firstOrNull().let { e ->
-        if (e is BinaryExpression && e.name == "id" && (e.operator == CompareOperator.Equal || e.operator == CompareOperator.Start || e.operator == CompareOperator.Include || e.operator == CompareOperator.End) && e.value is String) {
+        if (e is BinaryExpression && e.name == "text" && (e.operator == CompareOperator.Equal || e.operator == CompareOperator.Start || e.operator == CompareOperator.Include || e.operator == CompareOperator.End) && e.value is String) {
             e.value
         } else {
             null
