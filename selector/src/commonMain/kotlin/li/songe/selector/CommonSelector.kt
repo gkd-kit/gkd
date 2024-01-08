@@ -11,6 +11,7 @@ class CommonSelector private constructor(
 ) {
     val tracks = selector.tracks
     val trackIndex = selector.trackIndex
+    val connectKeys = selector.connectKeys
 
     fun <T : Any> match(node: T, transform: CommonTransform<T>): T? {
         return selector.match(node, transform.transform)
