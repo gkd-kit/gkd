@@ -4,6 +4,7 @@
 
 ## 安装
 
+- [gkd.li](https://gkd.li/guide/)
 - [releases](https://github.com/gkd-kit/gkd/releases)
 
 ## 功能
@@ -25,10 +26,19 @@
 |-----------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
 | ![image](https://github.com/gkd-kit/subscription/assets/38517192/32cfda78-b2e1-456c-8d85-bfb2bc4683aa) 微信自动领取红包 | ![image](https://github.com/gkd-kit/gkd/assets/38517192/ec0e9465-13d2-422b-97e2-644357ea564b) 关闭微信朋友圈广告 | ![image](https://github.com/gkd-kit/gkd/assets/38517192/cd4554f3-dd9f-431b-8e6d-6cfe7ac430ec) 关闭酷安字节 SDK 广告 | ![image](https://github.com/gkd-kit/gkd/assets/38517192/576a7a6d-5196-4184-8b24-980434dfb15a) 关闭贴吧开屏广告及内部广告 |
 
+## 选择器
+
+<details open>
+  <summary>示例: 选择器路径视图</summary>
+
+![image](https://github.com/gkd-kit/inspect/assets/38517192/27d0656a-2239-426c-930c-749ffb9f189b)
+
+</details>
+
 ## LICENSE
 
 本项目使用 [GPL-v3](https://www.gnu.org/licenses/gpl-3.0.html) 协议开源
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=gkd-kit/gkd&type=Date)](https://star-history.com/#gkd-kit/gkd&Date)
+[![Stargazers over time](https://starchart.cc/gkd-kit/gkd.svg?variant=adaptive)](https://starchart.cc/gkd-kit/gkd)
