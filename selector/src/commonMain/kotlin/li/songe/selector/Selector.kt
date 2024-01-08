@@ -23,6 +23,17 @@ class Selector internal constructor(private val propertyWrapper: PropertyWrapper
         if (i < 0) 0 else i
     }
 
+    val connectKeys by lazy {
+        var c = propertyWrapper.to
+        val keys = mutableListOf<String>()
+        while (c != null) {
+            c!!.connectSegment.connectExpression
+            keys.add(c!!.connectSegment.operator.key)
+            c = c?.to?.to
+        }
+        keys.toTypedArray()
+    }
+
     fun <T> match(
         node: T,
         transform: Transform<T>,
