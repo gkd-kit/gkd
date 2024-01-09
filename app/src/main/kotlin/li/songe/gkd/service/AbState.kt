@@ -54,7 +54,7 @@ private fun getFixTopActivity(): TopActivity {
     return topActivityFlow.value
 }
 
-fun getCurrentRules(): ActivityRule {
+fun getAndUpdateCurrentRules(): ActivityRule {
     val topActivity = getFixTopActivity()
     val oldActivityRule = activityRuleFlow.value
     val allRules = allRulesFlow.value
@@ -66,12 +66,10 @@ fun getCurrentRules(): ActivityRule {
             topActivity = topActivity,
             appRules = (allRules.appIdToRules[topActivity.appId]
                 ?: emptyList()).filter { rule ->
-                rule.matchActivity(topActivity)
+                rule.matchActivity(topActivity.appId, topActivity.activityId)
             },
             globalRules = allRulesFlow.value.globalRules.filter { r ->
-                r.matchActivity(
-                    topActivity
-                )
+                r.matchActivity(topActivity.appId, topActivity.activityId)
             },
         )
         activityRuleFlow.value = newActivityRule

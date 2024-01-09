@@ -2,7 +2,6 @@ package li.songe.gkd.data
 
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Job
-import li.songe.gkd.service.TopActivity
 import li.songe.gkd.service.lastTriggerRule
 import li.songe.gkd.service.lastTriggerTime
 import li.songe.gkd.service.querySelector
@@ -154,13 +153,13 @@ sealed class ResolvedRule(
     val excludeData = ExcludeData.parse(exclude)
 
     abstract val type: String
-    open fun matchActivity(topActivity: TopActivity): Boolean {
-        if (excludeData.appIds.contains(topActivity.appId)) {
+    open fun matchActivity(appId: String, activityId: String? = null): Boolean {
+        if (excludeData.appIds.contains(appId)) {
             return false
         }
-        topActivity.activityId ?: return true
-        excludeData.activityMap[topActivity.appId]?.let { activityIds ->
-            if (activityIds.any { a -> topActivity.activityId.startsWith(a) }) {
+        activityId ?: return true
+        excludeData.activityMap[appId]?.let { activityIds ->
+            if (activityIds.any { a -> activityId.startsWith(a) }) {
                 return false
             }
         }

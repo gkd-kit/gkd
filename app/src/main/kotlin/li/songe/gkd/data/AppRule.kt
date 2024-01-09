@@ -1,7 +1,5 @@
 package li.songe.gkd.data
 
-import li.songe.gkd.service.TopActivity
-
 class AppRule(
     rule: RawSubscription.RawAppRule,
     subsItem: SubsItem,
@@ -25,9 +23,10 @@ class AppRule(
         ) + (excludeData.activityMap[app.id] ?: emptyList())
 
     override val type = "app"
-    override fun matchActivity(topActivity: TopActivity): Boolean {
-        topActivity.activityId ?: return true
-        if (excludeActivityIds.any { topActivity.activityId.startsWith(it) }) return false
-        return activityIds.isEmpty() || activityIds.any { topActivity.activityId.startsWith(it) }
+    override fun matchActivity(appId: String, activityId: String?): Boolean {
+        if (appId != app.id) return false
+        activityId ?: return true
+        if (excludeActivityIds.any { activityId.startsWith(it) }) return false
+        return activityIds.isEmpty() || activityIds.any { activityId.startsWith(it) }
     }
 }
