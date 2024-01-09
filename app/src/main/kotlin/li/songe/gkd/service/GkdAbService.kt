@@ -141,7 +141,7 @@ class GkdAbService : CompositionAbService({
             queryThread
         }
         queryTaskJob = scope.launchTry(ctx) {
-            val activityRule = getCurrentRules()
+            val activityRule = getAndUpdateCurrentRules()
             for (rule in (activityRule.currentRules)) {
                 val statusCode = rule.status
                 if (statusCode == RuleStatus.Status3 && rule.matchDelayJob == null) {
@@ -153,8 +153,19 @@ class GkdAbService : CompositionAbService({
                 }
                 if (statusCode != RuleStatus.StatusOk) continue
                 val nodeVal = (eventNode ?: safeActiveWindow) ?: continue
+                val appId = nodeVal.packageName?.toString() ?: break
+                if (topActivityFlow.value.appId != appId) {
+                    eventExecutor.execute {
+                        if (topActivityFlow.value.appId != appId) {
+                            topActivityFlow.value = TopActivity(appId = appId)
+                            getAndUpdateCurrentRules()
+                        }
+                    }
+                    return@launchTry
+                }
+                if (!rule.matchActivity(appId)) continue
                 val target = rule.query(nodeVal) ?: continue
-                if (activityRule !== getCurrentRules()) break
+                if (activityRule !== getAndUpdateCurrentRules()) break
                 if (rule.checkDelay() && rule.actionDelayJob == null) {
                     rule.actionDelayJob = scope.launch(queryThread) {
                         delay(rule.actionDelay)
@@ -269,7 +280,7 @@ class GkdAbService : CompositionAbService({
                 }
             }
 
-            if (getCurrentRules().currentRules.isEmpty()) {
+            if (getAndUpdateCurrentRules().currentRules.isEmpty()) {
                 // 放在 evAppId != rightAppId 的前面使得 TopActivity 能借助 lastTopActivity 恢复
                 return@launch
             }
