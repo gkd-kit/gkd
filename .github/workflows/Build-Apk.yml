@@ -6,6 +6,10 @@ on:
   push:
     branches:
       - '**'
+    paths-ignore:
+      - 'LICENSE'
+      - 'README.md'
+      - '.github/**'
 
 jobs:
   build:

@@ -17,6 +17,12 @@ body:
         - label: |
             检查这个问题是属于 [规则](https://github.com/gkd-kit/subscription) 还是属于 GKD 本身, 也许你应该去 [subscription/issues](https://github.com/gkd-kit/subscription/issues) 提交问题
           required: true
+        - label: 我确认知晓并同意维护者直接关闭不符合 issue 规范的问题
+          required: true
+        - label: 我确认知晓并同意维护者直接关闭不符合 issue 规范的问题
+          required: true
+        - label: 我确认知晓并同意维护者直接关闭不符合 issue 规范的问题
+          required: true
   - type: textarea
     id: log-file
     attributes:
