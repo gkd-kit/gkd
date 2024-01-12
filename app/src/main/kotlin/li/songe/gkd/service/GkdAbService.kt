@@ -35,6 +35,7 @@ import li.songe.gkd.composition.CompositionAbService
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.composition.CompositionExt.useScope
 import li.songe.gkd.data.ActionResult
+import li.songe.gkd.data.AppRule
 import li.songe.gkd.data.AttrInfo
 import li.songe.gkd.data.GkdAction
 import li.songe.gkd.data.RawSubscription
@@ -153,17 +154,25 @@ class GkdAbService : CompositionAbService({
                 }
                 if (statusCode != RuleStatus.StatusOk) continue
                 val nodeVal = (eventNode ?: safeActiveWindow) ?: continue
-                val appId = nodeVal.packageName?.toString() ?: break
-                if (topActivityFlow.value.appId != appId) {
+                val rightAppId = nodeVal.packageName?.toString() ?: break
+                val matchApp = rule.matchActivity(
+                    rightAppId
+                )
+                if (topActivityFlow.value.appId != rightAppId || (!matchApp && rule is AppRule)) {
                     eventExecutor.execute {
-                        if (topActivityFlow.value.appId != appId) {
-                            topActivityFlow.value = TopActivity(appId = appId)
+                        if (topActivityFlow.value.appId != rightAppId) {
+                            val shizukuTop = getShizukuTopActivity()
+                            if (shizukuTop?.appId == rightAppId) {
+                                topActivityFlow.value = shizukuTop
+                            } else {
+                                topActivityFlow.value = TopActivity(appId = rightAppId)
+                            }
                             getAndUpdateCurrentRules()
                         }
                     }
                     return@launchTry
                 }
-                if (!rule.matchActivity(appId)) continue
+                if (!matchApp) continue
                 val target = rule.query(nodeVal) ?: continue
                 if (activityRule !== getAndUpdateCurrentRules()) break
                 if (rule.checkDelay() && rule.actionDelayJob == null) {
