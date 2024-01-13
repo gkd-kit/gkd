@@ -158,12 +158,9 @@ sealed class ResolvedRule(
             return false
         }
         activityId ?: return true
-        excludeData.activityMap[appId]?.let { activityIds ->
-            if (activityIds.any { a -> activityId.startsWith(a) }) {
-                return false
-            }
+        return !excludeData.activityIds.any { e ->
+            e.first == appId && activityId.startsWith(e.second)
         }
-        return true
     }
 
 }

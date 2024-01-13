@@ -69,9 +69,7 @@ data class SubsConfig(
 
         @Query("SELECT * FROM subs_config WHERE type=${AppGroupType} AND subs_item_id=:subsItemId AND app_id=:appId AND group_key=:groupKey")
         fun queryAppGroupTypeConfig(
-            subsItemId: Long,
-            appId: String,
-            groupKey: Int
+            subsItemId: Long, appId: String, groupKey: Int
         ): Flow<List<SubsConfig>>
 
         @Query("SELECT * FROM subs_config WHERE type=${GlobalGroupType} AND subs_item_id=:subsItemId")
@@ -84,36 +82,24 @@ data class SubsConfig(
 }
 
 data class ExcludeData(
-    val appIds: Set<String>, val activityMap: Map<String, List<String>>
+    val appIds: Set<String>, val activityIds: Set<Pair<String, String>>
 ) {
     companion object {
         fun parse(exclude: String?): ExcludeData {
             val appIds = mutableSetOf<String>()
-            val activityMap = (exclude ?: "").split('\n', ',')
-                .filter { s -> s.isNotBlank() && s.count { c -> c == '/' } <= 1 }.map { s ->
+            val activityIds = mutableSetOf<Pair<String, String>>()
+            (exclude ?: "").split('\n', ',')
+                .filter { s -> s.isNotBlank() && s.count { c -> c == '/' } <= 1 }.forEach { s ->
                     val a = s.split('/')
                     val appId = a[0]
                     val activityId = a.getOrNull(1)
-                    appId to activityId
-                }.let { list ->
-                    val map = mutableMapOf<String, MutableSet<String>>()
-                    list.forEach { (appId, activityId) ->
-                        if (activityId == null) {
-                            appIds.add(appId)
-                        }
+                    if (activityId != null) {
+                        activityIds.add(appId to activityId)
+                    } else {
+                        appIds.add(appId)
                     }
-                    list.forEach { (appId, activityId) ->
-                        if (activityId != null && !appIds.contains(appId)) {
-                            val subList =
-                                map[appId] ?: mutableSetOf<String>().apply { map[appId] = this }
-                            if (!subList.any { a -> activityId.startsWith(a) }) {
-                                subList.add(activityId)
-                            }
-                        }
-                    }
-                    map.mapValues { e -> e.value.distinct().filter { a -> a.isNotBlank() } }
                 }
-            return ExcludeData(appIds = appIds, activityMap = activityMap)
+            return ExcludeData(appIds = appIds, activityIds = activityIds)
         }
 
         fun parse(appId: String, exclude: String?): ExcludeData {
@@ -123,14 +109,33 @@ data class ExcludeData(
 }
 
 fun ExcludeData.stringify(): String {
-    return (appIds + activityMap.entries.filter { e ->
-        !appIds.contains(e.key) && e.value.isNotEmpty()
-    }.map { e ->
-        e.value.distinct().map { activityId -> "${e.key}/$activityId" }
-    }.flatten()).joinToString("\n")
+    return (appIds + activityIds.map { e -> "${e.first}/${e.second}" }).sorted().joinToString("\n")
 }
 
 fun ExcludeData.stringify(appId: String): String {
-    val activityIds = activityMap[appId] ?: emptyList()
-    return activityIds.distinct().joinToString("\n")
+    return activityIds.filter { e -> e.first == appId }.map { e -> e.second }.sorted()
+        .joinToString("\n")
+}
+
+fun ExcludeData.switch(appId: String, activityId: String? = null): ExcludeData {
+    return if (activityId == null) {
+        copy(
+            appIds = appIds.toMutableSet().apply {
+                if (contains(appId)) {
+                    remove(appId)
+                } else {
+                    add(appId)
+                }
+            },
+        )
+    } else {
+        copy(activityIds = activityIds.toMutableSet().apply {
+            val e = appId to activityId
+            if (contains(e)) {
+                remove(e)
+            } else {
+                add(e)
+            }
+        })
+    }
 }

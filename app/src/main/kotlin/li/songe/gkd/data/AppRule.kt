@@ -20,7 +20,7 @@ class AppRule(
         getFixActivityIds(
             app.id,
             rule.excludeActivityIds ?: group.excludeActivityIds
-        ) + (excludeData.activityMap[app.id] ?: emptyList())
+        ) + (excludeData.activityIds.filter { e -> e.first == appId }.map { e -> e.second })
 
     override val type = "app"
     override fun matchActivity(appId: String, activityId: String?): Boolean {

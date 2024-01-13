@@ -26,6 +26,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,11 +46,16 @@ import com.blankj.utilcode.util.ToastUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.ClickLog
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.stringify
+import li.songe.gkd.data.switch
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
@@ -75,13 +81,32 @@ fun ClickLogPage() {
     var previewClickLog by remember {
         mutableStateOf<ClickLog?>(null)
     }
+    val (previewConfigFlow, setPreviewConfigFlow) = remember {
+        mutableStateOf<StateFlow<SubsConfig?>>(MutableStateFlow(null))
+    }
+    LaunchedEffect(key1 = previewClickLog, block = {
+        val log = previewClickLog
+        if (log != null) {
+            val stateFlow = (if (log.groupType == SubsConfig.AppGroupType) {
+                DbSet.subsConfigDao.queryAppGroupTypeConfig(
+                    log.subsId, log.appId ?: "", log.groupKey
+                )
+            } else {
+                DbSet.subsConfigDao.queryGlobalGroupTypeConfig(log.subsId, log.groupKey)
+            }).map { s -> s.firstOrNull() }.stateIn(scope, SharingStarted.Eagerly, null)
+            setPreviewConfigFlow(stateFlow)
+        } else {
+            setPreviewConfigFlow(MutableStateFlow(null))
+        }
+    })
     var showDeleteDlg by remember {
         mutableStateOf(false)
     }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        TopAppBar(scrollBehavior = scrollBehavior,
+        TopAppBar(
+            scrollBehavior = scrollBehavior,
             navigationIcon = {
                 IconButton(onClick = {
                     navController.popBackStack()
@@ -181,6 +206,11 @@ fun ClickLogPage() {
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
+                val previewConfig = previewConfigFlow.collectAsState().value
+                val oldExclude = remember(key1 = previewConfig?.exclude) {
+                    ExcludeData.parse(previewConfig?.exclude)
+                }
+
                 Column {
                     Text(text = "查看规则组", modifier = Modifier
                         .clickable {
@@ -188,16 +218,13 @@ fun ClickLogPage() {
                             if (clickLog.groupType == SubsConfig.AppGroupType) {
                                 navController.navigate(
                                     AppItemPageDestination(
-                                        clickLog.subsId,
-                                        clickLog.appId,
-                                        clickLog.groupKey
+                                        clickLog.subsId, clickLog.appId, clickLog.groupKey
                                     )
                                 )
                             } else if (clickLog.groupType == SubsConfig.GlobalGroupType) {
                                 navController.navigate(
                                     GlobalRulePageDestination(
-                                        clickLog.subsId,
-                                        clickLog.groupKey
+                                        clickLog.subsId, clickLog.groupKey
                                     )
                                 )
                             }
@@ -205,35 +232,19 @@ fun ClickLogPage() {
                         }
                         .fillMaxWidth()
                         .padding(16.dp))
-
                     if (clickLog.groupType == SubsConfig.GlobalGroupType && clickLog.appId != null) {
                         Text(
-                            text = "在此应用禁用此规则",
+                            text = if (oldExclude.appIds.contains(clickLog.appId)) "移除在此应用的禁用" else "在此应用禁用",
                             modifier = Modifier
                                 .clickable(onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                                    val subsConfig = DbSet.subsConfigDao
-                                        .queryGlobalGroupTypeConfig(
-                                            clickLog.subsId,
-                                            clickLog.groupKey
-                                        )
-                                        .first()
-                                        .firstOrNull() ?: SubsConfig(
+                                    val subsConfig = previewConfig ?: SubsConfig(
                                         type = SubsConfig.GlobalGroupType,
                                         subsItemId = clickLog.subsId,
                                         groupKey = clickLog.groupKey,
                                     )
-                                    val excludeData = ExcludeData.parse(subsConfig.exclude)
-                                    if (excludeData.appIds.contains(clickLog.appId)) {
-                                        ToastUtils.showShort("禁用已存在")
-                                        return@launchAsFn
-                                    }
-                                    previewClickLog = null
                                     val newSubsConfig = subsConfig.copy(
-                                        exclude = excludeData
-                                            .copy(
-                                                appIds = excludeData.appIds
-                                                    .toMutableSet()
-                                                    .apply { add(clickLog.appId) })
+                                        exclude = oldExclude
+                                            .switch(clickLog.appId)
                                             .stringify()
                                     )
                                     DbSet.subsConfigDao.insert(newSubsConfig)
@@ -244,63 +255,32 @@ fun ClickLogPage() {
                         )
                     }
                     if (clickLog.appId != null && clickLog.activityId != null) {
+                        val disabled =
+                            oldExclude.activityIds.contains(clickLog.appId to clickLog.activityId)
                         Text(
-                            text = "在此页面禁用此规则",
+                            text = if (disabled) "移除在此页面的禁用" else "在此页面禁用",
                             modifier = Modifier
                                 .clickable(onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                                     val subsConfig =
                                         if (clickLog.groupType == SubsConfig.AppGroupType) {
-                                            DbSet.subsConfigDao
-                                                .queryAppGroupTypeConfig(
-                                                    clickLog.subsId,
-                                                    clickLog.appId,
-                                                    clickLog.groupKey
-                                                )
-                                                .first()
-                                                .firstOrNull() ?: SubsConfig(
+                                            previewConfig ?: SubsConfig(
                                                 type = SubsConfig.AppGroupType,
                                                 subsItemId = clickLog.subsId,
                                                 appId = clickLog.appId,
                                                 groupKey = clickLog.groupKey,
                                             )
                                         } else {
-                                            DbSet.subsConfigDao
-                                                .queryGlobalGroupTypeConfig(
-                                                    clickLog.subsId,
-                                                    clickLog.groupKey
-                                                )
-                                                .first()
-                                                .firstOrNull() ?: SubsConfig(
+                                            previewConfig ?: SubsConfig(
                                                 type = SubsConfig.GlobalGroupType,
                                                 subsItemId = clickLog.subsId,
                                                 groupKey = clickLog.groupKey,
                                             )
                                         }
-                                    val excludeData = ExcludeData.parse(subsConfig.exclude)
-                                    if (excludeData.appIds.contains(clickLog.appId) ||
-                                        excludeData.activityMap[clickLog.appId]?.any { a ->
-                                            a.startsWith(
-                                                clickLog.activityId
-                                            )
-                                        } == true
-                                    ) {
-                                        ToastUtils.showShort("禁用已存在")
-                                        return@launchAsFn
-                                    }
-                                    previewClickLog = null
                                     val newSubsConfig = subsConfig.copy(
-                                        exclude = excludeData
-                                            .copy(
-                                                activityMap = excludeData.activityMap
-                                                    .toMutableMap()
-                                                    .apply {
-                                                        this[clickLog.appId] = (get(clickLog.appId)
-                                                            ?: emptyList())
-                                                            .toMutableList()
-                                                            .apply {
-                                                                add(clickLog.activityId)
-                                                            }
-                                                    }
+                                        exclude = oldExclude
+                                            .switch(
+                                                clickLog.appId,
+                                                clickLog.activityId
                                             )
                                             .stringify()
                                     )
