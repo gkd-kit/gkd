@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.ToastUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
@@ -69,6 +68,7 @@ import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateStorage
 import li.songe.gkd.util.usePollState
 import rikka.shizuku.Shizuku
@@ -115,7 +115,7 @@ fun DebugPage() {
                             Shizuku.requestPermission(Activity.RESULT_OK)
                         } catch (e: Exception) {
                             LogUtils.d("Shizuku授权错误", e)
-                            ToastUtils.showShort("Shizuku可能没有运行")
+                            toast("Shizuku可能没有运行")
                         }
                     })
                 Divider()
@@ -135,7 +135,7 @@ fun DebugPage() {
                                         )
                                     )
                                 } else {
-                                    ToastUtils.showShort("Shizuku方法校验失败,无法使用")
+                                    toast("Shizuku方法校验失败,无法使用")
                                 }
                             }
                         } else {
@@ -307,7 +307,7 @@ fun DebugPage() {
                 TextButton(onClick = {
                     val newPort = value.toIntOrNull()
                     if (newPort == null || !(5000 <= newPort && newPort <= 65535)) {
-                        ToastUtils.showShort("请输入在 5000~65535 的任意数字")
+                        toast("请输入在 5000~65535 的任意数字")
                         return@TextButton
                     }
                     updateStorage(

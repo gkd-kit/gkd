@@ -4,7 +4,6 @@ import android.webkit.URLUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.ToastUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -21,6 +20,7 @@ import li.songe.gkd.util.client
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
+import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 import javax.inject.Inject
 
@@ -32,12 +32,12 @@ class SubsManageVm @Inject constructor() : ViewModel() {
 
         if (refreshingFlow.value) return@launchTry
         if (!URLUtil.isNetworkUrl(url)) {
-            ToastUtils.showShort("非法链接")
+            toast("非法链接")
             return@launchTry
         }
         val subItems = subsItemsFlow.value
         if (subItems.any { it.updateUrl == url }) {
-            ToastUtils.showShort("订阅链接已存在")
+            toast("订阅链接已存在")
             return@launchTry
         }
         refreshingFlow.value = true
@@ -46,22 +46,22 @@ class SubsManageVm @Inject constructor() : ViewModel() {
                 client.get(url).bodyAsText()
             } catch (e: Exception) {
                 e.printStackTrace()
-                ToastUtils.showShort("下载订阅文件失败")
+                toast("下载订阅文件失败")
                 return@launchTry
             }
             val newSubsRaw = try {
                 RawSubscription.parse(text)
             } catch (e: Exception) {
                 e.printStackTrace()
-                ToastUtils.showShort("解析订阅文件失败")
+                toast("解析订阅文件失败")
                 return@launchTry
             }
             if (subItems.any { it.id == newSubsRaw.id }) {
-                ToastUtils.showShort("订阅已存在")
+                toast("订阅已存在")
                 return@launchTry
             }
             if (newSubsRaw.id < 0) {
-                ToastUtils.showShort("订阅id不可为${newSubsRaw.id}\n负数id为内部使用")
+                toast("订阅id不可为${newSubsRaw.id}\n负数id为内部使用")
                 return@launchTry
             }
             val newItem = SubsItem(
@@ -71,7 +71,7 @@ class SubsManageVm @Inject constructor() : ViewModel() {
             )
             updateSubscription(newSubsRaw)
             DbSet.subsItemDao.insert(newItem)
-            ToastUtils.showShort("成功添加订阅")
+            toast("成功添加订阅")
         } finally {
             refreshingFlow.value = false
         }
@@ -120,13 +120,13 @@ class SubsManageVm @Inject constructor() : ViewModel() {
         }
         if (newSubsItems.isEmpty()) {
             if (errorNum == oldSubItems.size) {
-                ToastUtils.showShort("更新失败")
+                toast("更新失败")
             } else {
-                ToastUtils.showShort("暂无更新")
+                toast("暂无更新")
             }
         } else {
             DbSet.subsItemDao.update(*newSubsItems.toTypedArray())
-            ToastUtils.showShort("更新 ${newSubsItems.size} 条订阅")
+            toast("更新 ${newSubsItems.size} 条订阅")
         }
         delay(500)
         refreshingFlow.value = false

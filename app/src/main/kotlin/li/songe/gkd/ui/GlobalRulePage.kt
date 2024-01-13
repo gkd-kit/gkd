@@ -49,7 +49,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.ToastUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
@@ -67,6 +66,7 @@ import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
+import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 
 @RootNavGraph
@@ -228,15 +228,15 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                 val newGroup = try {
                     RawSubscription.parseRawGlobalGroup(source)
                 } catch (e: Exception) {
-                    ToastUtils.showShort("非法规则\n${e.message ?: e}")
+                    toast("非法规则\n${e.message ?: e}")
                     return@TextButton
                 }
                 if (!newGroup.valid) {
-                    ToastUtils.showShort("非法规则:存在非法选择器")
+                    toast("非法规则:存在非法选择器")
                     return@TextButton
                 }
                 if (rawSubs.globalGroups.any { g -> g.name == newGroup.name }) {
-                    ToastUtils.showShort("存在同名规则[${newGroup.name}]")
+                    toast("存在同名规则[${newGroup.name}]")
                     return@TextButton
                 }
                 val newKey = (rawSubs.globalGroups.maxByOrNull { g -> g.key }?.key ?: -1) + 1
@@ -247,7 +247,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                 updateSubscription(newRawSubs)
                 vm.viewModelScope.launchTry(Dispatchers.IO) {
                     showAddDlg = false
-                    ToastUtils.showShort("添加成功")
+                    toast("添加成功")
                 }
             }, enabled = source.isNotEmpty()) {
                 Text(text = "添加")
@@ -335,22 +335,22 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
             confirmButton = {
                 TextButton(onClick = {
                     if (oldSource == source) {
-                        ToastUtils.showShort("规则无变动")
+                        toast("规则无变动")
                         return@TextButton
                     }
                     val newGroupRaw = try {
                         RawSubscription.parseRawGlobalGroup(source)
                     } catch (e: Exception) {
                         LogUtils.d(e)
-                        ToastUtils.showShort("非法规则:${e.message}")
+                        toast("非法规则:${e.message}")
                         return@TextButton
                     }
                     if (newGroupRaw.key != editGroupRaw.key) {
-                        ToastUtils.showShort("不能更改规则组的key")
+                        toast("不能更改规则组的key")
                         return@TextButton
                     }
                     if (!newGroupRaw.valid) {
-                        ToastUtils.showShort("非法规则:存在非法选择器")
+                        toast("非法规则:存在非法选择器")
                         return@TextButton
                     }
                     setEditGroupRaw(null)
@@ -363,7 +363,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                     updateSubscription(rawSubs.copy(globalGroups = newGlobalGroups))
                     vm.viewModelScope.launchTry(Dispatchers.IO) {
                         DbSet.subsItemDao.updateMtime(rawSubs.id)
-                        ToastUtils.showShort("更新成功")
+                        toast("更新成功")
                     }
                 }, enabled = source.isNotEmpty()) {
                     Text(text = "更新")
@@ -405,7 +405,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
             confirmButton = {
                 TextButton(onClick = {
                     if (oldSource == source) {
-                        ToastUtils.showShort("禁用项无变动")
+                        toast("禁用项无变动")
                         return@TextButton
                     }
                     setExcludeGroupRaw(null)
@@ -417,7 +417,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                         )).copy(exclude = ExcludeData.parse(source).stringify())
                     vm.viewModelScope.launchTry(Dispatchers.IO) {
                         DbSet.subsConfigDao.insert(newSubsConfig)
-                        ToastUtils.showShort("更新成功")
+                        toast("更新成功")
                     }
                 }) {
                     Text(text = "更新")
@@ -460,7 +460,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                     TextButton(onClick = {
                         val groupAppText = json.encodeToJson5String(showGroupItem)
                         ClipboardUtils.copyText(groupAppText)
-                        ToastUtils.showShort("复制成功")
+                        toast("复制成功")
                     }) {
                         Text(text = "复制规则组")
                     }

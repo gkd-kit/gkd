@@ -17,7 +17,6 @@ import android.view.accessibility.AccessibilityNodeInfo
 import androidx.core.app.NotificationManagerCompat
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
-import com.blankj.utilcode.util.ToastUtils
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
@@ -55,6 +54,7 @@ import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
+import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateStorage
 import li.songe.gkd.util.updateSubscription
 import li.songe.selector.Selector
@@ -397,7 +397,7 @@ class GkdAbService : CompositionAbService({
                             aliveView = tempView
                         } catch (e: Exception) {
                             LogUtils.d("创建无障碍悬浮窗失败", e)
-                            ToastUtils.showShort("创建无障碍悬浮窗失败")
+                            toast("创建无障碍悬浮窗失败")
                             updateStorage(
                                 storeFlow,
                                 storeFlow.value.copy(enableAbFloatWindow = false)
@@ -427,7 +427,7 @@ class GkdAbService : CompositionAbService({
                         lastTriggerTime = t
                         scope.launchTry(Dispatchers.IO) {
                             SnapshotExt.captureSnapshot()
-                            ToastUtils.showShort("快照成功")
+                            toast("快照成功")
                         }
                     }
                 }

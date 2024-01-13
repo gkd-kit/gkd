@@ -5,7 +5,6 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Build
-import com.blankj.utilcode.util.ToastUtils
 import java.net.NetworkInterface
 
 
@@ -35,7 +34,7 @@ object Ext {
             // android.system.ErrnoException: getifaddrs failed: EACCES (Permission denied)
             NetworkInterface.getNetworkInterfaces().iterator().asSequence()
         } catch (e: Exception) {
-            ToastUtils.showShort("获取host失败:" + e.message)
+            toast("获取host失败:" + e.message)
             emptySequence()
         }
         val localAddresses = networkInterfaces.flatMap {

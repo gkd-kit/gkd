@@ -47,7 +47,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.ToastUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +64,7 @@ import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
+import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 
 
@@ -234,15 +234,15 @@ fun SubsPage(
                     RawSubscription.parseRawApp(source)
                 } catch (e: Exception) {
                     LogUtils.d(e)
-                    ToastUtils.showShort("非法规则${e.message}")
+                    toast("非法规则${e.message}")
                     return@TextButton
                 }
                 if (newAppRaw.groups.isEmpty()) {
-                    ToastUtils.showShort("不允许添加空规则组")
+                    toast("不允许添加空规则组")
                     return@TextButton
                 }
                 if (newAppRaw.groups.any { s -> s.name.isBlank() }) {
-                    ToastUtils.showShort("不允许添加空白名规则组,请先命名")
+                    toast("不允许添加空白名规则组,请先命名")
                     return@TextButton
                 }
                 val oldAppRawIndex = subsRaw.apps.indexOfFirst { a -> a.id == newAppRaw.id }
@@ -251,7 +251,7 @@ fun SubsPage(
                     // check same group name
                     newAppRaw.groups.forEach { g ->
                         if (oldAppRaw.groups.any { g0 -> g0.name == g.name }) {
-                            ToastUtils.showShort("已经存在同名规则[${g.name}]\n请修改名称后再添加")
+                            toast("已经存在同名规则[${g.name}]\n请修改名称后再添加")
                             return@TextButton
                         }
                     }
@@ -289,7 +289,7 @@ fun SubsPage(
                     )
                     DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
                     showAddDlg = false
-                    ToastUtils.showShort("添加成功")
+                    toast("添加成功")
                 }
             }, enabled = source.isNotEmpty()) {
                 Text(text = "添加")
@@ -319,7 +319,7 @@ fun SubsPage(
                 try {
                     val newAppRaw = RawSubscription.parseRawApp(source)
                     if (newAppRaw.id != editAppRawVal.id) {
-                        ToastUtils.showShort("不允许修改规则id")
+                        toast("不允许修改规则id")
                         return@TextButton
                     }
                     val oldAppRawIndex = subsRaw.apps.indexOfFirst { a -> a.id == editAppRawVal.id }
@@ -333,11 +333,11 @@ fun SubsPage(
                         )
                         DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
                         editRawApp = null
-                        ToastUtils.showShort("更新成功")
+                        toast("更新成功")
                     }
                 } catch (e: Exception) {
                     LogUtils.d(e)
-                    ToastUtils.showShort("非法规则${e.message}")
+                    toast("非法规则${e.message}")
                 }
             }, enabled = source.isNotEmpty()) {
                 Text(text = "添加")
@@ -366,7 +366,7 @@ fun SubsPage(
                                 ClipboardUtils.copyText(
                                     json.encodeToJson5String(menuAppRawVal)
                                 )
-                                ToastUtils.showShort("复制成功")
+                                toast("复制成功")
                                 menuRawApp = null
                             }
                             .fillMaxWidth()
@@ -379,7 +379,7 @@ fun SubsPage(
                                     updateSubscription(subsRaw.copy(apps = subsRaw.apps.filter { a -> a.id != menuAppRawVal.id }))
                                     DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
                                     DbSet.subsConfigDao.delete(subsItemVal.id, menuAppRawVal.id)
-                                    ToastUtils.showShort("删除成功")
+                                    toast("删除成功")
                                 }
                                 menuRawApp = null
                             }

@@ -49,7 +49,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.ImageUtils
-import com.blankj.utilcode.util.ToastUtils
 import com.blankj.utilcode.util.UriUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
@@ -72,6 +71,7 @@ import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.snapshotZipDir
+import li.songe.gkd.util.toast
 import java.io.File
 
 @RootNavGraph
@@ -225,7 +225,7 @@ fun SnapshotPage() {
                                 .clickable(onClick = {
                                     selectedSnapshot = null
                                     ClipboardUtils.copyText(IMPORT_BASE_URL + snapshotVal.githubAssetId)
-                                    ToastUtils.showShort("复制成功")
+                                    toast("复制成功")
                                 })
                                 .then(modifier)
                         )
@@ -249,7 +249,7 @@ fun SnapshotPage() {
                                     val isGranted =
                                         requestPermissionLauncher.launchForResult(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                                     if (!isGranted) {
-                                        ToastUtils.showShort("保存失败,暂无权限")
+                                        toast("保存失败,暂无权限")
                                         return@launchAsFn
                                     }
                                 }
@@ -258,7 +258,7 @@ fun SnapshotPage() {
                                     Bitmap.CompressFormat.PNG,
                                     true
                                 )
-                                ToastUtils.showShort("保存成功")
+                                toast("保存成功")
                                 selectedSnapshot = null
                             })
                             .then(modifier)
@@ -283,11 +283,11 @@ fun SnapshotPage() {
                                             DbSet.snapshotDao.update(snapshotVal.copy(githubAssetId = null))
                                         }
                                     } else {
-                                        ToastUtils.showShort("截图尺寸不一致,无法替换")
+                                        toast("截图尺寸不一致,无法替换")
                                         return@withContext
                                     }
                                 }
-                                ToastUtils.showShort("替换成功")
+                                toast("替换成功")
                                 selectedSnapshot = null
                             })
                             .then(modifier)
@@ -359,7 +359,7 @@ fun SnapshotPage() {
             }, confirmButton = {
                 TextButton(onClick = {
                     ClipboardUtils.copyText(IMPORT_BASE_URL + uploadStatusVal.result.id)
-                    ToastUtils.showShort("复制成功")
+                    toast("复制成功")
                     vm.uploadStatusFlow.value = null
                 }) {
                     Text(text = "复制")

@@ -43,7 +43,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.ToastUtils
 import com.blankj.utilcode.util.ZipUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -63,6 +62,7 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.logZipDir
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateStorage
 import java.io.File
 
@@ -183,7 +183,7 @@ fun SettingsPage() {
                 if (checkUpdatingFlow.value) return@launchTry
                 val newVersion = checkUpdate()
                 if (newVersion == null) {
-                    ToastUtils.showShort("暂无更新")
+                    toast("暂无更新")
                 }
             }
         })
@@ -227,7 +227,7 @@ fun SettingsPage() {
                             logFiles.forEach { f ->
                                 f.delete()
                             }
-                            ToastUtils.showShort("已删除全部日志")
+                            toast("已删除全部日志")
                         }
                     }
                 }
@@ -240,7 +240,7 @@ fun SettingsPage() {
                 if (logFiles.isNotEmpty()) {
                     showShareLogDlg = true
                 } else {
-                    ToastUtils.showShort("暂无日志")
+                    toast("暂无日志")
                 }
             }
         })
@@ -488,7 +488,7 @@ fun SettingsPage() {
             }, confirmButton = {
                 TextButton(onClick = {
                     ClipboardUtils.copyText(uploadStatusVal.result.href)
-                    ToastUtils.showShort("复制成功")
+                    toast("复制成功")
                     vm.uploadStatusFlow.value = null
                 }) {
                     Text(text = "复制")

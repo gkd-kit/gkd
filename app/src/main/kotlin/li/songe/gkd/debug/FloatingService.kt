@@ -10,7 +10,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.blankj.utilcode.util.ToastUtils
 import com.torrydo.floatingbubbleview.FloatingBubbleListener
 import com.torrydo.floatingbubbleview.service.expandable.BubbleBuilder
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +23,7 @@ import li.songe.gkd.notif.createNotif
 import li.songe.gkd.notif.floatingChannel
 import li.songe.gkd.notif.floatingNotif
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.toast
 import kotlin.math.sqrt
 
 class FloatingService : CompositionFbService({
@@ -66,7 +66,7 @@ class FloatingService : CompositionFbService({
                     // is onClick
                     appScope.launchTry(Dispatchers.IO) {
                         SnapshotExt.captureSnapshot()
-                        ToastUtils.showShort("快照成功")
+                        toast("快照成功")
                     }
                 }
             }

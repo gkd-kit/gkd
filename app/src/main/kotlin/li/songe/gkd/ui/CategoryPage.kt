@@ -43,7 +43,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
-import com.blankj.utilcode.util.ToastUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
@@ -53,6 +52,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 
 @RootNavGraph
@@ -244,7 +244,7 @@ fun CategoryPage(subsItemId: Long) {
                     enabled = source.isNotEmpty() && source != editNameCategory.name,
                     onClick = {
                         if (categories.any { c -> c.key != editNameCategory.key && c.name == source }) {
-                            ToastUtils.showShort("不可添加同名类别")
+                            toast("不可添加同名类别")
                             return@TextButton
                         }
                         vm.viewModelScope.launchTry(Dispatchers.IO) {
@@ -260,7 +260,7 @@ fun CategoryPage(subsItemId: Long) {
                                 ))
                                 DbSet.subsItemDao.update(copy(mtime = System.currentTimeMillis()))
                             }
-                            ToastUtils.showShort("修改成功")
+                            toast("修改成功")
                             setEditNameCategory(null)
                         }
                     }) {
@@ -293,7 +293,7 @@ fun CategoryPage(subsItemId: Long) {
             confirmButton = {
                 TextButton(enabled = source.isNotEmpty(), onClick = {
                     if (categories.any { c -> c.name == source }) {
-                        ToastUtils.showShort("不可添加同名类别")
+                        toast("不可添加同名类别")
                         return@TextButton
                     }
                     showAddDlg = false
@@ -309,7 +309,7 @@ fun CategoryPage(subsItemId: Long) {
                                 }
                             ))
                             DbSet.subsItemDao.update(copy(mtime = System.currentTimeMillis()))
-                            ToastUtils.showShort("添加成功")
+                            toast("添加成功")
                         }
                     }
                 }) {
@@ -348,7 +348,7 @@ fun CategoryPage(subsItemId: Long) {
                                     subsItemId,
                                     menuCategory.key
                                 )
-                                ToastUtils.showShort("删除成功")
+                                toast("删除成功")
                                 setMenuCategory(null)
                             }
                         }
