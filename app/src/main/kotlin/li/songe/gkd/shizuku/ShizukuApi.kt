@@ -5,7 +5,6 @@ import android.app.ActivityManager
 import android.app.IActivityTaskManager
 import android.view.Display
 import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.ToastUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,6 +15,7 @@ import li.songe.gkd.composition.CanOnDestroy
 import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
@@ -60,7 +60,7 @@ fun IActivityTaskManager.safeGetTasks(): List<ActivityManager.RunningTaskInfo>? 
                 getTasksFcType = -1
                 LogUtils.d(DeviceInfo.instance)
                 LogUtils.d(fcs)
-                ToastUtils.showShort("Shizuku获取方法签名错误")
+                toast("Shizuku获取方法签名错误")
             }
         }
     }

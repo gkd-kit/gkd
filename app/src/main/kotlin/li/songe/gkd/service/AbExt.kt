@@ -3,8 +3,8 @@ package li.songe.gkd.service
 import android.accessibilityservice.AccessibilityService
 import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
-import com.blankj.utilcode.util.ToastUtils
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.toast
 import li.songe.selector.Selector
 import li.songe.selector.Transform
 
@@ -194,7 +194,7 @@ fun toastClickTip() {
     if (storeFlow.value.toastWhenClick) {
         val t = System.currentTimeMillis()
         if (t - lastToastTime > 3000) {
-            ToastUtils.showShort(storeFlow.value.clickToast)
+            toast(storeFlow.value.clickToast)
             lastToastTime = t
         }
     }

@@ -5,7 +5,6 @@ import androidx.core.graphics.set
 import com.blankj.utilcode.util.BarUtils
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
-import com.blankj.utilcode.util.ToastUtils
 import com.blankj.utilcode.util.ZipUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -24,6 +23,7 @@ import li.songe.gkd.util.keepNullJson
 import li.songe.gkd.util.snapshotFolder
 import li.songe.gkd.util.snapshotZipDir
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.toast
 import java.io.File
 import kotlin.math.min
 
@@ -71,7 +71,7 @@ object SnapshotExt {
             throw RpcError("正在保存快照,不可重复操作")
         }
         captureLoading.value = true
-        ToastUtils.showShort("正在保存快照...")
+        toast("正在保存快照...")
 
         try {
             val snapshotDef = coroutineScope { async(Dispatchers.IO) { createComplexSnapshot() } }
@@ -121,7 +121,7 @@ object SnapshotExt {
                 File(getSnapshotPath(snapshot.id)).writeText(text)
                 DbSet.snapshotDao.insert(snapshot.toSnapshot())
             }
-            ToastUtils.showShort("快照捕获成功")
+            toast("快照捕获成功")
             return snapshot
         } finally {
             captureLoading.value = false

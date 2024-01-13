@@ -42,7 +42,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
-import com.blankj.utilcode.util.ToastUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +64,7 @@ import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.format
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.navigate
+import li.songe.gkd.util.toast
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
@@ -248,7 +248,7 @@ fun ClickLogPage() {
                                             .stringify()
                                     )
                                     DbSet.subsConfigDao.insert(newSubsConfig)
-                                    ToastUtils.showShort("更新禁用")
+                                    toast("更新禁用")
                                 })
                                 .fillMaxWidth()
                                 .padding(16.dp),
@@ -285,7 +285,7 @@ fun ClickLogPage() {
                                             .stringify()
                                     )
                                     DbSet.subsConfigDao.insert(newSubsConfig)
-                                    ToastUtils.showShort("更新禁用")
+                                    toast("更新禁用")
                                 })
                                 .fillMaxWidth()
                                 .padding(16.dp),
@@ -298,7 +298,7 @@ fun ClickLogPage() {
                             .clickable(onClick = scope.launchAsFn {
                                 previewClickLog = null
                                 DbSet.clickLogDao.delete(clickLog)
-                                ToastUtils.showShort("删除成功")
+                                toast("删除成功")
                             })
                             .fillMaxWidth()
                             .padding(16.dp),

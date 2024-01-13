@@ -51,7 +51,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
-import com.blankj.utilcode.util.ToastUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import li.songe.gkd.data.RawSubscription
@@ -71,6 +70,7 @@ import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
+import li.songe.gkd.util.toast
 import org.burnoutcrew.reorderable.ReorderableItem
 import org.burnoutcrew.reorderable.detectReorderAfterLongPress
 import org.burnoutcrew.reorderable.rememberReorderableLazyListState
@@ -253,7 +253,7 @@ fun SubsManagePage() {
                             .clickable {
                                 menuSubItem = null
                                 ClipboardUtils.copyText(menuSubItemVal.updateUrl)
-                                ToastUtils.showShort("复制成功")
+                                toast("复制成功")
                             }
                             .fillMaxWidth()
                             .padding(16.dp))
@@ -356,11 +356,11 @@ fun SubsManagePage() {
         }, onDismissRequest = { showAddLinkDialog = false }, confirmButton = {
             TextButton(onClick = {
                 if (!URLUtil.isNetworkUrl(link)) {
-                    ToastUtils.showShort("非法链接")
+                    toast("非法链接")
                     return@TextButton
                 }
                 if (subItems.any { s -> s.updateUrl == link }) {
-                    ToastUtils.showShort("链接已存在")
+                    toast("链接已存在")
                     return@TextButton
                 }
                 showAddLinkDialog = false

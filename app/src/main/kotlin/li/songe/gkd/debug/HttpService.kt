@@ -3,7 +3,6 @@ package li.songe.gkd.debug
 import android.content.Context
 import android.content.Intent
 import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.ToastUtils
 import io.ktor.http.ContentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.call
@@ -49,6 +48,7 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsItemsFlow
+import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 import java.io.File
 
@@ -139,7 +139,7 @@ class HttpService : CompositionService({
                 null
             }
             if (server == null) {
-                ToastUtils.showShort("HTTP服务启动失败,您可以尝试切换端口后重新启动")
+                toast("HTTP服务启动失败,您可以尝试切换端口后重新启动")
                 stopSelf()
                 return@collect
             }
