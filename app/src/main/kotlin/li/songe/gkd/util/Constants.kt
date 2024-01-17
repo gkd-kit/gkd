@@ -1,5 +1,7 @@
 package li.songe.gkd.util
 
+import li.songe.gkd.BuildConfig
+
 const val VOLUME_CHANGED_ACTION = "android.media.VOLUME_CHANGED_ACTION"
 
 const val FILE_UPLOAD_URL = "https://u.gkd.li/"
@@ -13,6 +15,13 @@ const val SERVER_SCRIPT_URL =
     "https://registry-direct.npmmirror.com/@gkd-kit/config/latest/files/dist/server.js"
 
 const val REPOSITORY_URL = "https://github.com/gkd-kit/gkd"
+
+@Suppress("SENSELESS_COMPARISON")
+val GIT_COMMIT_URL = if (BuildConfig.GIT_COMMIT_ID != null) {
+    "https://github.com/gkd-kit/gkd/commit/${BuildConfig.GIT_COMMIT_ID}"
+} else {
+    null
+}
 
 val safeRemoteBaseUrls = arrayOf(
     "https://registry.npmmirror.com/@gkd-kit/",
