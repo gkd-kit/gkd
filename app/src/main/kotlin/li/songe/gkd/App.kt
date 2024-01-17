@@ -12,6 +12,7 @@ import kotlinx.coroutines.MainScope
 import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.debug.clearHttpSubs
 import li.songe.gkd.notif.initChannel
+import li.songe.gkd.util.GIT_COMMIT_URL
 import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initFolder
 import li.songe.gkd.util.initStore
@@ -65,6 +66,7 @@ class App : Application() {
             setConsoleSwitch(BuildConfig.DEBUG)
             saveDays = 7
         }
+        LogUtils.d("GIT_COMMIT_URL: $GIT_COMMIT_URL")
 
         initFolder()
         appScope.launchTry(Dispatchers.IO) {

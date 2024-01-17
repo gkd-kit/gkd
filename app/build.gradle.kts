@@ -1,6 +1,22 @@
 import com.android.build.gradle.internal.cxx.json.jsonStringOf
-import java.text.SimpleDateFormat
-import java.util.Locale
+import java.io.ByteArrayOutputStream
+
+fun String.runCommand(currentWorkingDir: File = file("./")): String {
+    val byteOut = ByteArrayOutputStream()
+    project.exec {
+        workingDir = currentWorkingDir
+        commandLine = this@runCommand.split("\\s".toRegex())
+        standardOutput = byteOut
+    }
+    return String(byteOut.toByteArray()).trim()
+}
+
+val gitCommitId = try {
+    "git rev-parse HEAD".runCommand()
+} catch (e: Exception) {
+    e.printStackTrace()
+    null
+}
 
 plugins {
     alias(libs.plugins.android.application)
@@ -33,16 +49,13 @@ android {
         val nowTime = System.currentTimeMillis()
         buildConfigField("Long", "BUILD_TIME", jsonStringOf(nowTime) + "L")
         buildConfigField(
-            "String", "BUILD_DATE", jsonStringOf(
-                SimpleDateFormat(
-                    "yyyy-MM-dd HH:mm:ss ZZ", Locale.SIMPLIFIED_CHINESE
-                ).format(nowTime)
-            )
+            "String",
+            "GIT_COMMIT_ID",
+            jsonStringOf(gitCommitId)
         )
         buildConfigField(
             "String", "GKD_BUGLY_APP_ID", jsonStringOf(project.properties["GKD_BUGLY_APP_ID"])
         )
-
         resourceConfigurations.addAll(listOf("zh", "en"))
         ndk {
             // noinspection ChromeOsAbiSupport
@@ -80,6 +93,11 @@ android {
             )
         }
         debug {
+            versionNameSuffix = if (gitCommitId != null) {
+                "-${gitCommitId.substring(0, 8)}"
+            } else {
+                "-unknown"
+            }
             applicationIdSuffix = ".debug"
             resValue("string", "app_name", "GKD-debug")
         }
