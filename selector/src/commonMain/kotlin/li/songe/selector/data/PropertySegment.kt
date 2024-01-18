@@ -12,12 +12,18 @@ data class PropertySegment(
     val name: String,
     val expressions: List<Expression>,
 ) {
+    private val matchAnyName = name.isBlank() || name == "*"
+
+    val propertyNames =
+        (if (matchAnyName) listOf("name") else emptyList()) + expressions.map { e -> e.propertyNames }
+            .flatten()
+
     override fun toString(): String {
         val matchTag = if (tracked) "@" else ""
         return matchTag + name + expressions.joinToString("") { "[$it]" }
     }
 
-    private val matchName = if (name.isBlank() || name == "*") {
+    private val matchName = if (matchAnyName) {
         object : NodeMatchFc {
             override fun <T> invoke(node: T, transform: Transform<T>) = true
         }

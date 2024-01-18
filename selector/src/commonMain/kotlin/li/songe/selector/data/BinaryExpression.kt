@@ -7,6 +7,8 @@ data class BinaryExpression(val name: String, val operator: CompareOperator, val
     override fun <T> match(node: T, transform: Transform<T>) =
         operator.compare(transform.getAttr(node, name), value)
 
+    override val propertyNames = listOf(name)
+
     override fun toString() = "${name}${operator}${
         if (value is String) {
             val wrapChar = '"'

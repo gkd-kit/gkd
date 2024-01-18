@@ -117,6 +117,36 @@ val getChildren: (AccessibilityNodeInfo) -> Sequence<AccessibilityNodeInfo> = { 
     }
 }
 
+val allowPropertyNames = setOf(
+    "id",
+    "vid",
+
+    "name",
+    "text",
+    "text.length",
+    "desc",
+    "desc.length",
+
+    "clickable",
+    "focusable",
+    "checkable",
+    "checked",
+    "editable",
+    "longClickable",
+    "visibleToUser",
+
+    "left",
+    "top",
+    "right",
+    "bottom",
+    "width",
+    "height",
+
+    "index",
+    "depth",
+    "childCount"
+)
+
 private val getAttr: (AccessibilityNodeInfo, String) -> Any? = { node, name ->
     when (name) {
         "id" -> node.viewIdResourceName

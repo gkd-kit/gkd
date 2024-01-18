@@ -1,6 +1,5 @@
 package li.songe.gkd.data
 
-import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -12,6 +11,7 @@ import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.long
+import li.songe.gkd.service.allowPropertyNames
 import li.songe.gkd.util.json
 import li.songe.gkd.util.json5ToJson
 import li.songe.selector.Selector
@@ -30,7 +30,6 @@ data class RawSubscription(
     val apps: List<RawApp> = emptyList(),
 ) {
 
-    @IgnoredOnParcel
     val categoryToGroupsMap by lazy {
         val allAppGroups = apps.flatMap { a -> a.groups.map { g -> g to a } }
         allAppGroups.groupBy { g ->
@@ -38,7 +37,6 @@ data class RawSubscription(
         }
     }
 
-    @IgnoredOnParcel
     val groupToCategoryMap by lazy {
         val map = mutableMapOf<RawAppGroup, RawCategory>()
         categoryToGroupsMap.forEach { (key, value) ->
@@ -51,12 +49,10 @@ data class RawSubscription(
         map
     }
 
-    @IgnoredOnParcel
     val appGroups by lazy {
         apps.flatMap { a -> a.groups }
     }
 
-    @IgnoredOnParcel
     val numText by lazy {
         val appsSize = apps.size
         val appGroupsSize = appGroups.size
@@ -166,30 +162,37 @@ data class RawSubscription(
         override val rules: List<RawGlobalRule>,
     ) : RawGroupProps, RawGlobalRuleProps {
 
-        @IgnoredOnParcel
-        val valid by lazy {
-            rules.all { r ->
-                r.matches.all { s -> Selector.check(s) } && (r.excludeMatches
-                    ?: emptyList()).all { s ->
-                    Selector.check(
-                        s
-                    )
-                }
-            }
+        val allSelectorStrings by lazy {
+            rules.map { r -> r.matches + (r.excludeMatches ?: emptyList()) }.flatten().distinct()
         }
 
-        @IgnoredOnParcel
-        val allExampleUrls by lazy {
-            mutableListOf<String>().apply {
-                if (exampleUrls != null) {
-                    addAll(exampleUrls)
-                }
-                rules.forEach { r ->
-                    if (r.exampleUrls != null) {
-                        addAll(r.exampleUrls)
-                    }
+        val allSelector by lazy {
+            allSelectorStrings.map { s -> Selector.parseOrNull(s) }
+        }
+
+        val unknownPropertyNames by lazy {
+            allSelector.filterNotNull().flatMap { r -> r.propertyNames.toList() }.distinct()
+                .filterNot { n -> allowPropertyNames.contains(n) }
+        }
+
+        val errorDesc by lazy {
+            allSelector.forEachIndexed { i, s ->
+                if (s == null) {
+                    return@lazy "非法选择器:${allSelectorStrings[i]}"
                 }
             }
+            unknownPropertyNames.forEach { n ->
+                return@lazy "非法属性名:${n}"
+            }
+            null
+        }
+
+        val valid by lazy { errorDesc == null }
+
+        val allExampleUrls by lazy {
+            ((exampleUrls ?: emptyList()) + rules.flatMap { r ->
+                r.exampleUrls ?: emptyList()
+            }).distinct()
         }
     }
 
@@ -239,30 +242,37 @@ data class RawSubscription(
         override val rules: List<RawAppRule>,
     ) : RawGroupProps, RawAppRuleProps {
 
-        @IgnoredOnParcel
-        val valid by lazy {
-            rules.all { r ->
-                r.matches.all { s -> Selector.check(s) } && (r.excludeMatches
-                    ?: emptyList()).all { s ->
-                    Selector.check(
-                        s
-                    )
-                }
-            }
+        val allSelectorStrings by lazy {
+            rules.map { r -> r.matches + (r.excludeMatches ?: emptyList()) }.flatten().distinct()
         }
 
-        @IgnoredOnParcel
-        val allExampleUrls by lazy {
-            mutableListOf<String>().apply {
-                if (exampleUrls != null) {
-                    addAll(exampleUrls)
-                }
-                rules.forEach { r ->
-                    if (r.exampleUrls != null) {
-                        addAll(r.exampleUrls)
-                    }
+        val allSelector by lazy {
+            allSelectorStrings.map { s -> Selector.parseOrNull(s) }
+        }
+
+        val unknownPropertyNames by lazy {
+            allSelector.filterNotNull().flatMap { r -> r.propertyNames.toList() }.distinct()
+                .filterNot { n -> allowPropertyNames.contains(n) }
+        }
+
+        val errorDesc by lazy {
+            allSelector.forEachIndexed { i, s ->
+                if (s == null) {
+                    return@lazy "非法选择器:${allSelectorStrings[i]}"
                 }
             }
+            unknownPropertyNames.forEach { n ->
+                return@lazy "非法属性名:${n}"
+            }
+            null
+        }
+
+        val valid by lazy { errorDesc == null }
+
+        val allExampleUrls by lazy {
+            ((exampleUrls ?: emptyList()) + rules.flatMap { r ->
+                r.exampleUrls ?: emptyList()
+            }).distinct()
         }
     }
 
@@ -514,8 +524,7 @@ data class RawSubscription(
                 },
                 rules = jsonObject["rules"]?.jsonArray?.map { jsonElement ->
                     jsonToGlobalRule(jsonElement.jsonObject)
-                } ?: emptyList()
-            )
+                } ?: emptyList())
         }
 
         private fun jsonToSubscriptionRaw(rootJson: JsonObject): RawSubscription {
@@ -542,8 +551,7 @@ data class RawSubscription(
                 } ?: emptyList(),
                 globalGroups = rootJson["globalGroups"]?.jsonArray?.mapIndexed { index, jsonElement ->
                     jsonToGlobalGroups(jsonElement.jsonObject, index)
-                } ?: emptyList()
-            )
+                } ?: emptyList())
         }
 
         private fun <T> List<T>.findDuplicatedItem(predicate: (T) -> Any?): T? {

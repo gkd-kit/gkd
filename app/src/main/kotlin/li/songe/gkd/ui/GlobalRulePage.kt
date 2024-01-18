@@ -231,8 +231,8 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                     toast("非法规则\n${e.message ?: e}")
                     return@TextButton
                 }
-                if (!newGroup.valid) {
-                    toast("非法规则:存在非法选择器")
+                if (newGroup.errorDesc != null) {
+                    toast(newGroup.errorDesc!!)
                     return@TextButton
                 }
                 if (rawSubs.globalGroups.any { g -> g.name == newGroup.name }) {
@@ -349,8 +349,8 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                         toast("不能更改规则组的key")
                         return@TextButton
                     }
-                    if (!newGroupRaw.valid) {
-                        toast("非法规则:存在非法选择器")
+                    if (newGroupRaw.errorDesc != null) {
+                        toast(newGroupRaw.errorDesc!!)
                         return@TextButton
                     }
                     setEditGroupRaw(null)
