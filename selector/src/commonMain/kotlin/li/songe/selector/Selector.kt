@@ -34,6 +34,17 @@ class Selector internal constructor(private val propertyWrapper: PropertyWrapper
         keys.toTypedArray()
     }
 
+    val propertyNames by lazy {
+        var p: PropertyWrapper? = propertyWrapper
+        val names = mutableSetOf<String>()
+        while (p != null) {
+            val s = p!!.propertySegment
+            p = p!!.to?.to
+            names.addAll(s.propertyNames)
+        }
+        names.distinct().toTypedArray()
+    }
+
     fun <T> match(
         node: T,
         transform: Transform<T>,
@@ -84,13 +95,10 @@ class Selector internal constructor(private val propertyWrapper: PropertyWrapper
 
     companion object {
         fun parse(source: String) = ParserSet.selectorParser(source)
-        fun check(source: String): Boolean {
-            return try {
-                ParserSet.selectorParser(source)
-                true
-            } catch (e: Exception) {
-                false
-            }
+        fun parseOrNull(source: String) = try {
+            ParserSet.selectorParser(source)
+        } catch (e: Exception) {
+            null
         }
     }
 }

@@ -377,8 +377,8 @@ fun AppItemPage(
                         toast("不能更改规则组的key")
                         return@TextButton
                     }
-                    if (!newGroupRaw.valid) {
-                        toast("非法规则:存在非法选择器")
+                    if (newGroupRaw.errorDesc != null) {
+                        toast(newGroupRaw.errorDesc!!)
                         return@TextButton
                     }
                     setEditGroupRaw(null)
@@ -499,8 +499,8 @@ fun AppItemPage(
                     }
                     newAppRaw.groups
                 }
-                if (!tempGroups.all { g -> g.valid }) {
-                    toast("非法规则:存在非法选择器")
+                tempGroups.find { g -> g.errorDesc != null }?.errorDesc?.let { errorDesc ->
+                    toast(errorDesc)
                     return@TextButton
                 }
                 tempGroups.forEach { g ->

@@ -11,6 +11,8 @@ data class LogicalExpression(
         return operator.compare(node, transform, left, right)
     }
 
+    override val propertyNames = left.propertyNames + right.propertyNames
+
     override fun toString(): String {
         val leftStr = if (left is LogicalExpression && left.operator != operator) {
             "($left)"
