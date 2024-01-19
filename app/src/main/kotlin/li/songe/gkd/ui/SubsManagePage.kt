@@ -53,16 +53,15 @@ import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SubsItemCard
+import li.songe.gkd.ui.component.getDialogResult
 import li.songe.gkd.ui.destinations.CategoryPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.destinations.SubsPageDestination
-import li.songe.gkd.util.DEFAULT_SUBS_UPDATE_URL
 import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.formatTimeAgo
+import li.songe.gkd.util.isSafeUrl
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
@@ -102,14 +101,8 @@ fun SubsManagePage() {
     var deleteSubItem: SubsItem? by remember { mutableStateOf(null) }
     var menuSubItem: SubsItem? by remember { mutableStateOf(null) }
 
-    var showAddDialog by remember { mutableStateOf(false) }
     var showAddLinkDialog by remember { mutableStateOf(false) }
     var link by remember { mutableStateOf("") }
-
-    val (showSubsRaw, setShowSubsRaw) = remember {
-        mutableStateOf<RawSubscription?>(null)
-    }
-
 
     val refreshing by vm.refreshingFlow.collectAsState()
     val pullRefreshState = rememberPullRefreshState(refreshing, vm::refreshSubs)
@@ -137,10 +130,10 @@ fun SubsManagePage() {
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                if (subItems.any { it.id == 0L }) {
+                if (!vm.refreshingFlow.value) {
                     showAddLinkDialog = true
                 } else {
-                    showAddDialog = true
+                    toast("正在刷新订阅,请稍后添加")
                 }
             }) {
                 Icon(
@@ -182,8 +175,10 @@ fun SubsManagePage() {
                                 subsItem = subItem,
                                 rawSubscription = subsIdToRaw[subItem.id],
                                 index = index + 1,
-                                onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
-                                    DbSet.subsItemDao.update(subItem.copy(enable = it))
+                                onCheckedChange = { checked ->
+                                    vm.viewModelScope.launch {
+                                        DbSet.subsItemDao.update(subItem.copy(enable = checked))
+                                    }
                                 },
                             )
                         }
@@ -199,7 +194,6 @@ fun SubsManagePage() {
     }
 
     menuSubItem?.let { menuSubItemVal ->
-
         Dialog(onDismissRequest = { menuSubItem = null }) {
             Card(
                 modifier = Modifier
@@ -308,37 +302,6 @@ fun SubsManagePage() {
             })
     }
 
-    if (showAddDialog) {
-        Dialog(onDismissRequest = { showAddDialog = false }) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                Column {
-                    Text(text = "导入默认订阅", modifier = Modifier
-                        .clickable {
-                            showAddDialog = false
-                            vm.addSubsFromUrl(DEFAULT_SUBS_UPDATE_URL)
-                        }
-                        .fillMaxWidth()
-                        .padding(16.dp))
-                    Divider()
-                    Text(text = "导入其它订阅", modifier = Modifier
-                        .clickable {
-                            showAddDialog = false
-                            showAddLinkDialog = true
-                        }
-                        .fillMaxWidth()
-                        .padding(16.dp))
-                }
-            }
-        }
-    }
-
-
-
     LaunchedEffect(showAddLinkDialog) {
         if (!showAddLinkDialog) {
             link = ""
@@ -363,43 +326,19 @@ fun SubsManagePage() {
                     toast("链接已存在")
                     return@TextButton
                 }
-                showAddLinkDialog = false
-                vm.addSubsFromUrl(url = link)
+                vm.viewModelScope.launch {
+                    if (!isSafeUrl(link)) {
+                        val result = getDialogResult(
+                            "未知来源",
+                            "你正在添加一个未验证的远程订阅\n\n这可能含有恶意的规则\n\n是否仍然确认添加?"
+                        )
+                        if (!result) return@launch
+                    }
+                    showAddLinkDialog = false
+                    vm.addSubsFromUrl(url = link)
+                }
             }) {
                 Text(text = "添加")
-            }
-        })
-    }
-
-    if (showSubsRaw != null) {
-        AlertDialog(onDismissRequest = { setShowSubsRaw(null) }, title = {
-            Text(text = "订阅详情")
-        }, text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier
-            ) {
-                Text(text = "名称: " + showSubsRaw.name)
-                Text(text = "版本: " + showSubsRaw.version)
-                if (showSubsRaw.author != null) {
-                    Text(text = "作者: " + showSubsRaw.author)
-                }
-                val apps = showSubsRaw.apps
-                val groupsSize = apps.sumOf { it.groups.size }
-                if (groupsSize > 0) {
-                    Text(text = "规则: ${apps.size}应用/${groupsSize}规则组")
-                }
-
-                Text(
-                    text = "更新: " + formatTimeAgo(
-                        subItems.find { s -> s.id == showSubsRaw.id }?.mtime ?: 0
-                    )
-                )
-            }
-        }, confirmButton = {
-            TextButton(onClick = {
-                setShowSubsRaw(null)
-            }) {
-                Text(text = "关闭")
             }
         })
     }

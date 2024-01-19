@@ -46,6 +46,7 @@ class SubsManageVm @Inject constructor() : ViewModel() {
                 client.get(url).bodyAsText()
             } catch (e: Exception) {
                 e.printStackTrace()
+                LogUtils.d(e)
                 toast("下载订阅文件失败")
                 return@launchTry
             }
@@ -53,6 +54,7 @@ class SubsManageVm @Inject constructor() : ViewModel() {
                 RawSubscription.parse(text)
             } catch (e: Exception) {
                 e.printStackTrace()
+                LogUtils.d(e)
                 toast("解析订阅文件失败")
                 return@launchTry
             }
