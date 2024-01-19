@@ -52,9 +52,6 @@ class MainActivity : CompositionActivity({
         val navController = rememberNavController()
 
         AppTheme {
-            ConfirmDialog()
-            AuthDialog()
-            UpgradeDialog()
             CompositionLocalProvider(
                 LocalLauncher provides launcher,
                 LocalPickContentLauncher provides pickContentLauncher,
@@ -65,6 +62,9 @@ class MainActivity : CompositionActivity({
                     navGraph = NavGraphs.root, navController = navController, modifier = Modifier
                 )
             }
+            ConfirmDialog()
+            AuthDialog()
+            UpgradeDialog()
         }
     }
 })

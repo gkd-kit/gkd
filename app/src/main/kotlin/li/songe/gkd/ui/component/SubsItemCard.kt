@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.sp
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.util.formatTimeAgo
-import li.songe.gkd.util.safeRemoteBaseUrls
+import li.songe.gkd.util.isSafeUrl
 
 
 @Composable
@@ -42,6 +42,16 @@ fun SubsItemCard(
                 }
                 Spacer(modifier = Modifier.height(5.dp))
                 Row {
+                    val sourceText =
+                        if (subsItem.id < 0) {
+                            "本地来源"
+                        } else if (subsItem.updateUrl != null && isSafeUrl(subsItem.updateUrl)) {
+                            "可信来源"
+                        } else {
+                            "未知来源"
+                        }
+                    Text(text = sourceText, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = formatTimeAgo(subsItem.mtime),
                         maxLines = 1,
@@ -50,22 +60,6 @@ fun SubsItemCard(
                         fontSize = 14.sp
                     )
                     Spacer(modifier = Modifier.width(10.dp))
-                    val sourceText =
-                        if (subsItem.id < 0) {
-                            "本地来源"
-                        } else if (subsItem.updateUrl != null && safeRemoteBaseUrls.any { s ->
-                                subsItem.updateUrl.startsWith(
-                                    s
-                                )
-                            }) {
-                            "可信来源"
-                        } else {
-                            "未知来源"
-                        }
-                    Text(text = sourceText, fontSize = 14.sp)
-                }
-                Spacer(modifier = Modifier.height(5.dp))
-                Row {
                     if (subsItem.id >= 0) {
                         Text(
                             text = "v" + (rawSubscription.version.toString()),
@@ -76,12 +70,12 @@ fun SubsItemCard(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                     }
-
-                    Text(
-                        text = rawSubscription.numText,
-                        fontSize = 14.sp
-                    )
                 }
+                Spacer(modifier = Modifier.height(5.dp))
+                Text(
+                    text = rawSubscription.numText,
+                    fontSize = 14.sp
+                )
             } else {
                 Text(
                     text = "本地无订阅文件,请下拉刷新",
