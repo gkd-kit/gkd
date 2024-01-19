@@ -125,6 +125,7 @@ data class RawSubscription(
 
     interface RawGlobalRuleProps {
         val matchAnyApp: Boolean?
+        val matchSystemApp: Boolean?
         val matchLauncher: Boolean?
         val apps: List<RawGlobalApp>?
     }
@@ -157,6 +158,7 @@ data class RawSubscription(
         override val snapshotUrls: List<String>?,
         override val exampleUrls: List<String>?,
         override val matchAnyApp: Boolean?,
+        override val matchSystemApp: Boolean?,
         override val matchLauncher: Boolean?,
         override val apps: List<RawGlobalApp>?,
         override val rules: List<RawGlobalRule>,
@@ -216,6 +218,7 @@ data class RawSubscription(
         override val matches: List<String>,
         override val excludeMatches: List<String>?,
         override val matchAnyApp: Boolean?,
+        override val matchSystemApp: Boolean?,
         override val matchLauncher: Boolean?,
         override val apps: List<RawGlobalApp>?
     ) : RawRuleProps, RawGlobalRuleProps
@@ -485,6 +488,7 @@ data class RawSubscription(
                 actionMaximumKey = getInt(jsonObject, "actionMaximumKey"),
                 actionCdKey = getInt(jsonObject, "actionCdKey"),
                 matchAnyApp = getBoolean(jsonObject, "matchAnyApp"),
+                matchSystemApp = getBoolean(jsonObject, "matchSystemApp"),
                 matchLauncher = getBoolean(jsonObject, "matchLauncher"),
                 apps = jsonObject["apps"]?.jsonArray?.mapIndexed { index, jsonElement ->
                     jsonToGlobalApp(
@@ -515,6 +519,7 @@ data class RawSubscription(
                 exampleUrls = getStringIArray(jsonObject, "exampleUrls"),
                 actionMaximumKey = getInt(jsonObject, "actionMaximumKey"),
                 actionCdKey = getInt(jsonObject, "actionCdKey"),
+                matchSystemApp = getBoolean(jsonObject, "matchSystemApp"),
                 matchAnyApp = getBoolean(jsonObject, "matchAnyApp"),
                 matchLauncher = getBoolean(jsonObject, "matchLauncher"),
                 apps = jsonObject["apps"]?.jsonArray?.mapIndexed { index, jsonElement ->

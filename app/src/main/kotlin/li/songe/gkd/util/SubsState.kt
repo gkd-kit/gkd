@@ -223,14 +223,5 @@ fun initSubsState() {
             }
             subsIdToRawFlow.value = newMap
         }
-        var oldAppIds = emptySet<String>()
-        val appIdsFlow = subsIdToRawFlow.map(appScope) { e ->
-            e.values.map { s -> s.apps.map { a -> a.id } }.flatten().toSet()
-        }
-        appIdsFlow.collect { newAppIds ->
-            // diff new appId
-            updateAppInfo(newAppIds.subtract(oldAppIds).toList())
-            oldAppIds = newAppIds
-        }
     }
 }

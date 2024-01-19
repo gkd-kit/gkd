@@ -82,24 +82,35 @@ data class SubsConfig(
 }
 
 data class ExcludeData(
-    val appIds: Set<String>, val activityIds: Set<Pair<String, String>>
+    val appIds: Map<String, Boolean>,
+    val activityIds: Set<Pair<String, String>>,
 ) {
+    val excludeAppIds = appIds.entries.filter { e -> e.value }.map { e -> e.key }.toSet()
+    val includeAppIds = appIds.entries.filter { e -> !e.value }.map { e -> e.key }.toSet()
+
     companion object {
         fun parse(exclude: String?): ExcludeData {
-            val appIds = mutableSetOf<String>()
+            val appIds = mutableMapOf<String, Boolean>()
             val activityIds = mutableSetOf<Pair<String, String>>()
-            (exclude ?: "").split('\n', ',')
-                .filter { s -> s.isNotBlank() && s.count { c -> c == '/' } <= 1 }.forEach { s ->
-                    val a = s.split('/')
-                    val appId = a[0]
-                    val activityId = a.getOrNull(1)
-                    if (activityId != null) {
-                        activityIds.add(appId to activityId)
+            (exclude ?: "").split('\n', ',').filter { s -> s.isNotBlank() }.map { s -> s.trim() }
+                .forEach { s ->
+                    if (s[0] == '!') {
+                        appIds[s.substring(1)] = false
                     } else {
-                        appIds.add(appId)
+                        val a = s.split('/')
+                        val appId = a[0]
+                        val activityId = a.getOrNull(1)
+                        if (activityId != null) {
+                            activityIds.add(appId to activityId)
+                        } else {
+                            appIds[appId] = true
+                        }
                     }
                 }
-            return ExcludeData(appIds = appIds, activityIds = activityIds)
+            return ExcludeData(
+                appIds = appIds,
+                activityIds = activityIds,
+            )
         }
 
         fun parse(appId: String, exclude: String?): ExcludeData {
@@ -109,7 +120,13 @@ data class ExcludeData(
 }
 
 fun ExcludeData.stringify(): String {
-    return (appIds + activityIds.map { e -> "${e.first}/${e.second}" }).sorted().joinToString("\n")
+    return (appIds.entries.map { e ->
+        if (e.value) {
+            e.key
+        } else {
+            "!${e.key}"
+        }
+    } + activityIds.map { e -> "${e.first}/${e.second}" }).sorted().joinToString("\n")
 }
 
 fun ExcludeData.stringify(appId: String): String {
@@ -120,11 +137,11 @@ fun ExcludeData.stringify(appId: String): String {
 fun ExcludeData.switch(appId: String, activityId: String? = null): ExcludeData {
     return if (activityId == null) {
         copy(
-            appIds = appIds.toMutableSet().apply {
-                if (contains(appId)) {
-                    remove(appId)
+            appIds = appIds.toMutableMap().apply {
+                if (get(appId) == true) {
+                    set(appId, false)
                 } else {
-                    add(appId)
+                    set(appId, true)
                 }
             },
         )
