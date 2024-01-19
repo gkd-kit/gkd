@@ -15,12 +15,11 @@ import li.songe.gkd.data.Tuple3
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.collator
 import li.songe.gkd.util.getGroupRawEnable
 import li.songe.gkd.util.map
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
-import java.text.Collator
-import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -44,7 +43,6 @@ class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
     private val sortAppsFlow = combine(
         subsRawFlow, appInfoCacheFlow
     ) { subsRaw, appInfoCache ->
-        val collator = Collator.getInstance(Locale.CHINESE)
         (subsRaw?.apps ?: emptyList()).sortedWith { a, b ->
             // 顺序: 已安装(有名字->无名字)->未安装(有名字(来自订阅)->无名字)
             collator.compare(appInfoCache[a.id]?.name ?: a.name?.let { "\uFFFF" + it }

@@ -153,15 +153,9 @@ sealed class ResolvedRule(
     val excludeData = ExcludeData.parse(exclude)
 
     abstract val type: String
-    open fun matchActivity(appId: String, activityId: String? = null): Boolean {
-        if (excludeData.appIds.contains(appId)) {
-            return false
-        }
-        activityId ?: return true
-        return !excludeData.activityIds.any { e ->
-            e.first == appId && activityId.startsWith(e.second)
-        }
-    }
+
+    // 范围越精确, 优先级越高
+    abstract fun matchActivity(appId: String, activityId: String? = null): Boolean
 
 }
 

@@ -17,10 +17,11 @@ class AppRule(
     val appId = app.id
     val activityIds = getFixActivityIds(app.id, rule.activityIds ?: group.activityIds)
     val excludeActivityIds =
-        getFixActivityIds(
+        (getFixActivityIds(
             app.id,
             rule.excludeActivityIds ?: group.excludeActivityIds
-        ) + (excludeData.activityIds.filter { e -> e.first == appId }.map { e -> e.second })
+        ) + (excludeData.activityIds.filter { e -> e.first == appId }
+            .map { e -> e.second })).distinct()
 
     override val type = "app"
     override fun matchActivity(appId: String, activityId: String?): Boolean {

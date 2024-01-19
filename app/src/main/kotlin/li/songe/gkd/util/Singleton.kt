@@ -15,7 +15,9 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import li.songe.gkd.app
 import okhttp3.OkHttpClient
+import java.text.Collator
 import java.time.Duration
+import java.util.Locale
 
 
 val kv by lazy { MMKV.mmkvWithID("kv")!! }
@@ -68,4 +70,7 @@ val imageLoader by lazy {
             DiskCache.Builder().directory(imageCacheDir).build()
         }.build()
 }
+
+
+val collator by lazy { Collator.getInstance(Locale.CHINESE)!! }
 

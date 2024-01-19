@@ -8,4 +8,5 @@ data class AppInfo(
     val icon: Drawable,
     val versionCode: Int,
     val versionName: String,
+    val isSystem: Boolean,
 )

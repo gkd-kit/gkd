@@ -254,7 +254,7 @@ fun DebugPage() {
             Divider()
             TextSwitch(
                 name = "截屏快照",
-                desc = "当用户截屏时保存快照(需手动替换快照图片),仅支持部分MIUI14",
+                desc = "当用户截屏时保存快照(需手动替换快照图片),仅支持部分小米设备",
                 checked = store.captureScreenshot
             ) {
                 updateStorage(
