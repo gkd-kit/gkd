@@ -2,6 +2,7 @@ package li.songe.gkd.util
 
 import android.webkit.URLUtil
 import io.ktor.http.Url
+import io.ktor.http.fullPath
 import li.songe.gkd.BuildConfig
 
 const val VOLUME_CHANGED_ACTION = "android.media.VOLUME_CHANGED_ACTION"
@@ -27,12 +28,9 @@ val GIT_COMMIT_URL = if (BuildConfig.GIT_COMMIT_ID != null) {
 
 private val safeRemoteBaseUrls = arrayOf(
     "https://registry.npmmirror.com/@gkd-kit/",
-    "https://cdn.jsdelivr.net/npm/@gkd-kit/",
-    "https://fastly.jsdelivr.net/npm/@gkd-kit/",
-    "https://unpkg.com/@gkd-kit/",
+
     "https://github.com/gkd-kit/",
     "https://raw.githubusercontent.com/gkd-kit/",
-    HOME_PAGE_URL,
 )
 
 fun isSafeUrl(url: String): Boolean {
@@ -40,9 +38,17 @@ fun isSafeUrl(url: String): Boolean {
     if (safeRemoteBaseUrls.any { u -> url.startsWith(u) }) {
         return true
     }
-    return try {
-        Url(url).host.endsWith(".gkd.li")
+    val u = try {
+        Url(url)
     } catch (e: Exception) {
-        false
+        return false
     }
+    if (u.host == "gkd.li" || u.host.endsWith(".gkd.li")) {
+        return true
+    } else if (u.host.endsWith(".jsdelivr.net") && u.fullPath.startsWith("/npm/@gkd-kit/")) {
+        return true
+    } else if ((u.host == "unpkg.com" || u.host.endsWith(".unpkg.com")) && u.fullPath.startsWith("/@gkd-kit/")) {
+        return true
+    }
+    return false
 }
