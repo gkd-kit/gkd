@@ -7,16 +7,32 @@ fun String.runCommand(currentWorkingDir: File = file("./")): String {
         workingDir = currentWorkingDir
         commandLine = this@runCommand.split("\\s".toRegex())
         standardOutput = byteOut
+        errorOutput = ByteArrayOutputStream()
     }
     return String(byteOut.toByteArray()).trim()
 }
 
-val gitCommitId = try {
-    "git rev-parse HEAD".runCommand()
+data class GitInfo(
+    val commitId: String,
+    val tagName: String?,
+)
+
+val gitInfo = try {
+    GitInfo(
+        commitId = "git rev-parse HEAD".runCommand(),
+        tagName = try {
+            "git describe --tags --exact-match".runCommand()
+        } catch (e: Exception) {
+            println("app: current git commit is not a tag")
+            null
+        },
+    )
 } catch (e: Exception) {
-    e.printStackTrace()
+    println("app: git is not available")
     null
 }
+
+val vnSuffix = "-${gitInfo?.commitId?.substring(0, 7) ?: "unknown"}"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -51,7 +67,7 @@ android {
         buildConfigField(
             "String",
             "GIT_COMMIT_ID",
-            jsonStringOf(gitCommitId)
+            jsonStringOf(gitInfo?.commitId)
         )
         buildConfigField(
             "String", "GKD_BUGLY_APP_ID", jsonStringOf(project.properties["GKD_BUGLY_APP_ID"])
@@ -83,6 +99,9 @@ android {
             signingConfig = currentSigning
         }
         release {
+            if (gitInfo?.tagName == null) {
+                versionNameSuffix = vnSuffix
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             setProguardFiles(
@@ -93,11 +112,7 @@ android {
             )
         }
         debug {
-            versionNameSuffix = if (gitCommitId != null) {
-                "-${gitCommitId.substring(0, 8)}"
-            } else {
-                "-unknown"
-            }
+            versionNameSuffix = vnSuffix
             applicationIdSuffix = ".debug"
             resValue("string", "app_name", "GKD-debug")
         }

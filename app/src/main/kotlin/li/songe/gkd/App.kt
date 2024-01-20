@@ -66,7 +66,11 @@ class App : Application() {
             setConsoleSwitch(BuildConfig.DEBUG)
             saveDays = 7
         }
-        LogUtils.d("GIT_COMMIT_URL: $GIT_COMMIT_URL")
+        LogUtils.d(
+            "GIT_COMMIT_URL: $GIT_COMMIT_URL",
+            "VERSION_CODE: ${BuildConfig.VERSION_CODE}",
+            "VERSION_NAME: ${BuildConfig.VERSION_NAME}",
+        )
 
         initFolder()
         appScope.launchTry(Dispatchers.IO) {
