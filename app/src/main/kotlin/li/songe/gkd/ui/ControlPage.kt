@@ -1,6 +1,7 @@
 package li.songe.gkd.ui
 
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,8 +16,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -35,6 +38,7 @@ import li.songe.gkd.service.ManageService
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.ClickLogPageDestination
+import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.checkOrRequestNotifPermission
 import li.songe.gkd.util.launchTry
@@ -142,6 +146,36 @@ fun ControlPage() {
                     ManageService.stop(context)
                 }
             })
+        Divider()
+
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .clickable {
+                    appScope.launchTry {
+                        context.startActivity(
+                            Intent(
+                                Intent.ACTION_VIEW, Uri.parse(HOME_PAGE_URL)
+                            )
+                        )
+                    }
+                }
+                .padding(10.dp, 5.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "使用说明", fontSize = 18.sp
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = HOME_PAGE_URL,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Icon(imageVector = Icons.Default.OpenInNew, contentDescription = null)
+        }
         Divider()
 
         Row(
