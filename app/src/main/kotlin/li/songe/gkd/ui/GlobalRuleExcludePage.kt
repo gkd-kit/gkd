@@ -206,7 +206,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                             checked = checked ?: false,
                             onCheckedChange = {
                                 if (checked == null) {
-                                    toast("规则内已禁用,不可修改")
+                                    toast("规则内置禁用,不可修改")
                                     return@Switch
                                 }
                                 vm.viewModelScope.launchTry {
