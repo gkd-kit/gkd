@@ -9,9 +9,12 @@
 
 ## 功能
 
-基于 [高级选择器](https://github.com/gkd-kit/selector) + [订阅规则](https://github.com/gkd-kit/subscription) + [快照审查](https://github.com/gkd-kit/inspect),
+基于 [高级选择器](https://github.com/gkd-kit/selector) + [订阅规则](https://github.com/gkd-kit/subscription) + [快照审查](https://github.com/gkd-kit/inspect), 实现根据屏幕上下文信息自定义点击目标控件
 
-可以实现根据屏幕上下文信息自定义点击目标控件
+|                                                                                             |                                                                                             |                                                                                             |                                                                                             |
+|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| ![img](https://github.com/gkd-kit/gkd/assets/38517192/4bfa0f58-d80b-48d2-a77e-5f0e27cbd301) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/84d976bd-9260-4788-a34f-9bdfa2df1751) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/b9a755ec-fb08-4b33-9dd6-d45e13c9a1ac) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/85900277-4dab-4b76-901c-60bc3dace3b5) |
+| ![img](https://github.com/gkd-kit/gkd/assets/38517192/17adc76b-ba56-46ef-8c86-92aa5bba149d) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/af1aa078-7ddc-4e0c-b2c8-a53ea2acfa77) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/b420d23c-dc84-4127-8e60-5e8bac5cca92) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/4c2b1be6-f34b-48f4-8ae1-157e4b4a0c7d) |
 
 ## 选择器
 
