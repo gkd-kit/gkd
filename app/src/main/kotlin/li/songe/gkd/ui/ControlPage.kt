@@ -89,8 +89,8 @@ fun ControlPage() {
         Divider()
 
         TextSwitch(
-            name = "常驻通知栏",
-            desc = "在通知栏显示服务运行状态,避免被某些系统回收",
+            name = "常驻通知",
+            desc = "在通知栏显示服务运行状态及统计数据",
             checked = manageRunning && store.enableStatusService,
             onCheckedChange = {
                 if (it) {

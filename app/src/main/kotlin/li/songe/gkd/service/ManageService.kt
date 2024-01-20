@@ -2,6 +2,7 @@ package li.songe.gkd.service
 
 import android.content.Context
 import android.content.Intent
+import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -61,5 +62,16 @@ class ManageService : CompositionService({
         fun stop(context: Context = app) {
             context.stopService(Intent(context, ManageService::class.java))
         }
+
+        fun autoStart(context: Context) {
+            // 在[系统重启]/[被其它高权限应用重启]时自动打开通知栏状态服务
+            if (storeFlow.value.enableStatusService &&
+                NotificationManagerCompat.from(context).areNotificationsEnabled() &&
+                !isRunning.value
+            ) {
+                start(context)
+            }
+        }
     }
 }
+
