@@ -15,6 +15,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import li.songe.gkd.composition.CompositionActivity
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
+import li.songe.gkd.service.ManageService
 import li.songe.gkd.service.updateLauncherAppId
 import li.songe.gkd.ui.NavGraphs
 import li.songe.gkd.ui.component.ConfirmDialog
@@ -47,6 +48,8 @@ class MainActivity : CompositionActivity({
 
     // 每次打开页面更新记录桌面 appId
     updateLauncherAppId()
+
+    ManageService.autoStart(this)
 
     setContent {
         val navController = rememberNavController()
