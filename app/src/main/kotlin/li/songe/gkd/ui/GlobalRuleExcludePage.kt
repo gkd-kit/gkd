@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
@@ -152,13 +153,24 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Image(
-                        painter = rememberDrawablePainter(appInfo.icon),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(52.dp)
-                            .clip(CircleShape)
-                    )
+                    if (appInfo.icon != null) {
+                        Image(
+                            painter = rememberDrawablePainter(appInfo.icon),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(CircleShape)
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Android,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(52.dp)
+                                .padding(4.dp)
+                                .clip(CircleShape)
+                        )
+                    }
 
                     Spacer(modifier = Modifier.width(10.dp))
 
