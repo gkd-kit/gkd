@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import li.songe.gkd.MainActivity
 import li.songe.gkd.appScope
@@ -56,6 +57,9 @@ fun ControlPage() {
     val gkdAccessRunning by GkdAbService.isRunning.collectAsState()
     val manageRunning by ManageService.isRunning.collectAsState()
     val canDrawOverlays by usePollState { Settings.canDrawOverlays(context) }
+    val canNotif by usePollState {
+        NotificationManagerCompat.from(context).areNotificationsEnabled()
+    }
 
     Column(
         modifier = Modifier.verticalScroll(
@@ -63,7 +67,8 @@ fun ControlPage() {
         )
     ) {
         if (!gkdAccessRunning) {
-            AuthCard(title = "无障碍权限",
+            AuthCard(
+                title = "无障碍权限",
                 desc = "用于获取屏幕信息,点击屏幕上的控件",
                 onAuthClick = {
                     appScope.launchTry {
@@ -87,6 +92,31 @@ fun ControlPage() {
                 })
         }
         Divider()
+
+        if (!canNotif) {
+            AuthCard(title = "通知权限",
+                desc = "用于显示各类服务状态数据及前后台提示",
+                onAuthClick = {
+                    checkOrRequestNotifPermission(context)
+                })
+            Divider()
+        }
+
+        if (!canDrawOverlays) {
+            AuthCard(
+                title = "悬浮窗权限",
+                desc = "用于后台提示,显示保存快照按钮等功能",
+                onAuthClick = {
+                    appScope.launchTry {
+                        val intent = Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        )
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        context.startActivity(intent)
+                    }
+                })
+            Divider()
+        }
 
         TextSwitch(
             name = "常驻通知",
@@ -113,20 +143,6 @@ fun ControlPage() {
                 }
             })
         Divider()
-
-        if (!canDrawOverlays) {
-            AuthCard(
-                title = "悬浮窗权限",
-                desc = "用于后台提示,显示保存快照按钮等功能",
-                onAuthClick = {
-                    val intent = Intent(
-                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    )
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    context.startActivity(intent)
-                })
-            Divider()
-        }
 
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
