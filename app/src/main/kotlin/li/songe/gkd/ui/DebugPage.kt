@@ -5,13 +5,16 @@ import android.content.Context
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import android.provider.Settings
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -22,24 +25,31 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
+import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.LogUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
@@ -151,22 +161,70 @@ fun DebugPage() {
             }
 
             val httpServerRunning by HttpService.isRunning.collectAsState()
-            TextSwitch(
-                name = "HTTP服务",
-                desc = if (httpServerRunning) "浏览器打开下面任意链接即可自动连接\n${
-                    Ext.getIpAddressInLocalNetwork()
-                        .map { host -> "http://${host}:${store.httpServerPort}" }.joinToString("\n")
-                }" else "开启HTTP服务在同一局域网下连接调试工具",
-                checked = httpServerRunning
+
+            Row(
+                modifier = Modifier.padding(10.dp, 5.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (!checkOrRequestNotifPermission(context)) {
-                    return@TextSwitch
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "HTTP服务",
+                        fontSize = 18.sp
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    CompositionLocalProvider(
+                        LocalTextStyle provides LocalTextStyle.current.copy(
+                            fontSize = 14.sp
+                        )
+                    ) {
+                        if (!httpServerRunning) {
+                            Text(
+                                text = "开启HTTP服务在浏览器下连接调试工具",
+                            )
+                        } else {
+                            Text(
+                                text = "点击复制下面任意链接打开即可自动连接",
+                            )
+                            Row {
+                                Text(
+                                    text = "http://127.0.0.1:${store.httpServerPort}",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.clickable {
+                                        ClipboardUtils.copyText("http://127.0.0.1:${store.httpServerPort}")
+                                        toast("复制成功")
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(text = "仅本设备可访问")
+                            }
+                            Ext.getIpAddressInLocalNetwork().forEach { host ->
+                                Text(
+                                    text = "http://${host}:${store.httpServerPort}",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.clickable {
+                                        ClipboardUtils.copyText("http://${host}:${store.httpServerPort}")
+                                        toast("复制成功")
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
-                if (it) {
-                    HttpService.start()
-                } else {
-                    HttpService.stop()
-                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Switch(
+                    checked = httpServerRunning,
+                    onCheckedChange = {
+                        if (!checkOrRequestNotifPermission(context)) {
+                            return@Switch
+                        }
+                        if (it) {
+                            HttpService.start()
+                        } else {
+                            HttpService.stop()
+                        }
+                    }
+                )
             }
             Divider()
 
