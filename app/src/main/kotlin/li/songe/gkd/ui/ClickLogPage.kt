@@ -64,6 +64,7 @@ import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.format
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.navigate
+import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.toast
 
 @RootNavGraph
@@ -77,6 +78,7 @@ fun ClickLogPage() {
     val clickDataList by vm.clickDataListFlow.collectAsState()
     val clickLogCount by vm.clickLogCountFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
+    val subsIdToRaw by subsIdToRawFlow.collectAsState()
 
     var previewClickLog by remember {
         mutableStateOf<ClickLog?>(null)
@@ -210,6 +212,7 @@ fun ClickLogPage() {
                 val oldExclude = remember(key1 = previewConfig?.exclude) {
                     ExcludeData.parse(previewConfig?.exclude)
                 }
+                val appInfo = appInfoCache[clickLog.appId]
 
                 Column {
                     Text(text = "查看规则组", modifier = Modifier
@@ -233,26 +236,48 @@ fun ClickLogPage() {
                         .fillMaxWidth()
                         .padding(16.dp))
                     if (clickLog.groupType == SubsConfig.GlobalGroupType && clickLog.appId != null) {
-                        Text(
-                            text = if (oldExclude.appIds.contains(clickLog.appId)) "移除在此应用的禁用" else "在此应用禁用",
-                            modifier = Modifier
-                                .clickable(onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                                    val subsConfig = previewConfig ?: SubsConfig(
-                                        type = SubsConfig.GlobalGroupType,
-                                        subsItemId = clickLog.subsId,
-                                        groupKey = clickLog.groupKey,
-                                    )
-                                    val newSubsConfig = subsConfig.copy(
-                                        exclude = oldExclude
-                                            .switch(clickLog.appId)
-                                            .stringify()
-                                    )
-                                    DbSet.subsConfigDao.insert(newSubsConfig)
-                                    toast("更新禁用")
-                                })
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                        )
+                        val group =
+                            subsIdToRaw[clickLog.subsId]?.globalGroups?.find { g -> g.key == clickLog.groupKey }
+                        val appChecked = if (group != null) {
+                            getChecked(
+                                oldExclude,
+                                group,
+                                clickLog.appId,
+                                appInfo
+                            )
+                        } else {
+                            null
+                        }
+                        if (appChecked != null) {
+                            Text(
+                                text = if (appChecked) "在此应用禁用" else "移除在此应用的禁用",
+                                modifier = Modifier
+                                    .clickable(
+                                        onClick = vm.viewModelScope.launchAsFn(
+                                            Dispatchers.IO
+                                        ) {
+                                            val subsConfig = previewConfig ?: SubsConfig(
+                                                type = SubsConfig.GlobalGroupType,
+                                                subsItemId = clickLog.subsId,
+                                                groupKey = clickLog.groupKey,
+                                            )
+                                            val newSubsConfig = subsConfig.copy(
+                                                exclude = oldExclude
+                                                    .copy(
+                                                        appIds = oldExclude.appIds
+                                                            .toMutableMap()
+                                                            .apply {
+                                                                set(clickLog.appId, appChecked)
+                                                            })
+                                                    .stringify()
+                                            )
+                                            DbSet.subsConfigDao.insert(newSubsConfig)
+                                            toast("更新禁用")
+                                        })
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                            )
+                        }
                     }
                     if (clickLog.appId != null && clickLog.activityId != null) {
                         val disabled =

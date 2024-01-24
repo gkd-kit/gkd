@@ -138,7 +138,7 @@ fun ExcludeData.switch(appId: String, activityId: String? = null): ExcludeData {
     return if (activityId == null) {
         copy(
             appIds = appIds.toMutableMap().apply {
-                if (get(appId) == true) {
+                if (get(appId) != false) {
                     set(appId, false)
                 } else {
                     set(appId, true)

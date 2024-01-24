@@ -164,6 +164,10 @@ data class RawSubscription(
         override val rules: List<RawGlobalRule>,
     ) : RawGroupProps, RawGlobalRuleProps {
 
+        val appIdEnable by lazy {
+            (apps ?: emptyList()).associate { a -> a.id to (a.enable ?: true) }
+        }
+
         val allSelectorStrings by lazy {
             rules.map { r -> r.matches + (r.excludeMatches ?: emptyList()) }.flatten().distinct()
         }
