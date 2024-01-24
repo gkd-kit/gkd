@@ -1,28 +1,12 @@
 package li.songe.gkd.util
 
 import android.content.Intent
-import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.os.Build
 import java.net.NetworkInterface
 
 
 object Ext {
-    fun PackageManager.getApplicationInfoExt(
-        packageName: String,
-        value: Int = PackageManager.GET_META_DATA,
-    ): ApplicationInfo {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            getApplicationInfo(
-                packageName, PackageManager.ApplicationInfoFlags.of(value.toLong())
-            )
-        } else {
-            getApplicationInfo(
-                packageName, value
-            )
-        }
-    }
 
     fun Bitmap.isEmptyBitmap(): Boolean {
         val emptyBitmap = Bitmap.createBitmap(width, height, config)

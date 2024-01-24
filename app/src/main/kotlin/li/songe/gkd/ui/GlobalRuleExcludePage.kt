@@ -75,7 +75,6 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
     val rawSubs = vm.rawSubsFlow.collectAsState().value
     val group = vm.groupFlow.collectAsState().value
     val excludeData = vm.excludeDataFlow.collectAsState().value
-    val appIdEnable = vm.appIdEnableFlow.collectAsState().value
     val showAppInfos = vm.showAppInfosFlow.collectAsState().value
     val searchStr by vm.searchStrFlow.collectAsState()
 
@@ -201,7 +200,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                     Spacer(modifier = Modifier.width(10.dp))
 
                     if (group != null) {
-                        val checked = getChecked(excludeData, group, appIdEnable, appInfo)
+                        val checked = getChecked(excludeData, group, appInfo.id, appInfo)
                         Switch(
                             checked = checked ?: false,
                             onCheckedChange = {
@@ -298,21 +297,24 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
 
 }
 
-private fun getChecked(
+// null - 内置禁用
+// true - 启用
+// false - 禁用
+fun getChecked(
     excludeData: ExcludeData,
     group: RawSubscription.RawGlobalGroup,
-    appIdEnable: Map<String, Boolean>,
-    appInfo: AppInfo
+    appId: String,
+    appInfo: AppInfo? = null
 ): Boolean? {
-    val enable = appIdEnable[appInfo.id]
+    val enable = group.appIdEnable[appId]
     if (enable == false) {
         return null
     }
-    excludeData.appIds[appInfo.id]?.let { return !it }
-    if (appInfo.id == launcherAppId) {
+    excludeData.appIds[appId]?.let { return !it }
+    if (appInfo?.id == launcherAppId) {
         return group.matchLauncher ?: false
     }
-    if (appInfo.isSystem) {
+    if (appInfo?.isSystem == true) {
         return group.matchSystemApp ?: false
     }
     return group.matchAnyApp ?: true
