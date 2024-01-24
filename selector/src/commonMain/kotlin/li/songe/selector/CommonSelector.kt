@@ -14,6 +14,12 @@ class CommonSelector private constructor(
     val connectKeys = selector.connectKeys
     val propertyNames = selector.propertyNames
 
+    val qfIdValue = selector.qfIdValue
+    val qfVidValue = selector.qfVidValue
+    val qfTextValue = selector.qfIdValue
+    val canQf = selector.canQf
+    val isMatchRoot = selector.isMatchRoot
+
     fun <T : Any> match(node: T, transform: CommonTransform<T>): T? {
         return selector.match(node, transform.transform)
     }
