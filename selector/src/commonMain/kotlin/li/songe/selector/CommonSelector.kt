@@ -16,7 +16,7 @@ class CommonSelector private constructor(
 
     val qfIdValue = selector.qfIdValue
     val qfVidValue = selector.qfVidValue
-    val qfTextValue = selector.qfIdValue
+    val qfTextValue = selector.qfTextValue
     val canQf = selector.canQf
     val isMatchRoot = selector.isMatchRoot
 
