@@ -57,6 +57,7 @@ import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateStorage
 import li.songe.gkd.util.updateSubscription
 import li.songe.selector.Selector
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -101,6 +102,12 @@ class GkdAbService : CompositionAbService({
         val top = safeGetTasksFc()?.lastOrNull()?.topActivity ?: return null
         return TopActivity(appId = top.packageName, activityId = top.className)
     }
+    shizukuTopActivityGetter = {
+        getShizukuTopActivity()
+    }
+    onDestroy {
+        shizukuTopActivityGetter = null
+    }
 
     val activityCache = object : LruCache<Pair<String, String>, Boolean>(128) {
         override fun create(key: Pair<String, String>): Boolean {
@@ -127,7 +134,6 @@ class GkdAbService : CompositionAbService({
     var lastContentEventTime = 0L
     val queryThread = Dispatchers.IO.limitedParallelism(1)
     val actionThread = Dispatchers.IO.limitedParallelism(1)
-    val eventExecutor = Executors.newSingleThreadExecutor()
     onDestroy {
         queryThread.cancel()
         actionThread.cancel()
@@ -490,6 +496,10 @@ class GkdAbService : CompositionAbService({
 }) {
 
     companion object {
+
+        var shizukuTopActivityGetter: (() -> TopActivity?)? = null
+
+        val eventExecutor: ExecutorService by lazy { Executors.newSingleThreadExecutor() }
         var service: GkdAbService? = null
 
         val isRunning = MutableStateFlow(false)
