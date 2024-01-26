@@ -12,6 +12,7 @@ import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.deleteSubscription
+import li.songe.gkd.util.isSafeUrl
 
 @Entity(
     tableName = "subs_item",
@@ -27,6 +28,14 @@ data class SubsItem(
     @ColumnInfo(name = "update_url") val updateUrl: String? = null,
 
     ) {
+
+    val isSafeRemote by lazy {
+        if (updateUrl != null) {
+            isSafeUrl(updateUrl)
+        } else {
+            false
+        }
+    }
 
     suspend fun removeAssets() {
         deleteSubscription(id)

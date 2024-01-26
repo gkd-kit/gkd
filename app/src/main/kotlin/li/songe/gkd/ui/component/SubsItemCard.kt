@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.sp
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.util.formatTimeAgo
-import li.songe.gkd.util.isSafeUrl
 
 
 @Composable
@@ -45,7 +44,7 @@ fun SubsItemCard(
                     val sourceText =
                         if (subsItem.id < 0) {
                             "本地来源"
-                        } else if (subsItem.updateUrl != null && isSafeUrl(subsItem.updateUrl)) {
+                        } else if (subsItem.isSafeRemote) {
                             "可信来源"
                         } else {
                             "未知来源"
