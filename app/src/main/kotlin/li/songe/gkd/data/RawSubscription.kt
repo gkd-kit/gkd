@@ -97,6 +97,7 @@ data class RawSubscription(
         val resetMatch: String?
         val actionCdKey: Int?
         val actionMaximumKey: Int?
+        val order: Int?
         val snapshotUrls: List<String>?
         val exampleUrls: List<String>?
     }
@@ -155,6 +156,7 @@ data class RawSubscription(
         override val resetMatch: String?,
         override val actionCdKey: Int?,
         override val actionMaximumKey: Int?,
+        override val order: Int?,
         override val snapshotUrls: List<String>?,
         override val exampleUrls: List<String>?,
         override val matchAnyApp: Boolean?,
@@ -213,6 +215,7 @@ data class RawSubscription(
         override val resetMatch: String?,
         override val actionCdKey: Int?,
         override val actionMaximumKey: Int?,
+        override val order: Int?,
         override val snapshotUrls: List<String>?,
         override val exampleUrls: List<String>?,
         override val name: String?,
@@ -239,6 +242,7 @@ data class RawSubscription(
         override val actionDelay: Long?,
         override val quickFind: Boolean?,
         override val actionMaximum: Int?,
+        override val order: Int?,
         override val matchDelay: Long?,
         override val matchTime: Long?,
         override val resetMatch: String?,
@@ -298,6 +302,7 @@ data class RawSubscription(
         override val actionDelay: Long?,
         override val quickFind: Boolean?,
         override val actionMaximum: Int?,
+        override val order: Int?,
         override val matchDelay: Long?,
         override val matchTime: Long?,
         override val resetMatch: String?,
@@ -375,7 +380,6 @@ data class RawSubscription(
                 else -> error("Element $p is not a int")
             }
 
-        @Suppress("SameParameterValue")
         private fun getBoolean(json: JsonObject? = null, key: String): Boolean? =
             when (val p = json?.get(key)) {
                 JsonNull, null -> null
@@ -387,76 +391,78 @@ data class RawSubscription(
             }
 
         private fun jsonToRuleRaw(rulesRawJson: JsonElement): RawAppRule {
-            val rulesJson = when (rulesRawJson) {
+            val jsonObject = when (rulesRawJson) {
                 JsonNull -> error("miss current rule")
                 is JsonObject -> rulesRawJson
                 is JsonPrimitive, is JsonArray -> JsonObject(mapOf("matches" to rulesRawJson))
             }
             return RawAppRule(
-                activityIds = getStringIArray(rulesJson, "activityIds"),
-                excludeActivityIds = getStringIArray(rulesJson, "excludeActivityIds"),
+                activityIds = getStringIArray(jsonObject, "activityIds"),
+                excludeActivityIds = getStringIArray(jsonObject, "excludeActivityIds"),
                 matches = (getStringIArray(
-                    rulesJson, "matches"
+                    jsonObject, "matches"
                 ) ?: emptyList()),
-                excludeMatches = getStringIArray(rulesJson, "excludeMatches"),
-                key = getInt(rulesJson, "key"),
-                name = getString(rulesJson, "name"),
-                actionCd = getLong(rulesJson, "actionCd") ?: getLong(rulesJson, "cd"),
-                actionDelay = getLong(rulesJson, "actionDelay") ?: getLong(rulesJson, "delay"),
-                preKeys = getIntIArray(rulesJson, "preKeys"),
-                action = getString(rulesJson, "action"),
-                quickFind = getBoolean(rulesJson, "quickFind"),
-                actionMaximum = getInt(rulesJson, "actionMaximum"),
-                matchDelay = getLong(rulesJson, "matchDelay"),
-                matchTime = getLong(rulesJson, "matchTime"),
-                resetMatch = getString(rulesJson, "resetMatch"),
-                snapshotUrls = getStringIArray(rulesJson, "snapshotUrls"),
-                exampleUrls = getStringIArray(rulesJson, "exampleUrls"),
-                actionMaximumKey = getInt(rulesJson, "actionMaximumKey"),
-                actionCdKey = getInt(rulesJson, "actionCdKey"),
+                excludeMatches = getStringIArray(jsonObject, "excludeMatches"),
+                key = getInt(jsonObject, "key"),
+                name = getString(jsonObject, "name"),
+                actionCd = getLong(jsonObject, "actionCd") ?: getLong(jsonObject, "cd"),
+                actionDelay = getLong(jsonObject, "actionDelay") ?: getLong(jsonObject, "delay"),
+                preKeys = getIntIArray(jsonObject, "preKeys"),
+                action = getString(jsonObject, "action"),
+                quickFind = getBoolean(jsonObject, "quickFind"),
+                actionMaximum = getInt(jsonObject, "actionMaximum"),
+                matchDelay = getLong(jsonObject, "matchDelay"),
+                matchTime = getLong(jsonObject, "matchTime"),
+                resetMatch = getString(jsonObject, "resetMatch"),
+                snapshotUrls = getStringIArray(jsonObject, "snapshotUrls"),
+                exampleUrls = getStringIArray(jsonObject, "exampleUrls"),
+                actionMaximumKey = getInt(jsonObject, "actionMaximumKey"),
+                actionCdKey = getInt(jsonObject, "actionCdKey"),
+                order = getInt(jsonObject, "order"),
             )
         }
 
 
         private fun jsonToGroupRaw(groupRawJson: JsonElement, groupIndex: Int): RawAppGroup {
-            val groupJson = when (groupRawJson) {
+            val jsonObject = when (groupRawJson) {
                 JsonNull -> error("group must not be null")
                 is JsonObject -> groupRawJson
                 is JsonPrimitive, is JsonArray -> JsonObject(mapOf("rules" to groupRawJson))
             }
             return RawAppGroup(
-                activityIds = getStringIArray(groupJson, "activityIds"),
-                excludeActivityIds = getStringIArray(groupJson, "excludeActivityIds"),
-                actionCd = getLong(groupJson, "actionCd") ?: getLong(groupJson, "cd"),
-                actionDelay = getLong(groupJson, "actionDelay") ?: getLong(groupJson, "delay"),
-                name = getString(groupJson, "name") ?: error("miss group name"),
-                desc = getString(groupJson, "desc"),
-                enable = getBoolean(groupJson, "enable"),
-                key = getInt(groupJson, "key") ?: groupIndex,
-                rules = when (val rulesJson = groupJson["rules"]) {
+                activityIds = getStringIArray(jsonObject, "activityIds"),
+                excludeActivityIds = getStringIArray(jsonObject, "excludeActivityIds"),
+                actionCd = getLong(jsonObject, "actionCd") ?: getLong(jsonObject, "cd"),
+                actionDelay = getLong(jsonObject, "actionDelay") ?: getLong(jsonObject, "delay"),
+                name = getString(jsonObject, "name") ?: error("miss group name"),
+                desc = getString(jsonObject, "desc"),
+                enable = getBoolean(jsonObject, "enable"),
+                key = getInt(jsonObject, "key") ?: groupIndex,
+                rules = when (val rulesJson = jsonObject["rules"]) {
                     null, JsonNull -> emptyList()
                     is JsonPrimitive, is JsonObject -> JsonArray(listOf(rulesJson))
                     is JsonArray -> rulesJson
                 }.map {
                     jsonToRuleRaw(it)
                 },
-                quickFind = getBoolean(groupJson, "quickFind"),
-                actionMaximum = getInt(groupJson, "actionMaximum"),
-                matchDelay = getLong(groupJson, "matchDelay"),
-                matchTime = getLong(groupJson, "matchTime"),
-                resetMatch = getString(groupJson, "resetMatch"),
-                snapshotUrls = getStringIArray(groupJson, "snapshotUrls"),
-                exampleUrls = getStringIArray(groupJson, "exampleUrls"),
-                actionMaximumKey = getInt(groupJson, "actionMaximumKey"),
-                actionCdKey = getInt(groupJson, "actionCdKey"),
+                quickFind = getBoolean(jsonObject, "quickFind"),
+                actionMaximum = getInt(jsonObject, "actionMaximum"),
+                matchDelay = getLong(jsonObject, "matchDelay"),
+                matchTime = getLong(jsonObject, "matchTime"),
+                resetMatch = getString(jsonObject, "resetMatch"),
+                snapshotUrls = getStringIArray(jsonObject, "snapshotUrls"),
+                exampleUrls = getStringIArray(jsonObject, "exampleUrls"),
+                actionMaximumKey = getInt(jsonObject, "actionMaximumKey"),
+                actionCdKey = getInt(jsonObject, "actionCdKey"),
+                order = getInt(jsonObject, "order"),
             )
         }
 
-        private fun jsonToAppRaw(appsJson: JsonObject, appIndex: Int): RawApp {
+        private fun jsonToAppRaw(jsonObject: JsonObject, appIndex: Int): RawApp {
             return RawApp(
-                id = getString(appsJson, "id") ?: error("miss subscription.apps[$appIndex].id"),
-                name = getString(appsJson, "name"),
-                groups = (when (val groupsJson = appsJson["groups"]) {
+                id = getString(jsonObject, "id") ?: error("miss subscription.apps[$appIndex].id"),
+                name = getString(jsonObject, "name"),
+                groups = (when (val groupsJson = jsonObject["groups"]) {
                     null, JsonNull -> emptyList()
                     is JsonPrimitive, is JsonObject -> JsonArray(listOf(groupsJson))
                     is JsonArray -> groupsJson
@@ -503,12 +509,14 @@ data class RawSubscription(
                 preKeys = getIntIArray(jsonObject, "preKeys"),
                 excludeMatches = getStringIArray(jsonObject, "excludeMatches"),
                 matches = getStringIArray(jsonObject, "matches") ?: error("miss matches"),
+                order = getInt(jsonObject, "order"),
             )
         }
 
         private fun jsonToGlobalGroups(jsonObject: JsonObject, groupIndex: Int): RawGlobalGroup {
-            return RawGlobalGroup(key = getInt(jsonObject, "key")
-                ?: error("miss group[$groupIndex].key"),
+            return RawGlobalGroup(
+                key = getInt(jsonObject, "key")
+                    ?: error("miss group[$groupIndex].key"),
                 name = getString(jsonObject, "name") ?: error("miss group[$groupIndex].name"),
                 desc = getString(jsonObject, "desc"),
                 enable = getBoolean(jsonObject, "enable"),
@@ -533,7 +541,9 @@ data class RawSubscription(
                 },
                 rules = jsonObject["rules"]?.jsonArray?.map { jsonElement ->
                     jsonToGlobalRule(jsonElement.jsonObject)
-                } ?: emptyList())
+                } ?: emptyList(),
+                order = getInt(jsonObject, "order"),
+            )
         }
 
         private fun jsonToSubscriptionRaw(rootJson: JsonObject): RawSubscription {

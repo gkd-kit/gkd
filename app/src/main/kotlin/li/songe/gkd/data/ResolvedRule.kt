@@ -39,6 +39,8 @@ sealed class ResolvedRule(
         null
     } ?: group.actionMaximum
 
+    val order = rule.order ?: group.order ?: 0
+
     var groupRules: List<ResolvedRule> = emptyList()
         set(value) {
             field = value
