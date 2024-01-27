@@ -33,7 +33,7 @@ data class ActivityRule(
     val topActivity: TopActivity = TopActivity(),
     val allRules: AllRules = AllRules(),
 ) {
-    val currentRules = appRules + globalRules
+    val currentRules = (appRules + globalRules).sortedBy { r -> r.order }
 }
 
 val activityRuleFlow by lazy { MutableStateFlow(ActivityRule()) }
@@ -44,7 +44,7 @@ private fun getFixTopActivity(): TopActivity {
     val top = topActivityFlow.value
     if (top.activityId == null) {
         if (lastTopActivity.appId == top.appId) {
-            // 当从通知栏上拉返回应用等时, activityId 的无障碍事件不会触发, 此时复用上一次获得的 activityId 填充
+            // 当从通知栏上拉返回应用, 从锁屏返回 等时, activityId 的无障碍事件不会触发, 此时复用上一次获得的 activityId 填充
             topActivityFlow.value = lastTopActivity
         }
     } else {
@@ -64,8 +64,7 @@ fun getAndUpdateCurrentRules(): ActivityRule {
         val newActivityRule = ActivityRule(
             allRules = allRules,
             topActivity = topActivity,
-            appRules = (allRules.appIdToRules[topActivity.appId]
-                ?: emptyList()).filter { rule ->
+            appRules = (allRules.appIdToRules[topActivity.appId] ?: emptyList()).filter { rule ->
                 rule.matchActivity(topActivity.appId, topActivity.activityId)
             },
             globalRules = allRulesFlow.value.globalRules.filter { r ->
