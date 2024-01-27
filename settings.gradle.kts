@@ -28,7 +28,7 @@ dependencyResolutionManagement {
 
     versionCatalogs {
         create("libs") {
-            val kotlinVersion = "1.9.21"
+            val kotlinVersion = "1.9.22"
             // use jdk17
             version("jdkVersion", JavaVersion.VERSION_17.majorVersion)
             version("kotlinVersion", kotlinVersion)
@@ -38,7 +38,7 @@ dependencyResolutionManagement {
             version("android.buildToolsVersion", "34.0.0")
             version("android.minSdk", "26")
 
-            val androidLibraryVersion = "8.2.0"
+            val androidLibraryVersion = "8.2.2"
             library("android.gradle", "com.android.tools.build:gradle:$androidLibraryVersion")
             plugin("android.library", "com.android.library").version(androidLibraryVersion)
             plugin("android.application", "com.android.application").version(androidLibraryVersion)
@@ -66,8 +66,8 @@ dependencyResolutionManagement {
 
             // compose 编译器的版本, 需要注意它与 compose 的版本没有关联
             // https://mvnrepository.com/artifact/androidx.compose.compiler/compiler
-            version("compose.compilerVersion", "1.5.7")
-            val composeVersion = "1.5.4"
+            version("compose.compilerVersion", "1.5.8")
+            val composeVersion = "1.6.0"
             library("compose.ui", "androidx.compose.ui:ui:$composeVersion")
             library("compose.preview", "androidx.compose.ui:ui-tooling-preview:$composeVersion")
             library("compose.tooling", "androidx.compose.ui:ui-tooling:$composeVersion")
@@ -82,7 +82,7 @@ dependencyResolutionManagement {
             library("compose.activity", "androidx.activity:activity-compose:1.8.2")
 
             // https://github.com/Tencent/MMKV/blob/master/README_CN.md
-            library("tencent.mmkv", "com.tencent:mmkv:1.3.2")
+            library("tencent.mmkv", "com.tencent:mmkv:1.3.3")
             // https://bugly.qq.com/docs/user-guide/instruction-manual-android/
             library("tencent.bugly", "com.tencent.bugly:crashreport:4.1.9.3")
 
@@ -115,12 +115,12 @@ dependencyResolutionManagement {
             library("others.jankson", "blue.endless:jankson:1.2.3")
 
             // https://github.com/TorryDo/Floating-Bubble-View
-            library("others.floating.bubble.view", "io.github.torrydo:floating-bubble-view:0.6.3")
+            library("others.floating.bubble.view", "io.github.torrydo:floating-bubble-view:0.6.4")
 
             library("androidx.appcompat", "androidx.appcompat:appcompat:1.6.1")
             library("androidx.core.ktx", "androidx.core:core-ktx:1.12.0")
             library(
-                "androidx.lifecycle.runtime.ktx", "androidx.lifecycle:lifecycle-runtime-ktx:2.6.2"
+                "androidx.lifecycle.runtime.ktx", "androidx.lifecycle:lifecycle-runtime-ktx:2.7.0"
             )
             library("androidx.junit", "androidx.test.ext:junit:1.1.5")
             library("androidx.espresso", "androidx.test.espresso:espresso-core:3.5.1")
@@ -135,7 +135,7 @@ dependencyResolutionManagement {
 
             library(
                 "google.accompanist.drawablepainter",
-                "com.google.accompanist:accompanist-drawablepainter:0.32.0"
+                "com.google.accompanist:accompanist-drawablepainter:0.34.0"
             )
 
             library("junit", "junit:junit:4.13.2")
@@ -175,7 +175,7 @@ dependencyResolutionManagement {
 //            https://developer.android.com/reference/kotlin/org/json/package-summary
             library("org.json", "org.json:json:20210307")
 
-            plugin("google.ksp", "com.google.devtools.ksp").version("1.9.21-1.0.16")
+            plugin("google.ksp", "com.google.devtools.ksp").version("1.9.22-1.0.17")
 
             val hiltVersion = "2.50"
             plugin("google.hilt", "com.google.dagger.hilt.android").version(hiltVersion)
@@ -189,7 +189,7 @@ dependencyResolutionManagement {
             )
 
 //            https://github.com/raamcosta/compose-destinations
-            val destinationsVersion = "1.9.56"
+            val destinationsVersion = "1.10.0"
             library(
                 "destinations.core",
                 "io.github.raamcosta.compose-destinations:core:$destinationsVersion"
