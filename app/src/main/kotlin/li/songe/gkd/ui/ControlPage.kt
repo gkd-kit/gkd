@@ -14,9 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -174,7 +174,7 @@ fun ControlPage() {
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
-            Icon(imageVector = Icons.Default.OpenInNew, contentDescription = null)
+            Icon(imageVector = Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
         }
         Divider()
 
@@ -196,7 +196,10 @@ fun ControlPage() {
                     text = "如误触可在此快速定位关闭规则", fontSize = 14.sp
                 )
             }
-            Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = null)
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null
+            )
         }
         Divider()
 
