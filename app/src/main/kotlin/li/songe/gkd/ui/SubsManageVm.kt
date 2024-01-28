@@ -95,7 +95,11 @@ class SubsManageVm @Inject constructor() : ViewModel() {
                         val subsVersion =
                             client.get(oldSubsRaw.checkUpdateUrl).body<SubsVersion>()
                         LogUtils.d("快速检测更新成功", subsVersion)
-                        if (subsVersion.id == oldSubsRaw.id && subsVersion.version <= oldSubsRaw.version) {
+                        if (subsVersion.id != oldSubsRaw.id) {
+                            toast("${oldItem.id}:checkUpdateUrl获取id不一致")
+                            return@mapNotNull null
+                        }
+                        if (subsVersion.version <= oldSubsRaw.version) {
                             return@mapNotNull null
                         }
                     } catch (e: Exception) {
@@ -103,13 +107,16 @@ class SubsManageVm @Inject constructor() : ViewModel() {
                     }
                 }
                 val newSubsRaw = RawSubscription.parse(
-                    client.get(oldItem.updateUrl).bodyAsText()
+                    client.get(oldSubsRaw?.updateUrl ?: oldItem.updateUrl).bodyAsText()
                 )
+                if (newSubsRaw.id != oldItem.id) {
+                    toast("${oldItem.id}:updateUrl获取id不一致")
+                    return@mapNotNull null
+                }
                 if (oldSubsRaw != null && newSubsRaw.version <= oldSubsRaw.version) {
                     return@mapNotNull null
                 }
                 val newItem = oldItem.copy(
-                    updateUrl = newSubsRaw.updateUrl ?: oldItem.updateUrl,
                     mtime = System.currentTimeMillis(),
                 )
                 updateSubscription(newSubsRaw)
