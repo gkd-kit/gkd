@@ -326,7 +326,7 @@ class GkdAbService : CompositionAbService({
                     }
                 }
                 val newSubsRaw = RawSubscription.parse(
-                    client.get(subsItem.updateUrl).bodyAsText()
+                    client.get(oldSubsRaw?.updateUrl ?: subsItem.updateUrl).bodyAsText()
                 )
                 if (newSubsRaw.id != subsItem.id) {
                     return@forEach
@@ -336,7 +336,6 @@ class GkdAbService : CompositionAbService({
                 }
                 updateSubscription(newSubsRaw)
                 val newItem = subsItem.copy(
-                    updateUrl = newSubsRaw.updateUrl ?: subsItem.updateUrl,
                     mtime = System.currentTimeMillis()
                 )
                 DbSet.subsItemDao.update(newItem)
