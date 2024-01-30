@@ -78,7 +78,7 @@ dependencyResolutionManagement {
                 "compose.icons",
                 "androidx.compose.material:material-icons-extended:$composeVersion"
             )
-            library("compose.material3", "androidx.compose.material3:material3:1.1.2")
+            library("compose.material3", "androidx.compose.material3:material3:1.2.0-rc01")
             library("compose.activity", "androidx.activity:activity-compose:1.8.2")
 
             // https://github.com/Tencent/MMKV/blob/master/README_CN.md
