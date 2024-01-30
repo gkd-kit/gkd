@@ -116,6 +116,7 @@ data class RawSubscription(
         val key: Int
         val desc: String?
         val enable: Boolean?
+        val scopeKeys: List<Int>?
         val rules: List<RawRuleProps>
     }
 
@@ -147,6 +148,7 @@ data class RawSubscription(
         override val key: Int,
         override val desc: String?,
         override val enable: Boolean?,
+        override val scopeKeys: List<Int>?,
         override val actionCd: Long?,
         override val actionDelay: Long?,
         override val quickFind: Boolean?,
@@ -236,6 +238,7 @@ data class RawSubscription(
         override val key: Int,
         override val desc: String?,
         override val enable: Boolean?,
+        override val scopeKeys: List<Int>?,
         override val actionCdKey: Int?,
         override val actionMaximumKey: Int?,
         override val actionCd: Long?,
@@ -455,6 +458,7 @@ data class RawSubscription(
                 actionMaximumKey = getInt(jsonObject, "actionMaximumKey"),
                 actionCdKey = getInt(jsonObject, "actionCdKey"),
                 order = getInt(jsonObject, "order"),
+                scopeKeys = getIntIArray(jsonObject, "scopeKeys"),
             )
         }
 
@@ -543,6 +547,7 @@ data class RawSubscription(
                     jsonToGlobalRule(jsonElement.jsonObject)
                 } ?: emptyList(),
                 order = getInt(jsonObject, "order"),
+                scopeKeys = getIntIArray(jsonObject, "scopeKeys"),
             )
         }
 

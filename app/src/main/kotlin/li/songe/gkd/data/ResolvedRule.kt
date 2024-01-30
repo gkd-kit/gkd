@@ -41,24 +41,32 @@ sealed class ResolvedRule(
 
     val order = rule.order ?: group.order ?: 0
 
-    var groupRules: List<ResolvedRule> = emptyList()
+    var groupToRules: Map<out RawSubscription.RawGroupProps, List<ResolvedRule>> = emptyMap()
         set(value) {
             field = value
+            val selfGroupRules = field[group] ?: emptyList()
+            val othersGroupRules =
+                (group.scopeKeys ?: emptyList()).distinct().filter { k -> k != group.key }
+                    .map { k ->
+                        field.entries.find { e -> e.key.key == k }?.value ?: emptyList()
+                    }.flatten()
+            val groupRules = selfGroupRules + othersGroupRules
+
             // 共享次数
             if (actionMaximumKey != null) {
-                val otherRule = field.find { r -> r.key == actionMaximumKey }
+                val otherRule = groupRules.find { r -> r.key == actionMaximumKey }
                 if (otherRule != null) {
                     actionCount = otherRule.actionCount
                 }
             }
             // 共享 cd
             if (actionCdKey != null) {
-                val otherRule = field.find { r -> r.key == actionCdKey }
+                val otherRule = groupRules.find { r -> r.key == actionCdKey }
                 if (otherRule != null) {
                     actionTriggerTime = otherRule.actionTriggerTime
                 }
             }
-            preRules = field.filter { otherRule ->
+            preRules = groupRules.filter { otherRule ->
                 (otherRule.key != null) && preKeys.contains(
                     otherRule.key
                 )
