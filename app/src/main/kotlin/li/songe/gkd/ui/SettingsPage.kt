@@ -14,11 +14,11 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
@@ -111,7 +111,7 @@ fun SettingsPage() {
                     )
                 )
             })
-        Divider()
+        HorizontalDivider()
 
         TextSwitch(name = "前台悬浮窗",
             desc = "添加透明悬浮窗,关闭可能导致不点击/点击缓慢",
@@ -123,7 +123,7 @@ fun SettingsPage() {
                     )
                 )
             })
-        Divider()
+        HorizontalDivider()
 
         TextSwitch(name = "点击提示",
             desc = "触发点击时提示:[${store.clickToast}]",
@@ -142,7 +142,7 @@ fun SettingsPage() {
                     )
                 )
             })
-        Divider()
+        HorizontalDivider()
 
         Row(modifier = Modifier
             .clickable {
@@ -160,11 +160,12 @@ fun SettingsPage() {
                         ?: store.updateSubsInterval.toString(), fontSize = 14.sp
                 )
                 Icon(
-                    imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "more"
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "more"
                 )
             }
         }
-        Divider()
+        HorizontalDivider()
 
         TextSwitch(name = "自动更新应用",
             desc = "打开应用时自动检测是否存在新版本",
@@ -176,7 +177,7 @@ fun SettingsPage() {
                     )
                 )
             })
-        Divider()
+        HorizontalDivider()
 
         SettingItem(title = if (checkUpdating) "检查更新ing" else "检查更新", onClick = {
             appScope.launchTry {
@@ -187,7 +188,7 @@ fun SettingsPage() {
                 }
             }
         })
-        Divider()
+        HorizontalDivider()
 
         Row(modifier = Modifier
             .clickable {
@@ -205,11 +206,12 @@ fun SettingsPage() {
                         ?: store.enableDarkTheme.toString(), fontSize = 14.sp
                 )
                 Icon(
-                    imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "more"
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "more"
                 )
             }
         }
-        Divider()
+        HorizontalDivider()
 
         TextSwitch(name = "保存日志",
             desc = "保存最近7天的日志,大概占用您5M的空间",
@@ -232,7 +234,7 @@ fun SettingsPage() {
                     }
                 }
             })
-        Divider()
+        HorizontalDivider()
 
         SettingItem(title = "分享日志", onClick = {
             vm.viewModelScope.launchTry(Dispatchers.IO) {
@@ -244,12 +246,12 @@ fun SettingsPage() {
                 }
             }
         })
-        Divider()
+        HorizontalDivider()
 
         SettingItem(title = "高级模式", onClick = {
             navController.navigate(DebugPageDestination)
         })
-        Divider()
+        HorizontalDivider()
 
         SettingItem(title = "关于", onClick = {
             navController.navigate(AboutPageDestination)
@@ -462,7 +464,9 @@ fun SettingsPage() {
             AlertDialog(
                 title = { Text(text = "上传文件中") },
                 text = {
-                    LinearProgressIndicator(progress = uploadStatusVal.progress)
+                    LinearProgressIndicator(
+                        progress = { uploadStatusVal.progress },
+                    )
                 },
                 onDismissRequest = { },
                 confirmButton = {

@@ -20,7 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -163,7 +163,7 @@ fun SnapshotPage() {
                             )
                         }
                     }
-                    Divider()
+                    HorizontalDivider()
                 }
                 item {
                     Spacer(modifier = Modifier.height(10.dp))
@@ -207,7 +207,7 @@ fun SnapshotPage() {
                             })
                             .then(modifier)
                     )
-                    Divider()
+                    HorizontalDivider()
                     Text(
                         text = "分享",
                         modifier = Modifier
@@ -218,7 +218,7 @@ fun SnapshotPage() {
                             })
                             .then(modifier)
                     )
-                    Divider()
+                    HorizontalDivider()
                     if (snapshotVal.githubAssetId != null) {
                         Text(
                             text = "复制链接", modifier = Modifier
@@ -239,7 +239,7 @@ fun SnapshotPage() {
                                 .then(modifier)
                         )
                     }
-                    Divider()
+                    HorizontalDivider()
 
                     Text(
                         text = "保存截图到相册",
@@ -263,7 +263,7 @@ fun SnapshotPage() {
                             })
                             .then(modifier)
                     )
-                    Divider()
+                    HorizontalDivider()
                     Text(
                         text = "替换截图(去除隐私)",
                         modifier = Modifier
@@ -292,7 +292,7 @@ fun SnapshotPage() {
                             })
                             .then(modifier)
                     )
-                    Divider()
+                    HorizontalDivider()
                     Text(
                         text = "删除", modifier = Modifier
                             .clickable(onClick = scope.launchAsFn {
@@ -333,7 +333,9 @@ fun SnapshotPage() {
             AlertDialog(
                 title = { Text(text = "上传文件中") },
                 text = {
-                    LinearProgressIndicator(progress = uploadStatusVal.progress)
+                    LinearProgressIndicator(
+                        progress = { uploadStatusVal.progress },
+                    )
                 },
                 onDismissRequest = { },
                 confirmButton = {

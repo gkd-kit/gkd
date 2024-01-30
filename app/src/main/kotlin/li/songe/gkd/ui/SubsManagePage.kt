@@ -21,8 +21,8 @@ import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
-import androidx.compose.material3.Divider
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -211,7 +211,7 @@ fun SubsManagePage() {
                             }
                             .fillMaxWidth()
                             .padding(16.dp))
-                        Divider()
+                        HorizontalDivider()
                         Text(text = "查看类别", modifier = Modifier
                             .clickable {
                                 menuSubItem = null
@@ -219,7 +219,7 @@ fun SubsManagePage() {
                             }
                             .fillMaxWidth()
                             .padding(16.dp))
-                        Divider()
+                        HorizontalDivider()
                         Text(text = "全局规则", modifier = Modifier
                             .clickable {
                                 menuSubItem = null
@@ -227,7 +227,7 @@ fun SubsManagePage() {
                             }
                             .fillMaxWidth()
                             .padding(16.dp))
-                        Divider()
+                        HorizontalDivider()
                     }
                     if (menuSubItemVal.id < 0 && subsRawVal != null) {
                         Text(text = "分享文件", modifier = Modifier
@@ -240,7 +240,7 @@ fun SubsManagePage() {
                             }
                             .fillMaxWidth()
                             .padding(16.dp))
-                        Divider()
+                        HorizontalDivider()
                     }
                     if (menuSubItemVal.updateUrl != null) {
                         Text(text = "复制链接", modifier = Modifier
@@ -251,7 +251,7 @@ fun SubsManagePage() {
                             }
                             .fillMaxWidth()
                             .padding(16.dp))
-                        Divider()
+                        HorizontalDivider()
                     }
                     if (subsRawVal?.supportUri != null) {
                         Text(text = "问题反馈", modifier = Modifier
@@ -265,7 +265,7 @@ fun SubsManagePage() {
                             }
                             .fillMaxWidth()
                             .padding(16.dp))
-                        Divider()
+                        HorizontalDivider()
                     }
                     if (menuSubItemVal.id != -2L) {
                         Text(text = "删除订阅", modifier = Modifier

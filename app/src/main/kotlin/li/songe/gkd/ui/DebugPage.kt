@@ -22,7 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
@@ -128,7 +128,7 @@ fun DebugPage() {
                             toast("Shizuku可能没有运行")
                         }
                     })
-                Divider()
+                HorizontalDivider()
             } else {
                 TextSwitch(name = "Shizuku模式",
                     desc = "高级运行模式,能更准确识别界面活动ID",
@@ -157,7 +157,7 @@ fun DebugPage() {
                         }
 
                     })
-                Divider()
+                HorizontalDivider()
             }
 
             val httpServerRunning by HttpService.isRunning.collectAsState()
@@ -226,14 +226,14 @@ fun DebugPage() {
                     }
                 )
             }
-            Divider()
+            HorizontalDivider()
 
             SettingItem(
                 title = "HTTP服务端口-${store.httpServerPort}", imageVector = Icons.Default.Edit
             ) {
                 showPortDlg = true
             }
-            Divider()
+            HorizontalDivider()
 
             TextSwitch(
                 name = "自动清除内存订阅",
@@ -246,12 +246,12 @@ fun DebugPage() {
                     )
                 )
             }
-            Divider()
+            HorizontalDivider()
 
             SettingItem(title = "快照记录", onClick = {
                 navController.navigate(SnapshotPageDestination)
             })
-            Divider()
+            HorizontalDivider()
 
             val screenshotRunning by ScreenshotService.isRunning.collectAsState()
             TextSwitch(
@@ -274,7 +274,7 @@ fun DebugPage() {
                         ScreenshotService.stop()
                     }
                 })
-            Divider()
+            HorizontalDivider()
 
             val floatingRunning by FloatingService.isRunning.collectAsState()
             TextSwitch(
@@ -296,7 +296,7 @@ fun DebugPage() {
                     FloatingService.stop(context)
                 }
             }
-            Divider()
+            HorizontalDivider()
             TextSwitch(
                 name = "音量快照",
                 desc = "当音量变化时,生成快照,如果悬浮窗按钮不工作,可以使用这个",
@@ -309,7 +309,7 @@ fun DebugPage() {
                 )
             }
 
-            Divider()
+            HorizontalDivider()
             TextSwitch(
                 name = "截屏快照",
                 desc = "当用户截屏时保存快照(需手动替换快照图片),仅支持部分小米设备",
@@ -322,7 +322,7 @@ fun DebugPage() {
                 )
             }
 
-            Divider()
+            HorizontalDivider()
             TextSwitch(
                 name = "隐藏快照状态栏",
                 desc = "当保存快照时,隐藏截图里的顶部状态栏高度区域",

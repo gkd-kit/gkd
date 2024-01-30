@@ -17,7 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -95,7 +95,7 @@ fun ControlPage() {
                     )
                 })
         }
-        Divider()
+        HorizontalDivider()
 
         if (!canNotif) {
             AuthCard(title = "通知权限",
@@ -103,7 +103,7 @@ fun ControlPage() {
                 onAuthClick = {
                     checkOrRequestNotifPermission(context)
                 })
-            Divider()
+            HorizontalDivider()
         }
 
         if (!canDrawOverlays) {
@@ -119,7 +119,7 @@ fun ControlPage() {
                         context.startActivity(intent)
                     }
                 })
-            Divider()
+            HorizontalDivider()
         }
 
         TextSwitch(
@@ -146,7 +146,7 @@ fun ControlPage() {
                     ManageService.stop(context)
                 }
             })
-        Divider()
+        HorizontalDivider()
 
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -176,7 +176,7 @@ fun ControlPage() {
             }
             Icon(imageVector = Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
         }
-        Divider()
+        HorizontalDivider()
 
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -201,7 +201,7 @@ fun ControlPage() {
                 contentDescription = null
             )
         }
-        Divider()
+        HorizontalDivider()
 
         Column(
             modifier = Modifier
