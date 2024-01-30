@@ -147,7 +147,9 @@ fun UpgradeDialog() {
                 AlertDialog(
                     title = { Text(text = "下载新版本中") },
                     text = {
-                        LinearProgressIndicator(progress = downloadStatusVal.progress)
+                        LinearProgressIndicator(
+                            progress = { downloadStatusVal.progress },
+                        )
                     },
                     onDismissRequest = {},
                     confirmButton = {

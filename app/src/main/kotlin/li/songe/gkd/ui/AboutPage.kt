@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -80,7 +80,7 @@ fun AboutPage() {
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
-            Divider()
+            HorizontalDivider()
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -95,7 +95,7 @@ fun AboutPage() {
                     fontSize = 14.sp,
                 )
             }
-            Divider()
+            HorizontalDivider()
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -111,19 +111,20 @@ fun AboutPage() {
                 )
             }
             @Suppress("SENSELESS_COMPARISON") if (GIT_COMMIT_URL != null && BuildConfig.GIT_COMMIT_ID != null) {
-                Divider()
-                Column(modifier = Modifier
-                    .clickable {
-                        appScope.launchTry {
-                            context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW, Uri.parse(GIT_COMMIT_URL)
+                HorizontalDivider()
+                Column(
+                    modifier = Modifier
+                        .clickable {
+                            appScope.launchTry {
+                                context.startActivity(
+                                    Intent(
+                                        Intent.ACTION_VIEW, Uri.parse(GIT_COMMIT_URL)
+                                    )
                                 )
-                            )
+                            }
                         }
-                    }
-                    .fillMaxWidth()
-                    .padding(10.dp)) {
+                        .fillMaxWidth()
+                        .padding(10.dp)) {
                     Text(
                         text = "代码记录", fontSize = 18.sp
                     )
@@ -135,7 +136,7 @@ fun AboutPage() {
                     )
                 }
             }
-            Divider()
+            HorizontalDivider()
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -150,7 +151,7 @@ fun AboutPage() {
                     fontSize = 14.sp,
                 )
             }
-            Divider()
+            HorizontalDivider()
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
