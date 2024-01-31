@@ -57,7 +57,16 @@ val clickCenter: ActionFc = { context, node ->
 }
 
 val click: ActionFc = { context, node ->
-    if (node.isClickable) clickNode(context, node) else clickCenter(context, node)
+    if (node.isClickable) {
+        val result = clickNode(context, node)
+        if (result.result) {
+            result
+        } else {
+            clickCenter(context, node)
+        }
+    } else {
+        clickCenter(context, node)
+    }
 }
 
 val longClickNode: ActionFc = { _, node ->
@@ -96,7 +105,16 @@ val longClickCenter: ActionFc = { context, node ->
 
 
 val longClick: ActionFc = { context, node ->
-    if (node.isLongClickable) longClickNode(context, node) else longClickCenter(context, node)
+    if (node.isLongClickable) {
+        val result = longClickNode(context, node)
+        if (result.result) {
+            result
+        } else {
+            longClickCenter(context, node)
+        }
+    } else {
+        longClickCenter(context, node)
+    }
 }
 
 val backFc: ActionFc = { context, _ ->
