@@ -45,9 +45,7 @@ fun isSafeUrl(url: String): Boolean {
     } catch (e: Exception) {
         return false
     }
-    return if (u.host == "s.gkd.li") {
-        true
-    } else (u.host.endsWith(".jsdelivr.net") && (u.encodedPath.startsWith("/npm/@gkd-kit/") || u.encodedPath.startsWith(
+    return (u.host.endsWith(".jsdelivr.net") && (u.encodedPath.startsWith("/npm/@gkd-kit/") || u.encodedPath.startsWith(
         "/gh/gkd-kit/"
     )))
 }
