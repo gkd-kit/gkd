@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.GlobalRuleExcludePageDestination
+import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.map
 import li.songe.gkd.util.orderedAppInfosFlow
 import li.songe.gkd.util.subsIdToRawFlow
@@ -38,32 +39,39 @@ class GlobalRuleExcludeVm @Inject constructor(stateHandle: SavedStateHandle) : V
     private val debounceSearchStrFlow = searchStrFlow.debounce(200)
         .stateIn(viewModelScope, SharingStarted.Eagerly, searchStrFlow.value)
 
-    val sortByMtimeFlow = MutableStateFlow(false)
-    val showSystemAppFlow = MutableStateFlow(false)
-    val showAppInfosFlow = combine(
-        debounceSearchStrFlow,
-        orderedAppInfosFlow,
-        sortByMtimeFlow,
-        showSystemAppFlow
-    ) { str, list, sortByMtime, showSystemApp ->
-        list.let {
-            if (sortByMtime) {
-                it.sortedBy { a -> -a.mtime }
-            } else {
-                it
-            }
-        }.let {
-            if (!showSystemApp) {
-                it.filter { a -> !a.isSystem }
-            } else {
-                it
-            }
-        }.let {
-            if (str.isBlank()) {
-                it
-            } else {
-                (it.filter { a -> a.name.contains(str) } + it.filter { a -> a.id.contains(str) }).distinct()
-            }
+    private val appIdToOrderFlow =
+        DbSet.clickLogDao.queryLatestUniqueAppIds(args.subsItemId, args.groupKey).map { appIds ->
+            appIds.mapIndexed { index, appId -> appId to index }.toMap()
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val sortTypeFlow = MutableStateFlow<SortTypeOption>(SortTypeOption.SortByName)
+    val showSystemAppFlow = MutableStateFlow(false)
+    val showAppInfosFlow =
+        combine(orderedAppInfosFlow.combine(showSystemAppFlow) { apps, showSystemApp ->
+            if (showSystemApp) {
+                apps
+            } else {
+                apps.filter { a -> !a.isSystem }
+            }
+        }, sortTypeFlow, appIdToOrderFlow) { apps, sortType, appIdToOrder ->
+            when (sortType) {
+                SortTypeOption.SortByAppMtime -> {
+                    apps.sortedBy { a -> -a.mtime }
+                }
+
+                SortTypeOption.SortByTriggerTime -> {
+                    apps.sortedBy { a -> appIdToOrder[a.id] ?: Int.MAX_VALUE }
+                }
+
+                SortTypeOption.SortByName -> {
+                    apps
+                }
+            }
+        }.combine(debounceSearchStrFlow) { apps, str ->
+            if (str.isBlank()) {
+                apps
+            } else {
+                (apps.filter { a -> a.name.contains(str) } + apps.filter { a -> a.id.contains(str) }).distinct()
+            }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
 }

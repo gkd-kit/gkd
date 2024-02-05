@@ -73,5 +73,14 @@ data class ClickLog(
         """
         )
         suspend fun deleteKeepLatest(): Int
+
+        @Query("SELECT DISTINCT app_id FROM click_log ORDER BY id DESC")
+        fun queryLatestUniqueAppIds(): Flow<List<String>>
+
+        @Query("SELECT DISTINCT app_id FROM click_log WHERE subs_id=:subsItemId AND group_type=${SubsConfig.AppGroupType} ORDER BY id DESC")
+        fun queryLatestUniqueAppIds(subsItemId: Long): Flow<List<String>>
+
+        @Query("SELECT DISTINCT app_id FROM click_log WHERE subs_id=:subsItemId AND group_key=:globalGroupKey AND group_type=${SubsConfig.GlobalGroupType} ORDER BY id DESC")
+        fun queryLatestUniqueAppIds(subsItemId: Long, globalGroupKey: Int): Flow<List<String>>
     }
 }

@@ -119,7 +119,7 @@ fun ClickLogPage() {
                     )
                 }
             },
-            title = { Text(text = "点击记录" + if (clickLogCount <= 0) "" else ("-$clickLogCount")) },
+            title = { Text(text = "触发记录" + if (clickLogCount <= 0) "" else ("-$clickLogCount")) },
             actions = {
                 if (clickDataList.isNotEmpty()) {
                     IconButton(onClick = { showDeleteDlg = true }) {
@@ -336,8 +336,9 @@ fun ClickLogPage() {
     }
 
     if (showDeleteDlg) {
-        AlertDialog(onDismissRequest = { showDeleteDlg = false },
-            title = { Text(text = "是否删除全部点击记录?") },
+        AlertDialog(
+            onDismissRequest = { showDeleteDlg = false },
+            title = { Text(text = "是否删除全部点击触发记录?") },
             confirmButton = {
                 TextButton(onClick = scope.launchAsFn(Dispatchers.IO) {
                     showDeleteDlg = false
