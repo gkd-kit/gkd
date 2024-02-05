@@ -40,6 +40,7 @@ fun HomePage() {
     Scaffold(
         modifier = currentPage.modifier,
         topBar = currentPage.topBar,
+        floatingActionButton = currentPage.floatingActionButton,
         bottomBar = {
             NavigationBar {
                 pages.forEach { page ->
