@@ -55,6 +55,7 @@ import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.destinations.AppConfigPageDestination
 import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.ruleSummaryFlow
 
@@ -68,7 +69,7 @@ fun useAppListPage(): ScaffoldExt {
 
     val vm = hiltViewModel<HomeVm>()
     val showSystemApp by vm.showSystemAppFlow.collectAsState()
-    val sortByMtime by vm.sortByMtimeFlow.collectAsState()
+    val sortType by vm.sortTypeFlow.collectAsState()
     val orderedAppInfos by vm.appInfosFlow.collectAsState()
     val searchStr by vm.searchStrFlow.collectAsState()
     val ruleSummary by ruleSummaryFlow.collectAsState()
@@ -148,43 +149,25 @@ fun useAppListPage(): ScaffoldExt {
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
                         ) {
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        RadioButton(selected = !sortByMtime,
-                                            onClick = {
-                                                vm.sortByMtimeFlow.value = false
-                                            }
-                                        )
-                                        Text("按名称")
-                                    }
-                                },
-                                onClick = {
-                                    vm.sortByMtimeFlow.value = false
-                                },
-                            )
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
+                            SortTypeOption.allSubObject.forEach { sortOption ->
+                                DropdownMenuItem(
+                                    text = {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            RadioButton(
-                                                selected = sortByMtime,
-                                                onClick = { vm.sortByMtimeFlow.value = true }
+                                            RadioButton(selected = sortType == sortOption,
+                                                onClick = {
+                                                    vm.sortTypeFlow.value = sortOption
+                                                }
                                             )
-                                            Text("按更新时间")
+                                            Text(sortOption.label)
                                         }
-                                    }
-                                },
-                                onClick = {
-                                    vm.sortByMtimeFlow.value = true
-                                },
-                            )
+                                    },
+                                    onClick = {
+                                        vm.sortTypeFlow.value = sortOption
+                                    },
+                                )
+                            }
                             HorizontalDivider()
                             DropdownMenuItem(
                                 text = {

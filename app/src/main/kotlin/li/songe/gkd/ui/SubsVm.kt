@@ -8,12 +8,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.Tuple3
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.SubsPageDestination
+import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.collator
 import li.songe.gkd.util.getGroupRawEnable
@@ -40,33 +42,47 @@ class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
     private val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(args.subsItemId)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    val sortByMtimeFlow = MutableStateFlow(false)
-    val showUninstallAppFlow = MutableStateFlow(false)
-    private val sortAppsFlow = combine(
-        subsRawFlow, appInfoCacheFlow, showUninstallAppFlow, sortByMtimeFlow
-    ) { subsRaw, appInfoCache, showUninstallApp, sortByMtime ->
-        val apps = (subsRaw?.apps ?: emptyList()).let {
-            if (showUninstallApp) {
-                it
-            } else {
-                it.filter { a -> appInfoCache.containsKey(a.id) }
-            }
+    private val appIdToOrderFlow =
+        DbSet.clickLogDao.queryLatestUniqueAppIds(args.subsItemId).map { appIds ->
+            appIds.mapIndexed { index, appId -> appId to index }.toMap()
         }
-        apps.sortedWith { a, b ->
-            // 顺序: 已安装(有名字->无名字)->未安装(有名字(来自订阅)->无名字)
-            collator.compare(appInfoCache[a.id]?.name ?: a.name?.let { "\uFFFF" + it }
-            ?: ("\uFFFF\uFFFF" + a.id),
-                appInfoCache[b.id]?.name ?: b.name?.let { "\uFFFF" + it }
-                ?: ("\uFFFF\uFFFF" + b.id))
-        }.let {
-            if (sortByMtime) {
-                it.sortedBy { a -> -(appInfoCache[a.id]?.mtime ?: 0) }
-            } else {
-                it
-            }
-        }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val sortTypeFlow = MutableStateFlow<SortTypeOption>(SortTypeOption.SortByName)
 
+    val showUninstallAppFlow = MutableStateFlow(false)
+    private val sortAppsFlow =
+        combine(combine((subsRawFlow.combine(appInfoCacheFlow) { subs, appInfoCache ->
+            (subs?.apps ?: emptyList()).sortedWith { a, b ->
+                // 顺序: 已安装(有名字->无名字)->未安装(有名字(来自订阅)->无名字)
+                collator.compare(appInfoCache[a.id]?.name ?: a.name?.let { "\uFFFF" + it }
+                ?: ("\uFFFF\uFFFF" + a.id),
+                    appInfoCache[b.id]?.name ?: b.name?.let { "\uFFFF" + it }
+                    ?: ("\uFFFF\uFFFF" + b.id))
+            }
+        }), appInfoCacheFlow, showUninstallAppFlow) { apps, appInfoCache, showUninstallApp ->
+            if (showUninstallApp) {
+                apps
+            } else {
+                apps.filter { a -> appInfoCache.containsKey(a.id) }
+            }
+        },
+            appInfoCacheFlow,
+            appIdToOrderFlow,
+            sortTypeFlow
+        ) { apps, appInfoCache, appIdToOrder, sortType ->
+            when (sortType) {
+                SortTypeOption.SortByAppMtime -> {
+                    apps.sortedBy { a -> -(appInfoCache[a.id]?.mtime ?: 0) }
+                }
+
+                SortTypeOption.SortByTriggerTime -> {
+                    apps.sortedBy { a -> appIdToOrder[a.id] ?: Int.MAX_VALUE }
+                }
+
+                SortTypeOption.SortByName -> {
+                    apps
+                }
+            }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val searchStrFlow = MutableStateFlow("")
 

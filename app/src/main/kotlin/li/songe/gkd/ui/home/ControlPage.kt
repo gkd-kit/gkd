@@ -202,7 +202,7 @@ fun useControlPage(): ScaffoldExt {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "点击记录", fontSize = 18.sp
+                        text = "触发记录", fontSize = 18.sp
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(

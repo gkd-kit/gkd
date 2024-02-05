@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.appScope
@@ -32,6 +33,7 @@ import li.songe.gkd.data.SubsVersion
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.FILE_UPLOAD_URL
 import li.songe.gkd.util.LoadStatus
+import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.authActionFlow
 import li.songe.gkd.util.checkUpdate
@@ -277,33 +279,46 @@ class HomeVm @Inject constructor() : ViewModel() {
         refreshingFlow.value = false
     }
 
-    val sortByMtimeFlow = MutableStateFlow(false)
+    private val appIdToOrderFlow = DbSet.clickLogDao.queryLatestUniqueAppIds().map { appIds ->
+        appIds.mapIndexed { index, appId -> appId to index }.toMap()
+    }
+
+    val sortTypeFlow = MutableStateFlow<SortTypeOption>(SortTypeOption.SortByName)
     val showSystemAppFlow = MutableStateFlow(false)
     val searchStrFlow = MutableStateFlow("")
     private val debounceSearchStrFlow = searchStrFlow.debounce(200)
         .stateIn(viewModelScope, SharingStarted.Eagerly, searchStrFlow.value)
-    val appInfosFlow = orderedAppInfosFlow.combine(showSystemAppFlow) { appInfos, showSystemApp ->
-        if (showSystemApp) {
-            appInfos
-        } else {
-            appInfos.filter { a -> !a.isSystem }
-        }
-    }.combine(sortByMtimeFlow) { appInfos, sortByMtime ->
-        if (sortByMtime) {
-            appInfos.sortedBy { a -> -a.mtime }
-        } else {
-            appInfos
-        }
-    }.combine(debounceSearchStrFlow) { appInfos, debounceSearchStr ->
-        if (debounceSearchStr.isBlank()) {
-            appInfos
-        } else {
-            (appInfos.filter { a -> a.name.contains(debounceSearchStr) } + appInfos.filter { a ->
-                a.id.contains(
-                    debounceSearchStr
-                )
-            }).distinct()
-        }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val appInfosFlow =
+        combine(orderedAppInfosFlow.combine(showSystemAppFlow) { appInfos, showSystemApp ->
+            if (showSystemApp) {
+                appInfos
+            } else {
+                appInfos.filter { a -> !a.isSystem }
+            }
+        }, sortTypeFlow, appIdToOrderFlow) { appInfos, sortType, appIdToOrder ->
+            when (sortType) {
+                SortTypeOption.SortByAppMtime -> {
+                    appInfos.sortedBy { a -> -a.mtime }
+                }
+
+                SortTypeOption.SortByTriggerTime -> {
+                    appInfos.sortedBy { a -> appIdToOrder[a.id] ?: Int.MAX_VALUE }
+                }
+
+                SortTypeOption.SortByName -> {
+                    appInfos
+                }
+            }
+        }.combine(debounceSearchStrFlow) { appInfos, debounceSearchStr ->
+            if (debounceSearchStr.isBlank()) {
+                appInfos
+            } else {
+                (appInfos.filter { a -> a.name.contains(debounceSearchStr) } + appInfos.filter { a ->
+                    a.id.contains(
+                        debounceSearchStr
+                    )
+                }).distinct()
+            }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
 }

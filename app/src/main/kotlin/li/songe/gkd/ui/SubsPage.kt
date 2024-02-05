@@ -1,7 +1,6 @@
 package li.songe.gkd.ui
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -68,6 +68,7 @@ import li.songe.gkd.ui.component.SubsAppCard
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
+import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.encodeToJson5String
 import li.songe.gkd.util.json
@@ -121,7 +122,11 @@ fun SubsPage(
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     var expanded by remember { mutableStateOf(false) }
     val showUninstallApp by vm.showUninstallAppFlow.collectAsState()
-    val sortByMtime by vm.sortByMtimeFlow.collectAsState()
+    val sortType by vm.sortTypeFlow.collectAsState()
+    val listState = rememberLazyListState()
+    LaunchedEffect(key1 = appAndConfigs, block = {
+        listState.scrollToItem(0)
+    })
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -182,41 +187,26 @@ fun SubsPage(
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
                         ) {
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        RadioButton(selected = !sortByMtime,
-                                            onClick = { vm.sortByMtimeFlow.value = false }
-                                        )
-                                        Text("按名称")
-                                    }
-                                },
-                                onClick = {
-                                    vm.sortByMtimeFlow.value = false
-                                },
-                            )
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
+
+                            SortTypeOption.allSubObject.forEach { sortOption ->
+                                DropdownMenuItem(
+                                    text = {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            RadioButton(
-                                                selected = sortByMtime,
-                                                onClick = { vm.sortByMtimeFlow.value = true }
+                                            RadioButton(selected = sortType == sortOption,
+                                                onClick = {
+                                                    vm.sortTypeFlow.value = sortOption
+                                                }
                                             )
-                                            Text("按更新时间")
+                                            Text(sortOption.label)
                                         }
-                                    }
-                                },
-                                onClick = {
-                                    vm.sortByMtimeFlow.value = true
-                                },
-                            )
+                                    },
+                                    onClick = {
+                                        vm.sortTypeFlow.value = sortOption
+                                    },
+                                )
+                            }
                             HorizontalDivider()
                             DropdownMenuItem(
                                 text = {
@@ -246,14 +236,15 @@ fun SubsPage(
                 FloatingActionButton(onClick = { showAddDlg = true }) {
                     Icon(
                         imageVector = Icons.Filled.Add,
-                        contentDescription = "add",
+                        contentDescription = null,
                     )
                 }
             }
         },
     ) { padding ->
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.padding(padding)
+            modifier = Modifier.padding(padding),
+            state = listState
         ) {
             itemsIndexed(appAndConfigs, { i, a -> i.toString() + a.t0.id }) { _, a ->
                 val (appRaw, subsConfig, enableSize) = a
