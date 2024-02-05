@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.songe.gkd.ui.home
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -27,7 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pullrefresh.PullRefreshIndicator
@@ -81,12 +80,12 @@ val subsNav = BottomNavItem(
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun SubsManagePage() {
+fun useSubsManagePage(): ScaffoldExt {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val navController = LocalNavController.current
 
-    val vm = hiltViewModel<SubsManageVm>()
+    val vm = hiltViewModel<HomeVm>()
     val subItems by subsItemsFlow.collectAsState()
     val subsIdToRaw by subsIdToRawFlow.collectAsState()
 
@@ -126,72 +125,6 @@ fun SubsManagePage() {
             DbSet.subsItemDao.update(*changeItems.toTypedArray())
         }
     })
-
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = {
-                if (!vm.refreshingFlow.value) {
-                    showAddLinkDialog = true
-                } else {
-                    toast("正在刷新订阅,请稍后添加")
-                }
-            }) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "info",
-                )
-            }
-        },
-    ) { _ ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pullRefresh(pullRefreshState, subItems.isNotEmpty())
-        ) {
-            LazyColumn(
-                state = state.listState,
-                modifier = Modifier
-                    .reorderable(state)
-                    .detectReorderAfterLongPress(state)
-                    .fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                itemsIndexed(orderSubItems.value, { _, subItem -> subItem.id }) { index, subItem ->
-                    ReorderableItem(state, key = subItem.id) { isDragging ->
-                        val elevation = animateDpAsState(
-                            if (isDragging) 16.dp else 0.dp, label = ""
-                        )
-                        Card(
-                            modifier = Modifier
-                                .shadow(elevation.value)
-                                .animateItemPlacement()
-                                .padding(vertical = 3.dp, horizontal = 8.dp)
-                                .clickable {
-                                    menuSubItem = subItem
-                                },
-                            shape = RoundedCornerShape(8.dp),
-                        ) {
-                            SubsItemCard(
-                                subsItem = subItem,
-                                rawSubscription = subsIdToRaw[subItem.id],
-                                index = index + 1,
-                                onCheckedChange = { checked ->
-                                    vm.viewModelScope.launch {
-                                        DbSet.subsItemDao.update(subItem.copy(enable = checked))
-                                    }
-                                },
-                            )
-                        }
-                    }
-                }
-            }
-            PullRefreshIndicator(
-                refreshing = refreshing,
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
-            )
-        }
-    }
 
     menuSubItem?.let { menuSubItemVal ->
         Dialog(onDismissRequest = { menuSubItem = null }) {
@@ -281,7 +214,6 @@ fun SubsManagePage() {
         }
     }
 
-
     deleteSubItem?.let { deleteSubItemVal ->
         AlertDialog(onDismissRequest = { deleteSubItem = null },
             title = { Text(text = "是否删除 ${subsIdToRaw[deleteSubItemVal.id]?.name}?") },
@@ -341,5 +273,73 @@ fun SubsManagePage() {
                 Text(text = "添加")
             }
         })
+    }
+
+    return ScaffoldExt(
+        navItem = subsNav,
+        floatingActionButton = {
+            FloatingActionButton(onClick = {
+                if (!vm.refreshingFlow.value) {
+                    showAddLinkDialog = true
+                } else {
+                    toast("正在刷新订阅,请稍后添加")
+                }
+            }) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = "info",
+                )
+            }
+        },
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .pullRefresh(pullRefreshState, subItems.isNotEmpty())
+        ) {
+            LazyColumn(
+                state = state.listState,
+                modifier = Modifier
+                    .reorderable(state)
+                    .detectReorderAfterLongPress(state)
+                    .fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                itemsIndexed(orderSubItems.value, { _, subItem -> subItem.id }) { index, subItem ->
+                    ReorderableItem(state, key = subItem.id) { isDragging ->
+                        val elevation = animateDpAsState(
+                            if (isDragging) 16.dp else 0.dp, label = ""
+                        )
+                        Card(
+                            modifier = Modifier
+                                .shadow(elevation.value)
+                                .animateItemPlacement()
+                                .padding(vertical = 3.dp, horizontal = 8.dp)
+                                .clickable {
+                                    menuSubItem = subItem
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                        ) {
+                            SubsItemCard(
+                                subsItem = subItem,
+                                rawSubscription = subsIdToRaw[subItem.id],
+                                index = index + 1,
+                                onCheckedChange = { checked ->
+                                    vm.viewModelScope.launch {
+                                        DbSet.subsItemDao.update(subItem.copy(enable = checked))
+                                    }
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+            PullRefreshIndicator(
+                refreshing = refreshing,
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
+        }
     }
 }

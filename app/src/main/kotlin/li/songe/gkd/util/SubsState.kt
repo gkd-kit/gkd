@@ -75,11 +75,12 @@ fun getGroupRawEnable(
     } ?: rawGroup.enable ?: true
 }
 
-data class AllRules(
+data class RuleSummary(
     val globalRules: List<GlobalRule> = emptyList(),
     val globalGroups: List<RawSubscription.RawGlobalGroup> = emptyList(),
     val appIdToRules: Map<String, List<AppRule>> = emptyMap(),
     val appIdToGroups: Map<String, List<RawSubscription.RawAppGroup>> = emptyMap(),
+    val appIdToAllGroups: Map<String, List<Pair<RawSubscription.RawAppGroup, Boolean>>> = emptyMap(),
 ) {
     private val appSize = appIdToRules.keys.size
     private val appGroupSize = appIdToGroups.values.sumOf { s -> s.size }
@@ -103,7 +104,7 @@ data class AllRules(
     }
 }
 
-val allRulesFlow by lazy {
+val ruleSummaryFlow by lazy {
     combine(
         subsItemsFlow,
         subsIdToRawFlow,
@@ -115,9 +116,10 @@ val allRulesFlow by lazy {
         val appSubsConfigs = subsConfigs.filter { c -> c.type == SubsConfig.AppType }
         val groupSubsConfigs = subsConfigs.filter { c -> c.type == SubsConfig.AppGroupType }
         val appRules = mutableMapOf<String, MutableList<AppRule>>()
+        val appGroups = mutableMapOf<String, List<RawSubscription.RawAppGroup>>()
+        val appAllGroups = mutableMapOf<String, List<Pair<RawSubscription.RawAppGroup, Boolean>>>()
         val globalRules = mutableListOf<GlobalRule>()
         val globalGroups = mutableListOf<RawSubscription.RawGlobalGroup>()
-        val appGroups = mutableMapOf<String, List<RawSubscription.RawAppGroup>>()
         subsItems.filter { it.enable }.forEach { subsItem ->
             val rawSubs = subsIdToRaw[subsItem.id] ?: return@forEach
 
@@ -137,7 +139,6 @@ val allRulesFlow by lazy {
                         rawSubs = rawSubs,
                         subsItem = subsItem,
                         exclude = subGlobalSubsConfigs.find { c -> c.groupKey == groupRaw.key }?.exclude
-                            ?: ""
                     )
                 }
                 subGlobalGroupToRules[groupRaw] = subRules
@@ -156,37 +157,41 @@ val allRulesFlow by lazy {
             val subCategoryConfigs = categoryConfigs.filter { c -> c.subsItemId == subsItem.id }
             rawSubs.apps.filter { appRaw ->
                 // 筛选 当前启用的 app 订阅规则
-                (subAppSubsConfigs.find { c -> c.appId == appRaw.id }?.enable
+                appRaw.groups.isNotEmpty() && (subAppSubsConfigs.find { c -> c.appId == appRaw.id }?.enable
                     ?: (appInfoCache[appRaw.id] != null))
             }.forEach { appRaw ->
                 val subAppGroups = mutableListOf<RawSubscription.RawAppGroup>()
                 val appGroupConfigs = subGroupSubsConfigs.filter { c -> c.appId == appRaw.id }
                 val subAppGroupToRules = mutableMapOf<RawSubscription.RawAppGroup, List<AppRule>>()
-                appRaw.groups.filter { groupRaw ->
-                    groupRaw.valid && getGroupRawEnable(
+                val groupAndEnables = appRaw.groups.map { groupRaw ->
+                    val enable = groupRaw.valid && getGroupRawEnable(
                         groupRaw,
                         appGroupConfigs,
                         rawSubs.groupToCategoryMap[groupRaw],
                         subCategoryConfigs
                     )
-                }.forEach { groupRaw ->
-                    subAppGroups.add(groupRaw)
-                    val subRules = groupRaw.rules.map { ruleRaw ->
-                        AppRule(
-                            rule = ruleRaw,
-                            group = groupRaw,
-                            app = appRaw,
-                            rawSubs = rawSubs,
-                            subsItem = subsItem,
-                            exclude = appGroupConfigs.find { c -> c.groupKey == groupRaw.key }?.exclude
-                                ?: ""
-                        )
-                    }
-                    subAppGroupToRules[groupRaw] = subRules
-                    if (subRules.isNotEmpty()) {
-                        val rules = appRules[appRaw.id] ?: mutableListOf()
-                        appRules[appRaw.id] = rules
-                        rules.addAll(subRules)
+                    groupRaw to enable
+                }
+                appAllGroups[appRaw.id] = (appAllGroups[appRaw.id] ?: emptyList()) + groupAndEnables
+                groupAndEnables.forEach { (groupRaw, enable) ->
+                    if (enable) {
+                        subAppGroups.add(groupRaw)
+                        val subRules = groupRaw.rules.map { ruleRaw ->
+                            AppRule(
+                                rule = ruleRaw,
+                                group = groupRaw,
+                                app = appRaw,
+                                rawSubs = rawSubs,
+                                subsItem = subsItem,
+                                exclude = appGroupConfigs.find { c -> c.groupKey == groupRaw.key }?.exclude
+                            )
+                        }
+                        subAppGroupToRules[groupRaw] = subRules
+                        if (subRules.isNotEmpty()) {
+                            val rules = appRules[appRaw.id] ?: mutableListOf()
+                            appRules[appRaw.id] = rules
+                            rules.addAll(subRules)
+                        }
                     }
                 }
                 if (subAppGroups.isNotEmpty()) {
@@ -199,13 +204,14 @@ val allRulesFlow by lazy {
                 }
             }
         }
-        AllRules(
-            appIdToRules = appRules,
+        RuleSummary(
             globalRules = globalRules,
             globalGroups = globalGroups,
+            appIdToRules = appRules,
             appIdToGroups = appGroups,
+            appIdToAllGroups = appAllGroups
         )
-    }.stateIn(appScope, SharingStarted.Eagerly, AllRules())
+    }.stateIn(appScope, SharingStarted.Eagerly, RuleSummary())
 }
 
 fun initSubsState() {

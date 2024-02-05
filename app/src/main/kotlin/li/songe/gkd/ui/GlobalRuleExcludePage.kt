@@ -2,6 +2,7 @@ package li.songe.gkd.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,20 +12,27 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Android
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -77,6 +85,8 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
     val excludeData = vm.excludeDataFlow.collectAsState().value
     val showAppInfos = vm.showAppInfosFlow.collectAsState().value
     val searchStr by vm.searchStrFlow.collectAsState()
+    val showSystemApp by vm.showSystemAppFlow.collectAsState()
+    val sortByMtime by vm.sortByMtimeFlow.collectAsState()
 
     var showEditDlg by remember {
         mutableStateOf(false)
@@ -97,6 +107,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
             listState.animateScrollToItem(0)
         }
     })
+    var expanded by remember { mutableStateOf(false) }
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
             IconButton(onClick = {
@@ -116,7 +127,12 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                     modifier = Modifier.focusRequester(focusRequester)
                 )
             } else {
-                Text(text = "${rawSubs?.name ?: subsItemId}/${group?.name ?: groupKey}")
+                Text(
+                    text = "${rawSubs?.name ?: subsItemId}/${group?.name ?: groupKey}",
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }, actions = {
             if (showSearchBar) {
@@ -138,7 +154,81 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                 IconButton(onClick = {
                     showEditDlg = true
                 }) {
-                    Icon(Icons.Default.Edit, contentDescription = null)
+                    Icon(Icons.Outlined.Edit, contentDescription = null)
+                }
+
+                IconButton(onClick = {
+                    expanded = true
+                }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Sort,
+                        contentDescription = null
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .wrapContentSize(Alignment.TopStart)
+                ) {
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(selected = !sortByMtime,
+                                        onClick = {
+                                            vm.sortByMtimeFlow.value = false
+                                        }
+                                    )
+                                    Text("按名称")
+                                }
+                            },
+                            onClick = {
+                                vm.sortByMtimeFlow.value = false
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        RadioButton(
+                                            selected = sortByMtime,
+                                            onClick = { vm.sortByMtimeFlow.value = true }
+                                        )
+                                        Text("按更新时间")
+                                    }
+                                }
+                            },
+                            onClick = {
+                                vm.sortByMtimeFlow.value = true
+                            },
+                        )
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = showSystemApp,
+                                        onCheckedChange = {
+                                            vm.showSystemAppFlow.value = !vm.showSystemAppFlow.value
+                                        })
+                                    Text("显示系统应用")
+                                }
+                            },
+                            onClick = {
+                                vm.showSystemAppFlow.value = !vm.showSystemAppFlow.value
+                            },
+                        )
+                    }
                 }
             }
         })

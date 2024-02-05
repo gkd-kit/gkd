@@ -38,11 +38,32 @@ class GlobalRuleExcludeVm @Inject constructor(stateHandle: SavedStateHandle) : V
     private val debounceSearchStrFlow = searchStrFlow.debounce(200)
         .stateIn(viewModelScope, SharingStarted.Eagerly, searchStrFlow.value)
 
-    val showAppInfosFlow = combine(debounceSearchStrFlow, orderedAppInfosFlow) { str, list ->
-        if (str.isBlank()) {
-            list
-        } else {
-            (list.filter { a -> a.name.contains(str) } + list.filter { a -> a.id.contains(str) }).distinct()
+    val sortByMtimeFlow = MutableStateFlow(false)
+    val showSystemAppFlow = MutableStateFlow(false)
+    val showAppInfosFlow = combine(
+        debounceSearchStrFlow,
+        orderedAppInfosFlow,
+        sortByMtimeFlow,
+        showSystemAppFlow
+    ) { str, list, sortByMtime, showSystemApp ->
+        list.let {
+            if (sortByMtime) {
+                it.sortedBy { a -> -a.mtime }
+            } else {
+                it
+            }
+        }.let {
+            if (!showSystemApp) {
+                it.filter { a -> !a.isSystem }
+            } else {
+                it
+            }
+        }.let {
+            if (str.isBlank()) {
+                it
+            } else {
+                (it.filter { a -> a.name.contains(str) } + it.filter { a -> a.id.contains(str) }).distinct()
+            }
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 }

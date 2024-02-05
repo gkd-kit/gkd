@@ -12,12 +12,12 @@ import li.songe.gkd.data.GlobalRule
 import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.util.AllRules
 import li.songe.gkd.util.Ext.getDefaultLauncherAppId
-import li.songe.gkd.util.allRulesFlow
+import li.songe.gkd.util.RuleSummary
 import li.songe.gkd.util.increaseClickCount
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.recordStoreFlow
+import li.songe.gkd.util.ruleSummaryFlow
 
 data class TopActivity(
     val appId: String = "",
@@ -31,7 +31,7 @@ data class ActivityRule(
     private val appRules: List<AppRule> = emptyList(),
     private val globalRules: List<GlobalRule> = emptyList(),
     val topActivity: TopActivity = TopActivity(),
-    val allRules: AllRules = AllRules(),
+    val ruleSummary: RuleSummary = RuleSummary(),
 ) {
     val currentRules = (appRules + globalRules).sortedBy { r -> r.order }
 }
@@ -57,17 +57,17 @@ private fun getFixTopActivity(): TopActivity {
 fun getAndUpdateCurrentRules(): ActivityRule {
     val topActivity = getFixTopActivity()
     val oldActivityRule = activityRuleFlow.value
-    val allRules = allRulesFlow.value
+    val allRules = ruleSummaryFlow.value
     val idChanged = topActivity.appId != oldActivityRule.topActivity.appId
     val topChanged = idChanged || oldActivityRule.topActivity != topActivity
-    if (topChanged || oldActivityRule.allRules !== allRules) {
+    if (topChanged || oldActivityRule.ruleSummary !== allRules) {
         val newActivityRule = ActivityRule(
-            allRules = allRules,
+            ruleSummary = allRules,
             topActivity = topActivity,
             appRules = (allRules.appIdToRules[topActivity.appId] ?: emptyList()).filter { rule ->
                 rule.matchActivity(topActivity.appId, topActivity.activityId)
             },
-            globalRules = allRulesFlow.value.globalRules.filter { r ->
+            globalRules = ruleSummaryFlow.value.globalRules.filter { r ->
                 r.matchActivity(topActivity.appId, topActivity.activityId)
             },
         )

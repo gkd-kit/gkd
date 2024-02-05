@@ -16,7 +16,7 @@ const val SERVER_SCRIPT_URL =
 
 const val REPOSITORY_URL = "https://github.com/gkd-kit/gkd"
 
-const val HOME_PAGE_URL = "https://gkd.li/"
+const val HOME_PAGE_URL = "https://gkd.li"
 
 @Suppress("SENSELESS_COMPARISON")
 val GIT_COMMIT_URL = if (BuildConfig.GIT_COMMIT_ID != null) {

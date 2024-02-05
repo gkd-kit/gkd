@@ -49,6 +49,7 @@ import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.home.enableGroupRadioOptions
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.launchTry

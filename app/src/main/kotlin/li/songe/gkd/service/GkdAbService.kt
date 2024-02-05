@@ -210,8 +210,8 @@ class GkdAbService : CompositionAbService({
                 }
             }
             val t = System.currentTimeMillis()
-            if (t - lastTriggerTime < 10_000 || t - appChangeTime < 5_000) {
-                scope.launch(actionThread) {// 在任意规则触发10s内或APP切换5s内使用主动探测查询
+            if (t - lastTriggerTime < 5_000 || t - appChangeTime < 5_000) {
+                scope.launch(actionThread) {// 在任意规则触发5s内或APP切换5s内使用主动探测查询
                     delay(300)
                     if (queryTaskJob?.isActive != true) {
                         newQueryTask()

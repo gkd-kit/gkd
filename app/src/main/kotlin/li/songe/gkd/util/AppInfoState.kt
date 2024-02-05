@@ -4,8 +4,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.Build
-import com.blankj.utilcode.util.AppUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
@@ -13,6 +13,7 @@ import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
+import li.songe.gkd.data.toAppInfo
 
 val appInfoCacheFlow = MutableStateFlow(mapOf<String, AppInfo>())
 
@@ -78,19 +79,17 @@ private val updateAppMutex by lazy { Mutex() }
 fun updateAppInfo(appIds: List<String>) {
     if (appIds.isEmpty()) return
     appScope.launchTry(Dispatchers.IO) {
+        val packageManager = app.packageManager
         updateAppMutex.withLock {
             val newMap = appInfoCacheFlow.value.toMutableMap()
             appIds.forEach { appId ->
-                val a = AppUtils.getAppInfo(appId)
-                if (a != null) {
-                    val newAppInfo = AppInfo(
-                        id = a.packageName,
-                        name = a.name,
-                        icon = a.icon,
-                        versionCode = a.versionCode,
-                        versionName = a.versionName,
-                        isSystem = a.isSystem,
-                    )
+                val info = try {
+                    packageManager.getPackageInfo(appId, 0)
+                } catch (e: PackageManager.NameNotFoundException) {
+                    null
+                }
+                val newAppInfo = info?.toAppInfo()
+                if (newAppInfo != null) {
                     newMap[appId] = newAppInfo
                 } else {
                     newMap.remove(appId)
@@ -101,22 +100,18 @@ fun updateAppInfo(appIds: List<String>) {
     }
 }
 
-
 fun initAppState() {
     packageReceiver
     appScope.launchTry(Dispatchers.IO) {
         updateAppMutex.withLock {
             val appMap = mutableMapOf<String, AppInfo>()
-            AppUtils.getAppsInfo().forEach { a ->
-                appMap[a.packageName] = AppInfo(
-                    id = a.packageName,
-                    name = a.name,
-                    icon = a.icon,
-                    versionCode = a.versionCode,
-                    versionName = a.versionName,
-                    isSystem = a.isSystem,
-                )
-            }
+            app.packageManager.getInstalledPackages(0)
+                .forEach { packageInfo ->
+                    val info = packageInfo.toAppInfo()
+                    if (info != null) {
+                        appMap[packageInfo.packageName] = info
+                    }
+                }
             appInfoCacheFlow.value = appMap
         }
     }

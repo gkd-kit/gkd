@@ -40,22 +40,39 @@ class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
     private val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(args.subsItemId)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    val sortByMtimeFlow = MutableStateFlow(false)
+    val showUninstallAppFlow = MutableStateFlow(false)
     private val sortAppsFlow = combine(
-        subsRawFlow, appInfoCacheFlow
-    ) { subsRaw, appInfoCache ->
-        (subsRaw?.apps ?: emptyList()).sortedWith { a, b ->
+        subsRawFlow, appInfoCacheFlow, showUninstallAppFlow, sortByMtimeFlow
+    ) { subsRaw, appInfoCache, showUninstallApp, sortByMtime ->
+        val apps = (subsRaw?.apps ?: emptyList()).let {
+            if (showUninstallApp) {
+                it
+            } else {
+                it.filter { a -> appInfoCache.containsKey(a.id) }
+            }
+        }
+        apps.sortedWith { a, b ->
             // 顺序: 已安装(有名字->无名字)->未安装(有名字(来自订阅)->无名字)
             collator.compare(appInfoCache[a.id]?.name ?: a.name?.let { "\uFFFF" + it }
             ?: ("\uFFFF\uFFFF" + a.id),
                 appInfoCache[b.id]?.name ?: b.name?.let { "\uFFFF" + it }
                 ?: ("\uFFFF\uFFFF" + b.id))
+        }.let {
+            if (sortByMtime) {
+                it.sortedBy { a -> -(appInfoCache[a.id]?.mtime ?: 0) }
+            } else {
+                it
+            }
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
 
     val searchStrFlow = MutableStateFlow("")
 
     private val debounceSearchStr = searchStrFlow.debounce(200)
         .stateIn(viewModelScope, SharingStarted.Eagerly, searchStrFlow.value)
+
 
     private val appAndConfigsFlow = combine(
         subsRawFlow,

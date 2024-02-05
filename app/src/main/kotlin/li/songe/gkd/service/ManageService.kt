@@ -15,9 +15,9 @@ import li.songe.gkd.composition.CompositionService
 import li.songe.gkd.notif.abNotif
 import li.songe.gkd.notif.createNotif
 import li.songe.gkd.notif.defaultChannel
-import li.songe.gkd.util.allRulesFlow
 import li.songe.gkd.util.clickCountFlow
 import li.songe.gkd.util.map
+import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
 
 class ManageService : CompositionService({
@@ -27,7 +27,7 @@ class ManageService : CompositionService({
     val scope = useScope()
     scope.launch {
         combine(
-            allRulesFlow,
+            ruleSummaryFlow,
             clickCountFlow,
             storeFlow.map(scope) { it.enableService },
             GkdAbService.isRunning

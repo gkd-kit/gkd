@@ -12,7 +12,7 @@ sealed class ResolvedRule(
     val group: RawSubscription.RawGroupProps,
     val rawSubs: RawSubscription,
     val subsItem: SubsItem,
-    val exclude: String,
+    val exclude: String?,
 ) {
     val key = rule.key
     val index = group.rules.indexOf(rule)
