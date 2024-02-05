@@ -53,7 +53,7 @@ data class Store(
     val captureVolumeChange: Boolean = false,
     val autoCheckAppUpdate: Boolean = true,
     val toastWhenClick: Boolean = true,
-    val clickToast: String = "跳过",
+    val clickToast: String = "GKD",
     val autoClearMemorySubs: Boolean = true,
     val hideSnapshotStatusBar: Boolean = false,
     val enableShizuku: Boolean = false,

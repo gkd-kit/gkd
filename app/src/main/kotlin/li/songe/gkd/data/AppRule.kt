@@ -5,7 +5,7 @@ class AppRule(
     subsItem: SubsItem,
     group: RawSubscription.RawAppGroup,
     rawSubs: RawSubscription,
-    exclude: String,
+    exclude: String?,
     val app: RawSubscription.RawApp,
 ) : ResolvedRule(
     rule = rule,

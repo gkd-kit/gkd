@@ -15,7 +15,7 @@ class GlobalRule(
     rule: RawSubscription.RawGlobalRule,
     group: RawSubscription.RawGlobalGroup,
     rawSubs: RawSubscription,
-    exclude: String,
+    exclude: String?,
 ) : ResolvedRule(
     rule = rule,
     group = group,
