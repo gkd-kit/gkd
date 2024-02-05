@@ -4,9 +4,12 @@ import li.songe.selector.Transform
 
 sealed class LogicalOperator(val key: String) {
     companion object {
-        val allSubClasses = listOf(
-            AndOperator, OrOperator
-        ).sortedBy { -it.key.length }
+        // https://stackoverflow.com/questions/47648689
+        val allSubClasses by lazy {
+            listOf(
+                AndOperator, OrOperator
+            ).sortedBy { -it.key.length }
+        }
     }
 
     override fun toString() = key
@@ -17,7 +20,7 @@ sealed class LogicalOperator(val key: String) {
         right: Expression,
     ): Boolean
 
-    object AndOperator : LogicalOperator("&&") {
+    data object AndOperator : LogicalOperator("&&") {
         override fun <T> compare(
             node: T,
             transform: Transform<T>,
@@ -28,7 +31,7 @@ sealed class LogicalOperator(val key: String) {
         }
     }
 
-    object OrOperator : LogicalOperator("||") {
+    data object OrOperator : LogicalOperator("||") {
         override fun <T> compare(
             node: T,
             transform: Transform<T>,
