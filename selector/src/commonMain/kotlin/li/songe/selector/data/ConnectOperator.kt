@@ -8,15 +8,18 @@ sealed class ConnectOperator(val key: String) {
     abstract fun <T> traversal(node: T, transform: Transform<T>, offset: Int): T?
 
     companion object {
-        val allSubClasses = listOf(
-            BeforeBrother, AfterBrother, Ancestor, Child, Descendant
-        ).sortedBy { -it.key.length }
+        // https://stackoverflow.com/questions/47648689
+        val allSubClasses by lazy {
+            listOf(
+                BeforeBrother, AfterBrother, Ancestor, Child, Descendant
+            ).sortedBy { -it.key.length }
+        }
     }
 
     /**
      * A + B, 1,2,3,A,B,7,8
      */
-    object BeforeBrother : ConnectOperator("+") {
+    data object BeforeBrother : ConnectOperator("+") {
         override fun <T> traversal(node: T, transform: Transform<T>) =
             transform.getBeforeBrothers(node)
 
@@ -27,7 +30,7 @@ sealed class ConnectOperator(val key: String) {
     /**
      * A - B, 1,2,3,B,A,7,8
      */
-    object AfterBrother : ConnectOperator("-") {
+    data object AfterBrother : ConnectOperator("-") {
         override fun <T> traversal(node: T, transform: Transform<T>) =
             transform.getAfterBrothers(node)
 
@@ -38,7 +41,7 @@ sealed class ConnectOperator(val key: String) {
     /**
      * A > B, A is the ancestor of B
      */
-    object Ancestor : ConnectOperator(">") {
+    data object Ancestor : ConnectOperator(">") {
         override fun <T> traversal(node: T, transform: Transform<T>) = transform.getAncestors(node)
 
         override fun <T> traversal(node: T, transform: Transform<T>, offset: Int): T? =
@@ -48,7 +51,7 @@ sealed class ConnectOperator(val key: String) {
     /**
      * A < B, A is the child of B
      */
-    object Child : ConnectOperator("<") {
+    data object Child : ConnectOperator("<") {
         override fun <T> traversal(node: T, transform: Transform<T>) = transform.getChildren(node)
 
         override fun <T> traversal(node: T, transform: Transform<T>, offset: Int): T? =
@@ -58,7 +61,7 @@ sealed class ConnectOperator(val key: String) {
     /**
      * A << B, A is the descendant of B
      */
-    object Descendant : ConnectOperator("<<") {
+    data object Descendant : ConnectOperator("<<") {
         override fun <T> traversal(node: T, transform: Transform<T>) =
             transform.getDescendants(node)
 

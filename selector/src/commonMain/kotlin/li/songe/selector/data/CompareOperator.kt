@@ -5,11 +5,14 @@ sealed class CompareOperator(val key: String) {
     abstract fun compare(left: Any?, right: Any?): Boolean
 
     companion object {
-        val allSubClasses = listOf(
-            Equal,
-            NotEqual,
-            Start, NotStart, Include, NotInclude, End, NotEnd, Less, LessEqual, More, MoreEqual
-        ).sortedBy { -it.key.length }
+        // https://stackoverflow.com/questions/47648689
+        val allSubClasses by lazy {
+            listOf(
+                Equal,
+                NotEqual,
+                Start, NotStart, Include, NotInclude, End, NotEnd, Less, LessEqual, More, MoreEqual
+            ).sortedBy { -it.key.length }
+        }
 
         // example
         // id="com.lptiyu.tanke:id/ab1"
@@ -24,7 +27,7 @@ sealed class CompareOperator(val key: String) {
         }
     }
 
-    object Equal : CompareOperator("=") {
+    data object Equal : CompareOperator("=") {
         override fun compare(left: Any?, right: Any?): Boolean {
             return if (left is CharSequence && right is CharSequence) {
                 left.contentReversedEquals(right)
@@ -34,65 +37,65 @@ sealed class CompareOperator(val key: String) {
         }
     }
 
-    object NotEqual : CompareOperator("!=") {
+    data object NotEqual : CompareOperator("!=") {
         override fun compare(left: Any?, right: Any?) = !Equal.compare(left, right)
     }
 
-    object Start : CompareOperator("^=") {
+    data object Start : CompareOperator("^=") {
         override fun compare(left: Any?, right: Any?): Boolean {
             return if (left is CharSequence && right is CharSequence) left.startsWith(right) else false
         }
     }
 
-    object NotStart : CompareOperator("!^=") {
+    data object NotStart : CompareOperator("!^=") {
         override fun compare(left: Any?, right: Any?): Boolean {
             return if (left is CharSequence && right is CharSequence) !left.startsWith(right) else false
         }
     }
 
-    object Include : CompareOperator("*=") {
+    data object Include : CompareOperator("*=") {
         override fun compare(left: Any?, right: Any?): Boolean {
             return if (left is CharSequence && right is CharSequence) left.contains(right) else false
         }
     }
 
-    object NotInclude : CompareOperator("!*=") {
+    data object NotInclude : CompareOperator("!*=") {
         override fun compare(left: Any?, right: Any?): Boolean {
             return if (left is CharSequence && right is CharSequence) !left.contains(right) else false
         }
     }
 
-    object End : CompareOperator("$=") {
+    data object End : CompareOperator("$=") {
         override fun compare(left: Any?, right: Any?): Boolean {
             return if (left is CharSequence && right is CharSequence) left.endsWith(right) else false
         }
     }
 
-    object NotEnd : CompareOperator("!$=") {
+    data object NotEnd : CompareOperator("!$=") {
         override fun compare(left: Any?, right: Any?): Boolean {
             return if (left is CharSequence && right is CharSequence) !left.endsWith(right) else false
         }
     }
 
-    object Less : CompareOperator("<") {
+    data object Less : CompareOperator("<") {
         override fun compare(left: Any?, right: Any?): Boolean {
             return if (left is Int && right is Int) left < right else false
         }
     }
 
-    object LessEqual : CompareOperator("<=") {
+    data object LessEqual : CompareOperator("<=") {
         override fun compare(left: Any?, right: Any?): Boolean {
             return if (left is Int && right is Int) left <= right else false
         }
     }
 
-    object More : CompareOperator(">") {
+    data object More : CompareOperator(">") {
         override fun compare(left: Any?, right: Any?): Boolean {
             return if (left is Int && right is Int) left > right else false
         }
     }
 
-    object MoreEqual : CompareOperator(">=") {
+    data object MoreEqual : CompareOperator(">=") {
         override fun compare(left: Any?, right: Any?): Boolean {
             return if (left is Int && right is Int) left >= right else false
         }
