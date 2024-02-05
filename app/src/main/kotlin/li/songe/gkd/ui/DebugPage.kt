@@ -33,6 +33,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -42,6 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -96,18 +98,21 @@ fun DebugPage() {
         mutableStateOf(false)
     }
 
-    Scaffold(topBar = {
-        TopAppBar(navigationIcon = {
-            IconButton(onClick = {
-                navController.popBackStack()
-            }) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = null,
-                )
-            }
-        }, title = { Text(text = "高级模式") }, actions = {})
-    }, content = { contentPadding ->
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
+                IconButton(onClick = {
+                    navController.popBackStack()
+                }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = null,
+                    )
+                }
+            }, title = { Text(text = "高级模式") }, actions = {})
+        }) { contentPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -137,7 +142,8 @@ fun DebugPage() {
                         if (enableShizuku) {
                             appScope.launchTry(Dispatchers.IO) {
                                 // 校验方法是否适配, 再允许使用 shizuku
-                                val tasks = newActivityTaskManager()?.safeGetTasks()?.firstOrNull()
+                                val tasks =
+                                    newActivityTaskManager()?.safeGetTasks()?.firstOrNull()
                                 if (tasks != null) {
                                     updateStorage(
                                         storeFlow, store.copy(
@@ -337,7 +343,7 @@ fun DebugPage() {
 
             Spacer(modifier = Modifier.height(40.dp))
         }
-    })
+    }
 
     if (showPortDlg) {
         Dialog(onDismissRequest = { showPortDlg = false }) {
