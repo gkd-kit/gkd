@@ -69,7 +69,10 @@ fun SlowGroupPage() {
         }
     ) { padding ->
         LazyColumn(modifier = Modifier.padding(padding)) {
-            items(ruleSummary.slowGlobalGroups) { (group, rule) ->
+            items(
+                ruleSummary.slowGlobalGroups,
+                { (_, r) -> "${r.subsItem.id}-${r.group.key}" }
+            ) { (group, rule) ->
                 SlowGroupCard(
                     modifier = Modifier
                         .clickable {
@@ -85,7 +88,10 @@ fun SlowGroupPage() {
                     desc = "${rule.rawSubs.name}-全局规则"
                 )
             }
-            items(ruleSummary.slowAppGroups) { (group, rule) ->
+            items(
+                ruleSummary.slowAppGroups,
+                { (_, r) -> "${r.subsItem.id}-${r.appId}-${r.group.key}" }
+            ) { (group, rule) ->
                 SlowGroupCard(
                     modifier = Modifier
                         .clickable {
@@ -102,7 +108,7 @@ fun SlowGroupPage() {
                     desc = "${rule.rawSubs.name}-应用规则-${appInfoCache[rule.app.id]?.name ?: rule.app.name ?: rule.app.id}"
                 )
             }
-            item {
+            item("empty") {
                 Spacer(modifier = Modifier.height(40.dp))
                 if (ruleSummary.slowGroupCount == 0) {
                     Text(
@@ -125,17 +131,19 @@ fun SlowGroupCard(title: String, desc: String, modifier: Modifier = Modifier) {
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = title, fontSize = 18.sp,
+                text = title,
+                fontSize = 18.sp,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = desc, fontSize = 14.sp,
+                text = desc,
+                fontSize = 14.sp,
                 maxLines = 1,
                 softWrap = false,
-                overflow = TextOverflow.Ellipsis,
+                overflow = TextOverflow.Ellipsis
             )
         }
         Icon(
