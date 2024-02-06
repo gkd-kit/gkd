@@ -16,7 +16,8 @@ sealed class ResolvedRule(
 ) {
     val key = rule.key
     val index = group.rules.indexOf(rule)
-    val preKeys = (rule.preKeys ?: emptyList()).toSet()
+    val othersKeys = group.rules.filter { r -> r.key != rule.key }.mapNotNull { r -> r.key }.toSet()
+    val preKeys = (rule.preKeys ?: emptyList()).filter { r -> othersKeys.contains(r) }.toSet()
     val resetMatch = rule.resetMatch ?: group.resetMatch
     val matches = rule.matches.map { s -> Selector.parse(s) }
     val excludeMatches = (rule.excludeMatches ?: emptyList()).map { s -> Selector.parse(s) }
@@ -40,6 +41,16 @@ sealed class ResolvedRule(
     } ?: group.actionMaximum
 
     val order = rule.order ?: group.order ?: 0
+
+    val slowSelectors by lazy {
+        (matches + excludeMatches).filterNot { s ->
+            ((quickFind && s.canQf) || s.isMatchRoot) && !s.connectKeys.contains(
+                "<<"
+            )
+        }
+    }
+
+    val isSlow by lazy { preKeys.isEmpty() && slowSelectors.isNotEmpty() && (matchTime == null || matchTime > 30_000L) }
 
     var groupToRules: Map<out RawSubscription.RawGroupProps, List<ResolvedRule>> = emptyMap()
         set(value) {
