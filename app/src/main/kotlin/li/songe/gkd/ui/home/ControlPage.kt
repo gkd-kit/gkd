@@ -98,7 +98,7 @@ fun useControlPage(): ScaffoldExt {
             } else {
                 TextSwitch(
                     name = "服务开启",
-                    desc = "保持服务开启,根据订阅规则匹配屏幕目标节点",
+                    desc = "根据订阅规则匹配屏幕目标节点",
                     checked = store.enableService,
                     onCheckedChange = {
                         updateStorage(
