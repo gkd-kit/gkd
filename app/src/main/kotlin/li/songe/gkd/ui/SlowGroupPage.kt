@@ -85,7 +85,7 @@ fun SlowGroupPage() {
                         }
                         .padding(10.dp, 5.dp),
                     title = group.name,
-                    desc = "${rule.rawSubs.name}-全局规则"
+                    desc = "${rule.rawSubs.name}/全局规则"
                 )
             }
             items(
@@ -105,7 +105,7 @@ fun SlowGroupPage() {
                         }
                         .padding(10.dp, 5.dp),
                     title = group.name,
-                    desc = "${rule.rawSubs.name}-应用规则-${appInfoCache[rule.app.id]?.name ?: rule.app.name ?: rule.app.id}"
+                    desc = "${rule.rawSubs.name}/应用规则/${appInfoCache[rule.app.id]?.name ?: rule.app.name ?: rule.app.id}"
                 )
             }
             item("empty") {
