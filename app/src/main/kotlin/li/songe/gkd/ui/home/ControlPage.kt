@@ -39,11 +39,13 @@ import li.songe.gkd.service.ManageService
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.ClickLogPageDestination
+import li.songe.gkd.ui.destinations.SlowGroupPageDestination
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.checkOrRequestNotifPermission
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
+import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.updateStorage
 import li.songe.gkd.util.usePollState
@@ -58,6 +60,7 @@ fun useControlPage(): ScaffoldExt {
     val latestRecordDesc by vm.latestRecordDescFlow.collectAsState()
     val subsStatus by vm.subsStatusFlow.collectAsState()
     val store by storeFlow.collectAsState()
+    val ruleSummary by ruleSummaryFlow.collectAsState()
 
     val gkdAccessRunning by GkdAbService.isRunning.collectAsState()
     val manageRunning by ManageService.isRunning.collectAsState()
@@ -215,6 +218,34 @@ fun useControlPage(): ScaffoldExt {
                 )
             }
             HorizontalDivider()
+
+            if (ruleSummary.slowGroupCount > 0) {
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clickable {
+                            navController.navigate(SlowGroupPageDestination)
+                        }
+                        .padding(10.dp, 5.dp),
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "耗时查询", fontSize = 18.sp
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "存在${ruleSummary.slowGroupCount}规则组,可能导致触发缓慢或更多耗电",
+                            fontSize = 14.sp
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null
+                    )
+                }
+                HorizontalDivider()
+            }
 
             Column(
                 modifier = Modifier

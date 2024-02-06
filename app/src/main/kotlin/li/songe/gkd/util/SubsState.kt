@@ -102,6 +102,13 @@ data class RuleSummary(
     } else {
         "暂无规则"
     }
+
+    val slowGlobalGroups =
+        globalRules.filter { r -> r.isSlow }.distinctBy { r -> r.group }.map { r -> r.group to r }
+    val slowAppGroups =
+        appIdToRules.values.flatten().filter { r -> r.isSlow }.distinctBy { r -> r.group }
+            .map { r -> r.group to r }
+    val slowGroupCount = slowGlobalGroups.size + slowAppGroups.size
 }
 
 val ruleSummaryFlow by lazy {

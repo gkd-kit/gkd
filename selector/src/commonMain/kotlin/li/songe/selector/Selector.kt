@@ -27,8 +27,9 @@ class Selector internal constructor(private val propertyWrapper: PropertyWrapper
         var c = propertyWrapper.to
         val keys = mutableListOf<String>()
         while (c != null) {
-            c!!.connectSegment.connectExpression
-            keys.add(c!!.connectSegment.operator.key)
+            c?.apply {
+                keys.add(connectSegment.operator.key)
+            }
             c = c?.to?.to
         }
         keys.toTypedArray()

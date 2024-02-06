@@ -173,7 +173,7 @@ data class RawSubscription(
         }
 
         val allSelectorStrings by lazy {
-            rules.map { r -> r.matches + (r.excludeMatches ?: emptyList()) }.flatten().distinct()
+            rules.map { r -> r.matches + (r.excludeMatches ?: emptyList()) }.flatten()
         }
 
         val allSelector by lazy {
@@ -257,7 +257,7 @@ data class RawSubscription(
     ) : RawGroupProps, RawAppRuleProps {
 
         val allSelectorStrings by lazy {
-            rules.map { r -> r.matches + (r.excludeMatches ?: emptyList()) }.flatten().distinct()
+            rules.map { r -> r.matches + (r.excludeMatches ?: emptyList()) }.flatten()
         }
 
         val allSelector by lazy {
