@@ -16,8 +16,7 @@ sealed class ResolvedRule(
 ) {
     val key = rule.key
     val index = group.rules.indexOf(rule)
-    val othersKeys = group.rules.filter { r -> r.key != rule.key }.mapNotNull { r -> r.key }.toSet()
-    val preKeys = (rule.preKeys ?: emptyList()).filter { r -> othersKeys.contains(r) }.toSet()
+    val preKeys = (rule.preKeys ?: emptyList()).toSet()
     val resetMatch = rule.resetMatch ?: group.resetMatch
     val matches = rule.matches.map { s -> Selector.parse(s) }
     val excludeMatches = (rule.excludeMatches ?: emptyList()).map { s -> Selector.parse(s) }
