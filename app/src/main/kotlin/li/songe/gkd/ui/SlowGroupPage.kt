@@ -13,15 +13,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -46,6 +52,9 @@ fun SlowGroupPage() {
     val navController = LocalNavController.current
     val ruleSummary by ruleSummaryFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
+    var showInfoDlg by remember {
+        mutableStateOf(false)
+    }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
@@ -64,7 +73,13 @@ fun SlowGroupPage() {
                     }
                 },
                 title = { Text(text = if (ruleSummary.slowGroupCount > 0) "缓慢查询-${ruleSummary.slowGroupCount}" else "缓慢查询") },
-                actions = {}
+                actions = {
+                    IconButton(onClick = {
+                        showInfoDlg = true
+                    }) {
+                        Icon(Icons.Outlined.Info, contentDescription = null)
+                    }
+                }
             )
         }
     ) { padding ->
@@ -119,6 +134,19 @@ fun SlowGroupPage() {
                 }
             }
         }
+    }
+
+    if (showInfoDlg) {
+        AlertDialog(
+            onDismissRequest = { showInfoDlg = false },
+            title = { Text(text = "什么是缓慢查询") },
+            text = { Text(text = "任意单个规则满足以下 3 个条件即判定为缓慢查询\n\n1. 存在不能快速查询的选择器\n2. preKeys 为空\n3. matchTime 为空或大于 30s") },
+            confirmButton = {
+                TextButton(onClick = { showInfoDlg = false }) {
+                    Text(text = "确定")
+                }
+            },
+        )
     }
 }
 
