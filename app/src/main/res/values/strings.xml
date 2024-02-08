@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">GKD</string>
-    <string name="ab_desc">基于规则匹配的无障碍速点服务\n强大的自定义规则能帮助你实现点击关闭各种广告\n自定义快捷操作等高级功能</string>
+    <string name="ab_desc">基于规则匹配的无障碍屏幕自定义点击服务\n强大的自定义选择器和订阅规则能帮助你实现点击任意位置控件\n自定义快捷操作等高级功能</string>
     <string name="capture_label">捕获快照</string>
 </resources>
