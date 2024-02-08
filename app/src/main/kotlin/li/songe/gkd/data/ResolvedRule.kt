@@ -49,7 +49,7 @@ sealed class ResolvedRule(
         }
     }
 
-    val isSlow by lazy { preKeys.isEmpty() && slowSelectors.isNotEmpty() && (matchTime == null || matchTime > 30_000L) }
+    val isSlow by lazy { preKeys.isEmpty() && slowSelectors.isNotEmpty() && (matchTime == null || matchTime > 10_000L) }
 
     var groupToRules: Map<out RawSubscription.RawGroupProps, List<ResolvedRule>> = emptyMap()
         set(value) {
