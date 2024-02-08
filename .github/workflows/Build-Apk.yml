@@ -25,7 +25,8 @@ jobs:
 
       - name: write secrets info
         run: |
-          echo GKD_BUGLY_APP_ID='${{ secrets.GKD_BUGLY_APP_ID }}' >> gradle.properties
+          echo GKD_APP_CENTER_SECRET='${{ secrets.GKD_APP_CENTER_SECRET }}' >> gradle.properties
+          echo GKD_DEBUG_APP_CENTER_SECRET='${{ secrets.GKD_DEBUG_APP_CENTER_SECRET }}' >> gradle.properties
           echo ${{ secrets.GKD_STORE_FILE_BASE64 }} | base64 --decode > ${{ github.workspace }}/key.jks
           echo GKD_STORE_FILE='${{ github.workspace }}/key.jks' >> gradle.properties
           echo GKD_STORE_PASSWORD='${{ secrets.GKD_STORE_PASSWORD }}' >> gradle.properties
