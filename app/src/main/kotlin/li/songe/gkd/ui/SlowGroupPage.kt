@@ -140,7 +140,7 @@ fun SlowGroupPage() {
         AlertDialog(
             onDismissRequest = { showInfoDlg = false },
             title = { Text(text = "什么是缓慢查询") },
-            text = { Text(text = "任意单个规则满足以下 3 个条件即判定为缓慢查询\n\n1. 存在不能快速查询的选择器或使用 << 连接符\n2. preKeys 为空\n3. matchTime 为空或大于 30s") },
+            text = { Text(text = "任意单个规则满足以下 3 个条件即判定为缓慢查询\n\n1. 存在不能快速查询的选择器或使用 << 连接符\n2. preKeys 为空\n3. matchTime 为空或大于 10s") },
             confirmButton = {
                 TextButton(onClick = { showInfoDlg = false }) {
                     Text(text = "确定")
