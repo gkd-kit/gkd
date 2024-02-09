@@ -17,7 +17,7 @@ dependencyResolutionManagement {
 
 //    https://youtrack.jetbrains.com/issue/KT-55620
 //    https://stackoverflow.com/questions/69163511
-    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
+//    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
 
     repositories {
         mavenLocal()
@@ -65,9 +65,9 @@ dependencyResolutionManagement {
             plugin("kotlin.android", "org.jetbrains.kotlin.android").version(kotlinVersion)
 
             // compose 编译器的版本, 需要注意它与 compose 的版本没有关联
-            // https://mvnrepository.com/artifact/androidx.compose.compiler/compiler
-            version("compose.compilerVersion", "1.5.8")
-            val composeVersion = "1.6.0"
+            // https://developer.android.com/jetpack/androidx/releases/compose-compiler
+            version("compose.compilerVersion", "1.5.9")
+            val composeVersion = "1.6.1"
             library("compose.ui", "androidx.compose.ui:ui:$composeVersion")
             library("compose.preview", "androidx.compose.ui:ui-tooling-preview:$composeVersion")
             library("compose.tooling", "androidx.compose.ui:ui-tooling:$composeVersion")
@@ -78,13 +78,11 @@ dependencyResolutionManagement {
                 "compose.icons",
                 "androidx.compose.material:material-icons-extended:$composeVersion"
             )
-            library("compose.material3", "androidx.compose.material3:material3:1.2.0-rc01")
+            library("compose.material3", "androidx.compose.material3:material3:1.2.0")
             library("compose.activity", "androidx.activity:activity-compose:1.8.2")
 
             // https://github.com/Tencent/MMKV/blob/master/README_CN.md
             library("tencent.mmkv", "com.tencent:mmkv:1.3.3")
-            // https://bugly.qq.com/docs/user-guide/instruction-manual-android/
-            library("tencent.bugly", "com.tencent.bugly:crashreport:4.1.9.3")
 
             // https://github.com/RikkaApps/HiddenApiRefinePlugin
             val rikkaVersion = "4.4.0"
@@ -140,7 +138,7 @@ dependencyResolutionManagement {
 
             library("junit", "junit:junit:4.13.2")
 
-            val ktorVersion = "2.3.7"
+            val ktorVersion = "2.3.8"
             // 请注意,当 client 和 server 版本不一致时, 会报错 socket hang up
             library("ktor.server.core", "io.ktor:ktor-server-core:$ktorVersion")
             library("ktor.server.cio", "io.ktor:ktor-server-cio:$ktorVersion")
@@ -167,6 +165,7 @@ dependencyResolutionManagement {
             )
 
             // https://github.com/Kotlin/kotlinx.collections.immutable
+            // 仍然存在一些限制 kotlinx.serialization https://github.com/Kotlin/kotlinx.collections.immutable/issues/63
             library(
                 "kotlinx.collections.immutable",
                 "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.7"

@@ -50,6 +50,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import li.songe.gkd.data.SubsItem
@@ -109,7 +110,7 @@ fun useSubsManagePage(): ScaffoldExt {
     val state = rememberReorderableLazyListState(onMove = { from, to ->
         orderSubItems.value = orderSubItems.value.toMutableList().apply {
             add(to.index, removeAt(from.index))
-        }
+        }.toImmutableList()
     }, onDragEnd = { _, _ ->
         vm.viewModelScope.launch(Dispatchers.IO) {
             val changeItems = mutableListOf<SubsItem>()

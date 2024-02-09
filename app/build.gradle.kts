@@ -69,9 +69,6 @@ android {
             "GIT_COMMIT_ID",
             jsonStringOf(gitInfo?.commitId)
         )
-        buildConfigField(
-            "String", "GKD_BUGLY_APP_ID", jsonStringOf(project.properties["GKD_BUGLY_APP_ID"])
-        )
         resourceConfigurations.addAll(listOf("zh", "en"))
         ndk {
             // noinspection ChromeOsAbiSupport
@@ -181,7 +178,6 @@ dependencies {
     implementation(libs.rikka.shizuku.provider)
     implementation(libs.lsposed.hiddenapibypass)
 
-    implementation(libs.tencent.bugly)
     implementation(libs.tencent.mmkv)
 
     implementation(libs.androidx.room.runtime)

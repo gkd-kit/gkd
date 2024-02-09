@@ -1,16 +1,21 @@
 package li.songe.gkd.ui.home
 
+import android.app.Activity
+import android.content.Intent
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import li.songe.gkd.util.ProfileTransitions
@@ -26,6 +31,13 @@ data class BottomNavItem(
 fun HomePage() {
     val vm = hiltViewModel<HomeVm>()
     val tab by vm.tabFlow.collectAsState()
+
+    val intent: Intent? = (LocalContext.current as Activity).intent
+    LaunchedEffect(key1 = intent, block = {
+        if (intent != null) {
+            LogUtils.d(intent)
+        }
+    })
 
     val appListPage = useAppListPage()
     val subsPage = useSubsManagePage()

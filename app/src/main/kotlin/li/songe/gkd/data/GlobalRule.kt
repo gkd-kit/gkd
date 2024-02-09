@@ -1,5 +1,6 @@
 package li.songe.gkd.data
 
+import kotlinx.collections.immutable.ImmutableMap
 import li.songe.gkd.service.launcherAppId
 import li.songe.gkd.util.systemAppsFlow
 
@@ -16,6 +17,7 @@ class GlobalRule(
     group: RawSubscription.RawGlobalGroup,
     rawSubs: RawSubscription,
     exclude: String?,
+    appInfoCache: ImmutableMap<String, AppInfo>,
 ) : ResolvedRule(
     rule = rule,
     group = group,
@@ -23,17 +25,31 @@ class GlobalRule(
     rawSubs = rawSubs,
     exclude = exclude,
 ) {
-
-    val matchAnyApp = rule.matchAnyApp ?: group.matchAnyApp ?: true
-    val matchLauncher = rule.matchLauncher ?: group.matchLauncher ?: false
-    val matchSystemApp = rule.matchSystemApp ?: group.matchSystemApp ?: false
+    private val matchAnyApp = rule.matchAnyApp ?: group.matchAnyApp ?: true
+    private val matchLauncher = rule.matchLauncher ?: group.matchLauncher ?: false
+    private val matchSystemApp = rule.matchSystemApp ?: group.matchSystemApp ?: false
     val apps = mutableMapOf<String, GlobalApp>().apply {
         (rule.apps ?: group.apps ?: emptyList()).forEach { a ->
+            val enable = a.enable ?: appInfoCache[a.id]?.let { appInfo ->
+                if (a.excludeVersionCodes?.contains(appInfo.versionCode) == true) {
+                    return@let false
+                }
+                if (a.excludeVersionNames?.contains(appInfo.versionName) == true) {
+                    return@let false
+                }
+                a.versionCodes?.apply {
+                    return@let contains(appInfo.versionCode)
+                }
+                a.versionNames?.apply {
+                    return@let contains(appInfo.versionName)
+                }
+                null
+            } ?: true
             this[a.id] = GlobalApp(
                 id = a.id,
-                enable = a.enable ?: true,
+                enable = enable,
                 activityIds = getFixActivityIds(a.id, a.activityIds),
-                excludeActivityIds = getFixActivityIds(a.id, a.excludeActivityIds)
+                excludeActivityIds = getFixActivityIds(a.id, a.excludeActivityIds),
             )
         }
     }

@@ -16,7 +16,6 @@ import android.media.projection.MediaProjectionManager
 import android.os.Handler
 import android.os.Looper
 import com.blankj.utilcode.util.ScreenUtils
-import li.songe.gkd.util.Ext.isEmptyBitmap
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -46,7 +45,7 @@ class ScreenshotUtil(private val context: Context, private val screenshotIntent:
     }
 
     //    TODO android13 上一半概率获取到全透明图片, android12 暂无此问题
-    suspend fun execute() = suspendCoroutine<Bitmap> { block ->
+    suspend fun execute() = suspendCoroutine { block ->
         imageReader = ImageReader.newInstance(
             width, height,
             PixelFormat.RGBA_8888, 2

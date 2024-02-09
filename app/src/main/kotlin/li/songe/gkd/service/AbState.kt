@@ -12,8 +12,8 @@ import li.songe.gkd.data.GlobalRule
 import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.util.Ext.getDefaultLauncherAppId
 import li.songe.gkd.util.RuleSummary
+import li.songe.gkd.util.getDefaultLauncherAppId
 import li.songe.gkd.util.increaseClickCount
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.recordStoreFlow

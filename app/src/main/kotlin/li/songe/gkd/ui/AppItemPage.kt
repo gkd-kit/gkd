@@ -316,9 +316,13 @@ fun AppItemPage(
                                             .apply {
                                                 set(
                                                     indexOfFirst { a -> a.id == appRawVal.id },
-                                                    appRawVal.copy(groups = appRawVal.groups.filter { g -> g.key != menuGroupRaw.key })
+                                                    appRawVal.copy(
+                                                        groups = appRawVal.groups
+                                                            .filter { g -> g.key != menuGroupRaw.key }
+                                                    )
                                                 )
-                                            })
+                                            }
+                                    )
                                     updateSubscription(newSubsRaw)
                                     DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
                                     DbSet.subsConfigDao.delete(
@@ -514,11 +518,11 @@ fun AppItemPage(
                 val newSubsRaw = subsRaw.copy(apps = subsRaw.apps.toMutableList().apply {
                     set(
                         indexOfFirst { a -> a.id == appRawVal.id },
-                        appRawVal.copy(groups = appRawVal.groups + tempGroups.mapIndexed { i, g ->
+                        appRawVal.copy(groups = (appRawVal.groups + tempGroups.mapIndexed { i, g ->
                             g.copy(
                                 key = newKey + i
                             )
-                        })
+                        }))
                     )
                 })
                 vm.viewModelScope.launchTry(Dispatchers.IO) {
