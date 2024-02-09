@@ -175,18 +175,13 @@ fun SubsPage(
                     }
                     IconButton(onClick = { expanded = true }) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Sort,
-                            contentDescription = null
+                            imageVector = Icons.AutoMirrored.Filled.Sort, contentDescription = null
                         )
                     }
                     Box(
-                        modifier = Modifier
-                            .wrapContentSize(Alignment.TopStart)
+                        modifier = Modifier.wrapContentSize(Alignment.TopStart)
                     ) {
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
+                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
 
                             SortTypeOption.allSubObject.forEach { sortOption ->
                                 DropdownMenuItem(
@@ -194,11 +189,11 @@ fun SubsPage(
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            RadioButton(selected = sortType == sortOption,
+                                            RadioButton(
+                                                selected = sortType == sortOption,
                                                 onClick = {
                                                     vm.sortTypeFlow.value = sortOption
-                                                }
-                                            )
+                                                })
                                             Text(sortOption.label)
                                         }
                                     },
@@ -213,11 +208,9 @@ fun SubsPage(
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Checkbox(
-                                            checked = showUninstallApp,
-                                            onCheckedChange = {
-                                                vm.showUninstallAppFlow.value = it
-                                            })
+                                        Checkbox(checked = showUninstallApp, onCheckedChange = {
+                                            vm.showUninstallAppFlow.value = it
+                                        })
                                         Text("显示未安装应用")
                                     }
                                 },
@@ -243,8 +236,7 @@ fun SubsPage(
         },
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.padding(padding),
-            state = listState
+            modifier = Modifier.padding(padding), state = listState
         ) {
             itemsIndexed(appAndConfigs, { i, a -> i.toString() + a.t0.id }) { _, a ->
                 val (appRaw, subsConfig, enableSize) = a
@@ -440,31 +432,29 @@ fun SubsPage(
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Column {
-                    Text(
-                        text = "复制", modifier = Modifier
-                            .clickable {
-                                ClipboardUtils.copyText(
-                                    json.encodeToJson5String(menuAppRawVal)
-                                )
-                                toast("复制成功")
-                                menuRawApp = null
+                    Text(text = "复制", modifier = Modifier
+                        .clickable {
+                            ClipboardUtils.copyText(
+                                json.encodeToJson5String(menuAppRawVal)
+                            )
+                            toast("复制成功")
+                            menuRawApp = null
+                        }
+                        .fillMaxWidth()
+                        .padding(16.dp))
+                    Text(text = "删除", modifier = Modifier
+                        .clickable {
+                            // 也许需要二次确认
+                            vm.viewModelScope.launchTry(Dispatchers.IO) {
+                                updateSubscription(subsRaw.copy(apps = subsRaw.apps.filter { a -> a.id != menuAppRawVal.id }))
+                                DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
+                                DbSet.subsConfigDao.delete(subsItemVal.id, menuAppRawVal.id)
+                                toast("删除成功")
                             }
-                            .fillMaxWidth()
-                            .padding(16.dp))
-                    Text(
-                        text = "删除", modifier = Modifier
-                            .clickable {
-                                // 也许需要二次确认
-                                vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                    updateSubscription(subsRaw.copy(apps = subsRaw.apps.filter { a -> a.id != menuAppRawVal.id }))
-                                    DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
-                                    DbSet.subsConfigDao.delete(subsItemVal.id, menuAppRawVal.id)
-                                    toast("删除成功")
-                                }
-                                menuRawApp = null
-                            }
-                            .fillMaxWidth()
-                            .padding(16.dp), color = MaterialTheme.colorScheme.error)
+                            menuRawApp = null
+                        }
+                        .fillMaxWidth()
+                        .padding(16.dp), color = MaterialTheme.colorScheme.error)
                 }
             }
         }

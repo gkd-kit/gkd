@@ -41,8 +41,8 @@ import li.songe.gkd.notif.createNotif
 import li.songe.gkd.notif.httpChannel
 import li.songe.gkd.notif.httpNotif
 import li.songe.gkd.service.GkdAbService
-import li.songe.gkd.util.Ext.getIpAddressInLocalNetwork
 import li.songe.gkd.util.SERVER_SCRIPT_URL
+import li.songe.gkd.util.getIpAddressInLocalNetwork
 import li.songe.gkd.util.keepNullJson
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map

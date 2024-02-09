@@ -3,8 +3,8 @@ package li.songe.gkd
 import android.app.ActivityManager
 import android.content.Context
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.dylanc.activityresult.launcher.PickContentLauncher
@@ -31,6 +31,7 @@ import li.songe.gkd.util.storeFlow
 
 @AndroidEntryPoint
 class MainActivity : CompositionActivity({
+    this as MainActivity
     useLifeCycleLog()
     val launcher = StartActivityLauncher(this)
     val pickContentLauncher = PickContentLauncher(this)
@@ -62,7 +63,8 @@ class MainActivity : CompositionActivity({
                 LocalNavController provides navController
             ) {
                 DestinationsNavHost(
-                    navGraph = NavGraphs.root, navController = navController, modifier = Modifier
+                    navGraph = NavGraphs.root,
+                    navController = navController
                 )
             }
             ConfirmDialog()
@@ -70,7 +72,9 @@ class MainActivity : CompositionActivity({
             UpgradeDialog()
         }
     }
-})
+}) {
+    val mainVm by viewModels<MainViewModel>()
+}
 
 
 

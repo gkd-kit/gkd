@@ -16,24 +16,24 @@ sealed class ResolvedRule(
 ) {
     val key = rule.key
     val index = group.rules.indexOf(rule)
-    val preKeys = (rule.preKeys ?: emptyList()).toSet()
-    val resetMatch = rule.resetMatch ?: group.resetMatch
-    val matches = rule.matches.map { s -> Selector.parse(s) }
-    val excludeMatches = (rule.excludeMatches ?: emptyList()).map { s -> Selector.parse(s) }
+    private val preKeys = (rule.preKeys ?: emptyList()).toSet()
+    private val resetMatch = rule.resetMatch ?: group.resetMatch
+    private val matches = rule.matches?.map { s -> Selector.parse(s) } ?: emptyList()
+    private val excludeMatches = (rule.excludeMatches ?: emptyList()).map { s -> Selector.parse(s) }
     val matchDelay = rule.matchDelay ?: group.matchDelay ?: 0L
     val actionDelay = rule.actionDelay ?: group.actionDelay ?: 0L
-    val matchTime = rule.matchTime ?: group.matchTime
-    val quickFind = rule.quickFind ?: group.quickFind ?: false
+    private val matchTime = rule.matchTime ?: group.matchTime
+    private val quickFind = rule.quickFind ?: group.quickFind ?: false
 
-    val actionCdKey = rule.actionCdKey ?: group.actionCdKey
-    val actionCd = rule.actionCd ?: if (actionCdKey != null) {
+    private val actionCdKey = rule.actionCdKey ?: group.actionCdKey
+    private val actionCd = rule.actionCd ?: if (actionCdKey != null) {
         group.rules.find { r -> r.key == actionCdKey }?.actionCd
     } else {
         null
     } ?: group.actionCd ?: 1000L
 
-    val actionMaximumKey = rule.actionMaximumKey ?: group.actionMaximumKey
-    val actionMaximum = rule.actionMaximum ?: if (actionMaximumKey != null) {
+    private val actionMaximumKey = rule.actionMaximumKey ?: group.actionMaximumKey
+    private val actionMaximum = rule.actionMaximum ?: if (actionMaximumKey != null) {
         group.rules.find { r -> r.key == actionMaximumKey }?.actionMaximum
     } else {
         null
@@ -41,7 +41,7 @@ sealed class ResolvedRule(
 
     val order = rule.order ?: group.order ?: 0
 
-    val slowSelectors by lazy {
+    private val slowSelectors by lazy {
         (matches + excludeMatches).filterNot { s ->
             ((quickFind && s.canQf) || s.isMatchRoot) && !s.connectKeys.contains(
                 "<<"
@@ -83,7 +83,7 @@ sealed class ResolvedRule(
             }.toSet()
         }
 
-    var preRules = emptySet<ResolvedRule>()
+    private var preRules = emptySet<ResolvedRule>()
     val hasNext = group.rules.any { r -> r.preKeys?.any { k -> k == rule.key } == true }
 
     var actionDelayTriggerTime = 0L
@@ -96,7 +96,7 @@ sealed class ResolvedRule(
         return false
     }
 
-    var actionTriggerTime = Value(0L)
+    private var actionTriggerTime = Value(0L)
     fun trigger() {
         actionTriggerTime.value = System.currentTimeMillis()
         lastTriggerTime = actionTriggerTime.value
@@ -110,7 +110,7 @@ sealed class ResolvedRule(
 
     var matchChangedTime = 0L
 
-    val matchLimitTime = (matchTime ?: 0) + matchDelay
+    private val matchLimitTime = (matchTime ?: 0) + matchDelay
 
     val resetMatchTypeWhenActivity = when (resetMatch) {
         "app" -> false
@@ -193,8 +193,7 @@ fun getFixActivityIds(
     appId: String,
     activityIds: List<String>?,
 ): List<String> {
-    activityIds ?: return emptyList()
-    return activityIds.map { activityId ->
+    return (activityIds ?: emptyList()).map { activityId ->
         if (activityId.startsWith('.')) { // .a.b.c -> com.x.y.x.a.b.c
             appId + activityId
         } else {

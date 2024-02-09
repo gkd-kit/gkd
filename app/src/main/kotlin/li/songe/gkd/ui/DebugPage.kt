@@ -69,13 +69,13 @@ import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.SnapshotPageDestination
-import li.songe.gkd.util.Ext
 import li.songe.gkd.util.LocalLauncher
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.authActionFlow
 import li.songe.gkd.util.canDrawOverlaysAuthAction
 import li.songe.gkd.util.checkOrRequestNotifPermission
+import li.songe.gkd.util.getIpAddressInLocalNetwork
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
@@ -204,7 +204,7 @@ fun DebugPage() {
                                 Spacer(modifier = Modifier.width(2.dp))
                                 Text(text = "仅本设备可访问")
                             }
-                            Ext.getIpAddressInLocalNetwork().forEach { host ->
+                            getIpAddressInLocalNetwork().forEach { host ->
                                 Text(
                                     text = "http://${host}:${store.httpServerPort}",
                                     color = MaterialTheme.colorScheme.primary,
@@ -242,13 +242,13 @@ fun DebugPage() {
             HorizontalDivider()
 
             TextSwitch(
-                name = "自动清除内存订阅",
-                desc = "当HTTP服务关闭时,清除内存订阅",
-                checked = store.autoClearMemorySubs
+                name = "保留内存订阅",
+                desc = "当HTTP服务关闭时,保留内存订阅",
+                checked = !store.autoClearMemorySubs
             ) {
                 updateStorage(
                     storeFlow, store.copy(
-                        autoClearMemorySubs = it
+                        autoClearMemorySubs = !it
                     )
                 )
             }

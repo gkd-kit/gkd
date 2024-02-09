@@ -1,10 +1,17 @@
 package li.songe.gkd.util
 
 import com.blankj.utilcode.util.LogUtils
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -19,11 +26,12 @@ import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 
 val subsItemsFlow by lazy {
-    DbSet.subsItemDao.query().stateIn(appScope, SharingStarted.Eagerly, emptyList())
+    DbSet.subsItemDao.query().map { s -> s.toImmutableList() }
+        .stateIn(appScope, SharingStarted.Eagerly, persistentListOf())
 }
 
 val subsIdToRawFlow by lazy {
-    MutableStateFlow<Map<Long, RawSubscription>>(emptyMap())
+    MutableStateFlow<ImmutableMap<Long, RawSubscription>>(persistentMapOf())
 }
 
 private val updateSubsFileMutex by lazy { Mutex() }
@@ -36,7 +44,7 @@ fun updateSubscription(subscription: RawSubscription) {
             } else {
                 newMap[subscription.id] = subscription
             }
-            subsIdToRawFlow.value = newMap
+            subsIdToRawFlow.value = newMap.toImmutableMap()
             withContext(Dispatchers.IO) {
                 subsFolder.resolve("${subscription.id}.json")
                     .writeText(json.encodeToString(subscription))
@@ -48,7 +56,7 @@ fun updateSubscription(subscription: RawSubscription) {
 fun deleteSubscription(subsId: Long) {
     val newMap = subsIdToRawFlow.value.toMutableMap()
     newMap.remove(subsId)
-    subsIdToRawFlow.value = newMap
+    subsIdToRawFlow.value = newMap.toImmutableMap()
 }
 
 fun getGroupRawEnable(
@@ -76,11 +84,11 @@ fun getGroupRawEnable(
 }
 
 data class RuleSummary(
-    val globalRules: List<GlobalRule> = emptyList(),
-    val globalGroups: List<RawSubscription.RawGlobalGroup> = emptyList(),
-    val appIdToRules: Map<String, List<AppRule>> = emptyMap(),
-    val appIdToGroups: Map<String, List<RawSubscription.RawAppGroup>> = emptyMap(),
-    val appIdToAllGroups: Map<String, List<Pair<RawSubscription.RawAppGroup, Boolean>>> = emptyMap(),
+    val globalRules: ImmutableList<GlobalRule> = persistentListOf(),
+    val globalGroups: ImmutableList<RawSubscription.RawGlobalGroup> = persistentListOf(),
+    val appIdToRules: ImmutableMap<String, ImmutableList<AppRule>> = persistentMapOf(),
+    val appIdToGroups: ImmutableMap<String, ImmutableList<RawSubscription.RawAppGroup>> = persistentMapOf(),
+    val appIdToAllGroups: ImmutableMap<String, ImmutableList<Pair<RawSubscription.RawAppGroup, Boolean>>> = persistentMapOf(),
 ) {
     private val appSize = appIdToRules.keys.size
     private val appGroupSize = appIdToGroups.values.sumOf { s -> s.size }
@@ -145,7 +153,8 @@ val ruleSummaryFlow by lazy {
                         group = groupRaw,
                         rawSubs = rawSubs,
                         subsItem = subsItem,
-                        exclude = subGlobalSubsConfigs.find { c -> c.groupKey == groupRaw.key }?.exclude
+                        exclude = subGlobalSubsConfigs.find { c -> c.groupKey == groupRaw.key }?.exclude,
+                        appInfoCache = appInfoCache,
                     )
                 }
                 subGlobalGroupToRules[groupRaw] = subRules
@@ -190,9 +199,10 @@ val ruleSummaryFlow by lazy {
                                 app = appRaw,
                                 rawSubs = rawSubs,
                                 subsItem = subsItem,
-                                exclude = appGroupConfigs.find { c -> c.groupKey == groupRaw.key }?.exclude
+                                exclude = appGroupConfigs.find { c -> c.groupKey == groupRaw.key }?.exclude,
+                                appInfo = appInfoCache[appRaw.id]
                             )
-                        }
+                        }.filter { r -> r.enable }
                         subAppGroupToRules[groupRaw] = subRules
                         if (subRules.isNotEmpty()) {
                             val rules = appRules[appRaw.id] ?: mutableListOf()
@@ -212,11 +222,12 @@ val ruleSummaryFlow by lazy {
             }
         }
         RuleSummary(
-            globalRules = globalRules,
-            globalGroups = globalGroups,
-            appIdToRules = appRules,
-            appIdToGroups = appGroups,
-            appIdToAllGroups = appAllGroups
+            globalRules = globalRules.toImmutableList(),
+            globalGroups = globalGroups.toImmutableList(),
+            appIdToRules = appRules.mapValues { e -> e.value.toImmutableList() }.toImmutableMap(),
+            appIdToGroups = appGroups.mapValues { e -> e.value.toImmutableList() }.toImmutableMap(),
+            appIdToAllGroups = appAllGroups.mapValues { e -> e.value.toImmutableList() }
+                .toImmutableMap()
         )
     }.stateIn(appScope, SharingStarted.Eagerly, RuleSummary())
 }
@@ -248,7 +259,7 @@ fun initSubsState() {
                     author = "gkd",
                 )
             }
-            subsIdToRawFlow.value = newMap
+            subsIdToRawFlow.value = newMap.toImmutableMap()
         }
     }
 }

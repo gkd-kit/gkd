@@ -6,6 +6,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
@@ -15,10 +17,10 @@ import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.toAppInfo
 
-val appInfoCacheFlow = MutableStateFlow(mapOf<String, AppInfo>())
+val appInfoCacheFlow = MutableStateFlow(emptyMap<String, AppInfo>().toImmutableMap())
 
 val systemAppInfoCacheFlow =
-    appInfoCacheFlow.map(appScope) { c -> c.filter { a -> a.value.isSystem } }
+    appInfoCacheFlow.map(appScope) { c -> c.filter { a -> a.value.isSystem }.toImmutableMap() }
 
 val systemAppsFlow = systemAppInfoCacheFlow.map(appScope) { c -> c.keys }
 
@@ -35,7 +37,7 @@ val orderedAppInfosFlow = appInfoCacheFlow.map(appScope) { c ->
                 b.name
             }
         )
-    }
+    }.toImmutableList()
 }
 
 private val packageReceiver by lazy {
@@ -95,7 +97,7 @@ fun updateAppInfo(appIds: List<String>) {
                     newMap.remove(appId)
                 }
             }
-            appInfoCacheFlow.value = newMap
+            appInfoCacheFlow.value = newMap.toImmutableMap()
         }
     }
 }
@@ -112,7 +114,7 @@ fun initAppState() {
                         appMap[packageInfo.packageName] = info
                     }
                 }
-            appInfoCacheFlow.value = appMap
+            appInfoCacheFlow.value = appMap.toImmutableMap()
         }
     }
 }
