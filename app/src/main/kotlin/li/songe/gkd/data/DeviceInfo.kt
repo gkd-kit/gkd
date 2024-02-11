@@ -2,6 +2,7 @@ package li.songe.gkd.data
 
 import android.os.Build
 import kotlinx.serialization.Serializable
+import li.songe.gkd.BuildConfig
 
 @Serializable
 data class DeviceInfo(
@@ -11,6 +12,8 @@ data class DeviceInfo(
     val brand: String,
     val sdkInt: Int,
     val release: String,
+    val gkdVersionCode: Int,
+    val gkdVersionName: String
 ) {
     companion object {
         val instance by lazy {
@@ -21,6 +24,8 @@ data class DeviceInfo(
                 brand = Build.BRAND,
                 sdkInt = Build.VERSION.SDK_INT,
                 release = Build.VERSION.RELEASE,
+                gkdVersionCode = BuildConfig.VERSION_CODE,
+                gkdVersionName = BuildConfig.VERSION_NAME,
             )
         }
     }

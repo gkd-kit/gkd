@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.os.Build
+import android.util.Log
 import android.util.LruCache
 import android.view.Display
 import android.view.View
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import li.songe.gkd.BuildConfig
 import li.songe.gkd.composition.CompositionAbService
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.composition.CompositionExt.useScope
@@ -210,8 +212,8 @@ class GkdAbService : CompositionAbService({
                 }
             }
             val t = System.currentTimeMillis()
-            if (t - lastTriggerTime < 5_000 || t - appChangeTime < 5_000) {
-                scope.launch(actionThread) {// 在任意规则触发5s内或APP切换5s内使用主动探测查询
+            if (t - lastTriggerTime < 3000L || t - appChangeTime < 5000L) {
+                scope.launch(actionThread) {
                     delay(300)
                     if (queryTaskJob?.isActive != true) {
                         newQueryTask()
@@ -235,6 +237,12 @@ class GkdAbService : CompositionAbService({
                 return@onAccessibilityEvent
             }
             lastContentEventTime = fixedEvent.time
+        }
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                "AccessibilityEvent",
+                "type:${event.eventType},app:${event.packageName},cls:${event.className}"
+            )
         }
 
         // AccessibilityEvent 的 clear 方法会在后续时间被 某些系统 调用导致内部数据丢失
@@ -514,6 +522,14 @@ class GkdAbService : CompositionAbService({
             val targetNode =
                 serviceVal.safeActiveWindow?.querySelector(selector, gkdAction.quickFind)
                     ?: throw RpcError("没有选择到节点")
+
+            if (gkdAction.action == null) {
+                // 仅查询
+                return ActionResult(
+                    action = null,
+                    result = true
+                )
+            }
 
             return getActionFc(gkdAction.action)(serviceVal, targetNode)
         }
