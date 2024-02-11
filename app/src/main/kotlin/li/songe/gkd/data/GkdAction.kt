@@ -22,7 +22,7 @@ data class GkdAction(
 
 @Serializable
 data class ActionResult(
-    val action: String,
+    val action: String?,
     val result: Boolean,
 )
 

@@ -63,7 +63,6 @@ class HttpService : CompositionService({
         enableUpdate = false,
     )
 
-    val httpSubsRawFlow = MutableStateFlow<RawSubscription?>(null)
     fun createServer(port: Int): CIOApplicationEngine {
         return embeddedServer(CIO, port) {
             install(KtorCorsPlugin)
@@ -98,16 +97,17 @@ class HttpService : CompositionService({
                     get("/snapshots") {
                         call.respond(DbSet.snapshotDao.query().first())
                     }
-                    get("/subsApps") {
-                        call.respond(httpSubsRawFlow.value?.apps ?: emptyList())
-                    }
-                    post("/updateSubsApps") {
-
-                        val subsStr =
-                            """{"name":"内存订阅","id":-1,"version":0,"author":"@gkd-kit/inspect","apps":${call.receiveText()}}"""
+                    post("/updateSubscription") {
+                        val subscription =
+                            RawSubscription.parse(call.receiveText(), json5 = false)
+                                .copy(
+                                    id = -1,
+                                    name = "内存订阅",
+                                    version = 0,
+                                    author = "@gkd-kit/inspect"
+                                )
                         try {
-                            val httpSubsRaw = RawSubscription.parse(subsStr)
-                            updateSubscription(httpSubsRaw)
+                            updateSubscription(subscription)
                             DbSet.subsItemDao.insert((subsItemsFlow.value.find { s -> s.id == httpSubsItem.id }
                                 ?: httpSubsItem).copy(mtime = System.currentTimeMillis()))
                         } catch (e: Exception) {
@@ -120,7 +120,6 @@ class HttpService : CompositionService({
                             throw RpcError("无障碍没有运行")
                         }
                         val gkdAction = call.receive<GkdAction>()
-                        LogUtils.d(gkdAction)
                         call.respond(GkdAbService.execAction(gkdAction))
                     }
                 }
@@ -153,7 +152,6 @@ class HttpService : CompositionService({
 
 
     onDestroy {
-        httpSubsRawFlow.value = null
         scope.launchTry(Dispatchers.IO) {
             server?.stop()
             if (storeFlow.value.autoClearMemorySubs) {

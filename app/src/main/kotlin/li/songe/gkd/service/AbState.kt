@@ -100,8 +100,13 @@ fun getAndUpdateCurrentRules(): ActivityRule {
 }
 
 var lastTriggerRule: ResolvedRule? = null
+
+@Volatile
 var lastTriggerTime = 0L
+
+@Volatile
 var appChangeTime = 0L
+
 var launcherAppId = ""
 fun updateLauncherAppId() {
     launcherAppId = app.packageManager.getDefaultLauncherAppId() ?: ""
