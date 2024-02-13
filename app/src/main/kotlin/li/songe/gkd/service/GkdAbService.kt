@@ -201,7 +201,9 @@ class GkdAbService : CompositionAbService({
                                 newQueryTask()
                             }
                         }
-                        toastClickTip()
+                        if (storeFlow.value.toastWhenClick) {
+                            toast(storeFlow.value.clickToast)
+                        }
                         insertClickLog(rule)
                         LogUtils.d(
                             rule.statusText(),
@@ -521,7 +523,7 @@ class GkdAbService : CompositionAbService({
             }
             val targetNode =
                 serviceVal.safeActiveWindow?.querySelector(selector, gkdAction.quickFind)
-                    ?: throw RpcError("没有选择到节点")
+                    ?: throw RpcError("没有查询到节点")
 
             if (gkdAction.action == null) {
                 // 仅查询

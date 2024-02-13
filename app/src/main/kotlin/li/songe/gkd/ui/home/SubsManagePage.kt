@@ -1,6 +1,5 @@
 package li.songe.gkd.ui.home
 
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import android.webkit.URLUtil
@@ -79,7 +78,6 @@ val subsNav = BottomNavItem(
     label = "订阅", icon = Icons.AutoMirrored.Filled.FormatListBulleted
 )
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun useSubsManagePage(): ScaffoldExt {
     val context = LocalContext.current

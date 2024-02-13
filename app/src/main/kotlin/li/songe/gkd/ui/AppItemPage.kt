@@ -129,7 +129,12 @@ fun AppItemPage(
             } else {
                 "${subsRaw.name}/${appInfoCache[appRaw?.id]?.name ?: appRaw?.name ?: appRaw?.id}"
             }
-            Text(text = text)
+            Text(
+                text = text,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+            )
         }, actions = {})
     }, floatingActionButton = {
         if (editable) {
