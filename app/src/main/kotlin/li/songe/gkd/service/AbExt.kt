@@ -3,8 +3,6 @@ package li.songe.gkd.service
 import android.accessibilityservice.AccessibilityService
 import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
-import li.songe.gkd.util.storeFlow
-import li.songe.gkd.util.toast
 import li.songe.selector.Selector
 import li.songe.selector.Transform
 
@@ -217,16 +215,5 @@ val abTransform = Transform(
                 }
             } while (stack.isNotEmpty())
         }.take(MAX_DESCENDANTS_SIZE)
-    })
-
-private var lastToastTime = -1L
-fun toastClickTip() {
-    if (storeFlow.value.toastWhenClick) {
-        val t = System.currentTimeMillis()
-        if (t - lastToastTime > 3000) {
-            toast(storeFlow.value.clickToast)
-            lastToastTime = t
-        }
     }
-}
-
+)
