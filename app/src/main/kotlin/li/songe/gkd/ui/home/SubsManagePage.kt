@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
@@ -50,7 +51,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.db.DbSet
@@ -63,16 +63,13 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.isSafeUrl
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.navigate
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
-import org.burnoutcrew.reorderable.ReorderableItem
-import org.burnoutcrew.reorderable.detectReorderAfterLongPress
-import org.burnoutcrew.reorderable.rememberReorderableLazyListState
-import org.burnoutcrew.reorderable.reorderable
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyColumnState
 
 val subsNav = BottomNavItem(
     label = "订阅", icon = Icons.AutoMirrored.Filled.FormatListBulleted
@@ -88,13 +85,9 @@ fun useSubsManagePage(): ScaffoldExt {
     val subItems by subsItemsFlow.collectAsState()
     val subsIdToRaw by subsIdToRawFlow.collectAsState()
 
-    val orderSubItems = remember {
+    var orderSubItems by remember(subItems) {
         mutableStateOf(subItems)
     }
-    LaunchedEffect(subItems, block = {
-        orderSubItems.value = subItems
-    })
-
 
     var deleteSubItem: SubsItem? by remember { mutableStateOf(null) }
     var menuSubItem: SubsItem? by remember { mutableStateOf(null) }
@@ -105,25 +98,12 @@ fun useSubsManagePage(): ScaffoldExt {
     val refreshing by vm.refreshingFlow.collectAsState()
     val pullRefreshState = rememberPullRefreshState(refreshing, vm::refreshSubs)
 
-    val state = rememberReorderableLazyListState(onMove = { from, to ->
-        orderSubItems.value = orderSubItems.value.toMutableList().apply {
+    val lazyListState = rememberLazyListState()
+    val reorderableLazyColumnState = rememberReorderableLazyColumnState(lazyListState) { from, to ->
+        orderSubItems = orderSubItems.toMutableList().apply {
             add(to.index, removeAt(from.index))
         }.toImmutableList()
-    }, onDragEnd = { _, _ ->
-        vm.viewModelScope.launch(Dispatchers.IO) {
-            val changeItems = mutableListOf<SubsItem>()
-            orderSubItems.value.forEachIndexed { index, subsItem ->
-                if (subItems[index] != subsItem) {
-                    changeItems.add(
-                        subsItem.copy(
-                            order = index
-                        )
-                    )
-                }
-            }
-            DbSet.subsItemDao.update(*changeItems.toTypedArray())
-        }
-    })
+    }
 
     menuSubItem?.let { menuSubItemVal ->
         Dialog(onDismissRequest = { menuSubItem = null }) {
@@ -200,13 +180,15 @@ fun useSubsManagePage(): ScaffoldExt {
                         HorizontalDivider()
                     }
                     if (menuSubItemVal.id != -2L) {
-                        Text(text = "删除订阅", modifier = Modifier
-                            .clickable {
-                                deleteSubItem = menuSubItemVal
-                                menuSubItem = null
-                            }
-                            .fillMaxWidth()
-                            .padding(16.dp), color = MaterialTheme.colorScheme.error)
+                        Text(text = "删除订阅",
+                            modifier = Modifier
+                                .clickable {
+                                    deleteSubItem = menuSubItemVal
+                                    menuSubItem = null
+                                }
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            color = MaterialTheme.colorScheme.error)
                     }
                 }
             }
@@ -298,21 +280,34 @@ fun useSubsManagePage(): ScaffoldExt {
                 .pullRefresh(pullRefreshState, subItems.isNotEmpty())
         ) {
             LazyColumn(
-                state = state.listState,
-                modifier = Modifier
-                    .reorderable(state)
-                    .detectReorderAfterLongPress(state)
-                    .fillMaxHeight(),
+                state = lazyListState,
+                modifier = Modifier.fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                itemsIndexed(orderSubItems.value, { _, subItem -> subItem.id }) { index, subItem ->
-                    ReorderableItem(state, key = subItem.id) { isDragging ->
-                        val elevation = animateDpAsState(
-                            if (isDragging) 16.dp else 0.dp, label = ""
+                itemsIndexed(orderSubItems, { _, subItem -> subItem.id }) { index, subItem ->
+                    ReorderableItem(reorderableLazyColumnState, key = subItem.id) { isDragging ->
+                        val elevation by animateDpAsState(
+                            if (isDragging) 4.dp else 0.dp,
+                            label = "",
                         )
                         Card(
                             modifier = Modifier
-                                .shadow(elevation.value)
+                                .draggableHandle(onDragStopped = {
+                                    val changeItems = mutableListOf<SubsItem>()
+                                    orderSubItems.forEachIndexed { i, subsItem ->
+                                        if (subItems[i] != subsItem) {
+                                            changeItems.add(
+                                                subsItem.copy(
+                                                    order = i
+                                                )
+                                            )
+                                        }
+                                    }
+                                    if (orderSubItems.isNotEmpty()) {
+                                        DbSet.subsItemDao.update(*changeItems.toTypedArray())
+                                    }
+                                })
+                                .shadow(elevation)
                                 .animateItemPlacement()
                                 .padding(vertical = 3.dp, horizontal = 8.dp)
                                 .clickable {

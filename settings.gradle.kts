@@ -202,8 +202,8 @@ dependencyResolutionManagement {
             library("coil.compose", "io.coil-kt:coil-compose:$coilVersion")
             library("coil.gif", "io.coil-kt:coil-gif:$coilVersion")
 
-//            https://github.com/aclassen/ComposeReorderable
-            library("others.reorderable", "org.burnoutcrew.composereorderable:reorderable:0.9.6")
+            // https://github.com/Calvin-LL/Reorderable
+            library("others.reorderable", "sh.calvin.reorderable:reorderable:1.3.1")
         }
     }
 }
