@@ -3,6 +3,8 @@ package li.songe.gkd.util
 import android.webkit.URLUtil
 import io.ktor.http.Url
 import li.songe.gkd.BuildConfig
+import li.songe.gkd.R
+import li.songe.gkd.app
 
 const val VOLUME_CHANGED_ACTION = "android.media.VOLUME_CHANGED_ACTION"
 
@@ -48,4 +50,8 @@ fun isSafeUrl(url: String): Boolean {
     return (u.host.endsWith(".jsdelivr.net") && (u.encodedPath.startsWith("/npm/@gkd-kit/") || u.encodedPath.startsWith(
         "/gh/gkd-kit/"
     )))
+}
+
+val APP_NAME by lazy {
+    app.resources.getString(R.string.app_name)
 }
