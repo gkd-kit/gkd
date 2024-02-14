@@ -382,6 +382,7 @@ fun getChecked(
         return null
     }
     excludeData.appIds[appId]?.let { return !it }
+    if (enable == true) return true
     if (appInfo?.id == launcherAppId) {
         return group.matchLauncher ?: false
     }
