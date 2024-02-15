@@ -293,7 +293,7 @@ fun useSubsManagePage(): ScaffoldExt {
                         )
                         Card(
                             modifier = Modifier
-                                .draggableHandle(onDragStopped = {
+                                .longPressDraggableHandle(onDragStopped = {
                                     val changeItems = mutableListOf<SubsItem>()
                                     orderSubItems.forEachIndexed { i, subsItem ->
                                         if (subItems[i] != subsItem) {
@@ -305,7 +305,9 @@ fun useSubsManagePage(): ScaffoldExt {
                                         }
                                     }
                                     if (orderSubItems.isNotEmpty()) {
-                                        DbSet.subsItemDao.update(*changeItems.toTypedArray())
+                                        vm.viewModelScope.launchTry {
+                                            DbSet.subsItemDao.update(*changeItems.toTypedArray())
+                                        }
                                     }
                                 })
                                 .shadow(elevation)
