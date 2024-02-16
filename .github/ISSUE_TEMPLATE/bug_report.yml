@@ -23,11 +23,13 @@ body:
           required: true
         - label: 3.我确认知晓并同意维护者直接关闭不符合 issue 规范的问题
           required: true
+        - label: 我已确保提供下列的日志和BUG描述及其复现步骤, 否则我同意维护者直接关闭问题
+          required: true
   - type: textarea
     id: log-file
     attributes:
       label: |
-        日志文件
+        日志文件-不包含日志将会被直接关闭
       description: |
         主页-设置-日志, 上传日志文件或者生成链接并粘贴到下面的输入框\
         无论什么问题,你都需要提供日志文件. 没有日志, 纯发文字/截图/视频都是没有用的\
@@ -38,10 +40,11 @@ body:
     id: bug-description
     attributes:
       label: |
-        Bug 描述
+        BUG描述及其复现步骤(视频/截图)
       description: |
         关于bug是什么的清晰而简洁的描述, 例如: 我在使用 GKD 时遇到了..., 我期望的行为是..., 实际的行为是...\
-        请使用准确的描述, 否则你的问题将会被直接关闭
+        请提供复现问题的的步骤骤或者上传录制好的视频(不提供复现步骤将被直接关闭)\
+        请使用尽量准确的描述, 否则你的问题将会被直接关闭
     validations:
       required: true
 
