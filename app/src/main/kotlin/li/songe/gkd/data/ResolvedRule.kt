@@ -1,5 +1,6 @@
 package li.songe.gkd.data
 
+import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Job
 import li.songe.gkd.service.lastTriggerRule
@@ -130,7 +131,10 @@ sealed class ResolvedRule(
         return target
     }
 
-    val performAction = getActionFc(rule.action)
+    private val fc = getActionFc(rule.action)
+    fun performAction(context: AccessibilityService, node: AccessibilityNodeInfo): ActionResult {
+        return fc(context, node, rule.position)
+    }
 
     var matchDelayJob: Job? = null
 
