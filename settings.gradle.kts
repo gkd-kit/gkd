@@ -204,6 +204,9 @@ dependencyResolutionManagement {
 
             // https://github.com/Calvin-LL/Reorderable
             library("others.reorderable", "sh.calvin.reorderable:reorderable:1.3.1")
+
+            // https://www.objecthunter.net/exp4j/
+            library("exp4j", "net.objecthunter:exp4j:0.4.8")
         }
     }
 }

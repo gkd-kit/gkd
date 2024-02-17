@@ -1,5 +1,6 @@
 package li.songe.gkd.data
 
+import android.graphics.Rect
 import androidx.compose.runtime.Immutable
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
@@ -11,11 +12,14 @@ import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import li.songe.gkd.service.allowPropertyNames
 import li.songe.gkd.util.json
 import li.songe.gkd.util.json5ToJson
 import li.songe.selector.Selector
+import net.objecthunter.exp4j.Expression
+import net.objecthunter.exp4j.ExpressionBuilder
 
 @Immutable
 @Serializable
@@ -90,6 +94,61 @@ data class RawSubscription(
     @Serializable
     data class RawCategory(val key: Int, val name: String, val enable: Boolean?)
 
+    @Immutable
+    @Serializable
+    data class Position(
+        val left: String?,
+        val top: String?,
+        val right: String?,
+        val bottom: String?
+    ) {
+        private val leftExp by lazy { getExpression(left) }
+        private val topExp by lazy { getExpression(top) }
+        private val rightExp by lazy { getExpression(right) }
+        private val bottomExp by lazy { getExpression(bottom) }
+
+        val isValid by lazy {
+            ((leftExp != null && (topExp != null || bottomExp != null)) || (rightExp != null && (topExp != null || bottomExp != null)))
+        }
+
+        /**
+         * return (x, y)
+         */
+        fun calc(rect: Rect): Pair<Float, Float>? {
+            if (!isValid) return null
+            arrayOf(
+                leftExp,
+                topExp,
+                rightExp,
+                bottomExp
+            ).forEach { exp ->
+                if (exp != null) {
+                    setVariables(exp, rect)
+                }
+            }
+            if (leftExp != null) {
+                if (topExp != null) {
+                    return (rect.left + leftExp!!.evaluate()
+                        .toFloat()) to (rect.top + topExp!!.evaluate().toFloat())
+                }
+                if (bottomExp != null) {
+                    return (rect.left + leftExp!!.evaluate()
+                        .toFloat()) to (rect.bottom - bottomExp!!.evaluate().toFloat())
+                }
+            } else if (rightExp != null) {
+                if (topExp != null) {
+                    return (rect.right - rightExp!!.evaluate()
+                        .toFloat()) to (rect.top + topExp!!.evaluate().toFloat())
+                }
+                if (bottomExp != null) {
+                    return (rect.right - rightExp!!.evaluate()
+                        .toFloat()) to (rect.bottom - bottomExp!!.evaluate().toFloat())
+                }
+            }
+            return null
+        }
+    }
+
 
     interface RawCommonProps {
         val actionCd: Long?
@@ -111,6 +170,7 @@ data class RawSubscription(
         val key: Int?
         val preKeys: List<Int>?
         val action: String?
+        val position: Position?
         val matches: List<String>?
         val excludeMatches: List<String>?
     }
@@ -208,6 +268,9 @@ data class RawSubscription(
             unknownPropertyNames.forEach { n ->
                 return@lazy "非法属性名:${n}"
             }
+            if (rules.any { r -> r.position?.isValid == false }) {
+                return@lazy "非法位置"
+            }
             null
         }
 
@@ -239,6 +302,7 @@ data class RawSubscription(
         override val key: Int?,
         override val preKeys: List<Int>?,
         override val action: String?,
+        override val position: Position?,
         override val matches: List<String>,
         override val excludeMatches: List<String>?,
         override val matchAnyApp: Boolean?,
@@ -318,6 +382,7 @@ data class RawSubscription(
         override val key: Int?,
         override val preKeys: List<Int>?,
         override val action: String?,
+        override val position: Position?,
         override val matches: List<String>?,
         override val excludeMatches: List<String>?,
 
@@ -345,11 +410,69 @@ data class RawSubscription(
 
     companion object {
 
+        private val expVars = arrayOf(
+            "left",
+            "top",
+            "right",
+            "bottom",
+            "width",
+            "height"
+        )
+
+        private fun setVariables(exp: Expression, rect: Rect) {
+            exp.setVariable("left", rect.left.toDouble())
+            exp.setVariable("top", rect.top.toDouble())
+            exp.setVariable("right", rect.right.toDouble())
+            exp.setVariable("bottom", rect.bottom.toDouble())
+            exp.setVariable("width", rect.width().toDouble())
+            exp.setVariable("height", rect.height().toDouble())
+        }
+
+        private fun getExpression(value: String?): Expression? {
+            return if (value != null) {
+                try {
+                    ExpressionBuilder(value).variables(*expVars).build().apply {
+                        expVars.forEach { v ->
+                            // 预填充作 validate
+                            setVariable(v, 0.0)
+                        }
+                    }.let { e ->
+                        if (e.validate().isValid) {
+                            e
+                        } else {
+                            null
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
+                }
+            } else {
+                null
+            }
+        }
+
+        private fun getPosition(jsonObject: JsonObject? = null): Position? {
+            return when (val element = jsonObject?.get("position")) {
+                JsonNull, null -> null
+                is JsonObject -> {
+                    Position(
+                        left = element["left"]?.jsonPrimitive?.content,
+                        bottom = element["bottom"]?.jsonPrimitive?.content,
+                        top = element["top"]?.jsonPrimitive?.content,
+                        right = element["right"]?.jsonPrimitive?.content,
+                    )
+                }
+
+                else -> null
+            }
+        }
+
         private fun getStringIArray(
-            json: JsonObject? = null,
+            jsonObject: JsonObject? = null,
             name: String
         ): List<String>? {
-            return when (val element = json?.get(name)) {
+            return when (val element = jsonObject?.get(name)) {
                 JsonNull, null -> null
                 is JsonObject -> error("Element ${this::class} can not be object")
                 is JsonArray -> element.map {
@@ -363,8 +486,8 @@ data class RawSubscription(
             }
         }
 
-        private fun getIntIArray(json: JsonObject? = null, name: String): List<Int>? {
-            return when (val element = json?.get(name)) {
+        private fun getIntIArray(jsonObject: JsonObject? = null, name: String): List<Int>? {
+            return when (val element = jsonObject?.get(name)) {
                 JsonNull, null -> null
                 is JsonArray -> element.map {
                     when (it) {
@@ -378,8 +501,8 @@ data class RawSubscription(
             }
         }
 
-        private fun getLongIArray(json: JsonObject? = null, name: String): List<Long>? {
-            return when (val element = json?.get(name)) {
+        private fun getLongIArray(jsonObject: JsonObject? = null, name: String): List<Long>? {
+            return when (val element = jsonObject?.get(name)) {
                 JsonNull, null -> null
                 is JsonArray -> element.map {
                     when (it) {
@@ -393,8 +516,8 @@ data class RawSubscription(
             }
         }
 
-        private fun getString(json: JsonObject? = null, key: String): String? =
-            when (val p = json?.get(key)) {
+        private fun getString(jsonObject: JsonObject? = null, key: String): String? =
+            when (val p = jsonObject?.get(key)) {
                 JsonNull, null -> null
                 is JsonPrimitive -> {
                     if (p.isString) {
@@ -407,8 +530,8 @@ data class RawSubscription(
                 else -> error("Element $p is not a string")
             }
 
-        private fun getLong(json: JsonObject? = null, key: String): Long? =
-            when (val p = json?.get(key)) {
+        private fun getLong(jsonObject: JsonObject? = null, key: String): Long? =
+            when (val p = jsonObject?.get(key)) {
                 JsonNull, null -> null
                 is JsonPrimitive -> {
                     p.long
@@ -417,8 +540,8 @@ data class RawSubscription(
                 else -> error("Element $p is not a long")
             }
 
-        private fun getInt(json: JsonObject? = null, key: String): Int? =
-            when (val p = json?.get(key)) {
+        private fun getInt(jsonObject: JsonObject? = null, key: String): Int? =
+            when (val p = jsonObject?.get(key)) {
                 JsonNull, null -> null
                 is JsonPrimitive -> {
                     p.int
@@ -427,8 +550,8 @@ data class RawSubscription(
                 else -> error("Element $p is not a int")
             }
 
-        private fun getBoolean(json: JsonObject? = null, key: String): Boolean? =
-            when (val p = json?.get(key)) {
+        private fun getBoolean(jsonObject: JsonObject? = null, key: String): Boolean? =
+            when (val p = jsonObject?.get(key)) {
                 JsonNull, null -> null
                 is JsonPrimitive -> {
                     p.boolean
@@ -468,6 +591,7 @@ data class RawSubscription(
                 excludeVersionCodes = getLongIArray(jsonObject, "excludeVersionCodes"),
                 versionNames = getStringIArray(jsonObject, "versionNames"),
                 excludeVersionNames = getStringIArray(jsonObject, "excludeVersionNames"),
+                position = getPosition(jsonObject),
             )
         }
 
@@ -568,6 +692,7 @@ data class RawSubscription(
                 excludeMatches = getStringIArray(jsonObject, "excludeMatches"),
                 matches = getStringIArray(jsonObject, "matches") ?: error("miss matches"),
                 order = getInt(jsonObject, "order"),
+                position = getPosition(jsonObject),
             )
         }
 

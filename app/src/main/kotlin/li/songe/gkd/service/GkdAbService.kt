@@ -533,7 +533,7 @@ class GkdAbService : CompositionAbService({
                 )
             }
 
-            return getActionFc(gkdAction.action)(serviceVal, targetNode)
+            return getActionFc(gkdAction.action)(serviceVal, targetNode, gkdAction.position)
         }
 
 
