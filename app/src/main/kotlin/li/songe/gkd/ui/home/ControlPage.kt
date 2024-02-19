@@ -47,7 +47,6 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
-import li.songe.gkd.util.updateStorage
 import li.songe.gkd.util.usePollState
 
 val controlNav = BottomNavItem(label = "主页", icon = Icons.Outlined.Home)
@@ -101,10 +100,8 @@ fun useControlPage(): ScaffoldExt {
                     desc = "根据订阅规则匹配屏幕目标节点",
                     checked = store.enableService,
                     onCheckedChange = {
-                        updateStorage(
-                            storeFlow, store.copy(
-                                enableService = it
-                            )
+                        storeFlow.value = store.copy(
+                            enableService = it
                         )
                     })
             }
@@ -144,17 +141,13 @@ fun useControlPage(): ScaffoldExt {
                         if (!checkOrRequestNotifPermission(context)) {
                             return@TextSwitch
                         }
-                        updateStorage(
-                            storeFlow, store.copy(
-                                enableStatusService = true
-                            )
+                        storeFlow.value = store.copy(
+                            enableStatusService = true
                         )
                         ManageService.start(context)
                     } else {
-                        updateStorage(
-                            storeFlow, store.copy(
-                                enableStatusService = false
-                            )
+                        storeFlow.value = store.copy(
+                            enableStatusService = false
                         )
                         ManageService.stop(context)
                     }

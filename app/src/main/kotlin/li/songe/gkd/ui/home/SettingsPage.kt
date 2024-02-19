@@ -63,7 +63,6 @@ import li.songe.gkd.util.logZipDir
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
-import li.songe.gkd.util.updateStorage
 import java.io.File
 
 val settingsNav = BottomNavItem(
@@ -111,20 +110,16 @@ fun useSettingsPage(): ScaffoldExt {
                                 .fillMaxWidth()
                                 .selectable(selected = (option.second == store.updateSubsInterval),
                                     onClick = {
-                                        updateStorage(
-                                            storeFlow,
-                                            storeFlow.value.copy(updateSubsInterval = option.second)
-                                        )
+                                        storeFlow.value =
+                                            store.copy(updateSubsInterval = option.second)
+
                                     })
                                 .padding(horizontal = 16.dp)
                         ) {
                             RadioButton(
                                 selected = (option.second == store.updateSubsInterval),
                                 onClick = {
-                                    updateStorage(
-                                        storeFlow,
-                                        storeFlow.value.copy(updateSubsInterval = option.second)
-                                    )
+                                    storeFlow.value = store.copy(updateSubsInterval = option.second)
                                 })
                             Text(
                                 text = option.first, modifier = Modifier.padding(start = 16.dp)
@@ -152,20 +147,15 @@ fun useSettingsPage(): ScaffoldExt {
                                 .fillMaxWidth()
                                 .selectable(selected = (option.second == store.enableDarkTheme),
                                     onClick = {
-                                        updateStorage(
-                                            storeFlow,
-                                            storeFlow.value.copy(enableDarkTheme = option.second)
-                                        )
+                                        storeFlow.value =
+                                            store.copy(enableDarkTheme = option.second)
                                     })
                                 .padding(horizontal = 16.dp)
                         ) {
                             RadioButton(
                                 selected = (option.second == store.enableDarkTheme),
                                 onClick = {
-                                    updateStorage(
-                                        storeFlow,
-                                        storeFlow.value.copy(enableDarkTheme = option.second)
-                                    )
+                                    storeFlow.value = store.copy(enableDarkTheme = option.second)
                                 })
                             Text(
                                 text = option.first, modifier = Modifier.padding(start = 16.dp)
@@ -199,10 +189,8 @@ fun useSettingsPage(): ScaffoldExt {
             )
         }, onDismissRequest = { showToastInputDlg = false }, confirmButton = {
             TextButton(onClick = {
-                updateStorage(
-                    storeFlow, store.copy(
-                        clickToast = value
-                    )
+                storeFlow.value = store.copy(
+                    clickToast = value
                 )
                 showToastInputDlg = false
             }) {
@@ -349,10 +337,8 @@ fun useSettingsPage(): ScaffoldExt {
                 desc = "在[最近任务]界面中隐藏本应用",
                 checked = store.excludeFromRecents,
                 onCheckedChange = {
-                    updateStorage(
-                        storeFlow, store.copy(
-                            excludeFromRecents = it
-                        )
+                    storeFlow.value = store.copy(
+                        excludeFromRecents = it
                     )
                 })
             HorizontalDivider()
@@ -361,10 +347,8 @@ fun useSettingsPage(): ScaffoldExt {
                 desc = "添加透明悬浮窗,关闭可能导致不点击/点击缓慢",
                 checked = store.enableAbFloatWindow,
                 onCheckedChange = {
-                    updateStorage(
-                        storeFlow, store.copy(
-                            enableAbFloatWindow = it
-                        )
+                    storeFlow.value = store.copy(
+                        enableAbFloatWindow = it
                     )
                 })
             HorizontalDivider()
@@ -380,10 +364,8 @@ fun useSettingsPage(): ScaffoldExt {
                         authActionFlow.value = canDrawOverlaysAuthAction
                         return@TextSwitch
                     }
-                    updateStorage(
-                        storeFlow, store.copy(
-                            toastWhenClick = it
-                        )
+                    storeFlow.value = store.copy(
+                        toastWhenClick = it
                     )
                 })
             HorizontalDivider()
@@ -415,10 +397,8 @@ fun useSettingsPage(): ScaffoldExt {
                 desc = "打开应用时自动检测是否存在新版本",
                 checked = store.autoCheckAppUpdate,
                 onCheckedChange = {
-                    updateStorage(
-                        storeFlow, store.copy(
-                            autoCheckAppUpdate = it
-                        )
+                    storeFlow.value = store.copy(
+                        autoCheckAppUpdate = it
                     )
                 })
             HorizontalDivider()
@@ -461,10 +441,8 @@ fun useSettingsPage(): ScaffoldExt {
                 desc = "保存最近7天的日志,大概占用您5M的空间",
                 checked = store.log2FileSwitch,
                 onCheckedChange = {
-                    updateStorage(
-                        storeFlow, store.copy(
-                            log2FileSwitch = it
-                        )
+                    storeFlow.value = store.copy(
+                        log2FileSwitch = it
                     )
                     if (!it) {
                         appScope.launchTry(Dispatchers.IO) {
