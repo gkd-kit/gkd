@@ -81,7 +81,6 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
-import li.songe.gkd.util.updateStorage
 import li.songe.gkd.util.usePollState
 import rikka.shizuku.Shizuku
 
@@ -145,20 +144,16 @@ fun DebugPage() {
                                 val tasks =
                                     newActivityTaskManager()?.safeGetTasks()?.firstOrNull()
                                 if (tasks != null) {
-                                    updateStorage(
-                                        storeFlow, store.copy(
-                                            enableShizuku = true
-                                        )
+                                    storeFlow.value = store.copy(
+                                        enableShizuku = true
                                     )
                                 } else {
                                     toast("Shizuku方法校验失败,无法使用")
                                 }
                             }
                         } else {
-                            updateStorage(
-                                storeFlow, store.copy(
-                                    enableShizuku = false
-                                )
+                            storeFlow.value = store.copy(
+                                enableShizuku = false
                             )
                         }
 
@@ -246,10 +241,8 @@ fun DebugPage() {
                 desc = "当HTTP服务关闭时,保留内存订阅",
                 checked = !store.autoClearMemorySubs
             ) {
-                updateStorage(
-                    storeFlow, store.copy(
-                        autoClearMemorySubs = !it
-                    )
+                storeFlow.value = store.copy(
+                    autoClearMemorySubs = !it
                 )
             }
             HorizontalDivider()
@@ -308,10 +301,8 @@ fun DebugPage() {
                 desc = "当音量变化时,生成快照,如果悬浮窗按钮不工作,可以使用这个",
                 checked = store.captureVolumeChange
             ) {
-                updateStorage(
-                    storeFlow, store.copy(
-                        captureVolumeChange = it
-                    )
+                storeFlow.value = store.copy(
+                    captureVolumeChange = it
                 )
             }
 
@@ -321,10 +312,8 @@ fun DebugPage() {
                 desc = "当用户截屏时保存快照(需手动替换快照图片),仅支持部分小米设备",
                 checked = store.captureScreenshot
             ) {
-                updateStorage(
-                    storeFlow, store.copy(
-                        captureScreenshot = it
-                    )
+                storeFlow.value = store.copy(
+                    captureScreenshot = it
                 )
             }
 
@@ -334,10 +323,8 @@ fun DebugPage() {
                 desc = "当保存快照时,隐藏截图里的顶部状态栏高度区域",
                 checked = store.hideSnapshotStatusBar
             ) {
-                updateStorage(
-                    storeFlow, store.copy(
-                        hideSnapshotStatusBar = it
-                    )
+                storeFlow.value = store.copy(
+                    hideSnapshotStatusBar = it
                 )
             }
 
@@ -374,10 +361,8 @@ fun DebugPage() {
                         toast("请输入在 5000~65535 的任意数字")
                         return@TextButton
                     }
-                    updateStorage(
-                        storeFlow, store.copy(
-                            httpServerPort = newPort
-                        )
+                    storeFlow.value = store.copy(
+                        httpServerPort = newPort
                     )
                     showPortDlg = false
                 }) {

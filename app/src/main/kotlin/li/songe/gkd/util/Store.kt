@@ -3,8 +3,8 @@ package li.songe.gkd.util
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -14,7 +14,7 @@ import li.songe.gkd.appScope
 private inline fun <reified T> createStorageFlow(
     key: String,
     crossinline init: () -> T,
-): StateFlow<T> {
+): MutableStateFlow<T> {
     val str = kv.getString(key, null)
     val initValue = if (str != null) {
         try {
@@ -36,10 +36,6 @@ private inline fun <reified T> createStorageFlow(
         }
     }
     return stateFlow
-}
-
-fun <T> updateStorage(stateFlow: StateFlow<T>, newState: T) {
-    (stateFlow as MutableStateFlow).value = newState
 }
 
 @Serializable
@@ -82,10 +78,11 @@ val clickCountFlow by lazy {
 private val log2FileSwitchFlow by lazy { storeFlow.map(appScope) { s -> s.log2FileSwitch } }
 
 fun increaseClickCount(n: Int = 1) {
-    updateStorage(
-        recordStoreFlow,
-        recordStoreFlow.value.copy(clickCount = recordStoreFlow.value.clickCount + n)
-    )
+    recordStoreFlow.update {
+        it.copy(
+            clickCount = it.clickCount + n
+        )
+    }
 }
 
 fun initStore() {

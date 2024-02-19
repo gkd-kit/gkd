@@ -28,6 +28,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.BuildConfig
@@ -56,7 +57,6 @@ import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
-import li.songe.gkd.util.updateStorage
 import li.songe.gkd.util.updateSubscription
 import li.songe.selector.Selector
 import java.util.concurrent.ExecutorService
@@ -412,10 +412,9 @@ class GkdAbService : CompositionAbService({
                         } catch (e: Exception) {
                             LogUtils.d("创建无障碍悬浮窗失败", e)
                             toast("创建无障碍悬浮窗失败")
-                            updateStorage(
-                                storeFlow,
-                                storeFlow.value.copy(enableAbFloatWindow = false)
-                            )
+                            storeFlow.update { store ->
+                                store.copy(enableAbFloatWindow = false)
+                            }
                         }
                     }
                 } else {
