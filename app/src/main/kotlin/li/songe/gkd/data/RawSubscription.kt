@@ -2,6 +2,7 @@ package li.songe.gkd.data
 
 import android.graphics.Rect
 import androidx.compose.runtime.Immutable
+import com.blankj.utilcode.util.LogUtils
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -17,6 +18,7 @@ import kotlinx.serialization.json.long
 import li.songe.gkd.service.allowPropertyNames
 import li.songe.gkd.util.json
 import li.songe.gkd.util.json5ToJson
+import li.songe.gkd.util.toast
 import li.songe.selector.Selector
 import net.objecthunter.exp4j.Expression
 import net.objecthunter.exp4j.ExpressionBuilder
@@ -126,24 +128,31 @@ data class RawSubscription(
                     setVariables(exp, rect)
                 }
             }
-            if (leftExp != null) {
-                if (topExp != null) {
-                    return (rect.left + leftExp!!.evaluate()
-                        .toFloat()) to (rect.top + topExp!!.evaluate().toFloat())
+            try {
+                if (leftExp != null) {
+                    if (topExp != null) {
+                        return (rect.left + leftExp!!.evaluate()
+                            .toFloat()) to (rect.top + topExp!!.evaluate().toFloat())
+                    }
+                    if (bottomExp != null) {
+                        return (rect.left + leftExp!!.evaluate()
+                            .toFloat()) to (rect.bottom - bottomExp!!.evaluate().toFloat())
+                    }
+                } else if (rightExp != null) {
+                    if (topExp != null) {
+                        return (rect.right - rightExp!!.evaluate()
+                            .toFloat()) to (rect.top + topExp!!.evaluate().toFloat())
+                    }
+                    if (bottomExp != null) {
+                        return (rect.right - rightExp!!.evaluate()
+                            .toFloat()) to (rect.bottom - bottomExp!!.evaluate().toFloat())
+                    }
                 }
-                if (bottomExp != null) {
-                    return (rect.left + leftExp!!.evaluate()
-                        .toFloat()) to (rect.bottom - bottomExp!!.evaluate().toFloat())
-                }
-            } else if (rightExp != null) {
-                if (topExp != null) {
-                    return (rect.right - rightExp!!.evaluate()
-                        .toFloat()) to (rect.top + topExp!!.evaluate().toFloat())
-                }
-                if (bottomExp != null) {
-                    return (rect.right - rightExp!!.evaluate()
-                        .toFloat()) to (rect.bottom - bottomExp!!.evaluate().toFloat())
-                }
+            } catch (e: Exception) {
+                // 可能存在 1/0 导致错误
+                e.printStackTrace()
+                LogUtils.d(e)
+                toast(e.message ?: e.stackTraceToString())
             }
             return null
         }
