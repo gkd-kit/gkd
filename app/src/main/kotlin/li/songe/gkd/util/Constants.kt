@@ -1,15 +1,12 @@
 package li.songe.gkd.util
 
 import android.webkit.URLUtil
-import io.ktor.http.Url
 import li.songe.gkd.BuildConfig
-import li.songe.gkd.R
-import li.songe.gkd.app
 
 const val VOLUME_CHANGED_ACTION = "android.media.VOLUME_CHANGED_ACTION"
 
 const val FILE_UPLOAD_URL = "https://u.gkd.li/"
-const val IMPORT_BASE_URL = "https://i.gkd.li/import/"
+const val IMPORT_BASE_URL = "https://i.gkd.li/i/"
 
 const val UPDATE_URL = "https://registry.npmmirror.com/@gkd-kit/app/latest/files/index.json"
 
@@ -29,29 +26,15 @@ val GIT_COMMIT_URL = if (BuildConfig.GIT_COMMIT_ID != null) {
 
 private val safeRemoteBaseUrls = arrayOf(
     "https://registry.npmmirror.com/@gkd-kit/",
-
-    "https://unpkg.com/@gkd-kit/",
-    "https://www.unpkg.com/@gkd-kit/",
-
-    "https://github.com/gkd-kit/",
     "https://raw.githubusercontent.com/gkd-kit/",
+
+    "https://cdn.jsdelivr.net/gh/gkd-kit/",
+    "https://cdn.jsdelivr.net/npm/@gkd-kit/",
+    "https://fastly.jsdelivr.net/gh/gkd-kit/",
+    "https://fastly.jsdelivr.net/npm/@gkd-kit/",
 )
 
 fun isSafeUrl(url: String): Boolean {
     if (!URLUtil.isHttpsUrl(url)) return false
-    if (safeRemoteBaseUrls.any { u -> url.startsWith(u) }) {
-        return true
-    }
-    val u = try {
-        Url(url)
-    } catch (e: Exception) {
-        return false
-    }
-    return (u.host.endsWith(".jsdelivr.net") && (u.encodedPath.startsWith("/npm/@gkd-kit/") || u.encodedPath.startsWith(
-        "/gh/gkd-kit/"
-    )))
-}
-
-val APP_NAME by lazy {
-    app.resources.getString(R.string.app_name)
+    return safeRemoteBaseUrls.any { u -> url.startsWith(u) }
 }
