@@ -37,11 +37,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -123,63 +123,59 @@ fun SnapshotPage() {
                 }
             })
     }, content = { contentPadding ->
-        if (snapshots.isNotEmpty()) {
-            LazyColumn(
-                modifier = Modifier.padding(contentPadding),
-            ) {
-                items(snapshots, { it.id }) { snapshot ->
-                    Column(modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            selectedSnapshot = snapshot
-                        }
-                        .padding(10.dp)) {
-                        Row {
-                            Text(
-                                text = snapshot.id.format("MM-dd HH:mm:ss"),
-                                fontFamily = FontFamily.Monospace
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = snapshot.appName ?: snapshot.appId ?: snapshot.id.toString(),
-                                overflow = TextOverflow.Ellipsis,
-                                maxLines = 1,
-                            )
-                        }
-                        if (snapshot.activityId != null) {
-                            val showActivityId =
-                                if (snapshot.appId != null && snapshot.activityId.startsWith(
-                                        snapshot.appId
-                                    )
-                                ) {
-                                    snapshot.activityId.substring(snapshot.appId.length)
-                                } else {
-                                    snapshot.activityId
-                                }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = showActivityId, overflow = TextOverflow.Ellipsis,
-                                maxLines = 1,
-                            )
-                        }
+        LazyColumn(
+            modifier = Modifier.padding(contentPadding),
+        ) {
+            items(snapshots, { it.id }) { snapshot ->
+                Column(modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        selectedSnapshot = snapshot
                     }
-                    HorizontalDivider()
+                    .padding(10.dp)) {
+                    Row {
+                        Text(
+                            text = snapshot.id.format("MM-dd HH:mm:ss"),
+                            fontFamily = FontFamily.Monospace
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = snapshot.appName ?: snapshot.appId ?: snapshot.id.toString(),
+                            overflow = TextOverflow.Ellipsis,
+                            maxLines = 1,
+                        )
+                    }
+                    if (snapshot.activityId != null) {
+                        val showActivityId =
+                            if (snapshot.appId != null && snapshot.activityId.startsWith(
+                                    snapshot.appId
+                                )
+                            ) {
+                                snapshot.activityId.substring(snapshot.appId.length)
+                            } else {
+                                snapshot.activityId
+                            }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = showActivityId, overflow = TextOverflow.Ellipsis,
+                            maxLines = 1,
+                        )
+                    }
                 }
-                item {
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
+                HorizontalDivider()
             }
-        } else {
-            Column(
-                modifier = Modifier
-                    .padding(contentPadding)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
+            item {
                 Spacer(modifier = Modifier.height(40.dp))
-                Text(text = "暂无记录")
+                if (snapshots.isEmpty()) {
+                    Text(
+                        text = "暂无记录",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
+
     })
 
     selectedSnapshot?.let { snapshotVal ->
@@ -190,121 +186,119 @@ fun SnapshotPage() {
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
-                Column {
-                    val modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                    Text(
-                        text = "查看", modifier = Modifier
-                            .clickable(onClick = scope.launchAsFn {
-                                navController.navigate(
-                                    ImagePreviewPageDestination(
-                                        filePath = snapshotVal.screenshotFile.absolutePath,
-                                        title = snapshotVal.appName,
-                                    )
+                val modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                Text(
+                    text = "查看", modifier = Modifier
+                        .clickable(onClick = scope.launchAsFn {
+                            navController.navigate(
+                                ImagePreviewPageDestination(
+                                    filePath = snapshotVal.screenshotFile.absolutePath,
+                                    title = snapshotVal.appName,
                                 )
+                            )
+                            selectedSnapshot = null
+                        })
+                        .then(modifier)
+                )
+                HorizontalDivider()
+                Text(
+                    text = "分享",
+                    modifier = Modifier
+                        .clickable(onClick = vm.viewModelScope.launchAsFn {
+                            val zipFile = SnapshotExt.getSnapshotZipFile(snapshotVal.id)
+                            context.shareFile(zipFile, "分享快照文件")
+                            selectedSnapshot = null
+                        })
+                        .then(modifier)
+                )
+                HorizontalDivider()
+                if (snapshotVal.githubAssetId != null) {
+                    Text(
+                        text = "复制链接", modifier = Modifier
+                            .clickable(onClick = {
                                 selectedSnapshot = null
+                                ClipboardUtils.copyText(IMPORT_BASE_URL + snapshotVal.githubAssetId)
+                                toast("复制成功")
                             })
                             .then(modifier)
                     )
-                    HorizontalDivider()
+                } else {
                     Text(
-                        text = "分享",
-                        modifier = Modifier
-                            .clickable(onClick = vm.viewModelScope.launchAsFn {
-                                val zipFile = SnapshotExt.getSnapshotZipFile(snapshotVal.id)
-                                context.shareFile(zipFile, "分享快照文件")
+                        text = "生成链接(需科学上网)", modifier = Modifier
+                            .clickable(onClick = {
                                 selectedSnapshot = null
+                                vm.uploadZip(snapshotVal)
                             })
                             .then(modifier)
-                    )
-                    HorizontalDivider()
-                    if (snapshotVal.githubAssetId != null) {
-                        Text(
-                            text = "复制链接", modifier = Modifier
-                                .clickable(onClick = {
-                                    selectedSnapshot = null
-                                    ClipboardUtils.copyText(IMPORT_BASE_URL + snapshotVal.githubAssetId)
-                                    toast("复制成功")
-                                })
-                                .then(modifier)
-                        )
-                    } else {
-                        Text(
-                            text = "生成链接(需科学上网)", modifier = Modifier
-                                .clickable(onClick = {
-                                    selectedSnapshot = null
-                                    vm.uploadZip(snapshotVal)
-                                })
-                                .then(modifier)
-                        )
-                    }
-                    HorizontalDivider()
-
-                    Text(
-                        text = "保存截图到相册",
-                        modifier = Modifier
-                            .clickable(onClick = vm.viewModelScope.launchAsFn {
-                                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                                    val isGranted =
-                                        requestPermissionLauncher.launchForResult(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                                    if (!isGranted) {
-                                        toast("保存失败,暂无权限")
-                                        return@launchAsFn
-                                    }
-                                }
-                                ImageUtils.save2Album(
-                                    ImageUtils.getBitmap(snapshotVal.screenshotFile),
-                                    Bitmap.CompressFormat.PNG,
-                                    true
-                                )
-                                toast("保存成功")
-                                selectedSnapshot = null
-                            })
-                            .then(modifier)
-                    )
-                    HorizontalDivider()
-                    Text(
-                        text = "替换截图(去除隐私)",
-                        modifier = Modifier
-                            .clickable(onClick = vm.viewModelScope.launchAsFn {
-                                val uri = pickContentLauncher.launchForImageResult()
-                                withContext(Dispatchers.IO) {
-                                    val oldBitmap = ImageUtils.getBitmap(snapshotVal.screenshotFile)
-                                    val newBytes = UriUtils.uri2Bytes(uri)
-                                    val newBitmap = ImageUtils.getBitmap(newBytes, 0)
-                                    if (oldBitmap.width == newBitmap.width && oldBitmap.height == newBitmap.height) {
-                                        snapshotVal.screenshotFile.writeBytes(newBytes)
-                                        File(snapshotZipDir, "${snapshotVal.id}.zip").apply {
-                                            if (exists()) delete()
-                                        }
-                                        if (snapshotVal.githubAssetId != null) {
-                                            // 当本地快照变更时, 移除快照链接
-                                            DbSet.snapshotDao.update(snapshotVal.copy(githubAssetId = null))
-                                        }
-                                    } else {
-                                        toast("截图尺寸不一致,无法替换")
-                                        return@withContext
-                                    }
-                                }
-                                toast("替换成功")
-                                selectedSnapshot = null
-                            })
-                            .then(modifier)
-                    )
-                    HorizontalDivider()
-                    Text(
-                        text = "删除", modifier = Modifier
-                            .clickable(onClick = scope.launchAsFn {
-                                DbSet.snapshotDao.delete(snapshotVal)
-                                withContext(Dispatchers.IO) {
-                                    SnapshotExt.removeAssets(snapshotVal.id)
-                                }
-                                selectedSnapshot = null
-                            })
-                            .then(modifier), color = colorScheme.error
                     )
                 }
+                HorizontalDivider()
+
+                Text(
+                    text = "保存截图到相册",
+                    modifier = Modifier
+                        .clickable(onClick = vm.viewModelScope.launchAsFn {
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                                val isGranted =
+                                    requestPermissionLauncher.launchForResult(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                                if (!isGranted) {
+                                    toast("保存失败,暂无权限")
+                                    return@launchAsFn
+                                }
+                            }
+                            ImageUtils.save2Album(
+                                ImageUtils.getBitmap(snapshotVal.screenshotFile),
+                                Bitmap.CompressFormat.PNG,
+                                true
+                            )
+                            toast("保存成功")
+                            selectedSnapshot = null
+                        })
+                        .then(modifier)
+                )
+                HorizontalDivider()
+                Text(
+                    text = "替换截图(去除隐私)",
+                    modifier = Modifier
+                        .clickable(onClick = vm.viewModelScope.launchAsFn {
+                            val uri = pickContentLauncher.launchForImageResult()
+                            withContext(Dispatchers.IO) {
+                                val oldBitmap = ImageUtils.getBitmap(snapshotVal.screenshotFile)
+                                val newBytes = UriUtils.uri2Bytes(uri)
+                                val newBitmap = ImageUtils.getBitmap(newBytes, 0)
+                                if (oldBitmap.width == newBitmap.width && oldBitmap.height == newBitmap.height) {
+                                    snapshotVal.screenshotFile.writeBytes(newBytes)
+                                    File(snapshotZipDir, "${snapshotVal.id}.zip").apply {
+                                        if (exists()) delete()
+                                    }
+                                    if (snapshotVal.githubAssetId != null) {
+                                        // 当本地快照变更时, 移除快照链接
+                                        DbSet.snapshotDao.update(snapshotVal.copy(githubAssetId = null))
+                                    }
+                                } else {
+                                    toast("截图尺寸不一致,无法替换")
+                                    return@withContext
+                                }
+                            }
+                            toast("替换成功")
+                            selectedSnapshot = null
+                        })
+                        .then(modifier)
+                )
+                HorizontalDivider()
+                Text(
+                    text = "删除", modifier = Modifier
+                        .clickable(onClick = scope.launchAsFn {
+                            DbSet.snapshotDao.delete(snapshotVal)
+                            withContext(Dispatchers.IO) {
+                                SnapshotExt.removeAssets(snapshotVal.id)
+                            }
+                            selectedSnapshot = null
+                        })
+                        .then(modifier), color = colorScheme.error
+                )
             }
         }
     }

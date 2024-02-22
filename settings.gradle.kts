@@ -128,8 +128,13 @@ dependencyResolutionManagement {
             library("androidx.room.runtime", "androidx.room:room-runtime:$roomVersion")
             library("androidx.room.compiler", "androidx.room:room-compiler:$roomVersion")
             library("androidx.room.ktx", "androidx.room:room-ktx:$roomVersion")
+            library("androidx.room.paging", "androidx.room:room-paging:$roomVersion")
 
             library("androidx.splashscreen", "androidx.core:core-splashscreen:1.0.1")
+
+            val pagingVersion = "3.2.1"
+            library("androidx.paging.runtime", "androidx.paging:paging-runtime:$pagingVersion")
+            library("androidx.paging.compose", "androidx.paging:paging-compose:$pagingVersion")
 
             library(
                 "google.accompanist.drawablepainter",
@@ -203,7 +208,7 @@ dependencyResolutionManagement {
             library("coil.gif", "io.coil-kt:coil-gif:$coilVersion")
 
             // https://github.com/Calvin-LL/Reorderable
-            library("others.reorderable", "sh.calvin.reorderable:reorderable:1.3.1")
+            library("others.reorderable", "sh.calvin.reorderable:reorderable:1.3.2")
 
             // https://www.objecthunter.net/exp4j/
             library("exp4j", "net.objecthunter:exp4j:0.4.8")

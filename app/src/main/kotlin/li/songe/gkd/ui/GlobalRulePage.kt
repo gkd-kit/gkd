@@ -272,50 +272,48 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
-                Column {
-                    Text(text = "编辑禁用", modifier = Modifier
-                        .clickable {
-                            setMenuGroupRaw(null)
-                            navController.navigate(
-                                GlobalRuleExcludePageDestination(
-                                    subsItemId,
-                                    menuGroupRaw.key
-                                )
+                Text(text = "编辑禁用", modifier = Modifier
+                    .clickable {
+                        setMenuGroupRaw(null)
+                        navController.navigate(
+                            GlobalRuleExcludePageDestination(
+                                subsItemId,
+                                menuGroupRaw.key
                             )
+                        )
+                    }
+                    .padding(16.dp)
+                    .fillMaxWidth())
+                if (editable) {
+                    Text(text = "编辑规则组", modifier = Modifier
+                        .clickable {
+                            setEditGroupRaw(menuGroupRaw)
+                            setMenuGroupRaw(null)
                         }
                         .padding(16.dp)
                         .fillMaxWidth())
-                    if (editable) {
-                        Text(text = "编辑规则组", modifier = Modifier
-                            .clickable {
-                                setEditGroupRaw(menuGroupRaw)
-                                setMenuGroupRaw(null)
-                            }
-                            .padding(16.dp)
-                            .fillMaxWidth())
-                        Text(text = "删除规则组", modifier = Modifier
-                            .clickable {
-                                setMenuGroupRaw(null)
-                                vm.viewModelScope.launchTry {
-                                    if (!getDialogResult("是否删除${menuGroupRaw.name}")) return@launchTry
-                                    updateSubscription(
-                                        rawSubs.copy(
-                                            globalGroups = rawSubs.globalGroups.filter { g -> g.key != menuGroupRaw.key }
-                                        )
+                    Text(text = "删除规则组", modifier = Modifier
+                        .clickable {
+                            setMenuGroupRaw(null)
+                            vm.viewModelScope.launchTry {
+                                if (!getDialogResult("是否删除${menuGroupRaw.name}")) return@launchTry
+                                updateSubscription(
+                                    rawSubs.copy(
+                                        globalGroups = rawSubs.globalGroups.filter { g -> g.key != menuGroupRaw.key }
                                     )
-                                    val subsConfig =
-                                        subsConfigs.find { it.groupKey == menuGroupRaw.key }
-                                    if (subsConfig != null) {
-                                        DbSet.subsConfigDao.delete(subsConfig)
-                                    }
-                                    DbSet.subsItemDao.updateMtime(rawSubs.id)
+                                )
+                                val subsConfig =
+                                    subsConfigs.find { it.groupKey == menuGroupRaw.key }
+                                if (subsConfig != null) {
+                                    DbSet.subsConfigDao.delete(subsConfig)
                                 }
+                                DbSet.subsItemDao.updateMtime(rawSubs.id)
                             }
-                            .padding(16.dp)
-                            .fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
+                        }
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }

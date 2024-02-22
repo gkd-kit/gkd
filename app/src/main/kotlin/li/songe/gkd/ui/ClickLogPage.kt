@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -33,15 +32,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
+import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
@@ -75,8 +77,9 @@ fun ClickLogPage() {
     val navController = LocalNavController.current
 
     val vm = hiltViewModel<ClickLogVm>()
-    val clickDataList by vm.clickDataListFlow.collectAsState()
+//    val clickDataList by vm.clickDataListFlow.collectAsState()
     val clickLogCount by vm.clickLogCountFlow.collectAsState()
+    val clickDataItems = vm.pagingDataFlow.collectAsLazyPagingItems()
     val appInfoCache by appInfoCacheFlow.collectAsState()
     val subsIdToRaw by subsIdToRawFlow.collectAsState()
 
@@ -105,6 +108,10 @@ fun ClickLogPage() {
         mutableStateOf(false)
     }
 
+    LaunchedEffect(key1 = clickDataItems.itemSnapshotList.items, block = {
+        LogUtils.d(clickDataItems.itemSnapshotList.items.size)
+    })
+
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         TopAppBar(
@@ -121,7 +128,7 @@ fun ClickLogPage() {
             },
             title = { Text(text = "触发记录" + if (clickLogCount <= 0) "" else ("-$clickLogCount")) },
             actions = {
-                if (clickDataList.isNotEmpty()) {
+                if (clickLogCount > 0) {
                     IconButton(onClick = { showDeleteDlg = true }) {
                         Icon(
                             imageVector = Icons.Outlined.Delete,
@@ -131,71 +138,70 @@ fun ClickLogPage() {
                 }
             })
     }, content = { contentPadding ->
-        if (clickDataList.isNotEmpty()) {
-            LazyColumn(
-                modifier = Modifier.padding(contentPadding),
-            ) {
-                items(clickDataList, { it.t0.id }) { (clickLog, group, rule) ->
-                    Column(modifier = Modifier
-                        .clickable {
-                            previewClickLog = clickLog
-                        }
-                        .fillMaxWidth()
-                        .padding(10.dp)) {
-                        Row {
-                            Text(
-                                text = clickLog.id.format("MM-dd HH:mm:ss"),
-                                fontFamily = FontFamily.Monospace
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = appInfoCache[clickLog.appId]?.name ?: clickLog.appId ?: ""
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        val showActivityId = if (clickLog.activityId != null) {
-                            if (clickLog.appId != null && clickLog.activityId.startsWith(
-                                    clickLog.appId
-                                )
-                            ) {
-                                clickLog.activityId.substring(clickLog.appId.length)
-                            } else {
-                                clickLog.activityId
-                            }
-                        } else {
-                            null
-                        }
-                        if (showActivityId != null) {
-                            Text(
-                                text = showActivityId,
-                                overflow = TextOverflow.Ellipsis,
-                                maxLines = 1,
-                            )
-                        }
-                        if (group?.name != null) {
-                            Text(text = group.name)
-                        }
-                        if (rule?.name != null) {
-                            Text(text = rule.name ?: "")
-                        } else if ((group?.rules?.size ?: 0) > 1) {
-                            Text(text = (if (clickLog.ruleKey != null) "key=${clickLog.ruleKey}, " else "") + "index=${clickLog.ruleIndex}")
-                        }
+        LazyColumn(
+            modifier = Modifier.padding(contentPadding),
+        ) {
+            items(
+                count = clickDataItems.itemCount,
+                key = clickDataItems.itemKey { c -> c.t0.id }
+            ) { i ->
+                val (clickLog, group, rule) = clickDataItems[i] ?: return@items
+                Column(modifier = Modifier
+                    .clickable {
+                        previewClickLog = clickLog
                     }
-                    HorizontalDivider()
+                    .fillMaxWidth()
+                    .padding(10.dp)) {
+                    Row {
+                        Text(
+                            text = clickLog.id.format("MM-dd HH:mm:ss"),
+                            fontFamily = FontFamily.Monospace
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = appInfoCache[clickLog.appId]?.name ?: clickLog.appId ?: ""
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    val showActivityId = if (clickLog.activityId != null) {
+                        if (clickLog.appId != null && clickLog.activityId.startsWith(
+                                clickLog.appId
+                            )
+                        ) {
+                            clickLog.activityId.substring(clickLog.appId.length)
+                        } else {
+                            clickLog.activityId
+                        }
+                    } else {
+                        null
+                    }
+                    if (showActivityId != null) {
+                        Text(
+                            text = showActivityId,
+                            overflow = TextOverflow.Ellipsis,
+                            maxLines = 1,
+                        )
+                    }
+                    if (group?.name != null) {
+                        Text(text = group.name)
+                    }
+                    if (rule?.name != null) {
+                        Text(text = rule.name ?: "")
+                    } else if ((group?.rules?.size ?: 0) > 1) {
+                        Text(text = (if (clickLog.ruleKey != null) "key=${clickLog.ruleKey}, " else "") + "index=${clickLog.ruleIndex}")
+                    }
                 }
-                item {
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
+                HorizontalDivider()
             }
-        } else {
-            Column(
-                modifier = Modifier
-                    .padding(contentPadding)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
+            item {
                 Spacer(modifier = Modifier.height(40.dp))
-                Text(text = "暂无记录")
+                if (clickLogCount == 0) {
+                    Text(
+                        text = "暂无记录",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     })
@@ -214,124 +220,121 @@ fun ClickLogPage() {
                 }
                 val appInfo = appInfoCache[clickLog.appId]
 
-                Column {
-                    Text(text = "查看规则组", modifier = Modifier
-                        .clickable {
-                            clickLog.appId ?: return@clickable
-                            if (clickLog.groupType == SubsConfig.AppGroupType) {
-                                navController.navigate(
-                                    AppItemPageDestination(
-                                        clickLog.subsId, clickLog.appId, clickLog.groupKey
-                                    )
+                Text(text = "查看规则组", modifier = Modifier
+                    .clickable {
+                        clickLog.appId ?: return@clickable
+                        if (clickLog.groupType == SubsConfig.AppGroupType) {
+                            navController.navigate(
+                                AppItemPageDestination(
+                                    clickLog.subsId, clickLog.appId, clickLog.groupKey
                                 )
-                            } else if (clickLog.groupType == SubsConfig.GlobalGroupType) {
-                                navController.navigate(
-                                    GlobalRulePageDestination(
-                                        clickLog.subsId, clickLog.groupKey
-                                    )
-                                )
-                            }
-                            previewClickLog = null
-                        }
-                        .fillMaxWidth()
-                        .padding(16.dp))
-                    if (clickLog.groupType == SubsConfig.GlobalGroupType && clickLog.appId != null) {
-                        val group =
-                            subsIdToRaw[clickLog.subsId]?.globalGroups?.find { g -> g.key == clickLog.groupKey }
-                        val appChecked = if (group != null) {
-                            getChecked(
-                                oldExclude,
-                                group,
-                                clickLog.appId,
-                                appInfo
                             )
-                        } else {
-                            null
-                        }
-                        if (appChecked != null) {
-                            Text(
-                                text = if (appChecked) "在此应用禁用" else "移除在此应用的禁用",
-                                modifier = Modifier
-                                    .clickable(
-                                        onClick = vm.viewModelScope.launchAsFn(
-                                            Dispatchers.IO
-                                        ) {
-                                            val subsConfig = previewConfig ?: SubsConfig(
-                                                type = SubsConfig.GlobalGroupType,
-                                                subsItemId = clickLog.subsId,
-                                                groupKey = clickLog.groupKey,
-                                            )
-                                            val newSubsConfig = subsConfig.copy(
-                                                exclude = oldExclude
-                                                    .copy(
-                                                        appIds = oldExclude.appIds
-                                                            .toMutableMap()
-                                                            .apply {
-                                                                set(clickLog.appId, appChecked)
-                                                            })
-                                                    .stringify()
-                                            )
-                                            DbSet.subsConfigDao.insert(newSubsConfig)
-                                            toast("更新禁用")
-                                        })
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
+                        } else if (clickLog.groupType == SubsConfig.GlobalGroupType) {
+                            navController.navigate(
+                                GlobalRulePageDestination(
+                                    clickLog.subsId, clickLog.groupKey
+                                )
                             )
                         }
+                        previewClickLog = null
                     }
-                    if (clickLog.appId != null && clickLog.activityId != null) {
-                        val disabled =
-                            oldExclude.activityIds.contains(clickLog.appId to clickLog.activityId)
+                    .fillMaxWidth()
+                    .padding(16.dp))
+                if (clickLog.groupType == SubsConfig.GlobalGroupType && clickLog.appId != null) {
+                    val group =
+                        subsIdToRaw[clickLog.subsId]?.globalGroups?.find { g -> g.key == clickLog.groupKey }
+                    val appChecked = if (group != null) {
+                        getChecked(
+                            oldExclude,
+                            group,
+                            clickLog.appId,
+                            appInfo
+                        )
+                    } else {
+                        null
+                    }
+                    if (appChecked != null) {
                         Text(
-                            text = if (disabled) "移除在此页面的禁用" else "在此页面禁用",
+                            text = if (appChecked) "在此应用禁用" else "移除在此应用的禁用",
                             modifier = Modifier
-                                .clickable(onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                                    val subsConfig =
-                                        if (clickLog.groupType == SubsConfig.AppGroupType) {
-                                            previewConfig ?: SubsConfig(
-                                                type = SubsConfig.AppGroupType,
-                                                subsItemId = clickLog.subsId,
-                                                appId = clickLog.appId,
-                                                groupKey = clickLog.groupKey,
-                                            )
-                                        } else {
-                                            previewConfig ?: SubsConfig(
-                                                type = SubsConfig.GlobalGroupType,
-                                                subsItemId = clickLog.subsId,
-                                                groupKey = clickLog.groupKey,
-                                            )
-                                        }
-                                    val newSubsConfig = subsConfig.copy(
-                                        exclude = oldExclude
-                                            .switch(
-                                                clickLog.appId,
-                                                clickLog.activityId
-                                            )
-                                            .stringify()
-                                    )
-                                    DbSet.subsConfigDao.insert(newSubsConfig)
-                                    toast("更新禁用")
-                                })
+                                .clickable(
+                                    onClick = vm.viewModelScope.launchAsFn(
+                                        Dispatchers.IO
+                                    ) {
+                                        val subsConfig = previewConfig ?: SubsConfig(
+                                            type = SubsConfig.GlobalGroupType,
+                                            subsItemId = clickLog.subsId,
+                                            groupKey = clickLog.groupKey,
+                                        )
+                                        val newSubsConfig = subsConfig.copy(
+                                            exclude = oldExclude
+                                                .copy(
+                                                    appIds = oldExclude.appIds
+                                                        .toMutableMap()
+                                                        .apply {
+                                                            set(clickLog.appId, appChecked)
+                                                        })
+                                                .stringify()
+                                        )
+                                        DbSet.subsConfigDao.insert(newSubsConfig)
+                                        toast("更新禁用")
+                                    })
                                 .fillMaxWidth()
                                 .padding(16.dp),
                         )
                     }
-
+                }
+                if (clickLog.appId != null && clickLog.activityId != null) {
+                    val disabled =
+                        oldExclude.activityIds.contains(clickLog.appId to clickLog.activityId)
                     Text(
-                        text = "删除记录",
+                        text = if (disabled) "移除在此页面的禁用" else "在此页面禁用",
                         modifier = Modifier
-                            .clickable(onClick = scope.launchAsFn {
-                                previewClickLog = null
-                                DbSet.clickLogDao.delete(clickLog)
-                                toast("删除成功")
+                            .clickable(onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                                val subsConfig =
+                                    if (clickLog.groupType == SubsConfig.AppGroupType) {
+                                        previewConfig ?: SubsConfig(
+                                            type = SubsConfig.AppGroupType,
+                                            subsItemId = clickLog.subsId,
+                                            appId = clickLog.appId,
+                                            groupKey = clickLog.groupKey,
+                                        )
+                                    } else {
+                                        previewConfig ?: SubsConfig(
+                                            type = SubsConfig.GlobalGroupType,
+                                            subsItemId = clickLog.subsId,
+                                            groupKey = clickLog.groupKey,
+                                        )
+                                    }
+                                val newSubsConfig = subsConfig.copy(
+                                    exclude = oldExclude
+                                        .switch(
+                                            clickLog.appId,
+                                            clickLog.activityId
+                                        )
+                                        .stringify()
+                                )
+                                DbSet.subsConfigDao.insert(newSubsConfig)
+                                toast("更新禁用")
                             })
                             .fillMaxWidth()
                             .padding(16.dp),
-                        color = MaterialTheme.colorScheme.error
                     )
                 }
-            }
 
+                Text(
+                    text = "删除记录",
+                    modifier = Modifier
+                        .clickable(onClick = scope.launchAsFn {
+                            previewClickLog = null
+                            DbSet.clickLogDao.delete(clickLog)
+                            toast("删除成功")
+                        })
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 

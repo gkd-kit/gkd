@@ -1,6 +1,7 @@
 package li.songe.gkd.data
 
 import android.os.Parcelable
+import androidx.paging.PagingSource
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Delete
@@ -48,6 +49,9 @@ data class ClickLog(
 
         @Query("SELECT * FROM click_log ORDER BY id DESC LIMIT 1000")
         fun query(): Flow<List<ClickLog>>
+
+        @Query("SELECT * FROM click_log ORDER BY id DESC ")
+        fun pagingSource(): PagingSource<Int, ClickLog>
 
         @Query("SELECT COUNT(*) FROM click_log")
         fun count(): Flow<Int>
