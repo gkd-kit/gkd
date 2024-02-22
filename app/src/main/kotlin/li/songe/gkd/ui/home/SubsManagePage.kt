@@ -6,9 +6,9 @@ import android.webkit.URLUtil
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -114,83 +115,81 @@ fun useSubsManagePage(): ScaffoldExt {
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
-                Column {
-                    val subsRawVal = subsIdToRaw[menuSubItemVal.id]
-                    if (subsRawVal != null) {
-                        Text(text = "应用规则", modifier = Modifier
-                            .clickable {
-                                menuSubItem = null
-                                navController.navigate(SubsPageDestination(subsRawVal.id))
+                val subsRawVal = subsIdToRaw[menuSubItemVal.id]
+                if (subsRawVal != null) {
+                    Text(text = "应用规则", modifier = Modifier
+                        .clickable {
+                            menuSubItem = null
+                            navController.navigate(SubsPageDestination(subsRawVal.id))
+                        }
+                        .fillMaxWidth()
+                        .padding(16.dp))
+                    HorizontalDivider()
+                    Text(text = "查看类别", modifier = Modifier
+                        .clickable {
+                            menuSubItem = null
+                            navController.navigate(CategoryPageDestination(subsRawVal.id))
+                        }
+                        .fillMaxWidth()
+                        .padding(16.dp))
+                    HorizontalDivider()
+                    Text(text = "全局规则", modifier = Modifier
+                        .clickable {
+                            menuSubItem = null
+                            navController.navigate(GlobalRulePageDestination(subsRawVal.id))
+                        }
+                        .fillMaxWidth()
+                        .padding(16.dp))
+                    HorizontalDivider()
+                }
+                if (menuSubItemVal.id < 0 && subsRawVal != null) {
+                    Text(text = "分享文件", modifier = Modifier
+                        .clickable {
+                            menuSubItem = null
+                            vm.viewModelScope.launchTry {
+                                val subsFile = subsFolder.resolve("${menuSubItemVal.id}.json")
+                                context.shareFile(subsFile, "分享订阅文件")
                             }
-                            .fillMaxWidth()
-                            .padding(16.dp))
-                        HorizontalDivider()
-                        Text(text = "查看类别", modifier = Modifier
-                            .clickable {
-                                menuSubItem = null
-                                navController.navigate(CategoryPageDestination(subsRawVal.id))
-                            }
-                            .fillMaxWidth()
-                            .padding(16.dp))
-                        HorizontalDivider()
-                        Text(text = "全局规则", modifier = Modifier
-                            .clickable {
-                                menuSubItem = null
-                                navController.navigate(GlobalRulePageDestination(subsRawVal.id))
-                            }
-                            .fillMaxWidth()
-                            .padding(16.dp))
-                        HorizontalDivider()
-                    }
-                    if (menuSubItemVal.id < 0 && subsRawVal != null) {
-                        Text(text = "分享文件", modifier = Modifier
-                            .clickable {
-                                menuSubItem = null
-                                vm.viewModelScope.launchTry {
-                                    val subsFile = subsFolder.resolve("${menuSubItemVal.id}.json")
-                                    context.shareFile(subsFile, "分享订阅文件")
-                                }
-                            }
-                            .fillMaxWidth()
-                            .padding(16.dp))
-                        HorizontalDivider()
-                    }
-                    if (menuSubItemVal.updateUrl != null) {
-                        Text(text = "复制链接", modifier = Modifier
-                            .clickable {
-                                menuSubItem = null
-                                ClipboardUtils.copyText(menuSubItemVal.updateUrl)
-                                toast("复制成功")
-                            }
-                            .fillMaxWidth()
-                            .padding(16.dp))
-                        HorizontalDivider()
-                    }
-                    if (subsRawVal?.supportUri != null) {
-                        Text(text = "问题反馈", modifier = Modifier
-                            .clickable {
-                                menuSubItem = null
-                                context.startActivity(
-                                    Intent(
-                                        Intent.ACTION_VIEW, Uri.parse(subsRawVal.supportUri)
-                                    )
+                        }
+                        .fillMaxWidth()
+                        .padding(16.dp))
+                    HorizontalDivider()
+                }
+                if (menuSubItemVal.updateUrl != null) {
+                    Text(text = "复制链接", modifier = Modifier
+                        .clickable {
+                            menuSubItem = null
+                            ClipboardUtils.copyText(menuSubItemVal.updateUrl)
+                            toast("复制成功")
+                        }
+                        .fillMaxWidth()
+                        .padding(16.dp))
+                    HorizontalDivider()
+                }
+                if (subsRawVal?.supportUri != null) {
+                    Text(text = "问题反馈", modifier = Modifier
+                        .clickable {
+                            menuSubItem = null
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW, Uri.parse(subsRawVal.supportUri)
                                 )
+                            )
+                        }
+                        .fillMaxWidth()
+                        .padding(16.dp))
+                    HorizontalDivider()
+                }
+                if (menuSubItemVal.id != -2L) {
+                    Text(text = "删除订阅",
+                        modifier = Modifier
+                            .clickable {
+                                deleteSubItem = menuSubItemVal
+                                menuSubItem = null
                             }
                             .fillMaxWidth()
-                            .padding(16.dp))
-                        HorizontalDivider()
-                    }
-                    if (menuSubItemVal.id != -2L) {
-                        Text(text = "删除订阅",
-                            modifier = Modifier
-                                .clickable {
-                                    deleteSubItem = menuSubItemVal
-                                    menuSubItem = null
-                                }
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            color = MaterialTheme.colorScheme.error)
-                    }
+                            .padding(16.dp),
+                        color = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -291,35 +290,39 @@ fun useSubsManagePage(): ScaffoldExt {
                             if (isDragging) 1.dp else 0.dp,
                             label = "width",
                         )
+                        val interactionSource = remember { MutableInteractionSource() }
                         Card(
+                            onClick = { menuSubItem = subItem },
                             modifier = Modifier
-                                .longPressDraggableHandle(onDragStopped = {
-                                    val changeItems = mutableListOf<SubsItem>()
-                                    orderSubItems.forEachIndexed { i, subsItem ->
-                                        if (subItems[i] != subsItem) {
-                                            changeItems.add(
-                                                subsItem.copy(
-                                                    order = i
+                                .longPressDraggableHandle(
+                                    interactionSource = interactionSource,
+                                    onDragStopped = {
+                                        val changeItems = mutableListOf<SubsItem>()
+                                        orderSubItems.forEachIndexed { i, subsItem ->
+                                            if (subItems[i] != subsItem) {
+                                                changeItems.add(
+                                                    subsItem.copy(
+                                                        order = i
+                                                    )
                                                 )
-                                            )
+                                            }
                                         }
-                                    }
-                                    if (orderSubItems.isNotEmpty()) {
-                                        vm.viewModelScope.launchTry {
-                                            DbSet.subsItemDao.update(*changeItems.toTypedArray())
+                                        if (orderSubItems.isNotEmpty()) {
+                                            vm.viewModelScope.launchTry {
+                                                DbSet.subsItemDao.update(*changeItems.toTypedArray())
+                                            }
                                         }
-                                    }
-                                })
+                                    },
+                                )
                                 .animateItemPlacement()
-                                .padding(vertical = 3.dp, horizontal = 8.dp)
-                                .clickable {
-                                    menuSubItem = subItem
-                                },
+                                .padding(vertical = 3.dp, horizontal = 8.dp),
+                            elevation = CardDefaults.cardElevation(draggedElevation = 10.dp),
                             shape = RoundedCornerShape(8.dp),
                             border = if (isDragging) BorderStroke(
                                 width,
                                 MaterialTheme.colorScheme.primary
-                            ) else null
+                            ) else null,
+                            interactionSource = interactionSource,
                         ) {
                             SubsItemCard(
                                 subsItem = subItem,

@@ -181,37 +181,35 @@ fun CategoryPage(subsItemId: Long) {
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
-                Column {
-                    enableGroupRadioOptions.forEach { option ->
-                        val onClick: () -> Unit = {
-                            vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                DbSet.categoryConfigDao.insert(
-                                    (categoryConfig ?: CategoryConfig(
-                                        enable = option.second,
-                                        subsItemId = subsItemId,
-                                        categoryKey = category.key
-                                    )).copy(enable = option.second)
-                                )
-                            }
+                enableGroupRadioOptions.forEach { option ->
+                    val onClick: () -> Unit = {
+                        vm.viewModelScope.launchTry(Dispatchers.IO) {
+                            DbSet.categoryConfigDao.insert(
+                                (categoryConfig ?: CategoryConfig(
+                                    enable = option.second,
+                                    subsItemId = subsItemId,
+                                    categoryKey = category.key
+                                )).copy(enable = option.second)
+                            )
                         }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .selectable(
-                                    selected = (option.second == enable),
-                                    onClick = onClick
-                                )
-                                .padding(horizontal = 16.dp)
-                        ) {
-                            RadioButton(
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
                                 selected = (option.second == enable),
                                 onClick = onClick
                             )
-                            Text(
-                                text = option.first, modifier = Modifier.padding(start = 16.dp)
-                            )
-                        }
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        RadioButton(
+                            selected = (option.second == enable),
+                            onClick = onClick
+                        )
+                        Text(
+                            text = option.first, modifier = Modifier.padding(start = 16.dp)
+                        )
                     }
                 }
             }
@@ -328,36 +326,34 @@ fun CategoryPage(subsItemId: Long) {
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
-                Column {
-                    Text(text = "编辑", modifier = Modifier
-                        .clickable {
-                            setEditNameCategory(menuCategory)
+                Text(text = "编辑", modifier = Modifier
+                    .clickable {
+                        setEditNameCategory(menuCategory)
+                        setMenuCategory(null)
+                    }
+                    .padding(16.dp)
+                    .fillMaxWidth())
+                Text(text = "删除", modifier = Modifier
+                    .clickable {
+                        vm.viewModelScope.launchTry(Dispatchers.IO) {
+                            subsItem?.apply {
+                                updateSubscription(subsRawVal.copy(
+                                    categories = subsRawVal.categories.filter { c -> c.key != menuCategory.key }
+                                ))
+                                DbSet.subsItemDao.update(copy(mtime = System.currentTimeMillis()))
+                            }
+                            DbSet.categoryConfigDao.deleteByCategoryKey(
+                                subsItemId,
+                                menuCategory.key
+                            )
+                            toast("删除成功")
                             setMenuCategory(null)
                         }
-                        .padding(16.dp)
-                        .fillMaxWidth())
-                    Text(text = "删除", modifier = Modifier
-                        .clickable {
-                            vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                subsItem?.apply {
-                                    updateSubscription(subsRawVal.copy(
-                                        categories = subsRawVal.categories.filter { c -> c.key != menuCategory.key }
-                                    ))
-                                    DbSet.subsItemDao.update(copy(mtime = System.currentTimeMillis()))
-                                }
-                                DbSet.categoryConfigDao.deleteByCategoryKey(
-                                    subsItemId,
-                                    menuCategory.key
-                                )
-                                toast("删除成功")
-                                setMenuCategory(null)
-                            }
-                        }
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
+                    }
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.error
+                )
             }
         }
     }

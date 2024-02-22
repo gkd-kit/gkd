@@ -122,7 +122,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                 AppBarTextField(
                     value = searchStr,
                     onValueChange = { newValue -> vm.searchStrFlow.value = newValue.trim() },
-                    hint = "请输入应用名称",
+                    hint = "请输入应用名称/ID",
                     modifier = Modifier.focusRequester(focusRequester)
                 )
             } else {

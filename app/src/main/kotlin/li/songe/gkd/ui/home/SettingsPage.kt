@@ -102,29 +102,27 @@ fun useSettingsPage(): ScaffoldExt {
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
-                Column {
-                    updateTimeRadioOptions.forEach { option ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .selectable(selected = (option.second == store.updateSubsInterval),
-                                    onClick = {
-                                        storeFlow.value =
-                                            store.copy(updateSubsInterval = option.second)
-
-                                    })
-                                .padding(horizontal = 16.dp)
-                        ) {
-                            RadioButton(
-                                selected = (option.second == store.updateSubsInterval),
+                updateTimeRadioOptions.forEach { option ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(selected = (option.second == store.updateSubsInterval),
                                 onClick = {
-                                    storeFlow.value = store.copy(updateSubsInterval = option.second)
+                                    storeFlow.value =
+                                        store.copy(updateSubsInterval = option.second)
+
                                 })
-                            Text(
-                                text = option.first, modifier = Modifier.padding(start = 16.dp)
-                            )
-                        }
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        RadioButton(
+                            selected = (option.second == store.updateSubsInterval),
+                            onClick = {
+                                storeFlow.value = store.copy(updateSubsInterval = option.second)
+                            })
+                        Text(
+                            text = option.first, modifier = Modifier.padding(start = 16.dp)
+                        )
                     }
                 }
             }
@@ -139,28 +137,26 @@ fun useSettingsPage(): ScaffoldExt {
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
-                Column {
-                    darkThemeRadioOptions.forEach { option ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .selectable(selected = (option.second == store.enableDarkTheme),
-                                    onClick = {
-                                        storeFlow.value =
-                                            store.copy(enableDarkTheme = option.second)
-                                    })
-                                .padding(horizontal = 16.dp)
-                        ) {
-                            RadioButton(
-                                selected = (option.second == store.enableDarkTheme),
+                darkThemeRadioOptions.forEach { option ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(selected = (option.second == store.enableDarkTheme),
                                 onClick = {
-                                    storeFlow.value = store.copy(enableDarkTheme = option.second)
+                                    storeFlow.value =
+                                        store.copy(enableDarkTheme = option.second)
                                 })
-                            Text(
-                                text = option.first, modifier = Modifier.padding(start = 16.dp)
-                            )
-                        }
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        RadioButton(
+                            selected = (option.second == store.enableDarkTheme),
+                            onClick = {
+                                storeFlow.value = store.copy(enableDarkTheme = option.second)
+                            })
+                        Text(
+                            text = option.first, modifier = Modifier.padding(start = 16.dp)
+                        )
                     }
                 }
             }
@@ -215,49 +211,47 @@ fun useSettingsPage(): ScaffoldExt {
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
-                Column {
-                    val modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                    Text(
-                        text = "调用系统分享", modifier = Modifier
-                            .clickable(onClick = {
-                                showShareLogDlg = false
-                                vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                    val logZipFile = File(logZipDir, "log.zip")
-                                    ZipUtils.zipFiles(LogUtils.getLogFiles(), logZipFile)
-                                    val uri = FileProvider.getUriForFile(
-                                        context, "${context.packageName}.provider", logZipFile
-                                    )
-                                    val intent = Intent().apply {
-                                        action = Intent.ACTION_SEND
-                                        putExtra(Intent.EXTRA_STREAM, uri)
-                                        type = "application/zip"
-                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    }
-                                    context.startActivity(
-                                        Intent.createChooser(
-                                            intent, "分享日志文件"
-                                        )
-                                    )
+                val modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                Text(
+                    text = "调用系统分享", modifier = Modifier
+                        .clickable(onClick = {
+                            showShareLogDlg = false
+                            vm.viewModelScope.launchTry(Dispatchers.IO) {
+                                val logZipFile = File(logZipDir, "log.zip")
+                                ZipUtils.zipFiles(LogUtils.getLogFiles(), logZipFile)
+                                val uri = FileProvider.getUriForFile(
+                                    context, "${context.packageName}.provider", logZipFile
+                                )
+                                val intent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                    type = "application/zip"
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 }
-                            })
-                            .then(modifier)
-                    )
-                    Text(
-                        text = "生成链接(需科学上网)", modifier = Modifier
-                            .clickable(onClick = {
-                                showShareLogDlg = false
-                                vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                    val logZipFile = File(logZipDir, "log.zip")
-                                    ZipUtils.zipFiles(LogUtils.getLogFiles(), logZipFile)
-                                    vm.uploadZip(logZipFile)
-                                }
-                            })
-                            .then(modifier)
-                    )
-                }
+                                context.startActivity(
+                                    Intent.createChooser(
+                                        intent, "分享日志文件"
+                                    )
+                                )
+                            }
+                        })
+                        .then(modifier)
+                )
+                Text(
+                    text = "生成链接(需科学上网)", modifier = Modifier
+                        .clickable(onClick = {
+                            showShareLogDlg = false
+                            vm.viewModelScope.launchTry(Dispatchers.IO) {
+                                val logZipFile = File(logZipDir, "log.zip")
+                                ZipUtils.zipFiles(LogUtils.getLogFiles(), logZipFile)
+                                vm.uploadZip(logZipFile)
+                            }
+                        })
+                        .then(modifier)
+                )
             }
         }
     }

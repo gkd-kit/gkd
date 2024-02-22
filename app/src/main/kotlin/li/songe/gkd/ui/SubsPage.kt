@@ -2,7 +2,6 @@ package li.songe.gkd.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -50,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -145,7 +145,7 @@ fun SubsPage(
                     AppBarTextField(
                         value = searchStr,
                         onValueChange = { newValue -> vm.searchStrFlow.value = newValue.trim() },
-                        hint = "请输入应用名称",
+                        hint = "请输入应用名称/ID",
                         modifier = Modifier.focusRequester(focusRequester)
                     )
                 } else {
@@ -265,24 +265,15 @@ fun SubsPage(
                     })
             }
             item {
+                Spacer(modifier = Modifier.height(40.dp))
                 if (appAndConfigs.isEmpty()) {
-                    Spacer(modifier = Modifier.height(40.dp))
-                    Column(
+                    Text(
+                        text = if (searchStr.isNotEmpty()) "暂无搜索结果" else "暂无规则",
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        if (searchStr.isNotEmpty()) {
-                            Text(text = "暂无搜索结果")
-                        } else {
-                            Text(text = "暂无规则")
-                        }
-                    }
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
-            item {
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-
         }
     }
 
@@ -431,31 +422,29 @@ fun SubsPage(
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
-                Column {
-                    Text(text = "复制", modifier = Modifier
-                        .clickable {
-                            ClipboardUtils.copyText(
-                                json.encodeToJson5String(menuAppRawVal)
-                            )
-                            toast("复制成功")
-                            menuRawApp = null
+                Text(text = "复制", modifier = Modifier
+                    .clickable {
+                        ClipboardUtils.copyText(
+                            json.encodeToJson5String(menuAppRawVal)
+                        )
+                        toast("复制成功")
+                        menuRawApp = null
+                    }
+                    .fillMaxWidth()
+                    .padding(16.dp))
+                Text(text = "删除", modifier = Modifier
+                    .clickable {
+                        // 也许需要二次确认
+                        vm.viewModelScope.launchTry(Dispatchers.IO) {
+                            updateSubscription(subsRaw.copy(apps = subsRaw.apps.filter { a -> a.id != menuAppRawVal.id }))
+                            DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
+                            DbSet.subsConfigDao.delete(subsItemVal.id, menuAppRawVal.id)
+                            toast("删除成功")
                         }
-                        .fillMaxWidth()
-                        .padding(16.dp))
-                    Text(text = "删除", modifier = Modifier
-                        .clickable {
-                            // 也许需要二次确认
-                            vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                updateSubscription(subsRaw.copy(apps = subsRaw.apps.filter { a -> a.id != menuAppRawVal.id }))
-                                DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
-                                DbSet.subsConfigDao.delete(subsItemVal.id, menuAppRawVal.id)
-                                toast("删除成功")
-                            }
-                            menuRawApp = null
-                        }
-                        .fillMaxWidth()
-                        .padding(16.dp), color = MaterialTheme.colorScheme.error)
-                }
+                        menuRawApp = null
+                    }
+                    .fillMaxWidth()
+                    .padding(16.dp), color = MaterialTheme.colorScheme.error)
             }
         }
     }

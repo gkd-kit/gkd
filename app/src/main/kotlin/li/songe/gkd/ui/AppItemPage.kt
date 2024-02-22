@@ -295,53 +295,51 @@ fun AppItemPage(
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
-                Column {
-                    Text(text = "编辑禁用", modifier = Modifier
+                Text(text = "编辑禁用", modifier = Modifier
+                    .clickable {
+                        setExcludeGroupRaw(menuGroupRaw)
+                        setMenuGroupRaw(null)
+                    }
+                    .padding(16.dp)
+                    .fillMaxWidth())
+                if (editable) {
+                    Text(text = "编辑规则组", modifier = Modifier
                         .clickable {
-                            setExcludeGroupRaw(menuGroupRaw)
+                            setEditGroupRaw(menuGroupRaw)
                             setMenuGroupRaw(null)
                         }
                         .padding(16.dp)
                         .fillMaxWidth())
-                    if (editable) {
-                        Text(text = "编辑规则组", modifier = Modifier
-                            .clickable {
-                                setEditGroupRaw(menuGroupRaw)
+                    Text(text = "删除规则组", modifier = Modifier
+                        .clickable {
+                            vm.viewModelScope.launchTry(Dispatchers.IO) {
+                                subsRaw ?: return@launchTry
+                                val newSubsRaw = subsRaw.copy(
+                                    apps = subsRaw.apps
+                                        .toMutableList()
+                                        .apply {
+                                            set(
+                                                indexOfFirst { a -> a.id == appRawVal.id },
+                                                appRawVal.copy(
+                                                    groups = appRawVal.groups
+                                                        .filter { g -> g.key != menuGroupRaw.key }
+                                                )
+                                            )
+                                        }
+                                )
+                                updateSubscription(newSubsRaw)
+                                DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
+                                DbSet.subsConfigDao.delete(
+                                    subsItemVal.id, appRawVal.id, menuGroupRaw.key
+                                )
+                                toast("删除成功")
                                 setMenuGroupRaw(null)
                             }
-                            .padding(16.dp)
-                            .fillMaxWidth())
-                        Text(text = "删除规则组", modifier = Modifier
-                            .clickable {
-                                vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                    subsRaw ?: return@launchTry
-                                    val newSubsRaw = subsRaw.copy(
-                                        apps = subsRaw.apps
-                                            .toMutableList()
-                                            .apply {
-                                                set(
-                                                    indexOfFirst { a -> a.id == appRawVal.id },
-                                                    appRawVal.copy(
-                                                        groups = appRawVal.groups
-                                                            .filter { g -> g.key != menuGroupRaw.key }
-                                                    )
-                                                )
-                                            }
-                                    )
-                                    updateSubscription(newSubsRaw)
-                                    DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
-                                    DbSet.subsConfigDao.delete(
-                                        subsItemVal.id, appRawVal.id, menuGroupRaw.key
-                                    )
-                                    toast("删除成功")
-                                    setMenuGroupRaw(null)
-                                }
-                            }
-                            .padding(16.dp)
-                            .fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
+                        }
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }

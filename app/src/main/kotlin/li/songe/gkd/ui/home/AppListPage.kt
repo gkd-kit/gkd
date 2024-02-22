@@ -48,6 +48,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -106,7 +107,7 @@ fun useAppListPage(): ScaffoldExt {
                     AppBarTextField(
                         value = searchStr,
                         onValueChange = { newValue -> vm.searchStrFlow.value = newValue.trim() },
-                        hint = "请输入应用名称",
+                        hint = "请输入应用名称/ID",
                         modifier = Modifier.focusRequester(focusRequester)
                     )
                 } else {
@@ -278,6 +279,16 @@ fun useAppListPage(): ScaffoldExt {
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
+                }
+            }
+            item {
+                Spacer(modifier = Modifier.height(40.dp))
+                if (orderedAppInfos.isEmpty() && searchStr.isNotEmpty()) {
+                    Text(
+                        text = "暂无搜索结果",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
