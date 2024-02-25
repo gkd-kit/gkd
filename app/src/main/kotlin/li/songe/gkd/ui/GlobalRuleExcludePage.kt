@@ -346,6 +346,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                 TextButton(onClick = {
                     if (oldSource == source) {
                         toast("禁用项无变动")
+                        showEditDlg = false
                         return@TextButton
                     }
                     showEditDlg = false

@@ -1,10 +1,8 @@
 package li.songe.selector.data
 
-import li.songe.selector.NodeSequenceFc
-
 sealed class ConnectExpression {
-    abstract val isConstant: Boolean
     abstract val minOffset: Int
-
-    internal abstract val traversal: NodeSequenceFc
+    abstract val maxOffset: Int?
+    abstract fun checkOffset(offset: Int): Boolean
+    abstract fun getOffset(i: Int): Int
 }

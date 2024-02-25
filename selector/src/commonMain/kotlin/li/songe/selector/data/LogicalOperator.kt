@@ -12,7 +12,6 @@ sealed class LogicalOperator(val key: String) {
         }
     }
 
-    override fun toString() = key
     abstract fun <T> compare(
         node: T,
         transform: Transform<T>,

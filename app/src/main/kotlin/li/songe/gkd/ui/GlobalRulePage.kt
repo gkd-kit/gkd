@@ -343,6 +343,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
             confirmButton = {
                 TextButton(onClick = {
                     if (oldSource == source) {
+                        setEditGroupRaw(null)
                         toast("规则无变动")
                         return@TextButton
                     }

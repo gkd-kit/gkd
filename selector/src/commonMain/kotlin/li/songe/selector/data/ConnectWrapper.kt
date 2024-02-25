@@ -12,7 +12,7 @@ data class ConnectWrapper(
 
     fun <T> matchTracks(
         node: T, transform: Transform<T>,
-        trackNodes: MutableList<T> = mutableListOf(),
+        trackNodes: MutableList<T>,
     ): List<T>? {
         connectSegment.traversal(node, transform).forEach {
             if (it == null) return@forEach

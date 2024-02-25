@@ -15,5 +15,9 @@ data class TestNode(
 
     @Transient
     var children: MutableList<TestNode> = mutableListOf()
+
+    override fun toString(): String {
+        return id.toString()
+    }
 }
 

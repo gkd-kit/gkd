@@ -3,6 +3,8 @@ package li.songe.gkd.data
 import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Job
+import li.songe.gkd.service.CacheTransform
+import li.songe.gkd.service.createCacheTransform
 import li.songe.gkd.service.lastTriggerRule
 import li.songe.gkd.service.lastTriggerTime
 import li.songe.gkd.service.querySelector
@@ -119,15 +121,37 @@ sealed class ResolvedRule(
         else -> true
     }
 
-    fun query(nodeInfo: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+    private val canCacheIndex = (matches + excludeMatches).any { s -> s.canCacheIndex }
+
+    fun query(
+        nodeInfo: AccessibilityNodeInfo?,
+        cacheTransform: CacheTransform? = null
+    ): AccessibilityNodeInfo? {
         if (nodeInfo == null) return null
         var target: AccessibilityNodeInfo? = null
-        for (selector in matches) {
-            target = nodeInfo.querySelector(selector, quickFind) ?: return null
+        if (canCacheIndex) {
+            val transform = cacheTransform ?: createCacheTransform()
+            for (selector in matches) {
+                target = nodeInfo.querySelector(selector, quickFind, transform.transform)
+                    ?: return null
+            }
+            for (selector in excludeMatches) {
+                if (nodeInfo.querySelector(
+                        selector,
+                        quickFind,
+                        transform.transform
+                    ) != null
+                ) return null
+            }
+        } else {
+            for (selector in matches) {
+                target = nodeInfo.querySelector(selector, quickFind) ?: return null
+            }
+            for (selector in excludeMatches) {
+                if (nodeInfo.querySelector(selector, quickFind) != null) return null
+            }
         }
-        for (selector in excludeMatches) {
-            if (nodeInfo.querySelector(selector, quickFind) != null) return null
-        }
+
         return target
     }
 
