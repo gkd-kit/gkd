@@ -19,3 +19,5 @@ local.properties
 
 *.jks
 *.keystore
+
+/_assets

@@ -371,6 +371,7 @@ fun AppItemPage(
                 TextButton(onClick = {
                     if (oldSource == source) {
                         toast("规则无变动")
+                        setEditGroupRaw(null)
                         return@TextButton
                     }
                     val newGroupRaw = try {
@@ -446,6 +447,7 @@ fun AppItemPage(
                 TextButton(onClick = {
                     if (oldSource == source) {
                         toast("禁用项无变动")
+                        setExcludeGroupRaw(null)
                         return@TextButton
                     }
                     setExcludeGroupRaw(null)

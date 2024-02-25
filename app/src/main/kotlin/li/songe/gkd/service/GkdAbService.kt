@@ -148,6 +148,7 @@ class GkdAbService : CompositionAbService({
         } else {
             queryThread
         }
+        val common = ctx === queryThread
         queryTaskJob = scope.launchTry(ctx) {
             val activityRule = getAndUpdateCurrentRules()
             for (rule in (activityRule.currentRules)) {
@@ -180,7 +181,14 @@ class GkdAbService : CompositionAbService({
                     return@launchTry
                 }
                 if (!matchApp) continue
-                val target = rule.query(nodeVal) ?: continue
+                val target =
+                    rule.query(nodeVal, if (common) defaultCacheTransform else null)
+                if (common) {
+                    defaultCacheTransform.indexCache.clear()
+                }
+                if (target == null) {
+                    continue
+                }
                 if (activityRule !== getAndUpdateCurrentRules()) break
                 if (rule.checkDelay() && rule.actionDelayJob == null) {
                     rule.actionDelayJob = scope.launch(queryThread) {
@@ -521,8 +529,11 @@ class GkdAbService : CompositionAbService({
                 }
             }
             val targetNode =
-                serviceVal.safeActiveWindow?.querySelector(selector, gkdAction.quickFind)
-                    ?: throw RpcError("没有查询到节点")
+                serviceVal.safeActiveWindow?.querySelector(
+                    selector,
+                    gkdAction.quickFind,
+                    if (selector.canCacheIndex) createCacheTransform().transform else null
+                ) ?: throw RpcError("没有查询到节点")
 
             if (gkdAction.action == null) {
                 // 仅查询

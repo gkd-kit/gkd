@@ -2,50 +2,16 @@ package li.songe.selector.data
 
 import li.songe.selector.Transform
 
-data class BinaryExpression(val name: String, val operator: CompareOperator, val value: Any?) :
+data class BinaryExpression(
+    val name: String,
+    val operator: CompareOperator,
+    val value: PrimitiveValue
+) :
     Expression() {
     override fun <T> match(node: T, transform: Transform<T>) =
-        operator.compare(transform.getAttr(node, name), value)
+        operator.compare(transform.getAttr(node, name), value.value)
 
-    override val propertyNames = listOf(name)
+    override val binaryExpressions = listOf(this)
 
-    override fun toString() = "${name}${operator}${
-        if (value is String) {
-            val wrapChar = '"'
-            val sb = StringBuilder()
-            sb.append(wrapChar)
-            value.forEach { c ->
-                val escapeChar = when (c) {
-                    wrapChar -> wrapChar
-                    '\n' -> 'n'
-                    '\r' -> 'r'
-                    '\t' -> 't'
-                    '\b' -> 'b'
-                    '\\' -> '\\'
-                    else -> null
-                }
-                if (escapeChar != null) {
-                    sb.append("\\" + escapeChar)
-                } else {
-                    when (c.code) {
-                        in 0..0xf -> {
-                            sb.append("\\x0" + c.code.toString(16))
-                        }
-
-                        in 10..0x1f -> {
-                            sb.append("\\x" + c.code.toString(16))
-                        }
-
-                        else -> {
-                            sb.append(c)
-                        }
-                    }
-                }
-            }
-            sb.append(wrapChar)
-            sb.toString()
-        } else {
-            value
-        }
-    }"
+    override fun toString() = "${name}${operator.key}${value}"
 }

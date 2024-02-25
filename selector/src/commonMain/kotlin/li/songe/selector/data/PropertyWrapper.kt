@@ -17,7 +17,7 @@ data class PropertyWrapper(
     fun <T> matchTracks(
         node: T,
         transform: Transform<T>,
-        trackNodes: MutableList<T> = mutableListOf(),
+        trackNodes: MutableList<T>,
     ): List<T>? {
         if (!propertySegment.match(node, transform)) {
             return null

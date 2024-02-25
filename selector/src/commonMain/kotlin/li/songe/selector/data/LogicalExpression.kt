@@ -11,7 +11,7 @@ data class LogicalExpression(
         return operator.compare(node, transform, left, right)
     }
 
-    override val propertyNames = left.propertyNames + right.propertyNames
+    override val binaryExpressions = left.binaryExpressions + right.binaryExpressions
 
     override fun toString(): String {
         val leftStr = if (left is LogicalExpression && left.operator != operator) {
@@ -24,6 +24,6 @@ data class LogicalExpression(
         } else {
             right.toString()
         }
-        return "$leftStr\u0020$operator\u0020$rightStr"
+        return "$leftStr\u0020${operator.key}\u0020$rightStr"
     }
 }

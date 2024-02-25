@@ -1,6 +1,5 @@
 package li.songe.selector.parser
 
-import li.songe.selector.ExtSyntaxError
 import li.songe.selector.Selector
 import li.songe.selector.data.BinaryExpression
 import li.songe.selector.data.CompareOperator
@@ -12,9 +11,12 @@ import li.songe.selector.data.Expression
 import li.songe.selector.data.LogicalExpression
 import li.songe.selector.data.LogicalOperator
 import li.songe.selector.data.PolynomialExpression
+import li.songe.selector.data.PrimitiveValue
 import li.songe.selector.data.PropertySegment
 import li.songe.selector.data.PropertyWrapper
 import li.songe.selector.data.TupleExpression
+import li.songe.selector.gkdAssert
+import li.songe.selector.gkdError
 
 internal object ParserSet {
     val whiteCharParser = Parser("\u0020\t\r\n") { source, offset, prefix ->
@@ -27,7 +29,7 @@ internal object ParserSet {
         ParserResult(data, i - offset)
     }
     val whiteCharStrictParser = Parser("\u0020\t\r\n") { source, offset, prefix ->
-        ExtSyntaxError.assert(source, offset, prefix, "whitespace")
+        gkdAssert(source, offset, prefix, "whitespace")
         whiteCharParser(source, offset)
     }
     val nameParser =
@@ -37,7 +39,7 @@ internal object ParserSet {
             if ((s0 != null) && !prefix.contains(s0)) {
                 return@Parser ParserResult("")
             }
-            ExtSyntaxError.assert(source, i, prefix, "*0-9a-zA-Z_")
+            gkdAssert(source, i, prefix, "*0-9a-zA-Z_")
             var data = source[i].toString()
             i++
             if (data == "*") { // 范匹配
@@ -47,7 +49,7 @@ internal object ParserSet {
             while (i < source.length) {
 //                . 不能在开头和结尾
                 if (data[i - offset - 1] == '.') {
-                    ExtSyntaxError.assert(source, i, prefix, "[0-9a-zA-Z_]")
+                    gkdAssert(source, i, prefix, "[0-9a-zA-Z_]")
                 }
                 if (center.contains(source[i])) {
                     data += source[i]
@@ -65,13 +67,13 @@ internal object ParserSet {
                 source.startsWith(
                     subOperator.key, offset
                 )
-            } ?: ExtSyntaxError.throwError(source, offset, "ConnectOperator")
+            } ?: gkdError(source, offset, "ConnectOperator")
             ParserResult(operator, operator.key.length)
         }
 
     val integerParser = Parser("1234567890") { source, offset, prefix ->
         var i = offset
-        ExtSyntaxError.assert(source, i, prefix, "number")
+        gkdAssert(source, i, prefix, "number")
         var s = ""
         while (i < source.length && prefix.contains(source[i])) {
             s += source[i]
@@ -81,7 +83,7 @@ internal object ParserSet {
             try {
                 s.toInt()
             } catch (e: NumberFormatException) {
-                ExtSyntaxError.throwError(source, offset, "valid format number")
+                gkdError(source, offset, "valid format number")
             }, i - offset
         )
     }
@@ -90,7 +92,7 @@ internal object ParserSet {
     //    [+-][a][n]
     val monomialParser = Parser("+-1234567890n") { source, offset, prefix ->
         var i = offset
-        ExtSyntaxError.assert(source, i, prefix)
+        gkdAssert(source, i, prefix)
         /**
          * one of 1, -1
          */
@@ -109,7 +111,7 @@ internal object ParserSet {
         }
         i += whiteCharParser(source, i).length
         // [a][n]
-        ExtSyntaxError.assert(source, i, integerParser.prefix + "n")
+        gkdAssert(source, i, integerParser.prefix + "n")
         val coefficient = if (integerParser.prefix.contains(source[i])) {
             val coefficientResult = integerParser(source, i)
             i += coefficientResult.length
@@ -132,23 +134,23 @@ internal object ParserSet {
     // (+-an+-b)
     val polynomialExpressionParser = Parser("(0123456789n") { source, offset, prefix ->
         var i = offset
-        ExtSyntaxError.assert(source, i, prefix)
+        gkdAssert(source, i, prefix)
         val monomialResultList = mutableListOf<ParserResult<Pair<Int, Int>>>()
         when (source[i]) {
             '(' -> {
                 i++
                 i += whiteCharParser(source, i).length
-                ExtSyntaxError.assert(source, i, monomialParser.prefix)
+                gkdAssert(source, i, monomialParser.prefix)
                 while (source[i] != ')') {
                     if (monomialResultList.size > 0) {
-                        ExtSyntaxError.assert(source, i, "+-")
+                        gkdAssert(source, i, "+-")
                     }
                     val monomialResult = monomialParser(source, i)
                     monomialResultList.add(monomialResult)
                     i += monomialResult.length
                     i += whiteCharParser(source, i).length
                     if (i >= source.length) {
-                        ExtSyntaxError.assert(source, i, ")")
+                        gkdAssert(source, i, ")")
                     }
                 }
                 i++
@@ -167,21 +169,20 @@ internal object ParserSet {
         }
         map.mapKeys { power ->
             if (power.key > 1) {
-                ExtSyntaxError.throwError(source, offset, "power must be 0 or 1")
+                gkdError(source, offset, "power must be 0 or 1")
             }
         }
-        val polynomialExpression = PolynomialExpression(map[1] ?: 0, map[0] ?: 0)
-        polynomialExpression.apply {
-            if ((a <= 0 && numbers.isEmpty()) || (numbers.isNotEmpty() && numbers.first() <= 0)) {
-                ExtSyntaxError.throwError(source, offset, "valid polynomialExpression")
-            }
+        val polynomialExpression = try {
+            PolynomialExpression(map[1] ?: 0, map[0] ?: 0)
+        } catch (e: Exception) {
+            gkdError(source, offset, "valid polynomialExpression")
         }
         ParserResult(polynomialExpression, i - offset)
     }
 
     val tupleExpressionParser = Parser { source, offset, _ ->
         var i = offset
-        ExtSyntaxError.assert(source, i, "(")
+        gkdAssert(source, i, "(")
         i++
         val numbers = mutableListOf<Int>()
         while (i < source.length && source[i] != ')') {
@@ -189,11 +190,11 @@ internal object ParserSet {
             val intResult = integerParser(source, i)
             if (numbers.isEmpty()) {
                 if (intResult.data <= 0) {
-                    ExtSyntaxError.throwError(source, i, "positive integer")
+                    gkdError(source, i, "positive integer")
                 }
             } else {
                 if (intResult.data <= numbers.last()) {
-                    ExtSyntaxError.throwError(source, i, ">" + numbers.last())
+                    gkdError(source, i, ">" + numbers.last())
                 }
             }
             i += intResult.length
@@ -203,10 +204,10 @@ internal object ParserSet {
                 i++
                 i += whiteCharParser(source, i).length
                 // (1,2,3,) or (1, 2, 6)
-                ExtSyntaxError.assert(source, i, integerParser.prefix + ")")
+                gkdAssert(source, i, integerParser.prefix + ")")
             }
         }
-        ExtSyntaxError.assert(source, i, ")")
+        gkdAssert(source, i, ")")
         i++
         ParserResult(TupleExpression(numbers), i - offset)
     }
@@ -246,30 +247,30 @@ internal object ParserSet {
         Parser(CompareOperator.allSubClasses.joinToString("") { it.key }) { source, offset, _ ->
             val operator = CompareOperator.allSubClasses.find { compareOperator ->
                 source.startsWith(compareOperator.key, offset)
-            } ?: ExtSyntaxError.throwError(source, offset, "CompareOperator")
+            } ?: gkdError(source, offset, "CompareOperator")
             ParserResult(operator, operator.key.length)
         }
     val stringParser = Parser("`'\"") { source, offset, prefix ->
         var i = offset
-        ExtSyntaxError.assert(source, i, prefix)
+        gkdAssert(source, i, prefix)
         val startChar = source[i]
         i++
         if (i >= source.length) {
-            ExtSyntaxError.throwError(source, i, "any char")
+            gkdError(source, i, "any char")
         }
         var data = ""
         while (source[i] != startChar) {
             if (i >= source.length - 1) {
-                ExtSyntaxError.assert(source, i, startChar.toString())
+                gkdAssert(source, i, startChar.toString())
                 break
             }
             // https://www.rfc-editor.org/rfc/inline-errata/rfc7159.html
             if (source[i].code in 0x0000..0x001F) {
-                ExtSyntaxError.throwError(source, i, "0-1f escape char")
+                gkdError(source, i, "0-1f escape char")
             }
             if (source[i] == '\\') {
                 i++
-                ExtSyntaxError.assert(source, i)
+                gkdAssert(source, i)
                 data += when (source[i]) {
                     '\\' -> '\\'
                     '\'' -> '\''
@@ -282,7 +283,7 @@ internal object ParserSet {
                     'x' -> {
                         repeat(2) {
                             i++
-                            ExtSyntaxError.assert(source, i, "0123456789abcdefABCDEF")
+                            gkdAssert(source, i, "0123456789abcdefABCDEF")
                         }
                         source.substring(i - 2 + 1, i + 1).toInt(16).toChar()
                     }
@@ -290,13 +291,13 @@ internal object ParserSet {
                     'u' -> {
                         repeat(4) {
                             i++
-                            ExtSyntaxError.assert(source, i, "0123456789abcdefABCDEF")
+                            gkdAssert(source, i, "0123456789abcdefABCDEF")
                         }
                         source.substring(i - 4 + 1, i + 1).toInt(16).toChar()
                     }
 
                     else -> {
-                        ExtSyntaxError.throwError(source, i, "escape char")
+                        gkdError(source, i, "escape char")
                     }
                 }
             } else {
@@ -312,12 +313,12 @@ internal object ParserSet {
     private val varStr = varPrefix + '.' + ('0'..'9').joinToString("")
     val propertyParser = Parser(varPrefix) { source, offset, prefix ->
         var i = offset
-        ExtSyntaxError.assert(source, i, prefix)
+        gkdAssert(source, i, prefix)
         var data = source[i].toString()
         i++
         while (i < source.length && varStr.contains(source[i])) {
             if (source[i] == '.') {
-                ExtSyntaxError.assert(source, i + 1, prefix)
+                gkdAssert(source, i + 1, prefix)
             }
             data += source[i]
             i++
@@ -326,51 +327,59 @@ internal object ParserSet {
     }
 
     val valueParser =
-        Parser("tfn" + stringParser.prefix + integerParser.prefix) { source, offset, prefix ->
+        Parser("tfn-" + stringParser.prefix + integerParser.prefix) { source, offset, prefix ->
             var i = offset
-            ExtSyntaxError.assert(source, i, prefix)
-            val value: Any? = when (source[i]) {
+            gkdAssert(source, i, prefix)
+            val value: PrimitiveValue = when (source[i]) {
                 't' -> {
                     i++
                     "rue".forEach { c ->
-                        ExtSyntaxError.assert(source, i, c.toString())
+                        gkdAssert(source, i, c.toString())
                         i++
                     }
-                    true
+                    PrimitiveValue.BooleanValue(true)
                 }
 
                 'f' -> {
                     i++
                     "alse".forEach { c ->
-                        ExtSyntaxError.assert(source, i, c.toString())
+                        gkdAssert(source, i, c.toString())
                         i++
                     }
-                    false
+                    PrimitiveValue.BooleanValue(false)
                 }
 
                 'n' -> {
                     i++
                     "ull".forEach { c ->
-                        ExtSyntaxError.assert(source, i, c.toString())
+                        gkdAssert(source, i, c.toString())
                         i++
                     }
-                    null
+                    PrimitiveValue.NullValue
                 }
 
                 in stringParser.prefix -> {
                     val s = stringParser(source, i)
                     i += s.length
-                    s.data
+                    PrimitiveValue.StringValue(s.data)
+                }
+
+                '-' -> {
+                    i++
+                    gkdAssert(source, i, integerParser.prefix)
+                    val n = integerParser(source, i)
+                    i += n.length
+                    PrimitiveValue.IntValue(-n.data)
                 }
 
                 in integerParser.prefix -> {
                     val n = integerParser(source, i)
                     i += n.length
-                    n.data
+                    PrimitiveValue.IntValue(n.data)
                 }
 
                 else -> {
-                    ExtSyntaxError.throwError(source, i, prefix)
+                    gkdError(source, i, prefix)
                 }
             }
             ParserResult(value, i - offset)
@@ -385,6 +394,9 @@ internal object ParserSet {
         i += operatorResult.length
         i += whiteCharParser(source, i).length
         val valueResult = valueParser(source, i)
+        if (!operatorResult.data.allowType(valueResult.data)) {
+            gkdError(source, i, "valid primitive value")
+        }
         i += valueResult.length
         ParserResult(
             BinaryExpression(
@@ -398,7 +410,7 @@ internal object ParserSet {
         i += whiteCharParser(source, i).length
         val operator = LogicalOperator.allSubClasses.find { logicalOperator ->
             source.startsWith(logicalOperator.key, offset)
-        } ?: ExtSyntaxError.throwError(source, offset, "LogicalOperator")
+        } ?: gkdError(source, offset, "LogicalOperator")
         ParserResult(operator, operator.key.length)
     }
 
@@ -420,21 +432,21 @@ internal object ParserSet {
                             while (i - 1 >= count && source[i - 1 - count] in whiteCharParser.prefix) {
                                 count++
                             }
-                            ExtSyntaxError.throwError(
+                            gkdError(
                                 source, i - count - lastToken.length, "LogicalOperator"
                             )
                         }
                     }
                     i++
                     parserResults.add(expressionParser(source, i).apply { i += length })
-                    ExtSyntaxError.assert(source, i, ")")
+                    gkdAssert(source, i, ")")
                     i++
                 }
 
                 in "|&" -> {
                     parserResults.add(logicalOperatorParser(source, i).apply { i += length })
                     i += whiteCharParser(source, i).length
-                    ExtSyntaxError.assert(source, i, "(" + propertyParser.prefix)
+                    gkdAssert(source, i, "(" + propertyParser.prefix)
                 }
 
                 else -> {
@@ -444,7 +456,7 @@ internal object ParserSet {
             i += whiteCharParser(source, i).length
         }
         if (parserResults.isEmpty()) {
-            ExtSyntaxError.throwError(
+            gkdError(
                 source, i - offset, "Expression"
             )
         }
@@ -486,12 +498,12 @@ internal object ParserSet {
 
     val attrParser = Parser("[") { source, offset, prefix ->
         var i = offset
-        ExtSyntaxError.assert(source, i, prefix)
+        gkdAssert(source, i, prefix)
         i++
         i += whiteCharParser(source, i).length
         val exp = expressionParser(source, i)
         i += exp.length
-        ExtSyntaxError.assert(source, i, "]")
+        gkdAssert(source, i, "]")
         i++
         ParserResult(
             exp.data, i - offset
@@ -515,7 +527,7 @@ internal object ParserSet {
             expressions.add(attrResult.data)
         }
         if (nameResult.length == 0 && expressions.size == 0) {
-            ExtSyntaxError.throwError(source, i, "[")
+            gkdError(source, i, "[")
         }
         ParserResult(PropertySegment(tracked, nameResult.data, expressions), i - offset)
     }
@@ -537,6 +549,7 @@ internal object ParserSet {
                 i += whiteCharStrictParser(source, i).length
                 combinatorResult.data
             } else {
+                // A B
                 ConnectSegment(connectExpression = PolynomialExpression(1, 0))
             }
             val selectorResult = selectorUnitParser(source, i)
@@ -548,7 +561,7 @@ internal object ParserSet {
 
     val endParser = Parser { source, offset, _ ->
         if (offset != source.length) {
-            ExtSyntaxError.throwError(source, offset, "EOF")
+            gkdError(source, offset, "EOF")
         }
         ParserResult(Unit, 0)
     }

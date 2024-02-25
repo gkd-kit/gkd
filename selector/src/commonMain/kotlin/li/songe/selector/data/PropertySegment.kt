@@ -1,6 +1,5 @@
 package li.songe.selector.data
 
-import li.songe.selector.NodeMatchFc
 import li.songe.selector.Transform
 
 
@@ -14,31 +13,22 @@ data class PropertySegment(
 ) {
     private val matchAnyName = name.isBlank() || name == "*"
 
-    val propertyNames =
-        (if (matchAnyName) listOf("name") else emptyList()) + expressions.map { e -> e.propertyNames }
-            .flatten()
+    val binaryExpressions = expressions.map { e -> e.binaryExpressions }.flatten()
 
     override fun toString(): String {
         val matchTag = if (tracked) "@" else ""
         return matchTag + name + expressions.joinToString("") { "[$it]" }
     }
 
-    private val matchName = if (matchAnyName) {
-        object : NodeMatchFc {
-            override fun <T> invoke(node: T, transform: Transform<T>) = true
+    private fun <T> matchName(node: T, transform: Transform<T>): Boolean {
+        if (matchAnyName) return true
+        val str = transform.getName(node) ?: return false
+        if (str.length == name.length) {
+            return str.contentEquals(name)
+        } else if (str.length > name.length) {
+            return str[str.length - name.length - 1] == '.' && str.endsWith(name)
         }
-    } else {
-        object : NodeMatchFc {
-            override fun <T> invoke(node: T, transform: Transform<T>): Boolean {
-                val str = transform.getName(node) ?: return false
-                if (str.length == name.length) {
-                    return str.contentEquals(name)
-                } else if (str.length > name.length) {
-                    return str[str.length - name.length - 1] == '.' && str.endsWith(name)
-                }
-                return false
-            }
-        }
+        return false
     }
 
     fun <T> match(node: T, transform: Transform<T>): Boolean {

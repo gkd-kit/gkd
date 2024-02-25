@@ -1,18 +1,18 @@
 package li.songe.selector.data
 
-import li.songe.selector.NodeSequenceFc
-import li.songe.selector.util.filterIndexes
-
 data class TupleExpression(
     val numbers: List<Int>,
 ) : ConnectExpression() {
-    override val isConstant = numbers.size == 1
     override val minOffset = (numbers.firstOrNull() ?: 1) - 1
+    override val maxOffset = numbers.lastOrNull()
+
     private val indexes = numbers.map { x -> x - 1 }
-    override val traversal: NodeSequenceFc = object : NodeSequenceFc {
-        override fun <T> invoke(sq: Sequence<T?>): Sequence<T?> {
-            return sq.filterIndexes(indexes)
-        }
+    override fun checkOffset(offset: Int): Boolean {
+        return indexes.binarySearch(offset) >= 0
+    }
+
+    override fun getOffset(i: Int): Int {
+        return numbers[i]
     }
 
     override fun toString(): String {

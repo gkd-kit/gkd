@@ -16,6 +16,11 @@ kotlin {
         generateTypeScriptDefinitions()
         browser {}
     }
+    sourceSets {
+        all {
+            languageSettings.optIn("kotlin.js.ExperimentalJsExport")
+        }
+    }
     sourceSets["commonMain"].dependencies {
         implementation(libs.kotlin.stdlib.common)
     }

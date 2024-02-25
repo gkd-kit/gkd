@@ -1,12 +1,10 @@
 package li.songe.selector
 
-import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
 
-
-@OptIn(ExperimentalJsExport::class)
 @JsExport
-class CommonSelector private constructor(
+@Suppress("UNUSED")
+class MultiplatformSelector private constructor(
     internal val selector: Selector,
 ) {
     val tracks = selector.tracks
@@ -19,21 +17,24 @@ class CommonSelector private constructor(
     val qfTextValue = selector.qfTextValue
     val canQf = selector.canQf
     val isMatchRoot = selector.isMatchRoot
+    fun checkType(getType: (String) -> String): Boolean {
+        return selector.checkType(getType)
+    }
 
-    fun <T : Any> match(node: T, transform: CommonTransform<T>): T? {
+    fun <T : Any> match(node: T, transform: MultiplatformTransform<T>): T? {
         return selector.match(node, transform.transform)
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <T : Any> matchTrack(node: T, transform: CommonTransform<T>): Array<T>? {
+    fun <T : Any> matchTrack(node: T, transform: MultiplatformTransform<T>): Array<T>? {
         return selector.matchTracks(node, transform.transform)?.toTypedArray<Any?>() as Array<T>?
     }
 
     override fun toString() = selector.toString()
 
     companion object {
-        fun parse(source: String) = CommonSelector(Selector.parse(source))
-        fun parseOrNull(source: String) = Selector.parseOrNull(source)?.let(::CommonSelector)
+        fun parse(source: String) = MultiplatformSelector(Selector.parse(source))
+        fun parseOrNull(source: String) = Selector.parseOrNull(source)?.let(::MultiplatformSelector)
     }
 }
 
