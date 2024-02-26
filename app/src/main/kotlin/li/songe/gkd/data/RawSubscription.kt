@@ -254,34 +254,7 @@ data class RawSubscription(
             (apps ?: emptyList()).associate { a -> a.id to (a.enable ?: true) }
         }
 
-        val allSelectorStrings by lazy {
-            rules.map { r -> r.matches + (r.excludeMatches ?: emptyList()) }.flatten()
-
-        }
-
-        val allSelector by lazy {
-            allSelectorStrings.map { s -> Selector.parseOrNull(s) }
-        }
-
-        val unknownPropertyNames by lazy {
-            allSelector.filterNotNull().flatMap { r -> r.propertyNames.toList() }.distinct()
-                .filterNot { n -> allowPropertyNames.contains(n) }
-        }
-
-        val errorDesc by lazy {
-            allSelector.forEachIndexed { i, s ->
-                if (s == null) {
-                    return@lazy "非法选择器:${allSelectorStrings[i]}"
-                }
-            }
-            unknownPropertyNames.forEach { n ->
-                return@lazy "非法属性名:${n}"
-            }
-            if (rules.any { r -> r.position?.isValid == false }) {
-                return@lazy "非法位置"
-            }
-            null
-        }
+        val errorDesc by lazy { getErrorDesc() }
 
         val valid by lazy { errorDesc == null }
 
@@ -349,31 +322,7 @@ data class RawSubscription(
         override val excludeVersionCodes: List<Long>?,
     ) : RawGroupProps, RawAppRuleProps {
 
-        val allSelectorStrings by lazy {
-            rules.map { r -> (r.matches ?: emptyList()) + (r.excludeMatches ?: emptyList()) }
-                .flatten()
-        }
-
-        val allSelector by lazy {
-            allSelectorStrings.map { s -> Selector.parseOrNull(s) }
-        }
-
-        val unknownPropertyNames by lazy {
-            allSelector.filterNotNull().flatMap { r -> r.propertyNames.toList() }.distinct()
-                .filterNot { n -> allowPropertyNames.contains(n) }
-        }
-
-        val errorDesc by lazy {
-            allSelector.forEachIndexed { i, s ->
-                if (s == null) {
-                    return@lazy "非法选择器:${allSelectorStrings[i]}"
-                }
-            }
-            unknownPropertyNames.forEach { n ->
-                return@lazy "非法属性名:${n}"
-            }
-            null
-        }
+        val errorDesc by lazy { getErrorDesc() }
 
         val valid by lazy { errorDesc == null }
 
@@ -418,6 +367,36 @@ data class RawSubscription(
     ) : RawRuleProps, RawAppRuleProps
 
     companion object {
+
+        private fun RawGroupProps.getErrorDesc(): String? {
+            val allSelectorStrings =
+                rules.map { r -> (r.matches ?: emptyList()) + (r.excludeMatches ?: emptyList()) }
+                    .flatten()
+
+            val allSelector = allSelectorStrings.map { s -> Selector.parseOrNull(s) }
+
+            allSelector.forEachIndexed { i, s ->
+                if (s == null) {
+                    return "非法选择器:${allSelectorStrings[i]}"
+                }
+            }
+            allSelector.forEach { s ->
+                s?.nameToTypeList?.forEach { (name, type) ->
+                    if (!allowPropertyNames.contains(name)) {
+                        return "非法属性名:${name}"
+                    }
+                    if (type != "null" && allowPropertyNames[name] != type) {
+                        return "非法类型:${name}=$type"
+                    }
+                }
+            }
+            rules.forEach { r ->
+                if (r.position?.isValid == false) {
+                    return "非法位置:${r.position}"
+                }
+            }
+            return null
+        }
 
         private val expVars = arrayOf(
             "left",

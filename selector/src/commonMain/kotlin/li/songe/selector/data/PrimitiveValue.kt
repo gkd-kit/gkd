@@ -1,19 +1,31 @@
 package li.songe.selector.data
 
-sealed class PrimitiveValue(open val value: Any?) {
-    data object NullValue : PrimitiveValue(null) {
+sealed class PrimitiveValue(open val value: Any?, open val type: String) {
+    data object NullValue : PrimitiveValue(null, "null") {
         override fun toString() = "null"
     }
 
-    data class BooleanValue(override val value: Boolean) : PrimitiveValue(value) {
+    data class BooleanValue(override val value: Boolean) : PrimitiveValue(value, type) {
         override fun toString() = value.toString()
+
+        companion object {
+            const val type = "boolean"
+        }
     }
 
-    data class IntValue(override val value: Int) : PrimitiveValue(value) {
+    data class IntValue(override val value: Int) : PrimitiveValue(value, type) {
         override fun toString() = value.toString()
+
+        companion object {
+            const val type = "int"
+        }
     }
 
-    data class StringValue(override val value: String) : PrimitiveValue(value) {
+    data class StringValue(override val value: String) : PrimitiveValue(value, type) {
+        companion object {
+            const val type = "string"
+        }
+
         override fun toString(): String {
             val wrapChar = '"'
             val sb = StringBuilder(value.length + 2)

@@ -3,7 +3,7 @@ package li.songe.selector
 import kotlin.js.JsExport
 
 @JsExport
-@Suppress("UNUSED")
+@Suppress("UNUSED", "UNCHECKED_CAST")
 class MultiplatformSelector private constructor(
     internal val selector: Selector,
 ) {
@@ -17,15 +17,12 @@ class MultiplatformSelector private constructor(
     val qfTextValue = selector.qfTextValue
     val canQf = selector.canQf
     val isMatchRoot = selector.isMatchRoot
-    fun checkType(getType: (String) -> String): Boolean {
-        return selector.checkType(getType)
-    }
+    val nameToTypeList = selector.nameToTypeList
 
     fun <T : Any> match(node: T, transform: MultiplatformTransform<T>): T? {
         return selector.match(node, transform.transform)
     }
 
-    @Suppress("UNCHECKED_CAST")
     fun <T : Any> matchTrack(node: T, transform: MultiplatformTransform<T>): Array<T>? {
         return selector.matchTracks(node, transform.transform)?.toTypedArray<Any?>() as Array<T>?
     }

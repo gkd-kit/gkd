@@ -6,12 +6,12 @@ data class BinaryExpression(
     val name: String,
     val operator: CompareOperator,
     val value: PrimitiveValue
-) :
-    Expression() {
+) : Expression() {
     override fun <T> match(node: T, transform: Transform<T>) =
         operator.compare(transform.getAttr(node, name), value.value)
 
-    override val binaryExpressions = listOf(this)
+    override val binaryExpressions
+        get() = arrayOf(this)
 
     override fun toString() = "${name}${operator.key}${value}"
 }

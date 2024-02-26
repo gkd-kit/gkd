@@ -11,7 +11,8 @@ data class LogicalExpression(
         return operator.compare(node, transform, left, right)
     }
 
-    override val binaryExpressions = left.binaryExpressions + right.binaryExpressions
+    override val binaryExpressions
+        get() = left.binaryExpressions + right.binaryExpressions
 
     override fun toString(): String {
         val leftStr = if (left is LogicalExpression && left.operator != operator) {

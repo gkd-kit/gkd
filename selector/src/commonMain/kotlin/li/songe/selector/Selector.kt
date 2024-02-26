@@ -99,21 +99,11 @@ class Selector internal constructor(private val propertyWrapper: PropertyWrapper
         binaryExpressions.map { e -> e.name }.distinct().toTypedArray()
     }
 
-    fun checkType(getType: (String) -> String): Boolean {
-        binaryExpressions.forEach { e ->
-            if (e.value.value != null) {
-                if (!(when (getType(e.name)) {
-                        "boolean" -> e.value is PrimitiveValue.BooleanValue
-                        "int" -> e.value is PrimitiveValue.IntValue
-                        "string" -> e.value is PrimitiveValue.StringValue
-                        else -> false
-                    })
-                ) return false
-            }
-        }
-        return true
-    }
 
+    // [name,type][]
+    val nameToTypeList = run {
+        binaryExpressions.map { e -> arrayOf(e.name, e.value.type) }.distinct().toTypedArray()
+    }
 
     val canCacheIndex =
         connectKeys.contains(ConnectOperator.BeforeBrother.key) || connectKeys.contains(

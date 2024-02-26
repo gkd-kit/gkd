@@ -251,14 +251,6 @@ fun initSubsState() {
             subscriptions.forEach { s ->
                 newMap[s.id] = s
             }
-            if (newMap[-2] == null) {
-                newMap[-2] = RawSubscription(
-                    id = -2,
-                    name = "本地订阅",
-                    version = 0,
-                    author = "gkd",
-                )
-            }
             subsIdToRawFlow.value = newMap.toImmutableMap()
         }
     }
