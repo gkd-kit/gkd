@@ -11,7 +11,7 @@ sealed class CompareOperator(val key: String) {
                 Equal,
                 NotEqual,
                 Start, NotStart, Include, NotInclude, End, NotEnd, Less, LessEqual, More, MoreEqual
-            ).sortedBy { -it.key.length }
+            ).sortedBy { -it.key.length }.toTypedArray()
         }
 
         // example

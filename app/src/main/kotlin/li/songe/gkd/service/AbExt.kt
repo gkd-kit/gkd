@@ -5,6 +5,7 @@ import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
 import li.songe.selector.Selector
 import li.songe.selector.Transform
+import li.songe.selector.data.PrimitiveValue
 
 val AccessibilityService.safeActiveWindow: AccessibilityNodeInfo?
     get() = try {
@@ -128,35 +129,37 @@ val getChildren: (AccessibilityNodeInfo) -> Sequence<AccessibilityNodeInfo> = { 
     }
 }
 
-val allowPropertyNames = setOf(
-    "id",
-    "vid",
+val allowPropertyNames by lazy {
+    mapOf(
+        "id" to PrimitiveValue.StringValue.type,
+        "vid" to PrimitiveValue.StringValue.type,
 
-    "name",
-    "text",
-    "text.length",
-    "desc",
-    "desc.length",
+        "name" to PrimitiveValue.StringValue.type,
+        "text" to PrimitiveValue.StringValue.type,
+        "text.length" to PrimitiveValue.IntValue.type,
+        "desc" to PrimitiveValue.StringValue.type,
+        "desc.length" to PrimitiveValue.IntValue.type,
 
-    "clickable",
-    "focusable",
-    "checkable",
-    "checked",
-    "editable",
-    "longClickable",
-    "visibleToUser",
+        "clickable" to PrimitiveValue.BooleanValue.type,
+        "focusable" to PrimitiveValue.BooleanValue.type,
+        "checkable" to PrimitiveValue.BooleanValue.type,
+        "checked" to PrimitiveValue.BooleanValue.type,
+        "editable" to PrimitiveValue.BooleanValue.type,
+        "longClickable" to PrimitiveValue.BooleanValue.type,
+        "visibleToUser" to PrimitiveValue.BooleanValue.type,
 
-    "left",
-    "top",
-    "right",
-    "bottom",
-    "width",
-    "height",
+        "left" to PrimitiveValue.IntValue.type,
+        "top" to PrimitiveValue.IntValue.type,
+        "right" to PrimitiveValue.IntValue.type,
+        "bottom" to PrimitiveValue.IntValue.type,
+        "width" to PrimitiveValue.IntValue.type,
+        "height" to PrimitiveValue.IntValue.type,
 
-    "index",
-    "depth",
-    "childCount"
-)
+        "index" to PrimitiveValue.IntValue.type,
+        "depth" to PrimitiveValue.IntValue.type,
+        "childCount" to PrimitiveValue.IntValue.type,
+    )
+}
 
 private val getAttr: (AccessibilityNodeInfo, String) -> Any? = { node, name ->
     when (name) {

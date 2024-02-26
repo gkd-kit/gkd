@@ -13,7 +13,8 @@ data class PropertySegment(
 ) {
     private val matchAnyName = name.isBlank() || name == "*"
 
-    val binaryExpressions = expressions.map { e -> e.binaryExpressions }.flatten()
+    val binaryExpressions
+        get() = expressions.flatMap { it.binaryExpressions.toList() }.toTypedArray()
 
     override fun toString(): String {
         val matchTag = if (tracked) "@" else ""
