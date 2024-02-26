@@ -102,8 +102,7 @@ class Selector internal constructor(private val propertyWrapper: PropertyWrapper
     fun checkType(getType: (String) -> String): Boolean {
         binaryExpressions.forEach { e ->
             if (e.value.value != null) {
-                val type = getType(e.name)
-                if (!(when (type) {
+                if (!(when (getType(e.name)) {
                         "boolean" -> e.value is PrimitiveValue.BooleanValue
                         "int" -> e.value is PrimitiveValue.IntValue
                         "string" -> e.value is PrimitiveValue.StringValue
@@ -112,7 +111,7 @@ class Selector internal constructor(private val propertyWrapper: PropertyWrapper
                 ) return false
             }
         }
-        return false
+        return true
     }
 
 
