@@ -222,4 +222,6 @@ dependencies {
     implementation(libs.coil.gif)
 
     implementation(libs.exp4j)
+
+    implementation(libs.toaster)
 }

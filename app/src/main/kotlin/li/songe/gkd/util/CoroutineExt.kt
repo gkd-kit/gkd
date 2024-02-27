@@ -1,6 +1,7 @@
 package li.songe.gkd.util
 
 import com.blankj.utilcode.util.LogUtils
+import com.hjq.toast.Toaster
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -20,7 +21,7 @@ fun CoroutineScope.launchTry(
     } catch (e: Exception) {
         e.printStackTrace()
         LogUtils.d(e)
-        toast(e.message ?: e.stackTraceToString())
+        Toaster.show(e.message ?: e.stackTraceToString())
     }
 }
 
@@ -37,7 +38,7 @@ fun CoroutineScope.launchAsFn(
                 e.printStackTrace()
             } catch (e: Exception) {
                 e.printStackTrace()
-                toast(e.message ?: e.toString())
+                Toaster.show(e.message ?: e.stackTraceToString())
             }
         }
     }
@@ -54,7 +55,7 @@ fun <T> CoroutineScope.launchAsFn(
                 block(it)
             } catch (e: Exception) {
                 e.printStackTrace()
-                toast(e.message ?: e.toString())
+                Toaster.show(e.message ?: e.stackTraceToString())
             }
         }
     }

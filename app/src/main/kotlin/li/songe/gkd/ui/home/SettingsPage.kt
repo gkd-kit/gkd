@@ -25,6 +25,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -33,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -319,15 +322,28 @@ fun useSettingsPage(): ScaffoldExt {
         else -> {}
     }
 
-    return ScaffoldExt(navItem = settingsNav) { padding ->
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val scrollState = rememberScrollState()
+    return ScaffoldExt(
+        navItem = settingsNav,
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            TopAppBar(scrollBehavior = scrollBehavior,
+                title = {
+                    Text(
+                        text = settingsNav.label,
+                    )
+                }
+            )
+        },
+    ) { padding ->
         Column(
             modifier = Modifier
+                .verticalScroll(scrollState)
                 .padding(padding)
-                .verticalScroll(
-                    state = rememberScrollState()
-                )
         ) {
-            TextSwitch(name = "后台隐藏",
+            TextSwitch(
+                name = "后台隐藏",
                 desc = "在[最近任务]界面中隐藏本应用",
                 checked = store.excludeFromRecents,
                 onCheckedChange = {

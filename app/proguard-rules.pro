@@ -21,6 +21,7 @@
 # self
 -keep class li.songe.**{*;}
 -keep interface li.songe.**{*;}
+-keep class com.hjq.toast.** {*;}
 
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
 

@@ -22,11 +22,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,20 +69,22 @@ fun useControlPage(): ScaffoldExt {
     val canNotif by usePollState {
         NotificationManagerCompat.from(context).areNotificationsEnabled()
     }
-
-    return ScaffoldExt(navItem = controlNav, topBar = {
-        TopAppBar(title = {
-            Text(
-                text = controlNav.label,
-            )
-        })
-    }, content = { padding ->
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val scrollState = rememberScrollState()
+    return ScaffoldExt(navItem = controlNav,
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            TopAppBar(scrollBehavior = scrollBehavior, title = {
+                Text(
+                    text = controlNav.label,
+                )
+            })
+        }
+    ) { padding ->
         Column(
             modifier = Modifier
+                .verticalScroll(scrollState)
                 .padding(padding)
-                .verticalScroll(
-                    state = rememberScrollState()
-                )
         ) {
             if (!gkdAccessRunning) {
                 AuthCard(
@@ -253,6 +257,7 @@ fun useControlPage(): ScaffoldExt {
                 }
             }
 
+            Spacer(modifier = Modifier.height(40.dp))
         }
-    })
+    }
 }

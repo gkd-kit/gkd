@@ -7,11 +7,14 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
+import com.blankj.utilcode.util.LogUtils
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.RequestPermissionLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import li.songe.gkd.composition.CompositionActivity
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
@@ -71,7 +74,20 @@ class MainActivity : CompositionActivity({
     }
 }) {
     val mainVm by viewModels<MainViewModel>()
+
+    override fun onStart() {
+        super.onStart()
+        activityVisibleFlow.update { it + 1 }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        activityVisibleFlow.update { it - 1 }
+        LogUtils.d(activityVisibleFlow.value)
+    }
 }
+
+val activityVisibleFlow = MutableStateFlow(0)
 
 
 
