@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowInsetsControllerCompat
 import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.updateToastStyle
 
 val LightColorScheme = lightColorScheme()
 val DarkColorScheme = darkColorScheme()
@@ -42,6 +43,7 @@ fun AppTheme(
         WindowInsetsControllerCompat(context.window, context.window.decorView).apply {
             isAppearanceLightStatusBars = !darkTheme
         }
+        updateToastStyle(darkTheme)
     }
     MaterialTheme(
         colorScheme = colorScheme, content = content

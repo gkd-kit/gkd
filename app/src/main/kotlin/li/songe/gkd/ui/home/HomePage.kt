@@ -50,7 +50,7 @@ fun HomePage() {
     val controlPage = useControlPage()
     val settingsPage = useSettingsPage()
 
-    val pages = arrayOf(appListPage, subsPage, controlPage, settingsPage)
+    val pages = arrayOf(controlPage, subsPage, appListPage, settingsPage)
 
     val currentPage = pages.find { p -> p.navItem === tab }
         ?: controlPage

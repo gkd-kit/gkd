@@ -5,13 +5,13 @@ import li.songe.gkd.util.APP_NAME
 
 data class Notif(
     val id: Int,
+    @Suppress("UNRESOLVED_REFERENCE")
     val icon: Int = R.drawable.ic_launcher,
     val title: String = APP_NAME,
     val text: String,
     val ongoing: Boolean,
     val autoCancel: Boolean,
 )
-
 
 val abNotif by lazy {
     Notif(
@@ -21,6 +21,7 @@ val abNotif by lazy {
         autoCancel = false,
     )
 }
+
 val screenshotNotif by lazy {
     Notif(
         id = 101,

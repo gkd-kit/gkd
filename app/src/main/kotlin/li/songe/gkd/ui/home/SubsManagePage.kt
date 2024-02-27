@@ -31,6 +31,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pullrefresh.PullRefreshIndicator
 import androidx.compose.material3.pullrefresh.pullRefresh
 import androidx.compose.material3.pullrefresh.rememberPullRefreshState
@@ -44,6 +46,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -181,15 +184,13 @@ fun useSubsManagePage(): ScaffoldExt {
                     HorizontalDivider()
                 }
                 if (menuSubItemVal.id != -2L) {
-                    Text(text = "删除订阅",
-                        modifier = Modifier
-                            .clickable {
-                                deleteSubItem = menuSubItemVal
-                                menuSubItem = null
-                            }
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        color = MaterialTheme.colorScheme.error)
+                    Text(text = "删除订阅", modifier = Modifier
+                        .clickable {
+                            deleteSubItem = menuSubItemVal
+                            menuSubItem = null
+                        }
+                        .fillMaxWidth()
+                        .padding(16.dp), color = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -256,8 +257,20 @@ fun useSubsManagePage(): ScaffoldExt {
         })
     }
 
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     return ScaffoldExt(
         navItem = subsNav,
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            TopAppBar(
+                scrollBehavior = scrollBehavior,
+                title = {
+                    Text(
+                        text = subsNav.label,
+                    )
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = {
                 if (!vm.refreshingFlow.value) {
@@ -319,8 +332,7 @@ fun useSubsManagePage(): ScaffoldExt {
                             elevation = CardDefaults.cardElevation(draggedElevation = 10.dp),
                             shape = RoundedCornerShape(8.dp),
                             border = if (isDragging) BorderStroke(
-                                width,
-                                MaterialTheme.colorScheme.primary
+                                width, MaterialTheme.colorScheme.primary
                             ) else null,
                             interactionSource = interactionSource,
                         ) {

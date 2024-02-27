@@ -66,8 +66,8 @@ dependencyResolutionManagement {
 
             // compose 编译器的版本, 需要注意它与 compose 的版本没有关联
             // https://developer.android.com/jetpack/androidx/releases/compose-compiler
-            version("compose.compilerVersion", "1.5.9")
-            val composeVersion = "1.6.1"
+            version("compose.compilerVersion", "1.5.10")
+            val composeVersion = "1.6.2"
             library("compose.ui", "androidx.compose.ui:ui:$composeVersion")
             library("compose.preview", "androidx.compose.ui:ui-tooling-preview:$composeVersion")
             library("compose.tooling", "androidx.compose.ui:ui-tooling:$composeVersion")
@@ -212,6 +212,8 @@ dependencyResolutionManagement {
 
             // https://www.objecthunter.net/exp4j/
             library("exp4j", "net.objecthunter:exp4j:0.4.8")
+
+            library("toaster", "com.github.getActivity:Toaster:12.6")
         }
     }
 }
