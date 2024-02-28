@@ -1,7 +1,5 @@
 package li.songe.gkd.ui
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -29,13 +27,12 @@ import androidx.compose.ui.unit.sp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import li.songe.gkd.BuildConfig
-import li.songe.gkd.appScope
 import li.songe.gkd.util.GIT_COMMIT_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.REPOSITORY_URL
 import li.songe.gkd.util.format
-import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.openUri
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
@@ -73,15 +70,7 @@ fun AboutPage() {
             Column(
                 modifier = Modifier
                     .clickable {
-                        appScope.launchTry {
-                            // ActivityNotFoundException
-                            // https://bugly.qq.com/v2/crash-reporting/crashes/d0ce46b353/117002?pid=1
-                            context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW, Uri.parse(REPOSITORY_URL)
-                                )
-                            )
-                        }
+                        context.openUri(REPOSITORY_URL)
                     }
                     .fillMaxWidth()
                     .padding(10.dp)) {
@@ -130,13 +119,7 @@ fun AboutPage() {
                 Column(
                     modifier = Modifier
                         .clickable {
-                            appScope.launchTry {
-                                context.startActivity(
-                                    Intent(
-                                        Intent.ACTION_VIEW, Uri.parse(GIT_COMMIT_URL)
-                                    )
-                                )
-                            }
+                            context.openUri(GIT_COMMIT_URL)
                         }
                         .fillMaxWidth()
                         .padding(10.dp)) {

@@ -32,7 +32,7 @@ private val notifAuthAction by lazy {
             intent.putExtra(Settings.EXTRA_APP_PACKAGE, app.packageName)
             intent.putExtra(Settings.EXTRA_CHANNEL_ID, app.applicationInfo.uid)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            app.startActivity(intent)
+            app.tryStartActivity(intent)
         }
     )
 }
@@ -46,7 +46,7 @@ val canDrawOverlaysAuthAction by lazy {
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
             )
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            app.startActivity(intent)
+            app.tryStartActivity(intent)
         }
     )
 }

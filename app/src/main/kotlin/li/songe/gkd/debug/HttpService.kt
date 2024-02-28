@@ -163,12 +163,15 @@ class HttpService : CompositionService({
     }
 
     isRunning.value = true
+    localNetworkIpsFlow.value = getIpAddressInLocalNetwork()
     onDestroy {
         isRunning.value = false
+        localNetworkIpsFlow.value = emptyList()
     }
 }) {
     companion object {
         val isRunning = MutableStateFlow(false)
+        val localNetworkIpsFlow = MutableStateFlow(emptyList<String>())
         fun stop(context: Context = app) {
             context.stopService(Intent(context, HttpService::class.java))
         }

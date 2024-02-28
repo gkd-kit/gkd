@@ -1,7 +1,6 @@
 package li.songe.gkd.ui.home
 
 import android.content.Intent
-import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,7 +34,6 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import li.songe.gkd.MainActivity
-import li.songe.gkd.appScope
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.ui.component.AuthCard
@@ -45,10 +43,11 @@ import li.songe.gkd.ui.destinations.SlowGroupPageDestination
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.checkOrRequestNotifPermission
-import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
+import li.songe.gkd.util.openUri
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.tryStartActivity
 import li.songe.gkd.util.usePollState
 
 val controlNav = BottomNavItem(label = "主页", icon = Icons.Outlined.Home)
@@ -91,12 +90,9 @@ fun useControlPage(): ScaffoldExt {
                     title = "无障碍权限",
                     desc = "用于获取屏幕信息,点击屏幕上的控件",
                     onAuthClick = {
-                        appScope.launchTry {
-                            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            // android.content.ActivityNotFoundException
-                            context.startActivity(intent)
-                        }
+                        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        context.tryStartActivity(intent)
                     })
             } else {
                 TextSwitch(
@@ -125,13 +121,11 @@ fun useControlPage(): ScaffoldExt {
                     title = "悬浮窗权限",
                     desc = "用于后台提示,显示保存快照按钮等功能",
                     onAuthClick = {
-                        appScope.launchTry {
-                            val intent = Intent(
-                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            )
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            context.startActivity(intent)
-                        }
+                        val intent = Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        )
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        context.tryStartActivity(intent)
                     })
                 HorizontalDivider()
             }
@@ -163,13 +157,7 @@ fun useControlPage(): ScaffoldExt {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .clickable {
-                        appScope.launchTry {
-                            context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW, Uri.parse(HOME_PAGE_URL)
-                                )
-                            )
-                        }
+                        context.openUri(HOME_PAGE_URL)
                     }
                     .padding(10.dp, 5.dp),
             ) {
