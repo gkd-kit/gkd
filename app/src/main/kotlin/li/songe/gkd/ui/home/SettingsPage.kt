@@ -1,6 +1,5 @@
 package li.songe.gkd.ui.home
 
-import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -41,7 +40,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
@@ -64,6 +62,7 @@ import li.songe.gkd.util.checkUpdatingFlow
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.logZipDir
 import li.songe.gkd.util.navigate
+import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
 import java.io.File
@@ -224,21 +223,7 @@ fun useSettingsPage(): ScaffoldExt {
                             vm.viewModelScope.launchTry(Dispatchers.IO) {
                                 val logZipFile = File(logZipDir, "log.zip")
                                 ZipUtils.zipFiles(LogUtils.getLogFiles(), logZipFile)
-                                val uri = FileProvider.getUriForFile(
-                                    context, "${context.packageName}.provider", logZipFile
-                                )
-                                val intent = Intent().apply {
-                                    action = Intent.ACTION_SEND
-                                    putExtra(Intent.EXTRA_STREAM, uri)
-                                    type = "application/zip"
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                context.startActivity(
-                                    Intent.createChooser(
-                                        intent, "分享日志文件"
-                                    )
-                                )
+                                context.shareFile(logZipFile, "分享日志文件")
                             }
                         })
                         .then(modifier)

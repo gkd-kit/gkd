@@ -1,7 +1,5 @@
 package li.songe.gkd.ui.home
 
-import android.content.Intent
-import android.net.Uri
 import android.webkit.URLUtil
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
@@ -68,6 +66,7 @@ import li.songe.gkd.util.isSafeUrl
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
+import li.songe.gkd.util.openUri
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsIdToRawFlow
@@ -173,11 +172,7 @@ fun useSubsManagePage(): ScaffoldExt {
                     Text(text = "问题反馈", modifier = Modifier
                         .clickable {
                             menuSubItem = null
-                            context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW, Uri.parse(subsRawVal.supportUri)
-                                )
-                            )
+                            context.openUri(subsRawVal.supportUri)
                         }
                         .fillMaxWidth()
                         .padding(16.dp))

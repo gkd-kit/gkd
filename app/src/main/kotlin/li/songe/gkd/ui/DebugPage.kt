@@ -51,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
-import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.LogUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
@@ -75,10 +74,10 @@ import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.authActionFlow
 import li.songe.gkd.util.canDrawOverlaysAuthAction
 import li.songe.gkd.util.checkOrRequestNotifPermission
-import li.songe.gkd.util.getIpAddressInLocalNetwork
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
+import li.songe.gkd.util.openUri
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.usePollState
@@ -162,6 +161,7 @@ fun DebugPage() {
             }
 
             val httpServerRunning by HttpService.isRunning.collectAsState()
+            val localNetworkIps by HttpService.localNetworkIpsFlow.collectAsState()
 
             Row(
                 modifier = Modifier.padding(10.dp, 5.dp),
@@ -185,27 +185,25 @@ fun DebugPage() {
                             )
                         } else {
                             Text(
-                                text = "点击复制下面任意链接打开即可自动连接",
+                                text = "点击下面任意链接打开即可自动连接",
                             )
                             Row {
                                 Text(
                                     text = "http://127.0.0.1:${store.httpServerPort}",
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.clickable {
-                                        ClipboardUtils.copyText("http://127.0.0.1:${store.httpServerPort}")
-                                        toast("复制成功")
+                                        context.openUri("http://127.0.0.1:${store.httpServerPort}")
                                     }
                                 )
                                 Spacer(modifier = Modifier.width(2.dp))
                                 Text(text = "仅本设备可访问")
                             }
-                            getIpAddressInLocalNetwork().forEach { host ->
+                            localNetworkIps.forEach { host ->
                                 Text(
                                     text = "http://${host}:${store.httpServerPort}",
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.clickable {
-                                        ClipboardUtils.copyText("http://${host}:${store.httpServerPort}")
-                                        toast("复制成功")
+                                        context.openUri("http://${host}:${store.httpServerPort}")
                                     }
                                 )
                             }
