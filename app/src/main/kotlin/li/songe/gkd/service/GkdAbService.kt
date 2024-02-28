@@ -17,9 +17,6 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
-import io.ktor.client.call.body
-import io.ktor.client.request.get
-import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -39,25 +36,19 @@ import li.songe.gkd.data.ActionResult
 import li.songe.gkd.data.AppRule
 import li.songe.gkd.data.AttrInfo
 import li.songe.gkd.data.GkdAction
-import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.RuleStatus
-import li.songe.gkd.data.SubsVersion
 import li.songe.gkd.data.getActionFc
-import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.shizuku.useSafeGetTasksFc
 import li.songe.gkd.shizuku.useShizukuAliveState
 import li.songe.gkd.util.VOLUME_CHANGED_ACTION
-import li.songe.gkd.util.client
+import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
-import li.songe.gkd.util.subsIdToRawFlow
-import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
-import li.songe.gkd.util.updateSubscription
 import li.songe.selector.Selector
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -322,46 +313,6 @@ class GkdAbService : CompositionAbService({
             }
 
             newQueryTask(eventNode)
-        }
-    }
-
-    fun checkSubsUpdate() = scope.launchTry(Dispatchers.IO) { // 自动从网络更新订阅文件
-        LogUtils.d("开始自动检测更新")
-        subsItemsFlow.value.forEach { subsItem ->
-            if (subsItem.updateUrl == null) return@forEach
-            try {
-                val oldSubsRaw = subsIdToRawFlow.value[subsItem.id]
-                if (oldSubsRaw?.checkUpdateUrl != null) {
-                    try {
-                        val subsVersion =
-                            client.get(oldSubsRaw.checkUpdateUrl).body<SubsVersion>()
-                        LogUtils.d("快速检测更新成功", subsVersion)
-                        if (subsVersion.id == oldSubsRaw.id && subsVersion.version <= oldSubsRaw.version) {
-                            return@forEach
-                        }
-                    } catch (e: Exception) {
-                        LogUtils.d("快速检测更新失败", subsItem, e)
-                    }
-                }
-                val newSubsRaw = RawSubscription.parse(
-                    client.get(oldSubsRaw?.updateUrl ?: subsItem.updateUrl).bodyAsText()
-                )
-                if (newSubsRaw.id != subsItem.id) {
-                    return@forEach
-                }
-                if (oldSubsRaw != null && newSubsRaw.version <= oldSubsRaw.version) {
-                    return@forEach
-                }
-                updateSubscription(newSubsRaw)
-                val newItem = subsItem.copy(
-                    mtime = System.currentTimeMillis()
-                )
-                DbSet.subsItemDao.update(newItem)
-                LogUtils.d("更新订阅文件:${newSubsRaw.name}")
-            } catch (e: Exception) {
-                e.printStackTrace()
-                LogUtils.d("检测更新失败", e)
-            }
         }
     }
 

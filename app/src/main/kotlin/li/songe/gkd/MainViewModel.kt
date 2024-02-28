@@ -3,7 +3,7 @@ package li.songe.gkd
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
@@ -17,8 +17,6 @@ import li.songe.gkd.util.logZipDir
 import li.songe.gkd.util.newVersionApkDir
 import li.songe.gkd.util.snapshotZipDir
 import li.songe.gkd.util.storeFlow
-import li.songe.gkd.util.subsIdToRawFlow
-import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.updateSubscription
 
 class MainViewModel : ViewModel() {
@@ -34,23 +32,16 @@ class MainViewModel : ViewModel() {
             id = -2, order = -2, mtime = System.currentTimeMillis()
         )
         viewModelScope.launchTry(Dispatchers.IO) {
-            subsItemsFlow.debounce(1000).collect { subsItems ->
-                if (!subsItems.any { s -> s.id == localSubsItem.id }) {
-                    DbSet.subsItemDao.insert(localSubsItem)
-                }
-            }
-        }
-        viewModelScope.launchTry(Dispatchers.IO) {
-            subsIdToRawFlow.debounce(1000).collect { subsIdToRaw ->
-                if (!subsIdToRaw.containsKey(localSubsItem.id)) {
-                    updateSubscription(
-                        RawSubscription(
-                            id = localSubsItem.id,
-                            name = "本地订阅",
-                            version = 0
-                        )
+            val subsItems = DbSet.subsItemDao.query().first()
+            if (!subsItems.any { s -> s.id == localSubsItem.id }) {
+                updateSubscription(
+                    RawSubscription(
+                        id = localSubsItem.id,
+                        name = "本地订阅",
+                        version = 0
                     )
-                }
+                )
+                DbSet.subsItemDao.insert(localSubsItem)
             }
         }
 

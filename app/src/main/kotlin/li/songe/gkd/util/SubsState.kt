@@ -1,6 +1,9 @@
 package li.songe.gkd.util
 
 import com.blankj.utilcode.util.LogUtils
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
@@ -23,6 +26,7 @@ import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.GlobalRule
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
+import li.songe.gkd.data.SubsVersion
 import li.songe.gkd.db.DbSet
 
 val subsItemsFlow by lazy {
@@ -236,22 +240,68 @@ fun initSubsState() {
     subsItemsFlow.value
     appScope.launchTry(Dispatchers.IO) {
         if (subsFolder.exists() && subsFolder.isDirectory) {
-            val fileRegex = Regex("^-?\\d+\\.json$")
-            val files =
-                subsFolder.listFiles { f -> f.isFile && f.name.matches(fileRegex) } ?: emptyArray()
-            val subscriptions = files.mapNotNull { f ->
-                try {
-                    RawSubscription.parse(f.readText())
-                } catch (e: Exception) {
-                    LogUtils.d("加载订阅文件失败", e)
-                    null
+            updateSubsFileMutex.withLock {
+                val fileRegex = Regex("^-?\\d+\\.json$")
+                val files =
+                    subsFolder.listFiles { f -> f.isFile && f.name.matches(fileRegex) }
+                        ?: emptyArray()
+                val subscriptions = files.mapNotNull { f ->
+                    try {
+                        RawSubscription.parse(f.readText())
+                    } catch (e: Exception) {
+                        LogUtils.d("加载订阅文件失败", e)
+                        null
+                    }
                 }
+                val newMap = subsIdToRawFlow.value.toMutableMap()
+                subscriptions.forEach { s ->
+                    newMap[s.id] = s
+                }
+                subsIdToRawFlow.value = newMap.toImmutableMap()
             }
-            val newMap = subsIdToRawFlow.value.toMutableMap()
-            subscriptions.forEach { s ->
-                newMap[s.id] = s
-            }
-            subsIdToRawFlow.value = newMap.toImmutableMap()
         }
+    }
+}
+
+fun checkSubsUpdate() = appScope.launchTry(Dispatchers.IO) { // 自动从网络更新订阅文件
+    updateSubsFileMutex.withLock {
+        LogUtils.d("开始自动检测更新")
+        subsItemsFlow.value.forEach { subsItem ->
+            if (subsItem.updateUrl == null) return@forEach
+            try {
+                val oldSubsRaw = subsIdToRawFlow.value[subsItem.id]
+                if (oldSubsRaw?.checkUpdateUrl != null) {
+                    try {
+                        val subsVersion =
+                            client.get(oldSubsRaw.checkUpdateUrl).body<SubsVersion>()
+                        LogUtils.d("快速检测更新成功", subsVersion)
+                        if (subsVersion.id == oldSubsRaw.id && subsVersion.version <= oldSubsRaw.version) {
+                            return@forEach
+                        }
+                    } catch (e: Exception) {
+                        LogUtils.d("快速检测更新失败", subsItem, e)
+                    }
+                }
+                val newSubsRaw = RawSubscription.parse(
+                    client.get(oldSubsRaw?.updateUrl ?: subsItem.updateUrl).bodyAsText()
+                )
+                if (newSubsRaw.id != subsItem.id) {
+                    return@forEach
+                }
+                if (oldSubsRaw != null && newSubsRaw.version <= oldSubsRaw.version) {
+                    return@forEach
+                }
+                updateSubscription(newSubsRaw)
+                val newItem = subsItem.copy(
+                    mtime = System.currentTimeMillis()
+                )
+                DbSet.subsItemDao.update(newItem)
+                LogUtils.d("更新订阅文件:${newSubsRaw.name}")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                LogUtils.d("检测更新失败", e)
+            }
+        }
+        LogUtils.d("自动检测更新结束")
     }
 }
