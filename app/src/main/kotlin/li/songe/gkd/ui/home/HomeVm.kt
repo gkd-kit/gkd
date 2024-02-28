@@ -171,7 +171,7 @@ class HomeVm @Inject constructor() : ViewModel() {
         var errorNum = 0
         val oldSubItems = subsItemsFlow.value
         val newSubsItems = oldSubItems.mapNotNull { oldItem ->
-            if (oldItem.updateUrl == null) return@mapNotNull null
+            if (oldItem.updateUrl == null || oldItem.id < 0) return@mapNotNull null
             val oldSubsRaw = subsIdToRawFlow.value[oldItem.id]
             try {
                 if (oldSubsRaw?.checkUpdateUrl != null) {
