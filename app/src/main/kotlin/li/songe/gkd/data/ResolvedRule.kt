@@ -8,15 +8,17 @@ import li.songe.gkd.service.createCacheTransform
 import li.songe.gkd.service.lastTriggerRule
 import li.songe.gkd.service.lastTriggerTime
 import li.songe.gkd.service.querySelector
+import li.songe.gkd.util.ResolvedGroup
 import li.songe.selector.Selector
 
 sealed class ResolvedRule(
     val rule: RawSubscription.RawRuleProps,
-    val group: RawSubscription.RawGroupProps,
-    val rawSubs: RawSubscription,
-    val subsItem: SubsItem,
-    val exclude: String?,
+    val g: ResolvedGroup,
 ) {
+    private val group = g.group
+    val subsItem = g.subsItem
+    val rawSubs = g.subscription
+    val config = g.config
     val key = rule.key
     val index = group.rules.indexOf(rule)
     private val preKeys = (rule.preKeys ?: emptyList()).toSet()
@@ -198,7 +200,7 @@ sealed class ResolvedRule(
         return "id:${subsItem.id}, v:${rawSubs.version}, type:${type}, gKey=${group.key}, gName:${group.name}, index:${index}, key:${key}, status:${status.name}"
     }
 
-    val excludeData = ExcludeData.parse(exclude)
+    val excludeData = ExcludeData.parse(config?.exclude)
 
     abstract val type: String
 

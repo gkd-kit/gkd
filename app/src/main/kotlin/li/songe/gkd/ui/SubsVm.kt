@@ -101,7 +101,12 @@ class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
         apps.map { app ->
             val appGroupSubsConfigs = groupSubsConfigs.filter { s -> s.appId == app.id }
             val enableSize = app.groups.count { g ->
-                getGroupRawEnable(g, appGroupSubsConfigs, groupToCategoryMap[g], categoryConfigs)
+                getGroupRawEnable(
+                    g,
+                    appGroupSubsConfigs.find { c -> c.groupKey == g.key },
+                    groupToCategoryMap[g],
+                    categoryConfigs.find { c -> c.categoryKey == groupToCategoryMap[g]?.key }
+                )
             }
             Tuple3(app, appSubsConfigs.find { s -> s.appId == app.id }, enableSize)
         }

@@ -1,8 +1,8 @@
 package li.songe.gkd.data
 
-import androidx.compose.runtime.Stable
+import androidx.compose.runtime.Immutable
 
-@Stable
+@Immutable
 data class Tuple3<T0, T1, T2>(
     val t0: T0,
     val t1: T1,
