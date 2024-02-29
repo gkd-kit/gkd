@@ -122,7 +122,7 @@ fun insertClickLog(rule: ResolvedRule) {
                 activityId = topActivityFlow.value.activityId,
                 subsId = rule.subsItem.id,
                 subsVersion = rule.rawSubs.version,
-                groupKey = rule.group.key,
+                groupKey = rule.g.group.key,
                 groupType = when (rule) {
                     is AppRule -> SubsConfig.AppGroupType
                     is GlobalRule -> SubsConfig.GlobalGroupType

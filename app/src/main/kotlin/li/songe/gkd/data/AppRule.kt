@@ -1,20 +1,17 @@
 package li.songe.gkd.data
 
+import li.songe.gkd.util.ResolvedAppGroup
+
 class AppRule(
     rule: RawSubscription.RawAppRule,
-    subsItem: SubsItem,
-    group: RawSubscription.RawAppGroup,
-    rawSubs: RawSubscription,
-    exclude: String?,
-    val app: RawSubscription.RawApp,
+    g: ResolvedAppGroup,
     val appInfo: AppInfo?,
 ) : ResolvedRule(
     rule = rule,
-    group = group,
-    subsItem = subsItem,
-    rawSubs = rawSubs,
-    exclude = exclude,
+    g = g,
 ) {
+    val group = g.group
+    val app = g.app
     val enable = appInfo?.let {
         if ((rule.excludeVersionCodes
                 ?: group.excludeVersionCodes)?.contains(appInfo.versionCode) == true

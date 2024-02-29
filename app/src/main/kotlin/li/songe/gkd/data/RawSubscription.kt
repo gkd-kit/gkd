@@ -57,7 +57,7 @@ data class RawSubscription(
         map
     }
 
-    val appGroups by lazy {
+    private val appGroups by lazy {
         apps.flatMap { a -> a.groups }
     }
 
@@ -184,6 +184,7 @@ data class RawSubscription(
         val excludeMatches: List<String>?
     }
 
+    @Immutable
     interface RawGroupProps : RawCommonProps {
         val name: String
         val key: Int
@@ -191,6 +192,10 @@ data class RawSubscription(
         val enable: Boolean?
         val scopeKeys: List<Int>?
         val rules: List<RawRuleProps>
+
+        val valid: Boolean
+        val errorDesc: String?
+        val allExampleUrls: List<String>
     }
 
     interface RawAppRuleProps {
@@ -254,11 +259,11 @@ data class RawSubscription(
             (apps ?: emptyList()).associate { a -> a.id to (a.enable ?: true) }
         }
 
-        val errorDesc by lazy { getErrorDesc() }
+        override val errorDesc by lazy { getErrorDesc() }
 
-        val valid by lazy { errorDesc == null }
+        override val valid by lazy { errorDesc == null }
 
-        val allExampleUrls by lazy {
+        override val allExampleUrls by lazy {
             ((exampleUrls ?: emptyList()) + rules.flatMap { r ->
                 r.exampleUrls ?: emptyList()
             }).distinct()
@@ -322,11 +327,11 @@ data class RawSubscription(
         override val excludeVersionCodes: List<Long>?,
     ) : RawGroupProps, RawAppRuleProps {
 
-        val errorDesc by lazy { getErrorDesc() }
+        override val errorDesc by lazy { getErrorDesc() }
 
-        val valid by lazy { errorDesc == null }
+        override val valid by lazy { errorDesc == null }
 
-        val allExampleUrls by lazy {
+        override val allExampleUrls by lazy {
             ((exampleUrls ?: emptyList()) + rules.flatMap { r ->
                 r.exampleUrls ?: emptyList()
             }).distinct()

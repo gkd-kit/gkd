@@ -244,7 +244,7 @@ fun useAppListPage(): ScaffoldExt {
                         val appGroups = ruleSummary.appIdToAllGroups[appInfo.id] ?: emptyList()
 
                         val appDesc = if (appGroups.isNotEmpty()) {
-                            when (val disabledCount = appGroups.count { g -> !g.second }) {
+                            when (val disabledCount = appGroups.count { g -> !g.enable }) {
                                 0 -> {
                                     "${appGroups.size}组规则"
                                 }

@@ -31,6 +31,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -93,10 +95,11 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
             null
         )
     }
-
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(navigationIcon = {
+            TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
                 IconButton(onClick = {
                     navController.popBackStack()
                 }) {
@@ -108,7 +111,8 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
             }, title = {
                 Text(text = "${rawSubs?.name ?: subsItemId}/全局规则")
             })
-        }, floatingActionButton = {
+        },
+        floatingActionButton = {
             if (editable) {
                 FloatingActionButton(onClick = { showAddDlg = true }) {
                     Icon(
@@ -118,103 +122,102 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                 }
             }
         },
-        content = { paddingValues ->
-            LazyColumn(modifier = Modifier.padding(paddingValues)) {
-                items(globalGroups, { g -> g.key }) { group ->
-                    Row(
+    ) { paddingValues ->
+        LazyColumn(modifier = Modifier.padding(paddingValues)) {
+            items(globalGroups, { g -> g.key }) { group ->
+                Row(
+                    modifier = Modifier
+                        .background(
+                            if (group.key == focusGroupKey) MaterialTheme.colorScheme.inversePrimary else Color.Transparent
+                        )
+                        .clickable { setShowGroupItem(group) }
+                        .padding(10.dp, 6.dp)
+                        .fillMaxWidth()
+                        .height(45.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(
                         modifier = Modifier
-                            .background(
-                                if (group.key == focusGroupKey) MaterialTheme.colorScheme.inversePrimary else Color.Transparent
-                            )
-                            .clickable { setShowGroupItem(group) }
-                            .padding(10.dp, 6.dp)
-                            .fillMaxWidth()
-                            .height(45.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight(),
-                            verticalArrangement = Arrangement.SpaceBetween
-                        ) {
+                        Text(
+                            text = group.name,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        if (group.valid) {
                             Text(
-                                text = group.name,
+                                text = group.desc ?: "",
                                 maxLines = 1,
                                 softWrap = false,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                fontSize = 14.sp
                             )
-                            if (group.valid) {
-                                Text(
-                                    text = group.desc ?: "",
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    fontSize = 14.sp
-                                )
-                            } else {
-                                Text(
-                                    text = "非法选择器",
-                                    modifier = Modifier.fillMaxWidth(),
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        IconButton(onClick = {
-                            if (editable) {
-                                setMenuGroupRaw(group)
-                            } else {
-                                navController.navigate(
-                                    GlobalRuleExcludePageDestination(
-                                        subsItemId,
-                                        group.key
-                                    )
-                                )
-                            }
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = null,
+                        } else {
+                            Text(
+                                text = "非法选择器",
+                                modifier = Modifier.fillMaxWidth(),
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.error
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
 
-                        val groupEnable = subsConfigs.find { c -> c.groupKey == group.key }?.enable
-                            ?: group.enable ?: true
-                        val subsConfig = subsConfigs.find { it.groupKey == group.key }
-                        Switch(
-                            checked = groupEnable, modifier = Modifier,
-                            onCheckedChange = vm.viewModelScope.launchAsFn { enable ->
-                                val newItem = (subsConfig?.copy(enable = enable) ?: SubsConfig(
-                                    type = SubsConfig.GlobalGroupType,
-                                    subsItemId = subsItemId,
-                                    groupKey = group.key,
-                                    enable = enable
-                                ))
-                                DbSet.subsConfigDao.insert(newItem)
-                            }
+                    IconButton(onClick = {
+                        if (editable) {
+                            setMenuGroupRaw(group)
+                        } else {
+                            navController.navigate(
+                                GlobalRuleExcludePageDestination(
+                                    subsItemId,
+                                    group.key
+                                )
+                            )
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = null,
                         )
                     }
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    val groupEnable = subsConfigs.find { c -> c.groupKey == group.key }?.enable
+                        ?: group.enable ?: true
+                    val subsConfig = subsConfigs.find { it.groupKey == group.key }
+                    Switch(
+                        checked = groupEnable, modifier = Modifier,
+                        onCheckedChange = vm.viewModelScope.launchAsFn { enable ->
+                            val newItem = (subsConfig?.copy(enable = enable) ?: SubsConfig(
+                                type = SubsConfig.GlobalGroupType,
+                                subsItemId = subsItemId,
+                                groupKey = group.key,
+                                enable = enable
+                            ))
+                            DbSet.subsConfigDao.insert(newItem)
+                        }
+                    )
                 }
-                item {
-                    Spacer(modifier = Modifier.height(40.dp))
-                    if (globalGroups.isEmpty()) {
-                        Text(
-                            text = "暂无规则",
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
-                    }
+            }
+            item {
+                Spacer(modifier = Modifier.height(40.dp))
+                if (globalGroups.isEmpty()) {
+                    Text(
+                        text = "暂无规则",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
-    )
+    }
 
     if (showAddDlg && rawSubs != null) {
         var source by remember {

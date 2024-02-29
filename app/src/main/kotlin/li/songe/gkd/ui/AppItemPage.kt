@@ -32,6 +32,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -42,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -113,8 +115,9 @@ fun AppItemPage(
         mutableStateOf<RawSubscription.RawAppGroup?>(null)
     }
 
-    Scaffold(topBar = {
-        TopAppBar(navigationIcon = {
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
+        TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
             IconButton(onClick = {
                 navController.popBackStack()
             }) {
@@ -145,7 +148,7 @@ fun AppItemPage(
                 )
             }
         }
-    }, content = { contentPadding ->
+    }) { contentPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -213,9 +216,9 @@ fun AppItemPage(
 
                         val groupEnable = getGroupRawEnable(
                             group,
-                            subsConfigs,
+                            subsConfigs.find { c -> c.groupKey == group.key },
                             groupToCategoryMap[group],
-                            categoryConfigs
+                            categoryConfigs.find { c -> c.categoryKey == groupToCategoryMap[group]?.key }
                         )
                         val subsConfig = subsConfigs.find { it.groupKey == group.key }
                         Switch(
@@ -238,7 +241,7 @@ fun AppItemPage(
                 Spacer(modifier = Modifier.height(20.dp))
             }
         }
-    })
+    }
 
 
     showGroupItem?.let { showGroupItemVal ->
