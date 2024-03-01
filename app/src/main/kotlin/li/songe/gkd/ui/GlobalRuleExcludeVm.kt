@@ -44,9 +44,16 @@ class GlobalRuleExcludeVm @Inject constructor(stateHandle: SavedStateHandle) : V
             appIds.mapIndexed { index, appId -> appId to index }.toMap()
         }
     val sortTypeFlow = MutableStateFlow<SortTypeOption>(SortTypeOption.SortByName)
-    val showSystemAppFlow = MutableStateFlow(false)
+    val showSystemAppFlow = MutableStateFlow(true)
+    val showHiddenAppFlow = MutableStateFlow(false)
     val showAppInfosFlow =
-        combine(orderedAppInfosFlow.combine(showSystemAppFlow) { apps, showSystemApp ->
+        combine(orderedAppInfosFlow.combine(showHiddenAppFlow) { appInfos, showHiddenApp ->
+            if (showHiddenApp) {
+                appInfos
+            } else {
+                appInfos.filter { a -> !a.hidden }
+            }
+        }.combine(showSystemAppFlow) { apps, showSystemApp ->
             if (showSystemApp) {
                 apps
             } else {

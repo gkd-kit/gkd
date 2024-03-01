@@ -53,12 +53,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
+import kotlinx.coroutines.flow.update
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.destinations.AppConfigPageDestination
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.ruleSummaryFlow
+import li.songe.gkd.util.storeFlow
 
 val appListNav = BottomNavItem(
     label = "应用", icon = Icons.Default.Apps
@@ -70,6 +72,7 @@ fun useAppListPage(): ScaffoldExt {
 
     val vm = hiltViewModel<HomeVm>()
     val showSystemApp by vm.showSystemAppFlow.collectAsState()
+    val showHiddenApp by vm.showHiddenAppFlow.collectAsState()
     val sortType by vm.sortTypeFlow.collectAsState()
     val orderedAppInfos by vm.appInfosFlow.collectAsState()
     val searchStr by vm.searchStrFlow.collectAsState()
@@ -158,14 +161,14 @@ fun useAppListPage(): ScaffoldExt {
                                         ) {
                                             RadioButton(selected = sortType == sortOption,
                                                 onClick = {
-                                                    vm.sortTypeFlow.value = sortOption
+                                                    storeFlow.update { s -> s.copy(sortType = sortOption.value) }
                                                 }
                                             )
                                             Text(sortOption.label)
                                         }
                                     },
                                     onClick = {
-                                        vm.sortTypeFlow.value = sortOption
+                                        storeFlow.update { s -> s.copy(sortType = sortOption.value) }
                                     },
                                 )
                             }
@@ -186,6 +189,24 @@ fun useAppListPage(): ScaffoldExt {
                                 },
                                 onClick = {
                                     vm.showSystemAppFlow.value = !vm.showSystemAppFlow.value
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Checkbox(
+                                            checked = showHiddenApp,
+                                            onCheckedChange = {
+                                                vm.showHiddenAppFlow.value =
+                                                    !vm.showHiddenAppFlow.value
+                                            })
+                                        Text("显示隐藏应用")
+                                    }
+                                },
+                                onClick = {
+                                    vm.showHiddenAppFlow.value = !vm.showHiddenAppFlow.value
                                 },
                             )
                         }

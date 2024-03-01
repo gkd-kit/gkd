@@ -26,17 +26,7 @@ val systemAppsFlow = systemAppInfoCacheFlow.map(appScope) { c -> c.keys }
 
 val orderedAppInfosFlow = appInfoCacheFlow.map(appScope) { c ->
     c.values.sortedWith { a, b ->
-        collator.compare(
-            if (a.isSystem) {
-                "\uFFFF${a.name}"
-            } else {
-                a.name
-            }, if (b.isSystem) {
-                "\uFFFF${b.name}"
-            } else {
-                b.name
-            }
-        )
+        collator.compare(a.name, b.name)
     }.toImmutableList()
 }
 
@@ -107,8 +97,7 @@ fun initAppState() {
     appScope.launchTry(Dispatchers.IO) {
         updateAppMutex.withLock {
             val appMap = mutableMapOf<String, AppInfo>()
-            app.packageManager.getInstalledPackages(0)
-                .forEach { packageInfo ->
+            app.packageManager.getInstalledPackages(0).forEach { packageInfo ->
                     val info = packageInfo.toAppInfo()
                     if (info != null) {
                         appMap[packageInfo.packageName] = info

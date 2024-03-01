@@ -36,8 +36,10 @@ import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.clickCountFlow
 import li.songe.gkd.util.client
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.map
 import li.songe.gkd.util.orderedAppInfosFlow
 import li.songe.gkd.util.ruleSummaryFlow
+import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
@@ -229,13 +231,22 @@ class HomeVm @Inject constructor() : ViewModel() {
         appIds.mapIndexed { index, appId -> appId to index }.toMap()
     }
 
-    val sortTypeFlow = MutableStateFlow<SortTypeOption>(SortTypeOption.SortByName)
-    val showSystemAppFlow = MutableStateFlow(false)
+    val sortTypeFlow = storeFlow.map(viewModelScope) { s ->
+        SortTypeOption.allSubObject.find { o -> o.value == s.sortType } ?: SortTypeOption.SortByName
+    }
+    val showSystemAppFlow = MutableStateFlow(true)
+    val showHiddenAppFlow = MutableStateFlow(false)
     val searchStrFlow = MutableStateFlow("")
     private val debounceSearchStrFlow = searchStrFlow.debounce(200)
         .stateIn(viewModelScope, SharingStarted.Eagerly, searchStrFlow.value)
     val appInfosFlow =
-        combine(orderedAppInfosFlow.combine(showSystemAppFlow) { appInfos, showSystemApp ->
+        combine(orderedAppInfosFlow.combine(showHiddenAppFlow) { appInfos, showHiddenApp ->
+            if (showHiddenApp) {
+                appInfos
+            } else {
+                appInfos.filter { a -> !a.hidden }
+            }
+        }.combine(showSystemAppFlow) { appInfos, showSystemApp ->
             if (showSystemApp) {
                 appInfos
             } else {
