@@ -85,8 +85,8 @@ data class ExcludeData(
     val appIds: Map<String, Boolean>,
     val activityIds: Set<Pair<String, String>>,
 ) {
-    val excludeAppIds = appIds.entries.filter { e -> e.value }.map { e -> e.key }.toSet()
-    val includeAppIds = appIds.entries.filter { e -> !e.value }.map { e -> e.key }.toSet()
+    val excludeAppIds = appIds.entries.filter { e -> e.value }.map { e -> e.key }.toHashSet()
+    val includeAppIds = appIds.entries.filter { e -> !e.value }.map { e -> e.key }.toHashSet()
 
     companion object {
         fun parse(exclude: String?): ExcludeData {
