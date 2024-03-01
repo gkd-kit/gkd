@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -91,7 +92,6 @@ fun AppItemPage(
     val appRaw by vm.subsAppFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
 
-    val appRawVal = appRaw
     val subsItemVal = subsItem
     val groupToCategoryMap = subsRaw?.groupToCategoryMap ?: emptyMap()
 
@@ -130,7 +130,7 @@ fun AppItemPage(
             val text = if (subsRaw == null) {
                 "订阅文件缺失"
             } else {
-                "${subsRaw.name}/${appInfoCache[appRaw?.id]?.name ?: appRaw?.name ?: appRaw?.id}"
+                "${subsRaw.name}/${appInfoCache[appId]?.name ?: appRaw.name ?: appId}"
             }
             Text(
                 text = text,
@@ -157,92 +157,96 @@ fun AppItemPage(
             item {
                 Spacer(modifier = Modifier.height(10.dp))
             }
-            appRaw?.groups?.let { groupsVal ->
-                itemsIndexed(groupsVal, { i, g -> i.toString() + g.key }) { _, group ->
-                    Row(
+            itemsIndexed(appRaw.groups, { i, g -> i.toString() + g.key }) { _, group ->
+                Row(
+                    modifier = Modifier
+                        .background(
+                            if (group.key == focusGroupKey) MaterialTheme.colorScheme.inversePrimary else Color.Transparent
+                        )
+                        .clickable { setShowGroupItem(group) }
+                        .padding(10.dp, 6.dp)
+                        .fillMaxWidth()
+                        .height(45.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(
                         modifier = Modifier
-                            .background(
-                                if (group.key == focusGroupKey) MaterialTheme.colorScheme.inversePrimary else Color.Transparent
-                            )
-                            .clickable { setShowGroupItem(group) }
-                            .padding(10.dp, 6.dp)
-                            .fillMaxWidth()
-                            .height(45.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight(),
-                            verticalArrangement = Arrangement.SpaceBetween
-                        ) {
+                        Text(
+                            text = group.name,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        if (group.valid) {
                             Text(
-                                text = group.name,
+                                text = group.desc ?: "",
                                 maxLines = 1,
                                 softWrap = false,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                fontSize = 14.sp
                             )
-                            if (group.valid) {
-                                Text(
-                                    text = group.desc ?: "",
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    fontSize = 14.sp
-                                )
-                            } else {
-                                Text(
-                                    text = "非法选择器",
-                                    modifier = Modifier.fillMaxWidth(),
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        IconButton(onClick = {
-                            setMenuGroupRaw(group)
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "more",
+                        } else {
+                            Text(
+                                text = "非法选择器",
+                                modifier = Modifier.fillMaxWidth(),
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.error
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        val groupEnable = getGroupRawEnable(
-                            group,
-                            subsConfigs.find { c -> c.groupKey == group.key },
-                            groupToCategoryMap[group],
-                            categoryConfigs.find { c -> c.categoryKey == groupToCategoryMap[group]?.key }
-                        )
-                        val subsConfig = subsConfigs.find { it.groupKey == group.key }
-                        Switch(
-                            checked = groupEnable, modifier = Modifier,
-                            onCheckedChange = scope.launchAsFn { enable ->
-                                val newItem = (subsConfig?.copy(enable = enable) ?: SubsConfig(
-                                    type = SubsConfig.AppGroupType,
-                                    subsItemId = subsItemId,
-                                    appId = appId,
-                                    groupKey = group.key,
-                                    enable = enable
-                                ))
-                                DbSet.subsConfigDao.insert(newItem)
-                            })
                     }
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    IconButton(onClick = {
+                        setMenuGroupRaw(group)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "more",
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    val groupEnable = getGroupRawEnable(
+                        group,
+                        subsConfigs.find { c -> c.groupKey == group.key },
+                        groupToCategoryMap[group],
+                        categoryConfigs.find { c -> c.categoryKey == groupToCategoryMap[group]?.key }
+                    )
+                    val subsConfig = subsConfigs.find { it.groupKey == group.key }
+                    Switch(
+                        checked = groupEnable, modifier = Modifier,
+                        onCheckedChange = scope.launchAsFn { enable ->
+                            val newItem = (subsConfig?.copy(enable = enable) ?: SubsConfig(
+                                type = SubsConfig.AppGroupType,
+                                subsItemId = subsItemId,
+                                appId = appId,
+                                groupKey = group.key,
+                                enable = enable
+                            ))
+                            DbSet.subsConfigDao.insert(newItem)
+                        })
                 }
             }
 
             item {
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(40.dp))
+                if (appRaw.groups.isEmpty()) {
+                    Text(
+                        text = "暂无规则",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     }
-
 
     showGroupItem?.let { showGroupItemVal ->
         AlertDialog(modifier = Modifier.defaultMinSize(300.dp),
@@ -277,7 +281,7 @@ fun AppItemPage(
                     }
                     TextButton(onClick = {
                         val groupAppText = json.encodeToJson5String(
-                            appRaw?.copy(
+                            appRaw.copy(
                                 groups = listOf(showGroupItemVal)
                             )
                         )
@@ -290,7 +294,7 @@ fun AppItemPage(
             })
     }
 
-    if (menuGroupRaw != null && appRawVal != null && subsItemVal != null) {
+    if (menuGroupRaw != null && subsItemVal != null) {
         Dialog(onDismissRequest = { setMenuGroupRaw(null) }) {
             Card(
                 modifier = Modifier
@@ -322,9 +326,9 @@ fun AppItemPage(
                                         .toMutableList()
                                         .apply {
                                             set(
-                                                indexOfFirst { a -> a.id == appRawVal.id },
-                                                appRawVal.copy(
-                                                    groups = appRawVal.groups
+                                                indexOfFirst { a -> a.id == appRaw.id },
+                                                appRaw.copy(
+                                                    groups = appRaw.groups
                                                         .filter { g -> g.key != menuGroupRaw.key }
                                                 )
                                             )
@@ -333,7 +337,7 @@ fun AppItemPage(
                                 updateSubscription(newSubsRaw)
                                 DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
                                 DbSet.subsConfigDao.delete(
-                                    subsItemVal.id, appRawVal.id, menuGroupRaw.key
+                                    subsItemVal.id, appRaw.id, menuGroupRaw.key
                                 )
                                 toast("删除成功")
                                 setMenuGroupRaw(null)
@@ -348,7 +352,7 @@ fun AppItemPage(
         }
     }
 
-    if (editGroupRaw != null && appRawVal != null && subsItemVal != null) {
+    if (editGroupRaw != null && subsItemVal != null) {
         var source by remember {
             mutableStateOf(json.encodeToJson5String(editGroupRaw))
         }
@@ -396,8 +400,8 @@ fun AppItemPage(
                     subsRaw ?: return@TextButton
                     val newSubsRaw = subsRaw.copy(apps = subsRaw.apps.toMutableList().apply {
                         set(
-                            indexOfFirst { a -> a.id == appRawVal.id },
-                            appRawVal.copy(groups = appRawVal.groups.toMutableList().apply {
+                            indexOfFirst { a -> a.id == appRaw.id },
+                            appRaw.copy(groups = appRaw.groups.toMutableList().apply {
                                 set(
                                     indexOfFirst { g -> g.key == newGroupRaw.key }, newGroupRaw
                                 )
@@ -416,7 +420,7 @@ fun AppItemPage(
         )
     }
 
-    if (excludeGroupRaw != null && appRawVal != null && subsItemVal != null) {
+    if (excludeGroupRaw != null && subsItemVal != null) {
         var source by remember {
             mutableStateOf(
                 ExcludeData.parse(subsConfigs.find { s -> s.groupKey == excludeGroupRaw.key }?.exclude)
@@ -472,7 +476,7 @@ fun AppItemPage(
         )
     }
 
-    if (showAddDlg && appRawVal != null && subsItemVal != null) {
+    if (showAddDlg && subsItemVal != null) {
         var source by remember {
             mutableStateOf("")
         }
@@ -501,7 +505,7 @@ fun AppItemPage(
                     }
                     listOf(newGroupRaw)
                 } else {
-                    if (newAppRaw.id != appRawVal.id) {
+                    if (newAppRaw.id != appRaw.id) {
                         toast("id不一致,无法添加")
                         return@TextButton
                     }
@@ -516,22 +520,26 @@ fun AppItemPage(
                     return@TextButton
                 }
                 tempGroups.forEach { g ->
-                    if (appRawVal.groups.any { g2 -> g2.name == g.name }) {
+                    if (appRaw.groups.any { g2 -> g2.name == g.name }) {
                         toast("存在同名规则[${g.name}]")
                         return@TextButton
                     }
                 }
-                val newKey = (appRawVal.groups.maxByOrNull { g -> g.key }?.key ?: -1) + 1
+                val newKey = (appRaw.groups.maxByOrNull { g -> g.key }?.key ?: -1) + 1
                 subsRaw ?: return@TextButton
                 val newSubsRaw = subsRaw.copy(apps = subsRaw.apps.toMutableList().apply {
-                    set(
-                        indexOfFirst { a -> a.id == appRawVal.id },
-                        appRawVal.copy(groups = (appRawVal.groups + tempGroups.mapIndexed { i, g ->
+                    val newApp =
+                        appRaw.copy(groups = (appRaw.groups + tempGroups.mapIndexed { i, g ->
                             g.copy(
                                 key = newKey + i
                             )
                         }))
-                    )
+                    val i = indexOfFirst { a -> a.id == appRaw.id }
+                    if (i < 0) {
+                        add(newApp)
+                    } else {
+                        set(i, newApp)
+                    }
                 })
                 vm.viewModelScope.launchTry(Dispatchers.IO) {
                     DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
