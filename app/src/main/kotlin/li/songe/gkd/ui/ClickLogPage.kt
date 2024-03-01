@@ -36,14 +36,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
-import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
@@ -63,7 +61,6 @@ import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
-import li.songe.gkd.util.format
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.subsIdToRawFlow
@@ -108,10 +105,6 @@ fun ClickLogPage() {
         mutableStateOf(false)
     }
 
-    LaunchedEffect(key1 = clickDataItems.itemSnapshotList.items, block = {
-        LogUtils.d(clickDataItems.itemSnapshotList.items.size)
-    })
-
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         TopAppBar(
@@ -154,36 +147,21 @@ fun ClickLogPage() {
                     .padding(10.dp)) {
                     Row {
                         Text(
-                            text = clickLog.id.format("MM-dd HH:mm:ss"),
+                            text = clickLog.date,
                             fontFamily = FontFamily.Monospace
                         )
                         Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = appInfoCache[clickLog.appId]?.name ?: clickLog.appId ?: ""
-                        )
+                        val appShowName = appInfoCache[clickLog.appId]?.name ?: clickLog.appId
+                        if (appShowName != null) {
+                            Text(text = appShowName)
+                        }
                     }
                     Spacer(modifier = Modifier.width(10.dp))
-                    val showActivityId = if (clickLog.activityId != null) {
-                        if (clickLog.appId != null && clickLog.activityId.startsWith(
-                                clickLog.appId
-                            )
-                        ) {
-                            clickLog.activityId.substring(clickLog.appId.length)
-                        } else {
-                            clickLog.activityId
-                        }
-                    } else {
-                        null
+                    clickLog.showActivityId?.let { showActivityId ->
+                        Text(text = showActivityId)
                     }
-                    if (showActivityId != null) {
-                        Text(
-                            text = showActivityId,
-                            overflow = TextOverflow.Ellipsis,
-                            maxLines = 1,
-                        )
-                    }
-                    if (group?.name != null) {
-                        Text(text = group.name)
+                    group?.name?.let { name ->
+                        Text(text = name)
                     }
                     if (rule?.name != null) {
                         Text(text = rule.name ?: "")
