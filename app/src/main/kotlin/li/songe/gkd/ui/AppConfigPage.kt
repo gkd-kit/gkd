@@ -1,5 +1,6 @@
 package li.songe.gkd.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,10 +44,13 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.destinations.AppItemPageDestination
+import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.navigate
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.toast
 
@@ -60,25 +66,41 @@ fun AppConfigPage(appId: String) {
     val globalGroups = ruleSummary.globalGroups
     val appGroups = ruleSummary.appIdToAllGroups[appId] ?: emptyList()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
-            IconButton(onClick = {
-                navController.popBackStack()
-            }) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = null,
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
+                IconButton(onClick = {
+                    navController.popBackStack()
+                }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = null,
+                    )
+                }
+            }, title = {
+                Text(
+                    text = appInfo?.name ?: appId,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
                 )
-            }
-        }, title = {
-            Text(
-                text = appInfo?.name ?: appId,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis,
+            }, actions = {})
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    navController.navigate(AppItemPageDestination(-2, appId))
+                },
+                content = {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                    )
+                }
             )
-        }, actions = {})
-    }) { contentPadding ->
+        },
+    ) { contentPadding ->
         LazyColumn(
             modifier = Modifier.padding(contentPadding)
         ) {
@@ -87,7 +109,9 @@ fun AppConfigPage(appId: String) {
                     ExcludeData.parse(g.config?.exclude)
                 }
                 val checked = getChecked(excludeData, g.group, appId, appInfo)
-                AppGroupCard(g.group, checked ?: false) { newChecked ->
+                AppGroupCard(g.group, checked ?: false, onClick = {
+                    navController.navigate(GlobalRulePageDestination(g.subsItem.id, g.group.key))
+                }) { newChecked ->
                     if (checked == null) {
                         toast("内置禁用,不可修改")
                         return@AppGroupCard
@@ -110,7 +134,15 @@ fun AppConfigPage(appId: String) {
                 }
             }
             items(appGroups) { g ->
-                AppGroupCard(g.group, g.enable) {
+                AppGroupCard(g.group, g.enable, onClick = {
+                    navController.navigate(
+                        AppItemPageDestination(
+                            g.subsItem.id,
+                            appId,
+                            g.group.key,
+                        )
+                    )
+                }) {
                     vm.viewModelScope.launchTry {
                         DbSet.subsConfigDao.insert(
                             g.config?.copy(enable = it) ?: SubsConfig(
@@ -142,10 +174,12 @@ fun AppConfigPage(appId: String) {
 private fun AppGroupCard(
     group: RawSubscription.RawGroupProps,
     enable: Boolean,
+    onClick: () -> Unit,
     onCheckedChange: ((Boolean) -> Unit)?,
 ) {
     Row(
         modifier = Modifier
+            .clickable(onClick = onClick)
             .padding(10.dp, 6.dp)
             .fillMaxWidth()
             .height(45.dp),
