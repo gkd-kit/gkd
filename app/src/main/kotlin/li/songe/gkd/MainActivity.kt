@@ -7,7 +7,6 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
-import com.blankj.utilcode.util.LogUtils
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.RequestPermissionLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
@@ -83,7 +82,6 @@ class MainActivity : CompositionActivity({
     override fun onStop() {
         super.onStop()
         activityVisibleFlow.update { it - 1 }
-        LogUtils.d(activityVisibleFlow.value)
     }
 }
 
