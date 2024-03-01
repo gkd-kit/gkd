@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.util.map
@@ -31,7 +32,9 @@ class AppItemVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val subsAppFlow =
-        subsIdToRawFlow.map { subsIdToRaw -> subsIdToRaw[args.subsItemId]?.apps?.find { it.id == args.appId } }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        subsIdToRawFlow.map(viewModelScope) { subsIdToRaw ->
+            subsIdToRaw[args.subsItemId]?.apps?.find { it.id == args.appId }
+                ?: RawSubscription.RawApp(id = args.appId, name = null)
+        }
 
 }
