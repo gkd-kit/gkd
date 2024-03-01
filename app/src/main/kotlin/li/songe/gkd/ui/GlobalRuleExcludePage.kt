@@ -87,6 +87,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
     val showAppInfos = vm.showAppInfosFlow.collectAsState().value
     val searchStr by vm.searchStrFlow.collectAsState()
     val showSystemApp by vm.showSystemAppFlow.collectAsState()
+    val showHiddenApp by vm.showHiddenAppFlow.collectAsState()
     val sortType by vm.sortTypeFlow.collectAsState()
 
     var showEditDlg by remember {
@@ -207,6 +208,24 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                             },
                             onClick = {
                                 vm.showSystemAppFlow.value = !vm.showSystemAppFlow.value
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = showHiddenApp,
+                                        onCheckedChange = {
+                                            vm.showHiddenAppFlow.value =
+                                                !vm.showHiddenAppFlow.value
+                                        })
+                                    Text("显示隐藏应用")
+                                }
+                            },
+                            onClick = {
+                                vm.showHiddenAppFlow.value = !vm.showHiddenAppFlow.value
                             },
                         )
                     }

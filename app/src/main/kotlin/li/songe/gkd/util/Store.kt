@@ -56,6 +56,7 @@ data class Store(
     val log2FileSwitch: Boolean = true,
     val enableDarkTheme: Boolean? = null,
     val enableAbFloatWindow: Boolean = true,
+    val sortType: Int = SortTypeOption.SortByName.value,
 )
 
 val storeFlow by lazy {

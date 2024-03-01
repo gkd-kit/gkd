@@ -14,6 +14,7 @@ data class AppInfo(
     val versionName: String?,
     val isSystem: Boolean,
     val mtime: Long,
+    val hidden: Boolean,
 )
 
 fun PackageInfo.toAppInfo(): AppInfo? {
@@ -30,6 +31,7 @@ fun PackageInfo.toAppInfo(): AppInfo? {
         },
         versionName = versionName,
         isSystem = (ApplicationInfo.FLAG_SYSTEM and applicationInfo.flags) != 0,
-        mtime = lastUpdateTime
+        mtime = lastUpdateTime,
+        hidden = app.packageManager.getLaunchIntentForPackage(packageName) == null
     )
 }
