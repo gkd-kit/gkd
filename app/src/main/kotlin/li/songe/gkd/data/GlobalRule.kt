@@ -62,12 +62,14 @@ class GlobalRule(
         if (excludeData.excludeAppIds.contains(appId)) {
             return false
         }
+        if (activityId != null && excludeData.activityIds.contains(appId to activityId)) {
+            return false
+        }
         if (excludeData.includeAppIds.contains(appId)) {
             activityId ?: return true
             val app = apps[appId] ?: return true
+            // 规则自带页面的禁用
             return !app.excludeActivityIds.any { e -> e.startsWith(activityId) }
-        } else if (activityId != null && excludeData.activityIds.contains(appId to activityId)) {
-            return false
         }
         if (!matchLauncher && appId == launcherAppId) {
             return false
