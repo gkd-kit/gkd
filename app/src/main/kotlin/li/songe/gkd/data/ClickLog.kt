@@ -1,6 +1,5 @@
 package li.songe.gkd.data
 
-import android.os.Parcelable
 import androidx.paging.PagingSource
 import androidx.room.ColumnInfo
 import androidx.room.Dao
@@ -11,12 +10,11 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
-import kotlinx.parcelize.Parcelize
+import li.songe.gkd.util.format
 
 @Entity(
     tableName = "click_log",
 )
-@Parcelize
 data class ClickLog(
     @PrimaryKey @ColumnInfo(name = "id") val id: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "app_id") val appId: String? = null,
@@ -27,7 +25,26 @@ data class ClickLog(
     @ColumnInfo(name = "group_type", defaultValue = "2") val groupType: Int,
     @ColumnInfo(name = "rule_index") val ruleIndex: Int,
     @ColumnInfo(name = "rule_key") val ruleKey: Int? = null,
-) : Parcelable {
+) {
+
+    val showActivityId by lazy {
+        if (activityId != null) {
+            if (appId != null && activityId.startsWith(
+                    appId
+                )
+            ) {
+                activityId.substring(appId.length)
+            } else {
+                activityId
+            }
+        } else {
+            null
+        }
+    }
+
+    val date by lazy { id.format("MM-dd HH:mm:ss") }
+
+
     @Dao
     interface TriggerLogDao {
 
