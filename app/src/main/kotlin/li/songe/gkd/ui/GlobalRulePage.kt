@@ -24,6 +24,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -109,7 +110,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                     )
                 }
             }, title = {
-                Text(text = "${rawSubs?.name ?: subsItemId}/全局规则")
+                Text(text = "全局规则/${rawSubs?.name ?: subsItemId}")
             })
         },
         floatingActionButton = {
@@ -151,14 +152,23 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                             modifier = Modifier.fillMaxWidth()
                         )
                         if (group.valid) {
-                            Text(
-                                text = group.desc ?: "",
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.fillMaxWidth(),
-                                fontSize = 14.sp
-                            )
+                            if (group.desc != null) {
+                                Text(
+                                    text = group.desc,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    fontSize = 14.sp
+                                )
+                            } else {
+                                Text(
+                                    text = "暂无描述",
+                                    modifier = Modifier.fillMaxWidth(),
+                                    fontSize = 14.sp,
+                                    color = LocalContentColor.current.copy(alpha = 0.5f)
+                                )
+                            }
                         } else {
                             Text(
                                 text = "非法选择器",

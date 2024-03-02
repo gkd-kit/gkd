@@ -150,7 +150,7 @@ fun SubsPage(
                     )
                 } else {
                     Text(
-                        text = "${subsRaw?.name ?: subsItemId}/应用规则",
+                        text = "应用规则/${subsRaw?.name ?: subsItemId}",
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
@@ -182,7 +182,6 @@ fun SubsPage(
                         modifier = Modifier.wrapContentSize(Alignment.TopStart)
                     ) {
                         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-
                             SortTypeOption.allSubObject.forEach { sortOption ->
                                 DropdownMenuItem(
                                     text = {
