@@ -57,6 +57,8 @@ data class Store(
     val enableDarkTheme: Boolean? = null,
     val enableAbFloatWindow: Boolean = true,
     val sortType: Int = SortTypeOption.SortByName.value,
+    val showSystemApp: Boolean = true,
+    val showHiddenApp: Boolean = false,
 )
 
 val storeFlow by lazy {

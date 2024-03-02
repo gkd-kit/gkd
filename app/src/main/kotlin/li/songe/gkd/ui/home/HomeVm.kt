@@ -234,8 +234,8 @@ class HomeVm @Inject constructor() : ViewModel() {
     val sortTypeFlow = storeFlow.map(viewModelScope) { s ->
         SortTypeOption.allSubObject.find { o -> o.value == s.sortType } ?: SortTypeOption.SortByName
     }
-    val showSystemAppFlow = MutableStateFlow(true)
-    val showHiddenAppFlow = MutableStateFlow(false)
+    val showSystemAppFlow = storeFlow.map(viewModelScope) { s -> s.showSystemApp }
+    val showHiddenAppFlow = storeFlow.map(viewModelScope) { s -> s.showHiddenApp }
     val searchStrFlow = MutableStateFlow("")
     private val debounceSearchStrFlow = searchStrFlow.debounce(200)
         .stateIn(viewModelScope, SharingStarted.Eagerly, searchStrFlow.value)

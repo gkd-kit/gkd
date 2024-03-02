@@ -181,14 +181,13 @@ fun useAppListPage(): ScaffoldExt {
                                         Checkbox(
                                             checked = showSystemApp,
                                             onCheckedChange = {
-                                                vm.showSystemAppFlow.value =
-                                                    !vm.showSystemAppFlow.value
+                                                storeFlow.update { s -> s.copy(showSystemApp = !showSystemApp) }
                                             })
                                         Text("显示系统应用")
                                     }
                                 },
                                 onClick = {
-                                    vm.showSystemAppFlow.value = !vm.showSystemAppFlow.value
+                                    storeFlow.update { s -> s.copy(showSystemApp = !showSystemApp) }
                                 },
                             )
                             DropdownMenuItem(
@@ -199,14 +198,13 @@ fun useAppListPage(): ScaffoldExt {
                                         Checkbox(
                                             checked = showHiddenApp,
                                             onCheckedChange = {
-                                                vm.showHiddenAppFlow.value =
-                                                    !vm.showHiddenAppFlow.value
+                                                storeFlow.update { s -> s.copy(showHiddenApp = !s.showHiddenApp) }
                                             })
                                         Text("显示隐藏应用")
                                     }
                                 },
                                 onClick = {
-                                    vm.showHiddenAppFlow.value = !vm.showHiddenAppFlow.value
+                                    storeFlow.update { s -> s.copy(showHiddenApp = !showHiddenApp) }
                                 },
                             )
                         }
