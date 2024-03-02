@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.BuildConfig
+import li.songe.gkd.appScope
 import li.songe.gkd.composition.CompositionAbService
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.composition.CompositionExt.useScope
@@ -131,18 +132,26 @@ class GkdAbService : CompositionAbService({
         queryThread.cancel()
         actionThread.cancel()
     }
+    val events = mutableListOf<AccessibilityNodeInfo>()
     var queryTaskJob: Job? = null
-    fun newQueryTask(eventNode: AccessibilityNodeInfo? = null) {
-        if (!storeFlow.value.enableService) return
-        val ctx = if (System.currentTimeMillis() - appChangeTime < 5000L) {
-            Dispatchers.IO
-        } else {
-            queryThread
-        }
-        val common = ctx === queryThread
-        queryTaskJob = scope.launchTry(ctx) {
+    fun newQueryTask(byEvent: Boolean = false) {
+        queryTaskJob = scope.launchTry(queryThread) {
+            var latestEvent = synchronized(events) {
+                val size = events.size
+                if (size == 0 && byEvent) return@launchTry
+                val pair = if (size > 1) {
+                    if (BuildConfig.DEBUG) {
+                        Log.d("latestEvent", "丢弃事件=$size")
+                    }
+                    null
+                } else {
+                    events.lastOrNull()
+                }
+                events.clear()
+                pair
+            }
             val activityRule = getAndUpdateCurrentRules()
-            for (rule in (activityRule.currentRules)) {
+            for (rule in (activityRule.currentRules)) { // 规则数量有可能过多导致耗时过长
                 val statusCode = rule.status
                 if (statusCode == RuleStatus.Status3 && rule.matchDelayJob == null) {
                     rule.matchDelayJob = scope.launch(queryThread) {
@@ -152,7 +161,20 @@ class GkdAbService : CompositionAbService({
                     }
                 }
                 if (statusCode != RuleStatus.StatusOk) continue
-                val nodeVal = (eventNode ?: safeActiveWindow) ?: continue
+                latestEvent?.let { n ->
+                    val refreshOk = try {
+                        n.refresh()
+                    } catch (e: Exception) {
+                        false
+                    }
+                    if (!refreshOk) {
+                        if (BuildConfig.DEBUG) {
+                            Log.d("latestEvent", "最新事件已过期")
+                        }
+                        latestEvent = null
+                    }
+                }
+                val nodeVal = (latestEvent ?: safeActiveWindow) ?: continue
                 val rightAppId = nodeVal.packageName?.toString() ?: break
                 val matchApp = rule.matchActivity(
                     rightAppId
@@ -172,11 +194,8 @@ class GkdAbService : CompositionAbService({
                     return@launchTry
                 }
                 if (!matchApp) continue
-                val target =
-                    rule.query(nodeVal, if (common) defaultCacheTransform else null)
-                if (common) {
-                    defaultCacheTransform.indexCache.clear()
-                }
+                val target = rule.query(nodeVal, defaultCacheTransform)
+                defaultCacheTransform.indexCache.clear()
                 if (target == null) {
                     continue
                 }
@@ -189,20 +208,20 @@ class GkdAbService : CompositionAbService({
                     }
                     continue
                 }
-                scope.launch(actionThread) {
-                    if (rule.status != RuleStatus.StatusOk) return@launch
-                    val actionResult = rule.performAction(context, target)
-                    if (actionResult.result) {
-                        rule.trigger()
-                        scope.launch(actionThread) {
-                            delay(300)
-                            if (queryTaskJob?.isActive != true) {
-                                newQueryTask()
-                            }
+                if (rule.status != RuleStatus.StatusOk) break
+                val actionResult = rule.performAction(context, target)
+                if (actionResult.result) {
+                    rule.trigger()
+                    scope.launch(actionThread) {
+                        delay(300)
+                        if (queryTaskJob?.isActive != true) {
+                            newQueryTask()
                         }
-                        if (storeFlow.value.toastWhenClick) {
-                            toast(storeFlow.value.clickToast)
-                        }
+                    }
+                    if (storeFlow.value.toastWhenClick) {
+                        toast(storeFlow.value.clickToast)
+                    }
+                    appScope.launchTry(Dispatchers.IO) {
                         insertClickLog(rule)
                         LogUtils.d(
                             rule.statusText(),
@@ -311,8 +330,17 @@ class GkdAbService : CompositionAbService({
             if (evAppId != rightAppId) {
                 return@launch
             }
-
-            newQueryTask(eventNode)
+            if (!storeFlow.value.enableService) return@launch
+            synchronized(events) {
+                val eventLog = events.lastOrNull()
+                if (eventNode != null) {
+                    if (eventLog == eventNode) {
+                        events.removeLast()
+                    }
+                    events.add(eventNode)
+                }
+            }
+            newQueryTask(eventNode != null)
         }
     }
 
