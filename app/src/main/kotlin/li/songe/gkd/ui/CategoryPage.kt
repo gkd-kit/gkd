@@ -22,6 +22,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -122,10 +123,18 @@ fun CategoryPage(subsItemId: Long) {
                         Text(
                             text = category.name, fontSize = 18.sp
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = if (size > 0) "${size}规则组" else "暂无规则", fontSize = 14.sp
-                        )
+                        if (size > 0) {
+                            Text(
+                                text = "${size}规则组",
+                                fontSize = 14.sp
+                            )
+                        } else {
+                            Text(
+                                text = "暂无规则",
+                                fontSize = 14.sp,
+                                color = LocalContentColor.current.copy(alpha = 0.5f)
+                            )
+                        }
                     }
                     if (editable) {
                         IconButton(onClick = {
@@ -158,15 +167,13 @@ fun CategoryPage(subsItemId: Long) {
                 }
             }
             item {
+                Spacer(modifier = Modifier.height(40.dp))
                 if (categories.isEmpty()) {
-                    Spacer(modifier = Modifier.height(40.dp))
                     Text(
                         text = "暂无类别",
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
-                } else {
-                    Spacer(modifier = Modifier.height(20.dp))
                 }
             }
         }

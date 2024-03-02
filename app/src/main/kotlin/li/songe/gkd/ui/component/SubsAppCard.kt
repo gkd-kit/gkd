@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -89,18 +90,26 @@ fun SubsAppCard(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            val enableDesc = when (enableSize) {
-                0 -> "${rawApp.groups.size}组规则/${rawApp.groups.size}关闭"
-                rawApp.groups.size -> "${rawApp.groups.size}组规则"
-                else -> "${rawApp.groups.size}组规则/${enableSize}启用/${rawApp.groups.size - enableSize}关闭"
+            if (rawApp.groups.isNotEmpty()) {
+                val enableDesc = when (enableSize) {
+                    0 -> "${rawApp.groups.size}组规则/${rawApp.groups.size}关闭"
+                    rawApp.groups.size -> "${rawApp.groups.size}组规则"
+                    else -> "${rawApp.groups.size}组规则/${enableSize}启用/${rawApp.groups.size - enableSize}关闭"
+                }
+                Text(
+                    text = enableDesc,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                Text(
+                    text = "暂无规则",
+                    modifier = Modifier.fillMaxWidth(),
+                    color = LocalContentColor.current.copy(alpha = 0.5f)
+                )
             }
-            Text(
-                text = enableDesc,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
         Spacer(modifier = Modifier.width(10.dp))
 
