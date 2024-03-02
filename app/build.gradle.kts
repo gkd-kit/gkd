@@ -112,6 +112,7 @@ android {
             versionNameSuffix = vnSuffix
             applicationIdSuffix = ".debug"
             resValue("string", "app_name", "GKD-debug")
+            resValue("string", "capture_label", "捕获快照-debug")
         }
     }
     compileOptions {
