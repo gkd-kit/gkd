@@ -10,14 +10,10 @@ buildscript {
         classpath(libs.android.gradle)
         classpath(libs.kotlin.gradle.plugin)
         classpath(libs.kotlin.serialization)
-//        classpath(libs.rikka.gradle)
     }
 }
 
-// https://youtrack.jetbrains.com/issue/KTIJ-19369
-@Suppress(
-    "DSL_SCOPE_VIOLATION",
-) plugins {
+plugins {
     alias(libs.plugins.google.ksp) apply false
     alias(libs.plugins.google.hilt) apply false
 

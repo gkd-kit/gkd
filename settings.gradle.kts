@@ -14,11 +14,6 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-
-//    https://youtrack.jetbrains.com/issue/KT-55620
-//    https://stackoverflow.com/questions/69163511
-//    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
-
     repositories {
         mavenLocal()
         mavenCentral()
@@ -144,7 +139,6 @@ dependencyResolutionManagement {
             library("junit", "junit:junit:4.13.2")
 
             val ktorVersion = "2.3.8"
-            // 请注意,当 client 和 server 版本不一致时, 会报错 socket hang up
             library("ktor.server.core", "io.ktor:ktor-server-core:$ktorVersion")
             library("ktor.server.cio", "io.ktor:ktor-server-cio:$ktorVersion")
             library("ktor.server.cors", "io.ktor:ktor-server-cors:$ktorVersion")
@@ -176,12 +170,9 @@ dependencyResolutionManagement {
                 "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.7"
             )
 
-//            https://developer.android.com/reference/kotlin/org/json/package-summary
-            library("org.json", "org.json:json:20210307")
-
             plugin("google.ksp", "com.google.devtools.ksp").version("1.9.22-1.0.17")
 
-            val hiltVersion = "2.50"
+            val hiltVersion = "2.51"
             plugin("google.hilt", "com.google.dagger.hilt.android").version(hiltVersion)
             library("google.hilt.android", "com.google.dagger:hilt-android:$hiltVersion")
             library(
@@ -193,7 +184,7 @@ dependencyResolutionManagement {
             )
 
 //            https://github.com/raamcosta/compose-destinations
-            val destinationsVersion = "1.10.0"
+            val destinationsVersion = "1.10.1"
             library(
                 "destinations.core",
                 "io.github.raamcosta.compose-destinations:core:$destinationsVersion"
