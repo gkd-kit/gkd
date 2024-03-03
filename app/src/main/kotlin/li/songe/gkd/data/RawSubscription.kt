@@ -15,7 +15,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
-import li.songe.gkd.service.allowPropertyNames
+import li.songe.gkd.service.checkSelector
 import li.songe.gkd.util.json
 import li.songe.gkd.util.json5ToJson
 import li.songe.gkd.util.toast
@@ -386,14 +386,7 @@ data class RawSubscription(
                 }
             }
             allSelector.forEach { s ->
-                s?.nameToTypeList?.forEach { (name, type) ->
-                    if (!allowPropertyNames.contains(name)) {
-                        return "非法属性名:${name}"
-                    }
-                    if (type != "null" && allowPropertyNames[name] != type) {
-                        return "非法类型:${name}=$type"
-                    }
-                }
+                s?.checkSelector()?.let { return it }
             }
             rules.forEach { r ->
                 if (r.position?.isValid == false) {
