@@ -161,6 +161,18 @@ val allowPropertyNames by lazy {
     )
 }
 
+fun Selector.checkSelector(): String? {
+    nameToTypeList.forEach { (name, type) ->
+        if (!allowPropertyNames.contains(name)) {
+            return "未知属性:${name}"
+        }
+        if (type != "null" && allowPropertyNames[name] != type) {
+            return "非法类型:${name}=$type"
+        }
+    }
+    return null
+}
+
 private val getAttr: (AccessibilityNodeInfo, String) -> Any? = { node, name ->
     when (name) {
         "id" -> node.viewIdResourceName

@@ -185,7 +185,7 @@ fun AppItemPage(
                             modifier = Modifier.fillMaxWidth()
                         )
                         if (group.valid) {
-                            if (group.desc != null) {
+                            if (!group.desc.isNullOrBlank()) {
                                 Text(
                                     text = group.desc,
                                     maxLines = 1,
@@ -265,13 +265,7 @@ fun AppItemPage(
                 Text(text = showGroupItemVal.name)
             },
             text = {
-                Column {
-                    if (showGroupItemVal.enable == false) {
-                        Text(text = "该规则组默认不启用")
-                        Spacer(modifier = Modifier.height(10.dp))
-                    }
-                    Text(text = showGroupItemVal.desc ?: "")
-                }
+                Text(text = showGroupItemVal.desc ?: "")
             },
             confirmButton = {
                 Row {

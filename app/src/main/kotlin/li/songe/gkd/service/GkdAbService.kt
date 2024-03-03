@@ -502,10 +502,8 @@ class GkdAbService : CompositionAbService({
         fun execAction(gkdAction: GkdAction): ActionResult {
             val serviceVal = service ?: throw RpcError("无障碍没有运行")
             val selector = Selector.parseOrNull(gkdAction.selector) ?: throw RpcError("非法选择器")
-            selector.propertyNames.forEach { n ->
-                if (!allowPropertyNames.contains(n)) {
-                    throw RpcError("未知属性名:$n")
-                }
+            selector.checkSelector()?.let {
+                throw RpcError(it)
             }
             val targetNode =
                 serviceVal.safeActiveWindow?.querySelector(

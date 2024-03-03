@@ -152,7 +152,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                             modifier = Modifier.fillMaxWidth()
                         )
                         if (group.valid) {
-                            if (group.desc != null) {
+                            if (!group.desc.isNullOrBlank()) {
                                 Text(
                                     text = group.desc,
                                     maxLines = 1,
@@ -402,13 +402,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                 Text(text = showGroupItem.name)
             },
             text = {
-                Column {
-                    if (showGroupItem.enable == false) {
-                        Text(text = "该规则组默认不启用")
-                        Spacer(modifier = Modifier.height(10.dp))
-                    }
-                    Text(text = showGroupItem.desc ?: "")
-                }
+                Text(text = showGroupItem.desc ?: "")
             },
             confirmButton = {
                 Row {
