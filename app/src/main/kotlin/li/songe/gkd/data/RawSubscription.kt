@@ -159,7 +159,7 @@ data class RawSubscription(
     }
 
 
-    interface RawCommonProps {
+    sealed interface RawCommonProps {
         val actionCd: Long?
         val actionDelay: Long?
         val quickFind: Boolean?
@@ -170,11 +170,12 @@ data class RawSubscription(
         val actionCdKey: Int?
         val actionMaximumKey: Int?
         val order: Int?
+        val forcedTime: Long?
         val snapshotUrls: List<String>?
         val exampleUrls: List<String>?
     }
 
-    interface RawRuleProps : RawCommonProps {
+    sealed interface RawRuleProps : RawCommonProps {
         val name: String?
         val key: Int?
         val preKeys: List<Int>?
@@ -185,7 +186,7 @@ data class RawSubscription(
     }
 
     @Immutable
-    interface RawGroupProps : RawCommonProps {
+    sealed interface RawGroupProps : RawCommonProps {
         val name: String
         val key: Int
         val desc: String?
@@ -198,7 +199,7 @@ data class RawSubscription(
         val allExampleUrls: List<String>
     }
 
-    interface RawAppRuleProps {
+    sealed interface RawAppRuleProps {
         val activityIds: List<String>?
         val excludeActivityIds: List<String>?
 
@@ -208,7 +209,7 @@ data class RawSubscription(
         val excludeVersionCodes: List<Long>?
     }
 
-    interface RawGlobalRuleProps {
+    sealed interface RawGlobalRuleProps {
         val matchAnyApp: Boolean?
         val matchSystemApp: Boolean?
         val matchLauncher: Boolean?
@@ -246,6 +247,7 @@ data class RawSubscription(
         override val actionCdKey: Int?,
         override val actionMaximumKey: Int?,
         override val order: Int?,
+        override val forcedTime: Long?,
         override val snapshotUrls: List<String>?,
         override val exampleUrls: List<String>?,
         override val matchAnyApp: Boolean?,
@@ -283,6 +285,7 @@ data class RawSubscription(
         override val actionCdKey: Int?,
         override val actionMaximumKey: Int?,
         override val order: Int?,
+        override val forcedTime: Long?,
         override val snapshotUrls: List<String>?,
         override val exampleUrls: List<String>?,
         override val name: String?,
@@ -313,6 +316,7 @@ data class RawSubscription(
         override val quickFind: Boolean?,
         override val actionMaximum: Int?,
         override val order: Int?,
+        override val forcedTime: Long?,
         override val matchDelay: Long?,
         override val matchTime: Long?,
         override val resetMatch: String?,
@@ -356,6 +360,7 @@ data class RawSubscription(
         override val quickFind: Boolean?,
         override val actionMaximum: Int?,
         override val order: Int?,
+        override val forcedTime: Long?,
         override val matchDelay: Long?,
         override val matchTime: Long?,
         override val resetMatch: String?,
@@ -578,6 +583,7 @@ data class RawSubscription(
                 versionNames = getStringIArray(jsonObject, "versionNames"),
                 excludeVersionNames = getStringIArray(jsonObject, "excludeVersionNames"),
                 position = getPosition(jsonObject),
+                forcedTime = getLong(jsonObject, "forcedTime"),
             )
         }
 
@@ -614,6 +620,7 @@ data class RawSubscription(
                 actionMaximumKey = getInt(jsonObject, "actionMaximumKey"),
                 actionCdKey = getInt(jsonObject, "actionCdKey"),
                 order = getInt(jsonObject, "order"),
+                forcedTime = getLong(jsonObject, "forcedTime"),
                 scopeKeys = getIntIArray(jsonObject, "scopeKeys"),
                 versionCodes = getLongIArray(jsonObject, "versionCodes"),
                 excludeVersionCodes = getLongIArray(jsonObject, "excludeVersionCodes"),
@@ -678,6 +685,7 @@ data class RawSubscription(
                 excludeMatches = getStringIArray(jsonObject, "excludeMatches"),
                 matches = getStringIArray(jsonObject, "matches") ?: error("miss matches"),
                 order = getInt(jsonObject, "order"),
+                forcedTime = getLong(jsonObject, "forcedTime"),
                 position = getPosition(jsonObject),
             )
         }
@@ -713,6 +721,7 @@ data class RawSubscription(
                 } ?: emptyList(),
                 order = getInt(jsonObject, "order"),
                 scopeKeys = getIntIArray(jsonObject, "scopeKeys"),
+                forcedTime = getLong(jsonObject, "forcedTime"),
             )
         }
 
