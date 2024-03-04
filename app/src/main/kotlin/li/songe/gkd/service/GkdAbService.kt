@@ -134,7 +134,7 @@ class GkdAbService : CompositionAbService({
     }
     val events = mutableListOf<AccessibilityNodeInfo>()
     var queryTaskJob: Job? = null
-    fun newQueryTask(byEvent: Boolean = false) {
+    fun newQueryTask(byEvent: Boolean = false, byForced: Boolean = false) {
         queryTaskJob = scope.launchTry(queryThread) {
             var latestEvent = synchronized(events) {
                 val size = events.size
@@ -161,6 +161,7 @@ class GkdAbService : CompositionAbService({
                     }
                 }
                 if (statusCode != RuleStatus.StatusOk) continue
+                if (byForced && !rule.checkForced()) continue
                 latestEvent?.let { n ->
                     val refreshOk = try {
                         n.refresh()
@@ -189,6 +190,10 @@ class GkdAbService : CompositionAbService({
                                 topActivityFlow.value = TopActivity(appId = rightAppId)
                             }
                             getAndUpdateCurrentRules()
+                            if (queryTaskJob?.isActive != true) {
+                                Thread.sleep(300)
+                                newQueryTask()
+                            }
                         }
                     }
                     return@launchTry
@@ -239,11 +244,20 @@ class GkdAbService : CompositionAbService({
                         newQueryTask()
                     }
                 }
+            } else {
+                if (activityRule.currentRules.any { r -> r.checkForced() && r.status.let { s -> s == RuleStatus.StatusOk || s == RuleStatus.Status5 } }) {
+                    scope.launch(actionThread) {
+                        delay(300)
+                        if (queryTaskJob?.isActive != true) {
+                            newQueryTask(byForced = true)
+                        }
+                    }
+                }
             }
         }
     }
 
-    val skipAppIds = listOf("com.android.systemui")
+    val skipAppIds = setOf("com.android.systemui")
     onAccessibilityEvent { event ->
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
             skipAppIds.contains(event.packageName.toString())

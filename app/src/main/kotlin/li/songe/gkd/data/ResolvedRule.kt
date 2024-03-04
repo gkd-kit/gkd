@@ -22,13 +22,16 @@ sealed class ResolvedRule(
     val key = rule.key
     val index = group.rules.indexOf(rule)
     private val preKeys = (rule.preKeys ?: emptyList()).toSet()
-    private val resetMatch = rule.resetMatch ?: group.resetMatch
     private val matches = rule.matches?.map { s -> Selector.parse(s) } ?: emptyList()
     private val excludeMatches = (rule.excludeMatches ?: emptyList()).map { s -> Selector.parse(s) }
+
+    private val resetMatch = rule.resetMatch ?: group.resetMatch
     val matchDelay = rule.matchDelay ?: group.matchDelay ?: 0L
     val actionDelay = rule.actionDelay ?: group.actionDelay ?: 0L
     private val matchTime = rule.matchTime ?: group.matchTime
+    private val forcedTime = rule.forcedTime ?: group.forcedTime ?: 0L
     private val quickFind = rule.quickFind ?: group.quickFind ?: false
+    val order = rule.order ?: group.order ?: 0
 
     private val actionCdKey = rule.actionCdKey ?: group.actionCdKey
     private val actionCd = rule.actionCd ?: if (actionCdKey != null) {
@@ -43,8 +46,6 @@ sealed class ResolvedRule(
     } else {
         null
     } ?: group.actionMaximum
-
-    val order = rule.order ?: group.order ?: 0
 
     private val slowSelectors by lazy {
         (matches + excludeMatches).filterNot { s ->
@@ -99,6 +100,11 @@ sealed class ResolvedRule(
             return true
         }
         return false
+    }
+
+    fun checkForced(): Boolean {
+        if (forcedTime <= 0) return false
+        return System.currentTimeMillis() < matchChangedTime + matchDelay + forcedTime
     }
 
     private var actionTriggerTime = Value(0L)
