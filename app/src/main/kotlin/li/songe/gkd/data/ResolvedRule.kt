@@ -20,7 +20,7 @@ sealed class ResolvedRule(
     val rawSubs = g.subscription
     val config = g.config
     val key = rule.key
-    val index = group.rules.indexOf(rule)
+    val index = group.rules.indexOfFirst { r -> r === rule }
     private val preKeys = (rule.preKeys ?: emptyList()).toSet()
     private val matches = rule.matches?.map { s -> Selector.parse(s) } ?: emptyList()
     private val excludeMatches = (rule.excludeMatches ?: emptyList()).map { s -> Selector.parse(s) }
