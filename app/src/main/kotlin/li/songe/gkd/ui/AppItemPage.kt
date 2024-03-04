@@ -253,6 +253,8 @@ fun AppItemPage(
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center
                     )
+                } else if (editable) {
+                    Spacer(modifier = Modifier.height(40.dp))
                 }
             }
         }
