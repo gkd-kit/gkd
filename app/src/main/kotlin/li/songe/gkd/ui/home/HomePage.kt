@@ -45,9 +45,9 @@ fun HomePage() {
         }
     })
 
-    val appListPage = useAppListPage()
-    val subsPage = useSubsManagePage()
     val controlPage = useControlPage()
+    val subsPage = useSubsManagePage()
+    val appListPage = useAppListPage()
     val settingsPage = useSettingsPage()
 
     val pages = arrayOf(controlPage, subsPage, appListPage, settingsPage)

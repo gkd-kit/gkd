@@ -122,7 +122,11 @@ fun useAppListPage(): ScaffoldExt {
             }, actions = {
                 if (showSearchBar) {
                     IconButton(onClick = {
-                        showSearchBar = false
+                        if (vm.searchStrFlow.value.isEmpty()) {
+                            showSearchBar = false
+                        } else {
+                            vm.searchStrFlow.value = ""
+                        }
                     }) {
                         Icon(
                             imageVector = Icons.Default.Close,
