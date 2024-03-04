@@ -165,6 +165,9 @@ fun AppConfigPage(appId: String) {
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center
                     )
+                } else {
+                    // 避免被 floatingActionButton 遮挡
+                    Spacer(modifier = Modifier.height(40.dp))
                 }
             }
         }

@@ -271,6 +271,8 @@ fun SubsPage(
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center
                     )
+                } else if (editable) {
+                    Spacer(modifier = Modifier.height(40.dp))
                 }
             }
         }
@@ -282,13 +284,13 @@ fun SubsPage(
         var source by remember {
             mutableStateOf("")
         }
-        AlertDialog(title = { Text(text = "添加APP规则") }, text = {
+        AlertDialog(title = { Text(text = "添加应用规则") }, text = {
             OutlinedTextField(
                 value = source,
                 onValueChange = { source = it },
                 maxLines = 10,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(text = "请输入规则\n若APP规则已经存在则追加") },
+                placeholder = { Text(text = "请输入规则\n若应用规则已经存在则追加") },
             )
         }, onDismissRequest = { showAddDlg = false }, confirmButton = {
             TextButton(onClick = {

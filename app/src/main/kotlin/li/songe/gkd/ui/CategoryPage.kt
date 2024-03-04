@@ -174,6 +174,8 @@ fun CategoryPage(subsItemId: Long) {
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
+                } else if (editable) {
+                    Spacer(modifier = Modifier.height(40.dp))
                 }
             }
         }

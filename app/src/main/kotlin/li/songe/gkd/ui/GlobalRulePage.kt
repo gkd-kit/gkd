@@ -224,6 +224,8 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center
                     )
+                } else if (editable) {
+                    Spacer(modifier = Modifier.height(40.dp))
                 }
             }
         }
