@@ -109,7 +109,7 @@ fun updateLauncherAppId() {
     launcherAppId = app.packageManager.getDefaultLauncherAppId() ?: ""
 }
 
-val clickLogMutex = Mutex()
+val clickLogMutex by lazy { Mutex() }
 suspend fun insertClickLog(rule: ResolvedRule) {
     clickLogMutex.withLock {
         increaseClickCount()
