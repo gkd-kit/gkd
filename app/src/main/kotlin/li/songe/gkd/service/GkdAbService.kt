@@ -190,9 +190,11 @@ class GkdAbService : CompositionAbService({
                                 topActivityFlow.value = TopActivity(appId = rightAppId)
                             }
                             getAndUpdateCurrentRules()
-                            if (queryTaskJob?.isActive != true) {
-                                Thread.sleep(300)
-                                newQueryTask()
+                            scope.launch(actionThread) {
+                                delay(300)
+                                if (queryTaskJob?.isActive != true) {
+                                    newQueryTask()
+                                }
                             }
                         }
                     }
@@ -206,7 +208,7 @@ class GkdAbService : CompositionAbService({
                 }
                 if (activityRule !== getAndUpdateCurrentRules()) break
                 if (rule.checkDelay() && rule.actionDelayJob == null) {
-                    rule.actionDelayJob = scope.launch(queryThread) {
+                    rule.actionDelayJob = scope.launch(actionThread) {
                         delay(rule.actionDelay)
                         rule.actionDelayJob = null
                         newQueryTask()
