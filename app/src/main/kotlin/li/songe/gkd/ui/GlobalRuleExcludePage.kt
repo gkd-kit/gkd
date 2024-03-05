@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
@@ -49,7 +48,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -248,7 +246,6 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                             contentDescription = null,
                             modifier = Modifier
                                 .size(52.dp)
-                                .clip(CircleShape)
                         )
                     } else {
                         Icon(
@@ -257,7 +254,6 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                             modifier = Modifier
                                 .size(52.dp)
                                 .padding(4.dp)
-                                .clip(CircleShape)
                         )
                     }
 
