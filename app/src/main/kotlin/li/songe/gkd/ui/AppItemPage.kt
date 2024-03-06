@@ -3,6 +3,7 @@ package li.songe.gkd.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,15 +14,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,7 +51,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
@@ -62,6 +63,7 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.getDialogResult
 import li.songe.gkd.ui.destinations.GroupItemPageDestination
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
@@ -86,14 +88,13 @@ fun AppItemPage(
     val scope = rememberCoroutineScope()
     val navController = LocalNavController.current
     val vm = hiltViewModel<AppItemVm>()
-    val subsItem by vm.subsItemFlow.collectAsState()
+    val subsItem = vm.subsItemFlow.collectAsState().value
     val subsRaw = vm.subsRawFlow.collectAsState().value
     val subsConfigs by vm.subsConfigsFlow.collectAsState()
     val categoryConfigs by vm.categoryConfigsFlow.collectAsState()
     val appRaw by vm.subsAppFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
 
-    val subsItemVal = subsItem
     val groupToCategoryMap = subsRaw?.groupToCategoryMap ?: emptyMap()
 
     val (showGroupItem, setShowGroupItem) = remember {
@@ -106,9 +107,6 @@ fun AppItemPage(
 
     var showAddDlg by remember { mutableStateOf(false) }
 
-    val (menuGroupRaw, setMenuGroupRaw) = remember {
-        mutableStateOf<RawSubscription.RawAppGroup?>(null)
-    }
     val (editGroupRaw, setEditGroupRaw) = remember {
         mutableStateOf<RawSubscription.RawAppGroup?>(null)
     }
@@ -213,14 +211,97 @@ fun AppItemPage(
                     }
                     Spacer(modifier = Modifier.width(10.dp))
 
-                    IconButton(onClick = {
-                        setMenuGroupRaw(group)
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "more",
-                        )
+                    var expanded by remember { mutableStateOf(false) }
+                    Box(
+                        modifier = Modifier
+                            .wrapContentSize(Alignment.TopStart)
+                    ) {
+                        IconButton(onClick = {
+                            expanded = true
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "more",
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(text = "复制")
+                                },
+                                onClick = {
+                                    val groupAppText = json.encodeToJson5String(
+                                        appRaw.copy(
+                                            groups = listOf(group)
+                                        )
+                                    )
+                                    ClipboardUtils.copyText(groupAppText)
+                                    toast("复制成功")
+                                    expanded = false
+                                },
+                            )
+                            if (editable) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(text = "编辑")
+                                    },
+                                    onClick = {
+                                        setEditGroupRaw(group)
+                                        expanded = false
+                                    },
+                                )
+                            }
+                            DropdownMenuItem(
+                                text = {
+                                    Text(text = "编辑禁用")
+                                },
+                                onClick = {
+                                    setExcludeGroupRaw(group)
+                                    expanded = false
+                                },
+                            )
+                            if (editable && subsItem != null && subsRaw != null) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(text = "删除", color = MaterialTheme.colorScheme.error)
+                                    },
+                                    onClick = {
+                                        vm.viewModelScope.launchTry {
+                                            val result = getDialogResult(
+                                                "删除规则组",
+                                                "确定删除规则组 ${group.name} ?"
+                                            )
+                                            if (!result) return@launchTry
+                                            val newSubsRaw = subsRaw.copy(
+                                                apps = subsRaw.apps
+                                                    .toMutableList()
+                                                    .apply {
+                                                        set(
+                                                            indexOfFirst { a -> a.id == appRaw.id },
+                                                            appRaw.copy(
+                                                                groups = appRaw.groups
+                                                                    .filter { g -> g.key != group.key }
+                                                            )
+                                                        )
+                                                    }
+                                            )
+                                            updateSubscription(newSubsRaw)
+                                            DbSet.subsItemDao.update(subsItem.copy(mtime = System.currentTimeMillis()))
+                                            DbSet.subsConfigDao.delete(
+                                                subsItem.id, appRaw.id, group.key
+                                            )
+                                            toast("删除成功")
+                                        }
+                                        expanded = false
+                                    },
+                                )
+                            }
+                        }
                     }
+
                     Spacer(modifier = Modifier.width(10.dp))
 
                     val groupEnable = getGroupRawEnable(
@@ -285,80 +366,11 @@ fun AppItemPage(
                             Text(text = "查看图片")
                         }
                     }
-                    TextButton(onClick = {
-                        val groupAppText = json.encodeToJson5String(
-                            appRaw.copy(
-                                groups = listOf(showGroupItemVal)
-                            )
-                        )
-                        ClipboardUtils.copyText(groupAppText)
-                        toast("复制成功")
-                    }) {
-                        Text(text = "复制规则组")
-                    }
                 }
             })
     }
 
-    if (menuGroupRaw != null && subsItemVal != null) {
-        Dialog(onDismissRequest = { setMenuGroupRaw(null) }) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                Text(text = "编辑禁用", modifier = Modifier
-                    .clickable {
-                        setExcludeGroupRaw(menuGroupRaw)
-                        setMenuGroupRaw(null)
-                    }
-                    .padding(16.dp)
-                    .fillMaxWidth())
-                if (editable) {
-                    Text(text = "编辑规则组", modifier = Modifier
-                        .clickable {
-                            setEditGroupRaw(menuGroupRaw)
-                            setMenuGroupRaw(null)
-                        }
-                        .padding(16.dp)
-                        .fillMaxWidth())
-                    Text(text = "删除规则组", modifier = Modifier
-                        .clickable {
-                            vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                subsRaw ?: return@launchTry
-                                val newSubsRaw = subsRaw.copy(
-                                    apps = subsRaw.apps
-                                        .toMutableList()
-                                        .apply {
-                                            set(
-                                                indexOfFirst { a -> a.id == appRaw.id },
-                                                appRaw.copy(
-                                                    groups = appRaw.groups
-                                                        .filter { g -> g.key != menuGroupRaw.key }
-                                                )
-                                            )
-                                        }
-                                )
-                                updateSubscription(newSubsRaw)
-                                DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
-                                DbSet.subsConfigDao.delete(
-                                    subsItemVal.id, appRaw.id, menuGroupRaw.key
-                                )
-                                toast("删除成功")
-                                setMenuGroupRaw(null)
-                            }
-                        }
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-        }
-    }
-
-    if (editGroupRaw != null && subsItemVal != null) {
+    if (editGroupRaw != null && subsItem != null) {
         var source by remember {
             mutableStateOf(json.encodeToJson5String(editGroupRaw))
         }
@@ -416,7 +428,7 @@ fun AppItemPage(
                     })
                     vm.viewModelScope.launchTry(Dispatchers.IO) {
                         updateSubscription(newSubsRaw)
-                        DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
+                        DbSet.subsItemDao.update(subsItem.copy(mtime = System.currentTimeMillis()))
                         toast("更新成功")
                     }
                 }, enabled = source.isNotEmpty()) {
@@ -426,7 +438,7 @@ fun AppItemPage(
         )
     }
 
-    if (excludeGroupRaw != null && subsItemVal != null) {
+    if (excludeGroupRaw != null && subsItem != null) {
         var source by remember {
             mutableStateOf(
                 ExcludeData.parse(subsConfigs.find { s -> s.groupKey == excludeGroupRaw.key }?.exclude)
@@ -482,7 +494,7 @@ fun AppItemPage(
         )
     }
 
-    if (showAddDlg && subsItemVal != null) {
+    if (showAddDlg && subsItem != null) {
         var source by remember {
             mutableStateOf("")
         }
@@ -548,7 +560,7 @@ fun AppItemPage(
                     }
                 })
                 vm.viewModelScope.launchTry(Dispatchers.IO) {
-                    DbSet.subsItemDao.update(subsItemVal.copy(mtime = System.currentTimeMillis()))
+                    DbSet.subsItemDao.update(subsItem.copy(mtime = System.currentTimeMillis()))
                     updateSubscription(newSubsRaw)
                     showAddDlg = false
                     toast("添加成功")
