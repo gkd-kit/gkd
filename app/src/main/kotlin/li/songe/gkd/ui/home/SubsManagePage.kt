@@ -40,7 +40,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,7 +62,6 @@ import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.isSafeUrl
-import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.openUri
@@ -82,7 +80,6 @@ val subsNav = BottomNavItem(
 @Composable
 fun useSubsManagePage(): ScaffoldExt {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val navController = LocalNavController.current
 
     val vm = hiltViewModel<HomeVm>()
@@ -93,7 +90,6 @@ fun useSubsManagePage(): ScaffoldExt {
         mutableStateOf(subItems)
     }
 
-    var deleteSubItem: SubsItem? by remember { mutableStateOf(null) }
     var menuSubItem: SubsItem? by remember { mutableStateOf(null) }
 
     var showAddLinkDialog by remember { mutableStateOf(false) }
@@ -181,34 +177,21 @@ fun useSubsManagePage(): ScaffoldExt {
                 if (menuSubItemVal.id != -2L) {
                     Text(text = "删除订阅", modifier = Modifier
                         .clickable {
-                            deleteSubItem = menuSubItemVal
                             menuSubItem = null
+                            vm.viewModelScope.launchTry {
+                                val result = getDialogResult(
+                                    "删除订阅",
+                                    "是否删除订阅 ${subsIdToRaw[menuSubItemVal.id]?.name} ?",
+                                )
+                                if (!result) return@launchTry
+                                menuSubItemVal.removeAssets()
+                            }
                         }
                         .fillMaxWidth()
                         .padding(16.dp), color = MaterialTheme.colorScheme.error)
                 }
             }
         }
-    }
-
-    deleteSubItem?.let { deleteSubItemVal ->
-        AlertDialog(onDismissRequest = { deleteSubItem = null },
-            title = { Text(text = "是否删除 ${subsIdToRaw[deleteSubItemVal.id]?.name}?") },
-            confirmButton = {
-                TextButton(onClick = scope.launchAsFn {
-                    deleteSubItem = null
-                    deleteSubItemVal.removeAssets()
-                }) {
-                    Text(text = "是", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    deleteSubItem = null
-                }) {
-                    Text(text = "否")
-                }
-            })
     }
 
     LaunchedEffect(showAddLinkDialog) {
