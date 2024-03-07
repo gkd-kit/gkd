@@ -163,9 +163,7 @@ fun AppItemPage(
                             if (group.key == focusGroupKey) MaterialTheme.colorScheme.inversePrimary else Color.Transparent
                         )
                         .clickable { setShowGroupItem(group) }
-                        .padding(10.dp, 6.dp)
-                        .fillMaxWidth()
-                        .height(45.dp),
+                        .padding(10.dp, 6.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -460,6 +458,7 @@ fun AppItemPage(
                         )
                     },
                     maxLines = 10,
+                    textStyle = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp)
                 )
             },
             onDismissRequest = { setExcludeGroupRaw(null) },

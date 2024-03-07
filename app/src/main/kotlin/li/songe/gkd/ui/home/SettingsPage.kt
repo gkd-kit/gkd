@@ -186,20 +186,23 @@ fun useSettingsPage(): ScaffoldExt {
                 },
             )
         }, onDismissRequest = { showToastInputDlg = false }, confirmButton = {
-            TextButton(onClick = {
-                storeFlow.value = store.copy(
-                    clickToast = value
-                )
-                showToastInputDlg = false
-            }) {
+            TextButton(
+                enabled = value.isNotEmpty(),
+                onClick = {
+                    storeFlow.value = store.copy(
+                        clickToast = value
+                    )
+                    showToastInputDlg = false
+                }
+            ) {
                 Text(
-                    text = "确认", modifier = Modifier
+                    text = "确认",
                 )
             }
         }, dismissButton = {
             TextButton(onClick = { showToastInputDlg = false }) {
                 Text(
-                    text = "取消", modifier = Modifier
+                    text = "取消",
                 )
             }
         })

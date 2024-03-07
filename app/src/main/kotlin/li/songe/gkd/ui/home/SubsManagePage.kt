@@ -209,27 +209,29 @@ fun useSubsManagePage(): ScaffoldExt {
                 modifier = Modifier.fillMaxWidth()
             )
         }, onDismissRequest = { showAddLinkDialog = false }, confirmButton = {
-            TextButton(onClick = {
-                if (!URLUtil.isNetworkUrl(link)) {
-                    toast("非法链接")
-                    return@TextButton
-                }
-                if (subItems.any { s -> s.updateUrl == link }) {
-                    toast("链接已存在")
-                    return@TextButton
-                }
-                vm.viewModelScope.launch {
-                    if (!isSafeUrl(link)) {
-                        val result = getDialogResult(
-                            "未知来源",
-                            "你正在添加一个未验证的远程订阅\n\n这可能含有恶意的规则\n\n是否仍然确认添加?"
-                        )
-                        if (!result) return@launch
+            TextButton(
+                enabled = link.isNotBlank(),
+                onClick = {
+                    if (!URLUtil.isNetworkUrl(link)) {
+                        toast("非法链接")
+                        return@TextButton
                     }
-                    showAddLinkDialog = false
-                    vm.addSubsFromUrl(url = link)
-                }
-            }) {
+                    if (subItems.any { s -> s.updateUrl == link }) {
+                        toast("链接已存在")
+                        return@TextButton
+                    }
+                    vm.viewModelScope.launchTry {
+                        if (!isSafeUrl(link)) {
+                            val result = getDialogResult(
+                                "未知来源",
+                                "你正在添加一个未验证的远程订阅\n\n这可能含有恶意的规则\n\n是否仍然确认添加?"
+                            )
+                            if (!result) return@launchTry
+                        }
+                        showAddLinkDialog = false
+                        vm.addSubsFromUrl(url = link)
+                    }
+                }) {
                 Text(text = "添加")
             }
         })

@@ -184,9 +184,7 @@ private fun AppGroupCard(
     Row(
         modifier = Modifier
             .clickable(onClick = onClick)
-            .padding(10.dp, 6.dp)
-            .fillMaxWidth()
-            .height(45.dp),
+            .padding(10.dp, 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {

@@ -252,7 +252,7 @@ fun CategoryPage(subsItemId: Long) {
             },
             confirmButton = {
                 TextButton(
-                    enabled = source.isNotEmpty() && source != editNameCategory.name,
+                    enabled = source.isNotBlank() && source != editNameCategory.name,
                     onClick = {
                         if (categories.any { c -> c.key != editNameCategory.key && c.name == source }) {
                             toast("不可添加同名类别")
@@ -274,7 +274,8 @@ fun CategoryPage(subsItemId: Long) {
                             toast("修改成功")
                             setEditNameCategory(null)
                         }
-                    }) {
+                    }
+                ) {
                     Text(text = "确认")
                 }
             }
