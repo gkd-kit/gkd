@@ -353,17 +353,20 @@ fun DebugPage() {
                     },
                 )
             }, onDismissRequest = { showPortDlg = false }, confirmButton = {
-                TextButton(onClick = {
-                    val newPort = value.toIntOrNull()
-                    if (newPort == null || !(5000 <= newPort && newPort <= 65535)) {
-                        toast("请输入在 5000~65535 的任意数字")
-                        return@TextButton
+                TextButton(
+                    enabled = value.isNotEmpty(),
+                    onClick = {
+                        val newPort = value.toIntOrNull()
+                        if (newPort == null || !(5000 <= newPort && newPort <= 65535)) {
+                            toast("请输入在 5000~65535 的任意数字")
+                            return@TextButton
+                        }
+                        storeFlow.value = store.copy(
+                            httpServerPort = newPort
+                        )
+                        showPortDlg = false
                     }
-                    storeFlow.value = store.copy(
-                        httpServerPort = newPort
-                    )
-                    showPortDlg = false
-                }) {
+                ) {
                     Text(
                         text = "确认", modifier = Modifier
                     )

@@ -132,9 +132,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                             if (group.key == focusGroupKey) MaterialTheme.colorScheme.inversePrimary else Color.Transparent
                         )
                         .clickable { setShowGroupItem(group) }
-                        .padding(10.dp, 6.dp)
-                        .fillMaxWidth()
-                        .height(45.dp),
+                        .padding(10.dp, 6.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {

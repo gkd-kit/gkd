@@ -132,7 +132,7 @@ fun useControlPage(): ScaffoldExt {
 
             TextSwitch(
                 name = "常驻通知",
-                desc = "在通知栏显示服务运行状态及统计数据",
+                desc = "通知栏显示运行状态及统计数据",
                 checked = manageRunning && store.enableStatusService,
                 onCheckedChange = {
                     if (it) {

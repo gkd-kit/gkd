@@ -115,8 +115,13 @@ fun SubsPage(
     val showUninstallApp by vm.showUninstallAppFlow.collectAsState()
     val sortType by vm.sortTypeFlow.collectAsState()
     val listState = rememberLazyListState()
+    var isFirstVisit by remember { mutableStateOf(false) }
     LaunchedEffect(key1 = appAndConfigs, block = {
-        listState.scrollToItem(0)
+        if (isFirstVisit) {
+            listState.scrollToItem(0)
+        } else {
+            isFirstVisit = true
+        }
     })
 
     Scaffold(

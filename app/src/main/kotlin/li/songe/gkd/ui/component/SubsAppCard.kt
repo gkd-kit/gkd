@@ -5,13 +5,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
@@ -58,27 +59,35 @@ fun SubsAppCard(
     var expanded by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
-            .height(60.dp)
             .clickable {
                 onClick?.invoke()
             }
-            .padding(4.dp),
+            .height(IntrinsicSize.Min)
+            .padding(10.dp, 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (appInfo?.icon != null) {
-            Image(
-                painter = rememberDrawablePainter(appInfo.icon),
-                contentDescription = null,
+            Box(
                 modifier = Modifier
-                    .size(52.dp)
-            )
+                    .fillMaxHeight()
+                    .aspectRatio(1f)
+            ) {
+                Image(
+                    painter = rememberDrawablePainter(appInfo.icon),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .matchParentSize()
+                        .padding(4.dp)
+                )
+            }
         } else {
             Icon(
                 imageVector = Icons.Default.Android,
                 contentDescription = null,
                 modifier = Modifier
-                    .size(52.dp)
+                    .aspectRatio(1f)
+                    .fillMaxHeight()
                     .padding(4.dp)
             )
         }
