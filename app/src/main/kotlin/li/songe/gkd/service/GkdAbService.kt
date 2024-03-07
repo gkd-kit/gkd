@@ -21,6 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -126,7 +127,8 @@ class GkdAbService : CompositionAbService({
 
     var lastTriggerShizukuTime = 0L
     var lastContentEventTime = 0L
-    val queryThread = Dispatchers.IO.limitedParallelism(1)
+    // AccessibilityInteractionClient.getInstanceForThread(threadId)
+    val queryThread = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
     val actionThread = Dispatchers.IO.limitedParallelism(1)
     onDestroy {
         queryThread.cancel()
