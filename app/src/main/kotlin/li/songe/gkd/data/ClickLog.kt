@@ -77,6 +77,22 @@ data class ClickLog(
         @Query("SELECT * FROM click_log ORDER BY id DESC LIMIT 1")
         fun queryLatest(): Flow<ClickLog?>
 
+        @Query(
+            """
+            SELECT cl.* FROM click_log AS cl
+            INNER JOIN (
+                SELECT subs_id, group_key, MAX(id) AS max_id FROM click_log
+                WHERE app_id = :appId
+                  AND group_type = :groupType
+                  AND subs_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)
+                GROUP BY subs_id, group_key
+            ) AS latest_logs ON cl.subs_id = latest_logs.subs_id 
+            AND cl.group_key = latest_logs.group_key 
+            AND cl.id = latest_logs.max_id
+        """
+        )
+        fun queryAppLatest(appId: String, groupType: Int): Flow<List<ClickLog>>
+
 
         @Query(
             """
