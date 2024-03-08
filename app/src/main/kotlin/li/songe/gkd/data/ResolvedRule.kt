@@ -163,9 +163,14 @@ sealed class ResolvedRule(
         return target
     }
 
-    private val fc = getActionFc(rule.action)
+    private val performer = ActionPerformer.getAction(
+        rule.action ?: rule.position?.let {
+            ActionPerformer.ClickCenter.action
+        }
+    )
+
     fun performAction(context: AccessibilityService, node: AccessibilityNodeInfo): ActionResult {
-        return fc(context, node, rule.position)
+        return performer.perform(context, node, rule.position)
     }
 
     var matchDelayJob: Job? = null

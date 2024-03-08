@@ -34,13 +34,13 @@ import li.songe.gkd.appScope
 import li.songe.gkd.composition.CompositionAbService
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.composition.CompositionExt.useScope
+import li.songe.gkd.data.ActionPerformer
 import li.songe.gkd.data.ActionResult
 import li.songe.gkd.data.AppRule
 import li.songe.gkd.data.AttrInfo
 import li.songe.gkd.data.GkdAction
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.RuleStatus
-import li.songe.gkd.data.getActionFc
 import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.shizuku.useSafeGetTasksFc
@@ -538,7 +538,8 @@ class GkdAbService : CompositionAbService({
                 )
             }
 
-            return getActionFc(gkdAction.action)(serviceVal, targetNode, gkdAction.position)
+            return ActionPerformer.getAction(gkdAction.action)
+                .perform(serviceVal, targetNode, gkdAction.position)
         }
 
 
