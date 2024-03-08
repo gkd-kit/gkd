@@ -2,6 +2,7 @@ package li.songe.gkd.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,17 +11,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -29,7 +35,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -41,6 +49,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
+import kotlinx.coroutines.flow.update
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
@@ -53,7 +62,6 @@ import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
-import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.toast
 
 @RootNavGraph
@@ -62,12 +70,13 @@ import li.songe.gkd.util.toast
 fun AppConfigPage(appId: String) {
     val navController = LocalNavController.current
     val vm = hiltViewModel<AppConfigVm>()
+    val ruleSortType by vm.ruleSortTypeFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
     val appInfo = appInfoCache[appId]
-    val ruleSummary by ruleSummaryFlow.collectAsState()
-    val globalGroups = ruleSummary.globalGroups
-    val appGroups = ruleSummary.appIdToAllGroups[appId] ?: emptyList()
+    val globalGroups by vm.globalGroupsFlow.collectAsState()
+    val appGroups by vm.appGroupsFlow.collectAsState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    var expanded by remember { mutableStateOf(false) }
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
@@ -87,7 +96,46 @@ fun AppConfigPage(appId: String) {
                     softWrap = false,
                     overflow = TextOverflow.Ellipsis,
                 )
-            }, actions = {})
+            }, actions = {
+                IconButton(onClick = {
+                    expanded = true
+                }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Sort,
+                        contentDescription = null,
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .wrapContentSize(Alignment.TopStart)
+                ) {
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        RuleSortType.allSubObject.forEach { s ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        RadioButton(
+                                            selected = ruleSortType == s,
+                                            onClick = {
+                                                vm.ruleSortTypeFlow.update { s }
+                                            }
+                                        )
+                                        Text(s.label)
+                                    }
+                                },
+                                onClick = {
+                                    vm.ruleSortTypeFlow.update { s }
+                                },
+                            )
+                        }
+                    }
+                }
+            })
         },
         floatingActionButton = {
             FloatingActionButton(

@@ -129,7 +129,7 @@ fun AppItemPage(
             val text = if (subsRaw == null) {
                 "订阅文件缺失"
             } else {
-                "${subsRaw.name}/${appInfoCache[appId]?.name ?: appRaw.name ?: appId}"
+                "${appInfoCache[appId]?.name ?: appRaw.name ?: appId}/${subsRaw.name}"
             }
             Text(
                 text = text,
