@@ -238,19 +238,14 @@ fun useAppListPage(): ScaffoldExt {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (appInfo.icon != null) {
-                        Box(
+                        Image(
+                            painter = rememberDrawablePainter(appInfo.icon),
+                            contentDescription = null,
                             modifier = Modifier
                                 .fillMaxHeight()
-                                .aspectRatio(1f)
-                        ) {
-                            Image(
-                                painter = rememberDrawablePainter(appInfo.icon),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .matchParentSize()
-                                    .padding(4.dp)
-                            )
-                        }
+                                .height(1.dp)
+                                .padding(4.dp)
+                        )
                     } else {
                         Icon(
                             imageVector = Icons.Default.Android,
