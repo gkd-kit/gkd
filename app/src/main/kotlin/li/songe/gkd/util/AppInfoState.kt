@@ -92,18 +92,23 @@ fun updateAppInfo(appIds: List<String>) {
     }
 }
 
+suspend fun initOrResetAppInfoCache() {
+    if (updateAppMutex.isLocked) return
+    updateAppMutex.withLock {
+        val appMap = mutableMapOf<String, AppInfo>()
+        app.packageManager.getInstalledPackages(0).forEach { packageInfo ->
+            val info = packageInfo.toAppInfo()
+            if (info != null) {
+                appMap[packageInfo.packageName] = info
+            }
+        }
+        appInfoCacheFlow.value = appMap.toImmutableMap()
+    }
+}
+
 fun initAppState() {
     packageReceiver
     appScope.launchTry(Dispatchers.IO) {
-        updateAppMutex.withLock {
-            val appMap = mutableMapOf<String, AppInfo>()
-            app.packageManager.getInstalledPackages(0).forEach { packageInfo ->
-                    val info = packageInfo.toAppInfo()
-                    if (info != null) {
-                        appMap[packageInfo.packageName] = info
-                    }
-                }
-            appInfoCacheFlow.value = appMap.toImmutableMap()
-        }
+        initOrResetAppInfoCache()
     }
 }
