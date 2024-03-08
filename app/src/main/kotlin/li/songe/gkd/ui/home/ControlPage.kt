@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationManagerCompat
@@ -240,7 +241,11 @@ fun useControlPage(): ScaffoldExt {
                 Text(text = subsStatus, fontSize = 18.sp)
                 if (latestRecordDesc != null) {
                     Text(
-                        text = "最近点击: $latestRecordDesc", fontSize = 14.sp
+                        text = "最近点击: $latestRecordDesc",
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
