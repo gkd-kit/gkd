@@ -9,9 +9,11 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.service.updateLauncherAppId
+import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.authActionFlow
 import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.initFolder
+import li.songe.gkd.util.initOrResetAppInfoCache
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.logZipDir
 import li.songe.gkd.util.newVersionApkDir
@@ -27,6 +29,13 @@ class MainViewModel : ViewModel() {
 
         // 每次打开页面更新记录桌面 appId
         updateLauncherAppId()
+
+        // https://github.com/gkd-kit/gkd/issues/543
+        viewModelScope.launchTry(Dispatchers.IO) {
+            if (appInfoCacheFlow.value.size < 16) {
+                initOrResetAppInfoCache()
+            }
+        }
 
         val localSubsItem = SubsItem(
             id = -2, order = -2, mtime = System.currentTimeMillis()
