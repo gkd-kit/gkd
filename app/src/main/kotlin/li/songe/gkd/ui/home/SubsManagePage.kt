@@ -204,7 +204,7 @@ fun useSubsManagePage(): ScaffoldExt {
             OutlinedTextField(
                 value = link,
                 onValueChange = { link = it.trim() },
-                maxLines = 2,
+                maxLines = 8,
                 textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
                 modifier = Modifier.fillMaxWidth()
             )
