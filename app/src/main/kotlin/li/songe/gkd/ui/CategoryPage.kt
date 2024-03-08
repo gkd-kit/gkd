@@ -97,7 +97,7 @@ fun CategoryPage(subsItemId: Long) {
                     contentDescription = null,
                 )
             }
-        }, title = { Text(text = "${subsRaw?.name ?: subsItemId}/规则类别") }, actions = {})
+        }, title = { Text(text = "规则类别/${subsRaw?.name ?: subsItemId}") }, actions = {})
     }, floatingActionButton = {
         if (editable) {
             FloatingActionButton(onClick = { showAddDlg = true }) {
