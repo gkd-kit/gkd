@@ -37,6 +37,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +46,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
@@ -349,20 +352,18 @@ fun AppItemPage(
                 Text(text = showGroupItemVal.desc ?: "")
             },
             confirmButton = {
-                Row {
-                    if (showGroupItemVal.allExampleUrls.isNotEmpty()) {
-                        TextButton(onClick = {
-                            setShowGroupItem(null)
-                            navController.navigate(
-                                GroupItemPageDestination(
-                                    subsInt = subsItemId,
-                                    groupKey = showGroupItemVal.key,
-                                    appId = appId,
-                                )
+                if (showGroupItemVal.allExampleUrls.isNotEmpty()) {
+                    TextButton(onClick = {
+                        setShowGroupItem(null)
+                        navController.navigate(
+                            GroupItemPageDestination(
+                                subsInt = subsItemId,
+                                groupKey = showGroupItemVal.key,
+                                appId = appId,
                             )
-                        }) {
-                            Text(text = "查看图片")
-                        }
+                        )
+                    }) {
+                        Text(text = "查看图片")
                     }
                 }
             })
@@ -372,6 +373,7 @@ fun AppItemPage(
         var source by remember {
             mutableStateOf(json.encodeToJson5String(editGroupRaw))
         }
+        val focusRequester = remember { FocusRequester() }
         val oldSource = remember { source }
         AlertDialog(
             title = { Text(text = "编辑规则组") },
@@ -379,10 +381,15 @@ fun AppItemPage(
                 OutlinedTextField(
                     value = source,
                     onValueChange = { source = it },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
                     placeholder = { Text(text = "请输入规则组") },
                     maxLines = 10,
                 )
+                LaunchedEffect(null) {
+                    focusRequester.requestFocus()
+                }
             },
             onDismissRequest = { setEditGroupRaw(null) },
             dismissButton = {
@@ -444,13 +451,16 @@ fun AppItemPage(
             )
         }
         val oldSource = remember { source }
+        val focusRequester = remember { FocusRequester() }
         AlertDialog(
-            title = { Text(text = "编辑禁用项") },
+            title = { Text(text = "编辑禁用") },
             text = {
                 OutlinedTextField(
                     value = source,
                     onValueChange = { source = it },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
                     placeholder = {
                         Text(
                             fontSize = 12.sp,
@@ -460,6 +470,9 @@ fun AppItemPage(
                     maxLines = 10,
                     textStyle = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp)
                 )
+                LaunchedEffect(null) {
+                    focusRequester.requestFocus()
+                }
             },
             onDismissRequest = { setExcludeGroupRaw(null) },
             dismissButton = {
