@@ -29,7 +29,7 @@ body:
     id: log-file
     attributes:
       label: |
-        日志文件-不包含日志将会被直接关闭
+        日志文件-无论什么问题不包含日志将会被直接关闭
       description: |
         主页-设置-日志, 上传日志文件或者生成链接并粘贴到下面的输入框\
         无论什么问题,你都需要提供日志文件. 没有日志, 纯发文字/截图/视频都是没有用的\
@@ -37,13 +37,29 @@ body:
     validations:
       required: true
   - type: textarea
-    id: bug-description
+    id: bug-1
     attributes:
       label: |
-        BUG描述及其复现步骤(视频/截图)
+        BUG描述(文字/截图/视频)
       description: |
-        关于bug是什么的清晰而简洁的描述, 例如: 我在使用 GKD 时遇到了..., 我期望的行为是..., 实际的行为是...\
-        请提供复现问题的的步骤骤或者上传录制好的视频(不提供复现步骤将被直接关闭)\
+        请使用尽量准确的描述, 否则你的问题将会被直接关闭
+    validations:
+      required: true
+  - type: textarea
+    id: bug-2
+    attributes:
+      label: |
+        期望行为(文字/截图/视频)
+      description: |
+        请使用尽量准确的描述, 否则你的问题将会被直接关闭
+    validations:
+      required: true
+  - type: textarea
+    id: bug-3
+    attributes:
+      label: |
+        实际行为(文字/截图/视频)
+      description: |
         请使用尽量准确的描述, 否则你的问题将会被直接关闭
     validations:
       required: true
