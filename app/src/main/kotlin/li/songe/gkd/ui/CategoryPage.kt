@@ -90,7 +90,6 @@ fun CategoryPage(subsItemId: Long) {
     val categoriesGroups = subsRaw?.categoryToGroupsMap ?: emptyMap()
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    var expanded by remember { mutableStateOf(false) }
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
             IconButton(onClick = {
@@ -141,6 +140,7 @@ fun CategoryPage(subsItemId: Long) {
                         }
                     }
                     if (editable) {
+                        var expanded by remember { mutableStateOf(false) }
                         Box(
                             modifier = Modifier
                                 .wrapContentSize(Alignment.TopStart)
