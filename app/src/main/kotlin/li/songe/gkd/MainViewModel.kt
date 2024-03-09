@@ -3,6 +3,7 @@ package li.songe.gkd
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import li.songe.gkd.data.RawSubscription
@@ -32,8 +33,9 @@ class MainViewModel : ViewModel() {
 
         // https://github.com/gkd-kit/gkd/issues/543
         viewModelScope.launchTry(Dispatchers.IO) {
-            if (appInfoCacheFlow.value.size < 16) {
+            while (appInfoCacheFlow.value.size < 16) {
                 initOrResetAppInfoCache()
+                delay(10_000)
             }
         }
 
