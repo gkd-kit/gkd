@@ -104,7 +104,6 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
         )
     }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    var expanded by remember { mutableStateOf(false) }
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
@@ -186,6 +185,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                     }
                     Spacer(modifier = Modifier.width(10.dp))
 
+                    var expanded by remember { mutableStateOf(false) }
                     Box(
                         modifier = Modifier
                             .wrapContentSize(Alignment.TopStart)
