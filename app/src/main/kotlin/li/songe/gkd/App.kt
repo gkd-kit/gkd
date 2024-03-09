@@ -50,6 +50,7 @@ class App : Application() {
         LogUtils.getConfig().apply {
             setConsoleSwitch(BuildConfig.DEBUG)
             saveDays = 7
+            isLog2FileSwitch = true
         }
         LogUtils.d(
             "GIT_COMMIT_URL: $GIT_COMMIT_URL",
