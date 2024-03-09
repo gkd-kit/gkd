@@ -345,12 +345,14 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
         }
         val oldSource = remember { source }
         AlertDialog(
-            title = { Text(text = "编辑禁用项") },
+            title = { Text(text = "编辑禁用") },
             text = {
                 OutlinedTextField(
                     value = source,
                     onValueChange = { source = it },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
                     placeholder = {
                         Text(
                             fontSize = 12.sp,
@@ -359,6 +361,9 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                     },
                     maxLines = 10,
                 )
+                LaunchedEffect(null) {
+                    focusRequester.requestFocus()
+                }
             },
             onDismissRequest = { showEditDlg = false },
             dismissButton = {

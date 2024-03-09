@@ -377,46 +377,55 @@ fun SubsPage(
         var source by remember {
             mutableStateOf(json.encodeToJson5String(editAppRawVal))
         }
-        AlertDialog(title = { Text(text = "编辑本地APP规则") }, text = {
-            OutlinedTextField(
-                value = source,
-                onValueChange = { source = it },
-                maxLines = 10,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(text = "请输入规则") },
-            )
-        }, onDismissRequest = { editRawApp = null }, confirmButton = {
-            TextButton(onClick = {
-                try {
-                    val newAppRaw = RawSubscription.parseRawApp(source)
-                    if (newAppRaw.id != editAppRawVal.id) {
-                        toast("不允许修改规则id")
-                        return@TextButton
-                    }
-                    val oldAppRawIndex = subsRaw.apps.indexOfFirst { a -> a.id == editAppRawVal.id }
-                    vm.viewModelScope.launchTry {
-                        updateSubscription(
-                            subsRaw.copy(
-                                apps = subsRaw.apps.toMutableList().apply {
-                                    set(oldAppRawIndex, newAppRaw)
-                                }, version = subsRaw.version + 1
-                            )
-                        )
-                        DbSet.subsItemDao.update(subsItem.copy(mtime = System.currentTimeMillis()))
-                        editRawApp = null
-                        toast("更新成功")
-                    }
-                } catch (e: Exception) {
-                    LogUtils.d(e)
-                    toast("非法规则${e.message}")
+        AlertDialog(
+            title = { Text(text = "编辑应用规则") },
+            text = {
+                OutlinedTextField(
+                    value = source,
+                    onValueChange = { source = it },
+                    maxLines = 10,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
+                    placeholder = { Text(text = "请输入规则") },
+                )
+                LaunchedEffect(null) {
+                    focusRequester.requestFocus()
                 }
-            }, enabled = source.isNotEmpty()) {
-                Text(text = "添加")
-            }
-        }, dismissButton = {
-            TextButton(onClick = { editRawApp = null }) {
-                Text(text = "取消")
-            }
-        })
+            },
+            onDismissRequest = { editRawApp = null }, confirmButton = {
+                TextButton(onClick = {
+                    try {
+                        val newAppRaw = RawSubscription.parseRawApp(source)
+                        if (newAppRaw.id != editAppRawVal.id) {
+                            toast("不允许修改规则id")
+                            return@TextButton
+                        }
+                        val oldAppRawIndex =
+                            subsRaw.apps.indexOfFirst { a -> a.id == editAppRawVal.id }
+                        vm.viewModelScope.launchTry {
+                            updateSubscription(
+                                subsRaw.copy(
+                                    apps = subsRaw.apps.toMutableList().apply {
+                                        set(oldAppRawIndex, newAppRaw)
+                                    }, version = subsRaw.version + 1
+                                )
+                            )
+                            DbSet.subsItemDao.update(subsItem.copy(mtime = System.currentTimeMillis()))
+                            editRawApp = null
+                            toast("更新成功")
+                        }
+                    } catch (e: Exception) {
+                        LogUtils.d(e)
+                        toast("非法规则${e.message}")
+                    }
+                }, enabled = source.isNotEmpty()) {
+                    Text(text = "添加")
+                }
+            }, dismissButton = {
+                TextButton(onClick = { editRawApp = null }) {
+                    Text(text = "取消")
+                }
+            })
     }
 }
