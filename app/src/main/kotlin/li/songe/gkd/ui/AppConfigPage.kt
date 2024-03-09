@@ -80,12 +80,13 @@ fun AppConfigPage(appId: String) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     var expanded by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
-    var isFirstVisit by remember { mutableStateOf(false) }
-    LaunchedEffect(globalGroups, appGroups) {
+    var isFirstVisit by remember { mutableStateOf(true) }
+    globalGroups.map { g -> g.group }
+    LaunchedEffect(globalGroups.size, appGroups.size, ruleSortType.value) {
         if (isFirstVisit) {
-            listState.scrollToItem(0)
+            isFirstVisit = false
         } else {
-            isFirstVisit = true
+            listState.scrollToItem(0)
         }
     }
     Scaffold(
