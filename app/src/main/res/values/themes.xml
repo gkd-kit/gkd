@@ -1,10 +1,10 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
 
     <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar"></style>
 
     <style name="SplashScreenTheme" parent="Theme.SplashScreen">
         <item name="windowSplashScreenAnimatedIcon">
-            @drawable/ic_launcher_circle
+            @drawable/ic_launcher_foreground
         </item>
         <item name="windowSplashScreenAnimationDuration">1000</item>
         <!-- postSplashScreenTheme must invoke installSplashScreen -->
