@@ -1,7 +1,7 @@
 package li.songe.selector.data
 
 sealed class CompareOperator(val key: String) {
-    abstract fun compare(left: Any?, right: Any?): Boolean
+    abstract fun compare(left: Any?, right: PrimitiveValue): Boolean
     abstract fun allowType(type: PrimitiveValue): Boolean
 
     companion object {
@@ -10,7 +10,18 @@ sealed class CompareOperator(val key: String) {
             listOf(
                 Equal,
                 NotEqual,
-                Start, NotStart, Include, NotInclude, End, NotEnd, Less, LessEqual, More, MoreEqual
+                Start,
+                NotStart,
+                Include,
+                NotInclude,
+                End,
+                NotEnd,
+                Less,
+                LessEqual,
+                More,
+                MoreEqual,
+                Matches,
+                NotMatches
             ).sortedBy { -it.key.length }.toTypedArray()
         }
 
@@ -28,11 +39,11 @@ sealed class CompareOperator(val key: String) {
     }
 
     data object Equal : CompareOperator("=") {
-        override fun compare(left: Any?, right: Any?): Boolean {
-            return if (left is CharSequence && right is CharSequence) {
-                left.contentReversedEquals(right)
+        override fun compare(left: Any?, right: PrimitiveValue): Boolean {
+            return if (left is CharSequence && right is PrimitiveValue.StringValue) {
+                left.contentReversedEquals(right.value)
             } else {
-                left == right
+                left == right.value
             }
         }
 
@@ -40,61 +51,87 @@ sealed class CompareOperator(val key: String) {
     }
 
     data object NotEqual : CompareOperator("!=") {
-        override fun compare(left: Any?, right: Any?) = !Equal.compare(left, right)
+        override fun compare(left: Any?, right: PrimitiveValue) = !Equal.compare(left, right)
         override fun allowType(type: PrimitiveValue) = true
     }
 
     data object Start : CompareOperator("^=") {
-        override fun compare(left: Any?, right: Any?): Boolean {
-            return if (left is CharSequence && right is CharSequence) left.startsWith(right) else false
+        override fun compare(left: Any?, right: PrimitiveValue): Boolean {
+            return if (left is CharSequence && right is PrimitiveValue.StringValue) {
+                left.startsWith(right.value)
+            } else {
+                false
+            }
         }
 
         override fun allowType(type: PrimitiveValue) = type is PrimitiveValue.StringValue
     }
 
     data object NotStart : CompareOperator("!^=") {
-        override fun compare(left: Any?, right: Any?): Boolean {
-            return if (left is CharSequence && right is CharSequence) !left.startsWith(right) else false
+        override fun compare(left: Any?, right: PrimitiveValue): Boolean {
+            return if (left is CharSequence && right is PrimitiveValue.StringValue) {
+                !left.startsWith(right.value)
+            } else {
+                false
+            }
         }
 
         override fun allowType(type: PrimitiveValue) = type is PrimitiveValue.StringValue
     }
 
     data object Include : CompareOperator("*=") {
-        override fun compare(left: Any?, right: Any?): Boolean {
-            return if (left is CharSequence && right is CharSequence) left.contains(right) else false
+        override fun compare(left: Any?, right: PrimitiveValue): Boolean {
+            return if (left is CharSequence && right is PrimitiveValue.StringValue) {
+                left.contains(right.value)
+            } else {
+                false
+            }
         }
 
         override fun allowType(type: PrimitiveValue) = type is PrimitiveValue.StringValue
     }
 
     data object NotInclude : CompareOperator("!*=") {
-        override fun compare(left: Any?, right: Any?): Boolean {
-            return if (left is CharSequence && right is CharSequence) !left.contains(right) else false
+        override fun compare(left: Any?, right: PrimitiveValue): Boolean {
+            return if (left is CharSequence && right is PrimitiveValue.StringValue) {
+                !left.contains(right.value)
+            } else {
+                false
+            }
         }
 
         override fun allowType(type: PrimitiveValue) = type is PrimitiveValue.StringValue
     }
 
     data object End : CompareOperator("$=") {
-        override fun compare(left: Any?, right: Any?): Boolean {
-            return if (left is CharSequence && right is CharSequence) left.endsWith(right) else false
+        override fun compare(left: Any?, right: PrimitiveValue): Boolean {
+            return if (left is CharSequence && right is PrimitiveValue.StringValue) {
+                left.endsWith(right.value)
+            } else {
+                false
+            }
         }
 
         override fun allowType(type: PrimitiveValue) = type is PrimitiveValue.StringValue
     }
 
     data object NotEnd : CompareOperator("!$=") {
-        override fun compare(left: Any?, right: Any?): Boolean {
-            return if (left is CharSequence && right is CharSequence) !left.endsWith(right) else false
+        override fun compare(left: Any?, right: PrimitiveValue): Boolean {
+            return if (left is CharSequence && right is PrimitiveValue.StringValue) {
+                !left.endsWith(
+                    right.value
+                )
+            } else {
+                false
+            }
         }
 
         override fun allowType(type: PrimitiveValue) = type is PrimitiveValue.StringValue
     }
 
     data object Less : CompareOperator("<") {
-        override fun compare(left: Any?, right: Any?): Boolean {
-            return if (left is Int && right is Int) left < right else false
+        override fun compare(left: Any?, right: PrimitiveValue): Boolean {
+            return if (left is Int && right is PrimitiveValue.IntValue) left < right.value else false
         }
 
 
@@ -102,29 +139,56 @@ sealed class CompareOperator(val key: String) {
     }
 
     data object LessEqual : CompareOperator("<=") {
-        override fun compare(left: Any?, right: Any?): Boolean {
-            return if (left is Int && right is Int) left <= right else false
+        override fun compare(left: Any?, right: PrimitiveValue): Boolean {
+            return if (left is Int && right is PrimitiveValue.IntValue) left <= right.value else false
         }
 
         override fun allowType(type: PrimitiveValue) = type is PrimitiveValue.IntValue
     }
 
     data object More : CompareOperator(">") {
-        override fun compare(left: Any?, right: Any?): Boolean {
-            return if (left is Int && right is Int) left > right else false
+        override fun compare(left: Any?, right: PrimitiveValue): Boolean {
+            return if (left is Int && right is PrimitiveValue.IntValue) left > right.value else false
+        }
+
+        override fun allowType(type: PrimitiveValue) = type is PrimitiveValue.IntValue
+    }
+
+    data object MoreEqual : CompareOperator(">=") {
+        override fun compare(left: Any?, right: PrimitiveValue): Boolean {
+            return if (left is Int && right is PrimitiveValue.IntValue) left >= right.value else false
         }
 
 
         override fun allowType(type: PrimitiveValue) = type is PrimitiveValue.IntValue
     }
 
-    data object MoreEqual : CompareOperator(">=") {
-        override fun compare(left: Any?, right: Any?): Boolean {
-            return if (left is Int && right is Int) left >= right else false
+    data object Matches : CompareOperator("~=") {
+        override fun compare(left: Any?, right: PrimitiveValue): Boolean {
+            return if (left is CharSequence && right is PrimitiveValue.StringValue) {
+                right.outMatches(left)
+            } else {
+                false
+            }
         }
 
+        override fun allowType(type: PrimitiveValue): Boolean {
+            return type is PrimitiveValue.StringValue && type.matches != null
+        }
+    }
 
-        override fun allowType(type: PrimitiveValue) = type is PrimitiveValue.IntValue
+    data object NotMatches : CompareOperator("!~=") {
+        override fun compare(left: Any?, right: PrimitiveValue): Boolean {
+            return if (left is CharSequence && right is PrimitiveValue.StringValue) {
+                !right.outMatches(left)
+            } else {
+                false
+            }
+        }
+
+        override fun allowType(type: PrimitiveValue): Boolean {
+            return Matches.allowType(type)
+        }
     }
 
 }

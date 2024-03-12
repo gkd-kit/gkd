@@ -131,33 +131,33 @@ val getChildren: (AccessibilityNodeInfo) -> Sequence<AccessibilityNodeInfo> = { 
 
 val allowPropertyNames by lazy {
     mapOf(
-        "id" to PrimitiveValue.StringValue.type,
-        "vid" to PrimitiveValue.StringValue.type,
+        "id" to PrimitiveValue.StringValue.TYPE_NAME,
+        "vid" to PrimitiveValue.StringValue.TYPE_NAME,
 
-        "name" to PrimitiveValue.StringValue.type,
-        "text" to PrimitiveValue.StringValue.type,
-        "text.length" to PrimitiveValue.IntValue.type,
-        "desc" to PrimitiveValue.StringValue.type,
-        "desc.length" to PrimitiveValue.IntValue.type,
+        "name" to PrimitiveValue.StringValue.TYPE_NAME,
+        "text" to PrimitiveValue.StringValue.TYPE_NAME,
+        "text.length" to PrimitiveValue.IntValue.TYPE_NAME,
+        "desc" to PrimitiveValue.StringValue.TYPE_NAME,
+        "desc.length" to PrimitiveValue.IntValue.TYPE_NAME,
 
-        "clickable" to PrimitiveValue.BooleanValue.type,
-        "focusable" to PrimitiveValue.BooleanValue.type,
-        "checkable" to PrimitiveValue.BooleanValue.type,
-        "checked" to PrimitiveValue.BooleanValue.type,
-        "editable" to PrimitiveValue.BooleanValue.type,
-        "longClickable" to PrimitiveValue.BooleanValue.type,
-        "visibleToUser" to PrimitiveValue.BooleanValue.type,
+        "clickable" to PrimitiveValue.BooleanValue.TYPE_NAME,
+        "focusable" to PrimitiveValue.BooleanValue.TYPE_NAME,
+        "checkable" to PrimitiveValue.BooleanValue.TYPE_NAME,
+        "checked" to PrimitiveValue.BooleanValue.TYPE_NAME,
+        "editable" to PrimitiveValue.BooleanValue.TYPE_NAME,
+        "longClickable" to PrimitiveValue.BooleanValue.TYPE_NAME,
+        "visibleToUser" to PrimitiveValue.BooleanValue.TYPE_NAME,
 
-        "left" to PrimitiveValue.IntValue.type,
-        "top" to PrimitiveValue.IntValue.type,
-        "right" to PrimitiveValue.IntValue.type,
-        "bottom" to PrimitiveValue.IntValue.type,
-        "width" to PrimitiveValue.IntValue.type,
-        "height" to PrimitiveValue.IntValue.type,
+        "left" to PrimitiveValue.IntValue.TYPE_NAME,
+        "top" to PrimitiveValue.IntValue.TYPE_NAME,
+        "right" to PrimitiveValue.IntValue.TYPE_NAME,
+        "bottom" to PrimitiveValue.IntValue.TYPE_NAME,
+        "width" to PrimitiveValue.IntValue.TYPE_NAME,
+        "height" to PrimitiveValue.IntValue.TYPE_NAME,
 
-        "index" to PrimitiveValue.IntValue.type,
-        "depth" to PrimitiveValue.IntValue.type,
-        "childCount" to PrimitiveValue.IntValue.type,
+        "index" to PrimitiveValue.IntValue.TYPE_NAME,
+        "depth" to PrimitiveValue.IntValue.TYPE_NAME,
+        "childCount" to PrimitiveValue.IntValue.TYPE_NAME,
     )
 }
 
@@ -289,7 +289,8 @@ fun createCacheTransform(): CacheTransform {
         getBeforeBrothers = { node, connectExpression ->
             sequence {
                 val parentVal = node.parent ?: return@sequence
-                val index = indexCache[node] // 如果 node 由 quickFind 得到, 则第一次调用此方法可能得到 indexCache 是空
+                val index =
+                    indexCache[node] // 如果 node 由 quickFind 得到, 则第一次调用此方法可能得到 indexCache 是空
                 if (index != null) {
                     var i = index - 1
                     var offset = 0
@@ -305,7 +306,8 @@ fun createCacheTransform(): CacheTransform {
                         offset++
                     }
                 } else {
-                    val list = getChildrenCache(parentVal).takeWhile { it != node }.toMutableList()
+                    val list =
+                        getChildrenCache(parentVal).takeWhile { it != node }.toMutableList()
                     list.reverse()
                     yieldAll(list.filterIndexed { i, _ ->
                         connectExpression.checkOffset(
