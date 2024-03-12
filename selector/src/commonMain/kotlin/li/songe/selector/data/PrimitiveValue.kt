@@ -5,25 +5,55 @@ sealed class PrimitiveValue(open val value: Any?, open val type: String) {
         override fun toString() = "null"
     }
 
-    data class BooleanValue(override val value: Boolean) : PrimitiveValue(value, type) {
+    data class BooleanValue(override val value: Boolean) : PrimitiveValue(value, TYPE_NAME) {
         override fun toString() = value.toString()
 
         companion object {
-            const val type = "boolean"
+            const val TYPE_NAME = "boolean"
         }
     }
 
-    data class IntValue(override val value: Int) : PrimitiveValue(value, type) {
+    data class IntValue(override val value: Int) : PrimitiveValue(value, TYPE_NAME) {
         override fun toString() = value.toString()
 
         companion object {
-            const val type = "int"
+            const val TYPE_NAME = "int"
         }
     }
 
-    data class StringValue(override val value: String) : PrimitiveValue(value, type) {
+    data class StringValue(
+        override val value: String,
+        val matches: ((CharSequence) -> Boolean)? = null
+    ) : PrimitiveValue(value, TYPE_NAME) {
+
+        val outMatches: (value: CharSequence) -> Boolean = run {
+            matches ?: return@run { false }
+            getMatchValue(value, "(?is)", ".*")?.let { startsWithValue ->
+                return@run { value -> value.startsWith(startsWithValue, ignoreCase = true) }
+            }
+            getMatchValue(value, "(?is).*", ".*")?.let { containsValue ->
+                return@run { value -> value.contains(containsValue, ignoreCase = true) }
+            }
+            getMatchValue(value, "(?is).*", "")?.let { endsWithValue ->
+                return@run { value -> value.endsWith(endsWithValue, ignoreCase = true) }
+            }
+            return@run matches
+        }
+
         companion object {
-            const val type = "string"
+            const val TYPE_NAME = "string"
+            private const val REG_SPECIAL_STRING = "\\^$.?*|+()[]{}"
+            private fun getMatchValue(value: String, prefix: String, suffix: String): String? {
+                if (value.startsWith(prefix) && value.endsWith(suffix) && value.length >= (prefix.length + suffix.length)) {
+                    for (i in prefix.length until value.length - suffix.length) {
+                        if (value[i] in REG_SPECIAL_STRING) {
+                            return null
+                        }
+                    }
+                    return value.subSequence(prefix.length, value.length - suffix.length).toString()
+                }
+                return null
+            }
         }
 
         override fun toString(): String {

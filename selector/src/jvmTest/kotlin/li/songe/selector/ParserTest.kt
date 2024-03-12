@@ -185,4 +185,15 @@ class ParserTest {
         println("result:" + transform.querySelectorAll(snapshotNode, selector).map { n -> n.id }
             .toList())
     }
+
+    @Test
+    fun check_regex() {
+        val source = "[vid~=`(?is)TV.*`]"
+        println("source:$source")
+        val selector = Selector.parse(source)
+        val snapshotNode = getOrDownloadNode("https://i.gkd.li/i/14445410")
+        println("selector:$selector")
+        println("result:" + transform.querySelectorAll(snapshotNode, selector).map { n -> n.id }
+            .toList())
+    }
 }

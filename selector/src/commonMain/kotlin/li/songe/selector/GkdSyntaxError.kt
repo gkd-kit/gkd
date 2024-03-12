@@ -7,6 +7,7 @@ data class GkdSyntaxError internal constructor(
     val expectedValue: String,
     val position: Int,
     val source: String,
+    override val cause: Exception? = null
 ) : Exception(
     "expected $expectedValue in selector at position $position, but got ${
         source.getOrNull(
@@ -26,6 +27,11 @@ internal fun gkdAssert(
     }
 }
 
-internal fun gkdError(source: String, offset: Int, expectedValue: String = ""): Nothing {
-    throw GkdSyntaxError(expectedValue, offset, source)
+internal fun gkdError(
+    source: String,
+    offset: Int,
+    expectedValue: String = "",
+    cause: Exception? = null
+): Nothing {
+    throw GkdSyntaxError(expectedValue, offset, source, cause)
 }

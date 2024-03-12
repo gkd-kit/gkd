@@ -17,6 +17,7 @@ import li.songe.selector.data.PropertyWrapper
 import li.songe.selector.data.TupleExpression
 import li.songe.selector.gkdAssert
 import li.songe.selector.gkdError
+import li.songe.selector.toMatches
 
 internal object ParserSet {
     val whiteCharParser = Parser("\u0020\t\r\n") { source, offset, prefix ->
@@ -393,7 +394,19 @@ internal object ParserSet {
         val operatorResult = attrOperatorParser(source, i)
         i += operatorResult.length
         i += whiteCharParser(source, i).length
-        val valueResult = valueParser(source, i)
+        val valueResult = valueParser(source, i).let { result ->
+            // check regex
+            if ((operatorResult.data == CompareOperator.Matches || operatorResult.data == CompareOperator.NotMatches) && result.data is PrimitiveValue.StringValue) {
+                val matches = try {
+                    result.data.value.toMatches()
+                } catch (e: Exception) {
+                    gkdError(source, i, "valid primitive string regex", e)
+                }
+                result.copy(data = result.data.copy(matches = matches))
+            } else {
+                result
+            }
+        }
         if (!operatorResult.data.allowType(valueResult.data)) {
             gkdError(source, i, "valid primitive value")
         }

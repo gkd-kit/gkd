@@ -8,7 +8,7 @@ data class BinaryExpression(
     val value: PrimitiveValue
 ) : Expression() {
     override fun <T> match(node: T, transform: Transform<T>) =
-        operator.compare(transform.getAttr(node, name), value.value)
+        operator.compare(transform.getAttr(node, name), value)
 
     override val binaryExpressions
         get() = arrayOf(this)
