@@ -62,7 +62,7 @@ dependencyResolutionManagement {
             // compose 编译器的版本, 需要注意它与 compose 的版本没有关联
             // https://developer.android.com/jetpack/androidx/releases/compose-compiler
             version("compose.compilerVersion", "1.5.10")
-            val composeVersion = "1.6.2"
+            val composeVersion = "1.6.3"
             library("compose.ui", "androidx.compose.ui:ui:$composeVersion")
             library("compose.preview", "androidx.compose.ui:ui-tooling-preview:$composeVersion")
             library("compose.tooling", "androidx.compose.ui:ui-tooling:$composeVersion")
@@ -73,7 +73,7 @@ dependencyResolutionManagement {
                 "compose.icons",
                 "androidx.compose.material:material-icons-extended:$composeVersion"
             )
-            library("compose.material3", "androidx.compose.material3:material3:1.2.0")
+            library("compose.material3", "androidx.compose.material3:material3:1.2.1")
             library("compose.activity", "androidx.activity:activity-compose:1.8.2")
 
             // https://github.com/Tencent/MMKV/blob/master/README_CN.md
@@ -138,7 +138,7 @@ dependencyResolutionManagement {
 
             library("junit", "junit:junit:4.13.2")
 
-            val ktorVersion = "2.3.8"
+            val ktorVersion = "2.3.9"
             library("ktor.server.core", "io.ktor:ktor-server-core:$ktorVersion")
             library("ktor.server.cio", "io.ktor:ktor-server-cio:$ktorVersion")
             library("ktor.server.cors", "io.ktor:ktor-server-cors:$ktorVersion")
@@ -160,7 +160,7 @@ dependencyResolutionManagement {
 
             library(
                 "kotlinx.serialization.json",
-                "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2"
+                "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3"
             )
 
             // https://github.com/Kotlin/kotlinx.collections.immutable
@@ -180,7 +180,7 @@ dependencyResolutionManagement {
                 "com.google.dagger:hilt-android-compiler:$hiltVersion"
             )
             library(
-                "androidx.hilt.navigation.compose", "androidx.hilt:hilt-navigation-compose:1.1.0"
+                "androidx.hilt.navigation.compose", "androidx.hilt:hilt-navigation-compose:1.2.0"
             )
 
 //            https://github.com/raamcosta/compose-destinations
