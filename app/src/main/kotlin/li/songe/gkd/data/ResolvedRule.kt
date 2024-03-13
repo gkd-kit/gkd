@@ -169,8 +169,12 @@ sealed class ResolvedRule(
         }
     )
 
-    fun performAction(context: AccessibilityService, node: AccessibilityNodeInfo): ActionResult {
-        return performer.perform(context, node, rule.position)
+    fun performAction(
+        context: AccessibilityService,
+        node: AccessibilityNodeInfo,
+        shizukuClickFc: ((x: Float, y: Float) -> Boolean?)? = null
+    ): ActionResult {
+        return performer.perform(context, node, rule.position, shizukuClickFc)
     }
 
     var matchDelayJob: Job? = null
