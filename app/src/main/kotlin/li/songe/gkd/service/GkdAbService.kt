@@ -42,8 +42,10 @@ import li.songe.gkd.data.GkdAction
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.RuleStatus
 import li.songe.gkd.debug.SnapshotExt
+import li.songe.gkd.shizuku.getShizukuCanUsedFlow
 import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.shizuku.useSafeGetTasksFc
+import li.songe.gkd.shizuku.useSafeInjectClickEventFc
 import li.songe.gkd.shizuku.useShizukuAliveState
 import li.songe.gkd.util.VOLUME_CHANGED_ACTION
 import li.songe.gkd.util.checkSubsUpdate
@@ -88,7 +90,13 @@ class GkdAbService : CompositionAbService({
             }
         }
     }
-    val safeGetTasksFc = useSafeGetTasksFc(scope, shizukuGrantFlow, shizukuAliveFlow)
+    val shizukuCanUsedFlow = getShizukuCanUsedFlow(scope, shizukuGrantFlow, shizukuAliveFlow)
+    val safeGetTasksFc = useSafeGetTasksFc(scope, shizukuCanUsedFlow)
+    val safeInjectClickEventFc = useSafeInjectClickEventFc(scope, shizukuCanUsedFlow)
+    injectClickEventFc = safeInjectClickEventFc
+    onDestroy {
+        injectClickEventFc = null
+    }
 
     // 当锁屏/上拉通知栏时, safeActiveWindow 没有 activityId, 但是此时 shizuku 获取到是前台 app 的 appId 和 activityId
     fun getShizukuTopActivity(): TopActivity? {
@@ -97,9 +105,7 @@ class GkdAbService : CompositionAbService({
         val top = safeGetTasksFc()?.lastOrNull()?.topActivity ?: return null
         return TopActivity(appId = top.packageName, activityId = top.className)
     }
-    shizukuTopActivityGetter = {
-        getShizukuTopActivity()
-    }
+    shizukuTopActivityGetter = ::getShizukuTopActivity
     onDestroy {
         shizukuTopActivityGetter = null
     }
@@ -218,7 +224,7 @@ class GkdAbService : CompositionAbService({
                     continue
                 }
                 if (rule.status != RuleStatus.StatusOk) break
-                val actionResult = rule.performAction(context, target)
+                val actionResult = rule.performAction(context, target, safeInjectClickEventFc)
                 if (actionResult.result) {
                     rule.trigger()
                     scope.launch(actionThread) {
@@ -511,7 +517,7 @@ class GkdAbService : CompositionAbService({
     companion object {
 
         var shizukuTopActivityGetter: (() -> TopActivity?)? = null
-
+        private var injectClickEventFc: ((x: Float, y: Float) -> Boolean?)? = null
         val eventExecutor: ExecutorService by lazy { Executors.newSingleThreadExecutor() }
         var service: GkdAbService? = null
 
@@ -539,7 +545,7 @@ class GkdAbService : CompositionAbService({
             }
 
             return ActionPerformer.getAction(gkdAction.action)
-                .perform(serviceVal, targetNode, gkdAction.position)
+                .perform(serviceVal, targetNode, gkdAction.position, injectClickEventFc)
         }
 
 

@@ -62,6 +62,8 @@ import li.songe.gkd.debug.FloatingService
 import li.songe.gkd.debug.HttpService
 import li.songe.gkd.debug.ScreenshotService
 import li.songe.gkd.shizuku.newActivityTaskManager
+import li.songe.gkd.shizuku.newInputManager
+import li.songe.gkd.shizuku.safeClick
 import li.songe.gkd.shizuku.safeGetTasks
 import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.ui.component.AuthCard
@@ -122,7 +124,7 @@ fun DebugPage() {
             val shizukuIsOk by usePollState { shizukuIsSafeOK() }
             if (!shizukuIsOk) {
                 AuthCard(title = "Shizuku授权",
-                    desc = "高级运行模式,能更准确识别界面活动ID",
+                    desc = "高级模式:准确识别界面ID,强制模拟点击",
                     onAuthClick = {
                         try {
                             Shizuku.requestPermission(Activity.RESULT_OK)
@@ -134,7 +136,7 @@ fun DebugPage() {
                 HorizontalDivider()
             } else {
                 TextSwitch(name = "Shizuku模式",
-                    desc = "高级运行模式,能更准确识别界面活动ID",
+                    desc = "高级模式:准确识别界面ID,强制模拟点击",
                     checked = store.enableShizuku,
                     onCheckedChange = { enableShizuku ->
                         if (enableShizuku) {
@@ -142,7 +144,8 @@ fun DebugPage() {
                                 // 校验方法是否适配, 再允许使用 shizuku
                                 val tasks =
                                     newActivityTaskManager()?.safeGetTasks()?.firstOrNull()
-                                if (tasks != null) {
+                                val result = newInputManager()?.safeClick(0f, 0f)
+                                if (tasks != null && result != null) {
                                     storeFlow.value = store.copy(
                                         enableShizuku = true
                                     )

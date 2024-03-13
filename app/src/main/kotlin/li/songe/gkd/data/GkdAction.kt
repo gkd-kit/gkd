@@ -27,14 +27,16 @@ sealed class ActionPerformer(val action: String) {
     abstract fun perform(
         context: AccessibilityService,
         node: AccessibilityNodeInfo,
-        position: RawSubscription.Position?
+        position: RawSubscription.Position?,
+        shizukuClickFc: ((x: Float, y: Float) -> Boolean?)? = null,
     ): ActionResult
 
     data object ClickNode : ActionPerformer("clickNode") {
         override fun perform(
             context: AccessibilityService,
             node: AccessibilityNodeInfo,
-            position: RawSubscription.Position?
+            position: RawSubscription.Position?,
+            shizukuClickFc: ((x: Float, y: Float) -> Boolean?)?
         ): ActionResult {
             return ActionResult(
                 action = action,
@@ -47,7 +49,8 @@ sealed class ActionPerformer(val action: String) {
         override fun perform(
             context: AccessibilityService,
             node: AccessibilityNodeInfo,
-            position: RawSubscription.Position?
+            position: RawSubscription.Position?,
+            shizukuClickFc: ((x: Float, y: Float) -> Boolean?)?,
         ): ActionResult {
             val rect = Rect()
             node.getBoundsInScreen(rect)
@@ -58,6 +61,10 @@ sealed class ActionPerformer(val action: String) {
                 action = action,
                 // TODO 在分屏/小窗模式下会点击到应用界面外部导致误触其它应用
                 result = if (0 <= x && 0 <= y && x <= ScreenUtils.getScreenWidth() && y <= ScreenUtils.getScreenHeight()) {
+                    val result = shizukuClickFc?.invoke(x, y)
+                    if (result != null) {
+                        return ActionResult(action, result)
+                    }
                     val gestureDescription = GestureDescription.Builder()
                     val path = Path()
                     path.moveTo(x, y)
@@ -79,7 +86,8 @@ sealed class ActionPerformer(val action: String) {
         override fun perform(
             context: AccessibilityService,
             node: AccessibilityNodeInfo,
-            position: RawSubscription.Position?
+            position: RawSubscription.Position?,
+            shizukuClickFc: ((x: Float, y: Float) -> Boolean?)?
         ): ActionResult {
             if (node.isClickable) {
                 val result = ClickNode.perform(context, node, position)
@@ -87,7 +95,7 @@ sealed class ActionPerformer(val action: String) {
                     return result
                 }
             }
-            return ClickCenter.perform(context, node, position)
+            return ClickCenter.perform(context, node, position, shizukuClickFc)
         }
     }
 
@@ -95,7 +103,8 @@ sealed class ActionPerformer(val action: String) {
         override fun perform(
             context: AccessibilityService,
             node: AccessibilityNodeInfo,
-            position: RawSubscription.Position?
+            position: RawSubscription.Position?,
+            shizukuClickFc: ((x: Float, y: Float) -> Boolean?)?
         ): ActionResult {
             return ActionResult(
                 action = action,
@@ -108,7 +117,8 @@ sealed class ActionPerformer(val action: String) {
         override fun perform(
             context: AccessibilityService,
             node: AccessibilityNodeInfo,
-            position: RawSubscription.Position?
+            position: RawSubscription.Position?,
+            shizukuClickFc: ((x: Float, y: Float) -> Boolean?)?
         ): ActionResult {
             val rect = Rect()
             node.getBoundsInScreen(rect)
@@ -142,7 +152,8 @@ sealed class ActionPerformer(val action: String) {
         override fun perform(
             context: AccessibilityService,
             node: AccessibilityNodeInfo,
-            position: RawSubscription.Position?
+            position: RawSubscription.Position?,
+            shizukuClickFc: ((x: Float, y: Float) -> Boolean?)?
         ): ActionResult {
             if (node.isLongClickable) {
                 val result = LongClickNode.perform(context, node, position)
@@ -150,7 +161,7 @@ sealed class ActionPerformer(val action: String) {
                     return result
                 }
             }
-            return LongClickCenter.perform(context, node, position)
+            return LongClickCenter.perform(context, node, position, shizukuClickFc)
         }
     }
 
@@ -158,7 +169,8 @@ sealed class ActionPerformer(val action: String) {
         override fun perform(
             context: AccessibilityService,
             node: AccessibilityNodeInfo,
-            position: RawSubscription.Position?
+            position: RawSubscription.Position?,
+            shizukuClickFc: ((x: Float, y: Float) -> Boolean?)?
         ): ActionResult {
             return ActionResult(
                 action = action,
