@@ -21,6 +21,7 @@ data class GkdAction(
 data class ActionResult(
     val action: String?,
     val result: Boolean,
+    val shizuku: Boolean = false,
 )
 
 sealed class ActionPerformer(val action: String) {
@@ -63,7 +64,7 @@ sealed class ActionPerformer(val action: String) {
                 result = if (0 <= x && 0 <= y && x <= ScreenUtils.getScreenWidth() && y <= ScreenUtils.getScreenHeight()) {
                     val result = shizukuClickFc?.invoke(x, y)
                     if (result != null) {
-                        return ActionResult(action, result)
+                        return ActionResult(action, result, true)
                     }
                     val gestureDescription = GestureDescription.Builder()
                     val path = Path()

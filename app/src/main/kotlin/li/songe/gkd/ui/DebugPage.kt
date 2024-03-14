@@ -135,27 +135,49 @@ fun DebugPage() {
                     })
                 HorizontalDivider()
             } else {
-                TextSwitch(name = "Shizuku模式",
-                    desc = "高级模式:准确识别界面ID,强制模拟点击",
-                    checked = store.enableShizuku,
+                TextSwitch(name = "Shizuku-界面识别",
+                    desc = "更准确识别界面ID",
+                    checked = store.enableShizukuActivity,
                     onCheckedChange = { enableShizuku ->
                         if (enableShizuku) {
                             appScope.launchTry(Dispatchers.IO) {
                                 // 校验方法是否适配, 再允许使用 shizuku
                                 val tasks =
                                     newActivityTaskManager()?.safeGetTasks()?.firstOrNull()
-                                val result = newInputManager()?.safeClick(0f, 0f)
-                                if (tasks != null && result != null) {
+                                if (tasks != null) {
                                     storeFlow.value = store.copy(
-                                        enableShizuku = true
+                                        enableShizukuActivity = true
                                     )
                                 } else {
-                                    toast("Shizuku方法校验失败,无法使用")
+                                    toast("Shizuku-界面识别校验失败,无法使用")
                                 }
                             }
                         } else {
                             storeFlow.value = store.copy(
-                                enableShizuku = false
+                                enableShizukuActivity = false
+                            )
+                        }
+                    })
+                HorizontalDivider()
+                TextSwitch(
+                    name = "Shizuku-模拟点击",
+                    desc = "变更 clickCenter 为强制模拟点击",
+                    checked = store.enableShizukuClick,
+                    onCheckedChange = { enableShizuku ->
+                        if (enableShizuku) {
+                            appScope.launchTry(Dispatchers.IO) {
+                                val result = newInputManager()?.safeClick(0f, 0f)
+                                if (result != null) {
+                                    storeFlow.value = store.copy(
+                                        enableShizukuClick = true
+                                    )
+                                } else {
+                                    toast("Shizuku-模拟点击校验失败,无法使用")
+                                }
+                            }
+                        } else {
+                            storeFlow.value = store.copy(
+                                enableShizukuClick = false
                             )
                         }
 
