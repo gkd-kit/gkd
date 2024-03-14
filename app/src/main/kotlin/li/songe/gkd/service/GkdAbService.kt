@@ -75,10 +75,10 @@ class GkdAbService : CompositionAbService({
     val shizukuAliveFlow = useShizukuAliveState()
     val shizukuGrantFlow = MutableStateFlow(false)
     var lastCheckShizukuTime = 0L
-    onAccessibilityEvent { // 借助无障碍轮询校验 shizuku 权限
-        if (storeFlow.value.enableShizuku && it.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {// 筛选降低判断频率
+    onAccessibilityEvent { // 借助无障碍轮询校验 shizuku 权限, 因为 shizuku 可能无故被关闭
+        if ((storeFlow.value.enableShizukuActivity || storeFlow.value.enableShizukuClick) && it.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {// 筛选降低判断频率
             val t = System.currentTimeMillis()
-            if (t - lastCheckShizukuTime > 30_000L) {
+            if (t - lastCheckShizukuTime > 60_000L) {
                 lastCheckShizukuTime = t
                 scope.launchTry(Dispatchers.IO) {
                     shizukuGrantFlow.value = if (shizukuAliveFlow.value) {
@@ -90,9 +90,21 @@ class GkdAbService : CompositionAbService({
             }
         }
     }
-    val shizukuCanUsedFlow = getShizukuCanUsedFlow(scope, shizukuGrantFlow, shizukuAliveFlow)
+    val shizukuCanUsedFlow = getShizukuCanUsedFlow(
+        scope,
+        shizukuGrantFlow,
+        shizukuAliveFlow,
+        storeFlow.map(scope) { s -> s.enableShizukuActivity }
+    )
     val safeGetTasksFc = useSafeGetTasksFc(scope, shizukuCanUsedFlow)
-    val safeInjectClickEventFc = useSafeInjectClickEventFc(scope, shizukuCanUsedFlow)
+
+    val shizukuClickCanUsedFlow = getShizukuCanUsedFlow(
+        scope,
+        shizukuGrantFlow,
+        shizukuAliveFlow,
+        storeFlow.map(scope) { s -> s.enableShizukuClick }
+    )
+    val safeInjectClickEventFc = useSafeInjectClickEventFc(scope, shizukuClickCanUsedFlow)
     injectClickEventFc = safeInjectClickEventFc
     onDestroy {
         injectClickEventFc = null
@@ -100,7 +112,7 @@ class GkdAbService : CompositionAbService({
 
     // 当锁屏/上拉通知栏时, safeActiveWindow 没有 activityId, 但是此时 shizuku 获取到是前台 app 的 appId 和 activityId
     fun getShizukuTopActivity(): TopActivity? {
-        if (!storeFlow.value.enableShizuku) return null
+        if (!storeFlow.value.enableShizukuActivity) return null
         // 平均耗时 5 ms
         val top = safeGetTasksFc()?.lastOrNull()?.topActivity ?: return null
         return TopActivity(appId = top.packageName, activityId = top.className)
@@ -143,6 +155,7 @@ class GkdAbService : CompositionAbService({
     val events = mutableListOf<AccessibilityNodeInfo>()
     var queryTaskJob: Job? = null
     fun newQueryTask(byEvent: Boolean = false, byForced: Boolean = false) {
+        if (!storeFlow.value.enableService) return
         queryTaskJob = scope.launchTry(queryThread) {
             var latestEvent = synchronized(events) {
                 val size = events.size
@@ -322,7 +335,7 @@ class GkdAbService : CompositionAbService({
                         )
                     }
                 } else {
-                    if (storeFlow.value.enableShizuku && fixedEvent.time - lastTriggerShizukuTime > 300) {
+                    if (storeFlow.value.enableShizukuActivity && fixedEvent.time - lastTriggerShizukuTime > 300) {
                         val shizukuTop = getShizukuTopActivity()
                         if (shizukuTop != null && shizukuTop.appId == rightAppId) {
                             if (shizukuTop.activityId == evActivityId) {

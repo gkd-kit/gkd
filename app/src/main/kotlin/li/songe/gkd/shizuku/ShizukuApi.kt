@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.composition.CanOnDestroy
 import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.util.map
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
@@ -111,12 +110,14 @@ fun CanOnDestroy.useShizukuAliveState(): StateFlow<Boolean> {
 fun getShizukuCanUsedFlow(
     scope: CoroutineScope,
     shizukuGrantFlow: StateFlow<Boolean>,
-    shizukuAliveFlow: StateFlow<Boolean>
+    shizukuAliveFlow: StateFlow<Boolean>,
+    shizukuEnableFlow: StateFlow<Boolean>,
 ): StateFlow<Boolean> {
     return combine(
         shizukuAliveFlow,
         shizukuGrantFlow,
-        storeFlow.map(scope) { s -> s.enableShizuku }) { shizukuAlive, shizukuGrant, enableShizuku ->
+        shizukuEnableFlow
+    ) { shizukuAlive, shizukuGrant, enableShizuku ->
         enableShizuku && shizukuAlive && shizukuGrant
     }.stateIn(scope, SharingStarted.Eagerly, false)
 }
