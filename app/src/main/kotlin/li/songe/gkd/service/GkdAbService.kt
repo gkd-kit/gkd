@@ -45,7 +45,7 @@ import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.shizuku.getShizukuCanUsedFlow
 import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.shizuku.useSafeGetTasksFc
-import li.songe.gkd.shizuku.useSafeInjectClickEventFc
+import li.songe.gkd.shizuku.useSafeInputTapFc
 import li.songe.gkd.shizuku.useShizukuAliveState
 import li.songe.gkd.util.VOLUME_CHANGED_ACTION
 import li.songe.gkd.util.checkSubsUpdate
@@ -104,7 +104,7 @@ class GkdAbService : CompositionAbService({
         shizukuAliveFlow,
         storeFlow.map(scope) { s -> s.enableShizukuClick }
     )
-    val safeInjectClickEventFc = useSafeInjectClickEventFc(scope, shizukuClickCanUsedFlow)
+    val safeInjectClickEventFc = useSafeInputTapFc(scope, shizukuClickCanUsedFlow)
     injectClickEventFc = safeInjectClickEventFc
     onDestroy {
         injectClickEventFc = null
