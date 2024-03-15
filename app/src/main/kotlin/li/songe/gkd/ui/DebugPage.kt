@@ -56,14 +56,15 @@ import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.appScope
 import li.songe.gkd.debug.FloatingService
 import li.songe.gkd.debug.HttpService
 import li.songe.gkd.debug.ScreenshotService
+import li.songe.gkd.shizuku.CommandResult
 import li.songe.gkd.shizuku.newActivityTaskManager
-import li.songe.gkd.shizuku.newInputManager
-import li.songe.gkd.shizuku.safeClick
+import li.songe.gkd.shizuku.newUserService
 import li.songe.gkd.shizuku.safeGetTasks
 import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.ui.component.AuthCard
@@ -76,6 +77,7 @@ import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.authActionFlow
 import li.songe.gkd.util.canDrawOverlaysAuthAction
 import li.songe.gkd.util.checkOrRequestNotifPermission
+import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
@@ -166,11 +168,11 @@ fun DebugPage() {
                     onCheckedChange = { enableShizuku ->
                         if (enableShizuku) {
                             appScope.launchTry(Dispatchers.IO) {
-                                val result = newInputManager()?.safeClick(0f, 0f)
-                                if (result != null) {
-                                    storeFlow.value = store.copy(
-                                        enableShizukuClick = true
-                                    )
+                                val service = newUserService()
+                                val result = service.userService.execCommand("input tap 0 0")
+                                service.destroy()
+                                if (json.decodeFromString<CommandResult>(result).code == 0) {
+                                    storeFlow.update { it.copy(enableShizukuClick = true) }
                                 } else {
                                     toast("Shizuku-模拟点击校验失败,无法使用")
                                 }
