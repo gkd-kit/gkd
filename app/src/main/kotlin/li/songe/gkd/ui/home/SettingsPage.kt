@@ -59,11 +59,13 @@ import li.songe.gkd.util.authActionFlow
 import li.songe.gkd.util.canDrawOverlaysAuthAction
 import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.checkUpdatingFlow
+import li.songe.gkd.util.dbFolder
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.logZipDir
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.toast
 import java.io.File
 
@@ -225,7 +227,16 @@ fun useSettingsPage(): ScaffoldExt {
                             showShareLogDlg = false
                             vm.viewModelScope.launchTry(Dispatchers.IO) {
                                 val logZipFile = File(logZipDir, "log.zip")
-                                ZipUtils.zipFiles(LogUtils.getLogFiles(), logZipFile)
+                                val files = LogUtils
+                                    .getLogFiles()
+                                    .toMutableList()
+                                dbFolder
+                                    .listFiles { f -> f.isFile }
+                                    ?.forEach { files.add(it) }
+                                subsFolder
+                                    .listFiles { f -> f.isFile }
+                                    ?.forEach { files.add(it) }
+                                ZipUtils.zipFiles(files, logZipFile)
                                 context.shareFile(logZipFile, "分享日志文件")
                             }
                         })
