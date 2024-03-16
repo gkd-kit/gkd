@@ -25,7 +25,9 @@ class GlobalRule(
     private val matchLauncher = rule.matchLauncher ?: group.matchLauncher ?: false
     private val matchSystemApp = rule.matchSystemApp ?: group.matchSystemApp ?: false
     val apps = mutableMapOf<String, GlobalApp>().apply {
-        (rule.apps ?: group.apps ?: emptyList()).forEach { a ->
+        (rule.apps ?: group.apps ?: emptyList()).filter { a ->
+            appInfoCache.containsKey(a.id) // 过滤掉未安装应用
+        }.forEach { a ->
             val enable = a.enable ?: appInfoCache[a.id]?.let { appInfo ->
                 if (a.excludeVersionCodes?.contains(appInfo.versionCode) == true) {
                     return@let false
