@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import li.songe.gkd.data.GithubPoliciesAsset
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.RpcError
@@ -167,14 +166,26 @@ class HomeVm @Inject constructor() : ViewModel() {
     }
 
     val refreshingFlow = MutableStateFlow(false)
-    fun refreshSubs() = viewModelScope.launch(Dispatchers.IO) {
-        if (refreshingFlow.value) return@launch
+    fun refreshSubs() = viewModelScope.launchTry(Dispatchers.IO) {
+        if (refreshingFlow.value) return@launchTry
         refreshingFlow.value = true
         var errorNum = 0
         val oldSubItems = subsItemsFlow.value
+        val subsIdToRaw = subsIdToRawFlow.value
+        oldSubItems.find { it.id == -2L }?.let { localSubsItem ->
+            if (!subsIdToRaw.containsKey(localSubsItem.id)) {
+                updateSubscription(
+                    RawSubscription(
+                        id = localSubsItem.id,
+                        name = "本地订阅",
+                        version = 0
+                    )
+                )
+            }
+        }
         val newSubsItems = oldSubItems.mapNotNull { oldItem ->
             if (oldItem.updateUrl == null || oldItem.id < 0) return@mapNotNull null
-            val oldSubsRaw = subsIdToRawFlow.value[oldItem.id]
+            val oldSubsRaw = subsIdToRaw[oldItem.id]
             try {
                 if (oldSubsRaw?.checkUpdateUrl != null) {
                     try {
