@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,11 +32,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,12 +51,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.blankj.utilcode.util.KeyboardUtils
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import kotlinx.coroutines.flow.update
+import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.destinations.AppConfigPageDestination
 import li.songe.gkd.util.LocalNavController
@@ -69,6 +77,8 @@ val appListNav = BottomNavItem(
 @Composable
 fun useAppListPage(): ScaffoldExt {
     val navController = LocalNavController.current
+    val context = LocalContext.current as MainActivity
+    val softwareKeyboardController = LocalSoftwareKeyboardController.current
 
     val vm = hiltViewModel<HomeVm>()
     val showSystemApp by vm.showSystemAppFlow.collectAsState()
@@ -111,8 +121,22 @@ fun useAppListPage(): ScaffoldExt {
     return ScaffoldExt(navItem = appListNav,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
+            DisposableEffect(null) {
+                onDispose {
+                    if (vm.searchStrFlow.value.isEmpty()) {
+                        showSearchBar = false
+                    }
+                }
+            }
             TopAppBar(scrollBehavior = scrollBehavior, title = {
                 if (showSearchBar) {
+                    BackHandler(searchStr.isEmpty()) {
+                        if (KeyboardUtils.isSoftInputVisible(context)) {
+                            softwareKeyboardController?.hide()
+                        } else {
+                            showSearchBar = false
+                        }
+                    }
                     AppBarTextField(
                         value = searchStr,
                         onValueChange = { newValue -> vm.searchStrFlow.value = newValue.trim() },
@@ -270,7 +294,14 @@ fun useAppListPage(): ScaffoldExt {
                             maxLines = 1,
                             softWrap = false,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            style = LocalTextStyle.current.let {
+                                if (appInfo.isSystem) {
+                                    it.copy(textDecoration = TextDecoration.Underline)
+                                } else {
+                                    it
+                                }
+                            }
                         )
                         val appGroups = ruleSummary.appIdToAllGroups[appInfo.id] ?: emptyList()
 
