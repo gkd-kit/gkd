@@ -8,6 +8,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import li.songe.gkd.db.DbSet
@@ -49,6 +50,19 @@ data class SubsItem(
     interface SubsItemDao {
         @Update
         suspend fun update(vararg objects: SubsItem): Int
+
+        @Query("UPDATE subs_item SET enable=:enable WHERE id=:id")
+        suspend fun updateEnable(id: Long, enable: Boolean): Int
+
+        @Query("UPDATE subs_item SET `order`=:order WHERE id=:id")
+        suspend fun updateOrder(id: Long, order: Int): Int
+
+        @Transaction
+        suspend fun batchUpdateOrder(subsItems: List<SubsItem>) {
+            subsItems.forEach { subsItem ->
+                updateOrder(subsItem.id, subsItem.order)
+            }
+        }
 
         @Insert(onConflict = OnConflictStrategy.REPLACE)
         suspend fun insert(vararg users: SubsItem): List<Long>

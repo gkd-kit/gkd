@@ -86,8 +86,11 @@ fun useSubsManagePage(): ScaffoldExt {
     val subItems by subsItemsFlow.collectAsState()
     val subsIdToRaw by subsIdToRawFlow.collectAsState()
 
-    var orderSubItems by remember(subItems) {
+    var orderSubItems by remember {
         mutableStateOf(subItems)
+    }
+    LaunchedEffect(subItems) {
+        orderSubItems = subItems
     }
 
     var menuSubItem: SubsItem? by remember { mutableStateOf(null) }
@@ -102,6 +105,11 @@ fun useSubsManagePage(): ScaffoldExt {
     val reorderableLazyColumnState = rememberReorderableLazyColumnState(lazyListState) { from, to ->
         orderSubItems = orderSubItems.toMutableList().apply {
             add(to.index, removeAt(from.index))
+            forEachIndexed { index, subsItem ->
+                if (subsItem.order != index) {
+                    this[index] = subsItem.copy(order = index)
+                }
+            }
         }.toImmutableList()
     }
 
@@ -290,19 +298,12 @@ fun useSubsManagePage(): ScaffoldExt {
                                 .longPressDraggableHandle(
                                     interactionSource = interactionSource,
                                     onDragStopped = {
-                                        val changeItems = mutableListOf<SubsItem>()
-                                        orderSubItems.forEachIndexed { i, subsItem ->
-                                            if (subItems[i] != subsItem) {
-                                                changeItems.add(
-                                                    subsItem.copy(
-                                                        order = i
-                                                    )
-                                                )
-                                            }
+                                        val changeItems = orderSubItems.filter { newItem ->
+                                            subItems.find { oldItem -> oldItem.id == newItem.id }?.order != newItem.order
                                         }
-                                        if (orderSubItems.isNotEmpty()) {
+                                        if (changeItems.isNotEmpty()) {
                                             vm.viewModelScope.launchTry {
-                                                DbSet.subsItemDao.update(*changeItems.toTypedArray())
+                                                DbSet.subsItemDao.batchUpdateOrder(changeItems)
                                             }
                                         }
                                     },
@@ -322,7 +323,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                 index = index + 1,
                                 onCheckedChange = { checked ->
                                     vm.viewModelScope.launch {
-                                        DbSet.subsItemDao.update(subItem.copy(enable = checked))
+                                        DbSet.subsItemDao.updateEnable(subItem.id, checked)
                                     }
                                 },
                             )
