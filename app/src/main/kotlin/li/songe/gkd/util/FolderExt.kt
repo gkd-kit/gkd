@@ -1,6 +1,10 @@
 package li.songe.gkd.util
 
+import com.blankj.utilcode.util.LogUtils
+import com.blankj.utilcode.util.ZipUtils
+import kotlinx.serialization.encodeToString
 import li.songe.gkd.app
+import java.io.File
 
 private val filesDir by lazy {
     app.getExternalFilesDir(null) ?: app.filesDir
@@ -32,4 +36,24 @@ fun initFolder() {
             f.mkdirs()
         }
     }
+}
+
+
+fun buildLogFile(): File {
+    val files = LogUtils
+        .getLogFiles()
+        .toMutableList()
+    dbFolder
+        .listFiles { f -> f.isFile }
+        ?.forEach { files.add(it) }
+    subsFolder
+        .listFiles { f -> f.isFile }
+        ?.forEach { files.add(it) }
+    val appListFile = logZipDir
+        .resolve("appList.json")
+    appListFile.writeText(json.encodeToString(appInfoCacheFlow.value.values.toList()))
+    files.add(appListFile)
+    val logZipFile = logZipDir.resolve("log-${System.currentTimeMillis()}.zip")
+    ZipUtils.zipFiles(files, logZipFile)
+    return logZipFile
 }
