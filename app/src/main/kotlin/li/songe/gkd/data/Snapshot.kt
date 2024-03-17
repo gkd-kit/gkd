@@ -62,6 +62,9 @@ data class Snapshot(
 
         @Query("SELECT * FROM snapshot")
         fun query(): Flow<List<Snapshot>>
+
+        @Query("UPDATE snapshot SET github_asset_id=null WHERE id = :id")
+        suspend fun deleteGithubAssetId(id: Long)
     }
 }
 

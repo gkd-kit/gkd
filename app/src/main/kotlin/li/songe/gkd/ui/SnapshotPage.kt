@@ -72,7 +72,6 @@ import li.songe.gkd.util.navigate
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.snapshotZipDir
 import li.songe.gkd.util.toast
-import java.io.File
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
@@ -207,7 +206,8 @@ fun SnapshotPage() {
                     text = "分享",
                     modifier = Modifier
                         .clickable(onClick = vm.viewModelScope.launchAsFn {
-                            val zipFile = SnapshotExt.getSnapshotZipFile(snapshotVal.id)
+                            val zipFile =
+                                SnapshotExt.getSnapshotZipFile(snapshotVal.id, snapshotVal.appId)
                             context.shareFile(zipFile, "分享快照文件")
                             selectedSnapshot = null
                         })
@@ -270,12 +270,14 @@ fun SnapshotPage() {
                                 val newBitmap = ImageUtils.getBitmap(newBytes, 0)
                                 if (oldBitmap.width == newBitmap.width && oldBitmap.height == newBitmap.height) {
                                     snapshotVal.screenshotFile.writeBytes(newBytes)
-                                    File(snapshotZipDir, "${snapshotVal.id}.zip").apply {
-                                        if (exists()) delete()
-                                    }
+                                    snapshotZipDir
+                                        .listFiles { f -> f.isFile && f.name.endsWith("${snapshotVal.id}.zip") }
+                                        ?.forEach { f ->
+                                            f.delete()
+                                        }
                                     if (snapshotVal.githubAssetId != null) {
                                         // 当本地快照变更时, 移除快照链接
-                                        DbSet.snapshotDao.update(snapshotVal.copy(githubAssetId = null))
+                                        DbSet.snapshotDao.deleteGithubAssetId(snapshotVal.id)
                                     }
                                 } else {
                                     toast("截图尺寸不一致,无法替换")
