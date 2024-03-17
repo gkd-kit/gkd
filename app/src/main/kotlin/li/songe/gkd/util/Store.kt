@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import li.songe.gkd.appScope
+import li.songe.gkd.ui.home.UpdateTimeOption
 
 private inline fun <reified T> createStorageFlow(
     key: String,
@@ -45,7 +46,7 @@ data class Store(
     val excludeFromRecents: Boolean = false,
     val captureScreenshot: Boolean = false,
     val httpServerPort: Int = 8888,
-    val updateSubsInterval: Long = 6 * 60 * 60_000L,
+    val updateSubsInterval: Long = UpdateTimeOption.Everyday.value,
     val captureVolumeChange: Boolean = false,
     val autoCheckAppUpdate: Boolean = true,
     val toastWhenClick: Boolean = true,
@@ -63,7 +64,15 @@ data class Store(
 )
 
 val storeFlow by lazy {
-    createStorageFlow("store-v2") { Store() }
+    createStorageFlow("store-v2") { Store() }.apply {
+        if (UpdateTimeOption.allSubObject.all { it.value != value.updateSubsInterval }) {
+            update {
+                it.copy(
+                    updateSubsInterval = UpdateTimeOption.Everyday.value
+                )
+            }
+        }
+    }
 }
 
 @Serializable

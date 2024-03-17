@@ -47,6 +47,7 @@ import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.shizuku.useSafeGetTasksFc
 import li.songe.gkd.shizuku.useSafeInputTapFc
 import li.songe.gkd.shizuku.useShizukuAliveState
+import li.songe.gkd.ui.home.UpdateTimeOption
 import li.songe.gkd.util.VOLUME_CHANGED_ACTION
 import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.launchTry
@@ -387,7 +388,7 @@ class GkdAbService : CompositionAbService({
             val i = storeFlow.value.updateSubsInterval
             if (i <= 0) return@onAccessibilityEvent
             val t = System.currentTimeMillis()
-            if (t - lastUpdateSubsTime > i.coerceAtLeast(60 * 60_000)) {
+            if (t - lastUpdateSubsTime > i.coerceAtLeast(UpdateTimeOption.Everyday.value)) {
                 lastUpdateSubsTime = t
                 checkSubsUpdate()
             }

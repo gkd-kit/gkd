@@ -46,6 +46,7 @@ import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.appScope
 import li.songe.gkd.ui.component.SettingItem
@@ -102,26 +103,25 @@ fun useSettingsPage(): ScaffoldExt {
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
-                updateTimeRadioOptions.forEach { option ->
+                UpdateTimeOption.allSubObject.forEach { option ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .selectable(selected = (option.second == store.updateSubsInterval),
+                            .selectable(
+                                selected = (option.value == store.updateSubsInterval),
                                 onClick = {
-                                    storeFlow.value =
-                                        store.copy(updateSubsInterval = option.second)
-
+                                    storeFlow.update { it.copy(updateSubsInterval = option.value) }
                                 })
                             .padding(horizontal = 16.dp)
                     ) {
                         RadioButton(
-                            selected = (option.second == store.updateSubsInterval),
+                            selected = (option.value == store.updateSubsInterval),
                             onClick = {
-                                storeFlow.value = store.copy(updateSubsInterval = option.second)
+                                storeFlow.update { it.copy(updateSubsInterval = option.value) }
                             })
                         Text(
-                            text = option.first, modifier = Modifier.padding(start = 16.dp)
+                            text = option.label, modifier = Modifier.padding(start = 16.dp)
                         )
                     }
                 }
@@ -376,7 +376,7 @@ fun useSettingsPage(): ScaffoldExt {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = updateTimeRadioOptions.find { it.second == store.updateSubsInterval }?.first
+                        text = UpdateTimeOption.allSubObject.find { it.value == store.updateSubsInterval }?.label
                             ?: store.updateSubsInterval.toString(), fontSize = 14.sp
                     )
                     Icon(
@@ -478,21 +478,19 @@ fun useSettingsPage(): ScaffoldExt {
     }
 }
 
-private val updateTimeRadioOptions = listOf(
-    "暂停" to -1L,
-    "每小时" to 60 * 60_000L,
-    "每6小时" to 6 * 60 * 60_000L,
-    "每12小时" to 12 * 60 * 60_000L,
-    "每天" to 24 * 60 * 60_000L
-)
+sealed class UpdateTimeOption(val value: Long, val label: String) {
+    data object Pause : UpdateTimeOption(-1, "暂停")
+    data object Everyday : UpdateTimeOption(24 * 60 * 60_000, "每天")
+    data object Every3Days : UpdateTimeOption(24 * 60 * 60_000 * 3, "每3天")
+    data object Every7Days : UpdateTimeOption(24 * 60 * 60_000 * 7, "每7天")
 
-private val darkThemeRadioOptions = listOf(
+    companion object {
+        val allSubObject by lazy { arrayOf(Pause, Everyday, Every3Days, Every7Days) }
+    }
+}
+
+private val darkThemeRadioOptions = arrayOf(
     "跟随系统" to null,
     "启用" to true,
     "关闭" to false,
-)
-val enableGroupRadioOptions = listOf(
-    "跟随订阅" to null,
-    "全部启用" to true,
-    "全部关闭" to false,
 )

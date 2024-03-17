@@ -58,12 +58,17 @@ import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.getDialogResult
-import li.songe.gkd.ui.home.enableGroupRadioOptions
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
+
+val enableGroupRadioOptions = arrayOf(
+    "跟随订阅" to null,
+    "全部启用" to true,
+    "全部关闭" to false,
+)
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
