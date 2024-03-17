@@ -1,5 +1,6 @@
 package li.songe.gkd.util
 
+
 sealed class SortTypeOption(val value: Int, val label: String) {
     data object SortByName : SortTypeOption(0, "按名称")
     data object SortByAppMtime : SortTypeOption(1, "按更新时间")
