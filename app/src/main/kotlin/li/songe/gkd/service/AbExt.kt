@@ -2,6 +2,7 @@ package li.songe.gkd.service
 
 import android.accessibilityservice.AccessibilityService
 import android.graphics.Rect
+import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import li.songe.selector.Selector
 import li.songe.selector.Transform
@@ -15,6 +16,19 @@ val AccessibilityService.safeActiveWindow: AccessibilityNodeInfo?
     } catch (e: Exception) {
         e.printStackTrace()
         null
+    }
+
+val AccessibilityEvent.safeSource: AccessibilityNodeInfo?
+    get() = if (className == null) {
+        null // https://github.com/gkd-kit/gkd/issues/426 event.clear 已被系统调用
+    } else {
+        try {
+            // 仍然报错 Cannot perform this action on a not sealed instance.
+            // TODO 原因未知
+            source
+        } catch (e: Exception) {
+            null
+        }
     }
 
 
