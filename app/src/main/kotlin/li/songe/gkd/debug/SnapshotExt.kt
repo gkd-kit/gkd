@@ -39,10 +39,21 @@ object SnapshotExt {
     fun getScreenshotPath(snapshotId: Long) =
         "${getSnapshotParentPath(snapshotId)}/${snapshotId}.png"
 
-    suspend fun getSnapshotZipFile(snapshotId: Long, appId: String? = null): File {
+    suspend fun getSnapshotZipFile(
+        snapshotId: Long,
+        appId: String? = null,
+        activityId: String? = null
+    ): File {
         val filename = if (appId != null) {
-            val name = appInfoCacheFlow.value[appId]?.name?.filterNot { c -> c in "\\/:*?\"<>|" }
-            "${(name ?: appId).take(20)}-${snapshotId}.zip"
+            val name =
+                appInfoCacheFlow.value[appId]?.name?.filterNot { c -> c in "\\/:*?\"<>|" || c <= ' ' }
+            if (activityId != null) {
+                "${(name ?: appId).take(20)}_${
+                    activityId.split('.').last().take(40)
+                }-${snapshotId}.zip"
+            } else {
+                "${(name ?: appId).take(20)}-${snapshotId}.zip"
+            }
         } else {
             "${snapshotId}.zip"
         }
