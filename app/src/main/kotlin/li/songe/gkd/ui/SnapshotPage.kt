@@ -207,7 +207,11 @@ fun SnapshotPage() {
                     modifier = Modifier
                         .clickable(onClick = vm.viewModelScope.launchAsFn {
                             val zipFile =
-                                SnapshotExt.getSnapshotZipFile(snapshotVal.id, snapshotVal.appId)
+                                SnapshotExt.getSnapshotZipFile(
+                                    snapshotVal.id,
+                                    snapshotVal.appId,
+                                    snapshotVal.activityId
+                                )
                             context.shareFile(zipFile, "分享快照文件")
                             selectedSnapshot = null
                         })
