@@ -453,14 +453,7 @@ fun useSettingsPage(): ScaffoldExt {
             HorizontalDivider()
 
             SettingItem(title = "分享日志", onClick = {
-                vm.viewModelScope.launchTry(Dispatchers.IO) {
-                    val logFiles = LogUtils.getLogFiles()
-                    if (logFiles.isNotEmpty()) {
-                        showShareLogDlg = true
-                    } else {
-                        toast("暂无日志")
-                    }
-                }
+                showShareLogDlg = true
             })
             HorizontalDivider()
 

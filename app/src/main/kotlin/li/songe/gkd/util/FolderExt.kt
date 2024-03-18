@@ -40,15 +40,8 @@ fun initFolder() {
 
 
 fun buildLogFile(): File {
-    val files = LogUtils
-        .getLogFiles()
-        .toMutableList()
-    dbFolder
-        .listFiles { f -> f.isFile }
-        ?.forEach { files.add(it) }
-    subsFolder
-        .listFiles { f -> f.isFile }
-        ?.forEach { files.add(it) }
+    val files = mutableListOf(dbFolder, subsFolder)
+    LogUtils.getLogFiles().firstOrNull()?.parentFile?.let { files.add(it) }
     val appListFile = logZipDir
         .resolve("appList.json")
     appListFile.writeText(json.encodeToString(appInfoCacheFlow.value.values.toList()))
