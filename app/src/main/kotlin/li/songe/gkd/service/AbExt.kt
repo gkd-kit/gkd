@@ -255,12 +255,28 @@ fun createCacheTransform(): CacheTransform {
             }
         }
     }
+    var vidCacheNode: AccessibilityNodeInfo? = null
+    var vidCacheValue: CharSequence? = null
     val transform = Transform(
         getAttr = { node, name ->
-            if (name == "index") {
-                node.getIndexX()
-            } else {
-                getAttr(node, name)
+            when (name) {
+                "vid" -> {
+                    if (node === vidCacheNode) {
+                        vidCacheValue
+                    } else {
+                        vidCacheNode = node
+                        vidCacheValue = node.getVid()
+                        vidCacheValue
+                    }
+                }
+
+                "index" -> {
+                    node.getIndexX()
+                }
+
+                else -> {
+                    getAttr(node, name)
+                }
             }
         },
         getName = { node -> node.className },
