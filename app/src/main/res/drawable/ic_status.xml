@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="66dp"
+    android:height="66dp"
+    android:viewportWidth="66"
+    android:viewportHeight="66">
+    <!-- https://developer.android.com/develop/ui/views/launch/icon_design_adaptive?hl=zh-cn -->
+    <path
+        android:fillColor="#ffffff"
+        android:pathData="M19,18h8v30h-8z" />
+    <path
+        android:fillColor="#ffffff"
+        android:pathData="M39,18h8v30h-8z" />
+</vector>
