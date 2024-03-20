@@ -3,8 +3,8 @@ package li.songe.gkd.data
 import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Job
-import li.songe.gkd.service.CacheTransform
 import li.songe.gkd.service.createCacheTransform
+import li.songe.gkd.service.createTransform
 import li.songe.gkd.service.lastTriggerRule
 import li.songe.gkd.service.lastTriggerTime
 import li.songe.gkd.service.querySelector
@@ -130,37 +130,30 @@ sealed class ResolvedRule(
     }
 
     private val canCacheIndex = (matches + excludeMatches).any { s -> s.canCacheIndex }
+    private val transform = if (canCacheIndex) defaultCacheTransform.transform else defaultTransform
 
     fun query(
         nodeInfo: AccessibilityNodeInfo?,
-        cacheTransform: CacheTransform? = null
     ): AccessibilityNodeInfo? {
-        if (nodeInfo == null) return null
-        var target: AccessibilityNodeInfo? = null
-        if (canCacheIndex) {
-            val transform = cacheTransform ?: createCacheTransform()
+        try {
+            if (nodeInfo == null) return null
+            var target: AccessibilityNodeInfo? = null
             for (selector in matches) {
-                target = nodeInfo.querySelector(selector, quickFind, transform.transform)
+                target = nodeInfo.querySelector(selector, quickFind, transform)
                     ?: return null
             }
             for (selector in excludeMatches) {
                 if (nodeInfo.querySelector(
                         selector,
                         quickFind,
-                        transform.transform
+                        transform
                     ) != null
                 ) return null
             }
-        } else {
-            for (selector in matches) {
-                target = nodeInfo.querySelector(selector, quickFind) ?: return null
-            }
-            for (selector in excludeMatches) {
-                if (nodeInfo.querySelector(selector, quickFind) != null) return null
-            }
+            return target
+        } finally {
+            defaultCacheTransform.indexCache.clear()
         }
-
-        return target
     }
 
     private val performer = ActionPerformer.getAction(
@@ -246,5 +239,8 @@ fun getFixActivityIds(
         }
     }
 }
+
+private val defaultTransform = createTransform()
+private val defaultCacheTransform = createCacheTransform()
 
 
