@@ -28,7 +28,8 @@ fun createNotif(context: Service, channelId: String, notif: Notif) {
         context, notif.id, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
 
-    val builder = NotificationCompat.Builder(context, channelId).setSmallIcon(notif.icon)
+    val builder = NotificationCompat.Builder(context, channelId)
+        .setSmallIcon(notif.smallIcon)
         .setContentTitle(notif.title).setContentText(notif.text).setContentIntent(pendingIntent)
         .setPriority(NotificationCompat.PRIORITY_DEFAULT).setOngoing(notif.ongoing)
         .setAutoCancel(notif.autoCancel)
