@@ -86,12 +86,11 @@ fun AccessibilityNodeInfo.getVid(): CharSequence? {
 fun AccessibilityNodeInfo.querySelector(
     selector: Selector,
     quickFind: Boolean = false,
-    transform: Transform<AccessibilityNodeInfo>? = null,
+    transform: Transform<AccessibilityNodeInfo>,
 ): AccessibilityNodeInfo? {
-    val t = (if (selector.canCacheIndex) transform else defaultTransform) ?: defaultTransform
     if (selector.isMatchRoot) {
         if (parent == null) {
-            return selector.match(this, t)
+            return selector.match(this, transform)
         }
         return null
     }
@@ -111,21 +110,14 @@ fun AccessibilityNodeInfo.querySelector(
         if (nodes.isNotEmpty()) {
             val trackNodes = ArrayList<AccessibilityNodeInfo>(selector.tracks.size)
             nodes.forEach { childNode ->
-                val targetNode = selector.match(childNode, t, trackNodes)
+                val targetNode = selector.match(childNode, transform, trackNodes)
                 if (targetNode != null) return targetNode
             }
         }
         return null
     }
     // 在一些开屏广告的界面会造成1-2s的阻塞
-    return t.querySelector(this, selector)
-}
-
-// 不可以在 多线程/不同协程作用域 里同时使用
-private val tempRect = Rect()
-private fun AccessibilityNodeInfo.getTempRect(): Rect {
-    getBoundsInScreen(tempRect)
-    return tempRect
+    return transform.querySelector(this, selector)
 }
 
 
@@ -187,37 +179,57 @@ fun Selector.checkSelector(): String? {
     return null
 }
 
-private val getAttr: (AccessibilityNodeInfo, String) -> Any? = { node, name ->
-    when (name) {
-        "id" -> node.viewIdResourceName
-        "vid" -> node.getVid()
+private fun createGetAttr(): ((AccessibilityNodeInfo, String) -> Any?) {
+    var tempNode: AccessibilityNodeInfo? = null
+    val tempRect = Rect()
+    var tempVid: CharSequence? = null
+    fun AccessibilityNodeInfo.getTempRect(): Rect {
+        if (this !== tempNode) {
+            getBoundsInScreen(tempRect)
+            tempNode = this
+        }
+        return tempRect
+    }
 
-        "name" -> node.className
-        "text" -> node.text
-        "text.length" -> node.text?.length
-        "desc" -> node.contentDescription
-        "desc.length" -> node.contentDescription?.length
+    fun AccessibilityNodeInfo.getTempVid(): CharSequence? {
+        if (this !== tempNode) {
+            tempVid = getVid()
+            tempNode = this
+        }
+        return tempVid
+    }
+    return { node, name ->
+        when (name) {
+            "id" -> node.viewIdResourceName
+            "vid" -> node.getTempVid()
 
-        "clickable" -> node.isClickable
-        "focusable" -> node.isFocusable
-        "checkable" -> node.isCheckable
-        "checked" -> node.isChecked
-        "editable" -> node.isEditable
-        "longClickable" -> node.isLongClickable
-        "visibleToUser" -> node.isVisibleToUser
+            "name" -> node.className
+            "text" -> node.text
+            "text.length" -> node.text?.length
+            "desc" -> node.contentDescription
+            "desc.length" -> node.contentDescription?.length
 
-        "left" -> node.getTempRect().left
-        "top" -> node.getTempRect().top
-        "right" -> node.getTempRect().right
-        "bottom" -> node.getTempRect().bottom
+            "clickable" -> node.isClickable
+            "focusable" -> node.isFocusable
+            "checkable" -> node.isCheckable
+            "checked" -> node.isChecked
+            "editable" -> node.isEditable
+            "longClickable" -> node.isLongClickable
+            "visibleToUser" -> node.isVisibleToUser
 
-        "width" -> node.getTempRect().width()
-        "height" -> node.getTempRect().height()
+            "left" -> node.getTempRect().left
+            "top" -> node.getTempRect().top
+            "right" -> node.getTempRect().right
+            "bottom" -> node.getTempRect().bottom
 
-        "index" -> node.getIndex()
-        "depth" -> node.getDepth()
-        "childCount" -> node.childCount
-        else -> null
+            "width" -> node.getTempRect().width()
+            "height" -> node.getTempRect().height()
+
+            "index" -> node.getIndex()
+            "depth" -> node.getDepth()
+            "childCount" -> node.childCount
+            else -> null
+        }
     }
 }
 
@@ -255,21 +267,10 @@ fun createCacheTransform(): CacheTransform {
             }
         }
     }
-    var vidCacheNode: AccessibilityNodeInfo? = null
-    var vidCacheValue: CharSequence? = null
+    val getAttr = createGetAttr()
     val transform = Transform(
         getAttr = { node, name ->
             when (name) {
-                "vid" -> {
-                    if (node === vidCacheNode) {
-                        vidCacheValue
-                    } else {
-                        vidCacheNode = node
-                        vidCacheValue = node.getVid()
-                        vidCacheValue
-                    }
-                }
-
                 "index" -> {
                     node.getIndexX()
                 }
@@ -420,51 +421,50 @@ fun createCacheTransform(): CacheTransform {
     return CacheTransform(transform, indexCache)
 }
 
-val defaultCacheTransform = createCacheTransform()
-
-// no cache
-val defaultTransform = Transform(
-    getAttr = getAttr,
-    getName = { node -> node.className },
-    getChildren = getChildren,
-    getParent = { node -> node.parent },
-    getDescendants = { node ->
-        sequence {
-            val stack = getChildren(node).toMutableList()
-            if (stack.isEmpty()) return@sequence
-            stack.reverse()
-            val tempNodes = mutableListOf<AccessibilityNodeInfo>()
-            var offset = 0
-            do {
-                val top = stack.removeLast()
-                yield(top)
-                offset++
-                if (offset > MAX_DESCENDANTS_SIZE) {
-                    return@sequence
-                }
-                for (childNode in getChildren(top)) {
-                    tempNodes.add(childNode)
-                }
-                if (tempNodes.isNotEmpty()) {
-                    for (i in tempNodes.size - 1 downTo 0) {
-                        stack.add(tempNodes[i])
+fun createTransform(): Transform<AccessibilityNodeInfo> {
+    return Transform(
+        getAttr = createGetAttr(),
+        getName = { node -> node.className },
+        getChildren = getChildren,
+        getParent = { node -> node.parent },
+        getDescendants = { node ->
+            sequence {
+                val stack = getChildren(node).toMutableList()
+                if (stack.isEmpty()) return@sequence
+                stack.reverse()
+                val tempNodes = mutableListOf<AccessibilityNodeInfo>()
+                var offset = 0
+                do {
+                    val top = stack.removeLast()
+                    yield(top)
+                    offset++
+                    if (offset > MAX_DESCENDANTS_SIZE) {
+                        return@sequence
                     }
-                    tempNodes.clear()
-                }
-            } while (stack.isNotEmpty())
-        }
-    },
-    getChildrenX = { node, connectExpression ->
-        sequence {
-            repeat(node.childCount.coerceAtMost(MAX_CHILD_SIZE)) { offset ->
-                connectExpression.maxOffset?.let { maxOffset ->
-                    if (offset > maxOffset) return@sequence
-                }
-                if (connectExpression.checkOffset(offset)) {
-                    val child = node.getChild(offset) ?: return@sequence
-                    yield(child)
+                    for (childNode in getChildren(top)) {
+                        tempNodes.add(childNode)
+                    }
+                    if (tempNodes.isNotEmpty()) {
+                        for (i in tempNodes.size - 1 downTo 0) {
+                            stack.add(tempNodes[i])
+                        }
+                        tempNodes.clear()
+                    }
+                } while (stack.isNotEmpty())
+            }
+        },
+        getChildrenX = { node, connectExpression ->
+            sequence {
+                repeat(node.childCount.coerceAtMost(MAX_CHILD_SIZE)) { offset ->
+                    connectExpression.maxOffset?.let { maxOffset ->
+                        if (offset > maxOffset) return@sequence
+                    }
+                    if (connectExpression.checkOffset(offset)) {
+                        val child = node.getChild(offset) ?: return@sequence
+                        yield(child)
+                    }
                 }
             }
-        }
-    },
-)
+        },
+    )
+}
