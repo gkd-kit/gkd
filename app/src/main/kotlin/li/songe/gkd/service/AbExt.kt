@@ -364,7 +364,7 @@ fun createCacheTransform(): CacheTransform {
                                 val child = parentVal.getChild(i) ?: return@sequence
                                 yield(child)
                             }
-                            i--
+                            i++
                             offset++
                         }
                     }
