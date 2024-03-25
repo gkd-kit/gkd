@@ -46,12 +46,12 @@ plugins {
 
 android {
     namespace = "li.songe.gkd"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-    buildToolsVersion = libs.versions.android.buildToolsVersion.get()
+    compileSdk = libs.versions.compileSdk.get().toInt()
+    buildToolsVersion = libs.versions.buildToolsVersion.get()
 
     defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
-        targetSdk = libs.versions.android.targetSdk.get().toInt()
+        minSdk = libs.versions.minSdk.get().toInt()
+        targetSdk = libs.versions.targetSdk.get().toInt()
 
         applicationId = "li.songe.gkd"
         versionCode = 27
@@ -133,7 +133,7 @@ android {
         aidl = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.compose.compilerVersion.get()
+        kotlinCompilerExtensionVersion = libs.versions.composeCompiler.get()
     }
     packagingOptions.resources.excludes += setOf(
         // https://github.com/Kotlin/kotlinx.coroutines/issues/2023

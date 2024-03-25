@@ -1,0 +1,86 @@
+[versions]
+kotlin = "1.9.23"
+ksp = "1.9.23-1.0.19"
+compileSdk = "34"
+targetSdk = "34"
+buildToolsVersion = "34.0.0"
+minSdk = "26"
+android = "8.3.1"
+compose = "1.6.4"
+composeCompiler = "1.5.11"
+rikka = "4.4.0"
+room = "2.6.1"
+paging = "3.2.1"
+ktor = "2.3.9"
+hilt = "2.51"
+destinations = "1.10.2"
+coil = "2.6.0"
+
+[libraries]
+android_gradle = { module = "com.android.tools.build:gradle", version.ref = "android" }
+kotlin_gradle_plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlin_serialization = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
+kotlin_stdlib_common = { module = "org.jetbrains.kotlin:kotlin-stdlib-common", version.ref = "kotlin" }
+compose_ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
+compose_preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "compose" }
+compose_tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
+compose_junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "compose" }
+compose_icons = { module = "androidx.compose.material:material-icons-extended", version.ref = "compose" }
+compose_material3 = { module = "androidx.compose.material3:material3", version = "1.2.1" }
+compose_activity = { module = "androidx.activity:activity-compose", version = "1.8.2" }
+tencent_mmkv = { module = "com.tencent:mmkv", version = "1.3.4" }
+rikka_gradle = { module = "dev.rikka.tools.refine:gradle-plugin", version.ref = "rikka" }
+rikka_processor = { module = "dev.rikka.tools.refine:annotation-processor", version.ref = "rikka" }
+rikka_annotation = { module = "dev.rikka.tools.refine:annotation", version.ref = "rikka" }
+rikka_runtime = { module = "dev.rikka.tools.refine:runtime", version.ref = "rikka" }
+rikka_shizuku_api = { module = "dev.rikka.shizuku:api", version = "13.1.5" }
+rikka_shizuku_provider = { module = "dev.rikka.shizuku:provider", version = "13.1.5" }
+lsposed_hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version = "4.3" }
+others_utilcodex = { module = "com.blankj:utilcodex", version = "1.31.1" }
+others_activityResultLauncher = { module = "com.github.DylanCaiCoding:ActivityResultLauncher", version = "1.1.2" }
+others_jankson = { module = "blue.endless:jankson", version = "1.2.3" }
+others_floating_bubble_view = { module = "io.github.torrydo:floating-bubble-view", version = "0.6.4" }
+androidx_appcompat = { module = "androidx.appcompat:appcompat", version = "1.6.1" }
+androidx_core_ktx = { module = "androidx.core:core-ktx", version = "1.12.0" }
+androidx_lifecycle_runtime_ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version = "2.7.0" }
+androidx_junit = { module = "androidx.test.ext:junit", version = "1.1.5" }
+androidx_espresso = { module = "androidx.test.espresso:espresso-core", version = "3.5.1" }
+androidx_room_runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+androidx_room_compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+androidx_room_ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+androidx_room_paging = { module = "androidx.room:room-paging", version.ref = "room" }
+androidx_splashscreen = { module = "androidx.core:core-splashscreen", version = "1.0.1" }
+androidx_paging_runtime = { module = "androidx.paging:paging-runtime", version.ref = "paging" }
+androidx_paging_compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
+google_accompanist_drawablepainter = { module = "com.google.accompanist:accompanist-drawablepainter", version = "0.34.0" }
+junit = { module = "junit:junit", version = "4.13.2" }
+ktor_server_core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+ktor_server_cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
+ktor_server_content_negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
+ktor_client_core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor_client_okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor_client_content_negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor_serialization_kotlinx_json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+kotlinx_serialization_json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.6.3" }
+kotlinx_collections_immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version = "0.3.6" }
+google_hilt_android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+google_hilt_android_compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
+androidx_hilt_navigation_compose = { module = "androidx.hilt:hilt-navigation-compose", version = "1.2.0" }
+destinations_core = { module = "io.github.raamcosta.compose-destinations:core", version.ref = "destinations" }
+destinations_ksp = { module = "io.github.raamcosta.compose-destinations:ksp", version.ref = "destinations" }
+coil_compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+coil_gif = { module = "io.coil-kt:coil-gif", version.ref = "coil" }
+others_reorderable = { module = "sh.calvin.reorderable:reorderable", version = "1.3.3" }
+exp4j = { module = "net.objecthunter:exp4j", version = "0.4.8" }
+toaster = { module = "com.github.getActivity:Toaster", version = "12.6" }
+
+[plugins]
+android_library = { id = "com.android.library", version.ref = "android" }
+android_application = { id = "com.android.application", version.ref = "android" }
+kotlin_serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin_parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
+kotlin_multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin_android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+rikka_refine = { id = "dev.rikka.tools.refine", version.ref = "rikka" }
+google_ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+google_hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
