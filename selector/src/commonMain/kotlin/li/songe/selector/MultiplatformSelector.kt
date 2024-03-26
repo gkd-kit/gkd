@@ -17,7 +17,16 @@ class MultiplatformSelector private constructor(
     val qfTextValue = selector.qfTextValue
     val canQf = selector.canQf
     val isMatchRoot = selector.isMatchRoot
-    val nameToTypeList = selector.nameToTypeList
+
+    // [name,operator,value][]
+    val binaryExpressions = selector.binaryExpressions.map { e ->
+        arrayOf(
+            e.name,
+            e.operator.key,
+            e.value.type,
+            e.value.toString()
+        )
+    }.toTypedArray()
 
     fun <T : Any> match(node: T, transform: MultiplatformTransform<T>): T? {
         return selector.match(node, transform.transform)

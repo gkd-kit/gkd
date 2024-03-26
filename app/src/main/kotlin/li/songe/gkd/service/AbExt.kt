@@ -168,12 +168,12 @@ val allowPropertyNames by lazy {
 }
 
 fun Selector.checkSelector(): String? {
-    nameToTypeList.forEach { (name, type) ->
-        if (!allowPropertyNames.contains(name)) {
-            return "未知属性:${name}"
+    binaryExpressions.forEach { e ->
+        if (!allowPropertyNames.contains(e.name)) {
+            return "未知属性:${e.name}"
         }
-        if (type != "null" && allowPropertyNames[name] != type) {
-            return "非法类型:${name}=$type"
+        if (e.value.type != "null" && allowPropertyNames[e.name] != e.value.type) {
+            return "非法类型:${e.name}=${e.value.type}"
         }
     }
     return null
