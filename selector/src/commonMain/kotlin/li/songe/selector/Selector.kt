@@ -84,25 +84,19 @@ class Selector internal constructor(private val propertyWrapper: PropertyWrapper
         keys.toTypedArray()
     }
 
-    private val binaryExpressions = run {
+    val binaryExpressions = run {
         var p: PropertyWrapper? = propertyWrapper
-        val names = mutableListOf<BinaryExpression>()
+        val expressions = mutableListOf<BinaryExpression>()
         while (p != null) {
             val s = p.propertySegment
-            names.addAll(s.binaryExpressions)
+            expressions.addAll(s.binaryExpressions)
             p = p.to?.to
         }
-        names.distinct().toTypedArray()
+        expressions.distinct().toTypedArray()
     }
 
     val propertyNames = run {
         binaryExpressions.map { e -> e.name }.distinct().toTypedArray()
-    }
-
-
-    // [name,type][]
-    val nameToTypeList = run {
-        binaryExpressions.map { e -> arrayOf(e.name, e.value.type) }.distinct().toTypedArray()
     }
 
     val canCacheIndex =
