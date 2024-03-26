@@ -2,6 +2,7 @@ rootProject.name = "gkd"
 include(":app")
 include(":selector")
 include(":hidden_api")
+include(":wasm_matches")
 
 pluginManagement {
     repositories {
