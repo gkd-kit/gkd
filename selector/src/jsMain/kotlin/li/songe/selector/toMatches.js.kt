@@ -2,8 +2,11 @@ package li.songe.selector
 
 import kotlin.js.RegExp
 
-// https://github.com/JetBrains/kotlin/blob/master/libraries/stdlib/js/src/kotlin/text/regex.kt
 actual fun String.toMatches(): (input: CharSequence) -> Boolean {
+    if (wasmMatchesTemp !== null) {
+        val matches = wasmMatchesTemp!!(this)
+        return { input -> matches(input.toString()) }
+    }
     if (length >= 4 && startsWith("(?")) {
         for (i in 2 until length) {
             when (get(i)) {
@@ -15,6 +18,7 @@ actual fun String.toMatches(): (input: CharSequence) -> Boolean {
                         .joinToString("")
                     val nativePattern = RegExp(substring(i + 1), flags)
                     return { input ->
+                        // // https://github.com/JetBrains/kotlin/blob/master/libraries/stdlib/js/src/kotlin/text/regex.kt
                         nativePattern.reset()
                         val match = nativePattern.exec(input.toString())
                         match != null && match.index == 0 && nativePattern.lastIndex == input.length
@@ -27,4 +31,9 @@ actual fun String.toMatches(): (input: CharSequence) -> Boolean {
     }
     val regex = Regex(this)
     return { input -> regex.matches(input) }
+}
+
+private var wasmMatchesTemp: ((String) -> (String) -> Boolean)? = null
+actual fun setWasmToMatches(wasmToMatches: (String) -> (String) -> Boolean) {
+    wasmMatchesTemp = wasmToMatches
 }
