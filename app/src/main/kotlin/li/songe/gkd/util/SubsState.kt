@@ -1,7 +1,6 @@
 package li.songe.gkd.util
 
 import com.blankj.utilcode.util.LogUtils
-import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.collections.immutable.ImmutableList
@@ -11,6 +10,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -26,8 +26,10 @@ import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.GlobalRule
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
+import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.SubsVersion
 import li.songe.gkd.db.DbSet
+import java.net.URI
 
 val subsItemsFlow by lazy {
     DbSet.subsItemDao.query().map { s -> s.toImmutableList() }
@@ -85,6 +87,33 @@ fun getGroupRawEnable(
     } ?: group.enable ?: true
 }
 
+data class SubsEntry(
+    val subsItem: SubsItem,
+    val subscription: RawSubscription?,
+) {
+    val checkUpdateUrl = run {
+        val checkUpdateUrl = subscription?.checkUpdateUrl ?: return@run null
+        val updateUrl = subscription.updateUrl ?: subsItem.updateUrl ?: return@run null
+        try {
+            return@run URI(updateUrl).resolve(checkUpdateUrl).toString()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return@run null
+    }
+}
+
+val subsEntriesFlow by lazy {
+    combine(subsItemsFlow, subsIdToRawFlow) { subsItems, subsIdToRaw ->
+        subsItems.map { s ->
+            SubsEntry(
+                subsItem = s,
+                subscription = subsIdToRaw[s.id]
+            )
+        }.toImmutableList()
+    }.stateIn(appScope, SharingStarted.Eagerly, persistentListOf())
+}
+
 data class RuleSummary(
     val globalRules: ImmutableList<GlobalRule> = persistentListOf(),
     val globalGroups: ImmutableList<ResolvedGlobalGroup> = persistentListOf(),
@@ -124,12 +153,11 @@ data class RuleSummary(
 
 val ruleSummaryFlow by lazy {
     combine(
-        subsItemsFlow,
-        subsIdToRawFlow,
+        subsEntriesFlow,
         appInfoCacheFlow,
         DbSet.subsConfigDao.query(),
         DbSet.categoryConfigDao.query(),
-    ) { subsItems, subsIdToRaw, appInfoCache, subsConfigs, categoryConfigs ->
+    ) { subsEntries, appInfoCache, subsConfigs, categoryConfigs ->
         val globalSubsConfigs = subsConfigs.filter { c -> c.type == SubsConfig.GlobalGroupType }
         val appSubsConfigs = subsConfigs.filter { c -> c.type == SubsConfig.AppType }
         val groupSubsConfigs = subsConfigs.filter { c -> c.type == SubsConfig.AppGroupType }
@@ -139,8 +167,8 @@ val ruleSummaryFlow by lazy {
             HashMap<String, List<ResolvedAppGroup>>()
         val globalRules = mutableListOf<GlobalRule>()
         val globalGroups = mutableListOf<ResolvedGlobalGroup>()
-        subsItems.filter { it.enable }.forEach { subsItem ->
-            val rawSubs = subsIdToRaw[subsItem.id] ?: return@forEach
+        subsEntries.filter { it.subsItem.enable }.forEach { (subsItem, rawSubs) ->
+            rawSubs ?: return@forEach
 
             // global scope
             val subGlobalSubsConfigs = globalSubsConfigs.filter { c -> c.subsItemId == subsItem.id }
@@ -246,6 +274,7 @@ val ruleSummaryFlow by lazy {
 fun initSubsState() {
     subsItemsFlow.value
     appScope.launchTry(Dispatchers.IO) {
+        subsRefreshingFlow.value = true
         if (subsFolder.exists() && subsFolder.isDirectory) {
             updateSubsFileMutex.withLock {
                 val fileRegex = Regex("^-?\\d+\\.json$")
@@ -267,22 +296,50 @@ fun initSubsState() {
                 subsIdToRawFlow.value = newMap.toImmutableMap()
             }
         }
+        subsRefreshingFlow.value = false
     }
 }
 
-fun checkSubsUpdate() = appScope.launchTry(Dispatchers.IO) { // 自动从网络更新订阅文件
-    updateSubsFileMutex.withLock {
-        LogUtils.d("开始自动检测更新")
-        subsItemsFlow.value.forEach { subsItem ->
-            if (subsItem.updateUrl == null) return@forEach
+
+private val updateSubsMutex by lazy { Mutex() }
+val subsRefreshingFlow = MutableStateFlow(false)
+fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers.IO) {
+    if (updateSubsMutex.isLocked || subsRefreshingFlow.value) {
+        return@launchTry
+    }
+    updateSubsMutex.withLock {
+        if (subsRefreshingFlow.value) return@withLock
+        subsRefreshingFlow.value = true
+        LogUtils.d("开始检测更新")
+        val subsEntries = subsEntriesFlow.value
+        subsEntries.find { e -> e.subsItem.id == -2L && e.subscription == null }?.let { e ->
+            updateSubscription(
+                RawSubscription(
+                    id = e.subsItem.id,
+                    name = "本地订阅",
+                    version = 0
+                )
+            )
+        }
+        var successNum = 0
+        subsEntries.forEach { subsEntry ->
+            val subsItem = subsEntry.subsItem
+            val subsRaw = subsEntry.subscription
+            if (subsItem.updateUrl == null || subsItem.id < 0) return@forEach
+            val checkUpdateUrl = subsEntry.checkUpdateUrl
             try {
-                val oldSubsRaw = subsIdToRawFlow.value[subsItem.id]
-                if (oldSubsRaw?.checkUpdateUrl != null) {
+                if (checkUpdateUrl != null && subsRaw != null) {
                     try {
-                        val subsVersion =
-                            client.get(oldSubsRaw.checkUpdateUrl).body<SubsVersion>()
-                        LogUtils.d("快速检测更新成功", subsVersion)
-                        if (subsVersion.id == oldSubsRaw.id && subsVersion.version <= oldSubsRaw.version) {
+                        val subsVersion = json.decodeFromString<SubsVersion>(
+                            json5ToJson(
+                                client.get(checkUpdateUrl).bodyAsText()
+                            )
+                        )
+                        LogUtils.d(
+                            "快速检测更新:id=${subsRaw.id},version=${subsRaw.version}",
+                            subsVersion
+                        )
+                        if (subsVersion.id == subsRaw.id && subsVersion.version <= subsRaw.version) {
                             return@forEach
                         }
                     } catch (e: Exception) {
@@ -290,25 +347,41 @@ fun checkSubsUpdate() = appScope.launchTry(Dispatchers.IO) { // 自动从网络�
                     }
                 }
                 val newSubsRaw = RawSubscription.parse(
-                    client.get(oldSubsRaw?.updateUrl ?: subsItem.updateUrl).bodyAsText()
+                    client.get(subsRaw?.updateUrl ?: subsItem.updateUrl).bodyAsText()
                 )
                 if (newSubsRaw.id != subsItem.id) {
+                    LogUtils.d("id不匹配", newSubsRaw.id, subsItem.id)
                     return@forEach
                 }
-                if (oldSubsRaw != null && newSubsRaw.version <= oldSubsRaw.version) {
+                if (subsRaw != null && newSubsRaw.version <= subsRaw.version) {
+                    LogUtils.d(
+                        "版本号不满足条件:id=${subsItem.id}",
+                        "${subsRaw.version} -> ${newSubsRaw.version}"
+                    )
                     return@forEach
                 }
                 updateSubscription(newSubsRaw)
-                val newItem = subsItem.copy(
-                    mtime = System.currentTimeMillis()
+                DbSet.subsItemDao.update(
+                    subsItem.copy(
+                        mtime = System.currentTimeMillis()
+                    )
                 )
-                DbSet.subsItemDao.update(newItem)
-                LogUtils.d("更新订阅文件:${newSubsRaw.name}")
+                successNum++
+                LogUtils.d("更新订阅文件:id=${subsItem.id},name=${newSubsRaw.name}")
             } catch (e: Exception) {
                 e.printStackTrace()
                 LogUtils.d("检测更新失败", e)
             }
         }
-        LogUtils.d("自动检测更新结束")
+        subsRefreshingFlow.value = false
+        if (showToast) {
+            if (successNum > 0) {
+                toast("更新 $successNum 条订阅")
+            } else {
+                toast("暂无更新")
+            }
+        }
+        LogUtils.d("结束检测更新")
+        delay(500)
     }
 }
