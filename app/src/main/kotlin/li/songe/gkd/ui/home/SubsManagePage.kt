@@ -63,6 +63,7 @@ import li.songe.gkd.ui.destinations.CategoryPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.isSafeUrl
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
@@ -71,6 +72,7 @@ import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
+import li.songe.gkd.util.subsRefreshingFlow
 import li.songe.gkd.util.toast
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyColumnState
@@ -100,8 +102,8 @@ fun useSubsManagePage(): ScaffoldExt {
     var showAddLinkDialog by remember { mutableStateOf(false) }
     var link by remember { mutableStateOf("") }
 
-    val refreshing by vm.refreshingFlow.collectAsState()
-    val pullRefreshState = rememberPullRefreshState(refreshing, vm::refreshSubs)
+    val refreshing by subsRefreshingFlow.collectAsState()
+    val pullRefreshState = rememberPullRefreshState(refreshing, { checkSubsUpdate(true) })
 
     val lazyListState = rememberLazyListState()
     val reorderableLazyColumnState = rememberReorderableLazyColumnState(lazyListState) { from, to ->
@@ -263,7 +265,7 @@ fun useSubsManagePage(): ScaffoldExt {
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                if (!vm.refreshingFlow.value) {
+                if (!subsRefreshingFlow.value) {
                     showAddLinkDialog = true
                 } else {
                     toast("正在刷新订阅,请稍后添加")

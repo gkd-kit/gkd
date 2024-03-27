@@ -15,7 +15,6 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -26,7 +25,6 @@ import li.songe.gkd.data.GithubPoliciesAsset
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubsItem
-import li.songe.gkd.data.SubsVersion
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.FILE_UPLOAD_URL
 import li.songe.gkd.util.LoadStatus
@@ -41,6 +39,7 @@ import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
+import li.songe.gkd.util.subsRefreshingFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 import java.io.File
@@ -115,7 +114,7 @@ class HomeVm @Inject constructor() : ViewModel() {
     }.stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
     fun addSubsFromUrl(url: String) = viewModelScope.launchTry(Dispatchers.IO) {
-        if (refreshingFlow.value) return@launchTry
+        if (subsRefreshingFlow.value) return@launchTry
         if (!URLUtil.isNetworkUrl(url)) {
             toast("非法链接")
             return@launchTry
@@ -125,7 +124,7 @@ class HomeVm @Inject constructor() : ViewModel() {
             toast("订阅链接已存在")
             return@launchTry
         }
-        refreshingFlow.value = true
+        subsRefreshingFlow.value = true
         try {
             val text = try {
                 client.get(url).bodyAsText()
@@ -160,82 +159,8 @@ class HomeVm @Inject constructor() : ViewModel() {
             DbSet.subsItemDao.insert(newItem)
             toast("成功添加订阅")
         } finally {
-            refreshingFlow.value = false
+            subsRefreshingFlow.value = false
         }
-
-    }
-
-    val refreshingFlow = MutableStateFlow(false)
-    fun refreshSubs() = viewModelScope.launchTry(Dispatchers.IO) {
-        if (refreshingFlow.value) return@launchTry
-        refreshingFlow.value = true
-        var errorNum = 0
-        val oldSubItems = subsItemsFlow.value
-        val subsIdToRaw = subsIdToRawFlow.value
-        oldSubItems.find { it.id == -2L }?.let { localSubsItem ->
-            if (!subsIdToRaw.containsKey(localSubsItem.id)) {
-                updateSubscription(
-                    RawSubscription(
-                        id = localSubsItem.id,
-                        name = "本地订阅",
-                        version = 0
-                    )
-                )
-            }
-        }
-        val newSubsItems = oldSubItems.mapNotNull { oldItem ->
-            if (oldItem.updateUrl == null || oldItem.id < 0) return@mapNotNull null
-            val oldSubsRaw = subsIdToRaw[oldItem.id]
-            try {
-                if (oldSubsRaw?.checkUpdateUrl != null) {
-                    try {
-                        val subsVersion =
-                            client.get(oldSubsRaw.checkUpdateUrl).body<SubsVersion>()
-                        LogUtils.d("快速检测更新成功", subsVersion)
-                        if (subsVersion.id != oldSubsRaw.id) {
-                            toast("${oldItem.id}:checkUpdateUrl获取id不一致")
-                            return@mapNotNull null
-                        }
-                        if (subsVersion.version <= oldSubsRaw.version) {
-                            return@mapNotNull null
-                        }
-                    } catch (e: Exception) {
-                        LogUtils.d("快速检测更新失败", oldItem, e)
-                    }
-                }
-                val newSubsRaw = RawSubscription.parse(
-                    client.get(oldSubsRaw?.updateUrl ?: oldItem.updateUrl).bodyAsText()
-                )
-                if (newSubsRaw.id != oldItem.id) {
-                    toast("${oldItem.id}:updateUrl获取id不一致")
-                    return@mapNotNull null
-                }
-                if (oldSubsRaw != null && newSubsRaw.version <= oldSubsRaw.version) {
-                    return@mapNotNull null
-                }
-                val newItem = oldItem.copy(
-                    mtime = System.currentTimeMillis(),
-                )
-                updateSubscription(newSubsRaw)
-                newItem
-            } catch (e: Exception) {
-                e.printStackTrace()
-                errorNum++
-                null
-            }
-        }
-        if (newSubsItems.isEmpty()) {
-            if (errorNum == oldSubItems.size) {
-                toast("更新失败")
-            } else {
-                toast("暂无更新")
-            }
-        } else {
-            DbSet.subsItemDao.update(*newSubsItems.toTypedArray())
-            toast("更新 ${newSubsItems.size} 条订阅")
-        }
-        delay(500)
-        refreshingFlow.value = false
     }
 
     private val appIdToOrderFlow = DbSet.clickLogDao.queryLatestUniqueAppIds().map { appIds ->
