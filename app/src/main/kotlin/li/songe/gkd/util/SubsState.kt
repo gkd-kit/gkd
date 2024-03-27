@@ -93,7 +93,7 @@ data class SubsEntry(
 ) {
     val checkUpdateUrl = run {
         val checkUpdateUrl = subscription?.checkUpdateUrl ?: return@run null
-        val updateUrl = subscription.updateUrl ?: subsItem.updateUrl ?: return@run null
+        val updateUrl = subscription.updateUrl ?: subsItem.updateUrl ?: return@run checkUpdateUrl
         try {
             return@run URI(updateUrl).resolve(checkUpdateUrl).toString()
         } catch (e: Exception) {

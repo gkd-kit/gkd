@@ -152,7 +152,7 @@ class HomeVm @Inject constructor() : ViewModel() {
             }
             val newItem = SubsItem(
                 id = newSubsRaw.id,
-                updateUrl = newSubsRaw.updateUrl ?: url,
+                updateUrl = url,
                 order = if (subItems.isEmpty()) 1 else (subItems.maxBy { it.order }.order + 1)
             )
             updateSubscription(newSubsRaw)
