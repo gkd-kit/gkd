@@ -61,7 +61,7 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
-          draft: true
+          body_path: ./CHANGELOG.md
 
       - uses: actions/upload-release-asset@v1
         env:
