@@ -432,7 +432,7 @@ fun useSettingsPage(): ScaffoldExt {
             HorizontalDivider()
 
             TextSwitch(name = "保存日志",
-                desc = "保存最近7天的日志,大概占用您5M的空间",
+                desc = "保存最近7天日志,关闭后无法定位解决错误",
                 checked = store.log2FileSwitch,
                 onCheckedChange = {
                     storeFlow.value = store.copy(
@@ -449,7 +449,8 @@ fun useSettingsPage(): ScaffoldExt {
                             }
                         }
                     }
-                })
+                }
+            )
             HorizontalDivider()
 
             SettingItem(title = "分享日志", onClick = {
