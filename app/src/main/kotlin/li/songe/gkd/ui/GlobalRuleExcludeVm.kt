@@ -77,7 +77,12 @@ class GlobalRuleExcludeVm @Inject constructor(stateHandle: SavedStateHandle) : V
             if (str.isBlank()) {
                 apps
             } else {
-                (apps.filter { a -> a.name.contains(str) } + apps.filter { a -> a.id.contains(str) }).distinct()
+                (apps.filter { a -> a.name.contains(str, true) } + apps.filter { a ->
+                    a.id.contains(
+                        str,
+                        true
+                    )
+                }).distinct()
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
