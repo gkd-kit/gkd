@@ -1,4 +1,4 @@
-name: Bug report
+name: Bug report / 错误反馈
 description: Report an issue with GKD
 labels: [pending triage]
 body:
