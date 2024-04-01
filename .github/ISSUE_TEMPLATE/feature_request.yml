@@ -1,4 +1,4 @@
-name: New feature proposal
+name: New feature proposal / 新功能请求
 description: Propose a new feature to be added to GKD
 labels: ['enhancement: pending triage']
 body:
