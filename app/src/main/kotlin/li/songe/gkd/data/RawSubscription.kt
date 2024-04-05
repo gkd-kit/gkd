@@ -767,26 +767,26 @@ data class RawSubscription(
             val text = if (json5) json5ToJson(source) else source
             val subscription = jsonToSubscriptionRaw(json.parseToJsonElement(text).jsonObject)
             subscription.categories.findDuplicatedItem { v -> v.key }?.let { v ->
-                error("duplicated category: key=${v.key}")
+                error("id=${subscription.id}, duplicated category: key=${v.key}")
             }
             subscription.globalGroups.findDuplicatedItem { v -> v.key }?.let { v ->
-                error("duplicated global group: key=${v.key}")
+                error("id=${subscription.id}, duplicated global group: key=${v.key}")
             }
             subscription.globalGroups.forEach { g ->
                 g.rules.findDuplicatedItem { v -> v.key }?.let { v ->
-                    error("duplicated global rule: key=${v.key}, groupKey=${g.key}")
+                    error("id=${subscription.id}, duplicated global rule: key=${v.key}, groupKey=${g.key}")
                 }
             }
             subscription.apps.findDuplicatedItem { v -> v.id }?.let { v ->
-                error("duplicated app: ${v.id}")
+                error("id=${subscription.id}, duplicated app: ${v.id}")
             }
             subscription.apps.forEach { a ->
                 a.groups.findDuplicatedItem { v -> v.key }?.let { v ->
-                    error("duplicated app group: key=${v.key}, appId=${a.id}")
+                    error("id=${subscription.id}, duplicated app group: key=${v.key}, appId=${a.id}")
                 }
                 a.groups.forEach { g ->
                     g.rules.findDuplicatedItem { v -> v.key }?.let { v ->
-                        error("duplicated app rule: key=${v.key}, groupKey=${g.key}, appId=${a.id}")
+                        error("id=${subscription.id}, duplicated app rule: key=${v.key}, groupKey=${g.key}, appId=${a.id}")
                     }
                 }
             }
