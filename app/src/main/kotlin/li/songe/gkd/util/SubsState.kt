@@ -63,6 +63,11 @@ fun deleteSubscription(subsId: Long) {
     val newMap = subsIdToRawFlow.value.toMutableMap()
     newMap.remove(subsId)
     subsIdToRawFlow.value = newMap.toImmutableMap()
+    subsFolder.resolve("$subsId.json").apply {
+        if (exists()) {
+            delete()
+        }
+    }
 }
 
 fun getGroupRawEnable(
