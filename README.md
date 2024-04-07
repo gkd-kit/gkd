@@ -14,18 +14,17 @@
 本应用 **默认不携带任何规则**，官方也不再提供任何规则, 需要用户自行添加本地规则，或者通过订阅规则的方式获取规则
 
 |                                                                                             |                                                                                             |                                                                                             |                                                                                             |
-|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | ![img](https://github.com/gkd-kit/gkd/assets/38517192/e99f43b7-2247-4682-9981-f5d4ec9b483f) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/2d22ee71-d6fd-4dfe-b52f-d73df02f5009) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/b2deafde-d933-402f-a9ce-ebae521b439f) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/7be30706-3e76-4685-b853-3294c362999f) |
 | ![img](https://github.com/gkd-kit/gkd/assets/38517192/1cca31e6-ab1e-4f05-b2bb-ce4844029d52) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/905c2f8d-6af4-4870-b00e-27f6844467aa) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/79f4b6cd-c9c9-4c58-a613-f7f8951dfa61) | ![img](https://github.com/gkd-kit/gkd/assets/38517192/43f7024c-2227-4476-b90c-7dc6f1e4264d) |
 
 ## 选择器
 
-<details open>
-  <summary>示例: 选择器路径视图</summary>
+<https://gkd.li/selector/>
 
-![image](https://github.com/gkd-kit/inspect/assets/38517192/27d0656a-2239-426c-930c-749ffb9f189b)
+[@[vid=\"menu\"] < [vid=\"menu_container\"] - [vid=\"dot_text_layout\"] > [text^=\"广告\"]](https://i.gkd.li/i/14881985?gkd=QFt2aWQ9Im1lbnUiXSA8IFt2aWQ9Im1lbnVfY29udGFpbmVyIl0gLSBbdmlkPSJkb3RfdGV4dF9sYXlvdXQiXSA-IFt0ZXh0Xj0i5bm_5ZGKIl0)
 
-</details>
+![image](https://github.com/gkd-kit/gkd/assets/38517192/980db09f-2c50-4ca0-a8e3-43dce10e38f0)
 
 ## LICENSE
 
