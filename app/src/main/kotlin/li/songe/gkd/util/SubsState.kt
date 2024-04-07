@@ -282,9 +282,9 @@ fun initSubsState() {
         subsRefreshingFlow.value = true
         if (subsFolder.exists() && subsFolder.isDirectory) {
             updateSubsFileMutex.withLock {
-                val fileRegex = Regex("^-?\\d+\\.json$")
+                val filenames = DbSet.subsItemDao.queryAll().map { s -> "${s.id}.json" }
                 val files =
-                    subsFolder.listFiles { f -> f.isFile && f.name.matches(fileRegex) }
+                    subsFolder.listFiles { f -> f.isFile && filenames.contains(f.name) }
                         ?: emptyArray()
                 val subscriptions = files.mapNotNull { f ->
                     try {
