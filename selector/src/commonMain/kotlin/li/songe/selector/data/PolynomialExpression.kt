@@ -6,8 +6,18 @@ package li.songe.selector.data
 data class PolynomialExpression(val a: Int = 0, val b: Int = 1) : ConnectExpression() {
 
     override fun toString(): String {
-        if (a == 0 && b == 0) return "0"
-        if (a == 1 && b == 1) return "(n+1)"
+        if (a > 0 && b > 0) {
+            if (a == 1) {
+                return "(n+$b)"
+            }
+            return "(${a}n+$b)"
+        }
+        if (a < 0 && b > 0) {
+            if (a == -1) {
+                return "($b-n)"
+            }
+            return "($b${a}n)"
+        }
         if (b == 0) {
             if (a == 1) return "n"
             return if (a > 0) {
