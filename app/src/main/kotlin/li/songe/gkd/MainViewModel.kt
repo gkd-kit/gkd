@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
@@ -43,7 +42,7 @@ class MainViewModel : ViewModel() {
             id = -2, order = -2, mtime = System.currentTimeMillis()
         )
         viewModelScope.launchTry(Dispatchers.IO) {
-            val subsItems = DbSet.subsItemDao.query().first()
+            val subsItems = DbSet.subsItemDao.queryAll()
             if (!subsItems.any { s -> s.id == localSubsItem.id }) {
                 updateSubscription(
                     RawSubscription(
