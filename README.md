@@ -9,7 +9,7 @@
 
 ## 功能
 
-基于 [高级选择器](https://github.com/gkd-kit/selector) + [订阅规则](https://github.com/gkd-kit/subscription) + [快照审查](https://github.com/gkd-kit/inspect) 实现根据屏幕上下文信息自定义点击目标控件
+基于 [高级选择器](https://gkd.li/selector/) + [订阅规则](https://gkd.li/subscription/) + [快照审查](https://github.com/gkd-kit/inspect) 实现根据屏幕上下文信息自定义点击目标控件
 
 本应用 **默认不携带任何规则**，官方也不再提供任何规则, 需要用户自行添加本地规则，或者通过订阅链接的方式获取规则
 
