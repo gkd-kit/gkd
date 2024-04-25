@@ -216,7 +216,7 @@ dependencies {
     ksp(libs.google.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 
-    implementation(libs.others.reorderable)
+    implementation(libs.reorderable)
 
     implementation(libs.androidx.splashscreen)
 
