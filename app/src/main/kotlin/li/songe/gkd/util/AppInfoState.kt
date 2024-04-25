@@ -92,11 +92,14 @@ private fun updateAppInfo(appId: String) {
 suspend fun initOrResetAppInfoCache() {
     if (updateAppMutex.isLocked) return
     updateAppMutex.withLock {
-        val appMap = mutableMapOf<String, AppInfo>()
+        val oldAppIds = appInfoCacheFlow.value.keys
+        val appMap = appInfoCacheFlow.value.toMutableMap()
         app.packageManager.getInstalledPackages(0).forEach { packageInfo ->
-            val info = packageInfo.toAppInfo()
-            if (info != null) {
-                appMap[packageInfo.packageName] = info
+            if (!oldAppIds.contains(packageInfo.packageName)) {
+                val info = packageInfo.toAppInfo()
+                if (info != null) {
+                    appMap[packageInfo.packageName] = info
+                }
             }
         }
         appInfoCacheFlow.value = appMap.toImmutableMap()
