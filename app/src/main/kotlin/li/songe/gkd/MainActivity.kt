@@ -12,6 +12,7 @@ import com.dylanc.activityresult.launcher.RequestPermissionLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -27,6 +28,8 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.LocalPickContentLauncher
 import li.songe.gkd.util.LocalRequestPermissionLauncher
 import li.songe.gkd.util.UpgradeDialog
+import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.initOrResetAppInfoCache
 import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
 
@@ -77,6 +80,18 @@ class MainActivity : CompositionActivity({
     override fun onStart() {
         super.onStart()
         activityVisibleFlow.update { it + 1 }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        // https://github.com/gkd-kit/gkd/issues/543
+        // ContextCompat.checkSelfPermission(app, Manifest.permission.QUERY_ALL_PACKAGES) always is GRANTED
+        if (appInfoCacheFlow.value.count { e -> !e.value.isSystem && !e.value.hidden } < 16) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                initOrResetAppInfoCache()
+            }
+        }
     }
 
     override fun onStop() {
