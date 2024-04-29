@@ -30,11 +30,21 @@ data class SubsItem(
 
     ) {
 
-    val isSafeRemote by lazy {
+    private val isSafeRemote by lazy {
         if (updateUrl != null) {
             isSafeUrl(updateUrl)
         } else {
             false
+        }
+    }
+
+    val sourceText by lazy {
+        if (id < 0) {
+            "本地来源"
+        } else if (isSafeRemote) {
+            "可信来源"
+        } else {
+            "未知来源"
         }
     }
 

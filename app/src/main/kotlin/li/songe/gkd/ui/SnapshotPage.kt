@@ -1,8 +1,6 @@
 package li.songe.gkd.ui
 
-import android.Manifest
 import android.graphics.Bitmap
-import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -50,7 +48,6 @@ import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.ImageUtils
 import com.blankj.utilcode.util.UriUtils
-import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.CancellationException
@@ -59,12 +56,13 @@ import kotlinx.coroutines.withContext
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt
+import li.songe.gkd.permission.canSaveToAlbumState
+import li.songe.gkd.permission.checkOrRequestPermission
 import li.songe.gkd.ui.destinations.ImagePreviewPageDestination
 import li.songe.gkd.util.IMPORT_BASE_URL
 import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.LocalPickContentLauncher
-import li.songe.gkd.util.LocalRequestPermissionLauncher
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.format
 import li.songe.gkd.util.launchAsFn
@@ -83,7 +81,6 @@ fun SnapshotPage() {
     val colorScheme = MaterialTheme.colorScheme
 
     val pickContentLauncher = LocalPickContentLauncher.current
-    val requestPermissionLauncher = LocalRequestPermissionLauncher.current
 
     val vm = hiltViewModel<SnapshotVm>()
     val snapshots by vm.snapshotsState.collectAsState()
@@ -244,13 +241,8 @@ fun SnapshotPage() {
                     text = "保存截图到相册",
                     modifier = Modifier
                         .clickable(onClick = vm.viewModelScope.launchAsFn {
-                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                                val isGranted =
-                                    requestPermissionLauncher.launchForResult(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                                if (!isGranted) {
-                                    toast("保存失败,暂无权限")
-                                    return@launchAsFn
-                                }
+                            if (!checkOrRequestPermission(context, canSaveToAlbumState)) {
+                                return@launchAsFn
                             }
                             ImageUtils.save2Album(
                                 ImageUtils.getBitmap(snapshotVal.screenshotFile),
