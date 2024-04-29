@@ -20,6 +20,7 @@ fun TextSwitch(
     name: String = "",
     desc: String = "",
     checked: Boolean = true,
+    enabled: Boolean = true,
     onCheckedChange: ((Boolean) -> Unit)? = null,
 ) {
     Row(
@@ -36,8 +37,9 @@ fun TextSwitch(
         }
         Spacer(modifier = Modifier.width(10.dp))
         Switch(
-            checked,
-            onCheckedChange,
+            checked = checked,
+            enabled = enabled,
+            onCheckedChange = onCheckedChange,
         )
     }
 }

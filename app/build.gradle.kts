@@ -226,4 +226,5 @@ dependencies {
     implementation(libs.exp4j)
 
     implementation(libs.toaster)
+    implementation(libs.permissions)
 }

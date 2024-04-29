@@ -1,8 +1,6 @@
 package li.songe.gkd.ui.home
 
 import android.webkit.URLUtil
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +20,6 @@ import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -104,18 +101,6 @@ fun useSubsManagePage(): ScaffoldExt {
 
     val refreshing by subsRefreshingFlow.collectAsState()
     val pullRefreshState = rememberPullRefreshState(refreshing, { checkSubsUpdate(true) })
-
-    val lazyListState = rememberLazyListState()
-    val reorderableLazyColumnState = rememberReorderableLazyColumnState(lazyListState) { from, to ->
-        orderSubItems = orderSubItems.toMutableList().apply {
-            add(to.index, removeAt(from.index))
-            forEachIndexed { index, subsItem ->
-                if (subsItem.order != index) {
-                    this[index] = subsItem.copy(order = index)
-                }
-            }
-        }.toImmutableList()
-    }
 
     menuSubItem?.let { menuSubItemVal ->
         Dialog(onDismissRequest = { menuSubItem = null }) {
@@ -278,6 +263,18 @@ fun useSubsManagePage(): ScaffoldExt {
             }
         },
     ) { padding ->
+        val lazyListState = rememberLazyListState()
+        val reorderableLazyColumnState =
+            rememberReorderableLazyColumnState(lazyListState) { from, to ->
+                orderSubItems = orderSubItems.toMutableList().apply {
+                    add(to.index, removeAt(from.index))
+                    forEachIndexed { index, subsItem ->
+                        if (subsItem.order != index) {
+                            this[index] = subsItem.copy(order = index)
+                        }
+                    }
+                }.toImmutableList()
+            }
         Box(
             modifier = Modifier
                 .padding(padding)
@@ -290,16 +287,21 @@ fun useSubsManagePage(): ScaffoldExt {
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 itemsIndexed(orderSubItems, { _, subItem -> subItem.id }) { index, subItem ->
-                    ReorderableItem(reorderableLazyColumnState, key = subItem.id) { isDragging ->
-                        val width by animateDpAsState(
-                            if (isDragging) 1.dp else 0.dp,
-                            label = "width",
-                        )
+                    ReorderableItem(
+                        reorderableLazyColumnState,
+                        key = subItem.id,
+                        enabled = !refreshing,
+                    ) {
                         val interactionSource = remember { MutableInteractionSource() }
                         Card(
-                            onClick = { menuSubItem = subItem },
+                            onClick = {
+                                if (!refreshing) {
+                                    menuSubItem = subItem
+                                }
+                            },
                             modifier = Modifier
                                 .longPressDraggableHandle(
+                                    enabled = !refreshing,
                                     interactionSource = interactionSource,
                                     onDragStopped = {
                                         val changeItems = orderSubItems.filter { newItem ->
@@ -312,13 +314,8 @@ fun useSubsManagePage(): ScaffoldExt {
                                         }
                                     },
                                 )
-                                .animateItemPlacement()
                                 .padding(vertical = 3.dp, horizontal = 8.dp),
-                            elevation = CardDefaults.cardElevation(draggedElevation = 10.dp),
                             shape = RoundedCornerShape(8.dp),
-                            border = if (isDragging) BorderStroke(
-                                width, MaterialTheme.colorScheme.primary
-                            ) else null,
                             interactionSource = interactionSource,
                         ) {
                             SubsItemCard(

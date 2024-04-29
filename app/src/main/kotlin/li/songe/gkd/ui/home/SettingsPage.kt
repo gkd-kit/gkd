@@ -1,10 +1,18 @@
 package li.songe.gkd.ui.home
 
-import android.provider.Settings
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseInSine
+import androidx.compose.animation.core.EaseOutSine
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -14,10 +22,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
@@ -27,6 +35,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,6 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -55,11 +65,10 @@ import li.songe.gkd.ui.destinations.AboutPageDestination
 import li.songe.gkd.ui.destinations.DebugPageDestination
 import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.authActionFlow
 import li.songe.gkd.util.buildLogFile
-import li.songe.gkd.util.canDrawOverlaysAuthAction
 import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.checkUpdatingFlow
+import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.shareFile
@@ -93,7 +102,6 @@ fun useSettingsPage(): ScaffoldExt {
     }
 
     val checkUpdating by checkUpdatingFlow.collectAsState()
-
 
     if (showSubsIntervalDlg) {
         Dialog(onDismissRequest = { showSubsIntervalDlg = false }) {
@@ -335,7 +343,6 @@ fun useSettingsPage(): ScaffoldExt {
                         excludeFromRecents = it
                     )
                 })
-            HorizontalDivider()
 
             TextSwitch(name = "前台悬浮窗",
                 desc = "添加透明悬浮窗,关闭可能导致不点击/点击缓慢",
@@ -345,7 +352,6 @@ fun useSettingsPage(): ScaffoldExt {
                         enableAbFloatWindow = it
                     )
                 })
-            HorizontalDivider()
 
             TextSwitch(name = "点击提示",
                 desc = "触发点击时提示:[${store.clickToast}]",
@@ -354,15 +360,10 @@ fun useSettingsPage(): ScaffoldExt {
                     showToastInputDlg = true
                 },
                 onCheckedChange = {
-                    if (it && !Settings.canDrawOverlays(context)) {
-                        authActionFlow.value = canDrawOverlaysAuthAction
-                        return@TextSwitch
-                    }
                     storeFlow.value = store.copy(
                         toastWhenClick = it
                     )
                 })
-            HorizontalDivider()
 
             Row(modifier = Modifier
                 .clickable {
@@ -385,7 +386,6 @@ fun useSettingsPage(): ScaffoldExt {
                     )
                 }
             }
-            HorizontalDivider()
 
             TextSwitch(name = "自动更新应用",
                 desc = "打开应用时自动检测是否存在新版本",
@@ -395,18 +395,27 @@ fun useSettingsPage(): ScaffoldExt {
                         autoCheckAppUpdate = it
                     )
                 })
-            HorizontalDivider()
 
-            SettingItem(title = if (checkUpdating) "检查更新ing" else "检查更新", onClick = {
-                appScope.launchTry {
-                    if (checkUpdatingFlow.value) return@launchTry
-                    val newVersion = checkUpdate()
-                    if (newVersion == null) {
-                        toast("暂无更新")
-                    }
-                }
-            })
-            HorizontalDivider()
+            Row(
+                modifier = Modifier
+                    .clickable(
+                        onClick = appScope.launchAsFn(Dispatchers.IO) {
+                            if (checkUpdatingFlow.value) return@launchAsFn
+                            val newVersion = checkUpdate()
+                            if (newVersion == null) {
+                                toast("暂无更新")
+                            }
+                        }
+                    )
+                    .fillMaxWidth()
+                    .padding(10.dp, 10.dp)
+                    .defaultMinSize(minHeight = 30.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(text = "检查更新", fontSize = 18.sp)
+                RotatingLoadingIcon(loading = checkUpdating)
+            }
 
             Row(modifier = Modifier
                 .clickable {
@@ -429,7 +438,6 @@ fun useSettingsPage(): ScaffoldExt {
                     )
                 }
             }
-            HorizontalDivider()
 
             TextSwitch(name = "保存日志",
                 desc = "保存最近7天日志,关闭后无法定位解决错误",
@@ -451,17 +459,14 @@ fun useSettingsPage(): ScaffoldExt {
                     }
                 }
             )
-            HorizontalDivider()
 
             SettingItem(title = "分享日志", onClick = {
                 showShareLogDlg = true
             })
-            HorizontalDivider()
 
             SettingItem(title = "高级模式", onClick = {
                 navController.navigate(DebugPageDestination)
             })
-            HorizontalDivider()
 
             SettingItem(title = "关于", onClick = {
                 navController.navigate(AboutPageDestination)
@@ -488,3 +493,34 @@ private val darkThemeRadioOptions = arrayOf(
     "启用" to true,
     "关闭" to false,
 )
+
+@Composable
+fun RotatingLoadingIcon(loading: Boolean) {
+    val rotation = remember { Animatable(0f) }
+    LaunchedEffect(loading) {
+        if (loading) {
+            rotation.animateTo(
+                targetValue = rotation.value + 360f,
+                animationSpec = tween(durationMillis = 500, easing = EaseInSine)
+            )
+            rotation.animateTo(
+                targetValue = rotation.value + 360f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(durationMillis = 500, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart
+                )
+            )
+        } else if (rotation.value != 0f) {
+            rotation.animateTo(
+                targetValue = rotation.value + 360f,
+                animationSpec = tween(durationMillis = 500, easing = EaseOutSine)
+            )
+        }
+    }
+    Icon(
+        imageVector = Icons.Default.Autorenew,
+        contentDescription = null,
+        modifier = Modifier.graphicsLayer(rotationZ = rotation.value)
+    )
+}
+

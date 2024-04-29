@@ -71,6 +71,7 @@ coil_gif = { module = "io.coil-kt:coil-gif", version.ref = "coil" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version = "1.5.2" }
 exp4j = { module = "net.objecthunter:exp4j", version = "0.4.8" }
 toaster = { module = "com.github.getActivity:Toaster", version = "12.6" }
+permissions = { module = "com.github.getActivity:XXPermissions", version = "18.63" }
 
 [plugins]
 android_library = { id = "com.android.library", version.ref = "android" }

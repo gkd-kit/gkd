@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
@@ -89,21 +90,27 @@ private fun updateAppInfo(appId: String) {
     }
 }
 
+val appRefreshingFlow = MutableStateFlow(false)
+
 suspend fun initOrResetAppInfoCache() {
     if (updateAppMutex.isLocked) return
+    appRefreshingFlow.value = true
     updateAppMutex.withLock {
         val oldAppIds = appInfoCacheFlow.value.keys
         val appMap = appInfoCacheFlow.value.toMutableMap()
-        app.packageManager.getInstalledPackages(0).forEach { packageInfo ->
-            if (!oldAppIds.contains(packageInfo.packageName)) {
-                val info = packageInfo.toAppInfo()
-                if (info != null) {
-                    appMap[packageInfo.packageName] = info
+        withContext(Dispatchers.IO) {
+            app.packageManager.getInstalledPackages(0).forEach { packageInfo ->
+                if (!oldAppIds.contains(packageInfo.packageName)) {
+                    val info = packageInfo.toAppInfo()
+                    if (info != null) {
+                        appMap[packageInfo.packageName] = info
+                    }
                 }
             }
         }
         appInfoCacheFlow.value = appMap.toImmutableMap()
     }
+    appRefreshingFlow.value = false
 }
 
 fun initAppState() {

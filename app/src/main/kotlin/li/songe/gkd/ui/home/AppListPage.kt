@@ -24,8 +24,10 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PriorityHigh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -58,14 +60,19 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.KeyboardUtils
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
+import li.songe.gkd.permission.canQueryPkgState
+import li.songe.gkd.permission.checkOrRequestPermission
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.destinations.AppConfigPageDestination
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SortTypeOption
+import li.songe.gkd.util.appRefreshingFlow
+import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
@@ -163,6 +170,17 @@ fun useAppListPage(): ScaffoldExt {
                         )
                     }
                 } else {
+                    val canQueryPkg by canQueryPkgState.stateFlow.collectAsState()
+                    if (!canQueryPkg) {
+                        IconButton(onClick = vm.viewModelScope.launchAsFn {
+                            checkOrRequestPermission(context, canQueryPkgState)
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.PriorityHigh,
+                                contentDescription = null
+                            )
+                        }
+                    }
                     IconButton(onClick = {
                         showSearchBar = true
                     }) {
@@ -245,114 +263,128 @@ fun useAppListPage(): ScaffoldExt {
                     }
                 }
             })
-        }) { padding ->
-        LazyColumn(
-            modifier = Modifier.padding(padding),
-            state = listState
-        ) {
-            items(orderedAppInfos, { it.id }) { appInfo ->
-                Row(
-                    modifier = Modifier
-                        .clickable {
-                            navController.navigate(AppConfigPageDestination(appInfo.id))
-                        }
-                        .height(IntrinsicSize.Min)
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (appInfo.icon != null) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .aspectRatio(1f)
-                        ) {
-                            Image(
-                                painter = rememberDrawablePainter(appInfo.icon),
+        }
+    ) { padding ->
+        val appRefreshing by appRefreshingFlow.collectAsState()
+        if (!appRefreshing) {
+            LazyColumn(
+                modifier = Modifier.padding(padding),
+                state = listState
+            ) {
+                items(orderedAppInfos, { it.id }) { appInfo ->
+                    Row(
+                        modifier = Modifier
+                            .clickable {
+                                navController.navigate(AppConfigPageDestination(appInfo.id))
+                            }
+                            .height(IntrinsicSize.Min)
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (appInfo.icon != null) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .aspectRatio(1f)
+                            ) {
+                                Image(
+                                    painter = rememberDrawablePainter(appInfo.icon),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .matchParentSize()
+                                        .padding(4.dp)
+                                )
+                            }
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Android,
                                 contentDescription = null,
                                 modifier = Modifier
-                                    .matchParentSize()
+                                    .aspectRatio(1f)
+                                    .fillMaxHeight()
                                     .padding(4.dp)
                             )
                         }
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Android,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .aspectRatio(1f)
-                                .fillMaxHeight()
-                                .padding(4.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column(
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(
-                            text = appInfo.name,
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth(),
-                            style = LocalTextStyle.current.let {
-                                if (appInfo.isSystem) {
-                                    it.copy(textDecoration = TextDecoration.Underline)
-                                } else {
-                                    it
-                                }
-                            }
-                        )
-                        val appGroups = ruleSummary.appIdToAllGroups[appInfo.id] ?: emptyList()
-
-                        val appDesc = if (appGroups.isNotEmpty()) {
-                            when (val disabledCount = appGroups.count { g -> !g.enable }) {
-                                0 -> {
-                                    "${appGroups.size}组规则"
-                                }
-
-                                appGroups.size -> {
-                                    "${appGroups.size}组规则/${disabledCount}关闭"
-                                }
-
-                                else -> {
-                                    "${appGroups.size}组规则/${appGroups.size - disabledCount}启用/${disabledCount}关闭"
-                                }
-                            }
-                        } else {
-                            null
-                        }
-
-                        val desc = if (globalDesc != null) {
-                            if (appDesc != null) {
-                                "$globalDesc/$appDesc"
-                            } else {
-                                globalDesc
-                            }
-                        } else {
-                            appDesc
-                        }
-
-                        if (desc != null) {
-                            Text(text = desc)
-                        } else {
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(
+                            modifier = Modifier.weight(1f),
+                        ) {
                             Text(
-                                text = "暂无规则",
-                                color = LocalContentColor.current.copy(alpha = 0.5f)
+                                text = appInfo.name,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.fillMaxWidth(),
+                                style = LocalTextStyle.current.let {
+                                    if (appInfo.isSystem) {
+                                        it.copy(textDecoration = TextDecoration.Underline)
+                                    } else {
+                                        it
+                                    }
+                                }
                             )
+                            val appGroups = ruleSummary.appIdToAllGroups[appInfo.id] ?: emptyList()
+
+                            val appDesc = if (appGroups.isNotEmpty()) {
+                                when (val disabledCount = appGroups.count { g -> !g.enable }) {
+                                    0 -> {
+                                        "${appGroups.size}组规则"
+                                    }
+
+                                    appGroups.size -> {
+                                        "${appGroups.size}组规则/${disabledCount}关闭"
+                                    }
+
+                                    else -> {
+                                        "${appGroups.size}组规则/${appGroups.size - disabledCount}启用/${disabledCount}关闭"
+                                    }
+                                }
+                            } else {
+                                null
+                            }
+
+                            val desc = if (globalDesc != null) {
+                                if (appDesc != null) {
+                                    "$globalDesc/$appDesc"
+                                } else {
+                                    globalDesc
+                                }
+                            } else {
+                                appDesc
+                            }
+
+                            if (desc != null) {
+                                Text(text = desc)
+                            } else {
+                                Text(
+                                    text = "暂无规则",
+                                    color = LocalContentColor.current.copy(alpha = 0.5f)
+                                )
+                            }
                         }
+                    }
+                }
+                item {
+                    Spacer(modifier = Modifier.height(40.dp))
+                    if (orderedAppInfos.isEmpty() && searchStr.isNotEmpty()) {
+                        Text(
+                            text = "暂无搜索结果",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
             }
-            item {
+        } else {
+            Column(
+                modifier = Modifier
+                    .padding(padding)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Spacer(modifier = Modifier.height(40.dp))
-                if (orderedAppInfos.isEmpty() && searchStr.isNotEmpty()) {
-                    Text(
-                        text = "暂无搜索结果",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
-                }
+                CircularProgressIndicator()
             }
         }
     }

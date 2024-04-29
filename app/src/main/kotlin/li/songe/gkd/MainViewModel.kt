@@ -2,15 +2,14 @@ package li.songe.gkd
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.service.updateLauncherAppId
-import li.songe.gkd.util.authActionFlow
+import li.songe.gkd.permission.authReasonFlow
 import li.songe.gkd.util.checkUpdate
-import li.songe.gkd.util.initFolder
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.logZipDir
 import li.songe.gkd.util.newVersionApkDir
@@ -20,12 +19,6 @@ import li.songe.gkd.util.updateSubscription
 
 class MainViewModel : ViewModel() {
     init {
-        // 在某些机型由于未知原因创建失败
-        // 在此保证每次重新打开APP都能重新检测创建
-        initFolder()
-
-        // 每次打开页面更新记录桌面 appId
-        updateLauncherAppId()
 
         val localSubsItem = SubsItem(
             id = -2, order = -2, mtime = System.currentTimeMillis()
@@ -63,6 +56,7 @@ class MainViewModel : ViewModel() {
                     checkUpdate()
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    LogUtils.d(e)
                 }
             }
         }
@@ -71,6 +65,6 @@ class MainViewModel : ViewModel() {
 
     override fun onCleared() {
         super.onCleared()
-        authActionFlow.value = null
+        authReasonFlow.value = null
     }
 }

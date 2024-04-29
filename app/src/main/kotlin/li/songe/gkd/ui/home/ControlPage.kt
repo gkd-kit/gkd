@@ -32,9 +32,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewModelScope
 import li.songe.gkd.MainActivity
+import li.songe.gkd.permission.checkOrRequestPermission
+import li.songe.gkd.permission.notificationState
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.ui.component.AuthCard
@@ -43,13 +45,12 @@ import li.songe.gkd.ui.destinations.ClickLogPageDestination
 import li.songe.gkd.ui.destinations.SlowGroupPageDestination
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.checkOrRequestNotifPermission
+import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.tryStartActivity
-import li.songe.gkd.util.usePollState
 
 val controlNav = BottomNavItem(label = "主页", icon = Icons.Outlined.Home)
 
@@ -65,10 +66,6 @@ fun useControlPage(): ScaffoldExt {
 
     val gkdAccessRunning by GkdAbService.isRunning.collectAsState()
     val manageRunning by ManageService.isRunning.collectAsState()
-    val canDrawOverlays by usePollState { Settings.canDrawOverlays(context) }
-    val canNotif by usePollState {
-        NotificationManagerCompat.from(context).areNotificationsEnabled()
-    }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val scrollState = rememberScrollState()
     return ScaffoldExt(navItem = controlNav,
@@ -106,39 +103,15 @@ fun useControlPage(): ScaffoldExt {
                         )
                     })
             }
-            HorizontalDivider()
-
-            if (!canNotif) {
-                AuthCard(title = "通知权限",
-                    desc = "用于显示各类服务状态数据及前后台提示",
-                    onAuthClick = {
-                        checkOrRequestNotifPermission(context)
-                    })
-                HorizontalDivider()
-            }
-
-            if (!canDrawOverlays) {
-                AuthCard(
-                    title = "悬浮窗权限",
-                    desc = "用于后台提示,显示保存快照按钮等功能",
-                    onAuthClick = {
-                        val intent = Intent(
-                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        )
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        context.tryStartActivity(intent)
-                    })
-                HorizontalDivider()
-            }
 
             TextSwitch(
                 name = "常驻通知",
                 desc = "通知栏显示运行状态及统计数据",
                 checked = manageRunning && store.enableStatusService,
-                onCheckedChange = {
+                onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
-                        if (!checkOrRequestNotifPermission(context)) {
-                            return@TextSwitch
+                        if (!checkOrRequestPermission(context, notificationState)) {
+                            return@launchAsFn
                         }
                         storeFlow.value = store.copy(
                             enableStatusService = true
@@ -151,7 +124,6 @@ fun useControlPage(): ScaffoldExt {
                         ManageService.stop(context)
                     }
                 })
-            HorizontalDivider()
 
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -178,7 +150,6 @@ fun useControlPage(): ScaffoldExt {
                     contentDescription = null
                 )
             }
-            HorizontalDivider()
 
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -203,7 +174,6 @@ fun useControlPage(): ScaffoldExt {
                     contentDescription = null
                 )
             }
-            HorizontalDivider()
 
             if (ruleSummary.slowGroupCount > 0) {
                 Row(
@@ -230,9 +200,8 @@ fun useControlPage(): ScaffoldExt {
                         contentDescription = null
                     )
                 }
-                HorizontalDivider()
             }
-
+            HorizontalDivider()
             Column(
                 modifier = Modifier
                     .fillMaxWidth()

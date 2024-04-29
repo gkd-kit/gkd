@@ -53,6 +53,8 @@ fun <T> CoroutineScope.launchAsFn(
         launch(context, start) {
             try {
                 block(it)
+            } catch (e: CancellationException) {
+                e.printStackTrace()
             } catch (e: Exception) {
                 e.printStackTrace()
                 Toaster.show(e.message ?: e.stackTraceToString())

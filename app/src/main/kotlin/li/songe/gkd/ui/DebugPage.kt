@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
-import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,7 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
@@ -40,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,11 +61,14 @@ import li.songe.gkd.appScope
 import li.songe.gkd.debug.FloatingService
 import li.songe.gkd.debug.HttpService
 import li.songe.gkd.debug.ScreenshotService
+import li.songe.gkd.permission.canDrawOverlaysState
+import li.songe.gkd.permission.checkOrRequestPermission
+import li.songe.gkd.permission.notificationState
+import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.shizuku.CommandResult
 import li.songe.gkd.shizuku.newActivityTaskManager
 import li.songe.gkd.shizuku.newUserService
 import li.songe.gkd.shizuku.safeGetTasks
-import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
@@ -74,9 +76,6 @@ import li.songe.gkd.ui.destinations.SnapshotPageDestination
 import li.songe.gkd.util.LocalLauncher
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
-import li.songe.gkd.util.authActionFlow
-import li.songe.gkd.util.canDrawOverlaysAuthAction
-import li.songe.gkd.util.checkOrRequestNotifPermission
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
@@ -84,7 +83,6 @@ import li.songe.gkd.util.navigate
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
-import li.songe.gkd.util.usePollState
 import rikka.shizuku.Shizuku
 
 @RootNavGraph
@@ -92,6 +90,7 @@ import rikka.shizuku.Shizuku
 @Composable
 fun DebugPage() {
     val context = LocalContext.current as MainActivity
+    val scope = rememberCoroutineScope()
     val launcher = LocalLauncher.current
     val navController = LocalNavController.current
     val store by storeFlow.collectAsState()
@@ -123,8 +122,8 @@ fun DebugPage() {
                 .padding(contentPadding),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            val shizukuIsOk by usePollState { shizukuIsSafeOK() }
-            if (!shizukuIsOk) {
+            val shizukuOk by shizukuOkState.stateFlow.collectAsState()
+            if (!shizukuOk) {
                 AuthCard(title = "Shizuku授权",
                     desc = "高级模式:准确识别界面ID,强制模拟点击",
                     onAuthClick = {
@@ -135,56 +134,9 @@ fun DebugPage() {
                             toast("Shizuku可能没有运行")
                         }
                     })
-                HorizontalDivider()
+                ShizukuFragment(false)
             } else {
-                TextSwitch(name = "Shizuku-界面识别",
-                    desc = "更准确识别界面ID",
-                    checked = store.enableShizukuActivity,
-                    onCheckedChange = { enableShizuku ->
-                        if (enableShizuku) {
-                            appScope.launchTry(Dispatchers.IO) {
-                                // 校验方法是否适配, 再允许使用 shizuku
-                                val tasks =
-                                    newActivityTaskManager()?.safeGetTasks()?.firstOrNull()
-                                if (tasks != null) {
-                                    storeFlow.value = store.copy(
-                                        enableShizukuActivity = true
-                                    )
-                                } else {
-                                    toast("Shizuku-界面识别校验失败,无法使用")
-                                }
-                            }
-                        } else {
-                            storeFlow.value = store.copy(
-                                enableShizukuActivity = false
-                            )
-                        }
-                    })
-                HorizontalDivider()
-                TextSwitch(
-                    name = "Shizuku-模拟点击",
-                    desc = "变更 clickCenter 为强制模拟点击",
-                    checked = store.enableShizukuClick,
-                    onCheckedChange = { enableShizuku ->
-                        if (enableShizuku) {
-                            appScope.launchTry(Dispatchers.IO) {
-                                val service = newUserService()
-                                val result = service.userService.execCommand("input tap 0 0")
-                                service.destroy()
-                                if (json.decodeFromString<CommandResult>(result).code == 0) {
-                                    storeFlow.update { it.copy(enableShizukuClick = true) }
-                                } else {
-                                    toast("Shizuku-模拟点击校验失败,无法使用")
-                                }
-                            }
-                        } else {
-                            storeFlow.value = store.copy(
-                                enableShizukuClick = false
-                            )
-                        }
-
-                    })
-                HorizontalDivider()
+                ShizukuFragment()
             }
 
             val httpServerRunning by HttpService.isRunning.collectAsState()
@@ -240,11 +192,11 @@ fun DebugPage() {
                 Spacer(modifier = Modifier.width(10.dp))
                 Switch(
                     checked = httpServerRunning,
-                    onCheckedChange = {
-                        if (!checkOrRequestNotifPermission(context)) {
-                            return@Switch
-                        }
+                    onCheckedChange = scope.launchAsFn<Boolean> {
                         if (it) {
+                            if (!checkOrRequestPermission(context, notificationState)) {
+                                return@launchAsFn
+                            }
                             HttpService.start()
                         } else {
                             HttpService.stop()
@@ -252,14 +204,12 @@ fun DebugPage() {
                     }
                 )
             }
-            HorizontalDivider()
 
             SettingItem(
                 title = "HTTP服务端口-${store.httpServerPort}", imageVector = Icons.Default.Edit
             ) {
                 showPortDlg = true
             }
-            HorizontalDivider()
 
             TextSwitch(
                 name = "保留内存订阅",
@@ -270,23 +220,21 @@ fun DebugPage() {
                     autoClearMemorySubs = !it
                 )
             }
-            HorizontalDivider()
 
             SettingItem(title = "快照记录", onClick = {
                 navController.navigate(SnapshotPageDestination)
             })
-            HorizontalDivider()
 
             val screenshotRunning by ScreenshotService.isRunning.collectAsState()
             TextSwitch(
                 name = "截屏服务",
                 desc = "生成快照需要获取屏幕截图,Android11无需开启",
                 checked = screenshotRunning,
-                onCheckedChange = appScope.launchAsFn<Boolean> {
-                    if (!checkOrRequestNotifPermission(context)) {
-                        return@launchAsFn
-                    }
+                onCheckedChange = scope.launchAsFn<Boolean> {
                     if (it) {
+                        if (!checkOrRequestPermission(context, notificationState)) {
+                            return@launchAsFn
+                        }
                         val mediaProjectionManager =
                             context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
                         val activityResult =
@@ -298,29 +246,28 @@ fun DebugPage() {
                         ScreenshotService.stop()
                     }
                 })
-            HorizontalDivider()
 
             val floatingRunning by FloatingService.isRunning.collectAsState()
             TextSwitch(
                 name = "悬浮窗服务",
                 desc = "显示截屏按钮,便于用户主动保存快照",
-                checked = floatingRunning
-            ) {
-                if (!checkOrRequestNotifPermission(context)) {
-                    return@TextSwitch
-                }
-                if (it) {
-                    if (Settings.canDrawOverlays(context)) {
+                checked = floatingRunning,
+                onCheckedChange = scope.launchAsFn<Boolean> {
+                    if (it) {
+                        if (!checkOrRequestPermission(context, notificationState)) {
+                            return@launchAsFn
+                        }
+                        if (!checkOrRequestPermission(context, canDrawOverlaysState)) {
+                            return@launchAsFn
+                        }
                         val intent = Intent(context, FloatingService::class.java)
                         ContextCompat.startForegroundService(context, intent)
                     } else {
-                        authActionFlow.value = canDrawOverlaysAuthAction
+                        FloatingService.stop(context)
                     }
-                } else {
-                    FloatingService.stop(context)
                 }
-            }
-            HorizontalDivider()
+            )
+            
             TextSwitch(
                 name = "音量快照",
                 desc = "当音量变化时,生成快照,如果悬浮窗按钮不工作,可以使用这个",
@@ -331,7 +278,6 @@ fun DebugPage() {
                 )
             }
 
-            HorizontalDivider()
             TextSwitch(
                 name = "截屏快照",
                 desc = "当用户截屏时保存快照(需手动替换快照图片),仅支持部分小米设备",
@@ -342,7 +288,6 @@ fun DebugPage() {
                 )
             }
 
-            HorizontalDivider()
             TextSwitch(
                 name = "隐藏快照状态栏",
                 desc = "当保存快照时,隐藏截图里的顶部状态栏高度区域",
@@ -407,4 +352,59 @@ fun DebugPage() {
             })
         }
     }
+}
+
+@Composable
+private fun ShizukuFragment(enabled: Boolean = true) {
+    val store by storeFlow.collectAsState()
+    TextSwitch(name = "Shizuku-界面识别",
+        desc = "更准确识别界面ID",
+        checked = store.enableShizukuActivity,
+        enabled = enabled,
+        onCheckedChange = { enableShizuku ->
+            if (enableShizuku) {
+                appScope.launchTry(Dispatchers.IO) {
+                    // 校验方法是否适配, 再允许使用 shizuku
+                    val tasks =
+                        newActivityTaskManager()?.safeGetTasks()?.firstOrNull()
+                    if (tasks != null) {
+                        storeFlow.value = store.copy(
+                            enableShizukuActivity = true
+                        )
+                    } else {
+                        toast("Shizuku-界面识别校验失败,无法使用")
+                    }
+                }
+            } else {
+                storeFlow.value = store.copy(
+                    enableShizukuActivity = false
+                )
+            }
+        })
+
+    TextSwitch(
+        name = "Shizuku-模拟点击",
+        desc = "变更 clickCenter 为强制模拟点击",
+        checked = store.enableShizukuClick,
+        enabled = enabled,
+        onCheckedChange = { enableShizuku ->
+            if (enableShizuku) {
+                appScope.launchTry(Dispatchers.IO) {
+                    val service = newUserService()
+                    val result = service.userService.execCommand("input tap 0 0")
+                    service.destroy()
+                    if (json.decodeFromString<CommandResult>(result).code == 0) {
+                        storeFlow.update { it.copy(enableShizukuClick = true) }
+                    } else {
+                        toast("Shizuku-模拟点击校验失败,无法使用")
+                    }
+                }
+            } else {
+                storeFlow.value = store.copy(
+                    enableShizukuClick = false
+                )
+            }
+
+        })
+
 }
