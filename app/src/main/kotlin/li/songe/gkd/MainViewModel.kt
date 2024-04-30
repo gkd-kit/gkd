@@ -51,7 +51,7 @@ class MainViewModel : ViewModel() {
         }
 
         if (storeFlow.value.autoCheckAppUpdate) {
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.IO) {
                 try {
                     checkUpdate()
                 } catch (e: Exception) {
