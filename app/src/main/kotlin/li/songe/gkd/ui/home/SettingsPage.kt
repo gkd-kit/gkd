@@ -399,7 +399,7 @@ fun useSettingsPage(): ScaffoldExt {
             Row(
                 modifier = Modifier
                     .clickable(
-                        onClick = appScope.launchAsFn(Dispatchers.IO) {
+                        onClick = appScope.launchAsFn {
                             if (checkUpdatingFlow.value) return@launchAsFn
                             val newVersion = checkUpdate()
                             if (newVersion == null) {

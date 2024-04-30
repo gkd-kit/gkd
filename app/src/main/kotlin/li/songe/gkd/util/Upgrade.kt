@@ -26,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import li.songe.gkd.BuildConfig
 import li.songe.gkd.appScope
@@ -54,7 +55,8 @@ val newVersionFlow by lazy { MutableStateFlow<NewVersion?>(null) }
 val downloadStatusFlow by lazy { MutableStateFlow<LoadStatus<String>?>(null) }
 suspend fun checkUpdate(): NewVersion? {
     if (checkUpdatingFlow.value) return null
-    if (!NetworkUtils.isAvailable()) {
+    val isAvailable = withContext(Dispatchers.IO) { NetworkUtils.isAvailable() }
+    if (!isAvailable) {
         error("网络不可用")
     }
     checkUpdatingFlow.value = true
