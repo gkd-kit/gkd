@@ -1,8 +1,6 @@
 package li.songe.gkd.ui.home
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.EaseInSine
-import androidx.compose.animation.core.EaseOutSine
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
@@ -74,6 +72,7 @@ import li.songe.gkd.util.navigate
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
+import kotlin.math.sin
 
 val settingsNav = BottomNavItem(
     label = "设置", icon = Icons.Outlined.Settings
@@ -500,8 +499,11 @@ fun RotatingLoadingIcon(loading: Boolean) {
     LaunchedEffect(loading) {
         if (loading) {
             rotation.animateTo(
-                targetValue = rotation.value + 360f,
-                animationSpec = tween(durationMillis = 500, easing = EaseInSine)
+                targetValue = rotation.value + 180f,
+                animationSpec = tween(
+                    durationMillis = 250,
+                    easing = { x -> sin(Math.PI / 2 * (x - 1f)).toFloat() + 1f }
+                )
             )
             rotation.animateTo(
                 targetValue = rotation.value + 360f,
@@ -512,8 +514,11 @@ fun RotatingLoadingIcon(loading: Boolean) {
             )
         } else if (rotation.value != 0f) {
             rotation.animateTo(
-                targetValue = rotation.value + 360f,
-                animationSpec = tween(durationMillis = 500, easing = EaseOutSine)
+                targetValue = rotation.value + 180f,
+                animationSpec = tween(
+                    durationMillis = 250,
+                    easing = { x -> sin(Math.PI / 2 * x).toFloat() }
+                )
             )
         }
     }
