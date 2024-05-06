@@ -1,13 +1,14 @@
 package li.songe.gkd.notif
 
 import li.songe.gkd.R
-import li.songe.gkd.util.APP_NAME
+import li.songe.gkd.app
 
 data class Notif(
     val id: Int,
     @Suppress("UNRESOLVED_REFERENCE")
     val smallIcon: Int = R.drawable.ic_status,
-    val title: String = APP_NAME,
+    @Suppress("UNRESOLVED_REFERENCE")
+    val title: String = app.resources.getString(R.string.app_name),
     val text: String,
     val ongoing: Boolean,
     val autoCancel: Boolean,
