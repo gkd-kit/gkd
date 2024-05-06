@@ -72,7 +72,7 @@ import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.subsRefreshingFlow
 import li.songe.gkd.util.toast
 import sh.calvin.reorderable.ReorderableItem
-import sh.calvin.reorderable.rememberReorderableLazyColumnState
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 val subsNav = BottomNavItem(
     label = "订阅", icon = Icons.AutoMirrored.Filled.FormatListBulleted
@@ -265,7 +265,7 @@ fun useSubsManagePage(): ScaffoldExt {
     ) { padding ->
         val lazyListState = rememberLazyListState()
         val reorderableLazyColumnState =
-            rememberReorderableLazyColumnState(lazyListState) { from, to ->
+            rememberReorderableLazyListState(lazyListState) { from, to ->
                 orderSubItems = orderSubItems.toMutableList().apply {
                     add(to.index, removeAt(from.index))
                     forEachIndexed { index, subsItem ->
