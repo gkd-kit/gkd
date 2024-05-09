@@ -6,6 +6,7 @@ import li.songe.gkd.BuildConfig
 const val VOLUME_CHANGED_ACTION = "android.media.VOLUME_CHANGED_ACTION"
 
 const val FILE_UPLOAD_URL = "https://u.gkd.li/"
+const val FILE_SHORT_URL = "https://f.gkd.li/"
 const val IMPORT_BASE_URL = "https://i.gkd.li/i/"
 
 const val UPDATE_URL = "https://registry.npmmirror.com/@gkd-kit/app/latest/files/index.json"

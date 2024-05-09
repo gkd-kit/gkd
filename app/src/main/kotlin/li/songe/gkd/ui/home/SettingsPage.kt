@@ -291,7 +291,7 @@ fun useSettingsPage(): ScaffoldExt {
 
         is LoadStatus.Success -> {
             AlertDialog(title = { Text(text = "上传完成") }, text = {
-                Text(text = uploadStatusVal.result.href)
+                Text(text = uploadStatusVal.result.shortHref)
             }, onDismissRequest = {}, dismissButton = {
                 TextButton(onClick = {
                     vm.uploadStatusFlow.value = null
@@ -300,7 +300,7 @@ fun useSettingsPage(): ScaffoldExt {
                 }
             }, confirmButton = {
                 TextButton(onClick = {
-                    ClipboardUtils.copyText(uploadStatusVal.result.href)
+                    ClipboardUtils.copyText(uploadStatusVal.result.shortHref)
                     toast("复制成功")
                     vm.uploadStatusFlow.value = null
                 }) {
