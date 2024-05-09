@@ -33,8 +33,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -278,7 +277,7 @@ fun useAppListPage(): ScaffoldExt {
                                 navController.navigate(AppConfigPageDestination(appInfo.id))
                             }
                             .height(IntrinsicSize.Min)
-                            .padding(4.dp),
+                            .padding(10.dp, 6.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -308,7 +307,10 @@ fun useAppListPage(): ScaffoldExt {
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Column(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .padding(2.dp)
+                                .fillMaxHeight()
+                                .weight(1f),
                         ) {
                             Text(
                                 text = appInfo.name,
@@ -316,7 +318,7 @@ fun useAppListPage(): ScaffoldExt {
                                 softWrap = false,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.fillMaxWidth(),
-                                style = LocalTextStyle.current.let {
+                                style = MaterialTheme.typography.bodyLarge.let {
                                     if (appInfo.isSystem) {
                                         it.copy(textDecoration = TextDecoration.Underline)
                                     } else {
@@ -355,11 +357,16 @@ fun useAppListPage(): ScaffoldExt {
                             }
 
                             if (desc != null) {
-                                Text(text = desc)
+                                Text(
+                                    text = desc,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             } else {
                                 Text(
                                     text = "暂无规则",
-                                    color = LocalContentColor.current.copy(alpha = 0.5f)
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                                 )
                             }
                         }

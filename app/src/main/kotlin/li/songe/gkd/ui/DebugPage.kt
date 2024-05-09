@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -47,7 +46,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import com.blankj.utilcode.util.LogUtils
@@ -118,10 +116,14 @@ fun DebugPage() {
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(0.dp, 10.dp)
                 .padding(contentPadding),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            Text(
+                text = "Shizuku",
+                modifier = Modifier.padding(16.dp, 12.dp),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
             val shizukuOk by shizukuOkState.stateFlow.collectAsState()
             if (!shizukuOk) {
                 AuthCard(title = "Shizuku授权",
@@ -142,25 +144,27 @@ fun DebugPage() {
             val httpServerRunning by HttpService.isRunning.collectAsState()
             val localNetworkIps by HttpService.localNetworkIpsFlow.collectAsState()
 
+            Text(
+                text = "HTTP服务",
+                modifier = Modifier.padding(16.dp, 12.dp),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
             Row(
-                modifier = Modifier.padding(10.dp, 5.dp),
+                modifier = Modifier.padding(16.dp, 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "HTTP服务",
-                        fontSize = 18.sp
+                        style = MaterialTheme.typography.bodyLarge,
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
-
                     CompositionLocalProvider(
-                        LocalTextStyle provides LocalTextStyle.current.copy(
-                            fontSize = 14.sp
-                        )
+                        LocalTextStyle provides MaterialTheme.typography.bodyMedium
                     ) {
                         if (!httpServerRunning) {
                             Text(
-                                text = "开启HTTP服务在浏览器下连接调试工具",
+                                text = "在浏览器下连接调试工具",
                             )
                         } else {
                             Text(
@@ -189,7 +193,6 @@ fun DebugPage() {
                         }
                     }
                 }
-                Spacer(modifier = Modifier.width(10.dp))
                 Switch(
                     checked = httpServerRunning,
                     onCheckedChange = scope.launchAsFn<Boolean> {
@@ -220,6 +223,13 @@ fun DebugPage() {
                     autoClearMemorySubs = !it
                 )
             }
+
+            Text(
+                text = "快照",
+                modifier = Modifier.padding(16.dp, 12.dp),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
 
             SettingItem(title = "快照记录", onClick = {
                 navController.navigate(SnapshotPageDestination)
@@ -267,7 +277,7 @@ fun DebugPage() {
                     }
                 }
             )
-            
+
             TextSwitch(
                 name = "音量快照",
                 desc = "当音量变化时,生成快照,如果悬浮窗按钮不工作,可以使用这个",
@@ -297,6 +307,22 @@ fun DebugPage() {
                     hideSnapshotStatusBar = it
                 )
             }
+
+            Text(
+                text = "其它",
+                modifier = Modifier.padding(16.dp, 12.dp),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+
+            TextSwitch(name = "前台悬浮窗",
+                desc = "添加透明悬浮窗,关闭可能导致不点击/点击缓慢",
+                checked = store.enableAbFloatWindow,
+                onCheckedChange = {
+                    storeFlow.value = store.copy(
+                        enableAbFloatWindow = it
+                    )
+                })
 
             Spacer(modifier = Modifier.height(40.dp))
         }

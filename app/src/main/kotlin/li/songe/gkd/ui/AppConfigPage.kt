@@ -46,7 +46,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.annotation.Destination
@@ -276,13 +275,13 @@ private fun AppGroupCard(
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.fillMaxWidth(),
-                        fontSize = 14.sp
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 } else {
                     Text(
                         text = "暂无描述",
                         modifier = Modifier.fillMaxWidth(),
-                        fontSize = 14.sp,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = LocalContentColor.current.copy(alpha = 0.5f)
                     )
                 }
@@ -290,7 +289,7 @@ private fun AppGroupCard(
                 Text(
                     text = "非法选择器",
                     modifier = Modifier.fillMaxWidth(),
-                    fontSize = 14.sp,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error
                 )
             }

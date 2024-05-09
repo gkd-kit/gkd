@@ -31,7 +31,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import li.songe.gkd.MainActivity
@@ -132,16 +131,16 @@ fun useControlPage(): ScaffoldExt {
                     .clickable {
                         context.openUri(HOME_PAGE_URL)
                     }
-                    .padding(10.dp, 5.dp),
+                    .padding(16.dp, 12.dp),
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "使用说明", fontSize = 18.sp
+                        text = "使用说明",
+                        style = MaterialTheme.typography.bodyLarge,
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = HOME_PAGE_URL,
-                        fontSize = 14.sp,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -151,6 +150,7 @@ fun useControlPage(): ScaffoldExt {
                 )
             }
 
+            val clickLogCount by vm.clickLogCountFlow.collectAsState()
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
@@ -158,15 +158,17 @@ fun useControlPage(): ScaffoldExt {
                     .clickable {
                         navController.navigate(ClickLogPageDestination)
                     }
-                    .padding(10.dp, 5.dp),
+                    .padding(16.dp, 12.dp),
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "触发记录", fontSize = 18.sp
+                        text = "触发记录" + (if (clickLogCount > 0) "-$clickLogCount" else ""),
+                        style = MaterialTheme.typography.bodyLarge,
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "如误触可在此快速定位关闭规则", fontSize = 14.sp
+                        text = "如误触可在此快速定位关闭规则",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 Icon(
@@ -183,16 +185,17 @@ fun useControlPage(): ScaffoldExt {
                         .clickable {
                             navController.navigate(SlowGroupPageDestination)
                         }
-                        .padding(10.dp, 5.dp),
+                        .padding(16.dp, 12.dp),
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "耗时查询", fontSize = 18.sp
+                            text = "耗时查询-${ruleSummary.slowGroupCount}",
+                            style = MaterialTheme.typography.bodyLarge,
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "存在${ruleSummary.slowGroupCount}规则组,可能导致触发缓慢或更多耗电",
-                            fontSize = 14.sp
+                            text = "可能导致触发缓慢或更多耗电",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Icon(
@@ -205,16 +208,20 @@ fun useControlPage(): ScaffoldExt {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(10.dp, 5.dp)
+                    .padding(16.dp, 12.dp)
             ) {
-                Text(text = subsStatus, fontSize = 18.sp)
+                Text(
+                    text = subsStatus,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
                 if (latestRecordDesc != null) {
                     Text(
                         text = "最近点击: $latestRecordDesc",
-                        fontSize = 14.sp,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         softWrap = false,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }

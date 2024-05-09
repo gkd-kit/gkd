@@ -10,7 +10,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -23,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import li.songe.gkd.BuildConfig
@@ -73,95 +71,96 @@ fun AboutPage() {
                         context.openUri(REPOSITORY_URL)
                     }
                     .fillMaxWidth()
-                    .padding(10.dp)) {
+                    .padding(16.dp, 12.dp)
+            ) {
                 Text(
-                    text = "开源地址", fontSize = 18.sp
+                    text = "开源地址",
+                    style = MaterialTheme.typography.bodyLarge,
                 )
-                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = REPOSITORY_URL,
-                    fontSize = 14.sp,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
-            HorizontalDivider()
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(10.dp)
+                    .padding(16.dp, 12.dp)
             ) {
                 Text(
-                    text = "版本代码", fontSize = 18.sp
+                    text = "版本代码",
+                    style = MaterialTheme.typography.bodyLarge,
                 )
-                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = BuildConfig.VERSION_CODE.toString(),
-                    fontSize = 14.sp,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            HorizontalDivider()
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(10.dp)
+                    .padding(16.dp, 12.dp)
             ) {
                 Text(
-                    text = "版本名称", fontSize = 18.sp
+                    text = "版本名称",
+                    style = MaterialTheme.typography.bodyLarge,
                 )
-                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = BuildConfig.VERSION_NAME,
-                    fontSize = 14.sp,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             @Suppress("SENSELESS_COMPARISON") if (GIT_COMMIT_URL != null && BuildConfig.GIT_COMMIT_ID != null) {
-                HorizontalDivider()
                 Column(
                     modifier = Modifier
                         .clickable {
                             context.openUri(GIT_COMMIT_URL)
                         }
                         .fillMaxWidth()
-                        .padding(10.dp)) {
+                        .padding(16.dp, 12.dp)
+                ) {
                     Text(
-                        text = "代码记录", fontSize = 18.sp
+                        text = "代码记录",
+                        style = MaterialTheme.typography.bodyLarge,
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = BuildConfig.GIT_COMMIT_ID,
-                        fontSize = 14.sp,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
-            HorizontalDivider()
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(10.dp)
+                    .padding(16.dp, 12.dp)
             ) {
                 Text(
-                    text = "构建时间", fontSize = 18.sp
+                    text = "构建时间",
+                    style = MaterialTheme.typography.bodyLarge,
                 )
-                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = BuildConfig.BUILD_TIME.format("yyyy-MM-dd HH:mm:ss ZZ"),
-                    fontSize = 14.sp,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            HorizontalDivider()
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(10.dp)
+                    .padding(16.dp, 12.dp)
             ) {
                 Text(
-                    text = "构建类型", fontSize = 18.sp
+                    text = "构建类型",
+                    style = MaterialTheme.typography.bodyLarge,
                 )
-                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = BuildConfig.BUILD_TYPE,
-                    fontSize = 14.sp,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Spacer(modifier = Modifier.height(40.dp))
