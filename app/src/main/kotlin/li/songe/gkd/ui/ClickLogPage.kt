@@ -35,7 +35,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -58,6 +57,7 @@ import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.stringify
 import li.songe.gkd.data.switch
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.StartEllipsisText
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.util.LocalNavController
@@ -140,17 +140,16 @@ fun ClickLogPage() {
                 key = clickDataItems.itemKey { c -> c.t0.id }
             ) { i ->
                 val (clickLog, group, rule) = clickDataItems[i] ?: return@items
-                Column(modifier = Modifier
-                    .clickable {
-                        previewClickLog = clickLog
-                    }
-                    .fillMaxWidth()
-                    .padding(10.dp)) {
+                Column(
+                    modifier = Modifier
+                        .clickable {
+                            previewClickLog = clickLog
+                        }
+                        .fillMaxWidth()
+                        .padding(10.dp)
+                ) {
                     Row {
-                        Text(
-                            text = clickLog.date,
-                            fontFamily = FontFamily.Monospace
-                        )
+                        Text(text = clickLog.date)
                         Spacer(modifier = Modifier.width(10.dp))
                         val appInfo = appInfoCache[clickLog.appId]
                         val appShowName = appInfo?.name ?: clickLog.appId
@@ -169,7 +168,7 @@ fun ClickLogPage() {
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     clickLog.showActivityId?.let { showActivityId ->
-                        Text(text = showActivityId)
+                        StartEllipsisText(text = showActivityId)
                     }
                     group?.name?.let { name ->
                         Text(text = name)

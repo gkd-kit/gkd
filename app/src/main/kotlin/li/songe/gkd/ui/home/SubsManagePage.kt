@@ -203,7 +203,14 @@ fun useSubsManagePage(): ScaffoldExt {
                 onValueChange = { link = it.trim() },
                 maxLines = 8,
                 textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = {
+                    Text(
+                        text = "https://example.com/gkd.json5",
+                        style = LocalTextStyle.current.copy(fontSize = 14.sp)
+                    )
+                },
+                isError = link.isNotEmpty() && !URLUtil.isNetworkUrl(link),
             )
         }, onDismissRequest = { showAddLinkDialog = false }, confirmButton = {
             TextButton(

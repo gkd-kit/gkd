@@ -165,7 +165,6 @@ fun SlowGroupCard(title: String, desc: String, modifier: Modifier = Modifier) {
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,
             )
-            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = desc,
                 fontSize = 14.sp,

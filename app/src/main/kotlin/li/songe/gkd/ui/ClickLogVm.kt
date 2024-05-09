@@ -40,27 +40,6 @@ class ClickLogVm @Inject constructor() : ViewModel() {
             }
         }
 
-
-//    val clickDataListFlow =
-//        combine(DbSet.clickLogDao.query(), subsIdToRawFlow) { clickLogs, subsIdToRaw ->
-//            clickLogs.map { c ->
-//                val group = if (c.groupType == SubsConfig.AppGroupType) {
-//                    val app = subsIdToRaw[c.subsId]?.apps?.find { a -> a.id == c.appId }
-//                    app?.groups?.find { g -> g.key == c.groupKey }
-//                } else {
-//                    subsIdToRaw[c.subsId]?.globalGroups?.find { g -> g.key == c.groupKey }
-//                }
-//                val rule = group?.rules?.run {
-//                    if (c.ruleKey != null) {
-//                        find { r -> r.key == c.ruleKey }
-//                    } else {
-//                        getOrNull(c.ruleIndex)
-//                    }
-//                }
-//                Tuple3(c, group, rule)
-//            }
-//        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
     val clickLogCountFlow =
         DbSet.clickLogDao.count().stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 

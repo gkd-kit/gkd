@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,6 +25,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -46,7 +46,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
@@ -333,27 +332,16 @@ fun useSettingsPage(): ScaffoldExt {
                 .verticalScroll(scrollState)
                 .padding(padding)
         ) {
-            TextSwitch(
-                name = "后台隐藏",
-                desc = "在[最近任务]界面中隐藏本应用",
-                checked = store.excludeFromRecents,
-                onCheckedChange = {
-                    storeFlow.value = store.copy(
-                        excludeFromRecents = it
-                    )
-                })
 
-            TextSwitch(name = "前台悬浮窗",
-                desc = "添加透明悬浮窗,关闭可能导致不点击/点击缓慢",
-                checked = store.enableAbFloatWindow,
-                onCheckedChange = {
-                    storeFlow.value = store.copy(
-                        enableAbFloatWindow = it
-                    )
-                })
+            Text(
+                text = "常规",
+                modifier = Modifier.padding(16.dp, 12.dp),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
 
-            TextSwitch(name = "点击提示",
-                desc = "触发点击时提示:[${store.clickToast}]",
+            TextSwitch(name = "触发提示",
+                desc = store.clickToast,
                 checked = store.toastWhenClick,
                 modifier = Modifier.clickable {
                     showToastInputDlg = true
@@ -364,20 +352,71 @@ fun useSettingsPage(): ScaffoldExt {
                     )
                 })
 
-            Row(modifier = Modifier
-                .clickable {
-                    showSubsIntervalDlg = true
-                }
-                .padding(10.dp, 15.dp), verticalAlignment = Alignment.CenterVertically) {
+            TextSwitch(
+                name = "后台隐藏",
+                desc = "在[最近任务]界面中隐藏本应用",
+                checked = store.excludeFromRecents,
+                onCheckedChange = {
+                    storeFlow.value = store.copy(
+                        excludeFromRecents = it
+                    )
+                })
+
+            Row(
+                modifier = Modifier
+                    .clickable {
+                        showEnableDarkThemeDlg = true
+                    }
+                    .padding(16.dp, 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    modifier = Modifier.weight(1f), text = "自动更新订阅", fontSize = 18.sp
+                    modifier = Modifier.weight(1f),
+                    text = "深色模式",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = darkThemeRadioOptions.find { it.second == store.enableDarkTheme }?.first
+                            ?: store.enableDarkTheme.toString(),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = "more"
+                    )
+                }
+            }
+
+            Text(
+                text = "更新",
+                modifier = Modifier.padding(16.dp, 12.dp),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+
+            Row(
+                modifier = Modifier
+                    .clickable {
+                        showSubsIntervalDlg = true
+                    }
+                    .padding(16.dp, 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    modifier = Modifier.weight(1f),
+                    text = "自动更新订阅",
+                    style = MaterialTheme.typography.bodyLarge,
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = UpdateTimeOption.allSubObject.find { it.value == store.updateSubsInterval }?.label
-                            ?: store.updateSubsInterval.toString(), fontSize = 14.sp
+                            ?: store.updateSubsInterval.toString(),
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
@@ -407,36 +446,23 @@ fun useSettingsPage(): ScaffoldExt {
                         }
                     )
                     .fillMaxWidth()
-                    .padding(10.dp, 10.dp)
-                    .defaultMinSize(minHeight = 30.dp),
+                    .padding(16.dp, 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(text = "检查更新", fontSize = 18.sp)
+                Text(
+                    text = "检查更新",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
                 RotatingLoadingIcon(loading = checkUpdating)
             }
 
-            Row(modifier = Modifier
-                .clickable {
-                    showEnableDarkThemeDlg = true
-                }
-                .padding(10.dp, 15.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    modifier = Modifier.weight(1f), text = "深色模式", fontSize = 18.sp
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = darkThemeRadioOptions.find { it.second == store.enableDarkTheme }?.first
-                            ?: store.enableDarkTheme.toString(), fontSize = 14.sp
-                    )
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "more"
-                    )
-                }
-            }
+            Text(
+                text = "日志",
+                modifier = Modifier.padding(16.dp, 12.dp),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
 
             TextSwitch(name = "保存日志",
                 desc = "保存最近7天日志,关闭后无法定位解决错误",
@@ -462,6 +488,13 @@ fun useSettingsPage(): ScaffoldExt {
             SettingItem(title = "分享日志", onClick = {
                 showShareLogDlg = true
             })
+
+            Text(
+                text = "其它",
+                modifier = Modifier.padding(16.dp, 12.dp),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
 
             SettingItem(title = "高级模式", onClick = {
                 navController.navigate(DebugPageDestination)
