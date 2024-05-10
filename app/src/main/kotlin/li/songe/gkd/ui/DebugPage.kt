@@ -208,10 +208,25 @@ fun DebugPage() {
                 )
             }
 
-            SettingItem(
-                title = "HTTP服务端口-${store.httpServerPort}", imageVector = Icons.Default.Edit
+            Row(
+                modifier = Modifier
+                    .clickable { showPortDlg = true }
+                    .padding(16.dp, 12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                showPortDlg = true
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "服务端口",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        text = store.httpServerPort.toString(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Icon(imageVector = Icons.Default.Edit, contentDescription = null)
             }
 
             TextSwitch(
