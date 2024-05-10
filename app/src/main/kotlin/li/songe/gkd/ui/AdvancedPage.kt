@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.blankj.utilcode.util.LogUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
@@ -86,12 +87,14 @@ import rikka.shizuku.Shizuku
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
 @Composable
-fun DebugPage() {
+fun AdvancedPage() {
     val context = LocalContext.current as MainActivity
     val scope = rememberCoroutineScope()
     val launcher = LocalLauncher.current
     val navController = LocalNavController.current
     val store by storeFlow.collectAsState()
+    val vm = hiltViewModel<AdvancedVm>()
+    val snapshotCount by vm.snapshotCountFlow.collectAsState()
 
     var showPortDlg by remember {
         mutableStateOf(false)
@@ -246,9 +249,12 @@ fun DebugPage() {
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            SettingItem(title = "快照记录", onClick = {
-                navController.navigate(SnapshotPageDestination)
-            })
+            SettingItem(
+                title = "快照记录" + (if (snapshotCount > 0) "-$snapshotCount" else ""),
+                onClick = {
+                    navController.navigate(SnapshotPageDestination)
+                }
+            )
 
             val screenshotRunning by ScreenshotService.isRunning.collectAsState()
             TextSwitch(
