@@ -139,7 +139,12 @@ android {
         // https://github.com/Kotlin/kotlinx.coroutines/issues/2023
         "META-INF/**", "**/attach_hotspot_windows.dll",
 
-        "**.properties", "**.bin", "**/*.proto"
+        "**.properties", "**.bin", "**/*.proto",
+        "**/kotlin-tooling-metadata.json",
+
+        // ktor
+        "**/custom.config.conf",
+        "**/custom.config.yaml",
     )
     configurations.configureEach {
         //    https://github.com/Kotlin/kotlinx.coroutines/issues/2023
