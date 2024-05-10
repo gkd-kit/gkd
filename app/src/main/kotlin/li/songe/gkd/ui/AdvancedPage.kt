@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
+import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -256,27 +257,30 @@ fun AdvancedPage() {
                 }
             )
 
-            val screenshotRunning by ScreenshotService.isRunning.collectAsState()
-            TextSwitch(
-                name = "截屏服务",
-                desc = "生成快照需要获取屏幕截图,Android11无需开启",
-                checked = screenshotRunning,
-                onCheckedChange = scope.launchAsFn<Boolean> {
-                    if (it) {
-                        if (!checkOrRequestPermission(context, notificationState)) {
-                            return@launchAsFn
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                val screenshotRunning by ScreenshotService.isRunning.collectAsState()
+                TextSwitch(
+                    name = "截屏服务",
+                    desc = "生成快照需要获取屏幕截图",
+                    checked = screenshotRunning,
+                    onCheckedChange = scope.launchAsFn<Boolean> {
+                        if (it) {
+                            if (!checkOrRequestPermission(context, notificationState)) {
+                                return@launchAsFn
+                            }
+                            val mediaProjectionManager =
+                                context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+                            val activityResult =
+                                launcher.launchForResult(mediaProjectionManager.createScreenCaptureIntent())
+                            if (activityResult.resultCode == Activity.RESULT_OK && activityResult.data != null) {
+                                ScreenshotService.start(intent = activityResult.data!!)
+                            }
+                        } else {
+                            ScreenshotService.stop()
                         }
-                        val mediaProjectionManager =
-                            context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-                        val activityResult =
-                            launcher.launchForResult(mediaProjectionManager.createScreenCaptureIntent())
-                        if (activityResult.resultCode == Activity.RESULT_OK && activityResult.data != null) {
-                            ScreenshotService.start(intent = activityResult.data!!)
-                        }
-                    } else {
-                        ScreenshotService.stop()
                     }
-                })
+                )
+            }
 
             val floatingRunning by FloatingService.isRunning.collectAsState()
             TextSwitch(
@@ -301,7 +305,7 @@ fun AdvancedPage() {
 
             TextSwitch(
                 name = "音量快照",
-                desc = "当音量变化时,生成快照,如果悬浮窗按钮不工作,可以使用这个",
+                desc = "音量变化时生成快照,悬浮窗按钮不工作时使用",
                 checked = store.captureVolumeChange
             ) {
                 storeFlow.value = store.copy(
