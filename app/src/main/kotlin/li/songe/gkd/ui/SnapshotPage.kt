@@ -38,7 +38,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -64,7 +63,6 @@ import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.LocalPickContentLauncher
 import li.songe.gkd.util.ProfileTransitions
-import li.songe.gkd.util.format
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.shareFile
@@ -131,8 +129,7 @@ fun SnapshotPage() {
                     .padding(10.dp)) {
                     Row {
                         Text(
-                            text = snapshot.id.format("MM-dd HH:mm:ss"),
-                            fontFamily = FontFamily.Monospace
+                            text = snapshot.date,
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(

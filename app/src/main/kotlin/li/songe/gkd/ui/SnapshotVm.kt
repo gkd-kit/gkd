@@ -14,7 +14,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.GithubPoliciesAsset
 import li.songe.gkd.data.RpcError
@@ -30,7 +29,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SnapshotVm @Inject constructor() : ViewModel() {
-    val snapshotsState = DbSet.snapshotDao.query().map { it.reversed() }
+    val snapshotsState = DbSet.snapshotDao.query()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val uploadStatusFlow = MutableStateFlow<LoadStatus<GithubPoliciesAsset>?>(null)

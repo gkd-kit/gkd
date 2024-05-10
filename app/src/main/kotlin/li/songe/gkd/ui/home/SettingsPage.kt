@@ -59,7 +59,7 @@ import li.songe.gkd.appScope
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.AboutPageDestination
-import li.songe.gkd.ui.destinations.DebugPageDestination
+import li.songe.gkd.ui.destinations.AdvancedPageDestination
 import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.buildLogFile
@@ -497,7 +497,7 @@ fun useSettingsPage(): ScaffoldExt {
             )
 
             SettingItem(title = "高级模式", onClick = {
-                navController.navigate(DebugPageDestination)
+                navController.navigate(AdvancedPageDestination)
             })
 
             SettingItem(title = "关于", onClick = {
