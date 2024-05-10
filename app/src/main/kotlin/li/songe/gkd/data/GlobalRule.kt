@@ -55,11 +55,18 @@ class GlobalRule(
     override val type = "global"
 
     private val excludeAppIds = apps.filter { e -> !e.value.enable }.keys
+    private val enableApps = apps.filter { e -> e.value.enable }
+
+    /**
+     * 内置禁用>用户配置>规则自带
+     * 范围越精确优先级越高
+     */
     override fun matchActivity(appId: String, activityId: String?): Boolean {
         // 规则自带禁用
         if (excludeAppIds.contains(appId)) {
             return false
         }
+
         // 用户自定义禁用
         if (excludeData.excludeAppIds.contains(appId)) {
             return false
@@ -69,22 +76,25 @@ class GlobalRule(
         }
         if (excludeData.includeAppIds.contains(appId)) {
             activityId ?: return true
-            val app = apps[appId] ?: return true
+            val app = enableApps[appId] ?: return true
             // 规则自带页面的禁用
             return !app.excludeActivityIds.any { e -> e.startsWith(activityId) }
         }
-        if (!matchLauncher && appId == launcherAppId) {
-            return false
+
+        // 范围比较
+        val app = enableApps[appId]
+        if (app != null) { // 规则自定义启用
+            activityId ?: return true
+            return app.activityIds.isEmpty() || app.activityIds.any { e -> e.startsWith(activityId) }
+        } else {
+            if (!matchLauncher && appId == launcherAppId) {
+                return false
+            }
+            if (!matchSystemApp && systemAppsFlow.value.contains(appId)) {
+                return false
+            }
+            return matchAnyApp
         }
-        if (!matchSystemApp && systemAppsFlow.value.contains(appId)) {
-            return false
-        }
-        val app = apps[appId] ?: return matchAnyApp
-        activityId ?: return true
-        if (app.excludeActivityIds.any { e -> e.startsWith(activityId) }) {
-            return false
-        }
-        return app.activityIds.isEmpty() || app.activityIds.any { e -> e.startsWith(activityId) }
     }
 
 }
