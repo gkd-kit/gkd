@@ -57,6 +57,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.permission.canSaveToAlbumState
 import li.songe.gkd.permission.checkOrRequestPermission
+import li.songe.gkd.ui.component.StartEllipsisText
 import li.songe.gkd.ui.destinations.ImagePreviewPageDestination
 import li.songe.gkd.util.IMPORT_BASE_URL
 import li.songe.gkd.util.LoadStatus
@@ -149,10 +150,7 @@ fun SnapshotPage() {
                                 snapshot.activityId
                             }
                         Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = showActivityId, overflow = TextOverflow.Ellipsis,
-                            maxLines = 1,
-                        )
+                        StartEllipsisText(text = showActivityId)
                     }
                 }
                 HorizontalDivider()
