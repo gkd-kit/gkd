@@ -171,12 +171,16 @@ data class RuleSummary(
     val slowGroupCount = slowGlobalGroups.size + slowAppGroups.size
 }
 
+private val usedSubsEntriesFlow by lazy {
+    subsEntriesFlow.map { it.filter { s -> s.subsItem.enable && s.subscription != null } }
+}
+
 val ruleSummaryFlow by lazy {
     combine(
-        subsEntriesFlow,
+        usedSubsEntriesFlow,
         appInfoCacheFlow,
-        DbSet.subsConfigDao.query(),
-        DbSet.categoryConfigDao.query(),
+        DbSet.subsConfigDao.queryUsedList(),
+        DbSet.categoryConfigDao.queryUsedList(),
     ) { subsEntries, appInfoCache, subsConfigs, categoryConfigs ->
         val globalSubsConfigs = subsConfigs.filter { c -> c.type == SubsConfig.GlobalGroupType }
         val appSubsConfigs = subsConfigs.filter { c -> c.type == SubsConfig.AppType }
@@ -187,7 +191,7 @@ val ruleSummaryFlow by lazy {
             HashMap<String, List<ResolvedAppGroup>>()
         val globalRules = mutableListOf<GlobalRule>()
         val globalGroups = mutableListOf<ResolvedGlobalGroup>()
-        subsEntries.filter { it.subsItem.enable }.forEach { (subsItem, rawSubs) ->
+        subsEntries.forEach { (subsItem, rawSubs) ->
             rawSubs ?: return@forEach
 
             // global scope

@@ -54,9 +54,8 @@ data class SubsConfig(
         @Query("DELETE FROM subs_config WHERE subs_item_id=:subsItemId AND app_id=:appId AND group_key=:groupKey")
         suspend fun delete(subsItemId: Long, appId: String, groupKey: Int): Int
 
-        @Query("SELECT * FROM subs_config")
-        fun query(): Flow<List<SubsConfig>>
-
+        @Query("SELECT * FROM subs_config WHERE subs_item_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)")
+        fun queryUsedList(): Flow<List<SubsConfig>>
 
         @Query("SELECT * FROM subs_config WHERE type=${AppType} AND subs_item_id=:subsItemId")
         fun queryAppTypeConfig(subsItemId: Long): Flow<List<SubsConfig>>
