@@ -21,6 +21,9 @@ data class AppInfo(
     val hidden: Boolean,
 )
 
+/**
+ * 平均单次调用时间 11ms
+ */
 fun PackageInfo.toAppInfo(): AppInfo? {
     applicationInfo ?: return null
     return AppInfo(
