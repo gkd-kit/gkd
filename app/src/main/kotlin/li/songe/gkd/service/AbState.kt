@@ -25,8 +25,8 @@ data class TopActivity(
 val topActivityFlow = MutableStateFlow(TopActivity())
 
 data class ActivityRule(
-    private val appRules: List<AppRule> = emptyList(),
-    private val globalRules: List<GlobalRule> = emptyList(),
+    val appRules: List<AppRule> = emptyList(),
+    val globalRules: List<GlobalRule> = emptyList(),
     val topActivity: TopActivity = TopActivity(),
     val ruleSummary: RuleSummary = RuleSummary(),
 ) {
@@ -57,7 +57,9 @@ fun getAndUpdateCurrentRules(): ActivityRule {
     val allRules = ruleSummaryFlow.value
     val idChanged = topActivity.appId != oldActivityRule.topActivity.appId
     val topChanged = idChanged || oldActivityRule.topActivity != topActivity
-    if (topChanged || oldActivityRule.ruleSummary !== allRules) {
+    val ruleChanged = oldActivityRule.ruleSummary !== allRules
+    if (topChanged || ruleChanged) {
+        val t = System.currentTimeMillis()
         val newActivityRule = ActivityRule(
             ruleSummary = allRules,
             topActivity = topActivity,
@@ -68,30 +70,36 @@ fun getAndUpdateCurrentRules(): ActivityRule {
                 r.matchActivity(topActivity.appId, topActivity.activityId)
             },
         )
-        activityRuleFlow.value = newActivityRule
-        if (newActivityRule.currentRules.isNotEmpty()) {
-            val newRules =
-                newActivityRule.currentRules.filter { r -> !oldActivityRule.currentRules.any { r2 -> r2 == r } }
-            val t = System.currentTimeMillis()
-            if (newRules.isNotEmpty()) {
-                newRules.forEach { r ->
-                    r.matchChangedTime = t
-                }
+        if (idChanged) {
+            appChangeTime = t
+            allRules.globalRules.forEach { r ->
+                r.actionDelayTriggerTime = 0
+                r.actionCount.value = 0
+                r.matchChangedTime = t
             }
+            allRules.appIdToRules[oldActivityRule.topActivity.appId]?.forEach { r ->
+                r.actionDelayTriggerTime = 0
+                r.actionCount.value = 0
+                r.matchChangedTime = t
+            }
+            newActivityRule.appRules.forEach { r ->
+                r.actionDelayTriggerTime = 0
+                r.actionCount.value = 0
+                r.matchChangedTime = t
+            }
+        } else {
             newActivityRule.currentRules.forEach { r ->
-                if (r.resetMatchTypeWhenActivity || idChanged) {
+                if (r.resetMatchTypeWhenActivity) {
                     r.actionDelayTriggerTime = 0
                     r.actionCount.value = 0
                 }
-                if (idChanged) {
-                    // 重置全局规则的匹配时间
+                if (!oldActivityRule.currentRules.contains(r)) {
+                    // 新增规则
                     r.matchChangedTime = t
                 }
             }
         }
-    }
-    if (idChanged) {
-        appChangeTime = System.currentTimeMillis()
+        activityRuleFlow.value = newActivityRule
     }
     return activityRuleFlow.value
 }
