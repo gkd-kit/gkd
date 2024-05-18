@@ -10,7 +10,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import li.songe.gkd.appScope
-import li.songe.gkd.ui.home.UpdateTimeOption
 
 private inline fun <reified T> createStorageFlow(
     key: String,
@@ -57,6 +56,7 @@ data class Store(
     val enableShizukuClick: Boolean = false,
     val log2FileSwitch: Boolean = true,
     val enableDarkTheme: Boolean? = null,
+    val enableDynamicColor: Boolean = true,
     val enableAbFloatWindow: Boolean = true,
     val sortType: Int = SortTypeOption.SortByName.value,
     val showSystemApp: Boolean = true,
@@ -88,8 +88,6 @@ val clickCountFlow by lazy {
     recordStoreFlow.map(appScope) { r -> r.clickCount }
 }
 
-private val log2FileSwitchFlow by lazy { storeFlow.map(appScope) { s -> s.log2FileSwitch } }
-
 fun increaseClickCount(n: Int = 1) {
     recordStoreFlow.update {
         it.copy(
@@ -101,10 +99,5 @@ fun increaseClickCount(n: Int = 1) {
 fun initStore() {
     storeFlow.value
     recordStoreFlow.value
-    appScope.launchTry(Dispatchers.IO) {
-        log2FileSwitchFlow.collect {
-            LogUtils.getConfig().isLog2FileSwitch = it
-        }
-    }
 }
 

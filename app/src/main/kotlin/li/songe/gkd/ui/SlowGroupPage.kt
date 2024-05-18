@@ -17,6 +17,7 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -34,11 +35,11 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
+import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
@@ -98,7 +99,7 @@ fun SlowGroupPage() {
                                 )
                             )
                         }
-                        .padding(10.dp, 5.dp),
+                        .itemPadding(),
                     title = group.name,
                     desc = "${rule.rawSubs.name}/全局规则"
                 )
@@ -118,12 +119,12 @@ fun SlowGroupPage() {
                                 )
                             )
                         }
-                        .padding(10.dp, 5.dp),
+                        .itemPadding(),
                     title = group.name,
                     desc = "${rule.rawSubs.name}/应用规则/${appInfoCache[rule.app.id]?.name ?: rule.app.name ?: rule.app.id}"
                 )
             }
-            item("empty") {
+            item {
                 Spacer(modifier = Modifier.height(40.dp))
                 if (ruleSummary.slowGroupCount == 0) {
                     Text(
@@ -160,17 +161,18 @@ fun SlowGroupCard(title: String, desc: String, modifier: Modifier = Modifier) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                fontSize = 18.sp,
+                style = MaterialTheme.typography.bodyLarge,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = desc,
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 softWrap = false,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Icon(

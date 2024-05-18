@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import li.songe.gkd.BuildConfig
+import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.GIT_COMMIT_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
@@ -71,7 +72,7 @@ fun AboutPage() {
                         context.openUri(REPOSITORY_URL)
                     }
                     .fillMaxWidth()
-                    .padding(16.dp, 12.dp)
+                    .itemPadding()
             ) {
                 Text(
                     text = "开源地址",
@@ -86,7 +87,7 @@ fun AboutPage() {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp, 12.dp)
+                    .itemPadding()
             ) {
                 Text(
                     text = "版本代码",
@@ -101,7 +102,7 @@ fun AboutPage() {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp, 12.dp)
+                    .itemPadding()
             ) {
                 Text(
                     text = "版本名称",
@@ -120,7 +121,7 @@ fun AboutPage() {
                             context.openUri(GIT_COMMIT_URL)
                         }
                         .fillMaxWidth()
-                        .padding(16.dp, 12.dp)
+                        .itemPadding()
                 ) {
                     Text(
                         text = "代码记录",
@@ -136,7 +137,7 @@ fun AboutPage() {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp, 12.dp)
+                    .itemPadding()
             ) {
                 Text(
                     text = "构建时间",
@@ -151,7 +152,7 @@ fun AboutPage() {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp, 12.dp)
+                    .itemPadding()
             ) {
                 Text(
                     text = "构建类型",

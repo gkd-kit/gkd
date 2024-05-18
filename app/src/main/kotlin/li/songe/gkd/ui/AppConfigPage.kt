@@ -25,7 +25,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -58,8 +57,10 @@ import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
+import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
+import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
@@ -80,7 +81,6 @@ fun AppConfigPage(appId: String) {
     var expanded by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     var isFirstVisit by remember { mutableStateOf(true) }
-    globalGroups.map { g -> g.group }
     LaunchedEffect(globalGroups.size, appGroups.size, ruleSortType.value) {
         if (isFirstVisit) {
             isFirstVisit = false
@@ -124,7 +124,7 @@ fun AppConfigPage(appId: String) {
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                     ) {
-                        RuleSortType.allSubObject.forEach { s ->
+                        RuleSortOption.allSubObject.forEach { s ->
                             DropdownMenuItem(
                                 text = {
                                     Row(
@@ -250,7 +250,7 @@ private fun AppGroupCard(
     Row(
         modifier = Modifier
             .clickable(onClick = onClick)
-            .padding(10.dp, 6.dp),
+            .itemPadding(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -265,7 +265,8 @@ private fun AppGroupCard(
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.bodyLarge
             )
             if (group.valid) {
                 if (!group.desc.isNullOrBlank()) {
@@ -275,14 +276,15 @@ private fun AppGroupCard(
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.fillMaxWidth(),
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
                     Text(
                         text = "暂无描述",
                         modifier = Modifier.fillMaxWidth(),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = LocalContentColor.current.copy(alpha = 0.5f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 }
             } else {
