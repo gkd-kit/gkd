@@ -22,8 +22,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -109,7 +107,7 @@ fun SubsAppCard(
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth(),
-                style = LocalTextStyle.current.let {
+                style = MaterialTheme.typography.bodyLarge.let {
                     if (appInfo?.isSystem == true) {
                         it.copy(textDecoration = TextDecoration.Underline)
                     } else {
@@ -129,13 +127,16 @@ fun SubsAppCard(
                     maxLines = 1,
                     softWrap = false,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
                 Text(
                     text = "暂无规则",
                     modifier = Modifier.fillMaxWidth(),
-                    color = LocalContentColor.current.copy(alpha = 0.5f)
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 )
             }
         }

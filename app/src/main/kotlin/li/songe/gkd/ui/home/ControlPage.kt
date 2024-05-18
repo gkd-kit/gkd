@@ -42,6 +42,7 @@ import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.ClickLogPageDestination
 import li.songe.gkd.ui.destinations.SlowGroupPageDestination
+import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.launchAsFn
@@ -131,7 +132,7 @@ fun useControlPage(): ScaffoldExt {
                     .clickable {
                         context.openUri(HOME_PAGE_URL)
                     }
-                    .padding(16.dp, 12.dp),
+                    .itemPadding(),
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -158,7 +159,7 @@ fun useControlPage(): ScaffoldExt {
                     .clickable {
                         navController.navigate(ClickLogPageDestination)
                     }
-                    .padding(16.dp, 12.dp),
+                    .itemPadding(),
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -185,7 +186,7 @@ fun useControlPage(): ScaffoldExt {
                         .clickable {
                             navController.navigate(SlowGroupPageDestination)
                         }
-                        .padding(16.dp, 12.dp),
+                        .itemPadding(),
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -208,7 +209,7 @@ fun useControlPage(): ScaffoldExt {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp, 12.dp)
+                    .itemPadding()
             ) {
                 Text(
                     text = subsStatus,

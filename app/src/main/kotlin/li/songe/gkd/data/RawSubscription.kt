@@ -45,6 +45,23 @@ data class RawSubscription(
         }
     }
 
+    val categoryToAppMap by lazy {
+        val map = mutableMapOf<RawCategory, MutableList<RawApp>>()
+        categories.forEach { c ->
+            apps.forEach { a ->
+                if (a.groups.any { g -> g.name.startsWith(c.name) }) {
+                    val list = map[c]
+                    if (list == null) {
+                        map[c] = mutableListOf(a)
+                    } else {
+                        list.add(a)
+                    }
+                }
+            }
+        }
+        map
+    }
+
     val groupToCategoryMap by lazy {
         val map = mutableMapOf<RawAppGroup, RawCategory>()
         categoryToGroupsMap.forEach { (key, value) ->

@@ -31,7 +31,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -70,6 +70,7 @@ import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.service.launcherAppId
 import li.songe.gkd.ui.component.AppBarTextField
+import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SortTypeOption
@@ -239,7 +240,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                 Row(
                     modifier = Modifier
                         .height(IntrinsicSize.Min)
-                        .padding(10.dp, 6.dp),
+                        .itemPadding(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -283,7 +284,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                             softWrap = false,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.fillMaxWidth(),
-                            style = LocalTextStyle.current.let {
+                            style = MaterialTheme.typography.bodyLarge.let {
                                 if (appInfo.isSystem) {
                                     it.copy(textDecoration = TextDecoration.Underline)
                                 } else {
@@ -296,7 +297,9 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                             maxLines = 1,
                             softWrap = false,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
 

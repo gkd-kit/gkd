@@ -73,6 +73,7 @@ import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.SnapshotPageDestination
+import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.LocalLauncher
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
@@ -124,7 +125,7 @@ fun AdvancedPage() {
         ) {
             Text(
                 text = "Shizuku",
-                modifier = Modifier.padding(16.dp, 12.dp),
+                modifier = Modifier.itemPadding(),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -150,12 +151,12 @@ fun AdvancedPage() {
 
             Text(
                 text = "HTTP服务",
-                modifier = Modifier.padding(16.dp, 12.dp),
+                modifier = Modifier.itemPadding(),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
             )
             Row(
-                modifier = Modifier.padding(16.dp, 14.dp),
+                modifier = Modifier.itemPadding(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -215,7 +216,7 @@ fun AdvancedPage() {
             Row(
                 modifier = Modifier
                     .clickable { showPortDlg = true }
-                    .padding(16.dp, 12.dp),
+                    .itemPadding(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -245,7 +246,7 @@ fun AdvancedPage() {
 
             Text(
                 text = "快照",
-                modifier = Modifier.padding(16.dp, 12.dp),
+                modifier = Modifier.itemPadding(),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -335,7 +336,7 @@ fun AdvancedPage() {
 
             Text(
                 text = "其它",
-                modifier = Modifier.padding(16.dp, 12.dp),
+                modifier = Modifier.itemPadding(),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
             )

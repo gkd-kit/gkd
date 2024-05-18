@@ -259,19 +259,17 @@ fun SubsPage(
                         DbSet.subsConfigDao.insert(newItem)
                     },
                     showMenu = editable,
-                    onDelClick = {
-                        vm.viewModelScope.launchTry {
-                            val result = getDialogResult(
-                                "删除规则组",
-                                "确定删除 ${appInfoCache[appRaw.id]?.name ?: appRaw.name ?: appRaw.id} 下所有规则组?"
-                            )
-                            if (!result) return@launchTry
-                            if (subsRaw != null && subsItem != null) {
-                                updateSubscription(subsRaw.copy(apps = subsRaw.apps.filter { a -> a.id != appRaw.id }))
-                                DbSet.subsItemDao.update(subsItem.copy(mtime = System.currentTimeMillis()))
-                                DbSet.subsConfigDao.delete(subsItem.id, appRaw.id)
-                                toast("删除成功")
-                            }
+                    onDelClick = vm.viewModelScope.launchAsFn {
+                        val result = getDialogResult(
+                            "删除规则组",
+                            "确定删除 ${appInfoCache[appRaw.id]?.name ?: appRaw.name ?: appRaw.id} 下所有规则组?"
+                        )
+                        if (!result) return@launchAsFn
+                        if (subsRaw != null && subsItem != null) {
+                            updateSubscription(subsRaw.copy(apps = subsRaw.apps.filter { a -> a.id != appRaw.id }))
+                            DbSet.subsItemDao.update(subsItem.copy(mtime = System.currentTimeMillis()))
+                            DbSet.subsConfigDao.delete(subsItem.id, appRaw.id)
+                            toast("删除成功")
                         }
                     })
             }

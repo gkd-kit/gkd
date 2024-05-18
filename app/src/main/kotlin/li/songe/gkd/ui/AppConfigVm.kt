@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.AppConfigPageDestination
+import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.collator
 import li.songe.gkd.util.ruleSummaryFlow
 import javax.inject.Inject
@@ -29,7 +30,7 @@ class AppConfigVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel
         SubsConfig.AppGroupType
     )
 
-    val ruleSortTypeFlow = MutableStateFlow<RuleSortType>(RuleSortType.Default)
+    val ruleSortTypeFlow = MutableStateFlow<RuleSortOption>(RuleSortOption.Default)
 
     val globalGroupsFlow = combine(
         ruleSummaryFlow.map { r -> r.globalGroups },
@@ -37,15 +38,15 @@ class AppConfigVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel
         latestGlobalLogsFlow
     ) { list, type, logs ->
         when (type) {
-            RuleSortType.Default -> list
-            RuleSortType.ByName -> list.sortedWith { a, b ->
+            RuleSortOption.Default -> list
+            RuleSortOption.ByName -> list.sortedWith { a, b ->
                 collator.compare(
                     a.group.name,
                     b.group.name
                 )
             }
 
-            RuleSortType.ByTime -> list.sortedBy { a ->
+            RuleSortOption.ByTime -> list.sortedBy { a ->
                 -(logs.find { c -> c.groupKey == a.group.key && c.subsId == a.subsItem.id }?.id
                     ?: 0)
             }
@@ -58,15 +59,15 @@ class AppConfigVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel
         latestAppLogsFlow
     ) { list, type, logs ->
         when (type) {
-            RuleSortType.Default -> list
-            RuleSortType.ByName -> list.sortedWith { a, b ->
+            RuleSortOption.Default -> list
+            RuleSortOption.ByName -> list.sortedWith { a, b ->
                 collator.compare(
                     a.group.name,
                     b.group.name
                 )
             }
 
-            RuleSortType.ByTime -> list.sortedBy { a ->
+            RuleSortOption.ByTime -> list.sortedBy { a ->
                 -(logs.find { c -> c.groupKey == a.group.key && c.subsId == a.subsItem.id }?.id
                     ?: 0)
             }
@@ -75,12 +76,3 @@ class AppConfigVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel
 
 }
 
-sealed class RuleSortType(val value: Int, val label: String) {
-    data object Default : RuleSortType(0, "按订阅顺序")
-    data object ByTime : RuleSortType(1, "按触发时间")
-    data object ByName : RuleSortType(2, "按名称")
-
-    companion object {
-        val allSubObject by lazy { arrayOf(Default, ByTime, ByName) }
-    }
-}

@@ -27,7 +27,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -68,6 +67,7 @@ import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.getDialogResult
 import li.songe.gkd.ui.destinations.GroupItemPageDestination
+import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
@@ -166,7 +166,7 @@ fun AppItemPage(
                             if (group.key == focusGroupKey) MaterialTheme.colorScheme.inversePrimary else Color.Transparent
                         )
                         .clickable { setShowGroupItem(group) }
-                        .padding(10.dp, 6.dp),
+                        .itemPadding(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -181,7 +181,8 @@ fun AppItemPage(
                             maxLines = 1,
                             softWrap = false,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            style = MaterialTheme.typography.bodyLarge,
                         )
                         if (group.valid) {
                             if (!group.desc.isNullOrBlank()) {
@@ -191,21 +192,22 @@ fun AppItemPage(
                                     softWrap = false,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.fillMaxWidth(),
-                                    fontSize = 14.sp
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             } else {
                                 Text(
                                     text = "暂无描述",
                                     modifier = Modifier.fillMaxWidth(),
-                                    fontSize = 14.sp,
-                                    color = LocalContentColor.current.copy(alpha = 0.5f)
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                                 )
                             }
                         } else {
                             Text(
                                 text = "非法选择器",
                                 modifier = Modifier.fillMaxWidth(),
-                                fontSize = 14.sp,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.error
                             )
                         }
@@ -343,13 +345,18 @@ fun AppItemPage(
     }
 
     showGroupItem?.let { showGroupItemVal ->
-        AlertDialog(modifier = Modifier.defaultMinSize(300.dp),
+        AlertDialog(
+            modifier = Modifier.defaultMinSize(300.dp),
             onDismissRequest = { setShowGroupItem(null) },
             title = {
-                Text(text = showGroupItemVal.name)
+                Text(text = "规则组详情")
             },
             text = {
-                Text(text = showGroupItemVal.desc ?: "")
+                Column {
+                    Text(text = showGroupItemVal.name)
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(text = showGroupItemVal.desc ?: "")
+                }
             },
             confirmButton = {
                 if (showGroupItemVal.allExampleUrls.isNotEmpty()) {
