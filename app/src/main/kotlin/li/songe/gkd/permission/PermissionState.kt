@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.updateAndGet
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.shizuku.shizukuIsSafeOK
-import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.initOrResetAppInfoCache
 import li.songe.gkd.util.launchTry
 
@@ -133,10 +132,7 @@ fun updatePermissionState() {
         shizukuOkState
     ).forEach { it.updateAndGet() }
 
-    if (canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet() ||
-        // https://github.com/gkd-kit/gkd/issues/543
-        appInfoCacheFlow.value.count { e -> !e.value.isSystem && !e.value.hidden } < 16
-    ) {
+    if (canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet()) {
         appScope.launchTry {
             initOrResetAppInfoCache()
         }
