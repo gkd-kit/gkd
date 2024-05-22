@@ -39,6 +39,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.ksp)
     alias(libs.plugins.google.hilt)
     alias(libs.plugins.rikka.refine)
@@ -132,9 +133,6 @@ android {
         compose = true
         aidl = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.composeCompiler.get()
-    }
     packagingOptions.resources.excludes += setOf(
         // https://github.com/Kotlin/kotlinx.coroutines/issues/2023
         "META-INF/**", "**/attach_hotspot_windows.dll",
@@ -146,19 +144,27 @@ android {
         "**/custom.config.conf",
         "**/custom.config.yaml",
     )
-    configurations.configureEach {
-        //    https://github.com/Kotlin/kotlinx.coroutines/issues/2023
-        exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-debug")
-    }
-
-    ksp {
-        arg("room.schemaLocation", "$projectDir/schemas")
-        arg("room.incremental", "true")
-        arg("room.generateKotlin", "true")
-    }
     sourceSets.configureEach {
         kotlin.srcDir("${layout.buildDirectory.asFile.get()}/generated/ksp/$name/kotlin/")
     }
+}
+
+configurations.configureEach {
+    //    https://github.com/Kotlin/kotlinx.coroutines/issues/2023
+    exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-debug")
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.incremental", "true")
+    arg("room.generateKotlin", "true")
+}
+
+composeCompiler {
+    // https://developer.android.com/develop/ui/compose/performance/stability/strongskipping?hl=zh-cn
+    enableStrongSkippingMode = true
+    reportsDestination = layout.buildDirectory.dir("compose_compiler")
+    stabilityConfigurationFile = rootProject.layout.projectDirectory.file("stability_config.conf")
 }
 
 dependencies {
