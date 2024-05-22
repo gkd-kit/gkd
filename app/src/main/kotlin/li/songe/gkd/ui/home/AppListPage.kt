@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.AppsOutage
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PriorityHigh
 import androidx.compose.material.icons.filled.Search
@@ -79,6 +80,7 @@ import li.songe.gkd.util.storeFlow
 val appListNav = BottomNavItem(
     label = "应用", icon = Icons.Default.Apps
 )
+val appListOutageNav = appListNav.copy(icon = Icons.Default.AppsOutage)
 
 @Composable
 fun useAppListPage(): ScaffoldExt {
@@ -124,7 +126,14 @@ fun useAppListPage(): ScaffoldExt {
         }
     })
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    return ScaffoldExt(navItem = appListNav,
+    val canQueryPkg by canQueryPkgState.stateFlow.collectAsState()
+    val navItem = if (canQueryPkg) {
+        appListNav
+    } else {
+        appListOutageNav
+    }
+    return ScaffoldExt(
+        navItem = navItem,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             DisposableEffect(null) {
@@ -169,7 +178,6 @@ fun useAppListPage(): ScaffoldExt {
                         )
                     }
                 } else {
-                    val canQueryPkg by canQueryPkgState.stateFlow.collectAsState()
                     if (!canQueryPkg) {
                         IconButton(onClick = vm.viewModelScope.launchAsFn {
                             checkOrRequestPermission(context, canQueryPkgState)
