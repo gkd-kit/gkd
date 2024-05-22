@@ -14,10 +14,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.outlined.OpenInNew
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -75,6 +76,13 @@ fun useControlPage(): ScaffoldExt {
                 Text(
                     text = controlNav.label,
                 )
+            }, actions = {
+                IconButton(onClick = { context.openUri(HOME_PAGE_URL) }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                        contentDescription = null,
+                    )
+                }
             })
         }
     ) { padding ->
@@ -124,32 +132,6 @@ fun useControlPage(): ScaffoldExt {
                         ManageService.stop(context)
                     }
                 })
-
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .clickable {
-                        context.openUri(HOME_PAGE_URL)
-                    }
-                    .itemPadding(),
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "使用说明",
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Text(
-                        text = HOME_PAGE_URL,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
-                    contentDescription = null
-                )
-            }
 
             val clickLogCount by vm.clickLogCountFlow.collectAsState()
             Row(
