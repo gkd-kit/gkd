@@ -21,3 +21,4 @@ local.properties
 *.keystore
 
 /_assets
+/.kotlin
