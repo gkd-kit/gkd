@@ -4,11 +4,11 @@ import java.net.NetworkInterface
 
 fun getIpAddressInLocalNetwork(): List<String> {
     val networkInterfaces = try {
-        // android.system.ErrnoException: getifaddrs failed: EACCES (Permission denied)
-        NetworkInterface.getNetworkInterfaces().iterator().asSequence()
+        NetworkInterface.getNetworkInterfaces().asSequence()
     } catch (e: Exception) {
+        // android.system.ErrnoException: getifaddrs failed: EACCES (Permission denied)
         toast("获取host失败:" + e.message)
-        emptySequence()
+        return emptyList()
     }
     val localAddresses = networkInterfaces.flatMap {
         it.inetAddresses.asSequence().filter { inetAddress ->
