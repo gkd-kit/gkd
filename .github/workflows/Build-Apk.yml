@@ -8,7 +8,7 @@ on:
       - '**'
     paths-ignore:
       - 'LICENSE'
-      - 'README.md'
+      - '*.md'
       - '.github/**'
 
 jobs:
