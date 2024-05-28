@@ -78,6 +78,10 @@ data class RawSubscription(
         apps.flatMap { a -> a.groups }
     }
 
+    val groupsSize by lazy {
+        appGroups.size + globalGroups.size
+    }
+
     val numText by lazy {
         val appsSize = apps.size
         val appGroupsSize = appGroups.size

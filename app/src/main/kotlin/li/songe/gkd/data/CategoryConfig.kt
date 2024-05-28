@@ -10,7 +10,9 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Entity(
     tableName = "category_config",
 )
@@ -29,6 +31,9 @@ data class CategoryConfig(
         @Insert(onConflict = OnConflictStrategy.REPLACE)
         suspend fun insert(vararg objects: CategoryConfig): List<Long>
 
+        @Insert(onConflict = OnConflictStrategy.IGNORE)
+        suspend fun insertOrIgnore(vararg objects: CategoryConfig): List<Long>
+
         @Delete
         suspend fun delete(vararg objects: CategoryConfig): Int
 
@@ -43,5 +48,9 @@ data class CategoryConfig(
 
         @Query("SELECT * FROM category_config WHERE subs_item_id=:subsItemId")
         fun queryConfig(subsItemId: Long): Flow<List<CategoryConfig>>
+
+        @Query("SELECT * FROM category_config WHERE subs_item_id IN (:subsItemIds)")
+        suspend fun querySubsItemConfig(subsItemIds: List<Long>): List<CategoryConfig>
+
     }
 }

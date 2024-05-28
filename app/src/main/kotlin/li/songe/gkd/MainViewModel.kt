@@ -14,11 +14,9 @@ import li.songe.gkd.data.SubsItem
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.permission.authReasonFlow
 import li.songe.gkd.util.checkUpdate
+import li.songe.gkd.util.clearCache
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.logZipDir
 import li.songe.gkd.util.map
-import li.songe.gkd.util.newVersionApkDir
-import li.songe.gkd.util.snapshotZipDir
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.updateSubscription
 
@@ -44,15 +42,7 @@ class MainViewModel : ViewModel() {
 
         viewModelScope.launchTry(Dispatchers.IO) {
             // 每次进入删除缓存
-            listOf(snapshotZipDir, newVersionApkDir, logZipDir).forEach { dir ->
-                if (dir.isDirectory && dir.exists()) {
-                    dir.listFiles()?.forEach { file ->
-                        if (file.isFile) {
-                            file.delete()
-                        }
-                    }
-                }
-            }
+            clearCache()
         }
 
         if (storeFlow.value.autoCheckAppUpdate) {

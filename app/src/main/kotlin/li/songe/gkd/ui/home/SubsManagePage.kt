@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.home
 
+import android.content.Intent
 import android.webkit.URLUtil
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -18,11 +20,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -50,21 +56,34 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
+import com.blankj.utilcode.util.UriUtils
+import com.blankj.utilcode.util.ZipUtils
+import com.dylanc.activityresult.launcher.launchForResult
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
 import li.songe.gkd.data.SubsItem
+import li.songe.gkd.data.TransferData
+import li.songe.gkd.data.exportTransferData
+import li.songe.gkd.data.importTransferData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SubsItemCard
 import li.songe.gkd.ui.component.getDialogResult
 import li.songe.gkd.ui.destinations.CategoryPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.destinations.SubsPageDestination
+import li.songe.gkd.util.LocalLauncher
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.checkSubsUpdate
+import li.songe.gkd.util.exportZipDir
 import li.songe.gkd.util.isSafeUrl
+import li.songe.gkd.util.json
+import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.openUri
+import li.songe.gkd.util.readFileZipByteArray
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsIdToRawFlow
@@ -82,6 +101,7 @@ val subsNav = BottomNavItem(
 fun useSubsManagePage(): ScaffoldExt {
     val context = LocalContext.current
     val navController = LocalNavController.current
+    val launcher = LocalLauncher.current
 
     val vm = hiltViewModel<HomeVm>()
     val subItems by subsItemsFlow.collectAsState()
@@ -137,6 +157,30 @@ fun useSubsManagePage(): ScaffoldExt {
                         .padding(16.dp))
                     HorizontalDivider()
                 }
+                Text(text = "导出数据", modifier = Modifier
+                    .clickable {
+                        menuSubItem = null
+                        vm.viewModelScope.launchTry(Dispatchers.IO) {
+                            val transferDataFile = exportZipDir.resolve("${TransferData.TYPE}.json")
+                            transferDataFile.writeText(
+                                json.encodeToString(
+                                    exportTransferData(
+                                        listOf(
+                                            menuSubItemVal.id
+                                        )
+                                    )
+                                )
+                            )
+                            val file =
+                                exportZipDir.resolve("backup-${System.currentTimeMillis()}.zip")
+                            ZipUtils.zipFiles(listOf(transferDataFile), file)
+                            transferDataFile.delete()
+                            context.shareFile(file, "分享数据文件")
+                        }
+                    }
+                    .fillMaxWidth()
+                    .padding(16.dp))
+                HorizontalDivider()
                 if (menuSubItemVal.id < 0 && subsRawVal != null) {
                     Text(text = "分享文件", modifier = Modifier
                         .clickable {
@@ -252,16 +296,77 @@ fun useSubsManagePage(): ScaffoldExt {
                     Text(
                         text = subsNav.label,
                     )
+                },
+                actions = {
+                    var expanded by remember { mutableStateOf(false) }
+                    IconButton(onClick = {
+                        if (subsRefreshingFlow.value) {
+                            toast("正在刷新订阅,请稍后操作")
+                            return@IconButton
+                        }
+                        expanded = true
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = null,
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .wrapContentSize(Alignment.TopStart)
+                    ) {
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = null,
+                                    )
+                                },
+                                text = {
+                                    Text(text = "导入数据")
+                                },
+                                onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                                    expanded = false
+                                    val result =
+                                        launcher.launchForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                                            addCategory(Intent.CATEGORY_OPENABLE)
+                                            type = "application/zip"
+                                        })
+                                    val uri = result.data?.data
+                                    if (uri == null) {
+                                        toast("未选择文件")
+                                        return@launchAsFn
+                                    }
+                                    val string = readFileZipByteArray(
+                                        UriUtils.uri2Bytes(uri),
+                                        "${TransferData.TYPE}.json"
+                                    )
+                                    if (string != null) {
+                                        val transferData =
+                                            json.decodeFromString<TransferData>(string)
+                                        importTransferData(transferData)
+                                        toast("导入成功")
+                                    } else {
+                                        toast("导入文件无数据")
+                                    }
+                                },
+                            )
+                        }
+                    }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                if (!subsRefreshingFlow.value) {
-                    showAddLinkDialog = true
-                } else {
-                    toast("正在刷新订阅,请稍后添加")
+                if (subsRefreshingFlow.value) {
+                    toast("正在刷新订阅,请稍后操作")
+                    return@FloatingActionButton
                 }
+                showAddLinkDialog = true
             }) {
                 Icon(
                     imageVector = Icons.Filled.Add,

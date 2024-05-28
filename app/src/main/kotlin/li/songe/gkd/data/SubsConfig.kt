@@ -12,7 +12,9 @@ import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Entity(
     tableName = "subs_config",
 )
@@ -41,6 +43,9 @@ data class SubsConfig(
 
         @Insert(onConflict = OnConflictStrategy.REPLACE)
         suspend fun insert(vararg users: SubsConfig): List<Long>
+
+        @Insert(onConflict = OnConflictStrategy.IGNORE)
+        suspend fun insertOrIgnore(vararg users: SubsConfig): List<Long>
 
         @Delete
         suspend fun delete(vararg users: SubsConfig): Int
@@ -76,6 +81,10 @@ data class SubsConfig(
 
         @Query("SELECT * FROM subs_config WHERE type=${GlobalGroupType} AND subs_item_id=:subsItemId AND group_key=:groupKey")
         fun queryGlobalGroupTypeConfig(subsItemId: Long, groupKey: Int): Flow<List<SubsConfig>>
+
+        @Query("SELECT * FROM subs_config WHERE subs_item_id IN (:subsItemIds) ")
+        suspend fun querySubsItemConfig(subsItemIds: List<Long>): List<SubsConfig>
+
     }
 
 }
