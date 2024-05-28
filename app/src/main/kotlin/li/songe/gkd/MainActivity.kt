@@ -1,7 +1,10 @@
 package li.songe.gkd
 
+import android.app.Activity
 import android.app.ActivityManager
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.CompositionLocalProvider
@@ -99,6 +102,17 @@ class MainActivity : CompositionActivity({
 }
 
 val activityVisibleFlow = MutableStateFlow(0)
+
+fun Activity.navToMainActivity() {
+    val intent = this.intent?.cloneFilter()
+    if (intent != null) {
+        intent.component = ComponentName(this, MainActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        intent.putExtra("source", this::class.java.name)
+        startActivity(intent)
+    }
+    finish()
+}
 
 
 

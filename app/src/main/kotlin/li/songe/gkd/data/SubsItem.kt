@@ -11,10 +11,12 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.deleteSubscription
 import li.songe.gkd.util.isSafeUrl
 
+@Serializable
 @Entity(
     tableName = "subs_item",
 )
@@ -76,6 +78,9 @@ data class SubsItem(
 
         @Insert(onConflict = OnConflictStrategy.REPLACE)
         suspend fun insert(vararg users: SubsItem): List<Long>
+
+        @Insert(onConflict = OnConflictStrategy.IGNORE)
+        suspend fun insertOrIgnore(vararg users: SubsItem): List<Long>
 
         @Delete
         suspend fun delete(vararg users: SubsItem): Int

@@ -3,4 +3,5 @@
     <string name="app_name">GKD</string>
     <string name="ab_desc">基于高级选择器+订阅规则的屏幕自定义点击服务\n\n通过自定义选择器和订阅规则,能帮助你实现点击任意位置控件,自定义快捷操作等高级功能</string>
     <string name="capture_label">捕获快照</string>
+    <string name="import_desc">GKD-导入数据</string>
 </resources>

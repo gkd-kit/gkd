@@ -45,28 +45,41 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/SplashScreenTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
-            <!--
-            about android:configChanges
-            https://developer.android.com/guide/topics/resources/runtime-changes
-            https://developer.android.com/guide/topics/manifest/activity-element.html#config
-            -->
-
+        <activity
+            android:name="li.songe.gkd.OpenSchemeActivity"
+            android:exported="true"
+            android:theme="@style/TransparentTheme">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data
-                    android:host="import"
-                    android:scheme="gkd" />
-
+                <data android:scheme="gkd" />
             </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+        </activity>
+
+        <activity
+            android:name=".OpenFileActivity"
+            android:exported="true"
+            android:theme="@style/TransparentTheme">
+            <intent-filter android:label="@string/import_desc">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="content" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
             </intent-filter>
         </activity>
 
