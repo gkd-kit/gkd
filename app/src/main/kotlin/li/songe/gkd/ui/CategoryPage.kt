@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
@@ -92,7 +93,16 @@ fun CategoryPage(subsItemId: Long) {
                     contentDescription = null,
                 )
             }
-        }, title = { Text(text = "规则类别/${subsRaw?.name ?: subsItemId}") }, actions = {})
+        }, title = {
+            Column {
+                Text(
+                    text = subsRaw?.name ?: subsItemId.toString(),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(text = "规则类别", style = MaterialTheme.typography.bodyMedium)
+            }
+        }, actions = {})
     }, floatingActionButton = {
         if (editable) {
             FloatingActionButton(onClick = { showAddDlg = true }) {
@@ -260,14 +270,13 @@ fun CategoryPage(subsItemId: Long) {
                 vm.viewModelScope.launchTry(Dispatchers.IO) {
                     subsItem?.apply {
                         updateSubscription(
-                            subsRawVal.copy(categories = categories.toMutableList()
-                                .apply {
-                                    val i =
-                                        categories.indexOfFirst { c -> c.key == editNameCategory.key }
-                                    if (i >= 0) {
-                                        set(i, editNameCategory.copy(name = source))
-                                    }
-                                })
+                            subsRawVal.copy(categories = categories.toMutableList().apply {
+                                val i =
+                                    categories.indexOfFirst { c -> c.key == editNameCategory.key }
+                                if (i >= 0) {
+                                    set(i, editNameCategory.copy(name = source))
+                                }
+                            })
                         )
                         DbSet.subsItemDao.update(copy(mtime = System.currentTimeMillis()))
                     }
@@ -305,11 +314,10 @@ fun CategoryPage(subsItemId: Long) {
                 vm.viewModelScope.launchTry(Dispatchers.IO) {
                     subsItem?.apply {
                         updateSubscription(
-                            subsRawVal.copy(categories = categories.toMutableList()
-                                .apply {
-                                    add(RawSubscription.RawCategory(key = (categories.maxOfOrNull { c -> c.key }
-                                        ?: -1) + 1, name = source, enable = null))
-                                })
+                            subsRawVal.copy(categories = categories.toMutableList().apply {
+                                add(RawSubscription.RawCategory(key = (categories.maxOfOrNull { c -> c.key }
+                                    ?: -1) + 1, name = source, enable = null))
+                            })
                         )
                         DbSet.subsItemDao.update(copy(mtime = System.currentTimeMillis()))
                         toast("添加成功")
