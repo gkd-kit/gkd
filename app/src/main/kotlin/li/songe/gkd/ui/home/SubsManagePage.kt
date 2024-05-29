@@ -2,7 +2,6 @@ package li.songe.gkd.ui.home
 
 import android.content.Intent
 import android.webkit.URLUtil
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,21 +15,17 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -49,43 +44,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
-import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.UriUtils
-import com.blankj.utilcode.util.ZipUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
-import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.TransferData
-import li.songe.gkd.data.exportTransferData
 import li.songe.gkd.data.importTransferData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SubsItemCard
 import li.songe.gkd.ui.component.getDialogResult
-import li.songe.gkd.ui.destinations.CategoryPageDestination
-import li.songe.gkd.ui.destinations.GlobalRulePageDestination
-import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.util.LocalLauncher
-import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.checkSubsUpdate
-import li.songe.gkd.util.exportZipDir
 import li.songe.gkd.util.isSafeUrl
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.navigate
-import li.songe.gkd.util.openUri
 import li.songe.gkd.util.readFileZipByteArray
-import li.songe.gkd.util.shareFile
-import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.subsRefreshingFlow
@@ -99,8 +78,6 @@ val subsNav = BottomNavItem(
 
 @Composable
 fun useSubsManagePage(): ScaffoldExt {
-    val context = LocalContext.current
-    val navController = LocalNavController.current
     val launcher = LocalLauncher.current
 
     val vm = hiltViewModel<HomeVm>()
@@ -114,126 +91,11 @@ fun useSubsManagePage(): ScaffoldExt {
         orderSubItems = subItems
     }
 
-    var menuSubItem: SubsItem? by remember { mutableStateOf(null) }
-
     var showAddLinkDialog by remember { mutableStateOf(false) }
     var link by remember { mutableStateOf("") }
 
     val refreshing by subsRefreshingFlow.collectAsState()
     val pullRefreshState = rememberPullRefreshState(refreshing, { checkSubsUpdate(true) })
-
-    menuSubItem?.let { menuSubItemVal ->
-        Dialog(onDismissRequest = { menuSubItem = null }) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                val subsRawVal = subsIdToRaw[menuSubItemVal.id]
-                if (subsRawVal != null) {
-                    Text(text = "应用规则", modifier = Modifier
-                        .clickable {
-                            menuSubItem = null
-                            navController.navigate(SubsPageDestination(subsRawVal.id))
-                        }
-                        .fillMaxWidth()
-                        .padding(16.dp))
-                    HorizontalDivider()
-                    Text(text = "查看类别", modifier = Modifier
-                        .clickable {
-                            menuSubItem = null
-                            navController.navigate(CategoryPageDestination(subsRawVal.id))
-                        }
-                        .fillMaxWidth()
-                        .padding(16.dp))
-                    HorizontalDivider()
-                    Text(text = "全局规则", modifier = Modifier
-                        .clickable {
-                            menuSubItem = null
-                            navController.navigate(GlobalRulePageDestination(subsRawVal.id))
-                        }
-                        .fillMaxWidth()
-                        .padding(16.dp))
-                    HorizontalDivider()
-                }
-                Text(text = "导出数据", modifier = Modifier
-                    .clickable {
-                        menuSubItem = null
-                        vm.viewModelScope.launchTry(Dispatchers.IO) {
-                            val transferDataFile = exportZipDir.resolve("${TransferData.TYPE}.json")
-                            transferDataFile.writeText(
-                                json.encodeToString(
-                                    exportTransferData(
-                                        listOf(
-                                            menuSubItemVal.id
-                                        )
-                                    )
-                                )
-                            )
-                            val file =
-                                exportZipDir.resolve("backup-${System.currentTimeMillis()}.zip")
-                            ZipUtils.zipFiles(listOf(transferDataFile), file)
-                            transferDataFile.delete()
-                            context.shareFile(file, "分享数据文件")
-                        }
-                    }
-                    .fillMaxWidth()
-                    .padding(16.dp))
-                HorizontalDivider()
-                if (menuSubItemVal.id < 0 && subsRawVal != null) {
-                    Text(text = "分享文件", modifier = Modifier
-                        .clickable {
-                            menuSubItem = null
-                            vm.viewModelScope.launchTry {
-                                val subsFile = subsFolder.resolve("${menuSubItemVal.id}.json")
-                                context.shareFile(subsFile, "分享订阅文件")
-                            }
-                        }
-                        .fillMaxWidth()
-                        .padding(16.dp))
-                    HorizontalDivider()
-                }
-                if (menuSubItemVal.updateUrl != null) {
-                    Text(text = "复制链接", modifier = Modifier
-                        .clickable {
-                            menuSubItem = null
-                            ClipboardUtils.copyText(menuSubItemVal.updateUrl)
-                            toast("复制成功")
-                        }
-                        .fillMaxWidth()
-                        .padding(16.dp))
-                    HorizontalDivider()
-                }
-                if (subsRawVal?.supportUri != null) {
-                    Text(text = "问题反馈", modifier = Modifier
-                        .clickable {
-                            menuSubItem = null
-                            context.openUri(subsRawVal.supportUri)
-                        }
-                        .fillMaxWidth()
-                        .padding(16.dp))
-                    HorizontalDivider()
-                }
-                if (menuSubItemVal.id != -2L) {
-                    Text(text = "删除订阅", modifier = Modifier
-                        .clickable {
-                            menuSubItem = null
-                            vm.viewModelScope.launchTry {
-                                val result = getDialogResult(
-                                    "删除订阅",
-                                    "是否删除订阅 ${subsIdToRaw[menuSubItemVal.id]?.name} ?",
-                                )
-                                if (!result) return@launchTry
-                                menuSubItemVal.removeAssets()
-                            }
-                        }
-                        .fillMaxWidth()
-                        .padding(16.dp), color = MaterialTheme.colorScheme.error)
-                }
-            }
-        }
-    }
 
     LaunchedEffect(showAddLinkDialog) {
         if (!showAddLinkDialog) {
@@ -405,12 +267,7 @@ fun useSubsManagePage(): ScaffoldExt {
                         enabled = !refreshing,
                     ) {
                         val interactionSource = remember { MutableInteractionSource() }
-                        Card(
-                            onClick = {
-                                if (!refreshing) {
-                                    menuSubItem = subItem
-                                }
-                            },
+                        SubsItemCard(
                             modifier = Modifier
                                 .longPressDraggableHandle(
                                     enabled = !refreshing,
@@ -425,22 +282,18 @@ fun useSubsManagePage(): ScaffoldExt {
                                             }
                                         }
                                     },
-                                )
-                                .padding(vertical = 3.dp, horizontal = 8.dp),
-                            shape = RoundedCornerShape(8.dp),
+                                ),
                             interactionSource = interactionSource,
-                        ) {
-                            SubsItemCard(
-                                subsItem = subItem,
-                                rawSubscription = subsIdToRaw[subItem.id],
-                                index = index + 1,
-                                onCheckedChange = { checked ->
-                                    vm.viewModelScope.launch {
-                                        DbSet.subsItemDao.updateEnable(subItem.id, checked)
-                                    }
-                                },
-                            )
-                        }
+                            subsItem = subItem,
+                            subscription = subsIdToRaw[subItem.id],
+                            index = index + 1,
+                            vm = vm,
+                            onCheckedChange = { checked ->
+                                vm.viewModelScope.launch {
+                                    DbSet.subsItemDao.updateEnable(subItem.id, checked)
+                                }
+                            },
+                        )
                     }
                 }
                 item {
