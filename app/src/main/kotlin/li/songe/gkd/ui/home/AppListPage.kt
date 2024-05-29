@@ -69,6 +69,7 @@ import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.permission.checkOrRequestPermission
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.destinations.AppConfigPageDestination
+import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appRefreshingFlow
@@ -285,7 +286,7 @@ fun useAppListPage(): ScaffoldExt {
                                 navController.navigate(AppConfigPageDestination(appInfo.id))
                             }
                             .height(IntrinsicSize.Min)
-                            .padding(10.dp, 6.dp),
+                            .appItemPadding(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {

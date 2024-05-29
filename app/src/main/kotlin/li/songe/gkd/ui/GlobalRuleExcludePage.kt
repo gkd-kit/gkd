@@ -70,7 +70,7 @@ import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.service.launcherAppId
 import li.songe.gkd.ui.component.AppBarTextField
-import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SortTypeOption
@@ -247,7 +247,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                 Row(
                     modifier = Modifier
                         .height(IntrinsicSize.Min)
-                        .itemPadding(),
+                        .appItemPadding(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -314,29 +314,33 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
 
                     if (group != null) {
                         val checked = getChecked(excludeData, group, appInfo.id, appInfo)
-                        Switch(
-                            checked = checked ?: false,
-                            onCheckedChange = {
-                                if (checked == null) {
-                                    toast("内置禁用,不可修改")
-                                    return@Switch
-                                }
-                                vm.viewModelScope.launchTry {
-                                    val subsConfig = (vm.subsConfigFlow.value ?: SubsConfig(
-                                        type = SubsConfig.GlobalGroupType,
-                                        subsItemId = subsItemId,
-                                        groupKey = groupKey,
-                                    )).copy(
-                                        exclude = excludeData.copy(
-                                            appIds = excludeData.appIds.toMutableMap().apply {
-                                                set(appInfo.id, !it)
-                                            })
-                                            .stringify()
-                                    )
-                                    DbSet.subsConfigDao.insert(subsConfig)
-                                }
-                            },
-                        )
+                        if (checked != null) {
+                            Switch(
+                                checked = checked,
+                                onCheckedChange = {
+                                    vm.viewModelScope.launchTry {
+                                        val subsConfig = (vm.subsConfigFlow.value ?: SubsConfig(
+                                            type = SubsConfig.GlobalGroupType,
+                                            subsItemId = subsItemId,
+                                            groupKey = groupKey,
+                                        )).copy(
+                                            exclude = excludeData.copy(
+                                                appIds = excludeData.appIds.toMutableMap().apply {
+                                                    set(appInfo.id, !it)
+                                                })
+                                                .stringify()
+                                        )
+                                        DbSet.subsConfigDao.insert(subsConfig)
+                                    }
+                                },
+                            )
+                        } else {
+                            Switch(
+                                enabled = false,
+                                checked = false,
+                                onCheckedChange = {},
+                            )
+                        }
                     }
                 }
             }

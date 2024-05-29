@@ -40,6 +40,7 @@ import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
+import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.util.encodeToJson5String
 import li.songe.gkd.util.json
 import li.songe.gkd.util.toast
@@ -63,7 +64,7 @@ fun SubsAppCard(
                 onClick?.invoke()
             }
             .height(IntrinsicSize.Min)
-            .padding(10.dp, 6.dp),
+            .appItemPadding(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
