@@ -64,7 +64,6 @@ import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
-import li.songe.gkd.util.toast
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
@@ -171,13 +170,9 @@ fun AppConfigPage(appId: String) {
                     ExcludeData.parse(g.config?.exclude)
                 }
                 val checked = getChecked(excludeData, g.group, appId, appInfo)
-                AppGroupCard(g.group, checked ?: false, onClick = {
+                AppGroupCard(g.group, checked, onClick = {
                     navController.navigate(GlobalRulePageDestination(g.subsItem.id, g.group.key))
                 }) { newChecked ->
-                    if (checked == null) {
-                        toast("内置禁用,不可修改")
-                        return@AppGroupCard
-                    }
                     vm.viewModelScope.launchTry {
                         DbSet.subsConfigDao.insert(
                             (g.config ?: SubsConfig(
@@ -243,7 +238,7 @@ fun AppConfigPage(appId: String) {
 @Composable
 private fun AppGroupCard(
     group: RawSubscription.RawGroupProps,
-    enable: Boolean,
+    checked: Boolean?,
     onClick: () -> Unit,
     onCheckedChange: ((Boolean) -> Unit)?,
 ) {
@@ -297,6 +292,14 @@ private fun AppGroupCard(
             }
         }
         Spacer(modifier = Modifier.width(10.dp))
-        Switch(checked = enable, modifier = Modifier, onCheckedChange = onCheckedChange)
+        if (checked != null) {
+            Switch(checked = checked, onCheckedChange = onCheckedChange)
+        } else {
+            Switch(
+                checked = false,
+                enabled = false,
+                onCheckedChange = onCheckedChange
+            )
+        }
     }
 }
