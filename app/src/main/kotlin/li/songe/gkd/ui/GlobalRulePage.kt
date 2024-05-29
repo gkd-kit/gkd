@@ -116,7 +116,14 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                     )
                 }
             }, title = {
-                Text(text = "全局规则/${rawSubs?.name ?: subsItemId}")
+                Column {
+                    Text(
+                        text = rawSubs?.name ?: subsItemId.toString(),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(text = "全局规则", style = MaterialTheme.typography.bodyMedium)
+                }
             })
         },
         floatingActionButton = {

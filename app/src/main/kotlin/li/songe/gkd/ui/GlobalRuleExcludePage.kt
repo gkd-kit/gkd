@@ -129,12 +129,19 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                     modifier = Modifier.focusRequester(focusRequester)
                 )
             } else {
-                Text(
-                    text = "${rawSubs?.name ?: subsItemId}/${group?.name ?: groupKey}",
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Column {
+                    Text(
+                        text = rawSubs?.name ?: subsItemId.toString(),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = (group?.name ?: groupKey.toString()),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
         }, actions = {
             if (showSearchBar) {

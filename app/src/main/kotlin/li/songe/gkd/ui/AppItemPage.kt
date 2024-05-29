@@ -129,17 +129,19 @@ fun AppItemPage(
                 )
             }
         }, title = {
-            val text = if (subsRaw == null) {
-                "订阅文件缺失"
-            } else {
-                "${appInfoCache[appId]?.name ?: appRaw.name ?: appId}/${subsRaw.name}"
+            Column {
+                Text(
+                    text = subsRaw?.name ?: subsItemId.toString(),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = appInfoCache[appId]?.name ?: appRaw.name ?: appId,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
             }
-            Text(
-                text = text,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis,
-            )
         }, actions = {})
     }, floatingActionButton = {
         if (editable) {
