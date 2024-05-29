@@ -5,3 +5,5 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 fun Modifier.itemPadding() = this then padding(16.dp, 12.dp)
+
+fun Modifier.appItemPadding() = this then padding(10.dp, 8.dp)
