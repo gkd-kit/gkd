@@ -19,7 +19,11 @@ import com.blankj.utilcode.util.UriUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import li.songe.gkd.MainActivity
+import li.songe.gkd.OpenFileActivity
+import li.songe.gkd.OpenSchemeActivity
 import li.songe.gkd.data.TransferData
 import li.songe.gkd.data.importTransferData
 import li.songe.gkd.util.ProfileTransitions
@@ -54,27 +58,35 @@ fun HomePage() {
 
     val intent = context.intent
     LaunchedEffect(key1 = intent, block = {
-        if (intent != null) {
-            context.intent = null
-            LogUtils.d(intent)
-            val uri = intent.data
-            if (uri != null && intent.scheme == "content" && (intent.type == "application/zip" || intent.type == "application/x-zip-compressed")) {
-                vm.viewModelScope.launchTry(Dispatchers.IO) {
-                    val string = readFileZipByteArray(
-                        UriUtils.uri2Bytes(uri),
-                        "${TransferData.TYPE}.json"
-                    )
-                    if (string != null) {
-                        val transferData = json.decodeFromString<TransferData>(string)
-                        importTransferData(transferData)
-                        toast("导入成功")
-                        vm.tabFlow.value = subsPage.navItem
-                        checkSubsUpdate(true)
-                    } else {
-                        toast("导入文件无数据")
+        intent ?: return@LaunchedEffect
+        context.intent = null
+        LogUtils.d(intent)
+        val uri = intent.data ?: return@LaunchedEffect
+        val source = intent.getStringExtra("source")
+        if (source == OpenFileActivity::class.qualifiedName) {
+            vm.viewModelScope.launchTry(Dispatchers.IO) {
+                toast("加载导入...")
+                vm.tabFlow.value = subsPage.navItem
+                val string = readFileZipByteArray(
+                    UriUtils.uri2Bytes(uri),
+                    "${TransferData.TYPE}.json"
+                )
+                if (string != null) {
+                    val transferData = withContext(Dispatchers.Default) {
+                        json.decodeFromString<TransferData>(string)
                     }
+                    val hasNewSubsItem = importTransferData(transferData)
+                    toast("导入成功")
+                    if (hasNewSubsItem) {
+                        delay(1000)
+                        checkSubsUpdate(true)
+                    }
+                } else {
+                    toast("导入失败")
                 }
             }
+        } else if (source == OpenSchemeActivity::class.qualifiedName) {
+            LogUtils.d(uri)
         }
     })
 
@@ -86,7 +98,7 @@ fun HomePage() {
             NavigationBar {
                 pages.forEach { page ->
                     NavigationBarItem(
-                        selected = tab == page.navItem,
+                        selected = tab.label == page.navItem.label,
                         modifier = Modifier,
                         onClick = {
                             vm.tabFlow.value = page.navItem
@@ -99,7 +111,8 @@ fun HomePage() {
                         },
                         label = {
                             Text(text = page.navItem.label)
-                        })
+                        }
+                    )
                 }
             }
         },
