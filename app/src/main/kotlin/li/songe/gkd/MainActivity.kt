@@ -108,7 +108,7 @@ fun Activity.navToMainActivity() {
     if (intent != null) {
         intent.component = ComponentName(this, MainActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        intent.putExtra("source", this::class.java.name)
+        intent.putExtra("source", this::class.qualifiedName)
         startActivity(intent)
     }
     finish()

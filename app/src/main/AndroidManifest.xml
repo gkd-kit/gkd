@@ -54,7 +54,7 @@
         </activity>
 
         <activity
-            android:name="li.songe.gkd.OpenSchemeActivity"
+            android:name=".OpenSchemeActivity"
             android:exported="true"
             android:theme="@style/TransparentTheme">
             <intent-filter>

@@ -30,13 +30,16 @@ suspend fun exportTransferData(subsItemIds: List<Long>): TransferData {
     )
 }
 
-suspend fun importTransferData(transferData: TransferData) {
+suspend fun importTransferData(transferData: TransferData): Boolean {
     // TODO transaction
     val localIds = arrayOf(-1L, -2L)
     val maxOrder = (subsItemsFlow.value.maxOfOrNull { it.order } ?: -1) + 1
-    val subsItems = transferData.subsItems.mapIndexed { i, s ->
-        s.copy(order = maxOrder + i)
-    }
+    val subsItems = transferData.subsItems.filter { s -> s.id >= 0 || localIds.contains(s.id) }
+        .mapIndexed { i, s ->
+            s.copy(order = maxOrder + i)
+        }
+    val hasNewSubsItem =
+        subsItems.any { newSubs -> newSubs.id >= 0 && subsItemsFlow.value.all { oldSubs -> oldSubs.id != newSubs.id } }
     DbSet.subsItemDao.insertOrIgnore(*subsItems.toTypedArray())
     DbSet.subsConfigDao.insertOrIgnore(*transferData.subsConfigs.toTypedArray())
     DbSet.categoryConfigDao.insertOrIgnore(*transferData.categoryConfigs.toTypedArray())
@@ -45,4 +48,5 @@ suspend fun importTransferData(transferData: TransferData) {
             updateSubscription(subscription)
         }
     }
+    return hasNewSubsItem
 }
