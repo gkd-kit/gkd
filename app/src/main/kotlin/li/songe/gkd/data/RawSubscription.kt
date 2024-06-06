@@ -814,9 +814,8 @@ data class RawSubscription(
             return subscription
         }
 
-        fun parseRawApp(source: String, json5: Boolean = true): RawApp {
-            val text = if (json5) json5ToJson(source) else source
-            val a = jsonToAppRaw(json.parseToJsonElement(text).jsonObject, 0)
+        fun parseApp(jsonObject: JsonObject): RawApp {
+            val a = jsonToAppRaw(jsonObject, 0)
             a.groups.findDuplicatedItem { v -> v.key }?.let { v ->
                 error("duplicated app group: key=${v.key}")
             }
@@ -828,13 +827,22 @@ data class RawSubscription(
             return a
         }
 
-        fun parseRawGroup(source: String, json5: Boolean = true): RawAppGroup {
+        fun parseRawApp(source: String, json5: Boolean = true): RawApp {
             val text = if (json5) json5ToJson(source) else source
-            val g = jsonToGroupRaw(json.parseToJsonElement(text).jsonObject, 0)
+            return parseApp(json.parseToJsonElement(text).jsonObject)
+        }
+
+        fun parseGroup(jsonObject: JsonObject): RawAppGroup {
+            val g = jsonToGroupRaw(jsonObject, 0)
             g.rules.findDuplicatedItem { v -> v.key }?.let { v ->
                 error("duplicated app rule: key=${v.key}")
             }
             return g
+        }
+
+        fun parseRawGroup(source: String, json5: Boolean = true): RawAppGroup {
+            val text = if (json5) json5ToJson(source) else source
+            return parseGroup(json.parseToJsonElement(text).jsonObject)
         }
 
         fun parseRawGlobalGroup(source: String, json5: Boolean = true): RawGlobalGroup {
