@@ -114,6 +114,7 @@ android {
             applicationIdSuffix = ".debug"
             resValue("string", "app_name", "GKD-debug")
             resValue("string", "capture_label", "捕获快照-debug")
+            resValue("string", "import_desc", "GKD-debug-导入数据")
         }
     }
     compileOptions {

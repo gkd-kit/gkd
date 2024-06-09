@@ -2,6 +2,7 @@ package li.songe.gkd.ui.home
 
 import android.content.Intent
 import android.webkit.URLUtil
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +19,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -44,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -54,10 +59,14 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import li.songe.gkd.data.TransferData
+import li.songe.gkd.data.Value
+import li.songe.gkd.data.deleteSubscription
 import li.songe.gkd.data.importTransferData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SubsItemCard
 import li.songe.gkd.ui.component.getDialogResult
+import li.songe.gkd.ui.component.shareSubs
+import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalLauncher
 import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.isSafeUrl
@@ -79,6 +88,7 @@ val subsNav = BottomNavItem(
 @Composable
 fun useSubsManagePage(): ScaffoldExt {
     val launcher = LocalLauncher.current
+    val context = LocalContext.current
 
     val vm = hiltViewModel<HomeVm>()
     val subItems by subsItemsFlow.collectAsState()
@@ -96,6 +106,24 @@ fun useSubsManagePage(): ScaffoldExt {
 
     val refreshing by subsRefreshingFlow.collectAsState()
     val pullRefreshState = rememberPullRefreshState(refreshing, { checkSubsUpdate(true) })
+    var isSelectedMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
+    val draggedFlag = remember { Value(false) }
+    LaunchedEffect(key1 = isSelectedMode) {
+        if (!isSelectedMode && selectedIds.isNotEmpty()) {
+            selectedIds = emptySet()
+        }
+    }
+    if (isSelectedMode) {
+        BackHandler {
+            isSelectedMode = false
+        }
+    }
+    LaunchedEffect(key1 = subItems.size) {
+        if (subItems.size <= 1) {
+            isSelectedMode = false
+        }
+    }
 
     LaunchedEffect(showAddLinkDialog) {
         if (!showAddLinkDialog) {
@@ -119,53 +147,92 @@ fun useSubsManagePage(): ScaffoldExt {
                 isError = link.isNotEmpty() && !URLUtil.isNetworkUrl(link),
             )
         }, onDismissRequest = { showAddLinkDialog = false }, confirmButton = {
-            TextButton(
-                enabled = link.isNotBlank(),
-                onClick = {
-                    if (!URLUtil.isNetworkUrl(link)) {
-                        toast("非法链接")
-                        return@TextButton
+            TextButton(enabled = link.isNotBlank(), onClick = {
+                if (!URLUtil.isNetworkUrl(link)) {
+                    toast("非法链接")
+                    return@TextButton
+                }
+                if (subItems.any { s -> s.updateUrl == link }) {
+                    toast("链接已存在")
+                    return@TextButton
+                }
+                vm.viewModelScope.launchTry {
+                    if (!isSafeUrl(link)) {
+                        val result = getDialogResult(
+                            "未知来源",
+                            "你正在添加一个未验证的远程订阅\n\n这可能含有恶意的规则\n\n是否仍然确认添加?"
+                        )
+                        if (!result) return@launchTry
                     }
-                    if (subItems.any { s -> s.updateUrl == link }) {
-                        toast("链接已存在")
-                        return@TextButton
-                    }
-                    vm.viewModelScope.launchTry {
-                        if (!isSafeUrl(link)) {
-                            val result = getDialogResult(
-                                "未知来源",
-                                "你正在添加一个未验证的远程订阅\n\n这可能含有恶意的规则\n\n是否仍然确认添加?"
-                            )
-                            if (!result) return@launchTry
-                        }
-                        showAddLinkDialog = false
-                        vm.addSubsFromUrl(url = link)
-                    }
-                }) {
+                    showAddLinkDialog = false
+                    vm.addSubsFromUrl(url = link)
+                }
+            }) {
                 Text(text = "添加")
             }
         })
     }
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     return ScaffoldExt(
         navItem = subsNav,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                scrollBehavior = scrollBehavior,
-                title = {
+            TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
+                if (isSelectedMode) {
+                    IconButton(onClick = { isSelectedMode = false }) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = null,
+                        )
+                    }
+                }
+            }, title = {
+                if (isSelectedMode) {
+                    Text(
+                        text = if (selectedIds.isNotEmpty()) selectedIds.size.toString() else "",
+                    )
+                } else {
                     Text(
                         text = subsNav.label,
                     )
-                },
-                actions = {
-                    var expanded by remember { mutableStateOf(false) }
-                    IconButton(onClick = {
-                        if (subsRefreshingFlow.value) {
-                            toast("正在刷新订阅,请稍后操作")
-                            return@IconButton
+                }
+            }, actions = {
+                var expanded by remember { mutableStateOf(false) }
+                if (isSelectedMode) {
+                    val canDeleteIds = if (selectedIds.contains(LOCAL_SUBS_ID)) {
+                        selectedIds - LOCAL_SUBS_ID
+                    } else {
+                        selectedIds
+                    }
+                    if (canDeleteIds.isNotEmpty()) {
+                        IconButton(onClick = vm.viewModelScope.launchAsFn {
+                            val result = getDialogResult(
+                                "删除订阅",
+                                "是否删除所选 ${canDeleteIds.size} 个订阅?\n\n注: 不包含本地订阅",
+                            )
+                            if (!result) return@launchAsFn
+                            deleteSubscription(*canDeleteIds.toLongArray())
+                            selectedIds = selectedIds - canDeleteIds
+                            if (selectedIds.size == canDeleteIds.size) {
+                                isSelectedMode = false
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Outlined.Delete,
+                                contentDescription = null,
+                            )
                         }
+                    }
+                    IconButton(onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                        context.shareSubs(*selectedIds.toLongArray())
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = null,
+                        )
+                    }
+                    IconButton(onClick = {
                         expanded = true
                     }) {
                         Icon(
@@ -173,14 +240,49 @@ fun useSubsManagePage(): ScaffoldExt {
                             contentDescription = null,
                         )
                     }
-                    Box(
-                        modifier = Modifier
-                            .wrapContentSize(Alignment.TopStart)
-                    ) {
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
+                } else {
+                    IconButton(onClick = {
+                        if (subsRefreshingFlow.value) {
+                            toast("正在刷新订阅,请稍后操作")
+                        } else {
+                            expanded = true
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = null,
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier.wrapContentSize(Alignment.TopStart)
+                ) {
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        if (isSelectedMode) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(text = "全选")
+                                },
+                                onClick = {
+                                    expanded = false
+                                    selectedIds = subItems.map { it.id }.toSet()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(text = "反选")
+                                },
+                                onClick = {
+                                    expanded = false
+                                    val newSelectedIds =
+                                        subItems.map { it.id }.toSet() - selectedIds
+                                    if (newSelectedIds.isEmpty()) {
+                                        isSelectedMode = false
+                                    }
+                                    selectedIds = newSelectedIds
+                                }
+                            )
+                        } else {
                             DropdownMenuItem(
                                 leadingIcon = {
                                     Icon(
@@ -204,8 +306,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                         return@launchAsFn
                                     }
                                     val string = readFileZipByteArray(
-                                        UriUtils.uri2Bytes(uri),
-                                        "${TransferData.TYPE}.json"
+                                        UriUtils.uri2Bytes(uri), "${TransferData.TYPE}.json"
                                     )
                                     if (string != null) {
                                         val transferData =
@@ -220,20 +321,22 @@ fun useSubsManagePage(): ScaffoldExt {
                         }
                     }
                 }
-            )
+            })
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                if (subsRefreshingFlow.value) {
-                    toast("正在刷新订阅,请稍后操作")
-                    return@FloatingActionButton
+            if (!isSelectedMode) {
+                FloatingActionButton(onClick = {
+                    if (subsRefreshingFlow.value) {
+                        toast("正在刷新订阅,请稍后操作")
+                        return@FloatingActionButton
+                    }
+                    showAddLinkDialog = true
+                }) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "info",
+                    )
                 }
-                showAddLinkDialog = true
-            }) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "info",
-                )
             }
         },
     ) { padding ->
@@ -248,6 +351,7 @@ fun useSubsManagePage(): ScaffoldExt {
                         }
                     }
                 }.toImmutableList()
+                draggedFlag.value = true
             }
         Box(
             modifier = Modifier
@@ -261,36 +365,62 @@ fun useSubsManagePage(): ScaffoldExt {
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 itemsIndexed(orderSubItems, { _, subItem -> subItem.id }) { index, subItem ->
+                    val canDrag = !refreshing && orderSubItems.size > 1
                     ReorderableItem(
                         reorderableLazyColumnState,
                         key = subItem.id,
-                        enabled = !refreshing,
+                        enabled = canDrag,
                     ) {
                         val interactionSource = remember { MutableInteractionSource() }
                         SubsItemCard(
-                            modifier = Modifier
-                                .longPressDraggableHandle(
-                                    enabled = !refreshing,
-                                    interactionSource = interactionSource,
-                                    onDragStopped = {
-                                        val changeItems = orderSubItems.filter { newItem ->
-                                            subItems.find { oldItem -> oldItem.id == newItem.id }?.order != newItem.order
+                            modifier = Modifier.longPressDraggableHandle(
+                                enabled = canDrag,
+                                interactionSource = interactionSource,
+                                onDragStarted = {
+                                    if (orderSubItems.size > 1 && !isSelectedMode) {
+                                        isSelectedMode = true
+                                        selectedIds = setOf(subItem.id)
+                                    }
+                                },
+                                onDragStopped = {
+                                    if (draggedFlag.value) {
+                                        draggedFlag.value = false
+                                        isSelectedMode = false
+                                        selectedIds = emptySet()
+                                    }
+                                    val changeItems = orderSubItems.filter { newItem ->
+                                        subItems.find { oldItem -> oldItem.id == newItem.id }?.order != newItem.order
+                                    }
+                                    if (changeItems.isNotEmpty()) {
+                                        vm.viewModelScope.launchTry {
+                                            DbSet.subsItemDao.batchUpdateOrder(changeItems)
                                         }
-                                        if (changeItems.isNotEmpty()) {
-                                            vm.viewModelScope.launchTry {
-                                                DbSet.subsItemDao.batchUpdateOrder(changeItems)
-                                            }
-                                        }
-                                    },
-                                ),
+                                    }
+                                },
+                            ),
                             interactionSource = interactionSource,
                             subsItem = subItem,
                             subscription = subsIdToRaw[subItem.id],
                             index = index + 1,
                             vm = vm,
+                            isSelectedMode = isSelectedMode,
+                            isSelected = selectedIds.contains(subItem.id),
                             onCheckedChange = { checked ->
                                 vm.viewModelScope.launch {
                                     DbSet.subsItemDao.updateEnable(subItem.id, checked)
+                                }
+                            },
+                            onSelectedChange = {
+                                val newSelectedIds = if (selectedIds.contains(subItem.id)) {
+                                    selectedIds.toMutableSet().apply {
+                                        remove(subItem.id)
+                                    }
+                                } else {
+                                    selectedIds + subItem.id
+                                }
+                                selectedIds = newSelectedIds
+                                if (newSelectedIds.isEmpty()) {
+                                    isSelectedMode = false
                                 }
                             },
                         )

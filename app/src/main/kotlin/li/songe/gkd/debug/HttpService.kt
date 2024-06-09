@@ -35,12 +35,14 @@ import li.songe.gkd.data.GkdAction
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubsItem
+import li.songe.gkd.data.deleteSubscription
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt.captureSnapshot
 import li.songe.gkd.notif.createNotif
 import li.songe.gkd.notif.httpChannel
 import li.songe.gkd.notif.httpNotif
 import li.songe.gkd.service.GkdAbService
+import li.songe.gkd.util.LOCAL_HTTP_SUBS_ID
 import li.songe.gkd.util.SERVER_SCRIPT_URL
 import li.songe.gkd.util.getIpAddressInLocalNetwork
 import li.songe.gkd.util.keepNullJson
@@ -58,7 +60,7 @@ class HttpService : CompositionService({
     val scope = CoroutineScope(Dispatchers.IO)
 
     val httpSubsItem = SubsItem(
-        id = -1L,
+        id = LOCAL_HTTP_SUBS_ID,
         order = -1,
         enableUpdate = false,
     )
@@ -101,7 +103,7 @@ class HttpService : CompositionService({
                         val subscription =
                             RawSubscription.parse(call.receiveText(), json5 = false)
                                 .copy(
-                                    id = -1,
+                                    id = LOCAL_HTTP_SUBS_ID,
                                     name = "内存订阅",
                                     version = 0,
                                     author = "@gkd-kit/inspect"
@@ -155,7 +157,7 @@ class HttpService : CompositionService({
         scope.launchTry(Dispatchers.IO) {
             server?.stop()
             if (storeFlow.value.autoClearMemorySubs) {
-                httpSubsItem.removeAssets()
+                deleteSubscription(LOCAL_HTTP_SUBS_ID)
             }
             delay(3000)
             scope.cancel()
@@ -194,11 +196,7 @@ fun clearHttpSubs() {
     appScope.launchTry(Dispatchers.IO) {
         delay(1000)
         if (storeFlow.value.autoClearMemorySubs) {
-            SubsItem(
-                id = -1L,
-                order = -1,
-                enableUpdate = false,
-            ).removeAssets()
+            deleteSubscription(LOCAL_HTTP_SUBS_ID)
         }
     }
 }

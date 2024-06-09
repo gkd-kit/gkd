@@ -53,6 +53,9 @@ data class SubsConfig(
         @Query("DELETE FROM subs_config WHERE subs_item_id=:subsItemId")
         suspend fun delete(subsItemId: Long): Int
 
+        @Query("DELETE FROM subs_config WHERE subs_item_id IN (:subsIds)")
+        suspend fun deleteBySubsId(vararg subsIds: Long): Int
+
         @Query("DELETE FROM subs_config WHERE subs_item_id=:subsItemId AND app_id=:appId")
         suspend fun delete(subsItemId: Long, appId: String): Int
 
