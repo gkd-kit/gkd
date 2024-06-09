@@ -10,11 +10,16 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
+import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
+import li.songe.gkd.appScope
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.util.deleteSubscription
 import li.songe.gkd.util.isSafeUrl
+import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.subsFolder
+import li.songe.gkd.util.subsIdToRawFlow
 
 @Serializable
 @Entity(
@@ -48,14 +53,6 @@ data class SubsItem(
         } else {
             "未知来源"
         }
-    }
-
-    suspend fun removeAssets() {
-        deleteSubscription(id)
-        DbSet.subsItemDao.delete(this)
-        DbSet.subsConfigDao.delete(id)
-        DbSet.clickLogDao.deleteBySubsId(id)
-        DbSet.categoryConfigDao.deleteBySubsItemId(id)
     }
 
     @Dao
@@ -94,8 +91,28 @@ data class SubsItem(
         @Query("SELECT * FROM subs_item ORDER BY `order`")
         fun queryAll(): List<SubsItem>
 
-        @Query("SELECT * FROM subs_item WHERE id=:id")
-        fun queryById(id: Long): Flow<SubsItem?>
+        @Query("DELETE FROM subs_item WHERE id IN (:ids)")
+        suspend fun deleteById(vararg ids: Long)
     }
 
+}
+
+
+fun deleteSubscription(vararg subsIds: Long) {
+    appScope.launchTry(Dispatchers.IO) {
+        DbSet.subsItemDao.deleteById(*subsIds)
+        DbSet.subsConfigDao.deleteBySubsId(*subsIds)
+        DbSet.clickLogDao.deleteBySubsId(*subsIds)
+        DbSet.categoryConfigDao.deleteBySubsId(*subsIds)
+        val newMap = subsIdToRawFlow.value.toMutableMap()
+        subsIds.forEach { id ->
+            newMap.remove(id)
+            subsFolder.resolve("$id.json").apply {
+                if (exists()) {
+                    delete()
+                }
+            }
+        }
+        subsIdToRawFlow.value = newMap.toImmutableMap()
+    }
 }

@@ -58,6 +58,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.RuleSortOption
@@ -150,7 +151,7 @@ fun AppConfigPage(appId: String) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    navController.navigate(AppItemPageDestination(-2, appId))
+                    navController.navigate(AppItemPageDestination(LOCAL_SUBS_ID, appId))
                 },
                 content = {
                     Icon(

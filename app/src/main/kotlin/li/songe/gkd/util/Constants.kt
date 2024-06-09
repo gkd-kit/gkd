@@ -39,3 +39,7 @@ fun isSafeUrl(url: String): Boolean {
     if (!URLUtil.isHttpsUrl(url)) return false
     return safeRemoteBaseUrls.any { u -> url.startsWith(u) }
 }
+
+const val LOCAL_SUBS_ID = -2L
+const val LOCAL_HTTP_SUBS_ID = -1L
+val LOCAL_SUBS_IDS = arrayOf(LOCAL_SUBS_ID, LOCAL_HTTP_SUBS_ID)

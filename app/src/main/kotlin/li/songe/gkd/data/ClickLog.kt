@@ -58,8 +58,8 @@ data class ClickLog(
         suspend fun delete(vararg objects: ClickLog): Int
 
 
-        @Query("DELETE FROM click_log WHERE subs_id=:subsItemId")
-        suspend fun deleteBySubsId(subsItemId: Long): Int
+        @Query("DELETE FROM click_log WHERE subs_id IN (:subsIds)")
+        suspend fun deleteBySubsId(vararg subsIds: Long): Int
 
         @Query("DELETE FROM click_log")
         suspend fun deleteAll()

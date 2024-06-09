@@ -13,6 +13,7 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.permission.authReasonFlow
+import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.clearCache
 import li.songe.gkd.util.launchTry
@@ -24,7 +25,7 @@ class MainViewModel : ViewModel() {
     init {
 
         val localSubsItem = SubsItem(
-            id = -2, order = -2, mtime = System.currentTimeMillis()
+            id = LOCAL_SUBS_ID, order = -2, mtime = System.currentTimeMillis()
         )
         viewModelScope.launchTry(Dispatchers.IO) {
             val subsItems = DbSet.subsItemDao.queryAll()

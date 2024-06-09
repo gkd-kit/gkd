@@ -1,6 +1,8 @@
 package li.songe.gkd.ui.component
 
+import android.content.Context
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.LocalContentColor
@@ -36,10 +39,12 @@ import kotlinx.serialization.encodeToString
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.TransferData
+import li.songe.gkd.data.deleteSubscription
 import li.songe.gkd.data.exportTransferData
 import li.songe.gkd.ui.destinations.CategoryPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.destinations.SubsPageDestination
+import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.exportZipDir
 import li.songe.gkd.util.formatTimeAgo
@@ -63,7 +68,10 @@ fun SubsItemCard(
     subscription: RawSubscription?,
     index: Int,
     vm: ViewModel,
+    isSelectedMode: Boolean,
+    isSelected: Boolean,
     onCheckedChange: ((Boolean) -> Unit)? = null,
+    onSelectedChange: (() -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val subsLoadError by remember(subsItem.id) {
@@ -74,15 +82,28 @@ fun SubsItemCard(
     }.collectAsState()
     val subsRefreshing by subsRefreshingFlow.collectAsState()
     var expanded by remember { mutableStateOf(false) }
-    Card(
-        onClick = {
-            if (!subsRefreshingFlow.value) {
+    val dragged by interactionSource.collectIsDraggedAsState()
+    val onClick = {
+        if (!dragged) {
+            if (isSelectedMode) {
+                onSelectedChange?.invoke()
+            } else if (!subsRefreshingFlow.value) {
                 expanded = true
             }
-        },
+        }
+    }
+    Card(
+        onClick = onClick,
         modifier = modifier.padding(16.dp, 2.dp),
         shape = MaterialTheme.shapes.small,
         interactionSource = interactionSource,
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                Color.Unspecified
+            }
+        ),
     ) {
         SubsMenuItem(
             expanded = expanded,
@@ -165,7 +186,8 @@ fun SubsItemCard(
             Spacer(modifier = Modifier.width(10.dp))
             Switch(
                 checked = subsItem.enable,
-                onCheckedChange = onCheckedChange,
+                enabled = !isSelectedMode,
+                onCheckedChange = if (isSelectedMode) null else onCheckedChange,
             )
         }
     }
@@ -222,28 +244,12 @@ private fun SubsMenuItem(
         }
         DropdownMenuItem(
             text = {
-                Text(text = "导出数据")
+                Text(text = "分享数据")
             },
             onClick = {
                 onExpandedChange(false)
                 vm.viewModelScope.launchTry(Dispatchers.IO) {
-                    val transferDataFile = exportZipDir.resolve("${TransferData.TYPE}.json")
-                    transferDataFile.writeText(
-                        json.encodeToString(
-                            exportTransferData(
-                                listOf(
-                                    subItem.id
-                                )
-                            )
-                        )
-                    )
-                    val file = exportZipDir.resolve("backup-${subItem.id}.zip")
-                    if (file.exists()) {
-                        file.delete()
-                    }
-                    ZipUtils.zipFiles(listOf(transferDataFile), file)
-                    transferDataFile.delete()
-                    context.shareFile(file, "分享数据文件")
+                    context.shareSubs(subItem.id)
                 }
             }
         )
@@ -270,7 +276,7 @@ private fun SubsMenuItem(
                 }
             )
         }
-        if (subItem.id != -2L) {
+        if (subItem.id != LOCAL_SUBS_ID) {
             DropdownMenuItem(
                 text = {
                     Text(text = "删除订阅", color = MaterialTheme.colorScheme.error)
@@ -283,10 +289,21 @@ private fun SubsMenuItem(
                             "是否删除订阅 ${subscription?.name ?: subItem.id} ?",
                         )
                         if (!result) return@launchTry
-                        subItem.removeAssets()
+                        deleteSubscription(subItem.id)
                     }
                 }
             )
         }
     }
+}
+
+suspend fun Context.shareSubs(vararg subsIds: Long) {
+    val transferDataFile = exportZipDir.resolve("${TransferData.TYPE}.json")
+    transferDataFile.writeText(
+        json.encodeToString(exportTransferData(subsIds.toList()))
+    )
+    val file = exportZipDir.resolve("backup-${System.currentTimeMillis()}.zip")
+    ZipUtils.zipFiles(listOf(transferDataFile), file)
+    transferDataFile.delete()
+    this.shareFile(file, "分享数据文件")
 }
