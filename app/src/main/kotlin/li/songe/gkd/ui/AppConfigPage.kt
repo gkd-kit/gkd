@@ -58,6 +58,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
@@ -124,20 +125,24 @@ fun AppConfigPage(appId: String) {
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                     ) {
+                        Text(
+                            text = "排序",
+                            modifier = Modifier.menuPadding(),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
                         RuleSortOption.allSubObject.forEach { s ->
                             DropdownMenuItem(
                                 text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        RadioButton(
-                                            selected = ruleSortType == s,
-                                            onClick = {
-                                                vm.ruleSortTypeFlow.update { s }
-                                            }
-                                        )
-                                        Text(s.label)
-                                    }
+                                    Text(s.label)
+                                },
+                                trailingIcon = {
+                                    RadioButton(
+                                        selected = ruleSortType == s,
+                                        onClick = {
+                                            vm.ruleSortTypeFlow.update { s }
+                                        }
+                                    )
                                 },
                                 onClick = {
                                     vm.ruleSortTypeFlow.update { s }
@@ -171,9 +176,18 @@ fun AppConfigPage(appId: String) {
                     ExcludeData.parse(g.config?.exclude)
                 }
                 val checked = getChecked(excludeData, g.group, appId, appInfo)
-                AppGroupCard(g.group, checked, onClick = {
-                    navController.navigate(GlobalRulePageDestination(g.subsItem.id, g.group.key))
-                }) { newChecked ->
+                AppGroupCard(
+                    group = g.group,
+                    checked = checked,
+                    onClick = {
+                        navController.navigate(
+                            GlobalRulePageDestination(
+                                g.subsItem.id,
+                                g.group.key
+                            )
+                        )
+                    }
+                ) { newChecked ->
                     vm.viewModelScope.launchTry {
                         DbSet.subsConfigDao.insert(
                             (g.config ?: SubsConfig(

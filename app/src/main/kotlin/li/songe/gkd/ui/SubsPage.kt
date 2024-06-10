@@ -2,7 +2,6 @@ package li.songe.gkd.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,7 +21,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -62,6 +60,7 @@ import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.SubsAppCard
 import li.songe.gkd.ui.component.getDialogResult
 import li.songe.gkd.ui.destinations.AppItemPageDestination
+import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SortTypeOption
@@ -186,36 +185,43 @@ fun SubsPage(
                         modifier = Modifier.wrapContentSize(Alignment.TopStart)
                     ) {
                         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                            Text(
+                                text = "排序",
+                                modifier = Modifier.menuPadding(),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
                             SortTypeOption.allSubObject.forEach { sortOption ->
                                 DropdownMenuItem(
                                     text = {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            RadioButton(
-                                                selected = sortType == sortOption,
-                                                onClick = {
-                                                    vm.sortTypeFlow.value = sortOption
-                                                })
-                                            Text(sortOption.label)
-                                        }
+                                        Text(sortOption.label)
+                                    },
+                                    trailingIcon = {
+                                        RadioButton(
+                                            selected = sortType == sortOption,
+                                            onClick = {
+                                                vm.sortTypeFlow.value = sortOption
+                                            })
                                     },
                                     onClick = {
                                         vm.sortTypeFlow.value = sortOption
                                     },
                                 )
                             }
-                            HorizontalDivider()
+                            Text(
+                                text = "选项",
+                                modifier = Modifier.menuPadding(),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
                             DropdownMenuItem(
                                 text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Checkbox(checked = showUninstallApp, onCheckedChange = {
-                                            vm.showUninstallAppFlow.value = it
-                                        })
-                                        Text("显示未安装应用")
-                                    }
+                                    Text("显示未安装应用")
+                                },
+                                trailingIcon = {
+                                    Checkbox(checked = showUninstallApp, onCheckedChange = {
+                                        vm.showUninstallAppFlow.value = it
+                                    })
                                 },
                                 onClick = {
                                     vm.showUninstallAppFlow.value = !showUninstallApp

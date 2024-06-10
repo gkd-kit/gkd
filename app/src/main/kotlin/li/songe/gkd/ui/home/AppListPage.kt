@@ -31,7 +31,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -70,6 +69,7 @@ import li.songe.gkd.permission.checkOrRequestPermission
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.destinations.AppConfigPageDestination
 import li.songe.gkd.ui.style.appItemPadding
+import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appRefreshingFlow
@@ -213,38 +213,46 @@ fun useAppListPage(): ScaffoldExt {
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
                         ) {
+                            Text(
+                                text = "排序",
+                                modifier = Modifier.menuPadding(),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
                             SortTypeOption.allSubObject.forEach { sortOption ->
                                 DropdownMenuItem(
                                     text = {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            RadioButton(selected = sortType == sortOption,
-                                                onClick = {
-                                                    storeFlow.update { s -> s.copy(sortType = sortOption.value) }
-                                                }
-                                            )
-                                            Text(sortOption.label)
-                                        }
+                                        Text(sortOption.label)
+                                    },
+                                    trailingIcon = {
+                                        RadioButton(selected = sortType == sortOption,
+                                            onClick = {
+                                                storeFlow.update { s -> s.copy(sortType = sortOption.value) }
+                                            }
+                                        )
                                     },
                                     onClick = {
                                         storeFlow.update { s -> s.copy(sortType = sortOption.value) }
                                     },
                                 )
                             }
-                            HorizontalDivider()
+                            Text(
+                                text = "选项",
+                                modifier = Modifier.menuPadding(),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
                             DropdownMenuItem(
                                 text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Checkbox(
-                                            checked = showSystemApp,
-                                            onCheckedChange = {
-                                                storeFlow.update { s -> s.copy(showSystemApp = !showSystemApp) }
-                                            })
-                                        Text("显示系统应用")
-                                    }
+                                    Text("显示系统应用")
+                                },
+                                trailingIcon = {
+                                    Checkbox(
+                                        checked = showSystemApp,
+                                        onCheckedChange = {
+                                            storeFlow.update { s -> s.copy(showSystemApp = !showSystemApp) }
+                                        }
+                                    )
                                 },
                                 onClick = {
                                     storeFlow.update { s -> s.copy(showSystemApp = !showSystemApp) }
@@ -252,16 +260,14 @@ fun useAppListPage(): ScaffoldExt {
                             )
                             DropdownMenuItem(
                                 text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Checkbox(
-                                            checked = showHiddenApp,
-                                            onCheckedChange = {
-                                                storeFlow.update { s -> s.copy(showHiddenApp = !s.showHiddenApp) }
-                                            })
-                                        Text("显示隐藏应用")
-                                    }
+                                    Text("显示隐藏应用")
+                                },
+                                trailingIcon = {
+                                    Checkbox(
+                                        checked = showHiddenApp,
+                                        onCheckedChange = {
+                                            storeFlow.update { s -> s.copy(showHiddenApp = !s.showHiddenApp) }
+                                        })
                                 },
                                 onClick = {
                                     storeFlow.update { s -> s.copy(showHiddenApp = !showHiddenApp) }
