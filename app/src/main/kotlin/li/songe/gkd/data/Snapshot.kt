@@ -25,7 +25,7 @@ data class Snapshot(
     @ColumnInfo(name = "app_id") override val appId: String?,
     @ColumnInfo(name = "activity_id") override val activityId: String?,
     @ColumnInfo(name = "app_name") override val appName: String?,
-    @ColumnInfo(name = "app_version_code") override val appVersionCode: Int?,
+    @ColumnInfo(name = "app_version_code") override val appVersionCode: Long?,
     @ColumnInfo(name = "app_version_name") override val appVersionName: String?,
 
     @ColumnInfo(name = "screen_height") override val screenHeight: Int,

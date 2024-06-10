@@ -21,6 +21,10 @@ data class AppInfo(
     val hidden: Boolean,
 )
 
+val selfAppInfo by lazy {
+    app.packageManager.getPackageInfo(app.packageName, 0).toAppInfo()!!
+}
+
 /**
  * 平均单次调用时间 11ms
  */
