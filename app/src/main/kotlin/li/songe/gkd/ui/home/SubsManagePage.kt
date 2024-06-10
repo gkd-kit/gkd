@@ -131,7 +131,7 @@ fun useSubsManagePage(): ScaffoldExt {
         }
     }
     if (showAddLinkDialog) {
-        AlertDialog(title = { Text(text = "请输入订阅链接") }, text = {
+        AlertDialog(title = { Text(text = "添加订阅") }, text = {
             OutlinedTextField(
                 value = link,
                 onValueChange = { link = it.trim() },
@@ -140,7 +140,7 @@ fun useSubsManagePage(): ScaffoldExt {
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = {
                     Text(
-                        text = "https://example.com/gkd.json5",
+                        text = "请输入订阅链接",
                         style = LocalTextStyle.current.copy(fontSize = 14.sp)
                     )
                 },
