@@ -34,17 +34,17 @@ jobs:
       - run: chmod 777 ./gradlew
       - run: ./gradlew app:assemble
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: outputs
           path: app/build/outputs
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: release
           path: app/build/outputs/apk/release
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: debug
           path: app/build/outputs/apk/debug
