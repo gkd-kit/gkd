@@ -2,7 +2,6 @@ package li.songe.gkd.debug
 
 import android.util.Log
 import com.blankj.utilcode.util.LogUtils
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.application.hooks.CallFailed
 import io.ktor.server.plugins.origin
@@ -29,7 +28,7 @@ val KtorErrorPlugin = createApplicationPlugin(name = "KtorErrorPlugin") {
                 // 未知错误
                 LogUtils.d(call.request.uri, cause.message)
                 cause.printStackTrace()
-                call.respond(HttpStatusCode.InternalServerError, cause)
+                call.respond(RpcError(message = cause.message ?: "unknown error", unknown = true))
             }
 
             else -> {
