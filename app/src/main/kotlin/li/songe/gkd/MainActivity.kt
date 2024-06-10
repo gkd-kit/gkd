@@ -10,6 +10,7 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
+import com.blankj.utilcode.util.ServiceUtils
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
@@ -20,8 +21,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import li.songe.gkd.composition.CompositionActivity
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
+import li.songe.gkd.debug.FloatingService
+import li.songe.gkd.debug.HttpService
+import li.songe.gkd.debug.ScreenshotService
 import li.songe.gkd.permission.AuthDialog
 import li.songe.gkd.permission.updatePermissionState
+import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.service.updateLauncherAppId
 import li.songe.gkd.ui.NavGraphs
@@ -93,6 +98,11 @@ class MainActivity : CompositionActivity({
         }
 
         updatePermissionState()
+
+        // 进程崩溃后重新打开应用, 由于存在缓存导致服务状态可能不正确, 在此保证每次界面切换都能重新刷新状态
+        appScope.launch(Dispatchers.IO) {
+            updateServiceRunning()
+        }
     }
 
     override fun onStop() {
@@ -114,6 +124,10 @@ fun Activity.navToMainActivity() {
     finish()
 }
 
-
-
-
+fun updateServiceRunning() {
+    ManageService.isRunning.value = ServiceUtils.isServiceRunning(ManageService::class.java)
+    GkdAbService.isRunning.value = ServiceUtils.isServiceRunning(GkdAbService::class.java)
+    FloatingService.isRunning.value = ServiceUtils.isServiceRunning(FloatingService::class.java)
+    ScreenshotService.isRunning.value = ServiceUtils.isServiceRunning(ScreenshotService::class.java)
+    HttpService.isRunning.value = ServiceUtils.isServiceRunning(HttpService::class.java)
+}
