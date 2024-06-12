@@ -22,8 +22,9 @@ sealed class ResolvedRule(
     val key = rule.key
     val index = group.rules.indexOfFirst { r -> r === rule }
     private val preKeys = (rule.preKeys ?: emptyList()).toSet()
-    private val matches = rule.matches?.map { s -> Selector.parse(s) } ?: emptyList()
+    private val matches = (rule.matches ?: emptyList()).map { s -> Selector.parse(s) }
     private val excludeMatches = (rule.excludeMatches ?: emptyList()).map { s -> Selector.parse(s) }
+    private val anyMatches = (rule.anyMatches ?: emptyList()).map { s -> Selector.parse(s) }
 
     private val resetMatch = rule.resetMatch ?: group.resetMatch
     val matchDelay = rule.matchDelay ?: group.matchDelay ?: 0L
@@ -48,7 +49,7 @@ sealed class ResolvedRule(
     } ?: group.actionMaximum
 
     private val slowSelectors by lazy {
-        (matches + excludeMatches).filterNot { s ->
+        (matches + excludeMatches + anyMatches).filterNot { s ->
             ((quickFind && s.canQf) || s.isMatchRoot) && !s.connectKeys.contains(
                 "<<"
             )
@@ -138,17 +139,23 @@ sealed class ResolvedRule(
         try {
             if (nodeInfo == null) return null
             var target: AccessibilityNodeInfo? = null
+            if (anyMatches.isNotEmpty()) {
+                for (selector in anyMatches) {
+                    target = nodeInfo.querySelector(selector, quickFind, transform)
+                        ?: break
+                }
+                if (target == null) return null
+            }
             for (selector in matches) {
                 target = nodeInfo.querySelector(selector, quickFind, transform)
                     ?: return null
             }
             for (selector in excludeMatches) {
-                if (nodeInfo.querySelector(
-                        selector,
-                        quickFind,
-                        transform
-                    ) != null
-                ) return null
+                nodeInfo.querySelector(
+                    selector,
+                    quickFind,
+                    transform
+                )?.let { return null }
             }
             return target
         } finally {

@@ -1,7 +1,6 @@
 package li.songe.gkd.data
 
 import android.graphics.Rect
-import androidx.compose.runtime.Immutable
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
@@ -23,7 +22,7 @@ import li.songe.selector.Selector
 import net.objecthunter.exp4j.Expression
 import net.objecthunter.exp4j.ExpressionBuilder
 
-@Immutable
+
 @Serializable
 data class RawSubscription(
     val id: Long,
@@ -105,7 +104,7 @@ data class RawSubscription(
         }
     }
 
-    @Immutable
+
     @Serializable
     data class RawApp(
         val id: String,
@@ -113,17 +112,14 @@ data class RawSubscription(
         val groups: List<RawAppGroup> = emptyList(),
     )
 
-    @Immutable
+
     @Serializable
     data class RawCategory(val key: Int, val name: String, val enable: Boolean?)
 
-    @Immutable
+
     @Serializable
     data class Position(
-        val left: String?,
-        val top: String?,
-        val right: String?,
-        val bottom: String?
+        val left: String?, val top: String?, val right: String?, val bottom: String?
     ) {
         private val leftExp by lazy { getExpression(left) }
         private val topExp by lazy { getExpression(top) }
@@ -140,10 +136,7 @@ data class RawSubscription(
         fun calc(rect: Rect): Pair<Float, Float>? {
             if (!isValid) return null
             arrayOf(
-                leftExp,
-                topExp,
-                rightExp,
-                bottomExp
+                leftExp, topExp, rightExp, bottomExp
             ).forEach { exp ->
                 if (exp != null) {
                     setVariables(exp, rect)
@@ -204,9 +197,10 @@ data class RawSubscription(
         val position: Position?
         val matches: List<String>?
         val excludeMatches: List<String>?
+        val anyMatches: List<String>?
     }
 
-    @Immutable
+
     sealed interface RawGroupProps : RawCommonProps {
         val name: String
         val key: Int
@@ -237,7 +231,7 @@ data class RawSubscription(
         val apps: List<RawGlobalApp>?
     }
 
-    @Immutable
+
     @Serializable
     data class RawGlobalApp(
         val id: String,
@@ -250,7 +244,7 @@ data class RawSubscription(
         override val excludeVersionCodes: List<Long>?,
     ) : RawAppRuleProps
 
-    @Immutable
+
     @Serializable
     data class RawGlobalGroup(
         override val name: String,
@@ -293,7 +287,7 @@ data class RawSubscription(
         }
     }
 
-    @Immutable
+
     @Serializable
     data class RawGlobalRule(
         override val actionCd: Long?,
@@ -314,15 +308,15 @@ data class RawSubscription(
         override val preKeys: List<Int>?,
         override val action: String?,
         override val position: Position?,
-        override val matches: List<String>,
+        override val matches: List<String>?,
         override val excludeMatches: List<String>?,
+        override val anyMatches: List<String>?,
         override val matchAnyApp: Boolean?,
         override val matchSystemApp: Boolean?,
         override val matchLauncher: Boolean?,
         override val apps: List<RawGlobalApp>?
     ) : RawRuleProps, RawGlobalRuleProps
 
-    @Immutable
     @Serializable
     data class RawAppGroup(
         override val name: String,
@@ -363,7 +357,6 @@ data class RawSubscription(
         }
     }
 
-    @Immutable
     @Serializable
     data class RawAppRule(
         override val name: String?,
@@ -373,6 +366,7 @@ data class RawSubscription(
         override val position: Position?,
         override val matches: List<String>?,
         override val excludeMatches: List<String>?,
+        override val anyMatches: List<String>?,
 
         override val actionCdKey: Int?,
         override val actionMaximumKey: Int?,
@@ -400,9 +394,9 @@ data class RawSubscription(
     companion object {
 
         private fun RawGroupProps.getErrorDesc(): String? {
-            val allSelectorStrings =
-                rules.map { r -> (r.matches ?: emptyList()) + (r.excludeMatches ?: emptyList()) }
-                    .flatten()
+            val allSelectorStrings = rules.map { r ->
+                listOfNotNull(r.matches, r.excludeMatches, r.anyMatches).flatten()
+            }.flatten()
 
             val allSelector = allSelectorStrings.map { s -> Selector.parseOrNull(s) }
 
@@ -423,12 +417,7 @@ data class RawSubscription(
         }
 
         private val expVars = arrayOf(
-            "left",
-            "top",
-            "right",
-            "bottom",
-            "width",
-            "height"
+            "left", "top", "right", "bottom", "width", "height"
         )
 
         private fun setVariables(exp: Expression, rect: Rect) {
@@ -481,8 +470,7 @@ data class RawSubscription(
         }
 
         private fun getStringIArray(
-            jsonObject: JsonObject? = null,
-            name: String
+            jsonObject: JsonObject? = null, name: String
         ): List<String>? {
             return when (val element = jsonObject?.get(name)) {
                 JsonNull, null -> null
@@ -583,6 +571,7 @@ data class RawSubscription(
                 excludeActivityIds = getStringIArray(jsonObject, "excludeActivityIds"),
                 matches = getStringIArray(jsonObject, "matches"),
                 excludeMatches = getStringIArray(jsonObject, "excludeMatches"),
+                anyMatches = getStringIArray(jsonObject, "anyMatches"),
                 key = getInt(jsonObject, "key"),
                 name = getString(jsonObject, "name"),
                 actionCd = getLong(jsonObject, "actionCd") ?: getLong(jsonObject, "cd"),
@@ -704,7 +693,8 @@ data class RawSubscription(
                 action = getString(jsonObject, "action"),
                 preKeys = getIntIArray(jsonObject, "preKeys"),
                 excludeMatches = getStringIArray(jsonObject, "excludeMatches"),
-                matches = getStringIArray(jsonObject, "matches") ?: error("miss matches"),
+                matches = getStringIArray(jsonObject, "matches"),
+                anyMatches = getStringIArray(jsonObject, "anyMatches"),
                 order = getInt(jsonObject, "order"),
                 forcedTime = getLong(jsonObject, "forcedTime"),
                 position = getPosition(jsonObject),
@@ -713,8 +703,7 @@ data class RawSubscription(
 
         private fun jsonToGlobalGroups(jsonObject: JsonObject, groupIndex: Int): RawGlobalGroup {
             return RawGlobalGroup(
-                key = getInt(jsonObject, "key")
-                    ?: error("miss group[$groupIndex].key"),
+                key = getInt(jsonObject, "key") ?: error("miss group[$groupIndex].key"),
                 name = getString(jsonObject, "name") ?: error("miss group[$groupIndex].name"),
                 desc = getString(jsonObject, "desc"),
                 enable = getBoolean(jsonObject, "enable"),
@@ -770,8 +759,7 @@ data class RawSubscription(
                 } ?: emptyList()),
                 globalGroups = (rootJson["globalGroups"]?.jsonArray?.mapIndexed { index, jsonElement ->
                     jsonToGlobalGroups(jsonElement.jsonObject, index)
-                } ?: emptyList())
-            )
+                } ?: emptyList()))
         }
 
         private fun <T> List<T>.findDuplicatedItem(predicate: (T) -> Any?): T? {
@@ -854,15 +842,4 @@ data class RawSubscription(
             return g
         }
     }
-
 }
-
-
-
-
-
-
-
-
-
-
