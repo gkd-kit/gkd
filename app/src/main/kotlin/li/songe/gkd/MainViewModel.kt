@@ -23,21 +23,22 @@ import li.songe.gkd.util.updateSubscription
 
 class MainViewModel : ViewModel() {
     init {
-
-        val localSubsItem = SubsItem(
-            id = LOCAL_SUBS_ID, order = -2, mtime = System.currentTimeMillis()
-        )
         viewModelScope.launchTry(Dispatchers.IO) {
             val subsItems = DbSet.subsItemDao.queryAll()
-            if (!subsItems.any { s -> s.id == localSubsItem.id }) {
+            if (!subsItems.any { s -> s.id == LOCAL_SUBS_ID }) {
                 updateSubscription(
                     RawSubscription(
-                        id = localSubsItem.id,
+                        id = LOCAL_SUBS_ID,
                         name = "本地订阅",
                         version = 0
                     )
                 )
-                DbSet.subsItemDao.insert(localSubsItem)
+                DbSet.subsItemDao.insert(
+                    SubsItem(
+                        id = LOCAL_SUBS_ID,
+                        order = subsItems.minByOrNull { it.order }?.order ?: 0,
+                    )
+                )
             }
         }
 
