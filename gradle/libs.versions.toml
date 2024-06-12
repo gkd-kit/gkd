@@ -5,7 +5,7 @@ compileSdk = "34"
 targetSdk = "34"
 buildToolsVersion = "34.0.0"
 minSdk = "26"
-android = "8.4.1"
+android = "8.4.2"
 compose = "1.6.7"
 rikka = "4.4.0"
 room = "2.6.1"
@@ -37,9 +37,9 @@ others_utilcodex = { module = "com.blankj:utilcodex", version = "1.31.1" }
 others_activityResultLauncher = { module = "com.github.DylanCaiCoding:ActivityResultLauncher", version = "1.1.2" }
 others_jankson = { module = "blue.endless:jankson", version = "1.2.3" }
 others_floating_bubble_view = { module = "io.github.torrydo:floating-bubble-view", version = "0.6.5" }
-androidx_appcompat = { module = "androidx.appcompat:appcompat", version = "1.6.1" }
+androidx_appcompat = { module = "androidx.appcompat:appcompat", version = "1.7.0" }
 androidx_core_ktx = { module = "androidx.core:core-ktx", version = "1.13.1" }
-androidx_lifecycle_runtime_ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version = "2.8.0" }
+androidx_lifecycle_runtime_ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version = "2.8.1" }
 androidx_junit = { module = "androidx.test.ext:junit", version = "1.1.5" }
 androidx_espresso = { module = "androidx.test.espresso:espresso-core", version = "3.5.1" }
 androidx_room_runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
