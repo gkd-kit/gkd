@@ -7,7 +7,7 @@ import androidx.compose.ui.unit.dp
 
 fun Modifier.itemPadding() = this then padding(16.dp, 12.dp)
 
-fun Modifier.appItemPadding() = this then padding(10.dp, 8.dp)
+fun Modifier.appItemPadding() = this then padding(10.dp, 10.dp)
 
 fun Modifier.menuPadding() =
     this then padding(MenuDefaults.DropdownMenuItemContentPadding).padding(vertical = 8.dp)
