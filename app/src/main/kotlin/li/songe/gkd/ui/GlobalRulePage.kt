@@ -63,6 +63,7 @@ import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.getDialogResult
 import li.songe.gkd.ui.destinations.GlobalRuleExcludePageDestination
 import li.songe.gkd.ui.destinations.GroupItemPageDestination
@@ -116,14 +117,10 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                     )
                 }
             }, title = {
-                Column {
-                    Text(
-                        text = rawSubs?.name ?: subsItemId.toString(),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(text = "全局规则", style = MaterialTheme.typography.bodyMedium)
-                }
+                TowLineText(
+                    title = rawSubs?.name ?: subsItemId.toString(),
+                    subTitle = "全局规则"
+                )
             })
         },
         floatingActionButton = {

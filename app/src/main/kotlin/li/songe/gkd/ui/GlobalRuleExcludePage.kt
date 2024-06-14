@@ -69,6 +69,7 @@ import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.service.launcherAppId
 import li.songe.gkd.ui.component.AppBarTextField
+import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.util.LocalNavController
@@ -129,19 +130,10 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                     modifier = Modifier.focusRequester(focusRequester)
                 )
             } else {
-                Column {
-                    Text(
-                        text = rawSubs?.name ?: subsItemId.toString(),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = (group?.name ?: groupKey.toString()),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+                TowLineText(
+                    title = rawSubs?.name ?: subsItemId.toString(),
+                    subTitle = (group?.name ?: groupKey.toString())
+                )
             }
         }, actions = {
             if (showSearchBar) {
