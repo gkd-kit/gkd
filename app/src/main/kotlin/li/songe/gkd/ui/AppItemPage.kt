@@ -67,6 +67,7 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.getDialogResult
 import li.songe.gkd.ui.destinations.GroupItemPageDestination
 import li.songe.gkd.ui.style.itemPadding
@@ -132,19 +133,10 @@ fun AppItemPage(
                 )
             }
         }, title = {
-            Column {
-                Text(
-                    text = subsRaw?.name ?: subsItemId.toString(),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = appInfoCache[appId]?.name ?: appRaw.name ?: appId,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
+            TowLineText(
+                title = subsRaw?.name ?: subsItemId.toString(),
+                subTitle = appInfoCache[appId]?.name ?: appRaw.name ?: appId
+            )
         }, actions = {})
     }, floatingActionButton = {
         if (editable) {

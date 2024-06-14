@@ -1,7 +1,6 @@
 package li.songe.gkd.ui
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -46,7 +45,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
@@ -58,6 +56,7 @@ import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.SubsAppCard
+import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.getDialogResult
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.style.menuPadding
@@ -150,14 +149,10 @@ fun SubsPage(
                         modifier = Modifier.focusRequester(focusRequester)
                     )
                 } else {
-                    Column {
-                        Text(
-                            text = subsRaw?.name ?: subsItemId.toString(),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(text = "应用规则", style = MaterialTheme.typography.bodyMedium)
-                    }
+                    TowLineText(
+                        title = subsRaw?.name ?: subsItemId.toString(),
+                        subTitle = "应用规则",
+                    )
                 }
             }, actions = {
                 if (showSearchBar) {

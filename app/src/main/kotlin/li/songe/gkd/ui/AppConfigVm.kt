@@ -74,5 +74,7 @@ class AppConfigVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    val innerDisabledDlgFlow = MutableStateFlow(false)
+
 }
 

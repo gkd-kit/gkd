@@ -189,8 +189,8 @@ val ruleSummaryFlow by lazy {
             val subGlobalGroupToRules =
                 mutableMapOf<RawSubscription.RawGlobalGroup, List<GlobalRule>>()
             rawSubs.globalGroups.filter { g ->
-                g.valid && (subGlobalSubsConfigs.find { c -> c.groupKey == g.key }?.enable
-                    ?: g.enable ?: true)
+                (subGlobalSubsConfigs.find { c -> c.groupKey == g.key }?.enable
+                    ?: g.enable ?: true) && g.valid
             }.forEach { groupRaw ->
                 val config = subGlobalSubsConfigs.find { c -> c.groupKey == groupRaw.key }
                 val g = ResolvedGlobalGroup(

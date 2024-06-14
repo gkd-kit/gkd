@@ -1,6 +1,7 @@
 package li.songe.gkd.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
@@ -30,6 +32,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -177,6 +180,7 @@ fun AppConfigPage(appId: String) {
                 }
                 val checked = getChecked(excludeData, g.group, appId, appInfo)
                 AppGroupCard(
+                    vm = vm,
                     group = g.group,
                     checked = checked,
                     onClick = {
@@ -211,15 +215,20 @@ fun AppConfigPage(appId: String) {
                 }
             }
             items(appGroups) { g ->
-                AppGroupCard(g.group, g.enable, onClick = {
-                    navController.navigate(
-                        AppItemPageDestination(
-                            g.subsItem.id,
-                            appId,
-                            g.group.key,
+                AppGroupCard(
+                    vm = vm,
+                    group = g.group,
+                    checked = g.enable,
+                    onClick = {
+                        navController.navigate(
+                            AppItemPageDestination(
+                                g.subsItem.id,
+                                appId,
+                                g.group.key,
+                            )
                         )
-                    )
-                }) {
+                    }
+                ) {
                     vm.viewModelScope.launchTry {
                         DbSet.subsConfigDao.insert(
                             g.config?.copy(enable = it) ?: SubsConfig(
@@ -248,10 +257,28 @@ fun AppConfigPage(appId: String) {
             }
         }
     }
+
+    val innerDisabledDlg by vm.innerDisabledDlgFlow.collectAsState()
+    if (innerDisabledDlg) {
+        AlertDialog(
+            title = { Text(text = "内置禁用") },
+            text = {
+                Text(text = "此规则组已经在其 apps 字段中配置对当前应用的禁用, 因此无法手动开启规则组\n\n提示: 这种情况一般在此全局规则无法适配/跳过适配当前应用时出现")
+            },
+            onDismissRequest = { vm.innerDisabledDlgFlow.value = false },
+            confirmButton = {
+                TextButton(onClick = { vm.innerDisabledDlgFlow.value = false }) {
+                    Text(text = "我知道了")
+                }
+            }
+        )
+
+    }
 }
 
 @Composable
 private fun AppGroupCard(
+    vm: AppConfigVm,
     group: RawSubscription.RawGroupProps,
     checked: Boolean?,
     onClick: () -> Unit,
@@ -313,7 +340,13 @@ private fun AppGroupCard(
             Switch(
                 checked = false,
                 enabled = false,
-                onCheckedChange = onCheckedChange
+                onCheckedChange = null,
+                modifier = Modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) {
+                    vm.innerDisabledDlgFlow.value = true
+                }
             )
         }
     }

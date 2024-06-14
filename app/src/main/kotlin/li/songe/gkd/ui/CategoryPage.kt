@@ -40,7 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
@@ -50,6 +49,7 @@ import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.getDialogResult
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.EnableGroupOption
@@ -94,14 +94,10 @@ fun CategoryPage(subsItemId: Long) {
                 )
             }
         }, title = {
-            Column {
-                Text(
-                    text = subsRaw?.name ?: subsItemId.toString(),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(text = "规则类别", style = MaterialTheme.typography.bodyMedium)
-            }
+            TowLineText(
+                title = subsRaw?.name ?: subsItemId.toString(),
+                subTitle = "规则类别"
+            )
         }, actions = {})
     }, floatingActionButton = {
         if (editable) {
