@@ -30,17 +30,18 @@ import coil.request.ImageRequest
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import li.songe.gkd.data.RawSubscription
+import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
-import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.imageLoader
 import li.songe.gkd.util.subsIdToRawFlow
 
 
+// TODO 在 app debug 模式下存在严重绘制错误问题
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
 @Composable
-fun GroupItemPage(subsInt: Long, groupKey: Int, appId: String? = null) {
+fun GroupImagePage(subsInt: Long, groupKey: Int, appId: String? = null) {
     val context = LocalContext.current
     val navController = LocalNavController.current
     val subsIdToRaw by subsIdToRawFlow.collectAsState()
@@ -56,7 +57,6 @@ fun GroupItemPage(subsInt: Long, groupKey: Int, appId: String? = null) {
         is RawSubscription.RawGlobalGroup -> group.allExampleUrls
         else -> emptyList()
     }
-    val appInfoCache by appInfoCacheFlow.collectAsState()
     Box(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             navigationIcon = {
@@ -70,29 +70,13 @@ fun GroupItemPage(subsInt: Long, groupKey: Int, appId: String? = null) {
                 }
             },
             title = {
-                when (group) {
-                    is RawSubscription.RawAppGroup -> {
-                        Text(
-                            text = ((rawSubs?.name
-                                ?: subsInt.toString()) + "/" + (appInfoCache[appId]?.name
-                                ?: rawApp?.name
-                                ?: appId) + "/" + (group.name))
-                        )
-                    }
-
-                    is RawSubscription.RawGlobalGroup -> {
-                        Text(
-                            text = "${rawSubs?.name ?: subsInt}/${group.name}"
-                        )
-                    }
-
-                    else -> {
-                        Text(text = "未知规则")
-                    }
-
+                if (group != null) {
+                    TowLineText(
+                        title = rawSubs?.name ?: subsInt.toString(),
+                        subTitle = group.name
+                    )
                 }
             },
-            actions = {},
             modifier = Modifier.zIndex(1f),
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.5f)
