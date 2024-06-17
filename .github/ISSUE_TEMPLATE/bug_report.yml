@@ -20,7 +20,7 @@ body:
           required: true
         - label: 请 **务必** 给issue填写一个简洁明了的标题，以便他人快速检索
           required: true
-        - label: 我已确保提供下列的日志和BUG描述及其复现步骤, 否则我同意维护者直接关闭问题
+        - label: 请 **确保** 提供下列的日志和BUG描述及其复现步骤, 否您同意维护者直接关闭问题
           required: true
   - type: textarea
     id: log-file
