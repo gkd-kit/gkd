@@ -52,6 +52,7 @@ import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.AboutPageDestination
 import li.songe.gkd.ui.destinations.AdvancedPageDestination
 import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.ui.theme.supportDynamicColor
 import li.songe.gkd.util.DarkThemeOption
 import li.songe.gkd.util.LoadStatus
@@ -259,7 +260,7 @@ fun useSettingsPage(): ScaffoldExt {
 
             Text(
                 text = "常规",
-                modifier = Modifier.itemPadding(),
+                modifier = Modifier.titleItemPadding(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -311,7 +312,7 @@ fun useSettingsPage(): ScaffoldExt {
 
             Text(
                 text = "更新",
-                modifier = Modifier.itemPadding(),
+                modifier = Modifier.titleItemPadding(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -358,7 +359,7 @@ fun useSettingsPage(): ScaffoldExt {
 
             Text(
                 text = "日志",
-                modifier = Modifier.itemPadding(),
+                modifier = Modifier.titleItemPadding(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -395,7 +396,7 @@ fun useSettingsPage(): ScaffoldExt {
 
             Text(
                 text = "其它",
-                modifier = Modifier.itemPadding(),
+                modifier = Modifier.titleItemPadding(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )

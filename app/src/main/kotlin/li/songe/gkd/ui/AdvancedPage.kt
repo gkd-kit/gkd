@@ -74,6 +74,7 @@ import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.SnapshotPageDestination
 import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.LocalLauncher
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
@@ -125,7 +126,7 @@ fun AdvancedPage() {
         ) {
             Text(
                 text = "Shizuku",
-                modifier = Modifier.itemPadding(),
+                modifier = Modifier.titleItemPadding(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -151,7 +152,7 @@ fun AdvancedPage() {
 
             Text(
                 text = "HTTP服务",
-                modifier = Modifier.itemPadding(),
+                modifier = Modifier.titleItemPadding(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -246,7 +247,7 @@ fun AdvancedPage() {
 
             Text(
                 text = "快照",
-                modifier = Modifier.itemPadding(),
+                modifier = Modifier.titleItemPadding(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -336,7 +337,7 @@ fun AdvancedPage() {
 
             Text(
                 text = "其它",
-                modifier = Modifier.itemPadding(),
+                modifier = Modifier.titleItemPadding(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
