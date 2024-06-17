@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Questions & Discussions / 问题和讨论
+  - name: 讨论交流 / Discussions
     url: https://github.com/gkd-kit/gkd/discussions
     about: Use GitHub discussions for message-board style questions and discussions.
