@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -61,10 +61,13 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.menuPadding
+import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
+import li.songe.gkd.util.ResolvedGroup
 import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchTry
@@ -174,71 +177,77 @@ fun AppConfigPage(appId: String) {
             modifier = Modifier.padding(contentPadding),
             state = listState,
         ) {
-            items(globalGroups) { g ->
+            itemsIndexed(globalGroups) { i, g ->
                 val excludeData = remember(g.config?.exclude) {
                     ExcludeData.parse(g.config?.exclude)
                 }
                 val checked = getChecked(excludeData, g.group, appId, appInfo)
-                AppGroupCard(
-                    vm = vm,
-                    group = g.group,
-                    checked = checked,
-                    onClick = {
-                        navController.navigate(
-                            GlobalRulePageDestination(
-                                g.subsItem.id,
-                                g.group.key
+                TitleGroupCard(globalGroups, i) {
+                    AppGroupCard(
+                        vm = vm,
+                        group = g.group,
+                        checked = checked,
+                        onClick = {
+                            navController.navigate(
+                                GlobalRulePageDestination(
+                                    g.subsItem.id,
+                                    g.group.key
+                                )
                             )
-                        )
-                    }
-                ) { newChecked ->
-                    vm.viewModelScope.launchTry {
-                        DbSet.subsConfigDao.insert(
-                            (g.config ?: SubsConfig(
-                                type = SubsConfig.GlobalGroupType,
-                                subsItemId = g.subsItem.id,
-                                groupKey = g.group.key,
-                            )).copy(
-                                exclude = excludeData.copy(
-                                    appIds = excludeData.appIds.toMutableMap().apply {
-                                        set(appId, !newChecked)
-                                    }
-                                ).stringify()
+                        }
+                    ) { newChecked ->
+                        vm.viewModelScope.launchTry {
+                            DbSet.subsConfigDao.insert(
+                                (g.config ?: SubsConfig(
+                                    type = SubsConfig.GlobalGroupType,
+                                    subsItemId = g.subsItem.id,
+                                    groupKey = g.group.key,
+                                )).copy(
+                                    exclude = excludeData.copy(
+                                        appIds = excludeData.appIds.toMutableMap().apply {
+                                            set(appId, !newChecked)
+                                        }
+                                    ).stringify()
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
             item {
                 if (globalGroups.isNotEmpty() && appGroups.isNotEmpty()) {
-                    HorizontalDivider()
+                    HorizontalDivider(
+                        modifier = Modifier.padding(0.dp, itemVerticalPadding),
+                    )
                 }
             }
-            items(appGroups) { g ->
-                AppGroupCard(
-                    vm = vm,
-                    group = g.group,
-                    checked = g.enable,
-                    onClick = {
-                        navController.navigate(
-                            AppItemPageDestination(
-                                g.subsItem.id,
-                                appId,
-                                g.group.key,
+            itemsIndexed(appGroups) { i, g ->
+                TitleGroupCard(appGroups, i) {
+                    AppGroupCard(
+                        vm = vm,
+                        group = g.group,
+                        checked = g.enable,
+                        onClick = {
+                            navController.navigate(
+                                AppItemPageDestination(
+                                    g.subsItem.id,
+                                    appId,
+                                    g.group.key,
+                                )
                             )
-                        )
-                    }
-                ) {
-                    vm.viewModelScope.launchTry {
-                        DbSet.subsConfigDao.insert(
-                            g.config?.copy(enable = it) ?: SubsConfig(
-                                type = SubsConfig.AppGroupType,
-                                subsItemId = g.subsItem.id,
-                                appId = appId,
-                                groupKey = g.group.key,
-                                enable = it
+                        }
+                    ) {
+                        vm.viewModelScope.launchTry {
+                            DbSet.subsConfigDao.insert(
+                                g.config?.copy(enable = it) ?: SubsConfig(
+                                    type = SubsConfig.AppGroupType,
+                                    subsItemId = g.subsItem.id,
+                                    appId = appId,
+                                    groupKey = g.group.key,
+                                    enable = it
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
@@ -273,6 +282,30 @@ fun AppConfigPage(appId: String) {
             }
         )
 
+    }
+}
+
+@Composable
+private fun TitleGroupCard(groups: List<ResolvedGroup>, i: Int, content: @Composable () -> Unit) {
+    val lastGroup = groups.getOrNull(i - 1)
+    val g = groups[i]
+    if (g.subsItem !== lastGroup?.subsItem) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = g.subscription.name,
+                modifier = Modifier.titleItemPadding(),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+            )
+            content()
+        }
+    } else {
+        content()
     }
 }
 
