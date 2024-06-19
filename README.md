@@ -7,6 +7,8 @@
 - [gkd.li](https://gkd.li/guide/)
 - [releases](https://github.com/gkd-kit/gkd/releases)
 
+如遇到问题可查看 [疑难解答](https://gkd.li/faq/)
+
 ## 功能
 
 基于 [高级选择器](https://gkd.li/selector/) + [订阅规则](https://gkd.li/subscription/) + [快照审查](https://github.com/gkd-kit/inspect) 实现根据屏幕上下文信息自定义点击目标控件
