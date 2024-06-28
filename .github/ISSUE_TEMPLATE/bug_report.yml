@@ -20,6 +20,8 @@ body:
           required: true
         - label: 请 **务必** 给issue填写一个简洁明了的标题，以便他人快速检索
           required: true
+        - label: 请 **确保** 你的问题能在 [releases](https://github.com/gkd-kit/gkd/releases/latest) 发布的最新版本(包含测试版本)上复现 (如果不是请先更新到最新版本复现后再提交问题)
+          required: true
         - label: 请 **确保** 提供下列的日志和BUG描述及其复现步骤, 否则你的问题将会被直接关闭
           required: true
   - type: textarea
@@ -38,7 +40,8 @@ body:
       label: |
         BUG描述(文字/截图/视频)
       description: |
-        请使用尽量准确的描述, 否则你的问题将会被直接关闭
+        请使用尽量准确的描述, 否则你的问题将会被直接关闭\
+        另外如果你的问题是关于快照/选择器的, 请必须提供快照链接或者快照文件, 否则你的问题将会被直接关闭
     validations:
       required: true
   - type: textarea
