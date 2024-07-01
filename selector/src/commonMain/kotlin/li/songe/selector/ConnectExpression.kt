@@ -1,4 +1,4 @@
-package li.songe.selector.data
+package li.songe.selector
 
 sealed class ConnectExpression {
     abstract val minOffset: Int

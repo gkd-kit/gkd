@@ -1,4 +1,4 @@
-package li.songe.selector.data
+package li.songe.selector
 
 data class TupleExpression(
     val numbers: List<Int>,

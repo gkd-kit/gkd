@@ -3,7 +3,7 @@ package li.songe.selector
 import kotlin.js.JsExport
 
 @JsExport
-data class GkdSyntaxError internal constructor(
+data class SyntaxError internal constructor(
     val expectedValue: String,
     val position: Int,
     val source: String,
@@ -17,21 +17,21 @@ data class GkdSyntaxError internal constructor(
 )
 
 internal fun gkdAssert(
-    source: String,
+    source: CharSequence,
     offset: Int,
     value: String = "",
     expectedValue: String? = null
 ) {
     if (offset >= source.length || (value.isNotEmpty() && !value.contains(source[offset]))) {
-        throw GkdSyntaxError(expectedValue ?: value, offset, source)
+        throw SyntaxError(expectedValue ?: value, offset, source.toString())
     }
 }
 
 internal fun gkdError(
-    source: String,
+    source: CharSequence,
     offset: Int,
     expectedValue: String = "",
     cause: Exception? = null
 ): Nothing {
-    throw GkdSyntaxError(expectedValue, offset, source, cause)
+    throw SyntaxError(expectedValue, offset, source.toString(), cause)
 }

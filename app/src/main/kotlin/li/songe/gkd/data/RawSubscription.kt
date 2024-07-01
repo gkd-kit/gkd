@@ -398,7 +398,14 @@ data class RawSubscription(
                 listOfNotNull(r.matches, r.excludeMatches, r.anyMatches).flatten()
             }.flatten()
 
-            val allSelector = allSelectorStrings.map { s -> Selector.parseOrNull(s) }
+            val allSelector = allSelectorStrings.map { s ->
+                try {
+                    Selector.parse(s)
+                } catch (e: Exception) {
+                    LogUtils.d("非法选择器", e.toString())
+                    null
+                }
+            }
 
             allSelector.forEachIndexed { i, s ->
                 if (s == null) {

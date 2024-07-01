@@ -1,20 +1,18 @@
-package li.songe.selector.data
-
-import li.songe.selector.Transform
+package li.songe.selector
 
 data class ConnectWrapper(
-    val connectSegment: ConnectSegment,
+    val segment: ConnectSegment,
     val to: PropertyWrapper,
 ) {
     override fun toString(): String {
-        return (to.toString() + "\u0020" + connectSegment.toString()).trim()
+        return (to.toString() + "\u0020" + segment.toString()).trim()
     }
 
-    fun <T> matchTracks(
+    internal fun <T> matchTracks(
         node: T, transform: Transform<T>,
         trackNodes: MutableList<T>,
     ): List<T>? {
-        connectSegment.traversal(node, transform).forEach {
+        segment.traversal(node, transform).forEach {
             if (it == null) return@forEach
             val r = to.matchTracks(it, transform, trackNodes)
             if (r != null) return r

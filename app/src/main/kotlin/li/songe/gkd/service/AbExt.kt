@@ -4,9 +4,21 @@ import android.accessibilityservice.AccessibilityService
 import android.graphics.Rect
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.blankj.utilcode.util.LogUtils
+import li.songe.gkd.BuildConfig
+import li.songe.selector.MismatchExpressionTypeException
+import li.songe.selector.MismatchOperatorTypeException
+import li.songe.selector.MismatchParamTypeException
 import li.songe.selector.Selector
 import li.songe.selector.Transform
-import li.songe.selector.data.PrimitiveValue
+import li.songe.selector.UnknownIdentifierException
+import li.songe.selector.UnknownIdentifierMethodException
+import li.songe.selector.UnknownMemberException
+import li.songe.selector.UnknownMemberMethodException
+import li.songe.selector.getCharSequenceAttr
+import li.songe.selector.getCharSequenceInvoke
+import li.songe.selector.getIntInvoke
+import li.songe.selector.initDefaultTypeInfo
 
 val AccessibilityService.safeActiveWindow: AccessibilityNodeInfo?
     get() = try {
@@ -51,24 +63,13 @@ inline fun AccessibilityNodeInfo.forEachIndexed(action: (index: Int, childNode: 
     }
 }
 
-/**
- * 此方法小概率造成无限节点片段,底层原因未知
- *
- * https://github.com/gkd-kit/gkd/issues/28
- */
-fun AccessibilityNodeInfo.getDepth(): Int {
-    var p: AccessibilityNodeInfo? = this
-    var depth = 0
-    while (true) {
-        val p2 = p?.parent
-        if (p2 != null) {
-            p = p2
-            depth++
-        } else {
-            break
-        }
+fun AccessibilityNodeInfo.getChildOrNull(i: Int?): AccessibilityNodeInfo? {
+    i ?: return null
+    return if (i in 0 until childCount) {
+        getChild(i)
+    } else {
+        null
     }
-    return depth
 }
 
 fun AccessibilityNodeInfo.getVid(): CharSequence? {
@@ -135,51 +136,34 @@ val getChildren: (AccessibilityNodeInfo) -> Sequence<AccessibilityNodeInfo> = { 
     }
 }
 
-val allowPropertyNames by lazy {
-    mapOf(
-        "id" to PrimitiveValue.StringValue.TYPE_NAME,
-        "vid" to PrimitiveValue.StringValue.TYPE_NAME,
-
-        "name" to PrimitiveValue.StringValue.TYPE_NAME,
-        "text" to PrimitiveValue.StringValue.TYPE_NAME,
-        "text.length" to PrimitiveValue.IntValue.TYPE_NAME,
-        "desc" to PrimitiveValue.StringValue.TYPE_NAME,
-        "desc.length" to PrimitiveValue.IntValue.TYPE_NAME,
-
-        "clickable" to PrimitiveValue.BooleanValue.TYPE_NAME,
-        "focusable" to PrimitiveValue.BooleanValue.TYPE_NAME,
-        "checkable" to PrimitiveValue.BooleanValue.TYPE_NAME,
-        "checked" to PrimitiveValue.BooleanValue.TYPE_NAME,
-        "editable" to PrimitiveValue.BooleanValue.TYPE_NAME,
-        "longClickable" to PrimitiveValue.BooleanValue.TYPE_NAME,
-        "visibleToUser" to PrimitiveValue.BooleanValue.TYPE_NAME,
-
-        "left" to PrimitiveValue.IntValue.TYPE_NAME,
-        "top" to PrimitiveValue.IntValue.TYPE_NAME,
-        "right" to PrimitiveValue.IntValue.TYPE_NAME,
-        "bottom" to PrimitiveValue.IntValue.TYPE_NAME,
-        "width" to PrimitiveValue.IntValue.TYPE_NAME,
-        "height" to PrimitiveValue.IntValue.TYPE_NAME,
-
-        "index" to PrimitiveValue.IntValue.TYPE_NAME,
-        "depth" to PrimitiveValue.IntValue.TYPE_NAME,
-        "childCount" to PrimitiveValue.IntValue.TYPE_NAME,
-    )
+private val typeInfo by lazy {
+    initDefaultTypeInfo().apply {
+        nodeType.props = nodeType.props.filter { !it.name.startsWith('_') }.toTypedArray()
+        contextType.props = contextType.props.filter { !it.name.startsWith('_') }.toTypedArray()
+    }.contextType
 }
 
 fun Selector.checkSelector(): String? {
-    binaryExpressions.forEach { e ->
-        if (!allowPropertyNames.contains(e.name)) {
-            return "未知属性:${e.name}"
-        }
-        if (e.value.type != "null" && allowPropertyNames[e.name] != e.value.type) {
-            return "非法类型:${e.name}=${e.value.type}"
-        }
+    val error = checkType(typeInfo) ?: return null
+    if (BuildConfig.DEBUG) {
+        LogUtils.d(
+            "Selector check error",
+            source,
+            error.message
+        )
     }
-    return null
+    return when (error) {
+        is MismatchExpressionTypeException -> "不匹配表达式类型:${error.exception.stringify()}"
+        is MismatchOperatorTypeException -> "不匹配操作符类型:${error.exception.stringify()}"
+        is MismatchParamTypeException -> "不匹配参数类型:${error.call.stringify()}"
+        is UnknownIdentifierException -> "未知属性:${error.value.value}"
+        is UnknownIdentifierMethodException -> "未知方法:${error.value.value}"
+        is UnknownMemberException -> "未知属性:${error.value.property}"
+        is UnknownMemberMethodException -> "未知方法:${error.value.property}"
+    }
 }
 
-private fun createGetAttr(): ((AccessibilityNodeInfo, String) -> Any?) {
+private fun createGetNodeAttr(cache: NodeCache): ((AccessibilityNodeInfo, String) -> Any?) {
     var tempNode: AccessibilityNodeInfo? = null
     val tempRect = Rect()
     var tempVid: CharSequence? = null
@@ -197,6 +181,28 @@ private fun createGetAttr(): ((AccessibilityNodeInfo, String) -> Any?) {
             tempNode = this
         }
         return tempVid
+    }
+
+    /**
+     * 在无缓存时, 此方法小概率造成无限节点片段,底层原因未知
+     *
+     * https://github.com/gkd-kit/gkd/issues/28
+     */
+    fun AccessibilityNodeInfo.getDepthX(): Int {
+        var p: AccessibilityNodeInfo = this
+        var depth = 0
+        while (true) {
+            val p2 = cache.parent[p] ?: p.parent.apply {
+                cache.parent[p] = this
+            }
+            if (p2 != null) {
+                p = p2
+                depth++
+            } else {
+                break
+            }
+        }
+        return depth
     }
     return { node, name ->
         when (name) {
@@ -226,8 +232,13 @@ private fun createGetAttr(): ((AccessibilityNodeInfo, String) -> Any?) {
             "height" -> node.getTempRect().height()
 
             "index" -> node.getIndex()
-            "depth" -> node.getDepth()
+            "depth" -> node.getDepthX()
             "childCount" -> node.childCount
+
+            "parent" -> cache.parent[node] ?: node.parent.apply {
+                cache.parent[node] = this
+            }
+
             else -> null
         }
     }
@@ -235,22 +246,43 @@ private fun createGetAttr(): ((AccessibilityNodeInfo, String) -> Any?) {
 
 data class CacheTransform(
     val transform: Transform<AccessibilityNodeInfo>,
-    val indexCache: HashMap<AccessibilityNodeInfo, Int>,
+    val cache: NodeCache,
 )
 
+data class NodeCache(
+    val child: MutableMap<Pair<AccessibilityNodeInfo, Int>, AccessibilityNodeInfo> = HashMap(),
+    val index: MutableMap<AccessibilityNodeInfo, Int> = HashMap(),
+    val parent: MutableMap<AccessibilityNodeInfo, AccessibilityNodeInfo?> = HashMap(),
+) {
+    fun clear() {
+        emptyMap<String, String>()
+        child.clear()
+        parent.clear()
+        index.clear()
+    }
+}
+
 fun createCacheTransform(): CacheTransform {
-    val indexCache = HashMap<AccessibilityNodeInfo, Int>()
+    val cache = NodeCache()
+    fun AccessibilityNodeInfo.getParentX(): AccessibilityNodeInfo? {
+        return parent?.also { parent ->
+            cache.parent[this] = parent
+        }
+    }
+
     fun AccessibilityNodeInfo.getChildX(index: Int): AccessibilityNodeInfo? {
-        return getChild(index)?.also { child ->
-            indexCache[child] = index
+        return cache.child[this to index] ?: getChild(index)?.also { child ->
+            cache.index[child] = index
+            cache.parent[child] = this
+            cache.child[this to index] = child
         }
     }
 
     fun AccessibilityNodeInfo.getIndexX(): Int {
-        indexCache[this]?.let { return it }
-        parent?.forEachIndexed { index, child ->
+        cache.index[this]?.let { return it }
+        getParentX()?.forEachIndexed { index, child ->
             if (child != null) {
-                indexCache[child] = index
+                cache.index[child] = index
             }
             if (child == this) {
                 return index
@@ -267,22 +299,60 @@ fun createCacheTransform(): CacheTransform {
             }
         }
     }
-    val getAttr = createGetAttr()
+    val getNodeAttr = createGetNodeAttr(cache)
+    val getParent = { node: AccessibilityNodeInfo ->
+        cache.parent[node] ?: node.parent.apply {
+            cache.parent[node] = this
+        }
+    }
     val transform = Transform(
         getAttr = { node, name ->
-            when (name) {
-                "index" -> {
-                    node.getIndexX()
+            when (node) {
+                is AccessibilityNodeInfo -> {
+                    when (name) {
+                        "index" -> {
+                            node.getIndexX()
+                        }
+
+                        else -> {
+                            getNodeAttr(node, name)
+                        }
+                    }
                 }
 
+                is CharSequence -> getCharSequenceAttr(node, name)
+
                 else -> {
-                    getAttr(node, name)
+                    null
                 }
             }
         },
+        getInvoke = { target, name, args ->
+            when (target) {
+                is AccessibilityNodeInfo -> when (name) {
+                    "getChild" -> {
+                        args.getIntOrNull()?.let { index ->
+                            if (index in 0 until target.childCount) {
+                                target.getChildX(index)
+                            } else {
+                                null
+                            }
+                        }
+                    }
+
+                    else -> null
+                }
+
+                is CharSequence -> getCharSequenceInvoke(target, name, args)
+                is Int -> getIntInvoke(target, name, args)
+
+                else -> null
+            }
+
+        },
         getName = { node -> node.className },
         getChildren = getChildrenCache,
-        getParent = { node -> node.parent },
+        getParent = getParent,
         getDescendants = { node ->
             sequence {
                 val stack = getChildrenCache(node).toMutableList()
@@ -319,9 +389,9 @@ fun createCacheTransform(): CacheTransform {
         },
         getBeforeBrothers = { node, connectExpression ->
             sequence {
-                val parentVal = node.parent ?: return@sequence
-                val index =
-                    indexCache[node] // 如果 node 由 quickFind 得到, 则第一次调用此方法可能得到 indexCache 是空
+                val parentVal = getParent(node) ?: return@sequence
+                // 如果 node 由 quickFind 得到, 则第一次调用此方法可能得到 cache.index 是空
+                val index = cache.index[node]
                 if (index != null) {
                     var i = index - 1
                     var offset = 0
@@ -349,9 +419,9 @@ fun createCacheTransform(): CacheTransform {
             }
         },
         getAfterBrothers = { node, connectExpression ->
-            val parentVal = node.parent
+            val parentVal = getParent(node)
             if (parentVal != null) {
-                val index = indexCache[node]
+                val index = cache.index[node]
                 if (index != null) {
                     sequence {
                         var i = index + 1
@@ -418,12 +488,41 @@ fun createCacheTransform(): CacheTransform {
         },
     )
 
-    return CacheTransform(transform, indexCache)
+    return CacheTransform(transform, cache)
+}
+
+private fun List<Any?>.getIntOrNull(i: Int = 0): Int? {
+    return getOrNull(i) as? Int ?: return null
 }
 
 fun createTransform(): Transform<AccessibilityNodeInfo> {
+    val cache = NodeCache()
+    val getNodeAttr = createGetNodeAttr(cache)
     return Transform(
-        getAttr = createGetAttr(),
+        getAttr = { target, name ->
+            when (target) {
+                is AccessibilityNodeInfo -> getNodeAttr(target, name)
+                is CharSequence -> getCharSequenceAttr(target, name)
+                else -> {
+                    null
+                }
+            }
+        },
+        getInvoke = { target, name, args ->
+            when (target) {
+                is AccessibilityNodeInfo -> when (name) {
+                    "getChild" -> {
+                        target.getChildOrNull(args.getIntOrNull())
+                    }
+
+                    else -> null
+                }
+
+                is CharSequence -> getCharSequenceInvoke(target, name, args)
+                is Int -> getIntInvoke(target, name, args)
+                else -> null
+            }
+        },
         getName = { node -> node.className },
         getChildren = getChildren,
         getParent = { node -> node.parent },

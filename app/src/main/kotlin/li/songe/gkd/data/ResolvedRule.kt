@@ -130,7 +130,7 @@ sealed class ResolvedRule(
         else -> true
     }
 
-    private val canCacheIndex = (matches + excludeMatches).any { s -> s.canCacheIndex }
+    private val canCacheIndex = (matches + excludeMatches).any { s -> s.useCache }
     private val transform = if (canCacheIndex) defaultCacheTransform.transform else defaultTransform
 
     fun query(
@@ -159,7 +159,7 @@ sealed class ResolvedRule(
             }
             return target
         } finally {
-            defaultCacheTransform.indexCache.clear()
+            defaultCacheTransform.cache.clear()
         }
     }
 

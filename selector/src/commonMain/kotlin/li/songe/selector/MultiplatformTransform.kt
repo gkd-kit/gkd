@@ -5,13 +5,15 @@ import kotlin.js.JsExport
 @JsExport
 @Suppress("UNCHECKED_CAST", "UNUSED")
 class MultiplatformTransform<T : Any>(
-    getAttr: (T, String) -> Any?,
+    getAttr: (Any?, String) -> Any?,
+    getInvoke: (Any?, String, List<Any?>) -> Any?,
     getName: (T) -> String?,
     getChildren: (T) -> Array<T>,
     getParent: (T) -> T?,
 ) {
     internal val transform = Transform(
         getAttr = getAttr,
+        getInvoke = getInvoke,
         getName = getName,
         getChildren = { node -> getChildren(node).asSequence() },
         getParent = getParent,

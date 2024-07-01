@@ -1,22 +1,28 @@
 package li.songe.selector.parser
 
+import li.songe.selector.BinaryExpression
+import li.songe.selector.CompareOperator
+import li.songe.selector.ConnectExpression
+import li.songe.selector.ConnectOperator
+import li.songe.selector.ConnectSegment
+import li.songe.selector.ConnectWrapper
+import li.songe.selector.Expression
+import li.songe.selector.LogicalExpression
+import li.songe.selector.LogicalOperator
+import li.songe.selector.NotExpression
+import li.songe.selector.PolynomialExpression
+import li.songe.selector.Position
+import li.songe.selector.PositionImpl
+import li.songe.selector.PropertySegment
+import li.songe.selector.PropertyWrapper
 import li.songe.selector.Selector
-import li.songe.selector.data.BinaryExpression
-import li.songe.selector.data.CompareOperator
-import li.songe.selector.data.ConnectExpression
-import li.songe.selector.data.ConnectOperator
-import li.songe.selector.data.ConnectSegment
-import li.songe.selector.data.ConnectWrapper
-import li.songe.selector.data.Expression
-import li.songe.selector.data.LogicalExpression
-import li.songe.selector.data.LogicalOperator
-import li.songe.selector.data.PolynomialExpression
-import li.songe.selector.data.PrimitiveValue
-import li.songe.selector.data.PropertySegment
-import li.songe.selector.data.PropertyWrapper
-import li.songe.selector.data.TupleExpression
+import li.songe.selector.TupleExpression
+import li.songe.selector.ValueExpression
 import li.songe.selector.gkdAssert
 import li.songe.selector.gkdError
+import li.songe.selector.parser.ParserSet.connectSelectorParser
+import li.songe.selector.parser.ParserSet.endParser
+import li.songe.selector.parser.ParserSet.whiteCharParser
 import li.songe.selector.toMatches
 
 internal object ParserSet {
@@ -212,10 +218,26 @@ internal object ParserSet {
         i++
         ParserResult(TupleExpression(numbers), i - offset)
     }
-    private val tupleExpressionReg = Regex("^\\(\\s*\\d+,.*$")
+
+    private fun isTupleExpression(source: CharSequence): Boolean {
+        // ^\(\s*\d+\s*,
+        var i = 0
+        if (source.getOrNull(i) != '(') {
+            return false
+        }
+        i++
+        i += whiteCharParser(source, i).length
+        if (source.getOrNull(i) !in '0'..'9') {
+            return false
+        }
+        i += integerParser(source, i).length
+        i += whiteCharParser(source, i).length
+        return source.getOrNull(i) == ','
+    }
+
     val connectExpressionParser = Parser(polynomialExpressionParser.prefix) { source, offset, _ ->
         var i = offset
-        if (tupleExpressionReg.matches(source.subSequence(offset, source.length))) {
+        if (isTupleExpression(source.subSequence(offset, source.length))) {
             val tupleExpressionResult = tupleExpressionParser(source, i)
             i += tupleExpressionResult.length
             ParserResult(tupleExpressionResult.data, i - offset)
@@ -244,13 +266,20 @@ internal object ParserSet {
         )
     }
 
-    val attrOperatorParser =
-        Parser(CompareOperator.allSubClasses.joinToString("") { it.key }) { source, offset, _ ->
-            val operator = CompareOperator.allSubClasses.find { compareOperator ->
-                source.startsWith(compareOperator.key, offset)
-            } ?: gkdError(source, offset, "CompareOperator")
-            ParserResult(operator, operator.key.length)
-        }
+    private fun attrOperatorParser(
+        source: CharSequence,
+        offset: Int
+    ): PositionImpl<CompareOperator> {
+        val operator = CompareOperator.allSubClasses.find { compareOperator ->
+            source.startsWith(compareOperator.key, offset)
+        } ?: gkdError(source, offset, "CompareOperator")
+        return PositionImpl(
+            start = offset,
+            end = offset + operator.key.length,
+            value = operator
+        )
+    }
+
     val stringParser = Parser("`'\"") { source, offset, prefix ->
         var i = offset
         gkdAssert(source, i, prefix)
@@ -312,7 +341,7 @@ internal object ParserSet {
 
     private val varPrefix = "_" + ('a'..'z').joinToString("") + ('A'..'Z').joinToString("")
     private val varStr = varPrefix + '.' + ('0'..'9').joinToString("")
-    val propertyParser = Parser(varPrefix) { source, offset, prefix ->
+    private val propertyParser = Parser(varPrefix) { source, offset, prefix ->
         var i = offset
         gkdAssert(source, i, prefix)
         var data = source[i].toString()
@@ -327,120 +356,253 @@ internal object ParserSet {
         ParserResult(data, i - offset)
     }
 
-    val valueParser =
-        Parser("tfn-" + stringParser.prefix + integerParser.prefix) { source, offset, prefix ->
-            var i = offset
-            gkdAssert(source, i, prefix)
-            val value: PrimitiveValue = when (source[i]) {
-                't' -> {
+    private fun isVarChar(c: Char?, start: Boolean = false): Boolean {
+        c ?: return false
+        return (c == '_' || c in 'a'..'z' || c in 'A'..'Z' || (!start && c in '0'..'9'))
+    }
+
+    private fun matchLiteral(source: CharSequence, offset: Int, raw: String): Boolean {
+        if (source.startsWith(raw, offset)) {
+            val c = source.getOrNull(offset + raw.length) ?: return true
+            return !(c == '_' || c in 'a'..'z' || c in 'A'..'Z' || c in '0'..'9')
+        }
+        return false
+    }
+
+    fun parseVariable(source: CharSequence, offset: Int): ValueExpression {
+        var i = offset
+        i += whiteCharParser(source, i).length
+        if (i >= source.length) {
+            gkdError(source, i, "Variable")
+        }
+        if (matchLiteral(source, i, "true")) {
+            return ValueExpression.BooleanLiteral(start = i, value = true)
+        } else if (matchLiteral(source, i, "false")) {
+            return ValueExpression.BooleanLiteral(start = i, value = false)
+        } else if (matchLiteral(source, i, "null")) {
+            return ValueExpression.NullLiteral(start = i)
+        }
+        if (source[i] in stringParser.prefix) {
+            val result = stringParser(source, i)
+            i += result.length
+            return ValueExpression.StringLiteral(
+                start = i - result.length,
+                end = i,
+                value = result.data
+            )
+        }
+        if (source[i] == '-') {
+            i++
+            val result = integerParser(source, i)
+            i += result.length
+            return ValueExpression.IntLiteral(
+                start = i - result.length - 1,
+                end = i,
+                value = -result.data
+            )
+        }
+        if (source[i] in integerParser.prefix) {
+            val result = integerParser(source, i)
+            i += result.length
+            return ValueExpression.IntLiteral(
+                start = i - result.length,
+                end = i, value = result.data
+            )
+        }
+
+        var lastToken: ValueExpression.Variable? = null
+        while (i < source.length) {
+            i += whiteCharParser(source, i).length
+            val char = source.getOrNull(i)
+            when {
+                char == '(' -> {
+                    val start = i
                     i++
-                    "rue".forEach { c ->
-                        gkdAssert(source, i, c.toString())
+                    i += whiteCharParser(source, i).length
+                    if (lastToken != null) {
+                        // 暂不支持 object()()
+                        if (lastToken is ValueExpression.CallExpression) {
+                            gkdError(source, i, "Variable")
+                        }
+                        val arguments = mutableListOf<ValueExpression>()
+                        while (i < source.length && source[i] != ')') {
+                            val result = parseVariable(source, i)
+                            arguments.add(result)
+                            i += result.length
+                            if (source.getOrNull(i) == ',') {
+                                i++
+                                i += whiteCharParser(source, i).length
+                            }
+                        }
+                        i += whiteCharParser(source, i).length
+                        gkdAssert(source, i, ")")
                         i++
-                    }
-                    PrimitiveValue.BooleanValue(true)
-                }
-
-                'f' -> {
-                    i++
-                    "alse".forEach { c ->
-                        gkdAssert(source, i, c.toString())
+                        lastToken = ValueExpression.CallExpression(
+                            start = lastToken.start,
+                            end = i,
+                            lastToken,
+                            arguments
+                        )
+                    } else {
+                        val result = parseVariable(source, i)
+                        i += result.length
+                        i += whiteCharParser(source, i).length
+                        gkdAssert(source, i, ")")
                         i++
+                        val end = i
+                        return when (result) {
+                            is ValueExpression.BooleanLiteral -> result.copy(
+                                start = start
+                            )
+
+                            is ValueExpression.IntLiteral -> result.copy(start = start, end = end)
+                            is ValueExpression.NullLiteral -> result.copy(start = start)
+                            is ValueExpression.StringLiteral -> result.copy(
+                                start = start,
+                                end = end
+                            )
+
+                            is ValueExpression.CallExpression -> result.copy(
+                                start = start,
+                                end = end
+                            )
+
+                            is ValueExpression.Identifier -> result.copy(start = start)
+                            is ValueExpression.MemberExpression -> result.copy(
+                                start = start,
+                                end = end
+                            )
+                        }
                     }
-                    PrimitiveValue.BooleanValue(false)
                 }
 
-                'n' -> {
+                char == '.' -> {
                     i++
-                    "ull".forEach { c ->
-                        gkdAssert(source, i, c.toString())
-                        i++
+                    if (lastToken !is ValueExpression.Variable) {
+                        gkdError(source, i, "Variable")
                     }
-                    PrimitiveValue.NullValue
+                    if (!isVarChar(source.getOrNull(i), true)) {
+                        gkdError(source, i, "Variable")
+                    }
+                    val property = source.drop(i).takeWhile { c -> isVarChar(c, false) }.toString()
+                    lastToken = ValueExpression.MemberExpression(
+                        start = lastToken.start,
+                        end = i + property.length,
+                        lastToken,
+                        property
+                    )
+                    i += property.length
                 }
 
-                in stringParser.prefix -> {
-                    val s = stringParser(source, i)
-                    i += s.length
-                    PrimitiveValue.StringValue(s.data)
-                }
-
-                '-' -> {
-                    i++
-                    gkdAssert(source, i, integerParser.prefix)
-                    val n = integerParser(source, i)
-                    i += n.length
-                    PrimitiveValue.IntValue(-n.data)
-                }
-
-                in integerParser.prefix -> {
-                    val n = integerParser(source, i)
-                    i += n.length
-                    PrimitiveValue.IntValue(n.data)
+                isVarChar(char) -> {
+                    val variable = source.drop(i).takeWhile { c -> isVarChar(c) }.toString()
+                    lastToken = ValueExpression.Identifier(start = i, variable)
+                    i += variable.length
                 }
 
                 else -> {
-                    gkdError(source, i, prefix)
+                    break
                 }
             }
-            ParserResult(value, i - offset)
         }
+        if (lastToken == null) {
+            gkdError(source, i, "Variable")
+        }
+        return lastToken
+    }
 
-    val binaryExpressionParser = Parser { source, offset, _ ->
+    private fun valueParser(source: CharSequence, offset: Int): ValueExpression {
+        val prefix = "tfn-" + stringParser.prefix + integerParser.prefix + varPrefix
+        gkdAssert(source, offset, prefix)
+        val result = parseVariable(source, offset)
+        return result
+    }
+
+    private fun binaryExpressionParser(source: CharSequence, offset: Int): BinaryExpression {
         var i = offset
-        val parserResult = propertyParser(source, i)
-        i += parserResult.length
+        val leftValueResult = valueParser(source, i)
+        i += leftValueResult.length
         i += whiteCharParser(source, i).length
         val operatorResult = attrOperatorParser(source, i)
         i += operatorResult.length
         i += whiteCharParser(source, i).length
-        val valueResult = valueParser(source, i).let { result ->
+        val rightValueResult = valueParser(source, i).let { result ->
             // check regex
-            if ((operatorResult.data == CompareOperator.Matches || operatorResult.data == CompareOperator.NotMatches) && result.data is PrimitiveValue.StringValue) {
+            if ((operatorResult.value == CompareOperator.Matches || operatorResult.value == CompareOperator.NotMatches) && result is ValueExpression.StringLiteral) {
                 val matches = try {
-                    result.data.value.toMatches()
+                    result.value.toMatches()
                 } catch (e: Exception) {
                     gkdError(source, i, "valid primitive string regex", e)
                 }
-                result.copy(data = result.data.copy(matches = matches))
+                result.copy(
+                    matches = matches
+                )
             } else {
                 result
             }
         }
-        if (!operatorResult.data.allowType(valueResult.data)) {
-            gkdError(source, i, "valid primitive value")
-        }
-        i += valueResult.length
-        ParserResult(
-            BinaryExpression(
-                parserResult.data, operatorResult.data, valueResult.data
-            ), i - offset
+        i += rightValueResult.length
+        return BinaryExpression(
+            start = offset,
+            end = i,
+            leftValueResult,
+            operatorResult,
+            rightValueResult
         )
     }
 
-    val logicalOperatorParser = Parser { source, offset, _ ->
+    private fun logicalOperatorParser(
+        source: CharSequence,
+        offset: Int
+    ): PositionImpl<LogicalOperator> {
         var i = offset
         i += whiteCharParser(source, i).length
         val operator = LogicalOperator.allSubClasses.find { logicalOperator ->
             source.startsWith(logicalOperator.key, offset)
         } ?: gkdError(source, offset, "LogicalOperator")
-        ParserResult(operator, operator.key.length)
+        return PositionImpl(
+            start = i,
+            end = i + operator.key.length,
+            value = operator
+        )
     }
 
+    private fun unaryExpressionParser(
+        source: CharSequence,
+        offset: Int
+    ): NotExpression {
+        var i = offset
+        i += whiteCharParser(source, i).length
+        gkdAssert(source, i, "!")
+        val start = i
+        i += 1
+        gkdAssert(source, i, "(")
+        val expression = expressionParser(source, i, true)
+        i += expression.length
+        return NotExpression(
+            start = start,
+            expression
+        )
+    }
 
     //    a>1 && a>1 || a>1
 //    (a>1 || a>1) && a>1
-    fun expressionParser(source: String, offset: Int): ParserResult<Expression> {
+    fun expressionParser(
+        source: CharSequence,
+        offset: Int,
+        one: Boolean = false, // 是否只解析一个表达式
+    ): Expression {
         var i = offset
         i += whiteCharParser(source, i).length
 //        [exp, ||, exp, &&, &&]
-        val parserResults = mutableListOf<ParserResult<*>>()
+        val parserResults = mutableListOf<Position>()
         while (i < source.length && source[i] != ']' && source[i] != ')') {
             when (source[i]) {
                 '(' -> {
+                    val start = i
                     if (parserResults.isNotEmpty()) {
                         val lastToken = parserResults.last()
-                        if (lastToken.data !is LogicalOperator) {
+                        if (!(lastToken is PositionImpl<*> && lastToken.value is LogicalOperator)) {
                             var count = 0
                             while (i - 1 >= count && source[i - 1 - count] in whiteCharParser.prefix) {
                                 count++
@@ -450,16 +612,44 @@ internal object ParserSet {
                             )
                         }
                     }
+                    // [(a)=1]
+                    // [(a=1)]
                     i++
-                    parserResults.add(expressionParser(source, i).apply { i += length })
+                    val exp = expressionParser(source, i).apply { i += length }
                     gkdAssert(source, i, ")")
                     i++
+                    val end = i
+                    parserResults.add(
+                        when (exp) {
+                            is BinaryExpression -> exp.copy(
+                                start = start,
+                                end = end
+                            )
+
+                            is LogicalExpression -> exp.copy(
+                                start = start,
+                                end = end
+                            )
+
+                            is NotExpression -> exp.copy(
+                                start = start
+                            )
+                        }
+                    )
+                    if (one) {
+                        break
+                    }
                 }
 
                 in "|&" -> {
                     parserResults.add(logicalOperatorParser(source, i).apply { i += length })
                     i += whiteCharParser(source, i).length
-                    gkdAssert(source, i, "(" + propertyParser.prefix)
+                    gkdAssert(source, i, "(!" + propertyParser.prefix)
+                }
+
+                '!' -> {
+                    parserResults.add(unaryExpressionParser(source, i).apply { i += length })
+                    i += whiteCharParser(source, i).length
                 }
 
                 else -> {
@@ -474,21 +664,29 @@ internal object ParserSet {
             )
         }
         if (parserResults.size == 1) {
-            return ParserResult(parserResults.first().data as Expression, i - offset)
+            return parserResults.first() as Expression
         }
 
 //        运算符优先级 && > ||
 //        a && b || c -> ab || c
 //        0 1  2 3  4 -> 0  1  2
-        val tokens = parserResults.map { it.data }.toMutableList()
+        val tokens = parserResults.toMutableList()
         var index = 0
         while (index < tokens.size) {
             val token = tokens[index]
-            if (token == LogicalOperator.AndOperator) {
+            if (token is PositionImpl<*> && token.value == LogicalOperator.AndOperator) {
+                val left = tokens[index - 1] as Expression
+                val right = tokens[index + 1] as Expression
+
+                @Suppress("UNCHECKED_CAST")
+                val operator = token as PositionImpl<LogicalOperator>
                 tokens[index] = LogicalExpression(
-                    left = tokens[index - 1] as Expression,
-                    operator = LogicalOperator.AndOperator,
-                    right = tokens[index + 1] as Expression
+                    start = left.start,
+                    end = right.end,
+                    left = left,
+
+                    operator = operator,
+                    right = right
                 )
                 tokens.removeAt(index - 1)
                 tokens.removeAt(index + 1 - 1)
@@ -497,15 +695,22 @@ internal object ParserSet {
             }
         }
         while (tokens.size > 1) {
+            val left = tokens[0] as Expression
+
+            @Suppress("UNCHECKED_CAST")
+            val operator = tokens[1] as PositionImpl<LogicalOperator>
+            val right = tokens[2] as Expression
             tokens[1] = LogicalExpression(
-                left = tokens[0] as Expression,
-                operator = tokens[1] as LogicalOperator.OrOperator,
-                right = tokens[2] as Expression
+                start = left.start,
+                end = right.end,
+                left = left,
+                operator = operator,
+                right = right
             )
             tokens.removeAt(0)
             tokens.removeAt(2 - 1)
         }
-        return ParserResult(tokens.first() as Expression, i - offset)
+        return tokens.first() as Expression
     }
 
 
@@ -519,7 +724,7 @@ internal object ParserSet {
         gkdAssert(source, i, "]")
         i++
         ParserResult(
-            exp.data, i - offset
+            exp, i - offset
         )
     }
 
@@ -578,30 +783,30 @@ internal object ParserSet {
         }
         ParserResult(Unit, 0)
     }
+}
 
-    val selectorParser: (String) -> Selector = { source ->
-        var i = 0
-        i += whiteCharParser(source, i).length
-        val combinatorSelectorResult = connectSelectorParser(source, i)
-        i += combinatorSelectorResult.length
+internal fun selectorParser(source: String): Selector {
+    var i = 0
+    i += whiteCharParser(source, i).length
+    val combinatorSelectorResult = connectSelectorParser(source, i)
+    i += combinatorSelectorResult.length
 
-        i += whiteCharParser(source, i).length
-        i += endParser(source, i).length
-        val data = combinatorSelectorResult.data
-        val propertySelectorList = mutableListOf<PropertySegment>()
-        val combinatorSelectorList = mutableListOf<ConnectSegment>()
-        propertySelectorList.add(data.first)
-        data.second.forEach {
-            propertySelectorList.add(it.second)
-            combinatorSelectorList.add(it.first)
-        }
-        val wrapperList = mutableListOf(PropertyWrapper(propertySelectorList.first()))
-        combinatorSelectorList.forEachIndexed { index, combinatorSelector ->
-            val combinatorSelectorWrapper = ConnectWrapper(combinatorSelector, wrapperList.last())
-            val propertySelectorWrapper =
-                PropertyWrapper(propertySelectorList[index + 1], combinatorSelectorWrapper)
-            wrapperList.add(propertySelectorWrapper)
-        }
-        Selector(wrapperList.last())
+    i += whiteCharParser(source, i).length
+    i += endParser(source, i).length
+    val data = combinatorSelectorResult.data
+    val propertySelectorList = mutableListOf<PropertySegment>()
+    val combinatorSelectorList = mutableListOf<ConnectSegment>()
+    propertySelectorList.add(data.first)
+    data.second.forEach {
+        propertySelectorList.add(it.second)
+        combinatorSelectorList.add(it.first)
     }
+    val wrapperList = mutableListOf(PropertyWrapper(propertySelectorList.first()))
+    combinatorSelectorList.forEachIndexed { index, combinatorSelector ->
+        val combinatorSelectorWrapper = ConnectWrapper(combinatorSelector, wrapperList.last())
+        val propertySelectorWrapper =
+            PropertyWrapper(propertySelectorList[index + 1], combinatorSelectorWrapper)
+        wrapperList.add(propertySelectorWrapper)
+    }
+    return Selector(source, wrapperList.last())
 }
