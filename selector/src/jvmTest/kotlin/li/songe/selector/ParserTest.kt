@@ -24,15 +24,47 @@ class ParserTest {
     private val json = Json {
         ignoreUnknownKeys = true
     }
-    private val transform = Transform<TestNode>(getAttr = { node, name ->
-        if (name == "_id") return@Transform node.id
-        if (name == "_pid") return@Transform node.pid
-        val value = node.attr[name] ?: return@Transform null
-        if (value is JsonNull) return@Transform null
-        value.intOrNull ?: value.booleanOrNull ?: value.content
-    }, getName = { node -> node.attr["name"]?.content }, getChildren = { node ->
-        node.children.asSequence()
-    }, getParent = { node -> node.parent })
+
+    private fun getNodeAttr(node: TestNode, name: String): Any? {
+        if (name == "_id") return node.id
+        if (name == "_pid") return node.pid
+        if (name == "parent") return node.parent
+        val value = node.attr[name] ?: return null
+        if (value is JsonNull) return null
+        return value.intOrNull ?: value.booleanOrNull ?: value.content
+    }
+
+    private fun getNodeInvoke(target: TestNode, name: String, args: List<Any?>): Any? {
+        when (name) {
+            "getChild" -> {
+                val arg = (args.getIntOrNull() ?: return null)
+                return target.children.getOrNull(arg)
+            }
+        }
+        return null
+    }
+
+    private val transform = Transform<TestNode>(
+        getAttr = { target, name ->
+            when (target) {
+                is TestNode -> getNodeAttr(target, name)
+                is String -> getCharSequenceAttr(target, name)
+
+                else -> null
+            }
+        },
+        getInvoke = { target, name, args ->
+            when (target) {
+                is Int -> getIntInvoke(target, name, args)
+                is CharSequence -> getCharSequenceInvoke(target, name, args)
+                is TestNode -> getNodeInvoke(target, name, args)
+                else -> null
+            }
+        },
+        getName = { node -> node.attr["name"]?.content },
+        getChildren = { node -> node.children.asSequence() },
+        getParent = { node -> node.parent }
+    )
 
     private val idToSnapshot = HashMap<String, TestNode>()
 
@@ -42,7 +74,7 @@ class ParserTest {
 
         val file = assetsDir.resolve("$githubAssetId.json")
         if (!file.exists()) {
-            URL("https://github.com/gkd-kit/inspect/files/${githubAssetId}/file.zip").openStream()
+            URL("https://f.gkd.li/${githubAssetId}").openStream()
                 .use { inputStream ->
                     val zipInputStream = ZipInputStream(inputStream)
                     var entry = zipInputStream.nextEntry
@@ -78,7 +110,7 @@ class ParserTest {
 
     @Test
     fun test_expression() {
-        println(ParserSet.expressionParser("a>1&&b>1&&c>1||d>1", 0).data)
+        println(ParserSet.expressionParser("a>1&&b>1&&c>1||d>1", 0))
         println(Selector.parse("View[a>1&&b>1&&c>1||d>1&&x^=1] > Button[a>1||b*='zz'||c^=1]"))
         println(Selector.parse("[id=`com.byted.pangle:id/tt_splash_skip_btn`||(id=`com.hupu.games:id/tv_time`&&text*=`跳过`)]"))
     }
@@ -89,8 +121,8 @@ class ParserTest {
             "ImageView < @FrameLayout < LinearLayout < RelativeLayout <n LinearLayout < RelativeLayout + LinearLayout > RelativeLayout > TextView[text\$='广告']"
         val selector = Selector.parse(text)
         println("trackIndex: " + selector.trackIndex)
-        println("canCacheIndex: " + Selector.parse("A + B").canCacheIndex)
-        println("canCacheIndex: " + Selector.parse("A > B - C").canCacheIndex)
+        println("canCacheIndex: " + Selector.parse("A + B").useCache)
+        println("canCacheIndex: " + Selector.parse("A > B - C").useCache)
     }
 
     @Test
@@ -118,7 +150,7 @@ class ParserTest {
     fun check_parser() {
         val selector = Selector.parse("View > Text[index>-0]")
         println("selector: $selector")
-        println("canCacheIndex: " + selector.canCacheIndex)
+        println("canCacheIndex: " + selector.useCache)
     }
 
 
@@ -188,12 +220,40 @@ class ParserTest {
 
     @Test
     fun check_regex() {
-        val source = "[vid~=`(?is)TV.*`]"
+        val source = "[1<parent.getChild][vid=`im_cover`]"
         println("source:$source")
         val selector = Selector.parse(source)
         val snapshotNode = getOrDownloadNode("https://i.gkd.li/i/14445410")
         println("selector:$selector")
         println("result:" + transform.querySelectorAll(snapshotNode, selector).map { n -> n.id }
             .toList())
+    }
+
+    @Test
+    fun check_var() {
+        val result = ParserSet.parseVariable("rem(3)", 0)
+        println("result: $result")
+        println("check_var: " + result.stringify())
+
+        val selector = Selector.parse("[vid.get(-2)=`l`]")
+        println("selector: $selector")
+
+        val snapshotNode = getOrDownloadNode("https://i.gkd.li/i/14445410")
+        println(
+            "result: [" + transform.querySelectorAll(snapshotNode, selector)
+                .joinToString("||") { "_id=${it.id}" } + "]"
+        )
+    }
+
+    @Test
+    fun check_type() {
+        val source =
+            "[visibleToUser=true][((parent.getChild(0,).getChild( (0), )=null) && (((``  >=  1)))) || (name=null && desc=null)]"
+        val selector = Selector.parse(source)
+        val typeInfo = initDefaultTypeInfo().contextType
+        val error = selector.checkType(typeInfo)
+        println("useCache: ${selector.useCache}")
+        println("error: $error")
+        println("check_type: $selector")
     }
 }

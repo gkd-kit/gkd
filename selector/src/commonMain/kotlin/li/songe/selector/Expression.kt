@@ -1,8 +1,6 @@
-package li.songe.selector.data
+package li.songe.selector
 
-import li.songe.selector.Transform
-
-sealed class Expression {
+sealed class Expression : Position {
     internal abstract fun <T> match(node: T, transform: Transform<T>): Boolean
 
     abstract val binaryExpressions: Array<BinaryExpression>

@@ -1,8 +1,8 @@
-package li.songe.selector.data
+package li.songe.selector
 
-import li.songe.selector.Transform
+sealed class LogicalOperator(val key: String) : Stringify {
+    override fun stringify() = key
 
-sealed class LogicalOperator(val key: String) {
     companion object {
         // https://stackoverflow.com/questions/47648689
         val allSubClasses by lazy {
@@ -12,7 +12,7 @@ sealed class LogicalOperator(val key: String) {
         }
     }
 
-    abstract fun <T> compare(
+    internal abstract fun <T> compare(
         node: T,
         transform: Transform<T>,
         left: Expression,

@@ -10,7 +10,6 @@ class MultiplatformSelector private constructor(
     val tracks = selector.tracks
     val trackIndex = selector.trackIndex
     val connectKeys = selector.connectKeys
-    val propertyNames = selector.propertyNames
 
     val qfIdValue = selector.qfIdValue
     val qfVidValue = selector.qfVidValue
@@ -18,15 +17,8 @@ class MultiplatformSelector private constructor(
     val canQf = selector.canQf
     val isMatchRoot = selector.isMatchRoot
 
-    // [name,operator,value][]
-    val binaryExpressions = selector.binaryExpressions.map { e ->
-        arrayOf(
-            e.name,
-            e.operator.key,
-            e.value.type,
-            e.value.toString()
-        )
-    }.toTypedArray()
+    val binaryExpressions = selector.binaryExpressions
+    fun checkType(typeInfo: TypeInfo) = selector.checkType(typeInfo)
 
     fun <T : Any> match(node: T, transform: MultiplatformTransform<T>): T? {
         return selector.match(node, transform.transform)

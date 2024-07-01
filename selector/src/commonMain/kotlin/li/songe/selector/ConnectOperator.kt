@@ -1,9 +1,9 @@
-package li.songe.selector.data
+package li.songe.selector
 
-import li.songe.selector.Transform
+sealed class ConnectOperator(val key: String) : Stringify {
+    override fun stringify() = key
 
-sealed class ConnectOperator(val key: String) {
-    abstract fun <T> traversal(
+    internal abstract fun <T> traversal(
         node: T, transform: Transform<T>, connectExpression: ConnectExpression
     ): Sequence<T>
 

@@ -1,10 +1,9 @@
 package li.songe.selector
 
-import li.songe.selector.data.ConnectExpression
-
 @Suppress("UNUSED")
 class Transform<T>(
-    val getAttr: (T, String) -> Any?,
+    val getAttr: (Any?, String) -> Any?,
+    val getInvoke: (Any?, String, List<Any?>) -> Any? = { _, _, _ -> null },
     val getName: (T) -> CharSequence?,
     val getChildren: (T) -> Sequence<T>,
     val getParent: (T) -> T?,

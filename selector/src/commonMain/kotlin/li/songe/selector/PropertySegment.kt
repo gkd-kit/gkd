@@ -1,6 +1,4 @@
-package li.songe.selector.data
-
-import li.songe.selector.Transform
+package li.songe.selector
 
 
 data class PropertySegment(
@@ -18,7 +16,7 @@ data class PropertySegment(
 
     override fun toString(): String {
         val matchTag = if (tracked) "@" else ""
-        return matchTag + name + expressions.joinToString("") { "[$it]" }
+        return matchTag + name + expressions.joinToString("") { "[${it.stringify()}]" }
     }
 
     private fun <T> matchName(node: T, transform: Transform<T>): Boolean {

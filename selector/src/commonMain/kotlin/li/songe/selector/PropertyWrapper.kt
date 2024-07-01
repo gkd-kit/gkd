@@ -1,9 +1,7 @@
-package li.songe.selector.data
-
-import li.songe.selector.Transform
+package li.songe.selector
 
 data class PropertyWrapper(
-    val propertySegment: PropertySegment,
+    val segment: PropertySegment,
     val to: ConnectWrapper? = null,
 ) {
     override fun toString(): String {
@@ -11,7 +9,7 @@ data class PropertyWrapper(
             to.toString() + "\u0020"
         } else {
             ""
-        }) + propertySegment.toString()
+        }) + segment.toString()
     }
 
     fun <T> matchTracks(
@@ -19,7 +17,7 @@ data class PropertyWrapper(
         transform: Transform<T>,
         trackNodes: MutableList<T>,
     ): List<T>? {
-        if (!propertySegment.match(node, transform)) {
+        if (!segment.match(node, transform)) {
             return null
         }
         trackNodes.add(node)
