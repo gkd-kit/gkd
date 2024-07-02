@@ -55,6 +55,7 @@ class ParserTest {
         },
         getInvoke = { target, name, args ->
             when (target) {
+                is Boolean -> getBooleanInvoke(target, name, args)
                 is Int -> getIntInvoke(target, name, args)
                 is CharSequence -> getCharSequenceInvoke(target, name, args)
                 is TestNode -> getNodeInvoke(target, name, args)

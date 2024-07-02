@@ -78,6 +78,9 @@ fun initDefaultTypeInfo(): DefaultTypeInfo {
     val intType = TypeInfo(PrimitiveType.IntType)
     val stringType = TypeInfo(PrimitiveType.StringType)
 
+    booleanType.methods = arrayOf(
+        MethodInfo("toInt", intType),
+    )
     intType.methods = arrayOf(
         MethodInfo("toString", stringType),
         MethodInfo("toString", stringType, arrayOf(intType)),
@@ -93,6 +96,7 @@ fun initDefaultTypeInfo(): DefaultTypeInfo {
     stringType.methods = arrayOf(
         MethodInfo("get", stringType, arrayOf(intType)),
         MethodInfo("at", stringType, arrayOf(intType)),
+        MethodInfo("substring", stringType, arrayOf(intType)),
         MethodInfo("substring", stringType, arrayOf(intType, intType)),
         MethodInfo("toInt", intType),
         MethodInfo("toInt", intType, arrayOf(intType)),
@@ -187,8 +191,15 @@ fun getStringInvoke(target: String, name: String, args: List<Any?>): Any? {
     return getCharSequenceInvoke(target, name, args)
 }
 
-fun getCharSequenceInvoke(target: CharSequence, name: String, args: List<Any?>): Any? {
+@JsExport
+fun getBooleanInvoke(target: Boolean, name: String, args: List<Any?>): Any? {
+    return when (name) {
+        "toInt" -> if (target) 1 else 0
+        else -> null
+    }
+}
 
+fun getCharSequenceInvoke(target: CharSequence, name: String, args: List<Any?>): Any? {
     return when (name) {
         "get" -> {
             target.getOrNull(args.getIntOrNull() ?: return null).toString()

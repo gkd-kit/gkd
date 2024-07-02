@@ -15,6 +15,7 @@ import li.songe.selector.UnknownIdentifierException
 import li.songe.selector.UnknownIdentifierMethodException
 import li.songe.selector.UnknownMemberException
 import li.songe.selector.UnknownMemberMethodException
+import li.songe.selector.getBooleanInvoke
 import li.songe.selector.getCharSequenceAttr
 import li.songe.selector.getCharSequenceInvoke
 import li.songe.selector.getIntInvoke
@@ -345,6 +346,7 @@ fun createCacheTransform(): CacheTransform {
 
                 is CharSequence -> getCharSequenceInvoke(target, name, args)
                 is Int -> getIntInvoke(target, name, args)
+                is Boolean -> getBooleanInvoke(target, name, args)
 
                 else -> null
             }
@@ -520,6 +522,7 @@ fun createTransform(): Transform<AccessibilityNodeInfo> {
 
                 is CharSequence -> getCharSequenceInvoke(target, name, args)
                 is Int -> getIntInvoke(target, name, args)
+                is Boolean -> getBooleanInvoke(target, name, args)
                 else -> null
             }
         },
