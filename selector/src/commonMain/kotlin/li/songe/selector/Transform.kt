@@ -3,7 +3,7 @@ package li.songe.selector
 @Suppress("UNUSED")
 class Transform<T>(
     val getAttr: (Any?, String) -> Any?,
-    val getInvoke: (Any?, String, List<Any?>) -> Any? = { _, _, _ -> null },
+    val getInvoke: (Any?, String, List<Any>) -> Any? = { _, _, _ -> null },
     val getName: (T) -> CharSequence?,
     val getChildren: (T) -> Sequence<T>,
     val getParent: (T) -> T?,

@@ -56,6 +56,7 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
         override fun <T> getAttr(node: T, transform: Transform<T>): Any? {
             return when (callee) {
                 is CallExpression -> {
+                    // not support
                     null
                 }
 
@@ -63,15 +64,15 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
                     transform.getInvoke(
                         node,
                         callee.value,
-                        arguments.map { it.getAttr(node, transform) }
+                        arguments.map { it.getAttr(node, transform).whenNull { return null } }
                     )
                 }
 
                 is MemberExpression -> {
                     transform.getInvoke(
-                        callee.object0.getAttr(node, transform),
+                        callee.object0.getAttr(node, transform).whenNull { return null },
                         callee.property,
-                        arguments.map { it.getAttr(node, transform) }
+                        arguments.map { it.getAttr(node, transform).whenNull { return null } }
                     )
                 }
             }

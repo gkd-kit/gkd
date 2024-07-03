@@ -493,14 +493,14 @@ fun createCacheTransform(): CacheTransform {
     return CacheTransform(transform, cache)
 }
 
-private fun List<Any?>.getIntOrNull(i: Int = 0): Int? {
+private fun List<Any>.getIntOrNull(i: Int = 0): Int? {
     return getOrNull(i) as? Int ?: return null
 }
 
-fun createTransform(): Transform<AccessibilityNodeInfo> {
+fun createNoCacheTransform(): CacheTransform {
     val cache = NodeCache()
     val getNodeAttr = createGetNodeAttr(cache)
-    return Transform(
+    val transform = Transform(
         getAttr = { target, name ->
             when (target) {
                 is AccessibilityNodeInfo -> getNodeAttr(target, name)
@@ -569,4 +569,5 @@ fun createTransform(): Transform<AccessibilityNodeInfo> {
             }
         },
     )
+    return CacheTransform(transform, cache)
 }
