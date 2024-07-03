@@ -63,6 +63,13 @@ internal fun optimizeMatchString(value: String): ((CharSequence) -> Boolean)? {
     return null
 }
 
+internal inline fun <T> T?.whenNull(block: () -> Nothing): T {
+    if (this == null) {
+        block()
+    }
+    return this
+}
+
 @JsExport
 class DefaultTypeInfo(
     val booleanType: TypeInfo,

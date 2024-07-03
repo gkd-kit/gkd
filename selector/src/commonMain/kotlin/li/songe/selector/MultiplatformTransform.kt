@@ -6,7 +6,7 @@ import kotlin.js.JsExport
 @Suppress("UNCHECKED_CAST", "UNUSED")
 class MultiplatformTransform<T : Any>(
     getAttr: (Any?, String) -> Any?,
-    getInvoke: (Any?, String, List<Any?>) -> Any?,
+    getInvoke: (Any?, String, List<Any>) -> Any?,
     getName: (T) -> String?,
     getChildren: (T) -> Array<T>,
     getParent: (T) -> T?,

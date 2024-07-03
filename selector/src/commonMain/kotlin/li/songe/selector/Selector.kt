@@ -93,10 +93,7 @@ class Selector internal constructor(
     }
 
     val useCache = run {
-        if (connectKeys.contains(ConnectOperator.BeforeBrother.key)) {
-            return@run true
-        }
-        if (connectKeys.contains(ConnectOperator.AfterBrother.key)) {
+        if (connectKeys.isNotEmpty()) {
             return@run true
         }
         binaryExpressions.forEach { b ->
@@ -139,7 +136,7 @@ class Selector internal constructor(
 }
 
 private val useCacheProperties by lazy {
-    arrayOf("index", "parent")
+    arrayOf("index", "parent", "depth")
 }
 private val useCacheMethods by lazy {
     arrayOf("getChild")
