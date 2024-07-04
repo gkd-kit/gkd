@@ -89,7 +89,9 @@ object SnapshotExt {
             throw RpcError("正在保存快照,不可重复操作")
         }
         captureLoading.value = true
-        toast("正在保存快照...")
+        if (storeFlow.value.showSaveSnapshotToast) {
+            toast("正在保存快照...")
+        }
 
         try {
             val snapshotDef = coroutineScope { async(Dispatchers.IO) { createComplexSnapshot() } }
