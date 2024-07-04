@@ -335,6 +335,16 @@ fun AdvancedPage() {
                 )
             }
 
+            TextSwitch(
+                name = "保存快照提示",
+                desc = "保存快照时是否提示\"正在保存快照\"",
+                checked = store.showSaveSnapshotToast
+            ) {
+                storeFlow.value = store.copy(
+                    showSaveSnapshotToast = it
+                )
+            }
+
             Text(
                 text = "其它",
                 modifier = Modifier.titleItemPadding(),

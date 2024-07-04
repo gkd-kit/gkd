@@ -61,6 +61,7 @@ data class Store(
     val sortType: Int = SortTypeOption.SortByName.value,
     val showSystemApp: Boolean = true,
     val showHiddenApp: Boolean = false,
+    val showSaveSnapshotToast: Boolean = true,
 )
 
 val storeFlow by lazy {
