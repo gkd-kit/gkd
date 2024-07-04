@@ -3,11 +3,13 @@ package li.songe.gkd.data
 import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Job
+import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.service.createCacheTransform
 import li.songe.gkd.service.createNoCacheTransform
 import li.songe.gkd.service.lastTriggerRule
 import li.songe.gkd.service.lastTriggerTime
 import li.songe.gkd.service.querySelector
+import li.songe.gkd.service.safeActiveWindow
 import li.songe.gkd.util.ResolvedGroup
 import li.songe.selector.Selector
 
@@ -32,6 +34,7 @@ sealed class ResolvedRule(
     private val matchTime = rule.matchTime ?: group.matchTime
     private val forcedTime = rule.forcedTime ?: group.forcedTime ?: 0L
     private val quickFind = rule.quickFind ?: group.quickFind ?: false
+    private val matchRoot = rule.matchRoot ?: group.matchRoot ?: false
     val order = rule.order ?: group.order ?: 0
 
     private val actionCdKey = rule.actionCdKey ?: group.actionCdKey
@@ -50,7 +53,7 @@ sealed class ResolvedRule(
 
     private val slowSelectors by lazy {
         (matches + excludeMatches + anyMatches).filterNot { s ->
-            ((quickFind && s.canQf) || s.isMatchRoot) && !s.connectKeys.contains(
+            ((quickFind && s.quickFindValue.canQf) || s.isMatchRoot) && !s.connectKeys.contains(
                 "<<"
             )
         }
@@ -134,27 +137,49 @@ sealed class ResolvedRule(
     private val transform = if (useCache) defaultCacheTransform else defaultTransform
 
     fun query(
-        nodeInfo: AccessibilityNodeInfo?,
+        node: AccessibilityNodeInfo?,
+        isRootNode: Boolean,
     ): AccessibilityNodeInfo? {
+        val nodeInfo = if (matchRoot) {
+            val rootNode = (if (isRootNode) {
+                node
+            } else {
+                GkdAbService.service?.safeActiveWindow
+            }) ?: return null
+            rootNode.apply {
+                transform.cache.parentMap[this] = null
+            }
+        } else {
+            node
+        }
         try {
             if (nodeInfo == null) return null
             var target: AccessibilityNodeInfo? = null
             if (anyMatches.isNotEmpty()) {
                 for (selector in anyMatches) {
-                    target = nodeInfo.querySelector(selector, quickFind, transform.transform)
-                        ?: break
+                    target = nodeInfo.querySelector(
+                        selector,
+                        quickFind,
+                        transform.transform,
+                        isRootNode || matchRoot
+                    ) ?: break
                 }
                 if (target == null) return null
             }
             for (selector in matches) {
-                target = nodeInfo.querySelector(selector, quickFind, transform.transform)
-                    ?: return null
+                target = nodeInfo.querySelector(
+                    selector,
+                    quickFind,
+                    transform.transform,
+                    isRootNode || matchRoot
+                ) ?: return null
             }
             for (selector in excludeMatches) {
                 nodeInfo.querySelector(
                     selector,
                     quickFind,
-                    transform.transform
+                    transform.transform,
+                    isRootNode || matchRoot
                 )?.let { return null }
             }
             return target
@@ -248,7 +273,7 @@ fun getFixActivityIds(
     }
 }
 
-private val defaultTransform = createNoCacheTransform()
-private val defaultCacheTransform = createCacheTransform()
+private val defaultTransform by lazy { createNoCacheTransform() }
+private val defaultCacheTransform by lazy { createCacheTransform() }
 
 
