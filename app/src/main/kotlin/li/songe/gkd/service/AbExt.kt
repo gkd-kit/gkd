@@ -44,16 +44,6 @@ val AccessibilityEvent.safeSource: AccessibilityNodeInfo?
         }
     }
 
-
-fun AccessibilityNodeInfo.getIndex(): Int {
-    parent?.forEachIndexed { index, accessibilityNodeInfo ->
-        if (accessibilityNodeInfo == this) {
-            return index
-        }
-    }
-    return 0
-}
-
 inline fun AccessibilityNodeInfo.forEachIndexed(action: (index: Int, childNode: AccessibilityNodeInfo?) -> Unit) {
     var index = 0
     val childCount = this.childCount
@@ -61,15 +51,6 @@ inline fun AccessibilityNodeInfo.forEachIndexed(action: (index: Int, childNode: 
         val child: AccessibilityNodeInfo? = getChild(index)
         action(index, child)
         index += 1
-    }
-}
-
-fun AccessibilityNodeInfo.getChildOrNull(i: Int?): AccessibilityNodeInfo? {
-    i ?: return null
-    return if (i in 0 until childCount) {
-        getChild(i)
-    } else {
-        null
     }
 }
 
@@ -87,25 +68,28 @@ fun AccessibilityNodeInfo.getVid(): CharSequence? {
 
 fun AccessibilityNodeInfo.querySelector(
     selector: Selector,
-    quickFind: Boolean = false,
+    quickFind: Boolean,
     transform: Transform<AccessibilityNodeInfo>,
+    isRootNode: Boolean,
 ): AccessibilityNodeInfo? {
     if (selector.isMatchRoot) {
-        if (parent == null) {
-            return selector.match(this, transform)
+        val root = if (isRootNode) {
+            return this
+        } else {
+            GkdAbService.service?.safeActiveWindow ?: return null
         }
-        return null
+        return selector.match(root, transform)
     }
-    if (quickFind && selector.canQf) {
-        val qfIdValue = selector.qfIdValue
-        val qfVidValue = selector.qfVidValue
-        val qfTextValue = selector.qfTextValue
-        val nodes = (if (qfIdValue != null) {
-            findAccessibilityNodeInfosByViewId(qfIdValue)
-        } else if (qfVidValue != null) {
-            findAccessibilityNodeInfosByViewId("$packageName:id/$qfVidValue")
-        } else if (qfTextValue != null) {
-            findAccessibilityNodeInfosByText(qfTextValue)
+    if (quickFind && selector.quickFindValue.canQf) {
+        val idValue = selector.quickFindValue.id
+        val vidValue = selector.quickFindValue.vid
+        val textValue = selector.quickFindValue.text
+        val nodes = (if (idValue != null) {
+            findAccessibilityNodeInfosByViewId(idValue)
+        } else if (vidValue != null) {
+            findAccessibilityNodeInfosByViewId("$packageName:id/$vidValue")
+        } else if (textValue != null) {
+            findAccessibilityNodeInfosByText(textValue)
         } else {
             emptyList()
         })
@@ -184,27 +168,6 @@ private fun createGetNodeAttr(cache: NodeCache): ((AccessibilityNodeInfo, String
         return tempVid
     }
 
-    /**
-     * 在无缓存时, 此方法小概率造成无限节点片段,底层原因未知
-     *
-     * https://github.com/gkd-kit/gkd/issues/28
-     */
-    fun AccessibilityNodeInfo.getDepthX(): Int {
-        var p: AccessibilityNodeInfo = this
-        var depth = 0
-        while (true) {
-            val p2 = cache.parent[p] ?: p.parent.apply {
-                cache.parent[p] = this
-            }
-            if (p2 != null) {
-                p = p2
-                depth++
-            } else {
-                break
-            }
-        }
-        return depth
-    }
     return { node, name ->
         when (name) {
             "id" -> node.viewIdResourceName
@@ -212,9 +175,7 @@ private fun createGetNodeAttr(cache: NodeCache): ((AccessibilityNodeInfo, String
 
             "name" -> node.className
             "text" -> node.text
-            "text.length" -> node.text?.length
             "desc" -> node.contentDescription
-            "desc.length" -> node.contentDescription?.length
 
             "clickable" -> node.isClickable
             "focusable" -> node.isFocusable
@@ -232,13 +193,11 @@ private fun createGetNodeAttr(cache: NodeCache): ((AccessibilityNodeInfo, String
             "width" -> node.getTempRect().width()
             "height" -> node.getTempRect().height()
 
-            "index" -> node.getIndex()
-            "depth" -> node.getDepthX()
+            "index" -> cache.getIndex(node)
+            "depth" -> cache.getDepth(node)
             "childCount" -> node.childCount
 
-            "parent" -> cache.parent[node] ?: node.parent.apply {
-                cache.parent[node] = this
-            }
+            "parent" -> cache.getParent(node)
 
             else -> null
         }
@@ -251,78 +210,90 @@ data class CacheTransform(
 )
 
 data class NodeCache(
-    val child: MutableMap<Pair<AccessibilityNodeInfo, Int>, AccessibilityNodeInfo> = HashMap(),
-    val index: MutableMap<AccessibilityNodeInfo, Int> = HashMap(),
-    val parent: MutableMap<AccessibilityNodeInfo, AccessibilityNodeInfo?> = HashMap(),
+    val childMap: MutableMap<Pair<AccessibilityNodeInfo, Int>, AccessibilityNodeInfo> = HashMap(),
+    val indexMap: MutableMap<AccessibilityNodeInfo, Int> = HashMap(),
+    val parentMap: MutableMap<AccessibilityNodeInfo, AccessibilityNodeInfo?> = HashMap(),
 ) {
     fun clear() {
-        emptyMap<String, String>()
-        child.clear()
-        parent.clear()
-        index.clear()
-    }
-}
-
-fun createCacheTransform(): CacheTransform {
-    val cache = NodeCache()
-    fun AccessibilityNodeInfo.getParentX(): AccessibilityNodeInfo? {
-        return parent?.also { parent ->
-            cache.parent[this] = parent
-        }
+        childMap.clear()
+        parentMap.clear()
+        indexMap.clear()
     }
 
-    fun AccessibilityNodeInfo.getChildX(index: Int): AccessibilityNodeInfo? {
-        return cache.child[this to index] ?: getChild(index)?.also { child ->
-            cache.index[child] = index
-            cache.parent[child] = this
-            cache.child[this to index] = child
-        }
-    }
-
-    fun AccessibilityNodeInfo.getIndexX(): Int {
-        cache.index[this]?.let { return it }
-        getParentX()?.forEachIndexed { index, child ->
+    fun getIndex(node: AccessibilityNodeInfo): Int {
+        indexMap[node]?.let { return it }
+        getParent(node)?.forEachIndexed { index, child ->
             if (child != null) {
-                cache.index[child] = index
+                indexMap[child] = index
             }
-            if (child == this) {
+            if (child == node) {
                 return index
             }
         }
         return 0
     }
 
+    fun getParent(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        val parent = parentMap[node]
+        if (parent != null) {
+            return parent
+        } else if (parentMap.contains(node)) {
+            return null
+        }
+        return node.parent.apply {
+            parentMap[node] = this
+        }
+    }
+
+    /**
+     * 在无缓存时, 此方法小概率造成无限节点片段,底层原因未知
+     *
+     * https://github.com/gkd-kit/gkd/issues/28
+     */
+    fun getDepth(node: AccessibilityNodeInfo): Int {
+        var p: AccessibilityNodeInfo = node
+        var depth = 0
+        while (true) {
+            val p2 = getParent(p)
+            if (p2 != null) {
+                p = p2
+                depth++
+            } else {
+                break
+            }
+        }
+        return depth
+    }
+
+    fun getChild(node: AccessibilityNodeInfo, index: Int): AccessibilityNodeInfo? {
+        if (index !in 0 until node.childCount) {
+            return null
+        }
+        return childMap[node to index] ?: node.getChild(index)?.also { child ->
+            indexMap[child] = index
+            parentMap[child] = node
+            childMap[node to index] = child
+        }
+    }
+}
+
+fun createCacheTransform(): CacheTransform {
+    val cache = NodeCache()
+
     val getChildrenCache: (AccessibilityNodeInfo) -> Sequence<AccessibilityNodeInfo> = { node ->
         sequence {
             repeat(node.childCount.coerceAtMost(MAX_CHILD_SIZE)) { index ->
-                val child = node.getChildX(index) ?: return@sequence
+                val child = cache.getChild(node, index) ?: return@sequence
                 yield(child)
             }
         }
     }
     val getNodeAttr = createGetNodeAttr(cache)
-    val getParent = { node: AccessibilityNodeInfo ->
-        cache.parent[node] ?: node.parent.apply {
-            cache.parent[node] = this
-        }
-    }
     val transform = Transform(
         getAttr = { node, name ->
             when (node) {
-                is AccessibilityNodeInfo -> {
-                    when (name) {
-                        "index" -> {
-                            node.getIndexX()
-                        }
-
-                        else -> {
-                            getNodeAttr(node, name)
-                        }
-                    }
-                }
-
+                is AccessibilityNodeInfo -> getNodeAttr(node, name)
                 is CharSequence -> getCharSequenceAttr(node, name)
-
                 else -> {
                     null
                 }
@@ -333,11 +304,7 @@ fun createCacheTransform(): CacheTransform {
                 is AccessibilityNodeInfo -> when (name) {
                     "getChild" -> {
                         args.getIntOrNull()?.let { index ->
-                            if (index in 0 until target.childCount) {
-                                target.getChildX(index)
-                            } else {
-                                null
-                            }
+                            cache.getChild(target, index)
                         }
                     }
 
@@ -354,7 +321,7 @@ fun createCacheTransform(): CacheTransform {
         },
         getName = { node -> node.className },
         getChildren = getChildrenCache,
-        getParent = getParent,
+        getParent = { cache.getParent(it) },
         getDescendants = { node ->
             sequence {
                 val stack = getChildrenCache(node).toMutableList()
@@ -383,7 +350,7 @@ fun createCacheTransform(): CacheTransform {
                         if (offset > maxOffset) return@sequence
                     }
                     if (connectExpression.checkOffset(offset)) {
-                        val child = node.getChildX(offset) ?: return@sequence
+                        val child = cache.getChild(node, offset) ?: return@sequence
                         yield(child)
                     }
                 }
@@ -391,9 +358,9 @@ fun createCacheTransform(): CacheTransform {
         },
         getBeforeBrothers = { node, connectExpression ->
             sequence {
-                val parentVal = getParent(node) ?: return@sequence
+                val parentVal = cache.getParent(node) ?: return@sequence
                 // 如果 node 由 quickFind 得到, 则第一次调用此方法可能得到 cache.index 是空
-                val index = cache.index[node]
+                val index = cache.indexMap[node]
                 if (index != null) {
                     var i = index - 1
                     var offset = 0
@@ -402,7 +369,7 @@ fun createCacheTransform(): CacheTransform {
                             if (offset > maxOffset) return@sequence
                         }
                         if (connectExpression.checkOffset(offset)) {
-                            val child = parentVal.getChild(i) ?: return@sequence
+                            val child = cache.getChild(parentVal, i) ?: return@sequence
                             yield(child)
                         }
                         i--
@@ -421,9 +388,9 @@ fun createCacheTransform(): CacheTransform {
             }
         },
         getAfterBrothers = { node, connectExpression ->
-            val parentVal = getParent(node)
+            val parentVal = cache.getParent(node)
             if (parentVal != null) {
-                val index = cache.index[node]
+                val index = cache.indexMap[node]
                 if (index != null) {
                     sequence {
                         var i = index + 1
@@ -433,7 +400,7 @@ fun createCacheTransform(): CacheTransform {
                                 if (offset > maxOffset) return@sequence
                             }
                             if (connectExpression.checkOffset(offset)) {
-                                val child = parentVal.getChild(i) ?: return@sequence
+                                val child = cache.getChild(parentVal, i) ?: return@sequence
                                 yield(child)
                             }
                             i++
@@ -514,7 +481,9 @@ fun createNoCacheTransform(): CacheTransform {
             when (target) {
                 is AccessibilityNodeInfo -> when (name) {
                     "getChild" -> {
-                        target.getChildOrNull(args.getIntOrNull())
+                        args.getIntOrNull()?.let { index ->
+                            cache.getChild(target, index)
+                        }
                     }
 
                     else -> null

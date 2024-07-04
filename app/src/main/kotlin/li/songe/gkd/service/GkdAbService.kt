@@ -223,7 +223,7 @@ class GkdAbService : CompositionAbService({
                     return@launchTry
                 }
                 if (!matchApp) continue
-                val target = rule.query(nodeVal) ?: continue
+                val target = rule.query(nodeVal, latestEvent == null) ?: continue
                 if (activityRule !== getAndUpdateCurrentRules()) break
                 if (rule.checkDelay() && rule.actionDelayJob == null) {
                     rule.actionDelayJob = scope.launch(actionThread) {
@@ -531,7 +531,8 @@ class GkdAbService : CompositionAbService({
             val targetNode = serviceVal.safeActiveWindow?.querySelector(
                 selector,
                 gkdAction.quickFind,
-                createCacheTransform().transform
+                createCacheTransform().transform,
+                true
             ) ?: throw RpcError("没有查询到节点")
 
             if (gkdAction.action == null) {

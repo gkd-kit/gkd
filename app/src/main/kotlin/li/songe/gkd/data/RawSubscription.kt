@@ -177,6 +177,7 @@ data class RawSubscription(
         val actionCd: Long?
         val actionDelay: Long?
         val quickFind: Boolean?
+        val matchRoot: Boolean?
         val matchDelay: Long?
         val matchTime: Long?
         val actionMaximum: Int?
@@ -255,6 +256,7 @@ data class RawSubscription(
         override val actionCd: Long?,
         override val actionDelay: Long?,
         override val quickFind: Boolean?,
+        override val matchRoot: Boolean?,
         override val matchDelay: Long?,
         override val matchTime: Long?,
         override val actionMaximum: Int?,
@@ -293,6 +295,7 @@ data class RawSubscription(
         override val actionCd: Long?,
         override val actionDelay: Long?,
         override val quickFind: Boolean?,
+        override val matchRoot: Boolean?,
         override val matchDelay: Long?,
         override val matchTime: Long?,
         override val actionMaximum: Int?,
@@ -329,6 +332,7 @@ data class RawSubscription(
         override val actionCd: Long?,
         override val actionDelay: Long?,
         override val quickFind: Boolean?,
+        override val matchRoot: Boolean?,
         override val actionMaximum: Int?,
         override val order: Int?,
         override val forcedTime: Long?,
@@ -373,6 +377,7 @@ data class RawSubscription(
         override val actionCd: Long?,
         override val actionDelay: Long?,
         override val quickFind: Boolean?,
+        override val matchRoot: Boolean?,
         override val actionMaximum: Int?,
         override val order: Int?,
         override val forcedTime: Long?,
@@ -586,6 +591,7 @@ data class RawSubscription(
                 preKeys = getIntIArray(jsonObject, "preKeys"),
                 action = getString(jsonObject, "action"),
                 quickFind = getBoolean(jsonObject, "quickFind"),
+                matchRoot = getBoolean(jsonObject, "matchRoot"),
                 actionMaximum = getInt(jsonObject, "actionMaximum"),
                 matchDelay = getLong(jsonObject, "matchDelay"),
                 matchTime = getLong(jsonObject, "matchTime"),
@@ -628,6 +634,7 @@ data class RawSubscription(
                     jsonToRuleRaw(it)
                 },
                 quickFind = getBoolean(jsonObject, "quickFind"),
+                matchRoot = getBoolean(jsonObject, "matchRoot"),
                 actionMaximum = getInt(jsonObject, "actionMaximum"),
                 matchDelay = getLong(jsonObject, "matchDelay"),
                 matchTime = getLong(jsonObject, "matchTime"),
@@ -681,6 +688,7 @@ data class RawSubscription(
                 actionCd = getLong(jsonObject, "actionCd"),
                 actionDelay = getLong(jsonObject, "actionDelay"),
                 quickFind = getBoolean(jsonObject, "quickFind"),
+                matchRoot = getBoolean(jsonObject, "matchRoot"),
                 actionMaximum = getInt(jsonObject, "actionMaximum"),
                 matchDelay = getLong(jsonObject, "matchDelay"),
                 matchTime = getLong(jsonObject, "matchTime"),
@@ -717,6 +725,7 @@ data class RawSubscription(
                 actionCd = getLong(jsonObject, "actionCd"),
                 actionDelay = getLong(jsonObject, "actionDelay"),
                 quickFind = getBoolean(jsonObject, "quickFind"),
+                matchRoot = getBoolean(jsonObject, "matchRoot"),
                 actionMaximum = getInt(jsonObject, "actionMaximum"),
                 matchDelay = getLong(jsonObject, "matchDelay"),
                 matchTime = getLong(jsonObject, "matchTime"),

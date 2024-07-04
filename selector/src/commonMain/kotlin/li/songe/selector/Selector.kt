@@ -3,7 +3,8 @@ package li.songe.selector
 import li.songe.selector.parser.selectorParser
 
 class Selector internal constructor(
-    val source: String, private val propertyWrapper: PropertyWrapper
+    val source: String,
+    private val propertyWrapper: PropertyWrapper
 ) {
     override fun toString(): String {
         return propertyWrapper.toString()
@@ -38,35 +39,11 @@ class Selector internal constructor(
         return propertyWrapper.matchTracks(node, transform, trackNodes)
     }
 
-    val qfIdValue = propertyWrapper.segment.expressions.firstOrNull().let { e ->
-        if (e is BinaryExpression && e.left.value == "id" && e.operator.value == CompareOperator.Equal && e.right is ValueExpression.StringLiteral) {
-            e.right.value
-        } else {
-            null
-        }
-    }
+    val quickFindValue = getQuickFindValue(propertyWrapper.segment)
 
-    val qfVidValue = propertyWrapper.segment.expressions.firstOrNull().let { e ->
-        if (e is BinaryExpression && e.left.value == "vid" && e.operator.value == CompareOperator.Equal && e.right is ValueExpression.StringLiteral) {
-            e.right.value
-        } else {
-            null
-        }
-    }
-
-    val qfTextValue = propertyWrapper.segment.expressions.firstOrNull().let { e ->
-        if (e is BinaryExpression && e.left.value == "text" && (e.operator.value == CompareOperator.Equal || e.operator.value == CompareOperator.Start || e.operator.value == CompareOperator.Include || e.operator.value == CompareOperator.End) && e.right is ValueExpression.StringLiteral) {
-            e.right.value
-        } else {
-            null
-        }
-    }
-
-    val canQf = qfIdValue != null || qfVidValue != null || qfTextValue != null
-
-    // 主动查询
-    val isMatchRoot = propertyWrapper.segment.expressions.firstOrNull().let { e ->
-        e is BinaryExpression && e.left.value == "depth" && e.operator.value == CompareOperator.Equal && e.right.value == 0
+    // 主动查询根节点
+    val isMatchRoot = propertyWrapper.segment.expressions.any { e ->
+        e is BinaryExpression && e.operator.value == CompareOperator.Equal && ((e.left.value == "depth" && e.right.value == 0) || (e.left.value == "parent" && e.right.value == "null"))
     }
 
     val connectKeys = run {

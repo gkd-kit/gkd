@@ -11,11 +11,8 @@ class MultiplatformSelector private constructor(
     val trackIndex = selector.trackIndex
     val connectKeys = selector.connectKeys
 
-    val qfIdValue = selector.qfIdValue
-    val qfVidValue = selector.qfVidValue
-    val qfTextValue = selector.qfTextValue
-    val canQf = selector.canQf
     val isMatchRoot = selector.isMatchRoot
+    val quickFindValue = selector.quickFindValue
 
     val binaryExpressions = selector.binaryExpressions
     fun checkType(typeInfo: TypeInfo) = selector.checkType(typeInfo)
