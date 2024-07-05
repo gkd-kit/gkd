@@ -440,6 +440,9 @@ fun createCacheTransform(): CacheTransform {
                         yield(top)
                     }
                     offset++
+                    if (offset >= MAX_DESCENDANTS_SIZE) {
+                        return@sequence
+                    }
                     connectExpression.maxOffset?.let { maxOffset ->
                         if (offset > maxOffset) return@sequence
                     }
