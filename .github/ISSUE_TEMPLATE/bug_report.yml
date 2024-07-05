@@ -16,7 +16,11 @@ body:
       options:
         - label: 请 **确保** 您已经查阅了 [GKD 官方文档](https://gkd.li)  以及 [常见问题](https://gkd.li/faq/)
           required: true
-        - label: 请 **确保** [已有的问题](https://github.com/gkd-kit/gkd/issues?q=is%3Aissue) 中没有人提交过相似issue，否则请在已有的issue下进行讨论
+        - label: 1.请 **确保** [已有的问题](https://github.com/gkd-kit/gkd/issues?q=is%3Aissue) 中没有人提交过相似issue，否则请在已有的issue下进行讨论
+          required: true
+        - label: 2.请 **确保** [已有的问题](https://github.com/gkd-kit/gkd/issues?q=is%3Aissue) 中没有人提交过相似issue，否则请在已有的issue下进行讨论
+          required: true
+        - label: 3.请 **不要** 开启重复相关的 issue，这将导致别人搜索 issue 时出现无关的低质量信息, 否则你的问题将会被直接关闭甚至删除
           required: true
         - label: 请 **务必** 给issue填写一个简洁明了的标题，以便他人快速检索
           required: true
