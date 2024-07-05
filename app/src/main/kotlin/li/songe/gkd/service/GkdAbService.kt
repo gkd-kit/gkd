@@ -41,6 +41,7 @@ import li.songe.gkd.data.AttrInfo
 import li.songe.gkd.data.GkdAction
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.RuleStatus
+import li.songe.gkd.data.clearNodeCache
 import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.shizuku.getShizukuCanUsedFlow
 import li.songe.gkd.shizuku.shizukuIsSafeOK
@@ -173,6 +174,10 @@ class GkdAbService : CompositionAbService({
                 pair
             }
             val activityRule = getAndUpdateCurrentRules()
+            if (activityRule.currentRules.isEmpty()) {
+                return@launchTry
+            }
+            clearNodeCache()
             for (rule in (activityRule.currentRules)) { // 规则数量有可能过多导致耗时过长
                 val statusCode = rule.status
                 if (statusCode == RuleStatus.Status3 && rule.matchDelayJob == null) {

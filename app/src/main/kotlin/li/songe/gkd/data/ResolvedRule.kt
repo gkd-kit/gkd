@@ -1,8 +1,10 @@
 package li.songe.gkd.data
 
 import android.accessibilityservice.AccessibilityService
+import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Job
+import li.songe.gkd.BuildConfig
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.service.createCacheTransform
 import li.songe.gkd.service.createNoCacheTransform
@@ -133,13 +135,17 @@ sealed class ResolvedRule(
         else -> true
     }
 
-    private val useCache = (matches + excludeMatches).any { s -> s.useCache }
+    private val useCache = (matches + excludeMatches + anyMatches).any { s -> s.useCache }
     private val transform = if (useCache) defaultCacheTransform else defaultTransform
 
     fun query(
         node: AccessibilityNodeInfo?,
         isRootNode: Boolean,
     ): AccessibilityNodeInfo? {
+        val t = System.currentTimeMillis()
+        if (t - lastCacheTime > MIN_CACHE_INTERVAL) {
+            clearNodeCache(t)
+        }
         val nodeInfo = if (matchRoot) {
             val rootNode = (if (isRootNode) {
                 node
@@ -147,46 +153,41 @@ sealed class ResolvedRule(
                 GkdAbService.service?.safeActiveWindow
             }) ?: return null
             rootNode.apply {
-                transform.cache.parentMap[this] = null
+                transform.cache.rootNode = this
             }
         } else {
             node
         }
-        try {
-            if (nodeInfo == null) return null
-            var target: AccessibilityNodeInfo? = null
-            if (anyMatches.isNotEmpty()) {
-                for (selector in anyMatches) {
-                    target = nodeInfo.querySelector(
-                        selector,
-                        quickFind,
-                        transform.transform,
-                        isRootNode || matchRoot
-                    ) ?: break
-                }
-                if (target == null) return null
-            }
-            for (selector in matches) {
+        if (nodeInfo == null) return null
+        var target: AccessibilityNodeInfo? = null
+        if (anyMatches.isNotEmpty()) {
+            for (selector in anyMatches) {
                 target = nodeInfo.querySelector(
                     selector,
                     quickFind,
                     transform.transform,
                     isRootNode || matchRoot
-                ) ?: return null
+                ) ?: break
             }
-            for (selector in excludeMatches) {
-                nodeInfo.querySelector(
-                    selector,
-                    quickFind,
-                    transform.transform,
-                    isRootNode || matchRoot
-                )?.let { return null }
-            }
-            return target
-        } finally {
-            defaultTransform.cache.clear()
-            defaultCacheTransform.cache.clear()
+            if (target == null) return null
         }
+        for (selector in matches) {
+            target = nodeInfo.querySelector(
+                selector,
+                quickFind,
+                transform.transform,
+                isRootNode || matchRoot
+            ) ?: return null
+        }
+        for (selector in excludeMatches) {
+            nodeInfo.querySelector(
+                selector,
+                quickFind,
+                transform.transform,
+                isRootNode || matchRoot
+            )?.let { return null }
+        }
+        return target
     }
 
     private val performer = ActionPerformer.getAction(
@@ -275,5 +276,15 @@ fun getFixActivityIds(
 
 private val defaultTransform by lazy { createNoCacheTransform() }
 private val defaultCacheTransform by lazy { createCacheTransform() }
+private var lastCacheTime = 0L
+private const val MIN_CACHE_INTERVAL = 2000L
 
-
+fun clearNodeCache(t: Long = System.currentTimeMillis()) {
+    lastCacheTime = t
+    if (BuildConfig.DEBUG) {
+        val sizeList = defaultCacheTransform.cache.sizeList
+        Log.d("cache", "clear cache, sizeList=$sizeList")
+    }
+    defaultTransform.cache.clear()
+    defaultCacheTransform.cache.clear()
+}

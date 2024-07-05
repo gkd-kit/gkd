@@ -2,6 +2,7 @@ package li.songe.gkd.service
 
 import android.accessibilityservice.AccessibilityService
 import android.graphics.Rect
+import android.util.LruCache
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
@@ -108,6 +109,7 @@ fun AccessibilityNodeInfo.querySelector(
 
 
 // https://github.com/gkd-kit/gkd/issues/115
+// https://github.com/gkd-kit/gkd/issues/650
 // 限制节点遍历的数量避免内存溢出
 private const val MAX_CHILD_SIZE = 512
 private const val MAX_DESCENDANTS_SIZE = 4096
@@ -209,16 +211,29 @@ data class CacheTransform(
     val cache: NodeCache,
 )
 
-data class NodeCache(
-    val childMap: MutableMap<Pair<AccessibilityNodeInfo, Int>, AccessibilityNodeInfo> = HashMap(),
-    val indexMap: MutableMap<AccessibilityNodeInfo, Int> = HashMap(),
-    val parentMap: MutableMap<AccessibilityNodeInfo, AccessibilityNodeInfo?> = HashMap(),
-) {
+
+private operator fun <K, V> LruCache<K, V>.set(child: K, value: V): V {
+    return put(child, value)
+}
+
+private const val MAX_CACHE_SIZE = MAX_DESCENDANTS_SIZE
+
+class NodeCache {
+    private val childMap =
+        LruCache<Pair<AccessibilityNodeInfo, Int>, AccessibilityNodeInfo>(MAX_CACHE_SIZE)
+    val indexMap = LruCache<AccessibilityNodeInfo, Int>(MAX_CACHE_SIZE)
+    private val parentMap = LruCache<AccessibilityNodeInfo, AccessibilityNodeInfo>(MAX_CACHE_SIZE)
+    var rootNode: AccessibilityNodeInfo? = null
+
     fun clear() {
-        childMap.clear()
-        parentMap.clear()
-        indexMap.clear()
+        rootNode = null
+        childMap.evictAll()
+        parentMap.evictAll()
+        indexMap.evictAll()
     }
+
+    val sizeList: List<Int>
+        get() = listOf(childMap.size(), parentMap.size(), indexMap.size())
 
     fun getIndex(node: AccessibilityNodeInfo): Int {
         indexMap[node]?.let { return it }
@@ -234,14 +249,19 @@ data class NodeCache(
     }
 
     fun getParent(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        if (rootNode == node) {
+            return null
+        }
         val parent = parentMap[node]
         if (parent != null) {
             return parent
-        } else if (parentMap.contains(node)) {
-            return null
         }
         return node.parent.apply {
-            parentMap[node] = this
+            if (this != null) {
+                parentMap[node] = this
+            } else {
+                rootNode = node
+            }
         }
     }
 
