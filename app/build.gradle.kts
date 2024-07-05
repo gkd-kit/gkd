@@ -109,6 +109,11 @@ android {
                 )
             )
         }
+        create("releaseNoMinify") {
+            initWith(getByName("release"))
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
         debug {
             versionNameSuffix = vnSuffix
             applicationIdSuffix = ".debug"
