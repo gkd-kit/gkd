@@ -46,5 +46,10 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
+          name: releaseNoMinify
+          path: app/build/outputs/apk/releaseNoMinify
+
+      - uses: actions/upload-artifact@v4
+        with:
           name: debug
           path: app/build/outputs/apk/debug
