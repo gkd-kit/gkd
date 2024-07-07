@@ -53,27 +53,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
-import com.blankj.utilcode.util.UriUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import li.songe.gkd.data.TransferData
 import li.songe.gkd.data.Value
 import li.songe.gkd.data.deleteSubscription
-import li.songe.gkd.data.importTransferData
+import li.songe.gkd.data.exportData
+import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SubsItemCard
 import li.songe.gkd.ui.component.getDialogResult
-import li.songe.gkd.ui.component.shareSubs
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalLauncher
 import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.isSafeUrl
-import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.readFileZipByteArray
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.subsRefreshingFlow
@@ -225,7 +221,7 @@ fun useSubsManagePage(): ScaffoldExt {
                         }
                     }
                     IconButton(onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                        context.shareSubs(*selectedIds.toLongArray())
+                        exportData(context, selectedIds)
                     }) {
                         Icon(
                             imageVector = Icons.Default.Share,
@@ -305,17 +301,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                         toast("未选择文件")
                                         return@launchAsFn
                                     }
-                                    val string = readFileZipByteArray(
-                                        UriUtils.uri2Bytes(uri), "${TransferData.TYPE}.json"
-                                    )
-                                    if (string != null) {
-                                        val transferData =
-                                            json.decodeFromString<TransferData>(string)
-                                        importTransferData(transferData)
-                                        toast("导入成功")
-                                    } else {
-                                        toast("导入文件无数据")
-                                    }
+                                    importData(uri)
                                 },
                             )
                         }
