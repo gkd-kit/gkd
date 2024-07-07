@@ -1,6 +1,5 @@
 package li.songe.gkd.ui.component
 
-import android.content.Context
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -33,27 +32,21 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
-import com.blankj.utilcode.util.ZipUtils
 import kotlinx.coroutines.Dispatchers
-import kotlinx.serialization.encodeToString
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
-import li.songe.gkd.data.TransferData
 import li.songe.gkd.data.deleteSubscription
-import li.songe.gkd.data.exportTransferData
+import li.songe.gkd.data.exportData
 import li.songe.gkd.ui.destinations.CategoryPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.exportZipDir
 import li.songe.gkd.util.formatTimeAgo
-import li.songe.gkd.util.json
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.navigate
 import li.songe.gkd.util.openUri
-import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.subsLoadErrorsFlow
 import li.songe.gkd.util.subsRefreshErrorsFlow
 import li.songe.gkd.util.subsRefreshingFlow
@@ -249,7 +242,7 @@ private fun SubsMenuItem(
             onClick = {
                 onExpandedChange(false)
                 vm.viewModelScope.launchTry(Dispatchers.IO) {
-                    context.shareSubs(subItem.id)
+                    exportData(context, listOf(subItem.id))
                 }
             }
         )
@@ -295,15 +288,4 @@ private fun SubsMenuItem(
             )
         }
     }
-}
-
-suspend fun Context.shareSubs(vararg subsIds: Long) {
-    val transferDataFile = exportZipDir.resolve("${TransferData.TYPE}.json")
-    transferDataFile.writeText(
-        json.encodeToString(exportTransferData(subsIds.toList()))
-    )
-    val file = exportZipDir.resolve("backup-${System.currentTimeMillis()}.zip")
-    ZipUtils.zipFiles(listOf(transferDataFile), file)
-    transferDataFile.delete()
-    this.shareFile(file, "分享数据文件")
 }
