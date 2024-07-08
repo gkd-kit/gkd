@@ -77,9 +77,7 @@ android {
         }
     }
 
-    lint {
-        disable.add("ModifierFactoryUnreferencedReceiver")
-    }
+    lint {}
 
     val currentSigning = if (project.hasProperty("GKD_STORE_FILE")) {
         signingConfigs.create("release") {
@@ -131,6 +129,7 @@ android {
         jvmTarget = JavaVersion.VERSION_17.majorVersion
         freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
         freeCompilerArgs += "-opt-in=kotlinx.coroutines.FlowPreview"
+        freeCompilerArgs += "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
         freeCompilerArgs += "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
         freeCompilerArgs += "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi"
     }
