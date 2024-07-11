@@ -148,8 +148,14 @@ fun initDefaultTypeInfo(): DefaultTypeInfo {
     nodeType.methods = arrayOf(
         MethodInfo("getChild", nodeType, arrayOf(intType)),
     )
-    contextType.methods = arrayOf(*nodeType.methods)
-    contextType.props = arrayOf(*nodeType.props)
+    contextType.methods = arrayOf(
+        *nodeType.methods,
+        MethodInfo("getPrev", contextType, arrayOf(intType))
+    )
+    contextType.props = arrayOf(
+        *nodeType.props,
+        PropInfo("prev", contextType),
+    )
     return DefaultTypeInfo(
         booleanType = booleanType,
         intType = intType,
@@ -160,7 +166,7 @@ fun initDefaultTypeInfo(): DefaultTypeInfo {
 }
 
 @JsExport
-fun getIntInvoke(target: Int, name: String, args: List<Any?>): Any? {
+fun getIntInvoke(target: Int, name: String, args: List<Any>): Any? {
     return when (name) {
         "plus" -> {
             target + (args.getIntOrNull() ?: return null)
@@ -187,26 +193,26 @@ fun getIntInvoke(target: Int, name: String, args: List<Any?>): Any? {
 }
 
 
-internal fun List<Any?>.getIntOrNull(i: Int = 0): Int? {
+internal fun List<Any>.getIntOrNull(i: Int = 0): Int? {
     val v = getOrNull(i)
     if (v is Int) return v
     return null
 }
 
 @JsExport
-fun getStringInvoke(target: String, name: String, args: List<Any?>): Any? {
+fun getStringInvoke(target: String, name: String, args: List<Any>): Any? {
     return getCharSequenceInvoke(target, name, args)
 }
 
 @JsExport
-fun getBooleanInvoke(target: Boolean, name: String, args: List<Any?>): Any? {
+fun getBooleanInvoke(target: Boolean, name: String, args: List<Any>): Any? {
     return when (name) {
         "toInt" -> if (target) 1 else 0
         else -> null
     }
 }
 
-fun getCharSequenceInvoke(target: CharSequence, name: String, args: List<Any?>): Any? {
+fun getCharSequenceInvoke(target: CharSequence, name: String, args: List<Any>): Any? {
     return when (name) {
         "get" -> {
             target.getOrNull(args.getIntOrNull() ?: return null).toString()

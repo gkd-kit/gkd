@@ -1,33 +1,40 @@
 package li.songe.selector
 
+import kotlin.js.JsExport
+
+@JsExport
 data class PropertyWrapper(
     val segment: PropertySegment,
     val to: ConnectWrapper? = null,
-) {
-    override fun toString(): String {
+):Stringify {
+    override fun stringify(): String {
         return (if (to != null) {
-            to.toString() + "\u0020"
+            to.stringify() + "\u0020"
         } else {
             ""
-        }) + segment.toString()
+        }) + segment.stringify()
     }
 
-    fun <T> matchTracks(
-        node: T,
+    fun <T> matchContext(
+        context: Context<T>,
         transform: Transform<T>,
-        trackNodes: MutableList<T>,
-    ): List<T>? {
-        if (!segment.match(node, transform)) {
+    ): Context<T>? {
+        if (!segment.match(context, transform)) {
             return null
         }
-        trackNodes.add(node)
         if (to == null) {
-            return trackNodes
+            return context
         }
-        val r = to.matchTracks(node, transform, trackNodes)
-        if (r == null) {
-            trackNodes.removeLast()
-        }
-        return r
+        return to.matchContext(context, transform)
     }
+
+
+    val isMatchRoot = segment.expressions.any { e ->
+        e is BinaryExpression && e.operator.value == CompareOperator.Equal && ((e.left.value == "depth" && e.right.value == 0) || (e.left.value == "parent" && e.right.value == "null"))
+    }
+
+    val quickFindValue = getQuickFindValue(segment)
+
+    val length: Int
+        get() = if (to == null) 1 else to.to.length + 1
 }

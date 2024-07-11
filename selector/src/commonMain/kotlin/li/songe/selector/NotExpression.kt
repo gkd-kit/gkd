@@ -1,5 +1,8 @@
 package li.songe.selector
 
+import kotlin.js.JsExport
+
+@JsExport
 data class NotExpression(
     override val start: Int,
     val expression: Expression
@@ -7,8 +10,11 @@ data class NotExpression(
     override val end: Int
         get() = expression.end
 
-    override fun <T> match(node: T, transform: Transform<T>): Boolean {
-        return !expression.match(node, transform)
+    override fun <T> match(
+        context: Context<T>,
+        transform: Transform<T>,
+    ): Boolean {
+        return !expression.match(context, transform)
     }
 
     override val binaryExpressions: Array<BinaryExpression>

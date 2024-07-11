@@ -1,5 +1,8 @@
 package li.songe.selector
 
+import kotlin.js.JsExport
+
+@JsExport
 sealed class ConnectOperator(val key: String) : Stringify {
     override fun stringify() = key
 
@@ -22,7 +25,7 @@ sealed class ConnectOperator(val key: String) : Stringify {
     data object BeforeBrother : ConnectOperator("+") {
         override fun <T> traversal(
             node: T, transform: Transform<T>, connectExpression: ConnectExpression
-        ) = transform.getBeforeBrothers(node, connectExpression)
+        ) = transform.traverseBeforeBrothers(node, connectExpression)
 
     }
 
@@ -32,7 +35,7 @@ sealed class ConnectOperator(val key: String) : Stringify {
     data object AfterBrother : ConnectOperator("-") {
         override fun <T> traversal(
             node: T, transform: Transform<T>, connectExpression: ConnectExpression
-        ) = transform.getAfterBrothers(node, connectExpression)
+        ) = transform.traverseAfterBrothers(node, connectExpression)
     }
 
     /**
@@ -41,7 +44,7 @@ sealed class ConnectOperator(val key: String) : Stringify {
     data object Ancestor : ConnectOperator(">") {
         override fun <T> traversal(
             node: T, transform: Transform<T>, connectExpression: ConnectExpression
-        ) = transform.getAncestors(node, connectExpression)
+        ) = transform.traverseAncestors(node, connectExpression)
 
     }
 
@@ -51,7 +54,7 @@ sealed class ConnectOperator(val key: String) : Stringify {
     data object Child : ConnectOperator("<") {
         override fun <T> traversal(
             node: T, transform: Transform<T>, connectExpression: ConnectExpression
-        ) = transform.getChildrenX(node, connectExpression)
+        ) = transform.traverseChildren(node, connectExpression)
     }
 
     /**
@@ -60,7 +63,7 @@ sealed class ConnectOperator(val key: String) : Stringify {
     data object Descendant : ConnectOperator("<<") {
         override fun <T> traversal(
             node: T, transform: Transform<T>, connectExpression: ConnectExpression
-        ) = transform.getDescendantsX(node, connectExpression)
+        ) = transform.traverseDescendants(node, connectExpression)
     }
 
 }

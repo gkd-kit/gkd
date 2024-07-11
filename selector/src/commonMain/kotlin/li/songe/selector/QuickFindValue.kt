@@ -8,8 +8,7 @@ data class QuickFindValue(
     val vid: String?,
     val text: String?,
 ) {
-    val canQf: Boolean
-        get() = id != null || vid != null || text != null
+    val canQf = id != null || vid != null || text != null
 }
 
 internal fun getQuickFindValue(segment: PropertySegment): QuickFindValue {

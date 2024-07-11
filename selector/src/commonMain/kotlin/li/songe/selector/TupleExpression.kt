@@ -1,5 +1,8 @@
 package li.songe.selector
 
+import kotlin.js.JsExport
+
+@JsExport
 data class TupleExpression(
     val numbers: List<Int>,
 ) : ConnectExpression() {
@@ -15,7 +18,7 @@ data class TupleExpression(
         return numbers[i]
     }
 
-    override fun toString(): String {
+    override fun stringify(): String {
         if (numbers.size == 1) {
             return if (numbers.first() == 1) {
                 ""

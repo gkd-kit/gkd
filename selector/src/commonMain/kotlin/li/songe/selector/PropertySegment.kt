@@ -1,21 +1,20 @@
 package li.songe.selector
 
+import kotlin.js.JsExport
 
+@JsExport
 data class PropertySegment(
-    /**
-     * 此属性选择器是否被 @ 标记
-     */
-    val tracked: Boolean,
+    val at: Boolean,
     val name: String,
     val expressions: List<Expression>,
-) {
+) : Stringify {
     private val matchAnyName = name.isBlank() || name == "*"
 
     val binaryExpressions
         get() = expressions.flatMap { it.binaryExpressions.toList() }.toTypedArray()
 
-    override fun toString(): String {
-        val matchTag = if (tracked) "@" else ""
+    override fun stringify(): String {
+        val matchTag = if (at) "@" else ""
         return matchTag + name + expressions.joinToString("") { "[${it.stringify()}]" }
     }
 
@@ -30,8 +29,16 @@ data class PropertySegment(
         return false
     }
 
-    fun <T> match(node: T, transform: Transform<T>): Boolean {
-        return matchName(node, transform) && expressions.all { ex -> ex.match(node, transform) }
+    fun <T> match(
+        context: Context<T>,
+        transform: Transform<T>,
+    ): Boolean {
+        return matchName(context.current, transform) && expressions.all { ex ->
+            ex.match(
+                context,
+                transform
+            )
+        }
     }
 
 }

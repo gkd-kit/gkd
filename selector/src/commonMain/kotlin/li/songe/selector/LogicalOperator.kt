@@ -1,5 +1,8 @@
 package li.songe.selector
 
+import kotlin.js.JsExport
+
+@JsExport
 sealed class LogicalOperator(val key: String) : Stringify {
     override fun stringify() = key
 
@@ -12,8 +15,8 @@ sealed class LogicalOperator(val key: String) : Stringify {
         }
     }
 
-    internal abstract fun <T> compare(
-        node: T,
+    abstract fun <T> compare(
+        context: Context<T>,
         transform: Transform<T>,
         left: Expression,
         right: Expression,
@@ -21,23 +24,29 @@ sealed class LogicalOperator(val key: String) : Stringify {
 
     data object AndOperator : LogicalOperator("&&") {
         override fun <T> compare(
-            node: T,
+            context: Context<T>,
             transform: Transform<T>,
             left: Expression,
             right: Expression,
         ): Boolean {
-            return left.match(node, transform) && right.match(node, transform)
+            return left.match(context, transform) && right.match(
+                context,
+                transform
+            )
         }
     }
 
     data object OrOperator : LogicalOperator("||") {
         override fun <T> compare(
-            node: T,
+            context: Context<T>,
             transform: Transform<T>,
             left: Expression,
             right: Expression,
         ): Boolean {
-            return left.match(node, transform) || right.match(node, transform)
+            return left.match(context, transform) || right.match(
+                context,
+                transform
+            )
         }
     }
 }

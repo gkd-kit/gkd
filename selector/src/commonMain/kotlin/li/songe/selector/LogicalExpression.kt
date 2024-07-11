@@ -1,6 +1,8 @@
 package li.songe.selector
 
+import kotlin.js.JsExport
 
+@JsExport
 data class LogicalExpression(
     override val start: Int,
     override val end: Int,
@@ -8,8 +10,11 @@ data class LogicalExpression(
     val operator: PositionImpl<LogicalOperator>,
     val right: Expression,
 ) : Expression() {
-    override fun <T> match(node: T, transform: Transform<T>): Boolean {
-        return operator.value.compare(node, transform, left, right)
+    override fun <T> match(
+        context: Context<T>,
+        transform: Transform<T>,
+    ): Boolean {
+        return operator.value.compare(context, transform, left, right)
     }
 
     override val binaryExpressions

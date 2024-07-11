@@ -1,50 +1,49 @@
 package li.songe.selector
 
 import li.songe.selector.parser.selectorParser
+import kotlin.js.JsExport
 
-class Selector internal constructor(
+@JsExport
+class Selector(
     val source: String,
-    private val propertyWrapper: PropertyWrapper
-) {
-    override fun toString(): String {
-        return propertyWrapper.toString()
+    val propertyWrapper: PropertyWrapper
+) : Stringify {
+    override fun stringify(): String {
+        return propertyWrapper.stringify()
     }
 
-    val tracks = run {
-        val list = mutableListOf(propertyWrapper)
-        while (true) {
-            list.add(list.last().to?.to ?: break)
+    val targetIndex = run {
+        val length = propertyWrapper.length
+        var index = 0
+        var c: PropertyWrapper? = propertyWrapper
+        while (c != null) {
+            if (c.segment.at) {
+                return@run length - 1 - index
+            }
+            c = c.to?.to
+            index++
         }
-        list.map { p -> p.segment.tracked }.toTypedArray<Boolean>()
+        length - 1
     }
 
-    val trackIndex = tracks.indexOfFirst { it }.let { i ->
-        if (i < 0) 0 else i
+    fun <T> matchContext(
+        node: T,
+        transform: Transform<T>,
+    ): Context<T>? {
+        return propertyWrapper.matchContext(Context(node), transform)
     }
 
     fun <T> match(
         node: T,
         transform: Transform<T>,
-        trackNodes: MutableList<T> = ArrayList(tracks.size),
     ): T? {
-        val trackTempNodes = matchTracks(node, transform, trackNodes) ?: return null
-        return trackTempNodes[trackIndex]
+        val ctx = matchContext(node, transform) ?: return null
+        return ctx.get(targetIndex).current
     }
 
-    fun <T> matchTracks(
-        node: T,
-        transform: Transform<T>,
-        trackNodes: MutableList<T> = ArrayList(tracks.size),
-    ): List<T>? {
-        return propertyWrapper.matchTracks(node, transform, trackNodes)
-    }
+    val quickFindValue = propertyWrapper.quickFindValue
 
-    val quickFindValue = getQuickFindValue(propertyWrapper.segment)
-
-    // 主动查询根节点
-    val isMatchRoot = propertyWrapper.segment.expressions.any { e ->
-        e is BinaryExpression && e.operator.value == CompareOperator.Equal && ((e.left.value == "depth" && e.right.value == 0) || (e.left.value == "parent" && e.right.value == "null"))
-    }
+    val isMatchRoot = propertyWrapper.isMatchRoot
 
     val connectKeys = run {
         var c = propertyWrapper.to
