@@ -5,7 +5,11 @@ import kotlin.js.JsExport
 @JsExport
 sealed class ValueExpression(open val value: Any?, open val type: String) : Position {
     override fun stringify() = value.toString()
-    internal abstract fun <T> getAttr(node: T, transform: Transform<T>): Any?
+    internal abstract fun <T> getAttr(
+        context: Context<T>,
+        transform: Transform<T>,
+    ): Any?
+
     abstract val properties: Array<String>
     abstract val methods: Array<String>
 
@@ -18,8 +22,8 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
         override val value: String,
     ) : Variable(value) {
         override val end = start + value.length
-        override fun <T> getAttr(node: T, transform: Transform<T>): Any? {
-            return transform.getAttr(node, value)
+        override fun <T> getAttr(context: Context<T>, transform: Transform<T>): Any? {
+            return transform.getAttr(context, value)
         }
 
         override val properties: Array<String>
@@ -34,8 +38,14 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
         val object0: Variable,
         val property: String,
     ) : Variable(value = "${object0.stringify()}.$property") {
-        override fun <T> getAttr(node: T, transform: Transform<T>): Any? {
-            return transform.getAttr(object0.getAttr(node, transform), property)
+        override fun <T> getAttr(
+            context: Context<T>,
+            transform: Transform<T>,
+        ): Any? {
+            return transform.getAttr(
+                object0.getAttr(context, transform).whenNull { return null },
+                property
+            )
         }
 
         override val properties: Array<String>
@@ -53,7 +63,10 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
         value = "${callee.stringify()}(${arguments.joinToString(",") { it.stringify() }})",
     ) {
 
-        override fun <T> getAttr(node: T, transform: Transform<T>): Any? {
+        override fun <T> getAttr(
+            context: Context<T>,
+            transform: Transform<T>,
+        ): Any? {
             return when (callee) {
                 is CallExpression -> {
                     // not support
@@ -62,17 +75,21 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
 
                 is Identifier -> {
                     transform.getInvoke(
-                        node,
+                        context,
                         callee.value,
-                        arguments.map { it.getAttr(node, transform).whenNull { return null } }
+                        arguments.map {
+                            it.getAttr(context, transform).whenNull { return null }
+                        }
                     )
                 }
 
                 is MemberExpression -> {
                     transform.getInvoke(
-                        callee.object0.getAttr(node, transform).whenNull { return null },
+                        callee.object0.getAttr(context, transform).whenNull { return null },
                         callee.property,
-                        arguments.map { it.getAttr(node, transform).whenNull { return null } }
+                        arguments.map {
+                            it.getAttr(context, transform).whenNull { return null }
+                        }
                     )
                 }
             }
@@ -95,7 +112,10 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
         override val value: Any?,
         override val type: String,
     ) : ValueExpression(value, type) {
-        override fun <T> getAttr(node: T, transform: Transform<T>) = value
+        override fun <T> getAttr(
+            context: Context<T>,
+            transform: Transform<T>,
+        ) = value
 
         override val properties: Array<String>
             get() = emptyArray()

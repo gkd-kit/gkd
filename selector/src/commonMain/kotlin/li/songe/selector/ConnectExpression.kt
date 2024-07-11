@@ -1,6 +1,9 @@
 package li.songe.selector
 
-sealed class ConnectExpression {
+import kotlin.js.JsExport
+
+@JsExport
+sealed class ConnectExpression : Stringify {
     abstract val minOffset: Int
     abstract val maxOffset: Int?
     abstract fun checkOffset(offset: Int): Boolean

@@ -34,7 +34,7 @@ class ParserTest {
         return value.intOrNull ?: value.booleanOrNull ?: value.content
     }
 
-    private fun getNodeInvoke(target: TestNode, name: String, args: List<Any?>): Any? {
+    private fun getNodeInvoke(target: TestNode, name: String, args: List<Any>): Any? {
         when (name) {
             "getChild" -> {
                 val arg = (args.getIntOrNull() ?: return null)
@@ -47,6 +47,11 @@ class ParserTest {
     private val transform = Transform<TestNode>(
         getAttr = { target, name ->
             when (target) {
+                is Context<*> -> when (name) {
+                    "prev" -> target.prev
+                    else -> getNodeAttr(target.current as TestNode, name)
+                }
+
                 is TestNode -> getNodeAttr(target, name)
                 is String -> getCharSequenceAttr(target, name)
 
@@ -59,6 +64,14 @@ class ParserTest {
                 is Int -> getIntInvoke(target, name, args)
                 is CharSequence -> getCharSequenceInvoke(target, name, args)
                 is TestNode -> getNodeInvoke(target, name, args)
+                is Context<*> -> when (name) {
+                    "getPrev" -> {
+                        args.getIntOrNull()?.let { target.getPrev(it) }
+                    }
+
+                    else -> getNodeInvoke(target.current as TestNode, name, args)
+                }
+
                 else -> null
             }
         },
@@ -121,7 +134,7 @@ class ParserTest {
         val text =
             "ImageView < @FrameLayout < LinearLayout < RelativeLayout <n LinearLayout < RelativeLayout + LinearLayout > RelativeLayout > TextView[text\$='广告']"
         val selector = Selector.parse(text)
-        println("trackIndex: " + selector.trackIndex)
+        println("trackIndex: " + selector.targetIndex)
         println("canCacheIndex: " + Selector.parse("A + B").useCache)
         println("canCacheIndex: " + Selector.parse("A > B - C").useCache)
     }
@@ -139,12 +152,10 @@ class ParserTest {
         assertTrue(targets.size == 1)
         println("id: " + targets.first().id)
 
-        val trackTargets = transform.querySelectorTrackAll(node, selector).toList()
+        val trackTargets = transform.querySelectorAllContext(node, selector).toList()
         println("trackTargets_size: " + trackTargets.size)
         assertTrue(trackTargets.size == 1)
-        println(trackTargets.first().mapIndexed { index, testNode ->
-            testNode.id to selector.tracks[index]
-        })
+        println(trackTargets.first())
     }
 
     @Test
@@ -157,11 +168,10 @@ class ParserTest {
 
     @Test
     fun check_query() {
-        val text = "@TextView - [text=\"签到提醒\"] <<n [vid=\"webViewContainer\"]"
+        val text = "@TextView[getPrev(0).text=`签到提醒`] - [text=`签到提醒`] <<n [vid=`webViewContainer`]"
         val selector = Selector.parse(text)
         println("selector: $selector")
-        println(selector.trackIndex)
-        println(selector.tracks.toList())
+        println(selector.targetIndex)
 
         val node = getOrDownloadNode("https://i.gkd.li/i/14384152")
         val targets = transform.querySelectorAll(node, selector).toList()
@@ -249,7 +259,7 @@ class ParserTest {
     @Test
     fun check_type() {
         val source =
-            "[visibleToUser=true][((parent.getChild(0,).getChild( (0), )=null) && (((``  >=  1)))) || (name=null && desc=null)]"
+            "[prev!=null&&visibleToUser=true][((parent.getChild(0,).getChild( (0), )=null) && (((2  >=  1)))) || (name=null && desc=null)]"
         val selector = Selector.parse(source)
         val typeInfo = initDefaultTypeInfo().contextType
         val error = selector.checkType(typeInfo)

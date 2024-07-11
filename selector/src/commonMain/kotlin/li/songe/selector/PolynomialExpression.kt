@@ -1,11 +1,14 @@
 package li.songe.selector
 
+import kotlin.js.JsExport
+
 /**
  * an+b
  */
+@JsExport
 data class PolynomialExpression(val a: Int = 0, val b: Int = 1) : ConnectExpression() {
 
-    override fun toString(): String {
+    override fun stringify(): String {
         if (a > 0 && b > 0) {
             if (a == 1) {
                 return "(n+$b)"

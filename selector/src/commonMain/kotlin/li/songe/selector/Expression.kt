@@ -1,7 +1,13 @@
 package li.songe.selector
 
+import kotlin.js.JsExport
+
+@JsExport
 sealed class Expression : Position {
-    internal abstract fun <T> match(node: T, transform: Transform<T>): Boolean
+    abstract fun <T> match(
+        context: Context<T>,
+        transform: Transform<T>,
+    ): Boolean
 
     abstract val binaryExpressions: Array<BinaryExpression>
 }

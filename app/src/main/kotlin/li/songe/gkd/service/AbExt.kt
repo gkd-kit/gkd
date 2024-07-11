@@ -7,6 +7,7 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
 import li.songe.gkd.BuildConfig
+import li.songe.selector.Context
 import li.songe.selector.MismatchExpressionTypeException
 import li.songe.selector.MismatchOperatorTypeException
 import li.songe.selector.MismatchParamTypeException
@@ -95,9 +96,8 @@ fun AccessibilityNodeInfo.querySelector(
             emptyList()
         })
         if (nodes.isNotEmpty()) {
-            val trackNodes = ArrayList<AccessibilityNodeInfo>(selector.tracks.size)
             nodes.forEach { childNode ->
-                val targetNode = selector.match(childNode, transform, trackNodes)
+                val targetNode = selector.match(childNode, transform)
                 if (targetNode != null) return targetNode
             }
         }
@@ -232,6 +232,14 @@ class NodeCache {
         indexMap.evictAll()
     }
 
+    fun getRoot(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        if (rootNode == null) {
+            rootNode = GkdAbService.service?.safeActiveWindow
+        }
+        if (node == rootNode) return null
+        return rootNode
+    }
+
     val sizeList: List<Int>
         get() = listOf(childMap.size(), parentMap.size(), indexMap.size())
 
@@ -310,13 +318,16 @@ fun createCacheTransform(): CacheTransform {
     }
     val getNodeAttr = createGetNodeAttr(cache)
     val transform = Transform(
-        getAttr = { node, name ->
-            when (node) {
-                is AccessibilityNodeInfo -> getNodeAttr(node, name)
-                is CharSequence -> getCharSequenceAttr(node, name)
-                else -> {
-                    null
+        getAttr = { target, name ->
+            when (target) {
+                is Context<*> -> when (name) {
+                    "prev" -> target.prev
+                    else -> getNodeAttr(target.current as AccessibilityNodeInfo, name)
                 }
+
+                is AccessibilityNodeInfo -> getNodeAttr(target, name)
+                is CharSequence -> getCharSequenceAttr(target, name)
+                else -> null
             }
         },
         getInvoke = { target, name, args ->
@@ -325,6 +336,20 @@ fun createCacheTransform(): CacheTransform {
                     "getChild" -> {
                         args.getIntOrNull()?.let { index ->
                             cache.getChild(target, index)
+                        }
+                    }
+
+                    else -> null
+                }
+
+                is Context<*> -> when (name) {
+                    "getPrev" -> {
+                        args.getIntOrNull()?.let { target.getPrev(it) }
+                    }
+
+                    "getChild" -> {
+                        args.getIntOrNull()?.let { index ->
+                            cache.getChild(target.current as AccessibilityNodeInfo, index)
                         }
                     }
 
@@ -342,6 +367,7 @@ fun createCacheTransform(): CacheTransform {
         getName = { node -> node.className },
         getChildren = getChildrenCache,
         getParent = { cache.getParent(it) },
+        getRoot = { cache.getRoot(it) },
         getDescendants = { node ->
             sequence {
                 val stack = getChildrenCache(node).toMutableList()
@@ -349,7 +375,7 @@ fun createCacheTransform(): CacheTransform {
                 stack.reverse()
                 val tempNodes = mutableListOf<AccessibilityNodeInfo>()
                 do {
-                    val top = stack.removeLast()
+                    val top = stack.removeAt(stack.lastIndex)
                     yield(top)
                     for (childNode in getChildrenCache(top)) {
                         tempNodes.add(childNode)
@@ -363,7 +389,7 @@ fun createCacheTransform(): CacheTransform {
                 } while (stack.isNotEmpty())
             }.take(MAX_DESCENDANTS_SIZE)
         },
-        getChildrenX = { node, connectExpression ->
+        traverseChildren = { node, connectExpression ->
             sequence {
                 repeat(node.childCount.coerceAtMost(MAX_CHILD_SIZE)) { offset ->
                     connectExpression.maxOffset?.let { maxOffset ->
@@ -376,7 +402,7 @@ fun createCacheTransform(): CacheTransform {
                 }
             }
         },
-        getBeforeBrothers = { node, connectExpression ->
+        traverseBeforeBrothers = { node, connectExpression ->
             sequence {
                 val parentVal = cache.getParent(node) ?: return@sequence
                 // 如果 node 由 quickFind 得到, 则第一次调用此方法可能得到 cache.index 是空
@@ -407,7 +433,7 @@ fun createCacheTransform(): CacheTransform {
                 }
             }
         },
-        getAfterBrothers = { node, connectExpression ->
+        traverseAfterBrothers = { node, connectExpression ->
             val parentVal = cache.getParent(node)
             if (parentVal != null) {
                 val index = cache.indexMap[node]
@@ -447,7 +473,7 @@ fun createCacheTransform(): CacheTransform {
                 emptySequence()
             }
         },
-        getDescendantsX = { node, connectExpression ->
+        traverseDescendants = { node, connectExpression ->
             sequence {
                 val stack = getChildrenCache(node).toMutableList()
                 if (stack.isEmpty()) return@sequence
@@ -455,7 +481,7 @@ fun createCacheTransform(): CacheTransform {
                 val tempNodes = mutableListOf<AccessibilityNodeInfo>()
                 var offset = 0
                 do {
-                    val top = stack.removeLast()
+                    val top = stack.removeAt(stack.lastIndex)
                     if (connectExpression.checkOffset(offset)) {
                         yield(top)
                     }
@@ -493,11 +519,14 @@ fun createNoCacheTransform(): CacheTransform {
     val transform = Transform(
         getAttr = { target, name ->
             when (target) {
+                is Context<*> -> when (name) {
+                    "prev" -> target.prev
+                    else -> getNodeAttr(target.current as AccessibilityNodeInfo, name)
+                }
+
                 is AccessibilityNodeInfo -> getNodeAttr(target, name)
                 is CharSequence -> getCharSequenceAttr(target, name)
-                else -> {
-                    null
-                }
+                else -> null
             }
         },
         getInvoke = { target, name, args ->
@@ -506,6 +535,20 @@ fun createNoCacheTransform(): CacheTransform {
                     "getChild" -> {
                         args.getIntOrNull()?.let { index ->
                             cache.getChild(target, index)
+                        }
+                    }
+
+                    else -> null
+                }
+
+                is Context<*> -> when (name) {
+                    "getPrev" -> {
+                        args.getIntOrNull()?.let { target.getPrev(it) }
+                    }
+
+                    "getChild" -> {
+                        args.getIntOrNull()?.let { index ->
+                            cache.getChild(target.current as AccessibilityNodeInfo, index)
                         }
                     }
 
@@ -529,7 +572,7 @@ fun createNoCacheTransform(): CacheTransform {
                 val tempNodes = mutableListOf<AccessibilityNodeInfo>()
                 var offset = 0
                 do {
-                    val top = stack.removeLast()
+                    val top = stack.removeAt(stack.lastIndex)
                     yield(top)
                     offset++
                     if (offset > MAX_DESCENDANTS_SIZE) {
@@ -547,7 +590,7 @@ fun createNoCacheTransform(): CacheTransform {
                 } while (stack.isNotEmpty())
             }
         },
-        getChildrenX = { node, connectExpression ->
+        traverseChildren = { node, connectExpression ->
             sequence {
                 repeat(node.childCount.coerceAtMost(MAX_CHILD_SIZE)) { offset ->
                     connectExpression.maxOffset?.let { maxOffset ->

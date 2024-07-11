@@ -1,22 +1,33 @@
 package li.songe.selector
 
+import kotlin.js.JsExport
+
+@JsExport
 data class ConnectWrapper(
     val segment: ConnectSegment,
     val to: PropertyWrapper,
-) {
-    override fun toString(): String {
-        return (to.toString() + "\u0020" + segment.toString()).trim()
+) : Stringify {
+    override fun stringify(): String {
+        return (to.stringify() + "\u0020" + segment.stringify()).trim()
     }
 
-    internal fun <T> matchTracks(
-        node: T, transform: Transform<T>,
-        trackNodes: MutableList<T>,
-    ): List<T>? {
-        segment.traversal(node, transform).forEach {
+    fun <T> matchContext(
+        context: Context<T>,
+        transform: Transform<T>,
+    ): Context<T>? {
+        if (isMatchRoot) {
+            // C <<n [parent=null] >n A
+            val root = transform.getRoot(context.current) ?: return null
+            return to.matchContext(context.next(root), transform)
+        }
+        segment.traversal(context.current, transform).forEach {
             if (it == null) return@forEach
-            val r = to.matchTracks(it, transform, trackNodes)
+            val r = to.matchContext(context.next(it), transform)
             if (r != null) return r
         }
         return null
     }
+
+    private val isMatchRoot = to.isMatchRoot && segment.isMatchAnyAncestor
+    private val canQf = to.quickFindValue.canQf && segment.isMatchAnyDescendant
 }

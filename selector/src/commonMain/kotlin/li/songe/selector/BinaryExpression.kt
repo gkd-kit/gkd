@@ -10,8 +10,11 @@ data class BinaryExpression(
     val operator: PositionImpl<CompareOperator>,
     val right: ValueExpression,
 ) : Expression() {
-    override fun <T> match(node: T, transform: Transform<T>): Boolean {
-        return operator.value.compare(node, transform, left, right)
+    override fun <T> match(
+        context: Context<T>,
+        transform: Transform<T>,
+    ): Boolean {
+        return operator.value.compare(context, transform, left, right)
     }
 
     override val binaryExpressions

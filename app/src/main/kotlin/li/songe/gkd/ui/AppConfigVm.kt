@@ -131,10 +131,10 @@ class AppConfigVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel
 
     private val appConfigsFlow = subsFlow.map { subs ->
         DbSet.subsConfigDao.queryAppConfig(subs.map { it.first.id }, args.appId)
-    }.flatMapLatest { it }
+    }.flatMapLatest { it }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     private val categoryConfigsFlow = subsFlow.map { subs ->
         DbSet.categoryConfigDao.queryBySubsIds(subs.map { it.first.id })
-    }.flatMapLatest { it }
+    }.flatMapLatest { it }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val appGroupsFlow = combine(
         sortedAppGroupsFlow,
         appConfigsFlow,

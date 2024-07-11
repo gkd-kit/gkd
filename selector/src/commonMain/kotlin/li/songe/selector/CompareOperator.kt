@@ -7,10 +7,10 @@ sealed class CompareOperator(val key: String) : Stringify {
     override fun stringify() = key
 
     internal abstract fun <T> compare(
-        node: T,
+        context: Context<T>,
         transform: Transform<T>,
         leftExp: ValueExpression,
-        rightExp: ValueExpression
+        rightExp: ValueExpression,
     ): Boolean
 
     internal abstract fun allowType(left: ValueExpression, right: ValueExpression): Boolean
@@ -51,13 +51,13 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object Equal : CompareOperator("=") {
         override fun <T> compare(
-            node: T,
+            context: Context<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
-            rightExp: ValueExpression
+            rightExp: ValueExpression,
         ): Boolean {
-            val left = leftExp.getAttr(node, transform)
-            val right = rightExp.getAttr(node, transform)
+            val left = leftExp.getAttr(context, transform)
+            val right = rightExp.getAttr(context, transform)
             return if (left is CharSequence && right is CharSequence) {
                 left.contentReversedEquals(right)
             } else {
@@ -70,12 +70,12 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object NotEqual : CompareOperator("!=") {
         override fun <T> compare(
-            node: T,
+            context: Context<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
-            rightExp: ValueExpression
+            rightExp: ValueExpression,
         ): Boolean {
-            return !Equal.compare(node, transform, leftExp, rightExp)
+            return !Equal.compare(context, transform, leftExp, rightExp)
         }
 
         override fun allowType(left: ValueExpression, right: ValueExpression) = true
@@ -83,13 +83,14 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object Start : CompareOperator("^=") {
         override fun <T> compare(
-            node: T,
+            context: Context<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
-            rightExp: ValueExpression
-        ): Boolean {
-            val left = leftExp.getAttr(node, transform)
-            val right = rightExp.getAttr(node, transform)
+            rightExp: ValueExpression,
+
+            ): Boolean {
+            val left = leftExp.getAttr(context, transform)
+            val right = rightExp.getAttr(context, transform)
             return if (left is CharSequence && right is CharSequence) {
                 left.startsWith(right)
             } else {
@@ -104,13 +105,14 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object NotStart : CompareOperator("!^=") {
         override fun <T> compare(
-            node: T,
+            context: Context<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
-            rightExp: ValueExpression
-        ): Boolean {
-            val left = leftExp.getAttr(node, transform)
-            val right = rightExp.getAttr(node, transform)
+            rightExp: ValueExpression,
+
+            ): Boolean {
+            val left = leftExp.getAttr(context, transform)
+            val right = rightExp.getAttr(context, transform)
             return if (left is CharSequence && right is CharSequence) {
                 !left.startsWith(right)
             } else {
@@ -124,13 +126,14 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object Include : CompareOperator("*=") {
         override fun <T> compare(
-            node: T,
+            context: Context<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
-            rightExp: ValueExpression
-        ): Boolean {
-            val left = leftExp.getAttr(node, transform)
-            val right = rightExp.getAttr(node, transform)
+            rightExp: ValueExpression,
+
+            ): Boolean {
+            val left = leftExp.getAttr(context, transform)
+            val right = rightExp.getAttr(context, transform)
             return if (left is CharSequence && right is CharSequence) {
                 left.contains(right)
             } else {
@@ -144,13 +147,14 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object NotInclude : CompareOperator("!*=") {
         override fun <T> compare(
-            node: T,
+            context: Context<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
-            rightExp: ValueExpression
-        ): Boolean {
-            val left = leftExp.getAttr(node, transform)
-            val right = rightExp.getAttr(node, transform)
+            rightExp: ValueExpression,
+
+            ): Boolean {
+            val left = leftExp.getAttr(context, transform)
+            val right = rightExp.getAttr(context, transform)
             return if (left is CharSequence && right is CharSequence) {
                 !left.contains(right)
             } else {
@@ -164,13 +168,14 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object End : CompareOperator("$=") {
         override fun <T> compare(
-            node: T,
+            context: Context<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
-            rightExp: ValueExpression
-        ): Boolean {
-            val left = leftExp.getAttr(node, transform)
-            val right = rightExp.getAttr(node, transform)
+            rightExp: ValueExpression,
+
+            ): Boolean {
+            val left = leftExp.getAttr(context, transform)
+            val right = rightExp.getAttr(context, transform)
             return if (left is CharSequence && right is CharSequence) {
                 left.endsWith(right)
             } else {
@@ -184,13 +189,14 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object NotEnd : CompareOperator("!$=") {
         override fun <T> compare(
-            node: T,
+            context: Context<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
-            rightExp: ValueExpression
-        ): Boolean {
-            val left = leftExp.getAttr(node, transform)
-            val right = rightExp.getAttr(node, transform)
+            rightExp: ValueExpression,
+
+            ): Boolean {
+            val left = leftExp.getAttr(context, transform)
+            val right = rightExp.getAttr(context, transform)
             return if (left is CharSequence && right is CharSequence) {
                 !left.endsWith(
                     right
@@ -206,13 +212,14 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object Less : CompareOperator("<") {
         override fun <T> compare(
-            node: T,
+            context: Context<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
-            rightExp: ValueExpression
-        ): Boolean {
-            val left = leftExp.getAttr(node, transform)
-            val right = rightExp.getAttr(node, transform)
+            rightExp: ValueExpression,
+
+            ): Boolean {
+            val left = leftExp.getAttr(context, transform)
+            val right = rightExp.getAttr(context, transform)
             return if (left is Int && right is Int) left < right else false
         }
 
@@ -224,13 +231,14 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object LessEqual : CompareOperator("<=") {
         override fun <T> compare(
-            node: T,
+            context: Context<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
-            rightExp: ValueExpression
-        ): Boolean {
-            val left = leftExp.getAttr(node, transform)
-            val right = rightExp.getAttr(node, transform)
+            rightExp: ValueExpression,
+
+            ): Boolean {
+            val left = leftExp.getAttr(context, transform)
+            val right = rightExp.getAttr(context, transform)
             return if (left is Int && right is Int) left <= right else false
         }
 
@@ -240,13 +248,14 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object More : CompareOperator(">") {
         override fun <T> compare(
-            node: T,
+            context: Context<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
-            rightExp: ValueExpression
-        ): Boolean {
-            val left = leftExp.getAttr(node, transform)
-            val right = rightExp.getAttr(node, transform)
+            rightExp: ValueExpression,
+
+            ): Boolean {
+            val left = leftExp.getAttr(context, transform)
+            val right = rightExp.getAttr(context, transform)
             return if (left is Int && right is Int) left > right else false
         }
 
@@ -256,13 +265,14 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object MoreEqual : CompareOperator(">=") {
         override fun <T> compare(
-            node: T,
+            context: Context<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
-            rightExp: ValueExpression
-        ): Boolean {
-            val left = leftExp.getAttr(node, transform)
-            val right = rightExp.getAttr(node, transform)
+            rightExp: ValueExpression,
+
+            ): Boolean {
+            val left = leftExp.getAttr(context, transform)
+            val right = rightExp.getAttr(context, transform)
             return if (left is Int && right is Int) left >= right else false
         }
 
@@ -273,12 +283,13 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object Matches : CompareOperator("~=") {
         override fun <T> compare(
-            node: T,
+            context: Context<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
-            rightExp: ValueExpression
-        ): Boolean {
-            val left = leftExp.getAttr(node, transform)
+            rightExp: ValueExpression,
+
+            ): Boolean {
+            val left = leftExp.getAttr(context, transform)
             return if (left is CharSequence && rightExp is ValueExpression.StringLiteral) {
                 rightExp.outMatches(left)
             } else {
@@ -293,12 +304,13 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object NotMatches : CompareOperator("!~=") {
         override fun <T> compare(
-            node: T,
+            context: Context<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
-            rightExp: ValueExpression
-        ): Boolean {
-            val left = leftExp.getAttr(node, transform)
+            rightExp: ValueExpression,
+
+            ): Boolean {
+            val left = leftExp.getAttr(context, transform)
             return if (left is CharSequence && rightExp is ValueExpression.StringLiteral) {
                 !rightExp.outMatches(left)
             } else {
