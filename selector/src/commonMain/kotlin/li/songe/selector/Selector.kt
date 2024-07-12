@@ -85,7 +85,7 @@ class Selector(
 
     fun checkType(typeInfo: TypeInfo): SelectorCheckException? {
         try {
-            propertyWrapper.segment.binaryExpressions.forEach { exp ->
+            binaryExpressions.forEach { exp ->
                 if (!exp.operator.value.allowType(exp.left, exp.right)) {
                     throw MismatchOperatorTypeException(exp)
                 }
