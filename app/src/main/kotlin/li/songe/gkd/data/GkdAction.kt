@@ -8,13 +8,15 @@ import android.view.ViewConfiguration
 import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.ScreenUtils
 import kotlinx.serialization.Serializable
+import li.songe.selector.FastQuery
 
 @Serializable
 data class GkdAction(
     val selector: String,
     val quickFind: Boolean = false,
+    val fastQuery: Boolean = false,
     val action: String? = null,
-    val position: RawSubscription.Position? = null
+    val position: RawSubscription.Position? = null,
 )
 
 @Serializable

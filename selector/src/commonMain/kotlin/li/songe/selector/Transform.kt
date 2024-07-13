@@ -136,43 +136,70 @@ class Transform<T> @JsExport.Ignore constructor(
             } while (stack.isNotEmpty())
         }
     },
+
+    val traverseFastQueryDescendants: (T, List<FastQuery>) -> Sequence<T> = { _, _ -> emptySequence() }
 ) {
-    @JsExport.Ignore
-    val querySelectorAll: (T, Selector) -> Sequence<T> = { node, selector ->
-        sequence {
-            selector.match(node, this@Transform)?.let { yield(it) }
-            getDescendants(node).forEach { childNode ->
-                selector.match(childNode, this@Transform)?.let { yield(it) }
-            }
-        }
-    }
-    val querySelector: (T, Selector) -> T? = { node, selector ->
-        querySelectorAll(node, selector).firstOrNull()
-    }
 
     @JsExport.Ignore
-    val querySelectorAllContext: (T, Selector) -> Sequence<Context<T>> = { node, selector ->
-        sequence {
-            selector.matchContext(node, this@Transform)?.let { yield(it) }
+    fun querySelectorAll(
+        node: T,
+        selector: Selector,
+        option: MatchOption = defaultMatchOption,
+    ): Sequence<T> {
+        return sequence {
+            selector.match(node, this@Transform, option)?.let { yield(it) }
             getDescendants(node).forEach { childNode ->
-                selector.matchContext(childNode, this@Transform)?.let { yield(it) }
+                selector.match(childNode, this@Transform, option)?.let { yield(it) }
             }
         }
     }
 
-    val querySelectorContext: (T, Selector) -> Context<T>? = { node, selector ->
-        querySelectorAllContext(node, selector).firstOrNull()
+    fun querySelector(
+        node: T,
+        selector: Selector,
+        option: MatchOption = defaultMatchOption,
+    ): T? {
+        return querySelectorAll(node, selector, option).firstOrNull()
+    }
+
+    @JsExport.Ignore
+    fun querySelectorAllContext(
+        node: T,
+        selector: Selector,
+        option: MatchOption = defaultMatchOption,
+    ): Sequence<Context<T>> {
+        return sequence {
+            selector.matchContext(node, this@Transform, option)?.let { yield(it) }
+            getDescendants(node).forEach { childNode ->
+                selector.matchContext(childNode, this@Transform, option)?.let { yield(it) }
+            }
+        }
+    }
+
+    fun querySelectorContext(
+        node: T,
+        selector: Selector,
+        option: MatchOption = defaultMatchOption,
+    ): Context<T>? {
+        return querySelectorAllContext(node, selector, option).firstOrNull()
     }
 
     @Suppress("UNCHECKED_CAST")
-    val querySelectorAllArray: (T, Selector) -> Array<T> = { node, selector ->
-        val result = querySelectorAll(node, selector).toList()
-        (result as List<Any>).toTypedArray() as Array<T>
+    fun querySelectorAllArray(
+        node: T,
+        selector: Selector,
+        option: MatchOption = defaultMatchOption,
+    ): Array<T> {
+        val result = querySelectorAll(node, selector, option).toList()
+        return (result as List<Any>).toTypedArray() as Array<T>
     }
 
-    val querySelectorAllContextArray: (T, Selector) -> Array<Context<T>> = { node, selector ->
-        val result = querySelectorAllContext(node, selector)
-        result.toList().toTypedArray()
+    fun querySelectorAllContextArray(
+        node: T,
+        selector: Selector,
+        option: MatchOption = defaultMatchOption,
+    ): Array<Context<T>> {
+        return querySelectorAllContext(node, selector, option).toList().toTypedArray()
     }
 
     companion object {

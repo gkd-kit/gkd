@@ -230,12 +230,12 @@ val ruleSummaryFlow by lazy {
                 val appGroupConfigs = subGroupSubsConfigs.filter { c -> c.appId == appRaw.id }
                 val subAppGroupToRules = mutableMapOf<RawSubscription.RawAppGroup, List<AppRule>>()
                 val groupAndEnables = appRaw.groups.map { group ->
-                    val enable = group.valid && getGroupRawEnable(
+                    val enable = getGroupRawEnable(
                         group,
                         appGroupConfigs.find { c -> c.groupKey == group.key },
                         rawSubs.groupToCategoryMap[group],
                         subCategoryConfigs.find { c -> c.categoryKey == rawSubs.groupToCategoryMap[group]?.key }
-                    )
+                    ) && group.valid
                     ResolvedAppGroup(
                         group = group,
                         subscription = rawSubs,

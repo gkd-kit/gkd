@@ -33,4 +33,37 @@ data class LogicalExpression(
         }
         return "$leftStr\u0020${operator.stringify()}\u0020$rightStr"
     }
+
+    fun getSameExpressionArray(): Array<BinaryExpression>? {
+        if (left is LogicalExpression && left.operator.value != operator.value) {
+            return null
+        }
+        if (right is LogicalExpression && right.operator.value != operator.value) {
+            return null
+        }
+        return when (left) {
+            is BinaryExpression -> when (right) {
+                is BinaryExpression -> arrayOf(left, right)
+                is LogicalExpression -> {
+                    arrayOf(left) + (right.getSameExpressionArray() ?: return null)
+                }
+
+                is NotExpression -> null
+            }
+
+            is LogicalExpression -> {
+                val leftArray = left.getSameExpressionArray() ?: return null
+                when (right) {
+                    is BinaryExpression -> leftArray + right
+                    is LogicalExpression -> {
+                        return leftArray + (right.getSameExpressionArray() ?: return null)
+                    }
+
+                    is NotExpression -> null
+                }
+            }
+
+            is NotExpression -> null
+        }
+    }
 }

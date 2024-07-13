@@ -177,6 +177,7 @@ data class RawSubscription(
         val actionCd: Long?
         val actionDelay: Long?
         val quickFind: Boolean?
+        val fastQuery: Boolean?
         val matchRoot: Boolean?
         val matchDelay: Long?
         val matchTime: Long?
@@ -213,6 +214,7 @@ data class RawSubscription(
         val valid: Boolean
         val errorDesc: String?
         val allExampleUrls: List<String>
+        val cacheMap: MutableMap<String, Selector?>
     }
 
     sealed interface RawAppRuleProps {
@@ -256,6 +258,7 @@ data class RawSubscription(
         override val actionCd: Long?,
         override val actionDelay: Long?,
         override val quickFind: Boolean?,
+        override val fastQuery: Boolean?,
         override val matchRoot: Boolean?,
         override val matchDelay: Long?,
         override val matchTime: Long?,
@@ -273,15 +276,13 @@ data class RawSubscription(
         override val apps: List<RawGlobalApp>?,
         override val rules: List<RawGlobalRule>,
     ) : RawGroupProps, RawGlobalRuleProps {
-
         val appIdEnable by lazy {
             (apps ?: emptyList()).associate { a -> a.id to (a.enable ?: true) }
         }
 
+        override val cacheMap by lazy { HashMap<String, Selector?>() }
         override val errorDesc by lazy { getErrorDesc() }
-
         override val valid by lazy { errorDesc == null }
-
         override val allExampleUrls by lazy {
             ((exampleUrls ?: emptyList()) + rules.flatMap { r ->
                 r.exampleUrls ?: emptyList()
@@ -295,6 +296,7 @@ data class RawSubscription(
         override val actionCd: Long?,
         override val actionDelay: Long?,
         override val quickFind: Boolean?,
+        override val fastQuery: Boolean?,
         override val matchRoot: Boolean?,
         override val matchDelay: Long?,
         override val matchTime: Long?,
@@ -332,6 +334,7 @@ data class RawSubscription(
         override val actionCd: Long?,
         override val actionDelay: Long?,
         override val quickFind: Boolean?,
+        override val fastQuery: Boolean?,
         override val matchRoot: Boolean?,
         override val actionMaximum: Int?,
         override val order: Int?,
@@ -349,11 +352,9 @@ data class RawSubscription(
         override val versionCodes: List<Long>?,
         override val excludeVersionCodes: List<Long>?,
     ) : RawGroupProps, RawAppRuleProps {
-
+        override val cacheMap by lazy { HashMap<String, Selector?>() }
         override val errorDesc by lazy { getErrorDesc() }
-
         override val valid by lazy { errorDesc == null }
-
         override val allExampleUrls by lazy {
             ((exampleUrls ?: emptyList()) + rules.flatMap { r ->
                 r.exampleUrls ?: emptyList()
@@ -377,6 +378,7 @@ data class RawSubscription(
         override val actionCd: Long?,
         override val actionDelay: Long?,
         override val quickFind: Boolean?,
+        override val fastQuery: Boolean?,
         override val matchRoot: Boolean?,
         override val actionMaximum: Int?,
         override val order: Int?,
@@ -405,9 +407,12 @@ data class RawSubscription(
 
             val allSelector = allSelectorStrings.map { s ->
                 try {
-                    Selector.parse(s)
+                    Selector.parse(s).apply {
+                        cacheMap[s] = this
+                    }
                 } catch (e: Exception) {
                     LogUtils.d("非法选择器", e.toString())
+                    cacheMap[s] = null
                     null
                 }
             }
@@ -591,6 +596,7 @@ data class RawSubscription(
                 preKeys = getIntIArray(jsonObject, "preKeys"),
                 action = getString(jsonObject, "action"),
                 quickFind = getBoolean(jsonObject, "quickFind"),
+                fastQuery = getBoolean(jsonObject, "fastQuery"),
                 matchRoot = getBoolean(jsonObject, "matchRoot"),
                 actionMaximum = getInt(jsonObject, "actionMaximum"),
                 matchDelay = getLong(jsonObject, "matchDelay"),
@@ -634,6 +640,7 @@ data class RawSubscription(
                     jsonToRuleRaw(it)
                 },
                 quickFind = getBoolean(jsonObject, "quickFind"),
+                fastQuery = getBoolean(jsonObject, "fastQuery"),
                 matchRoot = getBoolean(jsonObject, "matchRoot"),
                 actionMaximum = getInt(jsonObject, "actionMaximum"),
                 matchDelay = getLong(jsonObject, "matchDelay"),
@@ -688,6 +695,7 @@ data class RawSubscription(
                 actionCd = getLong(jsonObject, "actionCd"),
                 actionDelay = getLong(jsonObject, "actionDelay"),
                 quickFind = getBoolean(jsonObject, "quickFind"),
+                fastQuery = getBoolean(jsonObject, "fastQuery"),
                 matchRoot = getBoolean(jsonObject, "matchRoot"),
                 actionMaximum = getInt(jsonObject, "actionMaximum"),
                 matchDelay = getLong(jsonObject, "matchDelay"),
@@ -725,6 +733,7 @@ data class RawSubscription(
                 actionCd = getLong(jsonObject, "actionCd"),
                 actionDelay = getLong(jsonObject, "actionDelay"),
                 quickFind = getBoolean(jsonObject, "quickFind"),
+                fastQuery = getBoolean(jsonObject, "fastQuery"),
                 matchRoot = getBoolean(jsonObject, "matchRoot"),
                 actionMaximum = getInt(jsonObject, "actionMaximum"),
                 matchDelay = getLong(jsonObject, "matchDelay"),

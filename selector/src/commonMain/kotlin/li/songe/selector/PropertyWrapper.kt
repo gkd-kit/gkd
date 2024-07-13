@@ -6,7 +6,7 @@ import kotlin.js.JsExport
 data class PropertyWrapper(
     val segment: PropertySegment,
     val to: ConnectWrapper? = null,
-):Stringify {
+) : Stringify {
     override fun stringify(): String {
         return (if (to != null) {
             to.stringify() + "\u0020"
@@ -18,6 +18,7 @@ data class PropertyWrapper(
     fun <T> matchContext(
         context: Context<T>,
         transform: Transform<T>,
+        option: MatchOption,
     ): Context<T>? {
         if (!segment.match(context, transform)) {
             return null
@@ -25,7 +26,7 @@ data class PropertyWrapper(
         if (to == null) {
             return context
         }
-        return to.matchContext(context, transform)
+        return to.matchContext(context, transform, option)
     }
 
 
@@ -33,7 +34,7 @@ data class PropertyWrapper(
         e is BinaryExpression && e.operator.value == CompareOperator.Equal && ((e.left.value == "depth" && e.right.value == 0) || (e.left.value == "parent" && e.right.value == "null"))
     }
 
-    val quickFindValue = getQuickFindValue(segment)
+    val fastQueryList = getFastQueryList(segment) ?: emptyList()
 
     val length: Int
         get() = if (to == null) 1 else to.to.length + 1
