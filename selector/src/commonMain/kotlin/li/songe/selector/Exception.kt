@@ -8,7 +8,7 @@ sealed class SelectorCheckException(override val message: String) : Exception(me
 @JsExport
 data class UnknownIdentifierException(
     val value: ValueExpression.Identifier,
-) : SelectorCheckException("Unknown Identifier: ${value.value}")
+) : SelectorCheckException("Unknown Identifier: ${value.name}")
 
 @JsExport
 data class UnknownMemberException(
@@ -18,7 +18,7 @@ data class UnknownMemberException(
 @JsExport
 data class UnknownIdentifierMethodException(
     val value: ValueExpression.Identifier,
-) : SelectorCheckException("Unknown Identifier Method: ${value.value}")
+) : SelectorCheckException("Unknown Identifier Method: ${value.name}")
 
 @JsExport
 data class UnknownMemberMethodException(

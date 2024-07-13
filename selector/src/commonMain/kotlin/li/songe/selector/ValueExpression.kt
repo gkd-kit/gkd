@@ -19,8 +19,8 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
 
     data class Identifier internal constructor(
         override val start: Int,
-        override val value: String,
-    ) : Variable(value) {
+        val name: String,
+    ) : Variable(name) {
         override val end = start + value.length
         override fun <T> getAttr(context: Context<T>, transform: Transform<T>): Any? {
             return transform.getAttr(context, value)
@@ -76,7 +76,7 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
                 is Identifier -> {
                     transform.getInvoke(
                         context,
-                        callee.value,
+                        callee.name,
                         arguments.map {
                             it.getAttr(context, transform).whenNull { return null }
                         }
@@ -102,7 +102,7 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
         override val methods: Array<String>
             get() = when (callee) {
                 is CallExpression -> callee.methods
-                is Identifier -> arrayOf(callee.value)
+                is Identifier -> arrayOf(callee.name)
                 is MemberExpression -> arrayOf(*callee.object0.methods, callee.property)
             }.toMutableList().plus(arguments.flatMap { it.methods.toList() })
                 .toTypedArray()

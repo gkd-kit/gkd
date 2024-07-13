@@ -55,6 +55,7 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
+import li.songe.selector.MatchOption
 import li.songe.selector.Selector
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -535,9 +536,12 @@ class GkdAbService : CompositionAbService({
             }
             val targetNode = serviceVal.safeActiveWindow?.querySelector(
                 selector,
-                gkdAction.quickFind,
+                MatchOption(
+                    quickFind = gkdAction.quickFind,
+                    fastQuery = gkdAction.fastQuery,
+                ),
                 createCacheTransform().transform,
-                true
+                isRootNode = true
             ) ?: throw RpcError("没有查询到节点")
 
             if (gkdAction.action == null) {

@@ -267,4 +267,12 @@ class ParserTest {
         println("error: $error")
         println("check_type: $selector")
     }
+
+    @Test
+    fun  check_qf(){
+        val source = "@UIView[clickable=true] -3 FlattenUIText[text=`a`||text=`b`||vid=`233`]"
+        val selector = Selector.parse(source)
+        println("fastQuery: ${selector.fastQueryList}")
+        println("quickFind: ${selector.quickFindValue}")
+    }
 }

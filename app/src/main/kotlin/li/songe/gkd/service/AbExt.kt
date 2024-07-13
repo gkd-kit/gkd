@@ -8,6 +8,8 @@ import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
 import li.songe.gkd.BuildConfig
 import li.songe.selector.Context
+import li.songe.selector.FastQuery
+import li.songe.selector.MatchOption
 import li.songe.selector.MismatchExpressionTypeException
 import li.songe.selector.MismatchOperatorTypeException
 import li.songe.selector.MismatchParamTypeException
@@ -70,7 +72,7 @@ fun AccessibilityNodeInfo.getVid(): CharSequence? {
 
 fun AccessibilityNodeInfo.querySelector(
     selector: Selector,
-    quickFind: Boolean,
+    option: MatchOption,
     transform: Transform<AccessibilityNodeInfo>,
     isRootNode: Boolean,
 ): AccessibilityNodeInfo? {
@@ -80,31 +82,51 @@ fun AccessibilityNodeInfo.querySelector(
         } else {
             GkdAbService.service?.safeActiveWindow ?: return null
         }
-        return selector.match(root, transform)
+        return selector.match(root, transform, option)
     }
-    if (quickFind && selector.quickFindValue.canQf) {
-        val idValue = selector.quickFindValue.id
-        val vidValue = selector.quickFindValue.vid
-        val textValue = selector.quickFindValue.text
-        val nodes = (if (idValue != null) {
-            findAccessibilityNodeInfosByViewId(idValue)
-        } else if (vidValue != null) {
-            findAccessibilityNodeInfosByViewId("$packageName:id/$vidValue")
-        } else if (textValue != null) {
-            findAccessibilityNodeInfosByText(textValue)
-        } else {
-            emptyList()
-        })
-        if (nodes.isNotEmpty()) {
-            nodes.forEach { childNode ->
-                val targetNode = selector.match(childNode, transform)
-                if (targetNode != null) return targetNode
-            }
+    if (option.fastQuery && selector.fastQueryList.isNotEmpty()) {
+        val nodes = transform.traverseFastQueryDescendants(this, selector.fastQueryList)
+        nodes.forEach { childNode ->
+            val targetNode = selector.match(childNode, transform, option)
+            if (targetNode != null) return targetNode
+        }
+        return null
+    }
+    if (option.quickFind && selector.quickFindValue != null) {
+        val nodes = getFastQueryNodes(this, selector.quickFindValue!!)
+        nodes.forEach { childNode ->
+            val targetNode = selector.match(childNode, transform, option)
+            if (targetNode != null) return targetNode
         }
         return null
     }
     // 在一些开屏广告的界面会造成1-2s的阻塞
-    return transform.querySelector(this, selector)
+    return transform.querySelector(this, selector, option)
+}
+
+private fun getFastQueryNodes(
+    node: AccessibilityNodeInfo,
+    fastQuery: FastQuery
+): List<AccessibilityNodeInfo> {
+    return when (fastQuery) {
+        is FastQuery.Id -> node.findAccessibilityNodeInfosByViewId(fastQuery.value)
+        is FastQuery.Text -> node.findAccessibilityNodeInfosByText(fastQuery.value)
+        is FastQuery.Vid -> node.findAccessibilityNodeInfosByViewId("${node.packageName}:id/${fastQuery.value}")
+    }
+}
+
+private fun traverseFastQueryDescendants(
+    node: AccessibilityNodeInfo,
+    fastQueryList: List<FastQuery>
+): Sequence<AccessibilityNodeInfo> {
+    return sequence {
+        for (fastQuery in fastQueryList) {
+            val nodes = getFastQueryNodes(node, fastQuery)
+            nodes.forEach { childNode ->
+                yield(childNode)
+            }
+        }
+    }
 }
 
 
@@ -504,6 +526,7 @@ fun createCacheTransform(): CacheTransform {
                 } while (stack.isNotEmpty())
             }
         },
+        traverseFastQueryDescendants = ::traverseFastQueryDescendants
     )
 
     return CacheTransform(transform, cache)
@@ -603,6 +626,7 @@ fun createNoCacheTransform(): CacheTransform {
                 }
             }
         },
+        traverseFastQueryDescendants = ::traverseFastQueryDescendants
     )
     return CacheTransform(transform, cache)
 }

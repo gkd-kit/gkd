@@ -14,20 +14,29 @@ data class ConnectWrapper(
     fun <T> matchContext(
         context: Context<T>,
         transform: Transform<T>,
+        option: MatchOption
     ): Context<T>? {
         if (isMatchRoot) {
             // C <<n [parent=null] >n A
             val root = transform.getRoot(context.current) ?: return null
-            return to.matchContext(context.next(root), transform)
+            return to.matchContext(context.next(root), transform, option)
         }
-        segment.traversal(context.current, transform).forEach {
-            if (it == null) return@forEach
-            val r = to.matchContext(context.next(it), transform)
-            if (r != null) return r
+        if (canFq && option.fastQuery) {
+            // C[name='a'||vid='b'] <<n A
+            transform.traverseFastQueryDescendants(context.current, to.fastQueryList).forEach {
+                val r = to.matchContext(context.next(it), transform, option)
+                if (r != null) return r
+            }
+        } else {
+            segment.traversal(context.current, transform).forEach {
+                if (it == null) return@forEach
+                val r = to.matchContext(context.next(it), transform, option)
+                if (r != null) return r
+            }
         }
         return null
     }
 
     private val isMatchRoot = to.isMatchRoot && segment.isMatchAnyAncestor
-    private val canQf = to.quickFindValue.canQf && segment.isMatchAnyDescendant
+    private val canFq = segment.isMatchAnyDescendant && to.fastQueryList.isNotEmpty()
 }

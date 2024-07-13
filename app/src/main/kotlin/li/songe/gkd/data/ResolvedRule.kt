@@ -13,6 +13,8 @@ import li.songe.gkd.service.lastTriggerTime
 import li.songe.gkd.service.querySelector
 import li.songe.gkd.service.safeActiveWindow
 import li.songe.gkd.util.ResolvedGroup
+import li.songe.selector.ConnectOperator
+import li.songe.selector.MatchOption
 import li.songe.selector.Selector
 
 sealed class ResolvedRule(
@@ -26,16 +28,22 @@ sealed class ResolvedRule(
     val key = rule.key
     val index = group.rules.indexOfFirst { r -> r === rule }
     private val preKeys = (rule.preKeys ?: emptyList()).toSet()
-    private val matches = (rule.matches ?: emptyList()).map { s -> Selector.parse(s) }
-    private val excludeMatches = (rule.excludeMatches ?: emptyList()).map { s -> Selector.parse(s) }
-    private val anyMatches = (rule.anyMatches ?: emptyList()).map { s -> Selector.parse(s) }
+    private val matches =
+        (rule.matches ?: emptyList()).map { s -> group.cacheMap[s] ?: Selector.parse(s) }
+    private val excludeMatches =
+        (rule.excludeMatches ?: emptyList()).map { s -> group.cacheMap[s] ?: Selector.parse(s) }
+    private val anyMatches =
+        (rule.anyMatches ?: emptyList()).map { s -> group.cacheMap[s] ?: Selector.parse(s) }
 
     private val resetMatch = rule.resetMatch ?: group.resetMatch
     val matchDelay = rule.matchDelay ?: group.matchDelay ?: 0L
     val actionDelay = rule.actionDelay ?: group.actionDelay ?: 0L
     private val matchTime = rule.matchTime ?: group.matchTime
     private val forcedTime = rule.forcedTime ?: group.forcedTime ?: 0L
-    private val quickFind = rule.quickFind ?: group.quickFind ?: false
+    private val matchOption = MatchOption(
+        quickFind = rule.quickFind ?: group.quickFind ?: false,
+        fastQuery = rule.fastQuery ?: group.fastQuery ?: false
+    )
     private val matchRoot = rule.matchRoot ?: group.matchRoot ?: false
     val order = rule.order ?: group.order ?: 0
 
@@ -55,9 +63,8 @@ sealed class ResolvedRule(
 
     private val slowSelectors by lazy {
         (matches + excludeMatches + anyMatches).filterNot { s ->
-            ((quickFind && s.quickFindValue.canQf) || s.isMatchRoot) && !s.connectKeys.contains(
-                "<<"
-            )
+            (!s.connectKeys.contains(ConnectOperator.Descendant)) &&
+                    ((matchOption.quickFind && s.quickFindValue != null) || (matchOption.fastQuery && s.fastQueryList.isNotEmpty()) || s.isMatchRoot)
         }
     }
 
@@ -164,7 +171,7 @@ sealed class ResolvedRule(
             for (selector in anyMatches) {
                 target = nodeInfo.querySelector(
                     selector,
-                    quickFind,
+                    matchOption,
                     transform.transform,
                     isRootNode || matchRoot
                 ) ?: break
@@ -174,7 +181,7 @@ sealed class ResolvedRule(
         for (selector in matches) {
             target = nodeInfo.querySelector(
                 selector,
-                quickFind,
+                matchOption,
                 transform.transform,
                 isRootNode || matchRoot
             ) ?: return null
@@ -182,7 +189,7 @@ sealed class ResolvedRule(
         for (selector in excludeMatches) {
             nodeInfo.querySelector(
                 selector,
-                quickFind,
+                matchOption,
                 transform.transform,
                 isRootNode || matchRoot
             )?.let { return null }

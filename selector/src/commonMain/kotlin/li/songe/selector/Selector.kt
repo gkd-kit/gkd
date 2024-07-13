@@ -29,28 +29,31 @@ class Selector(
     fun <T> matchContext(
         node: T,
         transform: Transform<T>,
+        option: MatchOption,
     ): Context<T>? {
-        return propertyWrapper.matchContext(Context(node), transform)
+        return propertyWrapper.matchContext(Context(node), transform, option)
     }
 
     fun <T> match(
         node: T,
         transform: Transform<T>,
+        option: MatchOption,
     ): T? {
-        val ctx = matchContext(node, transform) ?: return null
+        val ctx = matchContext(node, transform, option) ?: return null
         return ctx.get(targetIndex).current
     }
 
-    val quickFindValue = propertyWrapper.quickFindValue
+    val fastQueryList = propertyWrapper.fastQueryList
+    val quickFindValue = if (fastQueryList.size == 1) fastQueryList.first() else null
 
     val isMatchRoot = propertyWrapper.isMatchRoot
 
     val connectKeys = run {
         var c = propertyWrapper.to
-        val keys = mutableListOf<String>()
+        val keys = mutableListOf<ConnectOperator>()
         while (c != null) {
             c.apply {
-                keys.add(segment.operator.key)
+                keys.add(segment.operator)
             }
             c = c.to.to
         }
