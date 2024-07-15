@@ -48,13 +48,11 @@ class Selector(
 
     val isMatchRoot = propertyWrapper.isMatchRoot
 
-    val connectKeys = run {
+    val connectWrappers = run {
         var c = propertyWrapper.to
-        val keys = mutableListOf<ConnectOperator>()
+        val keys = mutableListOf<ConnectWrapper>()
         while (c != null) {
-            c.apply {
-                keys.add(segment.operator)
-            }
+            keys.add(c)
             c = c.to.to
         }
         keys.toTypedArray()
@@ -72,7 +70,7 @@ class Selector(
     }
 
     val useCache = run {
-        if (connectKeys.isNotEmpty()) {
+        if (connectWrappers.isNotEmpty()) {
             return@run true
         }
         binaryExpressions.forEach { b ->
@@ -84,6 +82,19 @@ class Selector(
             }
         }
         return@run false
+    }
+
+    fun isSlow(matchOption: MatchOption): Boolean {
+        if (matchOption.quickFind && quickFindValue == null && !isMatchRoot) {
+            return true
+        }
+        if ((!matchOption.fastQuery || propertyWrapper.fastQueryList.isEmpty()) && !isMatchRoot) {
+            return true
+        }
+        if (connectWrappers.any { c -> c.segment.operator == ConnectOperator.Descendant && !(c.canFq && matchOption.fastQuery) }) {
+            return true
+        }
+        return false
     }
 
     fun checkType(typeInfo: TypeInfo): SelectorCheckException? {

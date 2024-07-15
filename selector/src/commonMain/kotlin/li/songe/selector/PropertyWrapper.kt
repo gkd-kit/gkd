@@ -31,7 +31,7 @@ data class PropertyWrapper(
 
 
     val isMatchRoot = segment.expressions.any { e ->
-        e is BinaryExpression && e.operator.value == CompareOperator.Equal && ((e.left.value == "depth" && e.right.value == 0) || (e.left.value == "parent" && e.right.value == "null"))
+        e is BinaryExpression && e.operator.value == CompareOperator.Equal && e.left.value == "parent" && e.right.value == "null"
     }
 
     val fastQueryList = getFastQueryList(segment) ?: emptyList()

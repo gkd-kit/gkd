@@ -13,7 +13,6 @@ import li.songe.gkd.service.lastTriggerTime
 import li.songe.gkd.service.querySelector
 import li.songe.gkd.service.safeActiveWindow
 import li.songe.gkd.util.ResolvedGroup
-import li.songe.selector.ConnectOperator
 import li.songe.selector.MatchOption
 import li.songe.selector.Selector
 
@@ -61,14 +60,11 @@ sealed class ResolvedRule(
         null
     } ?: group.actionMaximum
 
-    private val slowSelectors by lazy {
-        (matches + excludeMatches + anyMatches).filterNot { s ->
-            (!s.connectKeys.contains(ConnectOperator.Descendant)) &&
-                    ((matchOption.quickFind && s.quickFindValue != null) || (matchOption.fastQuery && s.fastQueryList.isNotEmpty()) || s.isMatchRoot)
-        }
+    private val hasSlowSelector by lazy {
+        (matches + excludeMatches + anyMatches).any { s -> s.isSlow(matchOption) }
     }
 
-    val isSlow by lazy { preKeys.isEmpty() && slowSelectors.isNotEmpty() && (matchTime == null || matchTime > 10_000L) }
+    val isSlow by lazy { preKeys.isEmpty() && (matchTime == null || matchTime > 10_000L) && hasSlowSelector }
 
     var groupToRules: Map<out RawSubscription.RawGroupProps, List<ResolvedRule>> = emptyMap()
         set(value) {
@@ -170,38 +166,27 @@ sealed class ResolvedRule(
         if (anyMatches.isNotEmpty()) {
             for (selector in anyMatches) {
                 target = nodeInfo.querySelector(
-                    selector,
-                    matchOption,
-                    transform.transform,
-                    isRootNode || matchRoot
+                    selector, matchOption, transform.transform, isRootNode || matchRoot
                 ) ?: break
             }
             if (target == null) return null
         }
         for (selector in matches) {
             target = nodeInfo.querySelector(
-                selector,
-                matchOption,
-                transform.transform,
-                isRootNode || matchRoot
+                selector, matchOption, transform.transform, isRootNode || matchRoot
             ) ?: return null
         }
         for (selector in excludeMatches) {
             nodeInfo.querySelector(
-                selector,
-                matchOption,
-                transform.transform,
-                isRootNode || matchRoot
+                selector, matchOption, transform.transform, isRootNode || matchRoot
             )?.let { return null }
         }
         return target
     }
 
-    private val performer = ActionPerformer.getAction(
-        rule.action ?: rule.position?.let {
-            ActionPerformer.ClickCenter.action
-        }
-    )
+    private val performer = ActionPerformer.getAction(rule.action ?: rule.position?.let {
+        ActionPerformer.ClickCenter.action
+    })
 
     fun performAction(
         context: AccessibilityService,

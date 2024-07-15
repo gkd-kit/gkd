@@ -38,5 +38,5 @@ data class ConnectWrapper(
     }
 
     private val isMatchRoot = to.isMatchRoot && segment.isMatchAnyAncestor
-    private val canFq = segment.isMatchAnyDescendant && to.fastQueryList.isNotEmpty()
+    val canFq = segment.isMatchAnyDescendant && to.fastQueryList.isNotEmpty()
 }
