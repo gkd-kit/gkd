@@ -23,6 +23,11 @@ jobs:
           distribution: 'adopt'
           java-version: '17'
 
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_CACHE_ENCRYPTION_KEY }}
+          gradle-home-cache-cleanup: true
+
       - name: write secrets info
         run: |
           echo ${{ secrets.GKD_STORE_FILE_BASE64 }} | base64 --decode > ${{ github.workspace }}/key.jks
