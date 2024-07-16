@@ -14,7 +14,11 @@ body:
       label: 一些验证
       description: 在提交问题之前，请确保您完成以下操作
       options:
-        - label: GKD 默认不提供任何规则, 你可以查看 [GKD 官方文档](https://gkd.li) 后自行编写规则或者导入远程订阅, 请不要再提出类似想要XXX规则这种问题 
+        - label: 1.GKD 默认不提供任何规则, 你可以查看 [GKD 官方文档](https://gkd.li) 后自行编写规则或者导入远程订阅, 请不要再提出类似想要XXX规则这种问题 
+          required: true
+        - label: 2.GKD 默认不提供任何规则, 你可以查看 [GKD 官方文档](https://gkd.li) 后自行编写规则或者导入远程订阅, 请不要再提出类似想要XXX规则这种问题 
+          required: true
+        - label: 3.GKD 默认不提供任何规则, 你可以查看 [GKD 官方文档](https://gkd.li) 后自行编写规则或者导入远程订阅, 请不要再提出类似想要XXX规则这种问题 
           required: true
         - label: 1.请 **确保** [已有的问题](https://github.com/gkd-kit/gkd/issues?q=is%3Aissue) 中没有人提交过相似issue，否则请在已有的issue下进行讨论
           required: true
