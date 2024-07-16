@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
+import li.songe.gkd.BuildConfig.ENABLED_UPDATE
 import li.songe.gkd.appScope
 
 private inline fun <reified T> createStorageFlow(
@@ -47,7 +48,7 @@ data class Store(
     val httpServerPort: Int = 8888,
     val updateSubsInterval: Long = UpdateTimeOption.Everyday.value,
     val captureVolumeChange: Boolean = false,
-    val autoCheckAppUpdate: Boolean = true,
+    val autoCheckAppUpdate: Boolean = ENABLED_UPDATE,
     val toastWhenClick: Boolean = true,
     val clickToast: String = "GKD",
     val autoClearMemorySubs: Boolean = true,

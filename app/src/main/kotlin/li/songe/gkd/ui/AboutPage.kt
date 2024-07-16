@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import li.songe.gkd.BuildConfig
+import li.songe.gkd.channel
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.GIT_COMMIT_URL
 import li.songe.gkd.util.LocalNavController
@@ -40,6 +41,7 @@ fun AboutPage() {
     val navController = LocalNavController.current
     val context = LocalContext.current
 
+    val buildName = channel?.let { "$it-" } + BuildConfig.BUILD_TYPE
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -149,6 +151,7 @@ fun AboutPage() {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -159,7 +162,7 @@ fun AboutPage() {
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 Text(
-                    text = BuildConfig.BUILD_TYPE,
+                    text = buildName,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
