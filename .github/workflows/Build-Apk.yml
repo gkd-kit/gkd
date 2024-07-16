@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
           java-version: '17'
@@ -41,15 +41,20 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: release
-          path: app/build/outputs/apk/release
+          name: default-debug
+          path: app/build/outputs/apk/default/debug
 
       - uses: actions/upload-artifact@v4
         with:
-          name: releaseNoMinify
-          path: app/build/outputs/apk/releaseNoMinify
+          name: default-release
+          path: app/build/outputs/apk/default/release
 
       - uses: actions/upload-artifact@v4
         with:
-          name: debug
-          path: app/build/outputs/apk/debug
+          name: fdroid-debug
+          path: app/build/outputs/apk/fdroid/debug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fdroid-release
+          path: app/build/outputs/apk/fdroid/release

@@ -42,6 +42,10 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
 
+        <meta-data
+            android:name="channel"
+            android:value="${channel}" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

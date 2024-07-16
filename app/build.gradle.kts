@@ -36,6 +36,7 @@ val vnSuffix = "-${gitInfo?.commitId?.substring(0, 7) ?: "unknown"}"
 
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.androidx.room)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
@@ -70,6 +71,7 @@ android {
             "GIT_COMMIT_ID",
             jsonStringOf(gitInfo?.commitId)
         )
+        buildConfigField("Boolean", "ENABLED_UPDATE", jsonStringOf(true))
         resourceConfigurations.addAll(listOf("zh", "en"))
         ndk {
             // noinspection ChromeOsAbiSupport
@@ -78,6 +80,12 @@ android {
     }
 
     lint {}
+
+    buildFeatures {
+        buildConfig = true
+        compose = true
+        aidl = true
+    }
 
     val currentSigning = if (project.hasProperty("GKD_STORE_FILE")) {
         signingConfigs.create("release") {
@@ -107,11 +115,6 @@ android {
                 )
             )
         }
-        create("releaseNoMinify") {
-            initWith(getByName("release"))
-            isMinifyEnabled = false
-            isShrinkResources = false
-        }
         debug {
             versionNameSuffix = vnSuffix
             applicationIdSuffix = ".debug"
@@ -120,10 +123,23 @@ android {
             resValue("string", "import_desc", "GKD-debug-导入数据")
         }
     }
+    productFlavors {
+        flavorDimensions += "channel"
+        val defaultName = "default"
+        create(defaultName) {
+            isDefault = true
+        }
+        create("fdroid") {
+            buildConfigField("Boolean", "ENABLED_UPDATE", jsonStringOf(false))
+        }
+        all {
+            dimension = flavorDimensionList.first()
+            manifestPlaceholders["channel"] = name
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-
     }
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.majorVersion
@@ -133,11 +149,7 @@ android {
         freeCompilerArgs += "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
         freeCompilerArgs += "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi"
     }
-    buildFeatures {
-        buildConfig = true
-        compose = true
-        aidl = true
-    }
+    dependenciesInfo.includeInApk = false
     packagingOptions.resources.excludes += setOf(
         // https://github.com/Kotlin/kotlinx.coroutines/issues/2023
         "META-INF/**", "**/attach_hotspot_windows.dll",
@@ -149,20 +161,19 @@ android {
         "**/custom.config.conf",
         "**/custom.config.yaml",
     )
-    sourceSets.configureEach {
-        kotlin.srcDir("${layout.buildDirectory.asFile.get()}/generated/ksp/$name/kotlin/")
-    }
+}
+
+// https://developer.android.com/jetpack/androidx/releases/room?hl=zh-cn#compiler-options
+room {
+    schemaDirectory("$projectDir/schemas")
+}
+ksp {
+    arg("room.generateKotlin", "true")
 }
 
 configurations.configureEach {
     //    https://github.com/Kotlin/kotlinx.coroutines/issues/2023
     exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-debug")
-}
-
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
-    arg("room.incremental", "true")
-    arg("room.generateKotlin", "true")
 }
 
 composeCompiler {

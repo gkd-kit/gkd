@@ -2,6 +2,7 @@ package li.songe.gkd
 
 import android.app.Application
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import com.blankj.utilcode.util.LogUtils
 import com.hjq.toast.Toaster
@@ -26,6 +27,14 @@ private lateinit var innerApp: Application
 val app: Application
     get() = innerApp
 
+val applicationInfo by lazy {
+    app.packageManager.getApplicationInfo(
+        app.packageName,
+        PackageManager.GET_META_DATA
+    )
+}
+
+val channel by lazy { applicationInfo.metaData.getString("channel") }
 
 @HiltAndroidApp
 class App : Application() {
@@ -56,6 +65,7 @@ class App : Application() {
             "GIT_COMMIT_URL: $GIT_COMMIT_URL",
             "VERSION_CODE: ${BuildConfig.VERSION_CODE}",
             "VERSION_NAME: ${BuildConfig.VERSION_NAME}",
+            "CHANNEL: $channel"
         )
 
         initFolder()

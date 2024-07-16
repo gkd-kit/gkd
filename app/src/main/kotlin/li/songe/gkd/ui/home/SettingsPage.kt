@@ -43,6 +43,7 @@ import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
+import li.songe.gkd.BuildConfig.ENABLED_UPDATE
 import li.songe.gkd.MainActivity
 import li.songe.gkd.appScope
 import li.songe.gkd.ui.component.RotatingLoadingIcon
@@ -324,37 +325,40 @@ fun useSettingsPage(): ScaffoldExt {
                 storeFlow.update { s -> s.copy(updateSubsInterval = it.value) }
             }
 
-            TextSwitch(
-                name = "自动更新",
-                desc = "打开应用时检测新版本",
-                checked = store.autoCheckAppUpdate,
-                onCheckedChange = {
-                    storeFlow.value = store.copy(
-                        autoCheckAppUpdate = it
-                    )
-                })
-
-            Row(
-                modifier = Modifier
-                    .clickable(
-                        onClick = appScope.launchAsFn {
-                            if (checkUpdatingFlow.value) return@launchAsFn
-                            val newVersion = checkUpdate()
-                            if (newVersion == null) {
-                                toast("暂无更新")
-                            }
-                        }
-                    )
-                    .fillMaxWidth()
-                    .itemPadding(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "检查更新",
-                    style = MaterialTheme.typography.bodyLarge,
+            if (ENABLED_UPDATE) {
+                TextSwitch(
+                    name = "自动更新",
+                    desc = "打开应用时检测新版本",
+                    checked = store.autoCheckAppUpdate,
+                    onCheckedChange = {
+                        storeFlow.value = store.copy(
+                            autoCheckAppUpdate = it
+                        )
+                    }
                 )
-                RotatingLoadingIcon(loading = checkUpdating)
+
+                Row(
+                    modifier = Modifier
+                        .clickable(
+                            onClick = appScope.launchAsFn {
+                                if (checkUpdatingFlow.value) return@launchAsFn
+                                val newVersion = checkUpdate()
+                                if (newVersion == null) {
+                                    toast("暂无更新")
+                                }
+                            }
+                        )
+                        .fillMaxWidth()
+                        .itemPadding(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "检查更新",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    RotatingLoadingIcon(loading = checkUpdating)
+                }
             }
 
             Text(

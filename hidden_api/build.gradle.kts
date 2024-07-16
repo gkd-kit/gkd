@@ -12,10 +12,7 @@ android {
     }
 
     buildTypes {
-        release {
-            isMinifyEnabled = false
-        }
-        create("releaseNoMinify") {
+        all {
             isMinifyEnabled = false
         }
     }
