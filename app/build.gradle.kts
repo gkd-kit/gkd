@@ -14,12 +14,14 @@ fun String.runCommand(currentWorkingDir: File = file("./")): String {
 
 data class GitInfo(
     val commitId: String,
+    val commitTime: Long,
     val tagName: String?,
 )
 
 val gitInfo = try {
     GitInfo(
         commitId = "git rev-parse HEAD".runCommand(),
+        commitTime = "git log -1 --format=%ct".runCommand().toLong() * 1000L,
         tagName = try {
             "git describe --tags --exact-match".runCommand()
         } catch (e: Exception) {
@@ -64,7 +66,7 @@ android {
             useSupportLibrary = true
         }
 
-        val nowTime = System.currentTimeMillis()
+        val nowTime = gitInfo?.commitTime ?: 0
         buildConfigField("Long", "BUILD_TIME", jsonStringOf(nowTime) + "L")
         buildConfigField(
             "String",
