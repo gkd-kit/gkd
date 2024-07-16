@@ -32,7 +32,7 @@ jobs:
           echo GKD_KEY_PASSWORD='${{ secrets.GKD_KEY_PASSWORD }}' >> gradle.properties
 
       - run: chmod 777 ./gradlew
-      - run: ./gradlew app:assemble
+      - run: ./gradlew app:assembleRelease
 
       - uses: actions/upload-artifact@v4
         with:
@@ -41,18 +41,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: default-debug
-          path: app/build/outputs/apk/default/debug
-
-      - uses: actions/upload-artifact@v4
-        with:
           name: default-release
           path: app/build/outputs/apk/default/release
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: fdroid-debug
-          path: app/build/outputs/apk/fdroid/debug
 
       - uses: actions/upload-artifact@v4
         with:
