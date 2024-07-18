@@ -18,11 +18,8 @@ import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
@@ -57,12 +54,10 @@ import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
 import li.songe.selector.MatchOption
 import li.songe.selector.Selector
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class GkdAbService : CompositionAbService({
     useLifeCycleLog()
     updateLauncherAppId()
@@ -148,13 +143,6 @@ class GkdAbService : CompositionAbService({
 
     var lastTriggerShizukuTime = 0L
     var lastContentEventTime = 0L
-    // AccessibilityInteractionClient.getInstanceForThread(threadId)
-    val queryThread = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
-    val actionThread = Dispatchers.IO.limitedParallelism(1)
-    onDestroy {
-        queryThread.cancel()
-        actionThread.cancel()
-    }
     val events = mutableListOf<AccessibilityNodeInfo>()
     var queryTaskJob: Job? = null
     fun newQueryTask(byEvent: Boolean = false, byForced: Boolean = false) {
@@ -364,7 +352,7 @@ class GkdAbService : CompositionAbService({
                 val eventLog = events.lastOrNull()
                 if (eventNode != null) {
                     if (eventLog == eventNode) {
-                        events.removeLast()
+                        events.removeAt(events.lastIndex)
                     }
                     events.add(eventNode)
                 }
@@ -520,10 +508,13 @@ class GkdAbService : CompositionAbService({
 }) {
 
     companion object {
+        // AccessibilityInteractionClient.getInstanceForThread(threadId)
+        val queryThread by lazy { Executors.newSingleThreadExecutor().asCoroutineDispatcher() }
+        val eventExecutor by lazy { Executors.newSingleThreadExecutor()!! }
+        val actionThread by lazy { Executors.newSingleThreadExecutor().asCoroutineDispatcher() }
 
         var shizukuTopActivityGetter: (() -> TopActivity?)? = null
         private var injectClickEventFc: ((x: Float, y: Float) -> Boolean?)? = null
-        val eventExecutor: ExecutorService by lazy { Executors.newSingleThreadExecutor() }
         var service: GkdAbService? = null
 
         val isRunning = MutableStateFlow(false)
