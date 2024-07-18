@@ -4,7 +4,7 @@
 
     <style name="SplashScreenTheme" parent="Theme.SplashScreen">
         <item name="windowSplashScreenAnimatedIcon">
-            @drawable/ic_launcher_foreground
+            @mipmap/gkd_white
         </item>
         <item name="windowSplashScreenAnimationDuration">1000</item>
         <!-- postSplashScreenTheme must invoke installSplashScreen -->
