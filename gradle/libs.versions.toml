@@ -13,7 +13,7 @@ paging = "3.3.0"
 ktor = "2.3.12"
 hilt = "2.51.1"
 destinations = "1.10.2"
-coil = "2.6.0"
+coil = "2.7.0"
 
 [libraries]
 android_gradle = { module = "com.android.tools.build:gradle", version.ref = "android" }
