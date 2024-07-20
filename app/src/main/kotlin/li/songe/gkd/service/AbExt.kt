@@ -25,6 +25,7 @@ import li.songe.selector.getCharSequenceInvoke
 import li.songe.selector.getIntInvoke
 import li.songe.selector.initDefaultTypeInfo
 
+
 val AccessibilityService.safeActiveWindow: AccessibilityNodeInfo?
     get() = try {
         // java.lang.SecurityException: Call from user 0 as user -2 without permission INTERACT_ACROSS_USERS or INTERACT_ACROSS_USERS_FULL not allowed.
@@ -241,17 +242,25 @@ private operator fun <K, V> LruCache<K, V>.set(child: K, value: V): V {
 private const val MAX_CACHE_SIZE = MAX_DESCENDANTS_SIZE
 
 class NodeCache {
-    private val childMap =
+    private var childMap =
         LruCache<Pair<AccessibilityNodeInfo, Int>, AccessibilityNodeInfo>(MAX_CACHE_SIZE)
-    val indexMap = LruCache<AccessibilityNodeInfo, Int>(MAX_CACHE_SIZE)
-    private val parentMap = LruCache<AccessibilityNodeInfo, AccessibilityNodeInfo>(MAX_CACHE_SIZE)
+    private var indexMap = LruCache<AccessibilityNodeInfo, Int>(MAX_CACHE_SIZE)
+    private var parentMap = LruCache<AccessibilityNodeInfo, AccessibilityNodeInfo>(MAX_CACHE_SIZE)
     var rootNode: AccessibilityNodeInfo? = null
 
     fun clear() {
         rootNode = null
-        childMap.evictAll()
-        parentMap.evictAll()
-        indexMap.evictAll()
+        try {
+            childMap.evictAll()
+            parentMap.evictAll()
+            indexMap.evictAll()
+        } catch (e: Exception) {
+            // https://github.com/gkd-kit/gkd/issues/664
+            // 在某些机型上 未知原因 缓存不一致 导致删除失败
+            childMap = LruCache(MAX_CACHE_SIZE)
+            indexMap = LruCache(MAX_CACHE_SIZE)
+            parentMap = LruCache(MAX_CACHE_SIZE)
+        }
     }
 
     fun getRoot(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
@@ -264,6 +273,10 @@ class NodeCache {
 
     val sizeList: List<Int>
         get() = listOf(childMap.size(), parentMap.size(), indexMap.size())
+
+    fun getPureIndex(node: AccessibilityNodeInfo): Int? {
+        return indexMap[node]
+    }
 
     fun getIndex(node: AccessibilityNodeInfo): Int {
         indexMap[node]?.let { return it }
@@ -428,7 +441,7 @@ fun createCacheTransform(): CacheTransform {
             sequence {
                 val parentVal = cache.getParent(node) ?: return@sequence
                 // 如果 node 由 quickFind 得到, 则第一次调用此方法可能得到 cache.index 是空
-                val index = cache.indexMap[node]
+                val index = cache.getPureIndex(node)
                 if (index != null) {
                     var i = index - 1
                     var offset = 0
@@ -458,7 +471,7 @@ fun createCacheTransform(): CacheTransform {
         traverseAfterBrothers = { node, connectExpression ->
             val parentVal = cache.getParent(node)
             if (parentVal != null) {
-                val index = cache.indexMap[node]
+                val index = cache.getPureIndex(node)
                 if (index != null) {
                     sequence {
                         var i = index + 1
