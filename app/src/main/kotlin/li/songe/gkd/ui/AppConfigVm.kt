@@ -81,13 +81,19 @@ class AppConfigVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel
         DbSet.subsConfigDao.queryGlobalConfig(subs.map { it.first.id })
     }.flatMapLatest { it }
     val globalGroupsFlow = combine(sortedGlobalGroupsFlow, globalConfigs) { groups, configs ->
-        groups.map { g ->
-            ResolvedGlobalGroup(
-                group = g.group,
-                subsItem = g.subsItem,
-                subscription = g.subscription,
-                config = configs.find { c -> c.subsItemId == g.subsItem.id && c.groupKey == g.group.key },
-            )
+        groups.mapNotNull { g ->
+            val config =
+                configs.find { c -> c.subsItemId == g.subsItem.id && c.groupKey == g.group.key }
+            if (config?.enable == false) {
+                null
+            } else {
+                ResolvedGlobalGroup(
+                    group = g.group,
+                    subsItem = g.subsItem,
+                    subscription = g.subscription,
+                    config = config,
+                )
+            }
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
