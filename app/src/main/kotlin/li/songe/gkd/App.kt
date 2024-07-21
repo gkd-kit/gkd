@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import com.blankj.utilcode.util.LogUtils
+import com.blankj.utilcode.util.Utils
 import com.hjq.toast.Toaster
 import com.tencent.mmkv.MMKV
 import dagger.hilt.android.HiltAndroidApp
@@ -48,6 +49,7 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         innerApp = this
+        Utils.init(this)
 
         val errorHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
