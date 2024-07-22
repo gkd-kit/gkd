@@ -180,7 +180,7 @@ fun initDefaultTypeInfo(webField: Boolean = false): DefaultTypeInfo {
     contextType.props = arrayOf(
         *nodeType.props,
         PropInfo("prev", contextType),
-        PropInfo("current", contextType),
+        PropInfo("current", nodeType),
     )
     globalType.methods = arrayOf(
         *contextType.methods,
