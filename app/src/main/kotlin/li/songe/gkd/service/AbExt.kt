@@ -147,10 +147,7 @@ val getChildren: (AccessibilityNodeInfo) -> Sequence<AccessibilityNodeInfo> = { 
 }
 
 private val typeInfo by lazy {
-    initDefaultTypeInfo().apply {
-        nodeType.props = nodeType.props.filter { !it.name.startsWith('_') }.toTypedArray()
-        contextType.props = contextType.props.filter { !it.name.startsWith('_') }.toTypedArray()
-    }.contextType
+    initDefaultTypeInfo().globalType
 }
 
 fun Selector.checkSelector(): String? {
@@ -357,6 +354,7 @@ fun createCacheTransform(): CacheTransform {
             when (target) {
                 is Context<*> -> when (name) {
                     "prev" -> target.prev
+                    "current" -> target.current
                     else -> getNodeAttr(target.current as AccessibilityNodeInfo, name)
                 }
 
@@ -369,7 +367,7 @@ fun createCacheTransform(): CacheTransform {
             when (target) {
                 is AccessibilityNodeInfo -> when (name) {
                     "getChild" -> {
-                        args.getIntOrNull()?.let { index ->
+                        args.getInt().let { index ->
                             cache.getChild(target, index)
                         }
                     }
@@ -379,11 +377,11 @@ fun createCacheTransform(): CacheTransform {
 
                 is Context<*> -> when (name) {
                     "getPrev" -> {
-                        args.getIntOrNull()?.let { target.getPrev(it) }
+                        args.getInt().let { target.getPrev(it) }
                     }
 
                     "getChild" -> {
-                        args.getIntOrNull()?.let { index ->
+                        args.getInt().let { index ->
                             cache.getChild(target.current as AccessibilityNodeInfo, index)
                         }
                     }
@@ -545,9 +543,7 @@ fun createCacheTransform(): CacheTransform {
     return CacheTransform(transform, cache)
 }
 
-private fun List<Any>.getIntOrNull(i: Int = 0): Int? {
-    return getOrNull(i) as? Int ?: return null
-}
+private fun List<Any>.getInt(i: Int = 0) = get(i) as Int
 
 fun createNoCacheTransform(): CacheTransform {
     val cache = NodeCache()
@@ -569,7 +565,7 @@ fun createNoCacheTransform(): CacheTransform {
             when (target) {
                 is AccessibilityNodeInfo -> when (name) {
                     "getChild" -> {
-                        args.getIntOrNull()?.let { index ->
+                        args.getInt().let { index ->
                             cache.getChild(target, index)
                         }
                     }
@@ -579,11 +575,11 @@ fun createNoCacheTransform(): CacheTransform {
 
                 is Context<*> -> when (name) {
                     "getPrev" -> {
-                        args.getIntOrNull()?.let { target.getPrev(it) }
+                        args.getInt().let { target.getPrev(it) }
                     }
 
                     "getChild" -> {
-                        args.getIntOrNull()?.let { index ->
+                        args.getInt().let { index ->
                             cache.getChild(target.current as AccessibilityNodeInfo, index)
                         }
                     }

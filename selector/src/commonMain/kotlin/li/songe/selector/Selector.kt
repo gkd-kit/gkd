@@ -138,76 +138,129 @@ private fun getExpType(exp: ValueExpression, typeInfo: TypeInfo): PrimitiveType?
         is ValueExpression.BooleanLiteral -> PrimitiveType.BooleanType
         is ValueExpression.IntLiteral -> PrimitiveType.IntType
         is ValueExpression.StringLiteral -> PrimitiveType.StringType
-        is ValueExpression.Variable -> checkVariable(exp, typeInfo).type
+        is ValueExpression.Variable -> checkVariable(exp, typeInfo, typeInfo).type
     }
 }
 
-private fun checkVariable(value: ValueExpression.Variable, typeInfo: TypeInfo): TypeInfo {
+private fun checkMethod(
+    method: MethodInfo,
+    value: ValueExpression.CallExpression,
+    globalTypeInfo: TypeInfo
+): TypeInfo {
+    method.params.forEachIndexed { index, argTypeInfo ->
+        when (val argExp = value.arguments[index]) {
+            is ValueExpression.NullLiteral -> {}
+            is ValueExpression.BooleanLiteral -> {
+                if (argTypeInfo.type != PrimitiveType.BooleanType) {
+                    throw MismatchParamTypeException(
+                        value,
+                        argExp,
+                        PrimitiveType.BooleanType
+                    )
+                }
+            }
+
+            is ValueExpression.IntLiteral -> {
+                if (argTypeInfo.type != PrimitiveType.IntType) {
+                    throw MismatchParamTypeException(value, argExp, PrimitiveType.IntType)
+                }
+            }
+
+            is ValueExpression.StringLiteral -> {
+                if (argTypeInfo.type != PrimitiveType.StringType) {
+                    throw MismatchParamTypeException(
+                        value,
+                        argExp,
+                        PrimitiveType.StringType
+                    )
+                }
+            }
+
+            is ValueExpression.Variable -> {
+                val type = checkVariable(argExp, argTypeInfo, globalTypeInfo)
+                if (type.type != argTypeInfo.type) {
+                    throw MismatchParamTypeException(
+                        value,
+                        argExp,
+                        type.type
+                    )
+                }
+            }
+        }
+    }
+    return method.returnType
+}
+
+private fun checkVariable(
+    value: ValueExpression.Variable,
+    currentTypeInfo: TypeInfo,
+    globalTypeInfo: TypeInfo,
+): TypeInfo {
     return when (value) {
         is ValueExpression.CallExpression -> {
-            val method = when (value.callee) {
+            val methods = when (value.callee) {
                 is ValueExpression.CallExpression -> {
                     throw IllegalArgumentException("Unsupported nested call")
                 }
 
                 is ValueExpression.Identifier -> {
                     // getChild(0)
-                    typeInfo.methods.find { it.name == value.callee.value && it.params.size == value.arguments.size }
-                        ?: throw UnknownIdentifierMethodException(value.callee)
+                    globalTypeInfo.methods.filter { it.name == value.callee.value && it.params.size == value.arguments.size }
+                        .apply {
+                            if (isEmpty()) {
+                                throw UnknownIdentifierMethodException(value.callee)
+                            }
+                        }
                 }
 
                 is ValueExpression.MemberExpression -> {
                     // parent.getChild(0)
                     checkVariable(
-                        value.callee.object0, typeInfo
-                    ).methods.find { it.name == value.callee.property && it.params.size == value.arguments.size }
-                        ?: throw UnknownMemberMethodException(value.callee)
+                        value.callee.object0,
+                        currentTypeInfo,
+                        globalTypeInfo
+                    ).methods.filter { it.name == value.callee.property && it.params.size == value.arguments.size }
+                        .apply {
+                            if (isEmpty()) {
+                                throw UnknownMemberMethodException(value.callee)
+                            }
+                        }
                 }
             }
-            method.params.forEachIndexed { index, argTypeInfo ->
-                when (val argExp = value.arguments[index]) {
-                    is ValueExpression.NullLiteral -> {}
-                    is ValueExpression.BooleanLiteral -> {
-                        if (argTypeInfo.type != PrimitiveType.BooleanType) {
-                            throw MismatchParamTypeException(
-                                value,
-                                argExp,
-                                PrimitiveType.BooleanType
-                            )
-                        }
+            if (methods.size == 1) {
+                checkMethod(methods[0], value, globalTypeInfo)
+                return methods[0].returnType
+            }
+            methods.forEachIndexed { i, method ->
+                try {
+                    checkMethod(method, value, globalTypeInfo)
+                    return method.returnType
+                } catch (e: SelectorCheckException) {
+                    if (i == methods.size - 1) {
+                        throw e
                     }
-
-                    is ValueExpression.IntLiteral -> {
-                        if (argTypeInfo.type != PrimitiveType.IntType) {
-                            throw MismatchParamTypeException(value, argExp, PrimitiveType.IntType)
-                        }
-                    }
-
-                    is ValueExpression.StringLiteral -> {
-                        if (argTypeInfo.type != PrimitiveType.StringType) {
-                            throw MismatchParamTypeException(
-                                value,
-                                argExp,
-                                PrimitiveType.StringType
-                            )
-                        }
-                    }
-
-                    is ValueExpression.Variable -> {
-                        checkVariable(argExp, argTypeInfo)
-                    }
+                    // ignore
                 }
             }
-            return method.returnType
+            if (value.callee is ValueExpression.Identifier) {
+                throw UnknownIdentifierMethodException(value.callee)
+            } else if (value.callee is ValueExpression.MemberExpression) {
+                throw UnknownMemberMethodException(value.callee)
+            }
+            throw IllegalArgumentException("Unsupported nested call")
         }
 
         is ValueExpression.Identifier -> {
-            typeInfo.props.find { it.name == value.value }?.type
+            globalTypeInfo.props.find { it.name == value.value }?.type
                 ?: throw UnknownIdentifierException(value)
         }
 
         is ValueExpression.MemberExpression -> {
-            checkVariable(value.object0, typeInfo).props.find { it.name == value.property }?.type
+            checkVariable(
+                value.object0,
+                currentTypeInfo,
+                globalTypeInfo
+            ).props.find { it.name == value.property }?.type
                 ?: throw UnknownMemberException(value)
         }
     }

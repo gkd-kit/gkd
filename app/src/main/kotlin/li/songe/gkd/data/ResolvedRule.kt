@@ -275,7 +275,9 @@ fun clearNodeCache(t: Long = System.currentTimeMillis()) {
     lastCacheTime = t
     if (BuildConfig.DEBUG) {
         val sizeList = defaultCacheTransform.cache.sizeList
-        Log.d("cache", "clear cache, sizeList=$sizeList")
+        if (sizeList.any { it > 0 }) {
+            Log.d("cache", "clear cache, sizeList=$sizeList")
+        }
     }
     defaultTransform.cache.clear()
     defaultCacheTransform.cache.clear()
