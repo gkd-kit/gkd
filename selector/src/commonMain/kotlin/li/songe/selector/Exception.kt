@@ -28,7 +28,7 @@ data class UnknownMemberMethodException(
 @JsExport
 data class MismatchParamTypeException(
     val call: ValueExpression.CallExpression,
-    val argument: ValueExpression.LiteralExpression,
+    val argument: ValueExpression,
     val type: PrimitiveType
 ) : SelectorCheckException("Mismatch Param Type: ${argument.value} should be ${type.key}")
 

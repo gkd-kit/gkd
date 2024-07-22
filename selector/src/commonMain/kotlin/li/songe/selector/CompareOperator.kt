@@ -58,14 +58,18 @@ sealed class CompareOperator(val key: String) : Stringify {
         ): Boolean {
             val left = leftExp.getAttr(context, transform)
             val right = rightExp.getAttr(context, transform)
+            return compare(left, right)
+        }
+
+        override fun allowType(left: ValueExpression, right: ValueExpression) = true
+
+        fun compare(left: Any?, right: Any?): Boolean {
             return if (left is CharSequence && right is CharSequence) {
                 left.contentReversedEquals(right)
             } else {
                 left == right
             }
         }
-
-        override fun allowType(left: ValueExpression, right: ValueExpression) = true
     }
 
     data object NotEqual : CompareOperator("!=") {

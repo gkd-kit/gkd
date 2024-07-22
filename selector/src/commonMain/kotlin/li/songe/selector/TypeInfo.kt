@@ -15,7 +15,11 @@ data class MethodInfo(
     val name: String,
     val returnType: TypeInfo,
     val params: Array<TypeInfo> = emptyArray(),
-) {
+) : Stringify {
+    override fun stringify(): String {
+        return "$name(${params.joinToString(", ") { it.stringify() }}): ${returnType.stringify()}"
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -48,7 +52,15 @@ data class TypeInfo(
     val type: PrimitiveType,
     var props: Array<PropInfo> = arrayOf(),
     var methods: Array<MethodInfo> = arrayOf(),
-) {
+) : Stringify {
+    override fun stringify(): String {
+        return if (type is PrimitiveType.ObjectType) {
+            type.name
+        } else {
+            type.key
+        }
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false

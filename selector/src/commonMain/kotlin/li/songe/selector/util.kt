@@ -77,17 +77,36 @@ class DefaultTypeInfo(
     val stringType: TypeInfo,
     val contextType: TypeInfo,
     val nodeType: TypeInfo,
+    val globalType: TypeInfo
 )
 
 @JsExport
-fun initDefaultTypeInfo(): DefaultTypeInfo {
+fun initDefaultTypeInfo(webField: Boolean = false): DefaultTypeInfo {
     val booleanType = TypeInfo(PrimitiveType.BooleanType)
     val intType = TypeInfo(PrimitiveType.IntType)
     val stringType = TypeInfo(PrimitiveType.StringType)
+    val nodeType = TypeInfo(PrimitiveType.ObjectType("node"))
+    val contextType = TypeInfo(PrimitiveType.ObjectType("context"))
+    val globalType = TypeInfo(PrimitiveType.ObjectType("global"))
+
+    fun buildMethods(name: String, returnType: TypeInfo, paramsSize: Int): Array<MethodInfo> {
+        return arrayOf(
+            MethodInfo(name, returnType, Array(paramsSize) { booleanType }),
+            MethodInfo(name, returnType, Array(paramsSize) { intType }),
+            MethodInfo(name, returnType, Array(paramsSize) { stringType }),
+            MethodInfo(name, returnType, Array(paramsSize) { nodeType }),
+            MethodInfo(name, returnType, Array(paramsSize) { contextType }),
+        )
+    }
 
     booleanType.methods = arrayOf(
         MethodInfo("toInt", intType),
+        MethodInfo("or", booleanType, arrayOf(booleanType)),
+        MethodInfo("and", booleanType, arrayOf(booleanType)),
+        MethodInfo("not", booleanType),
+        *buildMethods("ifElse", booleanType, 2),
     )
+
     intType.methods = arrayOf(
         MethodInfo("toString", stringType),
         MethodInfo("toString", stringType, arrayOf(intType)),
@@ -96,6 +115,10 @@ fun initDefaultTypeInfo(): DefaultTypeInfo {
         MethodInfo("times", intType, arrayOf(intType)),
         MethodInfo("div", intType, arrayOf(intType)),
         MethodInfo("rem", intType, arrayOf(intType)),
+        MethodInfo("more", booleanType, arrayOf(intType)),
+        MethodInfo("moreEqual", booleanType, arrayOf(intType)),
+        MethodInfo("less", booleanType, arrayOf(intType)),
+        MethodInfo("lessEqual", booleanType, arrayOf(intType)),
     )
     stringType.props = arrayOf(
         PropInfo("length", intType),
@@ -110,13 +133,15 @@ fun initDefaultTypeInfo(): DefaultTypeInfo {
         MethodInfo("indexOf", intType, arrayOf(stringType)),
         MethodInfo("indexOf", intType, arrayOf(stringType, intType)),
     )
-
-    val contextType = TypeInfo(PrimitiveType.ObjectType("context"))
-    val nodeType = TypeInfo(PrimitiveType.ObjectType("node"))
-
     nodeType.props = arrayOf(
-        PropInfo("_id", intType),
-        PropInfo("_pid", intType),
+        * (if (webField) {
+            arrayOf(
+                PropInfo("_id", intType),
+                PropInfo("_pid", intType),
+            )
+        } else {
+            emptyArray()
+        }),
 
         PropInfo("id", stringType),
         PropInfo("vid", stringType),
@@ -155,13 +180,21 @@ fun initDefaultTypeInfo(): DefaultTypeInfo {
     contextType.props = arrayOf(
         *nodeType.props,
         PropInfo("prev", contextType),
+        PropInfo("current", contextType),
     )
+    globalType.methods = arrayOf(
+        *contextType.methods,
+        *buildMethods("equal", booleanType, 2),
+        *buildMethods("notEqual", booleanType, 2),
+    )
+    globalType.props = arrayOf(*contextType.props)
     return DefaultTypeInfo(
         booleanType = booleanType,
         intType = intType,
         stringType = stringType,
         contextType = contextType,
-        nodeType = nodeType
+        nodeType = nodeType,
+        globalType = globalType
     )
 }
 
@@ -169,23 +202,39 @@ fun initDefaultTypeInfo(): DefaultTypeInfo {
 fun getIntInvoke(target: Int, name: String, args: List<Any>): Any? {
     return when (name) {
         "plus" -> {
-            target + (args.getIntOrNull() ?: return null)
+            target + args.getInt()
         }
 
         "minus" -> {
-            target - (args.getIntOrNull() ?: return null)
+            target - args.getInt()
         }
 
         "times" -> {
-            target * (args.getIntOrNull() ?: return null)
+            target * args.getInt()
         }
 
         "div" -> {
-            target / (args.getIntOrNull()?.also { if (it == 0) return null } ?: return null)
+            target / args.getInt().also { if (it == 0) return null }
         }
 
         "rem" -> {
-            target % (args.getIntOrNull()?.also { if (it == 0) return null } ?: return null)
+            target % args.getInt().also { if (it == 0) return null }
+        }
+
+        "more" -> {
+            target > args.getInt()
+        }
+
+        "moreEqual" -> {
+            target >= args.getInt()
+        }
+
+        "less" -> {
+            target < args.getInt()
+        }
+
+        "lessEqual" -> {
+            target <= args.getInt()
         }
 
         else -> null
@@ -193,11 +242,7 @@ fun getIntInvoke(target: Int, name: String, args: List<Any>): Any? {
 }
 
 
-internal fun List<Any>.getIntOrNull(i: Int = 0): Int? {
-    val v = getOrNull(i)
-    if (v is Int) return v
-    return null
-}
+internal fun List<Any>.getInt(i: Int = 0) = get(i) as Int
 
 @JsExport
 fun getStringInvoke(target: String, name: String, args: List<Any>): Any? {
@@ -208,6 +253,7 @@ fun getStringInvoke(target: String, name: String, args: List<Any>): Any? {
 fun getBooleanInvoke(target: Boolean, name: String, args: List<Any>): Any? {
     return when (name) {
         "toInt" -> if (target) 1 else 0
+        "not" -> !target
         else -> null
     }
 }
@@ -215,11 +261,11 @@ fun getBooleanInvoke(target: Boolean, name: String, args: List<Any>): Any? {
 fun getCharSequenceInvoke(target: CharSequence, name: String, args: List<Any>): Any? {
     return when (name) {
         "get" -> {
-            target.getOrNull(args.getIntOrNull() ?: return null).toString()
+            target.getOrNull(args.getInt()).toString()
         }
 
         "at" -> {
-            val i = args.getIntOrNull() ?: return null
+            val i = args.getInt()
             if (i < 0) {
                 target.getOrNull(target.length + i).toString()
             } else {
@@ -230,7 +276,7 @@ fun getCharSequenceInvoke(target: CharSequence, name: String, args: List<Any>): 
         "substring" -> {
             when (args.size) {
                 1 -> {
-                    val start = args.getIntOrNull() ?: return null
+                    val start = args.getInt()
                     if (start < 0) return null
                     if (start >= target.length) return ""
                     target.substring(
@@ -240,10 +286,10 @@ fun getCharSequenceInvoke(target: CharSequence, name: String, args: List<Any>): 
                 }
 
                 2 -> {
-                    val start = args.getIntOrNull() ?: return null
+                    val start = args.getInt()
                     if (start < 0) return null
                     if (start >= target.length) return ""
-                    val end = args.getIntOrNull(1) ?: return null
+                    val end = args.getInt(1)
                     if (end < start) return null
                     target.substring(
                         start,
@@ -260,7 +306,7 @@ fun getCharSequenceInvoke(target: CharSequence, name: String, args: List<Any>): 
         "toInt" -> when (args.size) {
             0 -> target.toString().toIntOrNull()
             1 -> {
-                val radix = args.getIntOrNull() ?: return null
+                val radix = args.getInt()
                 if (radix !in 2..36) {
                     return null
                 }
@@ -279,7 +325,7 @@ fun getCharSequenceInvoke(target: CharSequence, name: String, args: List<Any>): 
 
                 2 -> {
                     val str = args[0] as? CharSequence ?: return null
-                    val startIndex = args.getIntOrNull(1) ?: return null
+                    val startIndex = args.getInt(1)
                     target.indexOf(str.toString(), startIndex)
                 }
 

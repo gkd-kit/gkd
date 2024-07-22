@@ -30,6 +30,9 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
             get() = arrayOf(value)
         override val methods: Array<String>
             get() = emptyArray()
+
+        val isEqual = name == "equal"
+        val isNotEqual = name == "notEqual"
     }
 
     data class MemberExpression internal constructor(
@@ -52,6 +55,10 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
             get() = arrayOf(*object0.properties, property)
         override val methods: Array<String>
             get() = object0.methods
+
+        val isPropertyOr = property == "or"
+        val isPropertyAnd = property == "and"
+        val isPropertyIfElse = property == "ifElse"
     }
 
     data class CallExpression internal constructor(
@@ -74,23 +81,66 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
                 }
 
                 is Identifier -> {
-                    transform.getInvoke(
-                        context,
-                        callee.name,
-                        arguments.map {
-                            it.getAttr(context, transform).whenNull { return null }
+                    when {
+                        callee.isEqual -> {
+                            CompareOperator.Equal.compare(
+                                arguments[0].getAttr(context, transform),
+                                arguments[1].getAttr(context, transform)
+                            )
                         }
-                    )
+
+                        callee.isNotEqual -> {
+                            !CompareOperator.Equal.compare(
+                                arguments[0].getAttr(context, transform),
+                                arguments[1].getAttr(context, transform)
+                            )
+                        }
+
+                        else -> {
+                            transform.getInvoke(
+                                context,
+                                callee.name,
+                                arguments.map {
+                                    it.getAttr(context, transform).whenNull { return null }
+                                }
+                            )
+                        }
+                    }
                 }
 
                 is MemberExpression -> {
-                    transform.getInvoke(
-                        callee.object0.getAttr(context, transform).whenNull { return null },
-                        callee.property,
-                        arguments.map {
-                            it.getAttr(context, transform).whenNull { return null }
+                    val objectValue =
+                        callee.object0.getAttr(context, transform).whenNull { return null }
+                    when {
+                        callee.isPropertyOr -> {
+                            (objectValue as Boolean) ||
+                                    (arguments[0].getAttr(context, transform)
+                                        .whenNull { return null } as Boolean)
                         }
-                    )
+
+                        callee.isPropertyAnd -> {
+                            (objectValue as Boolean) &&
+                                    (arguments[0].getAttr(context, transform)
+                                        .whenNull { return null } as Boolean)
+                        }
+
+                        callee.isPropertyIfElse -> {
+                            if (objectValue as Boolean) {
+                                arguments[0].getAttr(context, transform)
+                            } else {
+                                arguments[1].getAttr(context, transform)
+                            }
+                        }
+
+                        else -> transform.getInvoke(
+                            objectValue,
+                            callee.property,
+                            arguments.map {
+                                it.getAttr(context, transform).whenNull { return null }
+                            }
+                        )
+                    }
+
                 }
             }
         }

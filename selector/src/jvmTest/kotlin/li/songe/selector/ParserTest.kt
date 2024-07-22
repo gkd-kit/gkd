@@ -37,7 +37,7 @@ class ParserTest {
     private fun getNodeInvoke(target: TestNode, name: String, args: List<Any>): Any? {
         when (name) {
             "getChild" -> {
-                val arg = (args.getIntOrNull() ?: return null)
+                val arg = args.getInt()
                 return target.children.getOrNull(arg)
             }
         }
@@ -49,6 +49,7 @@ class ParserTest {
             when (target) {
                 is Context<*> -> when (name) {
                     "prev" -> target.prev
+                    "current" -> target.current
                     else -> getNodeAttr(target.current as TestNode, name)
                 }
 
@@ -66,7 +67,7 @@ class ParserTest {
                 is TestNode -> getNodeInvoke(target, name, args)
                 is Context<*> -> when (name) {
                     "getPrev" -> {
-                        args.getIntOrNull()?.let { target.getPrev(it) }
+                        args.getInt().let { target.getPrev(it) }
                     }
 
                     else -> getNodeInvoke(target.current as TestNode, name, args)
@@ -168,7 +169,8 @@ class ParserTest {
 
     @Test
     fun check_query() {
-        val text = "@TextView[getPrev(0).text=`签到提醒`] - [text=`签到提醒`] <<n [vid=`webViewContainer`]"
+        val text =
+            "@TextView[getPrev(0).text=`签到提醒`] - [text=`签到提醒`] <<n [vid=`webViewContainer`]"
         val selector = Selector.parse(text)
         println("selector: $selector")
         println(selector.targetIndex)
@@ -231,11 +233,16 @@ class ParserTest {
 
     @Test
     fun check_regex() {
-        val source = "[1<parent.getChild][vid=`im_cover`]"
+        val source = "[vid=`im_cover`][top.more(319).not()=true]"
         println("source:$source")
         val selector = Selector.parse(source)
         val snapshotNode = getOrDownloadNode("https://i.gkd.li/i/14445410")
-        println("selector:$selector")
+        val error = selector.checkType(typeInfo)
+        if (error != null) {
+            println("error:$error")
+            return
+        }
+        println("selector:${selector.stringify()}")
         println("result:" + transform.querySelectorAll(snapshotNode, selector).map { n -> n.id }
             .toList())
     }
@@ -256,20 +263,21 @@ class ParserTest {
         )
     }
 
+    private val typeInfo by lazy { initDefaultTypeInfo(webField = true).globalType }
+
     @Test
     fun check_type() {
         val source =
-            "[prev!=null&&visibleToUser=true][((parent.getChild(0,).getChild( (0), )=null) && (((2  >=  1)))) || (name=null && desc=null)]"
+            "[prev!=null&&visibleToUser=true&&equal(index, depth)=true][((parent.getChild(0,).getChild( (0), )=null) && (((2  >=  1)))) || (name=null && desc=null)]"
         val selector = Selector.parse(source)
-        val typeInfo = initDefaultTypeInfo().contextType
         val error = selector.checkType(typeInfo)
         println("useCache: ${selector.useCache}")
         println("error: $error")
-        println("check_type: $selector")
+        println("check_type: ${selector.stringify()}")
     }
 
     @Test
-    fun  check_qf(){
+    fun check_qf() {
         val source = "@UIView[clickable=true] -3 FlattenUIText[text=`a`||text=`b`||vid=`233`]"
         val selector = Selector.parse(source)
         println("fastQuery: ${selector.fastQueryList}")
