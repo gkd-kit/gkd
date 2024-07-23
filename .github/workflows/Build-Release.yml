@@ -92,7 +92,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: outputs/apk/fdroid/release/app-fdroid-release.apk
-          asset_name: gkd-fdroid-${{ github.ref_name }}.apk
+          asset_name: gkd-x-fdroid-${{ github.ref_name }}.apk
           asset_content_type: application/vnd.android.package-archive
 
       - run: zip -r outputs.zip outputs
