@@ -87,6 +87,7 @@ jobs:
           asset_content_type: application/vnd.android.package-archive
 
       - uses: actions/upload-release-asset@v1
+        if: ${{ !contains(github.ref_name, 'beta') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
