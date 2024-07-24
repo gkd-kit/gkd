@@ -17,8 +17,10 @@ import li.songe.selector.Selector
 import li.songe.selector.Transform
 import li.songe.selector.UnknownIdentifierException
 import li.songe.selector.UnknownIdentifierMethodException
+import li.songe.selector.UnknownIdentifierMethodParamsException
 import li.songe.selector.UnknownMemberException
 import li.songe.selector.UnknownMemberMethodException
+import li.songe.selector.UnknownMemberMethodParamsException
 import li.songe.selector.getBooleanInvoke
 import li.songe.selector.getCharSequenceAttr
 import li.songe.selector.getCharSequenceInvoke
@@ -163,10 +165,12 @@ fun Selector.checkSelector(): String? {
         is MismatchExpressionTypeException -> "不匹配表达式类型:${error.exception.stringify()}"
         is MismatchOperatorTypeException -> "不匹配操作符类型:${error.exception.stringify()}"
         is MismatchParamTypeException -> "不匹配参数类型:${error.call.stringify()}"
-        is UnknownIdentifierException -> "未知属性:${error.value.value}"
-        is UnknownIdentifierMethodException -> "未知方法:${error.value.value}"
-        is UnknownMemberException -> "未知属性:${error.value.property}"
-        is UnknownMemberMethodException -> "未知方法:${error.value.property}"
+        is UnknownIdentifierException -> "未知属性:${error.value.stringify()}"
+        is UnknownIdentifierMethodException -> "未知方法:${error.value.stringify()}"
+        is UnknownMemberException -> "未知属性:${error.value.stringify()}"
+        is UnknownMemberMethodException -> "未知方法:${error.value.stringify()}"
+        is UnknownIdentifierMethodParamsException -> "未知方法参数:${error.value.stringify()}"
+        is UnknownMemberMethodParamsException -> "未知方法参数:${error.value.stringify()}"
     }
 }
 
