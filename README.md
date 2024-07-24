@@ -7,11 +7,11 @@
 - [gkd.li](https://gkd.li/guide/)
 - [releases](https://github.com/gkd-kit/gkd/releases)
 
-如遇到问题可查看 [疑难解答](https://gkd.li/faq/)
+如遇到问题可查看 [疑难解答](https://gkd.li/guide/faq)
 
 ## 功能
 
-基于 [高级选择器](https://gkd.li/selector/) + [订阅规则](https://gkd.li/subscription/) + [快照审查](https://github.com/gkd-kit/inspect) 实现根据屏幕上下文信息自定义点击目标控件
+基于 [高级选择器](https://gkd.li/guide/selector) + [订阅规则](https://gkd.li/guide/subscription) + [快照审查](https://github.com/gkd-kit/inspect) 实现根据屏幕上下文信息自定义点击目标控件
 
 |                                                                                             |                                                                                             |                                                                                             |                                                                                             |
 | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -36,7 +36,7 @@
 
 ## 选择器
 
-<https://gkd.li/selector/>
+<https://gkd.li/guide/selector>
 
 [@[vid=\"menu\"] < [vid=\"menu_container\"] - [vid=\"dot_text_layout\"] > [text^=\"广告\"]](https://i.gkd.li/i/14881985?gkd=QFt2aWQ9Im1lbnUiXSA8IFt2aWQ9Im1lbnVfY29udGFpbmVyIl0gLSBbdmlkPSJkb3RfdGV4dF9sYXlvdXQiXSA-IFt0ZXh0Xj0i5bm_5ZGKIl0)
 
