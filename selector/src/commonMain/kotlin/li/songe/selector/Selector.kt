@@ -205,10 +205,17 @@ private fun checkVariable(
 
                 is ValueExpression.Identifier -> {
                     // getChild(0)
-                    globalTypeInfo.methods.filter { it.name == value.callee.value && it.params.size == value.arguments.size }
+                    globalTypeInfo.methods
+                        .filter { it.name == value.callee.value }
                         .apply {
                             if (isEmpty()) {
                                 throw UnknownIdentifierMethodException(value.callee)
+                            }
+                        }
+                        .filter { it.params.size == value.arguments.size }
+                        .apply {
+                            if (isEmpty()) {
+                                throw UnknownIdentifierMethodParamsException(value)
                             }
                         }
                 }
@@ -219,10 +226,15 @@ private fun checkVariable(
                         value.callee.object0,
                         currentTypeInfo,
                         globalTypeInfo
-                    ).methods.filter { it.name == value.callee.property && it.params.size == value.arguments.size }
+                    ).methods
+                        .filter { it.name == value.callee.property }
                         .apply {
                             if (isEmpty()) {
                                 throw UnknownMemberMethodException(value.callee)
+                            }
+                        }.filter { it.params.size == value.arguments.size }.apply {
+                            if (isEmpty()) {
+                                throw UnknownMemberMethodParamsException(value)
                             }
                         }
                 }

@@ -268,11 +268,12 @@ class ParserTest {
     @Test
     fun check_type() {
         val source =
-            "[prev!=null&&visibleToUser=true&&equal(index, depth)=true][((parent.getChild(0,).getChild( (0), )=null) && (((2  >=  1)))) || (name=null && desc=null)]"
+            "[prev.getChild(0,0)=0][prev!=null&&visibleToUser=true&&equal(index, depth)=true][((parent.getChild(0,).getChild( (0), )=null) && (((2  >=  1)))) || (name=null && desc=null)]"
         val selector = Selector.parse(source)
         val error = selector.checkType(typeInfo)
         println("useCache: ${selector.useCache}")
         println("error: $error")
+        println("error_message: ${error?.message}")
         println("check_type: ${selector.stringify()}")
     }
 
