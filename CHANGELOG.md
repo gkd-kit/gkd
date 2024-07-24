@@ -11,7 +11,7 @@
 - 更换应用图标
 - 修复全局规则被关闭时, 应用界面仍然显示的问题
 - 修复在某些设备节点缓存错误的问题
-- 选择器增加了一些方法 [属性方法](https://gkd.li/selector/node)
+- 选择器增加了一些方法 [属性方法](https://gkd.li/guide/node)
 
 ## 旧版本日志
 
@@ -20,13 +20,13 @@
 - 修复选择器类型检查不完全的错误
 - 选择器支持多次快速查询优化
 - 订阅新增 fastQuery 字段
-- 以上更新可在 [选择器-查询优化](https://gkd.li/selector/optimize) 查看
+- 以上更新可在 [选择器-查询优化](https://gkd.li/guide/optimize) 查看
 
 ### v1.8.0-beta.6
 
 - 优化导出数据格式兼容性
 - 优化更改应用规则页面的配置更改速度
-- 选择器新增 [prev/getPrev](https://gkd.li/selector/node.html#context) 属性方法
+- 选择器新增 [prev/getPrev](https://gkd.li/guide/node#context) 属性方法
 
 ### v1.8.0-beta.5
 
@@ -36,7 +36,7 @@
 ### v1.8.0-beta.4
 
 - 新增控制提示 `正在保存快照` 的开关
-- 新增订阅字段 [matchRoot](https://gkd.li/api/interfaces/RawCommonProps.html#matchroot)
+- 新增订阅字段 [matchRoot](https://gkd.li/api/interfaces/RawCommonProps#matchroot)
 - 优化了选择器的节点缓存策略
 
 ### v1.8.0-beta.3
@@ -45,7 +45,7 @@
 - 选择器支持成员属性链式访问
 - 选择器支持方法链式调用
 - 选择器支持更具体的错误提示
-- 以上更新可在 [文档-选择器](https://gkd.li/selector/) 查看
+- 以上更新可在 [文档-选择器](https://gkd.li/guide/selector) 查看
 
 ### v1.8.0-beta.2
 
