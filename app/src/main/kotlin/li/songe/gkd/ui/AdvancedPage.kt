@@ -57,6 +57,7 @@ import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
+import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.debug.FloatingService
 import li.songe.gkd.debug.HttpService
@@ -70,18 +71,23 @@ import li.songe.gkd.shizuku.newActivityTaskManager
 import li.songe.gkd.shizuku.newUserService
 import li.songe.gkd.shizuku.safeGetTasks
 import li.songe.gkd.ui.component.AuthCard
+import li.songe.gkd.ui.component.DialogApiInjection
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
+import li.songe.gkd.ui.component.build
+import li.songe.gkd.ui.component.useDialog
 import li.songe.gkd.ui.destinations.SnapshotPageDestination
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.LocalLauncher
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
+import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.navigate
+import li.songe.gkd.util.openApp
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
@@ -93,6 +99,7 @@ import rikka.shizuku.Shizuku
 fun AdvancedPage() {
     val context = LocalContext.current as MainActivity
     val scope = rememberCoroutineScope()
+    val dialog = useDialog()
     val launcher = LocalLauncher.current
     val navController = LocalNavController.current
     val store by storeFlow.collectAsState()
@@ -117,7 +124,8 @@ fun AdvancedPage() {
                     )
                 }
             }, title = { Text(text = "高级模式") }, actions = {})
-        }) { contentPadding ->
+        }
+    ) { contentPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -133,13 +141,13 @@ fun AdvancedPage() {
             val shizukuOk by shizukuOkState.stateFlow.collectAsState()
             if (!shizukuOk) {
                 AuthCard(title = "Shizuku授权",
-                    desc = "高级模式:准确识别界面ID,强制模拟点击",
+                    desc = "高级模式:准确区别界面ID,强制模拟点击",
                     onAuthClick = {
                         try {
                             Shizuku.requestPermission(Activity.RESULT_OK)
                         } catch (e: Exception) {
-                            LogUtils.d("Shizuku授权错误", e)
-                            toast("Shizuku可能没有运行")
+                            LogUtils.d("Shizuku授权错误", e.message)
+                            showShizukuErrorDialog(dialog)
                         }
                     })
                 ShizukuFragment(false)
@@ -473,4 +481,39 @@ private fun ShizukuFragment(enabled: Boolean = true) {
 
         })
 
+}
+
+private fun showShizukuErrorDialog(dialog: DialogApiInjection) {
+    val appId = "moe.shizuku.privileged.api"
+    val installed = appInfoCacheFlow.value.contains(appId)
+    dialog.build(
+        title = "授权错误",
+        text = if (installed) {
+            "Shizuku 授权失败, 请检查是否运行"
+        } else {
+            "Shizuku 未安装, 请先下载后安装"
+        },
+        confirmButton = {
+            if (installed) {
+                TextButton(onClick = {
+                    dialog.dismiss()
+                    app.openApp(appId)
+                }) {
+                    Text(text = "打开 Shizuku")
+                }
+            } else {
+                TextButton(onClick = {
+                    dialog.dismiss()
+                    app.openUri("https://shizuku.rikka.app/")
+                }) {
+                    Text(text = "去下载")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = dialog.dismiss) {
+                Text(text = "我知道了")
+            }
+        }
+    )
 }

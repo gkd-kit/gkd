@@ -97,7 +97,9 @@ class MainActivity : CompositionActivity({
             initFolder()
         }
 
-        updatePermissionState()
+        appScope.launch(Dispatchers.IO) {
+            updatePermissionState()
+        }
 
         // 进程崩溃后重新打开应用, 由于存在缓存导致服务状态可能不正确, 在此保证每次界面切换都能重新刷新状态
         appScope.launch(Dispatchers.IO) {

@@ -12,20 +12,22 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.updateAndGet
 import li.songe.gkd.app
 import li.songe.gkd.appScope
+import li.songe.gkd.shizuku.newActivityTaskManager
+import li.songe.gkd.shizuku.safeGetTasks
 import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.util.initOrResetAppInfoCache
 import li.songe.gkd.util.launchTry
 
 class PermissionState(
-    val check: () -> Boolean,
+    val check: suspend () -> Boolean,
     val request: (suspend (context: Activity) -> PermissionResult)? = null,
     /**
      * show it when user doNotAskAgain
      */
     val reason: AuthReason? = null,
 ) {
-    val stateFlow = MutableStateFlow(check())
-    fun updateAndGet(): Boolean {
+    val stateFlow = MutableStateFlow(false)
+    suspend fun updateAndGet(): Boolean {
         return stateFlow.updateAndGet { check() }
     }
 }
@@ -120,21 +122,32 @@ val canSaveToAlbumState by lazy {
 
 val shizukuOkState by lazy {
     PermissionState(
-        check = { shizukuIsSafeOK() },
+        check = {
+            shizukuIsSafeOK() && (try {
+                // 打开 shizuku 点击右上角停止, 此时 shizukuIsSafeOK() == true, 因此需要二次检查状态
+                newActivityTaskManager()?.safeGetTasks(log = false)
+                true
+            } catch (e: Exception) {
+                false
+            })
+        },
     )
 }
 
-fun updatePermissionState() {
+private val checkLoading = MutableStateFlow(false)
+suspend fun updatePermissionState() {
+    if (checkLoading.value) return
+    checkLoading.value = true
     arrayOf(
         notificationState,
         canDrawOverlaysState,
         canSaveToAlbumState,
         shizukuOkState
     ).forEach { it.updateAndGet() }
-
     if (canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet()) {
         appScope.launchTry {
             initOrResetAppInfoCache()
         }
     }
+    checkLoading.value = false
 }
