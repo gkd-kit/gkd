@@ -66,7 +66,7 @@ fun newActivityTaskManager(): IActivityTaskManager? {
  */
 private var getTasksFcType: Int? = null
 
-fun IActivityTaskManager.safeGetTasks(): List<ActivityManager.RunningTaskInfo>? {
+fun IActivityTaskManager.safeGetTasks(log: Boolean = true): List<ActivityManager.RunningTaskInfo>? {
     if (getTasksFcType == null) {
         val fcs = this::class.declaredMemberFunctions
         val parameters = fcs.find { d -> d.name == "getTasks" }?.parameters
@@ -95,7 +95,9 @@ fun IActivityTaskManager.safeGetTasks(): List<ActivityManager.RunningTaskInfo>? 
             else -> null
         }
     } catch (e: Exception) {
-        LogUtils.d(e)
+        if (log) {
+            LogUtils.d(e)
+        }
         null
     }
 }

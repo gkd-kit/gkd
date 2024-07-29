@@ -49,3 +49,13 @@ fun Context.openUri(uri: String) {
     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     tryStartActivity(intent)
 }
+
+fun Context.openApp(appId: String) {
+    val intent = packageManager.getLaunchIntentForPackage(appId)
+    if (intent != null) {
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        tryStartActivity(intent)
+    } else {
+        toast("请检查此应用是否安装")
+    }
+}
