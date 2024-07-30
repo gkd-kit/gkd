@@ -125,8 +125,7 @@ val shizukuOkState by lazy {
         check = {
             shizukuIsSafeOK() && (try {
                 // 打开 shizuku 点击右上角停止, 此时 shizukuIsSafeOK() == true, 因此需要二次检查状态
-                newActivityTaskManager()?.safeGetTasks(log = false)
-                true
+                newActivityTaskManager()?.safeGetTasks(log = false)?.isNotEmpty() == true
             } catch (e: Exception) {
                 false
             })
