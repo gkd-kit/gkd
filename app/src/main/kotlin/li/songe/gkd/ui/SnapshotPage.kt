@@ -65,9 +65,11 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.LocalPickContentLauncher
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.navigate
+import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.snapshotZipDir
+import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
 @RootNavGraph
@@ -156,7 +158,7 @@ fun SnapshotPage() {
                 HorizontalDivider()
             }
             item {
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(EmptyHeight))
                 if (snapshots.isEmpty()) {
                     Text(
                         text = "暂无记录",
@@ -182,7 +184,7 @@ fun SnapshotPage() {
                     .padding(16.dp)
                 Text(
                     text = "查看", modifier = Modifier
-                        .clickable(onClick = scope.launchAsFn {
+                        .clickable(onClick = throttle(fn = scope.launchAsFn {
                             navController.navigate(
                                 ImagePreviewPageDestination(
                                     filePath = snapshotVal.screenshotFile.absolutePath,
@@ -190,7 +192,7 @@ fun SnapshotPage() {
                                 )
                             )
                             selectedSnapshot = null
-                        })
+                        }))
                         .then(modifier)
                 )
                 HorizontalDivider()

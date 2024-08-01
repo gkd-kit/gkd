@@ -45,11 +45,12 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.formatTimeAgo
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
-import li.songe.gkd.util.navigate
+import com.ramcosta.composedestinations.navigation.navigate
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.subsLoadErrorsFlow
 import li.songe.gkd.util.subsRefreshErrorsFlow
 import li.songe.gkd.util.subsRefreshingFlow
+import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
 
@@ -206,7 +207,7 @@ private fun SubsMenuItem(
                     text = {
                         Text(text = "应用规则")
                     },
-                    onClick = {
+                    onClick = throttle {
                         onExpandedChange(false)
                         navController.navigate(SubsPageDestination(subItem.id))
                     }
@@ -217,7 +218,7 @@ private fun SubsMenuItem(
                     text = {
                         Text(text = "规则类别")
                     },
-                    onClick = {
+                    onClick = throttle {
                         onExpandedChange(false)
                         navController.navigate(CategoryPageDestination(subItem.id))
                     }
@@ -228,7 +229,7 @@ private fun SubsMenuItem(
                     text = {
                         Text(text = "全局规则")
                     },
-                    onClick = {
+                    onClick = throttle {
                         onExpandedChange(false)
                         navController.navigate(GlobalRulePageDestination(subItem.id))
                     }

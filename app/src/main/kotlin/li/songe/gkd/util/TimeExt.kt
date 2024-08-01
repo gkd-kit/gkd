@@ -36,13 +36,31 @@ fun Long.format(formatStr: String): String {
     return df.format(this)
 }
 
-fun useThrottle(interval: Long = 500L): (fn: () -> Unit) -> Unit {
-    var lastTriggerTime = 0L
-    return { fn ->
+private var globalThrottleLastTriggerTime = 0L
+private const val defaultThrottleInterval = 1000L
+
+fun throttle(
+    interval: Long = defaultThrottleInterval,
+    fn: (() -> Unit)?,
+): (() -> Unit) {
+    return {
         val t = System.currentTimeMillis()
-        if (t - lastTriggerTime > interval) {
-            lastTriggerTime = t
-            fn()
+        if (t - globalThrottleLastTriggerTime > interval) {
+            globalThrottleLastTriggerTime = t
+            fn?.invoke()
+        }
+    }
+}
+
+fun <T> throttle(
+    interval: Long = defaultThrottleInterval,
+    fn: ((T) -> Unit)?,
+): ((T) -> Unit) {
+    return {
+        val t = System.currentTimeMillis()
+        if (t - globalThrottleLastTriggerTime > interval) {
+            globalThrottleLastTriggerTime = t
+            fn?.invoke(it)
         }
     }
 }

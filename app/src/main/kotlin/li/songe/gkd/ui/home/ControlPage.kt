@@ -31,9 +31,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramcosta.composedestinations.navigation.navigate
 import li.songe.gkd.MainActivity
 import li.songe.gkd.permission.checkOrRequestPermission
 import li.songe.gkd.permission.notificationState
@@ -43,14 +43,15 @@ import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.ClickLogPageDestination
 import li.songe.gkd.ui.destinations.SlowGroupPageDestination
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.navigate
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.throttle
 import li.songe.gkd.util.tryStartActivity
 
 val controlNav = BottomNavItem(label = "主页", icon = Icons.Outlined.Home)
@@ -77,7 +78,7 @@ fun useControlPage(): ScaffoldExt {
                     text = controlNav.label,
                 )
             }, actions = {
-                IconButton(onClick = { context.openUri(HOME_PAGE_URL) }) {
+                IconButton(onClick = throttle { context.openUri(HOME_PAGE_URL) }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
                         contentDescription = null,
@@ -138,9 +139,9 @@ fun useControlPage(): ScaffoldExt {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .clickable {
+                    .clickable(onClick = throttle {
                         navController.navigate(ClickLogPageDestination)
-                    }
+                    })
                     .itemPadding(),
             ) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -165,9 +166,9 @@ fun useControlPage(): ScaffoldExt {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .clickable {
+                        .clickable(onClick = throttle {
                             navController.navigate(SlowGroupPageDestination)
-                        }
+                        })
                         .itemPadding(),
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
@@ -209,7 +210,7 @@ fun useControlPage(): ScaffoldExt {
                 }
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(EmptyHeight))
         }
     }
 }

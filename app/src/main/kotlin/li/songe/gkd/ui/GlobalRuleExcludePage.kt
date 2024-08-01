@@ -70,6 +70,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.service.launcherAppId
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.TowLineText
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.util.LocalNavController
@@ -344,14 +345,14 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                 }
             }
             item {
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(EmptyHeight))
                 if (showAppInfos.isEmpty()) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(text = "暂无搜索结果")
-                        Spacer(modifier = Modifier.height(40.dp))
+                        Spacer(modifier = Modifier.height(EmptyHeight))
                     }
                 }
             }

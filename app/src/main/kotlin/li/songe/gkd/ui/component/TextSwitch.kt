@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.util.throttle
 
 @Composable
 fun TextSwitch(
@@ -48,7 +49,7 @@ fun TextSwitch(
         Switch(
             checked = checked,
             enabled = enabled,
-            onCheckedChange = onCheckedChange,
+            onCheckedChange = onCheckedChange?.let { throttle(fn = it) },
         )
     }
 }

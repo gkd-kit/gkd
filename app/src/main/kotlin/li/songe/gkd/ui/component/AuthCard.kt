@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.util.throttle
 
 @Composable
 fun AuthCard(
@@ -36,7 +37,7 @@ fun AuthCard(
             )
         }
         Spacer(modifier = Modifier.width(10.dp))
-        OutlinedButton(onClick = onAuthClick) {
+        OutlinedButton(onClick = throttle(fn = onAuthClick)) {
             Text(text = "授权")
         }
     }

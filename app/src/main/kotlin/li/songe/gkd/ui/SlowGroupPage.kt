@@ -43,8 +43,10 @@ import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
-import li.songe.gkd.util.navigate
+import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.ruleSummaryFlow
+import li.songe.gkd.util.throttle
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
@@ -91,14 +93,14 @@ fun SlowGroupPage() {
             ) { (group, rule) ->
                 SlowGroupCard(
                     modifier = Modifier
-                        .clickable {
+                        .clickable(onClick = throttle {
                             navController.navigate(
                                 GlobalRulePageDestination(
                                     rule.subsItem.id,
                                     group.key
                                 )
                             )
-                        }
+                        })
                         .itemPadding(),
                     title = group.name,
                     desc = "${rule.rawSubs.name}/全局规则"
@@ -110,7 +112,7 @@ fun SlowGroupPage() {
             ) { (group, rule) ->
                 SlowGroupCard(
                     modifier = Modifier
-                        .clickable {
+                        .clickable(onClick = throttle {
                             navController.navigate(
                                 AppItemPageDestination(
                                     rule.subsItem.id,
@@ -118,14 +120,14 @@ fun SlowGroupPage() {
                                     group.key
                                 )
                             )
-                        }
+                        })
                         .itemPadding(),
                     title = group.name,
                     desc = "${rule.rawSubs.name}/应用规则/${appInfoCache[rule.app.id]?.name ?: rule.app.name ?: rule.app.id}"
                 )
             }
             item {
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(EmptyHeight))
                 if (ruleSummary.slowGroupCount == 0) {
                     Text(
                         text = "暂无规则",

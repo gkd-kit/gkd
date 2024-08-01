@@ -187,8 +187,8 @@ fun SubsAppCard(
         }
 
         Switch(
-            subsConfig?.enable ?: (appInfo != null),
-            onValueChange,
+            checked = subsConfig?.enable ?: (appInfo != null),
+            onCheckedChange = onValueChange,
         )
     }
 }

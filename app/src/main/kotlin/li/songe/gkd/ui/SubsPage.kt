@@ -45,12 +45,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.navigation.navigate
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
@@ -59,6 +59,7 @@ import li.songe.gkd.ui.component.SubsAppCard
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.getDialogResult
 import li.songe.gkd.ui.destinations.AppItemPageDestination
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
@@ -68,7 +69,7 @@ import li.songe.gkd.util.encodeToJson5String
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.navigate
+import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 
@@ -249,10 +250,10 @@ fun SubsPage(
                     appInfo = appInfoCache[appRaw.id],
                     subsConfig = subsConfig,
                     enableSize = enableSize,
-                    onClick = {
+                    onClick = throttle {
                         navController.navigate(AppItemPageDestination(subsItemId, appRaw.id))
                     },
-                    onValueChange = scope.launchAsFn { enable ->
+                    onValueChange = throttle(fn = scope.launchAsFn { enable ->
                         val newItem = subsConfig?.copy(
                             enable = enable
                         ) ?: SubsConfig(
@@ -262,9 +263,9 @@ fun SubsPage(
                             appId = appRaw.id,
                         )
                         DbSet.subsConfigDao.insert(newItem)
-                    },
+                    }),
                     showMenu = editable,
-                    onDelClick = vm.viewModelScope.launchAsFn {
+                    onDelClick = throttle(fn = vm.viewModelScope.launchAsFn {
                         val result = getDialogResult(
                             "删除规则组",
                             "确定删除 ${appInfoCache[appRaw.id]?.name ?: appRaw.name ?: appRaw.id} 下所有规则组?"
@@ -277,9 +278,10 @@ fun SubsPage(
                             toast("删除成功")
                         }
                     })
+                )
             }
             item {
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(EmptyHeight))
                 if (appAndConfigs.isEmpty()) {
                     Text(
                         text = if (searchStr.isNotEmpty()) "暂无搜索结果" else "暂无规则",
@@ -287,7 +289,7 @@ fun SubsPage(
                         textAlign = TextAlign.Center
                     )
                 } else if (editable) {
-                    Spacer(modifier = Modifier.height(40.dp))
+                    Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }
         }

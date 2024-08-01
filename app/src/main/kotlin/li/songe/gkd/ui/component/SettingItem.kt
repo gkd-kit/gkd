@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.util.throttle
 
 @Composable
 fun SettingItem(
@@ -24,7 +25,7 @@ fun SettingItem(
     Row(
         modifier = Modifier
             .clickable(
-                onClick = onClick
+                onClick = throttle(fn = onClick)
             )
             .fillMaxWidth()
             .itemPadding(),

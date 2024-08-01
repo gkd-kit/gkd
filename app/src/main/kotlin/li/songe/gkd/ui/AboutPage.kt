@@ -26,6 +26,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import li.songe.gkd.BuildConfig
 import li.songe.gkd.channel
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.GIT_COMMIT_URL
 import li.songe.gkd.util.LocalNavController
@@ -167,7 +168,7 @@ fun AboutPage() {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(EmptyHeight))
         }
     }
 }
