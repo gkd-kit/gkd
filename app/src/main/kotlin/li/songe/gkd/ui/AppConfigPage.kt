@@ -71,7 +71,9 @@ import li.songe.gkd.util.ResolvedGroup
 import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.navigate
+import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.util.throttle
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
@@ -161,7 +163,7 @@ fun AppConfigPage(appId: String) {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {
+                onClick = throttle {
                     navController.navigate(AppItemPageDestination(LOCAL_SUBS_ID, appId))
                 },
                 content = {
@@ -187,7 +189,7 @@ fun AppConfigPage(appId: String) {
                         vm = vm,
                         group = g.group,
                         checked = checked,
-                        onClick = {
+                        onClick = throttle {
                             navController.navigate(
                                 GlobalRulePageDestination(
                                     g.subsItem.id,
@@ -252,7 +254,7 @@ fun AppConfigPage(appId: String) {
                 }
             }
             item {
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(EmptyHeight))
                 if (globalGroups.size + appGroups.size == 0) {
                     Text(
                         text = "暂无规则",
@@ -261,7 +263,7 @@ fun AppConfigPage(appId: String) {
                     )
                 } else {
                     // 避免被 floatingActionButton 遮挡
-                    Spacer(modifier = Modifier.height(40.dp))
+                    Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }
         }

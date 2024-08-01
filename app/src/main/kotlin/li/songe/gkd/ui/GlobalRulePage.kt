@@ -74,7 +74,9 @@ import li.songe.gkd.util.encodeToJson5String
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.navigate
+import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 
@@ -233,7 +235,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                                 text = {
                                     Text(text = "编辑禁用")
                                 },
-                                onClick = {
+                                onClick = throttle {
                                     expanded = false
                                     navController.navigate(
                                         GlobalRuleExcludePageDestination(
@@ -295,7 +297,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                 }
             }
             item {
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(EmptyHeight))
                 if (globalGroups.isEmpty()) {
                     Text(
                         text = "暂无规则",
@@ -303,7 +305,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                         textAlign = TextAlign.Center
                     )
                 } else if (editable) {
-                    Spacer(modifier = Modifier.height(40.dp))
+                    Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }
         }
@@ -465,7 +467,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
             },
             confirmButton = {
                 if (showGroupItem.allExampleUrls.isNotEmpty()) {
-                    TextButton(onClick = {
+                    TextButton(onClick = throttle {
                         setShowGroupItem(null)
                         navController.navigate(
                             GroupImagePageDestination(

@@ -74,9 +74,11 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appRefreshingFlow
 import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.navigate
+import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.throttle
 
 val appListNav = BottomNavItem(
     label = "应用", icon = Icons.Default.Apps
@@ -288,9 +290,9 @@ fun useAppListPage(): ScaffoldExt {
                 items(orderedAppInfos, { it.id }) { appInfo ->
                     Row(
                         modifier = Modifier
-                            .clickable {
+                            .clickable(onClick = throttle {
                                 navController.navigate(AppConfigPageDestination(appInfo.id))
-                            }
+                            })
                             .height(IntrinsicSize.Min)
                             .appItemPadding(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -388,7 +390,7 @@ fun useAppListPage(): ScaffoldExt {
                     }
                 }
                 item {
-                    Spacer(modifier = Modifier.height(40.dp))
+                    Spacer(modifier = Modifier.height(EmptyHeight))
                     if (orderedAppInfos.isEmpty() && searchStr.isNotEmpty()) {
                         Text(
                             text = "暂无搜索结果",
@@ -405,7 +407,7 @@ fun useAppListPage(): ScaffoldExt {
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(EmptyHeight))
                 CircularProgressIndicator()
             }
         }

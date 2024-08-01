@@ -80,7 +80,9 @@ import li.songe.gkd.util.json
 import li.songe.gkd.util.json5ToJson
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.navigate
+import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 
@@ -327,7 +329,7 @@ fun AppItemPage(
             }
 
             item {
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(EmptyHeight))
                 if (appRaw.groups.isEmpty()) {
                     Text(
                         text = "暂无规则",
@@ -335,7 +337,7 @@ fun AppItemPage(
                         textAlign = TextAlign.Center
                     )
                 } else if (editable) {
-                    Spacer(modifier = Modifier.height(40.dp))
+                    Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }
         }
@@ -357,7 +359,7 @@ fun AppItemPage(
             },
             confirmButton = {
                 if (showGroupItemVal.allExampleUrls.isNotEmpty()) {
-                    TextButton(onClick = {
+                    TextButton(onClick = throttle {
                         setShowGroupItem(null)
                         navController.navigate(
                             GroupImagePageDestination(

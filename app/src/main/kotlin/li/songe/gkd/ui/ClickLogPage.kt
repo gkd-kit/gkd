@@ -64,8 +64,10 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.navigate
+import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.subsIdToRawFlow
+import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
 @RootNavGraph
@@ -182,7 +184,7 @@ fun ClickLogPage() {
                 HorizontalDivider()
             }
             item {
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(EmptyHeight))
                 if (clickLogCount == 0) {
                     Text(
                         text = "暂无记录",
@@ -209,8 +211,8 @@ fun ClickLogPage() {
                 val appInfo = appInfoCache[clickLog.appId]
 
                 Text(text = "查看规则组", modifier = Modifier
-                    .clickable {
-                        clickLog.appId ?: return@clickable
+                    .clickable(onClick = throttle {
+                        clickLog.appId ?: return@throttle
                         if (clickLog.groupType == SubsConfig.AppGroupType) {
                             navController.navigate(
                                 AppItemPageDestination(
@@ -225,7 +227,7 @@ fun ClickLogPage() {
                             )
                         }
                         previewClickLog = null
-                    }
+                    })
                     .fillMaxWidth()
                     .padding(16.dp))
                 if (clickLog.groupType == SubsConfig.GlobalGroupType && clickLog.appId != null) {

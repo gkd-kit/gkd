@@ -51,6 +51,7 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.getDialogResult
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.EnableGroupOption
 import li.songe.gkd.util.LocalNavController
@@ -226,7 +227,7 @@ fun CategoryPage(subsItemId: Long) {
                 }
             }
             item {
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(EmptyHeight))
                 if (categories.isEmpty()) {
                     Text(
                         text = "暂无类别",
@@ -234,7 +235,7 @@ fun CategoryPage(subsItemId: Long) {
                         modifier = Modifier.fillMaxWidth()
                     )
                 } else if (editable) {
-                    Spacer(modifier = Modifier.height(40.dp))
+                    Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }
         }
