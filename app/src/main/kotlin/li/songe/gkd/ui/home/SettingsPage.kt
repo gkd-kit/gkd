@@ -65,9 +65,11 @@ import li.songe.gkd.util.checkUpdatingFlow
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.navigate
+import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
 val settingsNav = BottomNavItem(
@@ -116,15 +118,12 @@ fun useSettingsPage(): ScaffoldExt {
                 },
             )
         }, onDismissRequest = { showToastInputDlg = false }, confirmButton = {
-            TextButton(
-                enabled = value.isNotEmpty(),
-                onClick = {
-                    storeFlow.value = store.copy(
-                        clickToast = value
-                    )
-                    showToastInputDlg = false
-                }
-            ) {
+            TextButton(enabled = value.isNotEmpty(), onClick = {
+                storeFlow.value = store.copy(
+                    clickToast = value
+                )
+                showToastInputDlg = false
+            }) {
                 Text(
                     text = "确认",
                 )
@@ -151,7 +150,7 @@ fun useSettingsPage(): ScaffoldExt {
                     .padding(16.dp)
                 Text(
                     text = "调用系统分享", modifier = Modifier
-                        .clickable(onClick = {
+                        .clickable(onClick = throttle {
                             showShareLogDlg = false
                             vm.viewModelScope.launchTry(Dispatchers.IO) {
                                 val logZipFile = buildLogFile()
@@ -161,8 +160,9 @@ fun useSettingsPage(): ScaffoldExt {
                         .then(modifier)
                 )
                 Text(
-                    text = "生成链接(需科学上网)", modifier = Modifier
-                        .clickable(onClick = {
+                    text = "生成链接(需科学上网)",
+                    modifier = Modifier
+                        .clickable(onClick = throttle {
                             showShareLogDlg = false
                             vm.viewModelScope.launchTry(Dispatchers.IO) {
                                 val logZipFile = buildLogFile()
@@ -244,13 +244,11 @@ fun useSettingsPage(): ScaffoldExt {
         navItem = settingsNav,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(scrollBehavior = scrollBehavior,
-                title = {
-                    Text(
-                        text = settingsNav.label,
-                    )
-                }
-            )
+            TopAppBar(scrollBehavior = scrollBehavior, title = {
+                Text(
+                    text = settingsNav.label,
+                )
+            })
         },
     ) { padding ->
         Column(
@@ -277,8 +275,17 @@ fun useSettingsPage(): ScaffoldExt {
                     storeFlow.value = store.copy(
                         toastWhenClick = it
                     )
-                }
-            )
+                })
+
+            TextSwitch(
+                name = "系统提示",
+                desc = "系统样式触发提示,频率较高时会被忽略",
+                checked = store.useSystemToast,
+                onCheckedChange = {
+                    storeFlow.value = store.copy(
+                        useSystemToast = it
+                    )
+                })
 
             TextSwitch(
                 name = "后台隐藏",
@@ -288,8 +295,7 @@ fun useSettingsPage(): ScaffoldExt {
                     storeFlow.value = store.copy(
                         excludeFromRecents = it
                     )
-                }
-            )
+                })
 
             TextMenu(
                 title = "深色模式",
@@ -299,16 +305,14 @@ fun useSettingsPage(): ScaffoldExt {
             }
 
             if (supportDynamicColor) {
-                TextSwitch(
-                    name = "动态配色",
+                TextSwitch(name = "动态配色",
                     desc = "配色跟随系统主题",
                     checked = store.enableDynamicColor,
                     onCheckedChange = {
                         storeFlow.value = store.copy(
                             enableDynamicColor = it
                         )
-                    }
-                )
+                    })
             }
 
             Text(
@@ -326,27 +330,25 @@ fun useSettingsPage(): ScaffoldExt {
             }
 
             if (ENABLED_UPDATE) {
-                TextSwitch(
-                    name = "自动更新",
+                TextSwitch(name = "自动更新",
                     desc = "打开应用时检测新版本",
                     checked = store.autoCheckAppUpdate,
                     onCheckedChange = {
                         storeFlow.value = store.copy(
                             autoCheckAppUpdate = it
                         )
-                    }
-                )
+                    })
 
                 Row(
                     modifier = Modifier
                         .clickable(
-                            onClick = appScope.launchAsFn {
+                            onClick = throttle(fn = appScope.launchAsFn {
                                 if (checkUpdatingFlow.value) return@launchAsFn
                                 val newVersion = checkUpdate()
                                 if (newVersion == null) {
                                     toast("暂无更新")
                                 }
-                            }
+                            })
                         )
                         .fillMaxWidth()
                         .itemPadding(),
@@ -368,8 +370,7 @@ fun useSettingsPage(): ScaffoldExt {
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            TextSwitch(
-                name = "保存日志",
+            TextSwitch(name = "保存日志",
                 desc = "保存7天日志,帮助定位BUG",
                 checked = store.log2FileSwitch,
                 onCheckedChange = {
@@ -387,16 +388,11 @@ fun useSettingsPage(): ScaffoldExt {
                             }
                         }
                     }
-                }
-            )
+                })
 
-            SettingItem(
-                title = "分享日志",
-                imageVector = Icons.Default.Share,
-                onClick = {
-                    showShareLogDlg = true
-                }
-            )
+            SettingItem(title = "分享日志", imageVector = Icons.Default.Share, onClick = {
+                showShareLogDlg = true
+            })
 
             Text(
                 text = "其它",
@@ -405,7 +401,7 @@ fun useSettingsPage(): ScaffoldExt {
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            SettingItem(title = "高级模式", onClick = {
+            SettingItem(title = "高级设置", onClick = {
                 navController.navigate(AdvancedPageDestination)
             })
 
@@ -413,7 +409,7 @@ fun useSettingsPage(): ScaffoldExt {
                 navController.navigate(AboutPageDestination)
             })
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(EmptyHeight))
         }
     }
 }

@@ -63,6 +63,7 @@ data class Store(
     val showSystemApp: Boolean = true,
     val showHiddenApp: Boolean = false,
     val showSaveSnapshotToast: Boolean = true,
+    val useSystemToast: Boolean = false,
 )
 
 val storeFlow by lazy {
