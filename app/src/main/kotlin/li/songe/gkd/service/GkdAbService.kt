@@ -50,6 +50,7 @@ import li.songe.gkd.util.VOLUME_CHANGED_ACTION
 import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
+import li.songe.gkd.util.showActionToast
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
 import li.songe.selector.MatchOption
@@ -237,9 +238,7 @@ class GkdAbService : CompositionAbService({
                             newQueryTask()
                         }
                     }
-                    if (storeFlow.value.toastWhenClick) {
-                        toast(storeFlow.value.clickToast)
-                    }
+                    showActionToast(context)
                     appScope.launchTry(Dispatchers.IO) {
                         insertClickLog(rule)
                         LogUtils.d(
@@ -404,9 +403,10 @@ class GkdAbService : CompositionAbService({
                         type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
                         format = PixelFormat.TRANSLUCENT
                         flags =
-                            flags or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                            flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                         width = 1
                         height = 1
+                        packageName = context.packageName
                     }
                     withContext(Dispatchers.Main) {
                         try {

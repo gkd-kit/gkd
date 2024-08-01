@@ -16,8 +16,6 @@ import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import li.songe.gkd.composition.CompositionActivity
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
@@ -81,11 +79,6 @@ class MainActivity : CompositionActivity({
 }) {
     val mainVm by viewModels<MainViewModel>()
 
-    override fun onStart() {
-        super.onStart()
-        activityVisibleFlow.update { it + 1 }
-    }
-
     override fun onResume() {
         super.onResume()
 
@@ -106,14 +99,7 @@ class MainActivity : CompositionActivity({
             updateServiceRunning()
         }
     }
-
-    override fun onStop() {
-        super.onStop()
-        activityVisibleFlow.update { it - 1 }
-    }
 }
-
-val activityVisibleFlow = MutableStateFlow(0)
 
 fun Activity.navToMainActivity() {
     val intent = this.intent?.cloneFilter()

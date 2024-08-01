@@ -19,6 +19,7 @@ import li.songe.gkd.util.initFolder
 import li.songe.gkd.util.initStore
 import li.songe.gkd.util.initSubsState
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.setReactiveToastStyle
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 
 
@@ -57,6 +58,7 @@ class App : Application() {
             errorHandler?.uncaughtException(t, e)
         }
         Toaster.init(this)
+        setReactiveToastStyle()
         MMKV.initialize(this)
         LogUtils.getConfig().apply {
             setConsoleSwitch(BuildConfig.DEBUG)
