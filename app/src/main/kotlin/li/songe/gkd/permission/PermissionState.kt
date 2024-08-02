@@ -125,7 +125,7 @@ val canDrawOverlaysState by lazy {
     )
 }
 
-val canSaveToAlbumState by lazy {
+val canWriteExternalStorage by lazy {
     PermissionState(
         check = {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
@@ -170,7 +170,7 @@ suspend fun updatePermissionState() {
     arrayOf(
         notificationState,
         canDrawOverlaysState,
-        canSaveToAlbumState,
+        canWriteExternalStorage,
         shizukuOkState
     ).forEach { it.updateAndGet() }
     if (canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet()) {

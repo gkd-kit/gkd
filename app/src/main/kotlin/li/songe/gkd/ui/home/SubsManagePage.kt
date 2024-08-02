@@ -3,6 +3,7 @@ package li.songe.gkd.ui.home
 import android.content.Intent
 import android.webkit.URLUtil
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Add
@@ -24,6 +26,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
@@ -51,19 +54,20 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.dylanc.activityresult.launcher.launchForResult
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import li.songe.gkd.MainActivity
 import li.songe.gkd.data.Value
 import li.songe.gkd.data.deleteSubscription
 import li.songe.gkd.data.exportData
 import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SubsItemCard
-import li.songe.gkd.ui.component.getResult
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalLauncher
@@ -72,9 +76,12 @@ import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.isSafeUrl
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.saveFileToDownloads
+import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.subsRefreshingFlow
+import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -86,7 +93,6 @@ val subsNav = BottomNavItem(
 @Composable
 fun useSubsManagePage(): ScaffoldExt {
     val launcher = LocalLauncher.current
-    val context = LocalContext.current
     val mainVm = LocalMainViewModel.current
 
     val vm = hiltViewModel<HomeVm>()
@@ -171,6 +177,8 @@ fun useSubsManagePage(): ScaffoldExt {
         })
     }
 
+    ShareDataDialog(vm)
+
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     return ScaffoldExt(
         navItem = subsNav,
@@ -205,11 +213,10 @@ fun useSubsManagePage(): ScaffoldExt {
                     }
                     if (canDeleteIds.isNotEmpty()) {
                         IconButton(onClick = vm.viewModelScope.launchAsFn {
-                            val result = mainVm.dialogFlow.getResult(
+                            mainVm.dialogFlow.waitResult(
                                 title = "删除订阅",
                                 text = "是否删除所选 ${canDeleteIds.size} 个订阅?\n\n注: 不包含本地订阅",
                             )
-                            if (!result) return@launchAsFn
                             deleteSubscription(*canDeleteIds.toLongArray())
                             selectedIds = selectedIds - canDeleteIds
                             if (selectedIds.size == canDeleteIds.size) {
@@ -223,7 +230,7 @@ fun useSubsManagePage(): ScaffoldExt {
                         }
                     }
                     IconButton(onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                        exportData(context, selectedIds)
+                        vm.showShareDataIdsFlow.value = selectedIds
                     }) {
                         Icon(
                             imageVector = Icons.Default.Share,
@@ -423,6 +430,49 @@ fun useSubsManagePage(): ScaffoldExt {
                 state = pullRefreshState,
                 modifier = Modifier.align(Alignment.TopCenter),
             )
+        }
+    }
+}
+
+@Composable
+private fun ShareDataDialog(vm: HomeVm) {
+    val context = LocalContext.current as MainActivity
+    val showShareDataIds = vm.showShareDataIdsFlow.collectAsState().value
+    if (showShareDataIds != null) {
+        Dialog(onDismissRequest = { vm.showShareDataIdsFlow.value = null }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                val modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                Text(
+                    text = "分享数据", modifier = Modifier
+                        .clickable(onClick = throttle {
+                            vm.showShareDataIdsFlow.value = null
+                            vm.viewModelScope.launchTry(Dispatchers.IO) {
+                                val file = exportData(showShareDataIds)
+                                context.shareFile(file, "分享数据文件")
+                            }
+                        })
+                        .then(modifier)
+                )
+                Text(
+                    text = "保存到下载",
+                    modifier = Modifier
+                        .clickable(onClick = throttle {
+                            vm.showShareDataIdsFlow.value = null
+                            vm.viewModelScope.launchTry(Dispatchers.IO) {
+                                val file = exportData(showShareDataIds)
+                                context.saveFileToDownloads(file)
+                            }
+                        })
+                        .then(modifier)
+                )
+            }
         }
     }
 }

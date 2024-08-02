@@ -55,7 +55,7 @@ import li.songe.gkd.MainActivity
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt
-import li.songe.gkd.permission.canSaveToAlbumState
+import li.songe.gkd.permission.canWriteExternalStorage
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.ui.component.StartEllipsisText
 import li.songe.gkd.ui.destinations.ImagePreviewPageDestination
@@ -66,6 +66,7 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.LocalPickContentLauncher
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.saveFileToDownloads
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.snapshotZipDir
 import li.songe.gkd.util.throttle
@@ -195,17 +196,31 @@ fun SnapshotPage() {
                 )
                 HorizontalDivider()
                 Text(
-                    text = "分享",
+                    text = "分享数据",
                     modifier = Modifier
                         .clickable(onClick = vm.viewModelScope.launchAsFn {
-                            val zipFile =
-                                SnapshotExt.getSnapshotZipFile(
-                                    snapshotVal.id,
-                                    snapshotVal.appId,
-                                    snapshotVal.activityId
-                                )
-                            context.shareFile(zipFile, "分享快照文件")
                             selectedSnapshot = null
+                            val zipFile = SnapshotExt.getSnapshotZipFile(
+                                snapshotVal.id,
+                                snapshotVal.appId,
+                                snapshotVal.activityId
+                            )
+                            context.shareFile(zipFile, "分享快照文件")
+                        })
+                        .then(modifier)
+                )
+                HorizontalDivider()
+                Text(
+                    text = "保存到下载",
+                    modifier = Modifier
+                        .clickable(onClick = vm.viewModelScope.launchAsFn {
+                            selectedSnapshot = null
+                            val zipFile = SnapshotExt.getSnapshotZipFile(
+                                snapshotVal.id,
+                                snapshotVal.appId,
+                                snapshotVal.activityId
+                            )
+                            context.saveFileToDownloads(zipFile)
                         })
                         .then(modifier)
                 )
@@ -236,7 +251,7 @@ fun SnapshotPage() {
                     text = "保存截图到相册",
                     modifier = Modifier
                         .clickable(onClick = vm.viewModelScope.launchAsFn {
-                            requiredPermission(context, canSaveToAlbumState)
+                            requiredPermission(context, canWriteExternalStorage)
                             ImageUtils.save2Album(
                                 ImageUtils.getBitmap(snapshotVal.screenshotFile),
                                 Bitmap.CompressFormat.PNG,
