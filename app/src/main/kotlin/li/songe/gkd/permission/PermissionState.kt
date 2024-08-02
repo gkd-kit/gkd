@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
 import androidx.core.content.ContextCompat
+import com.hjq.permissions.OnPermissionCallback
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +18,8 @@ import li.songe.gkd.shizuku.safeGetTasks
 import li.songe.gkd.shizuku.shizukuIsSafeOK
 import li.songe.gkd.util.initOrResetAppInfoCache
 import li.songe.gkd.util.launchTry
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class PermissionState(
     val check: suspend () -> Boolean,
@@ -37,6 +40,33 @@ private fun checkSelfPermission(permission: String): Boolean {
         app,
         permission
     ) == PackageManager.PERMISSION_GRANTED
+}
+
+private suspend fun asyncRequestPermission(
+    context: Activity,
+    permission: String,
+): PermissionResult {
+    if (XXPermissions.isGranted(context, permission)) {
+        return PermissionResult.Granted
+    }
+    return suspendCoroutine { continuation ->
+        XXPermissions.with(context)
+            .unchecked()
+            .permission(permission)
+            .request(object : OnPermissionCallback {
+                override fun onGranted(permissions: MutableList<String>, allGranted: Boolean) {
+                    if (allGranted) {
+                        continuation.resume(PermissionResult.Granted)
+                    } else {
+                        continuation.resume(PermissionResult.Denied(false))
+                    }
+                }
+
+                override fun onDenied(permissions: MutableList<String>, doNotAskAgain: Boolean) {
+                    continuation.resume(PermissionResult.Denied(doNotAskAgain))
+                }
+            })
+    }
 }
 
 val notificationState by lazy {
@@ -114,7 +144,7 @@ val canSaveToAlbumState by lazy {
         reason = AuthReason(
             text = "当前操作需要[写入外部存储权限]\n\n您需要前往应用权限设置打开此权限",
             confirm = {
-                XXPermissions.startPermissionActivity(app, Permission.SYSTEM_ALERT_WINDOW)
+                XXPermissions.startPermissionActivity(app, Permission.WRITE_EXTERNAL_STORAGE)
             }
         ),
     )
@@ -133,10 +163,10 @@ val shizukuOkState by lazy {
     )
 }
 
-private val checkLoading = MutableStateFlow(false)
+private val checkAuthLoading = MutableStateFlow(false)
 suspend fun updatePermissionState() {
-    if (checkLoading.value) return
-    checkLoading.value = true
+    if (checkAuthLoading.value) return
+    checkAuthLoading.value = true
     arrayOf(
         notificationState,
         canDrawOverlaysState,
@@ -148,5 +178,5 @@ suspend fun updatePermissionState() {
             initOrResetAppInfoCache()
         }
     }
-    checkLoading.value = false
+    checkAuthLoading.value = false
 }

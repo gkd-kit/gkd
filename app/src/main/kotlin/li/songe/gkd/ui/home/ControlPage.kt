@@ -35,8 +35,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.navigation.navigate
 import li.songe.gkd.MainActivity
-import li.songe.gkd.permission.checkOrRequestPermission
 import li.songe.gkd.permission.notificationState
+import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.ui.component.AuthCard
@@ -119,9 +119,7 @@ fun useControlPage(): ScaffoldExt {
                 checked = manageRunning && store.enableStatusService,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
-                        if (!checkOrRequestPermission(context, notificationState)) {
-                            return@launchAsFn
-                        }
+                        requiredPermission(context, notificationState)
                         storeFlow.value = store.copy(
                             enableStatusService = true
                         )

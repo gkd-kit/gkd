@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
@@ -13,8 +14,10 @@ import li.songe.gkd.BuildConfig.ENABLED_UPDATE
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.permission.authReasonFlow
+import li.songe.gkd.permission.AuthReason
+import li.songe.gkd.ui.component.AlertDialogOptions
 import li.songe.gkd.util.LOCAL_SUBS_ID
+import li.songe.gkd.util.UpdateStatus
 import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.clearCache
 import li.songe.gkd.util.launchTry
@@ -23,6 +26,22 @@ import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.updateSubscription
 
 class MainViewModel : ViewModel() {
+    val enableDarkThemeFlow = storeFlow.debounce(200).map { s -> s.enableDarkTheme }.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        storeFlow.value.enableDarkTheme
+    )
+    val enableDynamicColorFlow = storeFlow.debounce(300).map { s -> s.enableDynamicColor }.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        storeFlow.value.enableDynamicColor
+    )
+
+    val dialogFlow = MutableStateFlow<AlertDialogOptions?>(null)
+    val authReasonFlow = MutableStateFlow<AuthReason?>(null)
+
+    val updateStatus = UpdateStatus()
+
     init {
         viewModelScope.launchTry(Dispatchers.IO) {
             val subsItems = DbSet.subsItemDao.queryAll()
@@ -49,9 +68,9 @@ class MainViewModel : ViewModel() {
         }
 
         if (ENABLED_UPDATE && storeFlow.value.autoCheckAppUpdate) {
-            appScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(Dispatchers.IO) {
                 try {
-                    checkUpdate()
+                    updateStatus.checkUpdate()
                 } catch (e: Exception) {
                     e.printStackTrace()
                     LogUtils.d(e)
@@ -64,22 +83,5 @@ class MainViewModel : ViewModel() {
                 LogUtils.getConfig().isLog2FileSwitch = it
             }
         }
-    }
-
-    val enableDarkThemeFlow = storeFlow.debounce(200).map { s -> s.enableDarkTheme }.stateIn(
-        viewModelScope,
-        SharingStarted.Eagerly,
-        storeFlow.value.enableDarkTheme
-    )
-    val enableDynamicColorFlow = storeFlow.debounce(300).map { s -> s.enableDynamicColor }.stateIn(
-        viewModelScope,
-        SharingStarted.Eagerly,
-        storeFlow.value.enableDynamicColor
-    )
-
-
-    override fun onCleared() {
-        super.onCleared()
-        authReasonFlow.value = null
     }
 }

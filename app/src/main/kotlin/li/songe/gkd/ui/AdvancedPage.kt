@@ -38,7 +38,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,10 +49,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.LogUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -64,8 +65,8 @@ import li.songe.gkd.debug.FloatingService
 import li.songe.gkd.debug.HttpService
 import li.songe.gkd.debug.ScreenshotService
 import li.songe.gkd.permission.canDrawOverlaysState
-import li.songe.gkd.permission.checkOrRequestPermission
 import li.songe.gkd.permission.notificationState
+import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.shizuku.CommandResult
 import li.songe.gkd.shizuku.newActivityTaskManager
@@ -75,6 +76,7 @@ import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.SnapshotPageDestination
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.LocalLauncher
@@ -84,12 +86,9 @@ import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
-import com.ramcosta.composedestinations.navigation.navigate
-import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.openApp
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.storeFlow
-import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
 
@@ -99,7 +98,6 @@ import rikka.shizuku.Shizuku
 fun AdvancedPage() {
     val context = LocalContext.current as MainActivity
     val vm = hiltViewModel<AdvancedVm>()
-    val scope = rememberCoroutineScope()
     val launcher = LocalLauncher.current
     val navController = LocalNavController.current
     val store by storeFlow.collectAsState()
@@ -210,11 +208,9 @@ fun AdvancedPage() {
                 }
                 Switch(
                     checked = httpServerRunning,
-                    onCheckedChange = scope.launchAsFn<Boolean> {
+                    onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                         if (it) {
-                            if (!checkOrRequestPermission(context, notificationState)) {
-                                return@launchAsFn
-                            }
+                            requiredPermission(context, notificationState)
                             HttpService.start()
                         } else {
                             HttpService.stop()
@@ -274,11 +270,9 @@ fun AdvancedPage() {
                     name = "截屏服务",
                     desc = "生成快照需要获取屏幕截图",
                     checked = screenshotRunning,
-                    onCheckedChange = scope.launchAsFn<Boolean> {
+                    onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                         if (it) {
-                            if (!checkOrRequestPermission(context, notificationState)) {
-                                return@launchAsFn
-                            }
+                            requiredPermission(context, notificationState)
                             val mediaProjectionManager =
                                 context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
                             val activityResult =
@@ -298,14 +292,10 @@ fun AdvancedPage() {
                 name = "悬浮窗服务",
                 desc = "显示截屏按钮,便于用户主动保存快照",
                 checked = floatingRunning,
-                onCheckedChange = scope.launchAsFn<Boolean> {
+                onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
-                        if (!checkOrRequestPermission(context, notificationState)) {
-                            return@launchAsFn
-                        }
-                        if (!checkOrRequestPermission(context, canDrawOverlaysState)) {
-                            return@launchAsFn
-                        }
+                        requiredPermission(context, notificationState)
+                        requiredPermission(context, canDrawOverlaysState)
                         val intent = Intent(context, FloatingService::class.java)
                         ContextCompat.startForegroundService(context, intent)
                     } else {

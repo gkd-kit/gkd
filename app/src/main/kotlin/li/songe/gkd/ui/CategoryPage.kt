@@ -50,10 +50,11 @@ import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.TowLineText
-import li.songe.gkd.ui.component.getDialogResult
+import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.EnableGroupOption
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.findOption
@@ -66,6 +67,8 @@ import li.songe.gkd.util.updateSubscription
 @Composable
 fun CategoryPage(subsItemId: Long) {
     val navController = LocalNavController.current
+    val mainVm = LocalMainViewModel.current
+
     val vm = hiltViewModel<CategoryVm>()
     val subsItem by vm.subsItemFlow.collectAsState()
     val subsRaw by vm.subsRawFlow.collectAsState()
@@ -166,10 +169,10 @@ fun CategoryPage(subsItemId: Long) {
                                 }, onClick = {
                                     expanded = false
                                     vm.viewModelScope.launchTry {
-                                        val result = getDialogResult(
-                                            "删除类别", "是否删除类别 ${category.name} ?"
+                                        mainVm.dialogFlow.waitResult(
+                                            title = "删除类别",
+                                            text = "是否删除类别 ${category.name} ?"
                                         )
-                                        if (!result) return@launchTry
                                         subsItem?.apply {
                                             updateSubscription(subsRaw!!.copy(categories = subsRaw!!.categories.filter { c -> c.key != category.key }))
                                             DbSet.subsItemDao.update(copy(mtime = System.currentTimeMillis()))

@@ -59,23 +59,24 @@ import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.TowLineText
-import li.songe.gkd.ui.component.getDialogResult
+import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.destinations.GlobalRuleExcludePageDestination
 import li.songe.gkd.ui.destinations.GroupImagePageDestination
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.encodeToJson5String
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
-import com.ramcosta.composedestinations.navigation.navigate
-import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
@@ -85,6 +86,7 @@ import li.songe.gkd.util.updateSubscription
 @Composable
 fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
     val navController = LocalNavController.current
+    val mainVm = LocalMainViewModel.current
     val vm = hiltViewModel<GlobalRuleVm>()
     val subsItem by vm.subsItemFlow.collectAsState()
     val rawSubs = vm.subsRawFlow.collectAsState().value
@@ -253,13 +255,10 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                                     onClick = {
                                         expanded = false
                                         vm.viewModelScope.launchTry {
-                                            if (!getDialogResult(
-                                                    "删除规则组",
-                                                    "是否删除 ${group.name} ?"
-                                                )
-                                            ) {
-                                                return@launchTry
-                                            }
+                                            mainVm.dialogFlow.waitResult(
+                                                title = "删除规则组",
+                                                text = "是否删除 ${group.name} ?"
+                                            )
                                             updateSubscription(
                                                 rawSubs!!.copy(
                                                     globalGroups = rawSubs.globalGroups.filter { g -> g.key != group.key }

@@ -21,7 +21,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
+import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
@@ -41,11 +41,11 @@ import li.songe.gkd.ui.destinations.CategoryPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.util.LOCAL_SUBS_ID
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.formatTimeAgo
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
-import com.ramcosta.composedestinations.navigation.navigate
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.subsLoadErrorsFlow
 import li.songe.gkd.util.subsRefreshErrorsFlow
@@ -67,12 +67,11 @@ fun SubsItemCard(
     onCheckedChange: ((Boolean) -> Unit)? = null,
     onSelectedChange: (() -> Unit)? = null,
 ) {
-    val scope = rememberCoroutineScope()
     val subsLoadError by remember(subsItem.id) {
-        subsLoadErrorsFlow.map(scope) { it[subsItem.id] }
+        subsLoadErrorsFlow.map(vm.viewModelScope) { it[subsItem.id] }
     }.collectAsState()
     val subsRefreshError by remember(subsItem.id) {
-        subsRefreshErrorsFlow.map(scope) { it[subsItem.id] }
+        subsRefreshErrorsFlow.map(vm.viewModelScope) { it[subsItem.id] }
     }.collectAsState()
     val subsRefreshing by subsRefreshingFlow.collectAsState()
     var expanded by remember { mutableStateOf(false) }
@@ -197,6 +196,7 @@ private fun SubsMenuItem(
 ) {
     val navController = LocalNavController.current
     val context = LocalContext.current
+    val mainVm = LocalMainViewModel.current
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = { onExpandedChange(false) }
@@ -278,11 +278,10 @@ private fun SubsMenuItem(
                 onClick = {
                     onExpandedChange(false)
                     vm.viewModelScope.launchTry {
-                        val result = getDialogResult(
-                            "删除订阅",
-                            "是否删除订阅 ${subscription?.name ?: subItem.id} ?",
+                        mainVm.dialogFlow.waitResult(
+                            title = "删除订阅",
+                            text = "是否删除订阅 ${subscription?.name ?: subItem.id} ?",
                         )
-                        if (!result) return@launchTry
                         deleteSubscription(subItem.id)
                     }
                 }

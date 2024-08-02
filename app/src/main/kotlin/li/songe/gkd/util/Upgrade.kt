@@ -14,6 +14,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.AppUtils
 import com.blankj.utilcode.util.NetworkUtils
 import io.ktor.client.call.body
@@ -29,7 +30,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import li.songe.gkd.BuildConfig
-import li.songe.gkd.appScope
+import li.songe.gkd.MainViewModel
 import java.io.File
 import java.net.URI
 
@@ -50,10 +51,13 @@ data class VersionLog(
     val desc: String,
 )
 
-val checkUpdatingFlow by lazy { MutableStateFlow(false) }
-val newVersionFlow by lazy { MutableStateFlow<NewVersion?>(null) }
-val downloadStatusFlow by lazy { MutableStateFlow<LoadStatus<String>?>(null) }
-suspend fun checkUpdate(): NewVersion? {
+class UpdateStatus {
+    val checkUpdatingFlow = MutableStateFlow(false)
+    val newVersionFlow = MutableStateFlow<NewVersion?>(null)
+    val downloadStatusFlow = MutableStateFlow<LoadStatus<String>?>(null)
+}
+
+suspend fun UpdateStatus.checkUpdate(): NewVersion? {
     if (checkUpdatingFlow.value) return null
     val isAvailable = withContext(Dispatchers.IO) { NetworkUtils.isAvailable() }
     if (!isAvailable) {
@@ -75,7 +79,7 @@ suspend fun checkUpdate(): NewVersion? {
     return null
 }
 
-fun startDownload(newVersion: NewVersion) {
+private fun UpdateStatus.startDownload(viewModel: MainViewModel, newVersion: NewVersion) {
     if (downloadStatusFlow.value is LoadStatus.Loading) return
     downloadStatusFlow.value = LoadStatus.Loading(0f)
     val newApkFile = File(newVersionApkDir, "v${newVersion.versionCode}.apk")
@@ -83,7 +87,7 @@ fun startDownload(newVersion: NewVersion) {
         newApkFile.delete()
     }
     var job: Job? = null
-    job = appScope.launch(Dispatchers.IO) {
+    job = viewModel.viewModelScope.launch(Dispatchers.IO) {
         try {
             val channel = client.get(URI(UPDATE_URL).resolve(newVersion.downloadUrl).toString()) {
                 onDownload { bytesSentTotal, contentLength ->
@@ -112,8 +116,9 @@ fun startDownload(newVersion: NewVersion) {
 }
 
 @Composable
-fun UpgradeDialog() {
-    val newVersion by newVersionFlow.collectAsState()
+fun UpgradeDialog(status: UpdateStatus) {
+    val mainVm = LocalMainViewModel.current
+    val newVersion by status.newVersionFlow.collectAsState()
     newVersion?.let { newVersionVal ->
         AlertDialog(title = {
             Text(text = "检测到新版本")
@@ -134,19 +139,19 @@ fun UpgradeDialog() {
 
         }, onDismissRequest = { }, confirmButton = {
             TextButton(onClick = {
-                newVersionFlow.value = null
-                startDownload(newVersionVal)
+                status.newVersionFlow.value = null
+                status.startDownload(mainVm, newVersionVal)
             }) {
                 Text(text = "下载更新")
             }
         }, dismissButton = {
-            TextButton(onClick = { newVersionFlow.value = null }) {
+            TextButton(onClick = { status.newVersionFlow.value = null }) {
                 Text(text = "取消")
             }
         })
     }
 
-    val downloadStatus by downloadStatusFlow.collectAsState()
+    val downloadStatus by status.downloadStatusFlow.collectAsState()
     downloadStatus?.let { downloadStatusVal ->
         when (downloadStatusVal) {
             is LoadStatus.Loading -> {
@@ -160,7 +165,7 @@ fun UpgradeDialog() {
                     onDismissRequest = {},
                     confirmButton = {
                         TextButton(onClick = {
-                            downloadStatusFlow.value = LoadStatus.Failure(
+                            status.downloadStatusFlow.value = LoadStatus.Failure(
                                 Exception("终止下载")
                             )
                         }) {
@@ -178,10 +183,10 @@ fun UpgradeDialog() {
                             it.message ?: it.toString()
                         })
                     },
-                    onDismissRequest = { downloadStatusFlow.value = null },
+                    onDismissRequest = { status.downloadStatusFlow.value = null },
                     confirmButton = {
                         TextButton(onClick = {
-                            downloadStatusFlow.value = null
+                            status.downloadStatusFlow.value = null
                         }) {
                             Text(text = "关闭")
                         }
@@ -190,19 +195,20 @@ fun UpgradeDialog() {
             }
 
             is LoadStatus.Success -> {
-                AlertDialog(title = { Text(text = "新版本下载完毕") },
+                AlertDialog(
+                    title = { Text(text = "新版本下载完毕") },
                     onDismissRequest = {},
                     dismissButton = {
                         TextButton(onClick = {
-                            downloadStatusFlow.value = null
+                            status.downloadStatusFlow.value = null
                         }) {
                             Text(text = "关闭")
                         }
                     },
                     confirmButton = {
-                        TextButton(onClick = {
+                        TextButton(onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
                             AppUtils.installApp(downloadStatusVal.result)
-                        }) {
+                        })) {
                             Text(text = "安装")
                         }
                     })

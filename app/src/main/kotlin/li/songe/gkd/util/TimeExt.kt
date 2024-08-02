@@ -41,26 +41,26 @@ private const val defaultThrottleInterval = 1000L
 
 fun throttle(
     interval: Long = defaultThrottleInterval,
-    fn: (() -> Unit)?,
+    fn: (() -> Unit),
 ): (() -> Unit) {
     return {
         val t = System.currentTimeMillis()
         if (t - globalThrottleLastTriggerTime > interval) {
             globalThrottleLastTriggerTime = t
-            fn?.invoke()
+            fn.invoke()
         }
     }
 }
 
 fun <T> throttle(
     interval: Long = defaultThrottleInterval,
-    fn: ((T) -> Unit)?,
+    fn: ((T) -> Unit),
 ): ((T) -> Unit) {
     return {
         val t = System.currentTimeMillis()
         if (t - globalThrottleLastTriggerTime > interval) {
             globalThrottleLastTriggerTime = t
-            fn?.invoke(it)
+            fn.invoke(it)
         }
     }
 }

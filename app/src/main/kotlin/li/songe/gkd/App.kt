@@ -57,9 +57,11 @@ class App : Application() {
             LogUtils.d("UncaughtExceptionHandler", t, e)
             errorHandler?.uncaughtException(t, e)
         }
+        MMKV.initialize(this)
+
         Toaster.init(this)
         setReactiveToastStyle()
-        MMKV.initialize(this)
+
         LogUtils.getConfig().apply {
             setConsoleSwitch(BuildConfig.DEBUG)
             saveDays = 7

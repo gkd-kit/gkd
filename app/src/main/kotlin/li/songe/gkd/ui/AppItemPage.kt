@@ -41,7 +41,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +58,7 @@ import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonObject
@@ -68,9 +68,11 @@ import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.TowLineText
-import li.songe.gkd.ui.component.getDialogResult
+import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.destinations.GroupImagePageDestination
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
@@ -80,8 +82,6 @@ import li.songe.gkd.util.json
 import li.songe.gkd.util.json5ToJson
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
-import com.ramcosta.composedestinations.navigation.navigate
-import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
@@ -94,8 +94,8 @@ fun AppItemPage(
     appId: String,
     focusGroupKey: Int? = null, // 背景/边框高亮一下
 ) {
-    val scope = rememberCoroutineScope()
     val navController = LocalNavController.current
+    val mainVm = LocalMainViewModel.current
     val vm = hiltViewModel<AppItemVm>()
     val subsItem = vm.subsItemFlow.collectAsState().value
     val subsRaw = vm.subsRawFlow.collectAsState().value
@@ -271,12 +271,12 @@ fun AppItemPage(
                                         Text(text = "删除", color = MaterialTheme.colorScheme.error)
                                     },
                                     onClick = {
+                                        expanded = false
                                         vm.viewModelScope.launchTry {
-                                            val result = getDialogResult(
-                                                "删除规则组",
-                                                "确定删除规则组 ${group.name} ?"
+                                            mainVm.dialogFlow.waitResult(
+                                                title = "删除规则组",
+                                                text = "确定删除规则组 ${group.name} ?"
                                             )
-                                            if (!result) return@launchTry
                                             val newSubsRaw = subsRaw.copy(
                                                 apps = subsRaw.apps
                                                     .toMutableList()
@@ -297,7 +297,6 @@ fun AppItemPage(
                                             )
                                             toast("删除成功")
                                         }
-                                        expanded = false
                                     },
                                 )
                             }
@@ -315,7 +314,7 @@ fun AppItemPage(
                     val subsConfig = subsConfigs.find { it.groupKey == group.key }
                     Switch(
                         checked = groupEnable, modifier = Modifier,
-                        onCheckedChange = scope.launchAsFn { enable ->
+                        onCheckedChange = vm.viewModelScope.launchAsFn { enable ->
                             val newItem = (subsConfig?.copy(enable = enable) ?: SubsConfig(
                                 type = SubsConfig.AppGroupType,
                                 subsItemId = subsItemId,
