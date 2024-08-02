@@ -28,7 +28,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
 import com.ramcosta.composedestinations.navigation.navigate
@@ -36,10 +35,10 @@ import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.deleteSubscription
-import li.songe.gkd.data.exportData
 import li.songe.gkd.ui.destinations.CategoryPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.destinations.SubsPageDestination
+import li.songe.gkd.ui.home.HomeVm
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
@@ -61,7 +60,7 @@ fun SubsItemCard(
     subsItem: SubsItem,
     subscription: RawSubscription?,
     index: Int,
-    vm: ViewModel,
+    vm: HomeVm,
     isSelectedMode: Boolean,
     isSelected: Boolean,
     onCheckedChange: ((Boolean) -> Unit)? = null,
@@ -192,7 +191,7 @@ private fun SubsMenuItem(
     onExpandedChange: ((Boolean) -> Unit),
     subItem: SubsItem,
     subscription: RawSubscription?,
-    vm: ViewModel
+    vm: HomeVm
 ) {
     val navController = LocalNavController.current
     val context = LocalContext.current
@@ -243,7 +242,7 @@ private fun SubsMenuItem(
             onClick = {
                 onExpandedChange(false)
                 vm.viewModelScope.launchTry(Dispatchers.IO) {
-                    exportData(context, listOf(subItem.id))
+                    vm.showShareDataIdsFlow.value = setOf(subItem.id)
                 }
             }
         )

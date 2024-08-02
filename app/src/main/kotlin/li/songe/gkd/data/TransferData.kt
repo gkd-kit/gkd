@@ -1,6 +1,5 @@
 package li.songe.gkd.data
 
-import android.content.Context
 import android.net.Uri
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.UriUtils
@@ -17,11 +16,11 @@ import li.songe.gkd.util.exportZipDir
 import li.songe.gkd.util.importZipDir
 import li.songe.gkd.util.json
 import li.songe.gkd.util.resetDirectory
-import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
+import java.io.File
 
 @Serializable
 private data class TransferData(
@@ -52,8 +51,7 @@ private suspend fun importTransferData(transferData: TransferData): Boolean {
     return hasNewSubsItem
 }
 
-suspend fun exportData(context: Context, subsIds: Collection<Long>) {
-    if (subsIds.isEmpty()) return
+suspend fun exportData(subsIds: Collection<Long>):File {
     exportZipDir.resetDirectory()
     val dataFile = exportZipDir.resolve("${TransferData.TYPE}.json")
     dataFile.writeText(
@@ -74,7 +72,7 @@ suspend fun exportData(context: Context, subsIds: Collection<Long>) {
     ZipUtils.zipFiles(listOf(dataFile, files), file)
     dataFile.delete()
     files.deleteRecursively()
-    context.shareFile(file, "分享数据文件")
+    return file
 }
 
 suspend fun importData(uri: Uri) {

@@ -66,6 +66,7 @@ import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.saveFileToDownloads
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
@@ -149,12 +150,23 @@ fun useSettingsPage(): ScaffoldExt {
                     .fillMaxWidth()
                     .padding(16.dp)
                 Text(
-                    text = "调用系统分享", modifier = Modifier
+                    text = "分享数据", modifier = Modifier
                         .clickable(onClick = throttle {
                             showShareLogDlg = false
                             vm.viewModelScope.launchTry(Dispatchers.IO) {
                                 val logZipFile = buildLogFile()
                                 context.shareFile(logZipFile, "分享日志文件")
+                            }
+                        })
+                        .then(modifier)
+                )
+                Text(
+                    text = "保存到下载", modifier = Modifier
+                        .clickable(onClick = throttle {
+                            showShareLogDlg = false
+                            vm.viewModelScope.launchTry(Dispatchers.IO) {
+                                val logZipFile = buildLogFile()
+                                context.saveFileToDownloads(logZipFile)
                             }
                         })
                         .then(modifier)

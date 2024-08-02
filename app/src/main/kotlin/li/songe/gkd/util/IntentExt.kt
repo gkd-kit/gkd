@@ -1,14 +1,23 @@
 package li.songe.gkd.util
 
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
 import com.blankj.utilcode.util.LogUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import li.songe.gkd.MainActivity
+import li.songe.gkd.permission.canWriteExternalStorage
+import li.songe.gkd.permission.requiredPermission
 import java.io.File
 
-fun Context.shareFile(file: File, tile: String) {
+fun Context.shareFile(file: File, title: String) {
     val uri = FileProvider.getUriForFile(
         this, "${packageName}.provider", file
     )
@@ -21,9 +30,34 @@ fun Context.shareFile(file: File, tile: String) {
     }
     tryStartActivity(
         Intent.createChooser(
-            intent, tile
+            intent, title
         )
     )
+}
+
+suspend fun MainActivity.saveFileToDownloads(file: File) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        requiredPermission(this, canWriteExternalStorage)
+        val targetFile = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+            file.name
+        )
+        targetFile.writeBytes(file.readBytes())
+    } else {
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, file.name)
+            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+        }
+        withContext(Dispatchers.IO) {
+            val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                ?: error("创建URI失败")
+            contentResolver.openOutputStream(uri)?.use { outputStream ->
+                outputStream.write(file.readBytes())
+                outputStream.flush()
+            }
+        }
+    }
+    toast("已保存 ${file.name} 到下载")
 }
 
 fun Context.tryStartActivity(intent: Intent) {
