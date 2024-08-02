@@ -36,7 +36,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,10 +56,11 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.SubsAppCard
 import li.songe.gkd.ui.component.TowLineText
-import li.songe.gkd.ui.component.getDialogResult
+import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.menuPadding
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SortTypeOption
@@ -80,8 +80,8 @@ import li.songe.gkd.util.updateSubscription
 fun SubsPage(
     subsItemId: Long,
 ) {
-    val scope = rememberCoroutineScope()
     val navController = LocalNavController.current
+    val mainVm = LocalMainViewModel.current
 
     val vm = hiltViewModel<SubsVm>()
     val subsItem = vm.subsItemFlow.collectAsState().value
@@ -253,7 +253,7 @@ fun SubsPage(
                     onClick = throttle {
                         navController.navigate(AppItemPageDestination(subsItemId, appRaw.id))
                     },
-                    onValueChange = throttle(fn = scope.launchAsFn { enable ->
+                    onValueChange = throttle(fn = vm.viewModelScope.launchAsFn { enable ->
                         val newItem = subsConfig?.copy(
                             enable = enable
                         ) ?: SubsConfig(
@@ -266,11 +266,10 @@ fun SubsPage(
                     }),
                     showMenu = editable,
                     onDelClick = throttle(fn = vm.viewModelScope.launchAsFn {
-                        val result = getDialogResult(
-                            "删除规则组",
-                            "确定删除 ${appInfoCache[appRaw.id]?.name ?: appRaw.name ?: appRaw.id} 下所有规则组?"
+                        mainVm.dialogFlow.waitResult(
+                            title = "删除规则组",
+                            text = "确定删除 ${appInfoCache[appRaw.id]?.name ?: appRaw.name ?: appRaw.id} 下所有规则组?"
                         )
-                        if (!result) return@launchAsFn
                         if (subsRaw != null && subsItem != null) {
                             updateSubscription(subsRaw.copy(apps = subsRaw.apps.filter { a -> a.id != appRaw.id }))
                             DbSet.subsItemDao.update(subsItem.copy(mtime = System.currentTimeMillis()))

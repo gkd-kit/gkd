@@ -31,7 +31,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -45,6 +44,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -60,12 +60,11 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.StartEllipsisText
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
-import com.ramcosta.composedestinations.navigation.navigate
-import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
@@ -74,7 +73,6 @@ import li.songe.gkd.util.toast
 @Destination(style = ProfileTransitions::class)
 @Composable
 fun ClickLogPage() {
-    val scope = rememberCoroutineScope()
     val navController = LocalNavController.current
 
     val vm = hiltViewModel<ClickLogVm>()
@@ -98,7 +96,7 @@ fun ClickLogPage() {
                 )
             } else {
                 DbSet.subsConfigDao.queryGlobalGroupTypeConfig(log.subsId, log.groupKey)
-            }).map { s -> s.firstOrNull() }.stateIn(scope, SharingStarted.Eagerly, null)
+            }).map { s -> s.firstOrNull() }.stateIn(vm.viewModelScope, SharingStarted.Eagerly, null)
             setPreviewConfigFlow(stateFlow)
         } else {
             setPreviewConfigFlow(MutableStateFlow(null))
@@ -210,26 +208,28 @@ fun ClickLogPage() {
                 }
                 val appInfo = appInfoCache[clickLog.appId]
 
-                Text(text = "查看规则组", modifier = Modifier
-                    .clickable(onClick = throttle {
-                        clickLog.appId ?: return@throttle
-                        if (clickLog.groupType == SubsConfig.AppGroupType) {
-                            navController.navigate(
-                                AppItemPageDestination(
-                                    clickLog.subsId, clickLog.appId, clickLog.groupKey
+                Text(
+                    text = "查看规则组", modifier = Modifier
+                        .clickable(onClick = throttle {
+                            clickLog.appId ?: return@throttle
+                            if (clickLog.groupType == SubsConfig.AppGroupType) {
+                                navController.navigate(
+                                    AppItemPageDestination(
+                                        clickLog.subsId, clickLog.appId, clickLog.groupKey
+                                    )
                                 )
-                            )
-                        } else if (clickLog.groupType == SubsConfig.GlobalGroupType) {
-                            navController.navigate(
-                                GlobalRulePageDestination(
-                                    clickLog.subsId, clickLog.groupKey
+                            } else if (clickLog.groupType == SubsConfig.GlobalGroupType) {
+                                navController.navigate(
+                                    GlobalRulePageDestination(
+                                        clickLog.subsId, clickLog.groupKey
+                                    )
                                 )
-                            )
-                        }
-                        previewClickLog = null
-                    })
-                    .fillMaxWidth()
-                    .padding(16.dp))
+                            }
+                            previewClickLog = null
+                        })
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                )
                 if (clickLog.groupType == SubsConfig.GlobalGroupType && clickLog.appId != null) {
                     val group =
                         subsIdToRaw[clickLog.subsId]?.globalGroups?.find { g -> g.key == clickLog.groupKey }
@@ -315,7 +315,7 @@ fun ClickLogPage() {
                 Text(
                     text = "删除记录",
                     modifier = Modifier
-                        .clickable(onClick = scope.launchAsFn {
+                        .clickable(onClick = vm.viewModelScope.launchAsFn {
                             previewClickLog = null
                             DbSet.clickLogDao.delete(clickLog)
                             toast("删除成功")
@@ -333,7 +333,7 @@ fun ClickLogPage() {
             onDismissRequest = { showDeleteDlg = false },
             title = { Text(text = "是否删除全部点击触发记录?") },
             confirmButton = {
-                TextButton(onClick = scope.launchAsFn(Dispatchers.IO) {
+                TextButton(onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                     showDeleteDlg = false
                     DbSet.clickLogDao.deleteAll()
                 }) {

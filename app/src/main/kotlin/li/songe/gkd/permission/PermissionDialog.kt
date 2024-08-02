@@ -1,26 +1,23 @@
 package li.songe.gkd.permission
 
-import android.app.Activity
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import com.hjq.permissions.OnPermissionCallback
-import com.hjq.permissions.XXPermissions
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.yield
+import li.songe.gkd.MainActivity
+import kotlin.coroutines.coroutineContext
 
 data class AuthReason(
     val text: String,
     val confirm: () -> Unit
 )
 
-val authReasonFlow = MutableStateFlow<AuthReason?>(null)
-
 @Composable
-fun AuthDialog() {
+fun AuthDialog(authReasonFlow: MutableStateFlow<AuthReason?>) {
     val authAction = authReasonFlow.collectAsState().value
     if (authAction != null) {
         AlertDialog(
@@ -53,45 +50,29 @@ sealed class PermissionResult {
     data class Denied(val doNotAskAgain: Boolean) : PermissionResult()
 }
 
-suspend fun asyncRequestPermission(
-    context: Activity,
-    permission: String,
-): PermissionResult {
-    if (XXPermissions.isGranted(context, permission)) {
-        return PermissionResult.Granted
-    }
-    return suspendCoroutine { continuation ->
-        XXPermissions.with(context)
-            .unchecked()
-            .permission(permission)
-            .request(object : OnPermissionCallback {
-                override fun onGranted(permissions: MutableList<String>, allGranted: Boolean) {
-                    if (allGranted) {
-                        continuation.resume(PermissionResult.Granted)
-                    } else {
-                        continuation.resume(PermissionResult.Denied(false))
-                    }
-                }
-
-                override fun onDenied(permissions: MutableList<String>, doNotAskAgain: Boolean) {
-                    continuation.resume(PermissionResult.Denied(doNotAskAgain))
-                }
-            })
-    }
-}
-
-suspend fun checkOrRequestPermission(
-    context: Activity,
+private suspend fun checkOrRequestPermission(
+    context: MainActivity,
     permissionState: PermissionState
 ): Boolean {
     if (!permissionState.updateAndGet()) {
         val result = permissionState.request?.let { it(context) } ?: return false
         if (result is PermissionResult.Denied) {
             if (result.doNotAskAgain) {
-                authReasonFlow.value = permissionState.reason
+                context.mainVm.authReasonFlow.value = permissionState.reason
             }
             return false
         }
     }
     return true
+}
+
+suspend fun requiredPermission(
+    context: MainActivity,
+    permissionState: PermissionState
+) {
+    val r = checkOrRequestPermission(context, permissionState)
+    if (!r) {
+        coroutineContext[Job]?.cancel()
+        yield()
+    }
 }

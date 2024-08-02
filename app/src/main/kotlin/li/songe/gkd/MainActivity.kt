@@ -28,9 +28,10 @@ import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.service.updateLauncherAppId
 import li.songe.gkd.ui.NavGraphs
-import li.songe.gkd.ui.component.ConfirmDialog
+import li.songe.gkd.ui.component.BuildDialog
 import li.songe.gkd.ui.theme.AppTheme
 import li.songe.gkd.util.LocalLauncher
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.LocalPickContentLauncher
 import li.songe.gkd.util.UpgradeDialog
@@ -64,16 +65,19 @@ class MainActivity : CompositionActivity({
             CompositionLocalProvider(
                 LocalLauncher provides launcher,
                 LocalPickContentLauncher provides pickContentLauncher,
-                LocalNavController provides navController
+                LocalNavController provides navController,
+                LocalMainViewModel provides mainVm
             ) {
                 DestinationsNavHost(
                     navGraph = NavGraphs.root,
                     navController = navController
                 )
+                AuthDialog(mainVm.authReasonFlow)
+                BuildDialog(mainVm.dialogFlow)
+                if (BuildConfig.ENABLED_UPDATE) {
+                    UpgradeDialog(mainVm.updateStatus)
+                }
             }
-            ConfirmDialog()
-            AuthDialog()
-            UpgradeDialog()
         }
     }
 }) {
@@ -112,7 +116,7 @@ fun Activity.navToMainActivity() {
     finish()
 }
 
-fun updateServiceRunning() {
+private fun updateServiceRunning() {
     ManageService.isRunning.value = ServiceUtils.isServiceRunning(ManageService::class.java)
     GkdAbService.isRunning.value = ServiceUtils.isServiceRunning(GkdAbService::class.java)
     FloatingService.isRunning.value = ServiceUtils.isServiceRunning(FloatingService::class.java)

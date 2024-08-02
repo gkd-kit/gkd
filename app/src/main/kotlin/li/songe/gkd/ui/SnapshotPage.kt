@@ -1,7 +1,6 @@
 package li.songe.gkd.ui
 
 import android.graphics.Bitmap
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,7 +32,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -49,24 +47,25 @@ import com.blankj.utilcode.util.ImageUtils
 import com.blankj.utilcode.util.UriUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import li.songe.gkd.MainActivity
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.permission.canSaveToAlbumState
-import li.songe.gkd.permission.checkOrRequestPermission
+import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.ui.component.StartEllipsisText
 import li.songe.gkd.ui.destinations.ImagePreviewPageDestination
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.IMPORT_BASE_URL
 import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.LocalPickContentLauncher
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.launchAsFn
-import com.ramcosta.composedestinations.navigation.navigate
-import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.snapshotZipDir
 import li.songe.gkd.util.throttle
@@ -76,8 +75,7 @@ import li.songe.gkd.util.toast
 @Destination(style = ProfileTransitions::class)
 @Composable
 fun SnapshotPage() {
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current as ComponentActivity
+    val context = LocalContext.current as MainActivity
     val navController = LocalNavController.current
     val colorScheme = MaterialTheme.colorScheme
 
@@ -184,7 +182,7 @@ fun SnapshotPage() {
                     .padding(16.dp)
                 Text(
                     text = "查看", modifier = Modifier
-                        .clickable(onClick = throttle(fn = scope.launchAsFn {
+                        .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             navController.navigate(
                                 ImagePreviewPageDestination(
                                     filePath = snapshotVal.screenshotFile.absolutePath,
@@ -238,9 +236,7 @@ fun SnapshotPage() {
                     text = "保存截图到相册",
                     modifier = Modifier
                         .clickable(onClick = vm.viewModelScope.launchAsFn {
-                            if (!checkOrRequestPermission(context, canSaveToAlbumState)) {
-                                return@launchAsFn
-                            }
+                            requiredPermission(context, canSaveToAlbumState)
                             ImageUtils.save2Album(
                                 ImageUtils.getBitmap(snapshotVal.screenshotFile),
                                 Bitmap.CompressFormat.PNG,
@@ -285,7 +281,7 @@ fun SnapshotPage() {
                 HorizontalDivider()
                 Text(
                     text = "删除", modifier = Modifier
-                        .clickable(onClick = scope.launchAsFn {
+                        .clickable(onClick = vm.viewModelScope.launchAsFn {
                             DbSet.snapshotDao.delete(snapshotVal)
                             withContext(Dispatchers.IO) {
                                 SnapshotExt.removeAssets(snapshotVal.id)
@@ -366,7 +362,7 @@ fun SnapshotPage() {
             title = { Text(text = "是否删除全部快照记录?") },
             confirmButton = {
                 TextButton(
-                    onClick = scope.launchAsFn(Dispatchers.IO) {
+                    onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                         showDeleteDlg = false
                         snapshots.forEach { s ->
                             SnapshotExt.removeAssets(s.id)

@@ -40,33 +40,32 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.LogUtils
+import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.BuildConfig.ENABLED_UPDATE
 import li.songe.gkd.MainActivity
-import li.songe.gkd.appScope
 import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.AboutPageDestination
 import li.songe.gkd.ui.destinations.AdvancedPageDestination
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.ui.theme.supportDynamicColor
 import li.songe.gkd.util.DarkThemeOption
 import li.songe.gkd.util.LoadStatus
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.UpdateTimeOption
 import li.songe.gkd.util.buildLogFile
 import li.songe.gkd.util.checkUpdate
-import li.songe.gkd.util.checkUpdatingFlow
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
-import com.ramcosta.composedestinations.navigation.navigate
-import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
@@ -79,6 +78,7 @@ val settingsNav = BottomNavItem(
 @Composable
 fun useSettingsPage(): ScaffoldExt {
     val context = LocalContext.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     val store by storeFlow.collectAsState()
     val vm = hiltViewModel<HomeVm>()
@@ -92,7 +92,7 @@ fun useSettingsPage(): ScaffoldExt {
         mutableStateOf(false)
     }
 
-    val checkUpdating by checkUpdatingFlow.collectAsState()
+    val checkUpdating by mainVm.updateStatus.checkUpdatingFlow.collectAsState()
 
     if (showToastInputDlg) {
         var value by remember {
@@ -342,9 +342,9 @@ fun useSettingsPage(): ScaffoldExt {
                 Row(
                     modifier = Modifier
                         .clickable(
-                            onClick = throttle(fn = appScope.launchAsFn {
-                                if (checkUpdatingFlow.value) return@launchAsFn
-                                val newVersion = checkUpdate()
+                            onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
+                                if (mainVm.updateStatus.checkUpdatingFlow.value) return@launchAsFn
+                                val newVersion = mainVm.updateStatus.checkUpdate()
                                 if (newVersion == null) {
                                     toast("暂无更新")
                                 }
@@ -378,7 +378,7 @@ fun useSettingsPage(): ScaffoldExt {
                         log2FileSwitch = it
                     )
                     if (!it) {
-                        appScope.launchTry(Dispatchers.IO) {
+                        mainVm.viewModelScope.launchTry(Dispatchers.IO) {
                             val logFiles = LogUtils.getLogFiles()
                             if (logFiles.isNotEmpty()) {
                                 logFiles.forEach { f ->

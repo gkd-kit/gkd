@@ -63,9 +63,11 @@ import li.songe.gkd.data.exportData
 import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SubsItemCard
-import li.songe.gkd.ui.component.getDialogResult
+import li.songe.gkd.ui.component.getResult
+import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalLauncher
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.isSafeUrl
 import li.songe.gkd.util.launchAsFn
@@ -85,6 +87,7 @@ val subsNav = BottomNavItem(
 fun useSubsManagePage(): ScaffoldExt {
     val launcher = LocalLauncher.current
     val context = LocalContext.current
+    val mainVm = LocalMainViewModel.current
 
     val vm = hiltViewModel<HomeVm>()
     val subItems by subsItemsFlow.collectAsState()
@@ -154,11 +157,10 @@ fun useSubsManagePage(): ScaffoldExt {
                 }
                 vm.viewModelScope.launchTry {
                     if (!isSafeUrl(link)) {
-                        val result = getDialogResult(
-                            "未知来源",
-                            "你正在添加一个未验证的远程订阅\n\n这可能含有恶意的规则\n\n是否仍然确认添加?"
+                        mainVm.dialogFlow.waitResult(
+                            title = "未知来源",
+                            text = "你正在添加一个未验证的远程订阅\n\n这可能含有恶意的规则\n\n是否仍然确认添加?"
                         )
-                        if (!result) return@launchTry
                     }
                     showAddLinkDialog = false
                     vm.addSubsFromUrl(url = link)
@@ -203,9 +205,9 @@ fun useSubsManagePage(): ScaffoldExt {
                     }
                     if (canDeleteIds.isNotEmpty()) {
                         IconButton(onClick = vm.viewModelScope.launchAsFn {
-                            val result = getDialogResult(
-                                "删除订阅",
-                                "是否删除所选 ${canDeleteIds.size} 个订阅?\n\n注: 不包含本地订阅",
+                            val result = mainVm.dialogFlow.getResult(
+                                title = "删除订阅",
+                                text = "是否删除所选 ${canDeleteIds.size} 个订阅?\n\n注: 不包含本地订阅",
                             )
                             if (!result) return@launchAsFn
                             deleteSubscription(*canDeleteIds.toLongArray())

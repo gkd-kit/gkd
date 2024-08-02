@@ -62,20 +62,20 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.KeyboardUtils
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
+import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.permission.canQueryPkgState
-import li.songe.gkd.permission.checkOrRequestPermission
+import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.destinations.AppConfigPageDestination
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appRefreshingFlow
 import li.songe.gkd.util.launchAsFn
-import com.ramcosta.composedestinations.navigation.navigate
-import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
@@ -183,7 +183,7 @@ fun useAppListPage(): ScaffoldExt {
                 } else {
                     if (!canQueryPkg) {
                         IconButton(onClick = vm.viewModelScope.launchAsFn {
-                            checkOrRequestPermission(context, canQueryPkgState)
+                            requiredPermission(context, canQueryPkgState)
                         }) {
                             Icon(
                                 imageVector = Icons.Default.PriorityHigh,
