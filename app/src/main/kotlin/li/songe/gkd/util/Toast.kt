@@ -44,12 +44,13 @@ private val circleOutlineProvider by lazy {
     object : ViewOutlineProvider() {
         override fun getOutline(view: View?, outline: Outline?) {
             if (view != null && outline != null) {
+                // 20.sp : line height, 12.dp : top/bottom padding
                 outline.setRoundRect(
                     0,
                     0,
                     view.width,
                     view.height,
-                    view.height / 2f
+                    (12.dp.px * 2 + 20.sp.px) / 2f
                 )
             }
         }
