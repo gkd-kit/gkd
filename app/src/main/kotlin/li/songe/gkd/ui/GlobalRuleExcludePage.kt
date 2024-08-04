@@ -30,6 +30,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -55,7 +56,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
@@ -377,11 +377,12 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                         .focusRequester(focusRequester),
                     placeholder = {
                         Text(
-                            fontSize = 12.sp,
-                            text = tipText
+                            text = tipText,
+                            style = LocalTextStyle.current.copy(fontSize = MaterialTheme.typography.bodySmall.fontSize)
                         )
                     },
                     maxLines = 10,
+                    textStyle = LocalTextStyle.current.copy(fontSize = MaterialTheme.typography.bodySmall.fontSize)
                 )
                 LaunchedEffect(null) {
                     focusRequester.requestFocus()

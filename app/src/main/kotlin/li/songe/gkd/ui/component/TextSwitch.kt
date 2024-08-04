@@ -27,23 +27,18 @@ fun TextSwitch(
         modifier = modifier.itemPadding(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (desc != null) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            if (desc != null) {
                 Text(
                     text = desc,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-        } else {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.bodyLarge,
-            )
         }
         Spacer(modifier = Modifier.width(10.dp))
         Switch(
