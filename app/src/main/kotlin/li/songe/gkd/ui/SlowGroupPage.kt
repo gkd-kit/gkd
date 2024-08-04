@@ -14,37 +14,33 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.ui.component.buildDialogOptions
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
-import com.ramcosta.composedestinations.navigation.navigate
-import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.throttle
 
@@ -53,11 +49,9 @@ import li.songe.gkd.util.throttle
 @Composable
 fun SlowGroupPage() {
     val navController = LocalNavController.current
+    val mainVm = LocalMainViewModel.current
     val ruleSummary by ruleSummaryFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
-    var showInfoDlg by remember {
-        mutableStateOf(false)
-    }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
@@ -77,8 +71,13 @@ fun SlowGroupPage() {
                 },
                 title = { Text(text = if (ruleSummary.slowGroupCount > 0) "缓慢查询-${ruleSummary.slowGroupCount}" else "缓慢查询") },
                 actions = {
-                    IconButton(onClick = {
-                        showInfoDlg = true
+                    IconButton(onClick = throttle {
+                        mainVm.dialogFlow.value = buildDialogOptions(
+                            title = "缓慢查询",
+                            text = "任意单个规则同时满足以下 3 个条件即判定为缓慢查询\n\n1. 选择器右侧无法快速查询且不是主动查询, 或内部使用<<且无法快速查询\n2. preKeys 为空\n3. matchTime 为空或大于 10s",
+                            confirmText = "我知道了",
+                            confirmAction = { mainVm.dialogFlow.value = null }
+                        )
                     }) {
                         Icon(Icons.Outlined.Info, contentDescription = null)
                     }
@@ -137,19 +136,6 @@ fun SlowGroupPage() {
                 }
             }
         }
-    }
-
-    if (showInfoDlg) {
-        AlertDialog(
-            onDismissRequest = { showInfoDlg = false },
-            title = { Text(text = "什么是缓慢查询") },
-            text = { Text(text = "任意单个规则同时满足以下 3 个条件即判定为缓慢查询\n\n1. 选择器右侧无法快速查询且不是主动查询, 或内部使用<<且无法快速查询\n2. preKeys 为空\n3. matchTime 为空或大于 10s") },
-            confirmButton = {
-                TextButton(onClick = { showInfoDlg = false }) {
-                    Text(text = "确定")
-                }
-            },
-        )
     }
 }
 

@@ -202,7 +202,7 @@ fun SnapshotPage() {
                 )
                 HorizontalDivider()
                 Text(
-                    text = "分享数据",
+                    text = "分享到其他应用",
                     modifier = Modifier
                         .clickable(onClick = vm.viewModelScope.launchAsFn {
                             selectedSnapshot = null

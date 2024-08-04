@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
@@ -32,7 +31,6 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -52,27 +50,29 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.buildDialogOptions
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.ResolvedGroup
 import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchTry
-import com.ramcosta.composedestinations.navigation.navigate
-import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.throttle
 
 @RootNavGraph
@@ -186,7 +186,6 @@ fun AppConfigPage(appId: String) {
                 val checked = getChecked(excludeData, g.group, appId, appInfo)
                 TitleGroupCard(globalGroups, i) {
                     AppGroupCard(
-                        vm = vm,
                         group = g.group,
                         checked = checked,
                         onClick = throttle {
@@ -226,7 +225,6 @@ fun AppConfigPage(appId: String) {
             itemsIndexed(appGroups) { i, g ->
                 TitleGroupCard(appGroups, i) {
                     AppGroupCard(
-                        vm = vm,
                         group = g.group,
                         checked = g.enable,
                         onClick = {
@@ -268,23 +266,6 @@ fun AppConfigPage(appId: String) {
             }
         }
     }
-
-    val innerDisabledDlg by vm.innerDisabledDlgFlow.collectAsState()
-    if (innerDisabledDlg) {
-        AlertDialog(
-            title = { Text(text = "内置禁用") },
-            text = {
-                Text(text = "此规则组已经在其 apps 字段中配置对当前应用的禁用, 因此无法手动开启规则组\n\n提示: 这种情况一般在此全局规则无法适配/跳过适配/单独适配当前应用时出现")
-            },
-            onDismissRequest = { vm.innerDisabledDlgFlow.value = false },
-            confirmButton = {
-                TextButton(onClick = { vm.innerDisabledDlgFlow.value = false }) {
-                    Text(text = "我知道了")
-                }
-            }
-        )
-
-    }
 }
 
 @Composable
@@ -313,12 +294,12 @@ private fun TitleGroupCard(groups: List<ResolvedGroup>, i: Int, content: @Compos
 
 @Composable
 private fun AppGroupCard(
-    vm: AppConfigVm,
     group: RawSubscription.RawGroupProps,
     checked: Boolean?,
     onClick: () -> Unit,
     onCheckedChange: ((Boolean) -> Unit)?,
 ) {
+    val mainVm = LocalMainViewModel.current
     Row(
         modifier = Modifier
             .clickable(onClick = onClick)
@@ -380,7 +361,14 @@ private fun AppGroupCard(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                 ) {
-                    vm.innerDisabledDlgFlow.value = true
+                    mainVm.dialogFlow.value = buildDialogOptions(
+                        title = "内置禁用",
+                        text = "此规则组已经在其 apps 字段中配置对当前应用的禁用, 因此无法手动开启规则组\n\n提示: 这种情况一般在此全局规则无法适配/跳过适配/单独适配当前应用时出现",
+                        confirmText = "我知道了",
+                        confirmAction = {
+                            mainVm.dialogFlow.value = null
+                        },
+                    )
                 }
             )
         }

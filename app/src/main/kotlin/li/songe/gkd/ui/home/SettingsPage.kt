@@ -12,7 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -150,7 +150,7 @@ fun useSettingsPage(): ScaffoldExt {
                     .fillMaxWidth()
                     .padding(16.dp)
                 Text(
-                    text = "分享数据", modifier = Modifier
+                    text = "分享到其他应用", modifier = Modifier
                         .clickable(onClick = throttle {
                             showShareLogDlg = false
                             vm.viewModelScope.launchTry(Dispatchers.IO) {
@@ -291,7 +291,7 @@ fun useSettingsPage(): ScaffoldExt {
 
             TextSwitch(
                 name = "系统提示",
-                desc = "系统样式触发提示,频率较高时会被忽略",
+                desc = "系统样式触发提示,频率较高时不显示",
                 checked = store.useSystemToast,
                 onCheckedChange = {
                     storeFlow.value = store.copy(
@@ -402,7 +402,7 @@ fun useSettingsPage(): ScaffoldExt {
                     }
                 })
 
-            SettingItem(title = "分享日志", imageVector = Icons.Default.Share, onClick = {
+            SettingItem(title = "导出日志", imageVector = Icons.Default.Upload, onClick = {
                 showShareLogDlg = true
             })
 
