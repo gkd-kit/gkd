@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.yield
+import li.songe.gkd.util.throttle
 import kotlin.coroutines.coroutineContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -39,13 +40,13 @@ fun buildDialogOptions(
         },
         onDismissRequest = onDismissRequest,
         confirmButton = {
-            TextButton(onClick = confirmAction) {
+            TextButton(onClick = throttle(fn = confirmAction)) {
                 Text(text = confirmText)
             }
         },
         dismissButton = if (dismissText != null && dismissAction != null) {
             {
-                TextButton(onClick = dismissAction) {
+                TextButton(onClick = throttle(fn = dismissAction)) {
                     Text(text = dismissText)
                 }
             }
