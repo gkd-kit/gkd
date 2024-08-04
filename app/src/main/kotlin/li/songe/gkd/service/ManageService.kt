@@ -16,7 +16,6 @@ import li.songe.gkd.notif.abNotif
 import li.songe.gkd.notif.createNotif
 import li.songe.gkd.notif.defaultChannel
 import li.songe.gkd.util.clickCountFlow
-import li.songe.gkd.util.map
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
 
@@ -29,11 +28,14 @@ class ManageService : CompositionService({
         combine(
             ruleSummaryFlow,
             clickCountFlow,
-            storeFlow.map(scope) { it.enableService },
+            storeFlow,
             GkdAbService.isRunning
-        ) { allRules, clickCount, enableService, abRunning ->
+        ) { allRules, clickCount, store, abRunning ->
             if (!abRunning) return@combine "无障碍未授权"
-            if (!enableService) return@combine "服务已暂停"
+            if (!store.enableService) return@combine "服务已暂停"
+            if (store.useCustomNotifText) {
+                return@combine store.customNotifText.replace("$" + "{count}", clickCount.toString())
+            }
             allRules.numText + if (clickCount > 0) {
                 "/${clickCount}点击"
             } else {

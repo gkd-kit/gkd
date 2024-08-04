@@ -23,8 +23,6 @@ import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Upgrade
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
@@ -34,7 +32,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -55,7 +52,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
@@ -143,13 +139,9 @@ fun useSubsManagePage(): ScaffoldExt {
                 value = link,
                 onValueChange = { link = it.trim() },
                 maxLines = 8,
-                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = {
-                    Text(
-                        text = "请输入订阅链接",
-                        style = LocalTextStyle.current.copy(fontSize = 14.sp)
-                    )
+                    Text(text = "请输入订阅链接")
                 },
                 isError = link.isNotEmpty() && !URLUtil.isNetworkUrl(link),
             )

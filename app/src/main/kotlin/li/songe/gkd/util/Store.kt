@@ -64,6 +64,8 @@ data class Store(
     val showHiddenApp: Boolean = false,
     val showSaveSnapshotToast: Boolean = true,
     val useSystemToast: Boolean = false,
+    val useCustomNotifText: Boolean = false,
+    val customNotifText: String = "GKD",
 )
 
 val storeFlow by lazy {

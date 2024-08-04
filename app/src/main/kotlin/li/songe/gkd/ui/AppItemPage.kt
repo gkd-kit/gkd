@@ -27,6 +27,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -51,7 +52,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
@@ -477,12 +477,12 @@ fun AppItemPage(
                         .focusRequester(focusRequester),
                     placeholder = {
                         Text(
-                            fontSize = 12.sp,
-                            text = "请填入需要禁用的 activityId\n以换行或英文逗号分割"
+                            text = "请填入需要禁用的 activityId\n以换行或英文逗号分割",
+                            style = LocalTextStyle.current.copy(fontSize = MaterialTheme.typography.bodySmall.fontSize)
                         )
                     },
                     maxLines = 10,
-                    textStyle = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp)
+                    textStyle = LocalTextStyle.current.copy(fontSize = MaterialTheme.typography.bodySmall.fontSize)
                 )
                 LaunchedEffect(null) {
                     focusRequester.requestFocus()

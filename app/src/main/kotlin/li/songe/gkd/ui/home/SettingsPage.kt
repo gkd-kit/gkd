@@ -88,6 +88,9 @@ fun useSettingsPage(): ScaffoldExt {
     var showToastInputDlg by remember {
         mutableStateOf(false)
     }
+    var showNotifTextInputDlg by remember {
+        mutableStateOf(false)
+    }
 
     var showShareLogDlg by remember {
         mutableStateOf(false)
@@ -104,7 +107,9 @@ fun useSettingsPage(): ScaffoldExt {
             OutlinedTextField(
                 value = value,
                 placeholder = {
-                    Text(text = "请输入提示内容")
+                    Text(
+                        text = "请输入提示内容",
+                    )
                 },
                 onValueChange = {
                     value = it.take(maxCharLen)
@@ -120,9 +125,7 @@ fun useSettingsPage(): ScaffoldExt {
             )
         }, onDismissRequest = { showToastInputDlg = false }, confirmButton = {
             TextButton(enabled = value.isNotEmpty(), onClick = {
-                storeFlow.value = store.copy(
-                    clickToast = value
-                )
+                storeFlow.update { it.copy(clickToast = value) }
                 showToastInputDlg = false
             }) {
                 Text(
@@ -131,6 +134,46 @@ fun useSettingsPage(): ScaffoldExt {
             }
         }, dismissButton = {
             TextButton(onClick = { showToastInputDlg = false }) {
+                Text(
+                    text = "取消",
+                )
+            }
+        })
+    }
+    if (showNotifTextInputDlg) {
+        var value by remember {
+            mutableStateOf(store.customNotifText)
+        }
+        val maxCharLen = 64
+        AlertDialog(title = { Text(text = "通知文案") }, text = {
+            OutlinedTextField(
+                value = value,
+                placeholder = {
+                    Text(text = "请输入文案内容")
+                },
+                onValueChange = {
+                    value = it.take(maxCharLen)
+                },
+                singleLine = true,
+                supportingText = {
+                    Text(
+                        text = "${value.length} / $maxCharLen",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.End,
+                    )
+                },
+            )
+        }, onDismissRequest = { showNotifTextInputDlg = false }, confirmButton = {
+            TextButton(enabled = value.isNotEmpty(), onClick = {
+                storeFlow.update { it.copy(customNotifText = value) }
+                showNotifTextInputDlg = false
+            }) {
+                Text(
+                    text = "确认",
+                )
+            }
+        }, dismissButton = {
+            TextButton(onClick = { showNotifTextInputDlg = false }) {
                 Text(
                     text = "取消",
                 )
@@ -289,13 +332,29 @@ fun useSettingsPage(): ScaffoldExt {
                     )
                 })
 
+            if (store.toastWhenClick) {
+                TextSwitch(
+                    name = "系统提示",
+                    desc = "系统样式触发提示,频率较高时不显示",
+                    checked = store.useSystemToast,
+                    onCheckedChange = {
+                        storeFlow.value = store.copy(
+                            useSystemToast = it
+                        )
+                    })
+            }
+
+            val subsStatus by vm.subsStatusFlow.collectAsState()
             TextSwitch(
-                name = "系统提示",
-                desc = "系统样式触发提示,频率较高时不显示",
-                checked = store.useSystemToast,
+                name = "通知文案",
+                desc = if (store.useCustomNotifText) store.customNotifText else subsStatus,
+                checked = store.useCustomNotifText,
+                modifier = Modifier.clickable {
+                    showNotifTextInputDlg = true
+                },
                 onCheckedChange = {
                     storeFlow.value = store.copy(
-                        useSystemToast = it
+                        useCustomNotifText = it
                     )
                 })
 
@@ -308,6 +367,13 @@ fun useSettingsPage(): ScaffoldExt {
                         excludeFromRecents = it
                     )
                 })
+
+            Text(
+                text = "主题",
+                modifier = Modifier.titleItemPadding(),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
 
             TextMenu(
                 title = "深色模式",
