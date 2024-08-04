@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import li.songe.gkd.BuildConfig
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.ActivityLog
@@ -14,6 +15,7 @@ import li.songe.gkd.data.GlobalRule
 import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.isActivityVisible
 import li.songe.gkd.util.RuleSummary
 import li.songe.gkd.util.getDefaultLauncherAppId
 import li.songe.gkd.util.increaseClickCount
@@ -37,7 +39,12 @@ private val activityLogMutex by lazy { Mutex() }
 private var activityLogCount = 0
 private var lastActivityChangeTime = 0L
 fun updateTopActivity(topActivity: TopActivity) {
-    if (topActivityFlow.value.appId == topActivity.appId && topActivityFlow.value.activityId == topActivity.activityId) {
+    val isSameActivity =
+        topActivityFlow.value.appId == topActivity.appId && topActivityFlow.value.activityId == topActivity.activityId
+    if (isSameActivity) {
+        if (isActivityVisible() && topActivity.appId == BuildConfig.APPLICATION_ID) {
+            return
+        }
         if (topActivityFlow.value.number == topActivity.number) {
             return
         }
