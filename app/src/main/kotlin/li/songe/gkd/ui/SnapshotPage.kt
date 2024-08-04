@@ -124,6 +124,9 @@ fun SnapshotPage() {
             modifier = Modifier.padding(contentPadding),
         ) {
             items(snapshots, { it.id }) { snapshot ->
+                if (snapshot.id != snapshots.firstOrNull()?.id) {
+                    HorizontalDivider()
+                }
                 Column(modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
@@ -160,7 +163,6 @@ fun SnapshotPage() {
                         Text(text = "null", color = LocalContentColor.current.copy(alpha = 0.5f))
                     }
                 }
-                HorizontalDivider()
             }
             item {
                 Spacer(modifier = Modifier.height(EmptyHeight))
