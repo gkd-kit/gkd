@@ -37,7 +37,7 @@ fun Long.format(formatStr: String): String {
 }
 
 data class ThrottleTimer(
-    private val interval: Long = 1000L,
+    private val interval: Long = 500L,
     private var value: Long = 0L
 ) {
     fun expired(): Boolean {
