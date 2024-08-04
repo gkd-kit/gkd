@@ -23,4 +23,6 @@ object DbSet {
         get() = db.clickLogDao()
     val categoryConfigDao
         get() = db.categoryConfigDao()
+    val activityLogDao
+        get() = db.activityLogDao()
 }

@@ -1,9 +1,13 @@
 package li.songe.gkd.service
 
+import com.blankj.utilcode.util.LogUtils
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.app
+import li.songe.gkd.appScope
+import li.songe.gkd.data.ActivityLog
 import li.songe.gkd.data.AppRule
 import li.songe.gkd.data.ClickLog
 import li.songe.gkd.data.GlobalRule
@@ -13,6 +17,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.RuleSummary
 import li.songe.gkd.util.getDefaultLauncherAppId
 import li.songe.gkd.util.increaseClickCount
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.recordStoreFlow
 import li.songe.gkd.util.ruleSummaryFlow
 
@@ -20,9 +25,47 @@ data class TopActivity(
     val appId: String = "",
     val activityId: String? = null,
     val number: Int = 0
-)
+) {
+    fun format(): String {
+        return "${appId}/${activityId}/${number}"
+    }
+}
 
 val topActivityFlow = MutableStateFlow(TopActivity())
+private val activityLogMutex by lazy { Mutex() }
+
+private var activityLogCount = 0
+private var lastActivityChangeTime = 0L
+fun updateTopActivity(topActivity: TopActivity) {
+    if (topActivityFlow.value.appId == topActivity.appId && topActivityFlow.value.activityId == topActivity.activityId) {
+        if (topActivityFlow.value.number == topActivity.number) {
+            return
+        }
+        val t = System.currentTimeMillis()
+        if (t - lastActivityChangeTime < 1000) {
+            return
+        }
+    }
+    appScope.launchTry(Dispatchers.IO) {
+        activityLogMutex.withLock {
+            DbSet.activityLogDao.insert(
+                ActivityLog(
+                    appId = topActivity.appId,
+                    activityId = topActivity.activityId
+                )
+            )
+            activityLogCount++
+            if (activityLogCount % 100 == 0) {
+                DbSet.activityLogDao.deleteKeepLatest()
+            }
+        }
+    }
+    LogUtils.d(
+        "${topActivityFlow.value.format()} -> ${topActivity.format()}"
+    )
+    topActivityFlow.value = topActivity
+    lastActivityChangeTime = System.currentTimeMillis()
+}
 
 data class ActivityRule(
     val appRules: List<AppRule> = emptyList(),
@@ -42,7 +85,7 @@ private fun getFixTopActivity(): TopActivity {
     if (top.activityId == null) {
         if (lastTopActivity.appId == top.appId) {
             // 当从通知栏上拉返回应用, 从锁屏返回 等时, activityId 的无障碍事件不会触发, 此时复用上一次获得的 activityId 填充
-            topActivityFlow.value = lastTopActivity
+            updateTopActivity(lastTopActivity)
         }
     } else {
         // 仅保留最近的有 activityId 的单个 TopActivity

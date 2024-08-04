@@ -202,9 +202,9 @@ class GkdAbService : CompositionAbService({
                         if (topActivityFlow.value.appId != rightAppId) {
                             val shizukuTop = getShizukuTopActivity()
                             if (shizukuTop?.appId == rightAppId) {
-                                topActivityFlow.value = shizukuTop
+                                updateTopActivity(shizukuTop)
                             } else {
-                                topActivityFlow.value = TopActivity(appId = rightAppId)
+                                updateTopActivity(TopActivity(appId = rightAppId))
                             }
                             getAndUpdateCurrentRules()
                             scope.launch(actionThread) {
@@ -308,8 +308,10 @@ class GkdAbService : CompositionAbService({
                 if (fixedEvent.type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
                     // tv.danmaku.bili, com.miui.home, com.miui.home.launcher.Launcher
                     if (isActivity(evAppId, evActivityId)) {
-                        topActivityFlow.value = TopActivity(
-                            evAppId, evActivityId, topActivityFlow.value.number + 1
+                        updateTopActivity(
+                            TopActivity(
+                                evAppId, evActivityId, topActivityFlow.value.number + 1
+                            )
                         )
                     }
                 } else {
@@ -317,11 +319,13 @@ class GkdAbService : CompositionAbService({
                         val shizukuTop = getShizukuTopActivity()
                         if (shizukuTop != null && shizukuTop.appId == rightAppId) {
                             if (shizukuTop.activityId == evActivityId) {
-                                topActivityFlow.value = TopActivity(
-                                    evAppId, evActivityId, topActivityFlow.value.number + 1
+                                updateTopActivity(
+                                    TopActivity(
+                                        evAppId, evActivityId, topActivityFlow.value.number + 1
+                                    )
                                 )
                             }
-                            topActivityFlow.value = shizukuTop
+                            updateTopActivity(shizukuTop)
                         }
                         lastTriggerShizukuTime = fixedEvent.time
                     }
@@ -331,9 +335,9 @@ class GkdAbService : CompositionAbService({
                 // 从 锁屏,下拉通知栏 返回等情况, 应用不会发送事件, 但是系统组件会发送事件
                 val shizukuTop = getShizukuTopActivity()
                 if (shizukuTop?.appId == rightAppId) {
-                    topActivityFlow.value = shizukuTop
+                    updateTopActivity(shizukuTop)
                 } else {
-                    topActivityFlow.value = TopActivity(rightAppId)
+                    updateTopActivity(TopActivity(rightAppId))
                 }
             }
 
@@ -375,14 +379,10 @@ class GkdAbService : CompositionAbService({
 
     scope.launch(Dispatchers.IO) {
         activityRuleFlow.debounce(300).collect {
-            if (storeFlow.value.enableService) {
+            if (storeFlow.value.enableService && it.currentRules.isNotEmpty()) {
                 LogUtils.d(it.topActivity, *it.currentRules.map { r ->
                     r.statusText()
                 }.toTypedArray())
-            } else {
-                LogUtils.d(
-                    it.topActivity
-                )
             }
         }
     }

@@ -215,9 +215,5 @@ class HomeVm @Inject constructor() : ViewModel() {
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-
-    val clickLogCountFlow =
-        DbSet.clickLogDao.count().stateIn(viewModelScope, SharingStarted.Eagerly, 0)
-
     val showShareDataIdsFlow = MutableStateFlow<Set<Long>?>(null)
 }

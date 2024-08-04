@@ -12,7 +12,7 @@ import li.songe.gkd.service.GkdAbService.Companion.shizukuTopActivityGetter
 import li.songe.gkd.service.TopActivity
 import li.songe.gkd.service.getAndUpdateCurrentRules
 import li.songe.gkd.service.safeActiveWindow
-import li.songe.gkd.service.topActivityFlow
+import li.songe.gkd.service.updateTopActivity
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.toast
 
@@ -35,8 +35,9 @@ class SnapshotTileService : TileService() {
                     service.safeActiveWindow?.packageName?.toString() ?: return@launchTry
                 if (latestAppId != oldAppId) {
                     eventExecutor.execute {
-                        topActivityFlow.value =
+                        updateTopActivity(
                             shizukuTopActivityGetter?.invoke() ?: TopActivity(appId = latestAppId)
+                        )
                         getAndUpdateCurrentRules()
                         appScope.launchTry(Dispatchers.IO) {
                             captureSnapshot()
