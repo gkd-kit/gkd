@@ -96,7 +96,7 @@ fun useControlPage(): ScaffoldExt {
             if (!gkdAccessRunning) {
                 AuthCard(
                     title = "无障碍权限",
-                    desc = "用于获取屏幕信息,点击屏幕上的控件",
+                    desc = "获取屏幕信息,匹配节点,执行操作",
                     onAuthClick = {
                         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -105,7 +105,7 @@ fun useControlPage(): ScaffoldExt {
             } else {
                 TextSwitch(
                     name = "服务开启",
-                    desc = "根据订阅规则匹配屏幕目标节点",
+                    desc = "根据规则匹配节点,执行操作",
                     checked = store.enableService,
                     onCheckedChange = {
                         storeFlow.value = store.copy(
