@@ -24,6 +24,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Upgrade
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -233,7 +235,7 @@ fun useSubsManagePage(): ScaffoldExt {
                         vm.showShareDataIdsFlow.value = selectedIds
                     }) {
                         Icon(
-                            imageVector = Icons.Default.Share,
+                            imageVector = Icons.Default.Upload,
                             contentDescription = null,
                         )
                     }
@@ -450,7 +452,7 @@ private fun ShareDataDialog(vm: HomeVm) {
                     .fillMaxWidth()
                     .padding(16.dp)
                 Text(
-                    text = "分享数据", modifier = Modifier
+                    text = "分享到其他应用", modifier = Modifier
                         .clickable(onClick = throttle {
                             vm.showShareDataIdsFlow.value = null
                             vm.viewModelScope.launchTry(Dispatchers.IO) {

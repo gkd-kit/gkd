@@ -26,8 +26,6 @@ import javax.inject.Inject
 class AppConfigVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
     private val args = AppConfigPageDestination.argsFrom(stateHandle)
 
-    val innerDisabledDlgFlow = MutableStateFlow(false)
-
     private val latestGlobalLogsFlow = DbSet.clickLogDao.queryAppLatest(
         args.appId,
         SubsConfig.GlobalGroupType

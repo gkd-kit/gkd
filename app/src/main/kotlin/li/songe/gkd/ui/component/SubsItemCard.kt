@@ -237,7 +237,7 @@ private fun SubsMenuItem(
         }
         DropdownMenuItem(
             text = {
-                Text(text = "分享数据")
+                Text(text = "导出数据")
             },
             onClick = {
                 onExpandedChange(false)
