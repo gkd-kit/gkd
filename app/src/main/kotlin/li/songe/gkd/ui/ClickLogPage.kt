@@ -18,6 +18,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -34,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -51,6 +53,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import li.songe.gkd.MainActivity
 import li.songe.gkd.data.ClickLog
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.SubsConfig
@@ -58,6 +61,7 @@ import li.songe.gkd.data.stringify
 import li.songe.gkd.data.switch
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.StartEllipsisText
+import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.style.EmptyHeight
@@ -73,8 +77,9 @@ import li.songe.gkd.util.toast
 @Destination(style = ProfileTransitions::class)
 @Composable
 fun ClickLogPage() {
+    val context = LocalContext.current as MainActivity
+    val mainVm = context.mainVm
     val navController = LocalNavController.current
-
     val vm = hiltViewModel<ClickLogVm>()
     val clickLogCount by vm.clickLogCountFlow.collectAsState()
     val clickDataItems = vm.pagingDataFlow.collectAsLazyPagingItems()
@@ -111,7 +116,7 @@ fun ClickLogPage() {
         TopAppBar(
             scrollBehavior = scrollBehavior,
             navigationIcon = {
-                IconButton(onClick = {
+                IconButton(onClick = throttle {
                     navController.popBackStack()
                 }) {
                     Icon(
@@ -120,10 +125,16 @@ fun ClickLogPage() {
                     )
                 }
             },
-            title = { Text(text = "触发记录" + if (clickLogCount <= 0) "" else ("-$clickLogCount")) },
+            title = { Text(text = "触发记录") },
             actions = {
                 if (clickLogCount > 0) {
-                    IconButton(onClick = { showDeleteDlg = true }) {
+                    IconButton(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
+                        mainVm.dialogFlow.waitResult(
+                            title = "删除记录",
+                            text = "是否删除所有触发记录?",
+                        )
+                        DbSet.clickLogDao.deleteAll()
+                    })) {
                         Icon(
                             imageVector = Icons.Outlined.Delete,
                             contentDescription = null,
@@ -140,6 +151,9 @@ fun ClickLogPage() {
                 key = clickDataItems.itemKey { c -> c.t0.id }
             ) { i ->
                 val (clickLog, group, rule) = clickDataItems[i] ?: return@items
+                if (i > 0) {
+                    HorizontalDivider()
+                }
                 Column(
                     modifier = Modifier
                         .clickable {
@@ -167,8 +181,11 @@ fun ClickLogPage() {
                         }
                     }
                     Spacer(modifier = Modifier.width(10.dp))
-                    clickLog.showActivityId?.let { showActivityId ->
+                    val showActivityId = clickLog.showActivityId
+                    if (showActivityId != null) {
                         StartEllipsisText(text = showActivityId)
+                    } else {
+                        Text(text = "null", color = LocalContentColor.current.copy(alpha = 0.5f))
                     }
                     group?.name?.let { name ->
                         Text(text = name)
@@ -179,7 +196,6 @@ fun ClickLogPage() {
                         Text(text = (if (clickLog.ruleKey != null) "key=${clickLog.ruleKey}, " else "") + "index=${clickLog.ruleIndex}")
                     }
                 }
-                HorizontalDivider()
             }
             item {
                 Spacer(modifier = Modifier.height(EmptyHeight))

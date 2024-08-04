@@ -41,6 +41,7 @@ import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.TextSwitch
+import li.songe.gkd.ui.destinations.ActivityLogPageDestination
 import li.songe.gkd.ui.destinations.ClickLogPageDestination
 import li.songe.gkd.ui.destinations.SlowGroupPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
@@ -132,7 +133,6 @@ fun useControlPage(): ScaffoldExt {
                     }
                 })
 
-            val clickLogCount by vm.clickLogCountFlow.collectAsState()
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
@@ -144,11 +144,37 @@ fun useControlPage(): ScaffoldExt {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "触发记录" + (if (clickLogCount > 0) "-$clickLogCount" else ""),
+                        text = "触发记录",
                         style = MaterialTheme.typography.bodyLarge,
                     )
                     Text(
                         text = "如误触可在此快速定位关闭规则",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null
+                )
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clickable(onClick = throttle {
+                        navController.navigate(ActivityLogPageDestination)
+                    })
+                    .itemPadding(),
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "界面记录",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        text = "记录打开的应用及界面",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

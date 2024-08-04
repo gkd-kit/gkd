@@ -1,5 +1,6 @@
 package li.songe.gkd.util
 
+import li.songe.gkd.data.Value
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -36,17 +37,20 @@ fun Long.format(formatStr: String): String {
     return df.format(this)
 }
 
-private var globalThrottleLastTriggerTime = 0L
+private val defaultThrottleTimer by lazy {
+    Value(0L)
+}
 private const val defaultThrottleInterval = 1000L
 
 fun throttle(
     interval: Long = defaultThrottleInterval,
+    timer: Value<Long> = defaultThrottleTimer,
     fn: (() -> Unit),
 ): (() -> Unit) {
     return {
         val t = System.currentTimeMillis()
-        if (t - globalThrottleLastTriggerTime > interval) {
-            globalThrottleLastTriggerTime = t
+        if (t - timer.value > interval) {
+            timer.value = t
             fn.invoke()
         }
     }
@@ -54,12 +58,13 @@ fun throttle(
 
 fun <T> throttle(
     interval: Long = defaultThrottleInterval,
+    timer: Value<Long> = defaultThrottleTimer,
     fn: ((T) -> Unit),
 ): ((T) -> Unit) {
     return {
         val t = System.currentTimeMillis()
-        if (t - globalThrottleLastTriggerTime > interval) {
-            globalThrottleLastTriggerTime = t
+        if (t - timer.value > interval) {
+            timer.value = t
             fn.invoke(it)
         }
     }

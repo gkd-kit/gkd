@@ -21,6 +21,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -140,18 +141,23 @@ fun SnapshotPage() {
                             maxLines = 1,
                         )
                     }
-                    if (snapshot.activityId != null) {
-                        val showActivityId =
-                            if (snapshot.appId != null && snapshot.activityId.startsWith(
-                                    snapshot.appId
-                                )
-                            ) {
-                                snapshot.activityId.substring(snapshot.appId.length)
-                            } else {
-                                snapshot.activityId
-                            }
-                        Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
+                    val showActivityId = if (snapshot.activityId != null) {
+                        if (snapshot.appId != null && snapshot.activityId.startsWith(
+                                snapshot.appId
+                            )
+                        ) {
+                            snapshot.activityId.substring(snapshot.appId.length)
+                        } else {
+                            snapshot.activityId
+                        }
+                    } else {
+                        null
+                    }
+                    if (showActivityId != null) {
                         StartEllipsisText(text = showActivityId)
+                    } else {
+                        Text(text = "null", color = LocalContentColor.current.copy(alpha = 0.5f))
                     }
                 }
                 HorizontalDivider()
