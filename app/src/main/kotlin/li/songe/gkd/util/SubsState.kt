@@ -131,8 +131,8 @@ data class RuleSummary(
     val appIdToGroups: ImmutableMap<String, ImmutableList<RawSubscription.RawAppGroup>> = persistentMapOf(),
     val appIdToAllGroups: ImmutableMap<String, ImmutableList<ResolvedAppGroup>> = persistentMapOf(),
 ) {
-    private val appSize = appIdToRules.keys.size
-    private val appGroupSize = appIdToGroups.values.sumOf { s -> s.size }
+    val appSize = appIdToRules.keys.size
+    val appGroupSize = appIdToGroups.values.sumOf { s -> s.size }
 
     val numText = if (globalGroups.size + appGroupSize > 0) {
         if (globalGroups.isNotEmpty()) {
@@ -283,6 +283,14 @@ val ruleSummaryFlow by lazy {
                 .toImmutableMap()
         )
     }.flowOn(Dispatchers.Default).stateIn(appScope, SharingStarted.Eagerly, RuleSummary())
+}
+
+fun getSubsStatus(ruleSummary: RuleSummary, count: Int): String {
+    return if (count > 0) {
+        "${ruleSummary.numText}/${count}触发"
+    } else {
+        ruleSummary.numText
+    }
 }
 
 private fun loadSubs(id: Long): RawSubscription {
