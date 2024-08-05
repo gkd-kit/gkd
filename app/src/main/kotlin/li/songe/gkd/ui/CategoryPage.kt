@@ -257,7 +257,11 @@ fun CategoryPage(subsItemId: Long) {
                 placeholder = { Text(text = "请输入类别名称") },
                 singleLine = true
             )
-        }, onDismissRequest = { setEditNameCategory(null) }, dismissButton = {
+        }, onDismissRequest = {
+            if (source.isEmpty()) {
+                setEditNameCategory(null)
+            }
+        }, dismissButton = {
             TextButton(onClick = { setEditNameCategory(null) }) {
                 Text(text = "取消")
             }
@@ -300,7 +304,11 @@ fun CategoryPage(subsItemId: Long) {
                 placeholder = { Text(text = "请输入类别名称") },
                 singleLine = true
             )
-        }, onDismissRequest = { showAddDlg = false }, dismissButton = {
+        }, onDismissRequest = {
+            if (source.isEmpty()) {
+                showAddDlg = false
+            }
+        }, dismissButton = {
             TextButton(onClick = { showAddDlg = false }) {
                 Text(text = "取消")
             }

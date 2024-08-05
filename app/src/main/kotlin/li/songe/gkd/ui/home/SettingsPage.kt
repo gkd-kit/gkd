@@ -125,7 +125,11 @@ fun useSettingsPage(): ScaffoldExt {
                     )
                 },
             )
-        }, onDismissRequest = { showToastInputDlg = false }, confirmButton = {
+        }, onDismissRequest = {
+            if (value.isEmpty()) {
+                showToastInputDlg = false
+            }
+        }, confirmButton = {
             TextButton(enabled = value.isNotEmpty(), onClick = {
                 storeFlow.update { it.copy(clickToast = value) }
                 showToastInputDlg = false
@@ -186,7 +190,11 @@ fun useSettingsPage(): ScaffoldExt {
                     )
                 },
             )
-        }, onDismissRequest = { showNotifTextInputDlg = false }, confirmButton = {
+        }, onDismissRequest = {
+            if (value.isEmpty()) {
+                showNotifTextInputDlg = false
+            }
+        }, confirmButton = {
             TextButton(enabled = value.isNotEmpty(), onClick = {
                 storeFlow.update { it.copy(customNotifText = value) }
                 showNotifTextInputDlg = false

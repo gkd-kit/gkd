@@ -396,7 +396,11 @@ fun AppItemPage(
                     focusRequester.requestFocus()
                 }
             },
-            onDismissRequest = { setEditGroupRaw(null) },
+            onDismissRequest = {
+                if (source.isEmpty()) {
+                    setEditGroupRaw(null)
+                }
+            },
             dismissButton = {
                 TextButton(onClick = { setEditGroupRaw(null) }) {
                     Text(text = "取消")
@@ -488,7 +492,11 @@ fun AppItemPage(
                     focusRequester.requestFocus()
                 }
             },
-            onDismissRequest = { setExcludeGroupRaw(null) },
+            onDismissRequest = {
+                if (source.isEmpty()) {
+                    setExcludeGroupRaw(null)
+                }
+            },
             dismissButton = {
                 TextButton(onClick = { setExcludeGroupRaw(null) }) {
                     Text(text = "取消")
@@ -532,7 +540,11 @@ fun AppItemPage(
                 placeholder = { Text(text = "请输入规则组\n可以是APP规则\n也可以是单个规则组") },
                 maxLines = 10,
             )
-        }, onDismissRequest = { showAddDlg = false }, confirmButton = {
+        }, onDismissRequest = {
+            if (source.isEmpty()) {
+                showAddDlg = false
+            }
+        }, confirmButton = {
             TextButton(onClick = {
                 val newAppRaw = try {
                     RawSubscription.parseRawApp(source)
