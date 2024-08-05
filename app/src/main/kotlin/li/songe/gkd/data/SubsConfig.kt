@@ -9,6 +9,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import kotlinx.parcelize.Parcelize
@@ -93,6 +94,19 @@ data class SubsConfig(
 
         @Query("SELECT * FROM subs_config WHERE subs_item_id IN (:subsItemIds) ")
         suspend fun querySubsItemConfig(subsItemIds: List<Long>): List<SubsConfig>
+
+        @Query("UPDATE subs_config SET enable = null WHERE type=${AppGroupType} AND subs_item_id=:subsItemId AND app_id=:appId AND group_key=:groupKey AND enable IS NOT NULL")
+        suspend fun resetAppGroupTypeEnable(subsItemId: Long, appId: String, groupKey: Int): Int
+
+        @Transaction
+        suspend fun batchResetAppGroupEnable(
+            subsItemId: Long,
+            list: List<Pair<RawSubscription.RawAppGroup, RawSubscription.RawApp>>
+        ): List<Pair<RawSubscription.RawAppGroup, RawSubscription.RawApp>> {
+            return list.filter { (g, a) ->
+                resetAppGroupTypeEnable(subsItemId, a.id, g.key) > 0
+            }
+        }
 
     }
 
