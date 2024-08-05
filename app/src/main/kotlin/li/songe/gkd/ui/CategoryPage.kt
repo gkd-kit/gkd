@@ -121,8 +121,11 @@ fun CategoryPage(subsItemId: Long) {
                 Row(modifier = Modifier
                     .clickable { selectedExpanded = true }
                     .itemPadding(),
-                    verticalAlignment = Alignment.CenterVertically) {
-                    val size = categoriesGroups[category]?.size ?: 0
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    val groups = categoriesGroups[category] ?: emptyList()
+                    val size = groups.size
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = category.name,
@@ -143,21 +146,39 @@ fun CategoryPage(subsItemId: Long) {
                             )
                         }
                     }
-                    if (editable) {
-                        var expanded by remember { mutableStateOf(false) }
-                        Box(
-                            modifier = Modifier.wrapContentSize(Alignment.TopStart)
+                    var expanded by remember { mutableStateOf(false) }
+                    Box(
+                        modifier = Modifier.wrapContentSize(Alignment.TopStart)
+                    ) {
+                        IconButton(onClick = {
+                            expanded = true
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = null,
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
                         ) {
-                            IconButton(onClick = {
-                                expanded = true
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = null,
-                                )
-                            }
-                            DropdownMenu(expanded = expanded,
-                                onDismissRequest = { expanded = false }) {
+                            DropdownMenuItem(text = {
+                                Text(text = "重置开关")
+                            }, onClick = {
+                                expanded = false
+                                vm.viewModelScope.launchTry(Dispatchers.IO) {
+                                    val updatedList = DbSet.subsConfigDao.batchResetAppGroupEnable(
+                                        subsItemId,
+                                        groups
+                                    )
+                                    if (updatedList.isNotEmpty()) {
+                                        toast("成功重置 ${updatedList.size} 规则组开关")
+                                    } else {
+                                        toast("无可重置规则组")
+                                    }
+                                }
+                            })
+                            if (editable) {
                                 DropdownMenuItem(text = {
                                     Text(text = "编辑")
                                 }, onClick = {
