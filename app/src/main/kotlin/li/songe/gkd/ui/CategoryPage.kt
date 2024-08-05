@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.UnfoldMore
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -50,6 +51,7 @@ import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.TowLineText
+import li.songe.gkd.ui.component.buildDialogOptions
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
@@ -59,6 +61,7 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 
@@ -102,7 +105,18 @@ fun CategoryPage(subsItemId: Long) {
                 title = subsRaw?.name ?: subsItemId.toString(),
                 subTitle = "规则类别"
             )
-        }, actions = {})
+        }, actions = {
+            IconButton(onClick = throttle {
+                mainVm.dialogFlow.value = buildDialogOptions(
+                    title = "开关优先级",
+                    text = "规则手动配置 > 分类手动配置 > 分类默认 > 规则默认\n\n重置开关: 移除规则手动配置",
+                    confirmText = "我知道了",
+                    confirmAction = { mainVm.dialogFlow.value = null }
+                )
+            }) {
+                Icon(Icons.Outlined.Info, contentDescription = null)
+            }
+        })
     }, floatingActionButton = {
         if (editable) {
             FloatingActionButton(onClick = { showAddDlg = true }) {
