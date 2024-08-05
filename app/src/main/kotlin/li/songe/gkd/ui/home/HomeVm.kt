@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import li.songe.gkd.appScope
 import li.songe.gkd.data.GithubPoliciesAsset
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.RpcError
@@ -32,6 +33,7 @@ import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.clickCountFlow
 import li.songe.gkd.util.client
+import li.songe.gkd.util.getSubsStatus
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.orderedAppInfosFlow
@@ -105,13 +107,11 @@ class HomeVm @Inject constructor() : ViewModel() {
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    val subsStatusFlow = combine(ruleSummaryFlow, clickCountFlow) { allRules, clickCount ->
-        allRules.numText + if (clickCount > 0) {
-            "/${clickCount}点击"
-        } else {
-            ""
-        }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, "")
+    val subsStatusFlow by lazy {
+        combine(ruleSummaryFlow, clickCountFlow) { ruleSummary, count ->
+            getSubsStatus(ruleSummary, count)
+        }.stateIn(appScope, SharingStarted.Eagerly, "")
+    }
 
     fun addSubsFromUrl(url: String) = viewModelScope.launchTry(Dispatchers.IO) {
         if (subsRefreshingFlow.value) return@launchTry

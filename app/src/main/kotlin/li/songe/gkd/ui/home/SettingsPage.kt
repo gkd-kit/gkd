@@ -12,10 +12,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -50,6 +53,7 @@ import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.TextSwitch
+import li.songe.gkd.ui.component.buildDialogOptions
 import li.songe.gkd.ui.destinations.AboutPageDestination
 import li.songe.gkd.ui.destinations.AdvancedPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
@@ -107,9 +111,7 @@ fun useSettingsPage(): ScaffoldExt {
             OutlinedTextField(
                 value = value,
                 placeholder = {
-                    Text(
-                        text = "请输入提示内容",
-                    )
+                    Text(text = "请输入提示内容")
                 },
                 onValueChange = {
                     value = it.take(maxCharLen)
@@ -145,7 +147,28 @@ fun useSettingsPage(): ScaffoldExt {
             mutableStateOf(store.customNotifText)
         }
         val maxCharLen = 64
-        AlertDialog(title = { Text(text = "通知文案") }, text = {
+        AlertDialog(title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(text = "通知文案")
+                IconButton(onClick = throttle {
+                    mainVm.dialogFlow.value = buildDialogOptions(
+                        title = "文案规则",
+                        text = "通知文案支持变量替换,规则如下\n\${a} 全局规则数\n\${b} 应用数\n\${c} 应用规则组数\n\${d} 触发次数\n\n示例模板\n\${a}全局/\${b}应用/\${c}规则组/\${d}触发\n\n替换结果\n0全局/1应用/2规则组/3触发",
+                        confirmText = "知道了",
+                        confirmAction = { mainVm.dialogFlow.value = null },
+                    )
+                }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                        contentDescription = null,
+                    )
+                }
+            }
+        }, text = {
             OutlinedTextField(
                 value = value,
                 placeholder = {
