@@ -46,7 +46,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
@@ -365,57 +364,59 @@ fun AdvancedPage() {
     }
 
     if (showPortDlg) {
-        Dialog(onDismissRequest = { showPortDlg = false }) {
-            var value by remember {
-                mutableStateOf(store.httpServerPort.toString())
-            }
-            AlertDialog(title = { Text(text = "服务端口") }, text = {
-                OutlinedTextField(
-                    value = value,
-                    placeholder = {
-                        Text(text = "请输入 5000-65535 的整数")
-                    },
-                    onValueChange = {
-                        value = it.filter { c -> c.isDigit() }.take(5)
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    supportingText = {
-                        Text(
-                            text = "${value.length} / 5",
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.End,
-                        )
-                    },
-                )
-            }, onDismissRequest = { showPortDlg = false }, confirmButton = {
-                TextButton(
-                    enabled = value.isNotEmpty(),
-                    onClick = {
-                        val newPort = value.toIntOrNull()
-                        if (newPort == null || !(5000 <= newPort && newPort <= 65535)) {
-                            toast("请输入 5000-65535 的整数")
-                            return@TextButton
-                        }
-                        storeFlow.value = store.copy(
-                            httpServerPort = newPort
-                        )
-                        showPortDlg = false
-                    }
-                ) {
-                    Text(
-                        text = "确认", modifier = Modifier
-                    )
-                }
-            }, dismissButton = {
-                TextButton(onClick = { showPortDlg = false }) {
-                    Text(
-                        text = "取消"
-                    )
-                }
-            })
+        var value by remember {
+            mutableStateOf(store.httpServerPort.toString())
         }
+        AlertDialog(title = { Text(text = "服务端口") }, text = {
+            OutlinedTextField(
+                value = value,
+                placeholder = {
+                    Text(text = "请输入 5000-65535 的整数")
+                },
+                onValueChange = {
+                    value = it.filter { c -> c.isDigit() }.take(5)
+                },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                supportingText = {
+                    Text(
+                        text = "${value.length} / 5",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.End,
+                    )
+                },
+            )
+        }, onDismissRequest = {
+            if (value.isEmpty()) {
+                showPortDlg = false
+            }
+        }, confirmButton = {
+            TextButton(
+                enabled = value.isNotEmpty(),
+                onClick = {
+                    val newPort = value.toIntOrNull()
+                    if (newPort == null || !(5000 <= newPort && newPort <= 65535)) {
+                        toast("请输入 5000-65535 的整数")
+                        return@TextButton
+                    }
+                    storeFlow.value = store.copy(
+                        httpServerPort = newPort
+                    )
+                    showPortDlg = false
+                }
+            ) {
+                Text(
+                    text = "确认", modifier = Modifier
+                )
+            }
+        }, dismissButton = {
+            TextButton(onClick = { showPortDlg = false }) {
+                Text(
+                    text = "取消"
+                )
+            }
+        })
     }
 }
 

@@ -307,7 +307,11 @@ fun SubsPage(
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text(text = "请输入规则\n若应用规则已经存在则追加") },
             )
-        }, onDismissRequest = { showAddDlg = false }, confirmButton = {
+        }, onDismissRequest = {
+            if (source.isEmpty()) {
+                showAddDlg = false
+            }
+        }, confirmButton = {
             TextButton(onClick = {
                 val newAppRaw = try {
                     RawSubscription.parseRawApp(source)
@@ -401,7 +405,11 @@ fun SubsPage(
                     focusRequester.requestFocus()
                 }
             },
-            onDismissRequest = { editRawApp = null }, confirmButton = {
+            onDismissRequest = {
+                if (source.isEmpty()) {
+                    editRawApp = null
+                }
+            }, confirmButton = {
                 TextButton(onClick = {
                     try {
                         val newAppRaw = RawSubscription.parseRawApp(source)

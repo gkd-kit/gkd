@@ -388,7 +388,11 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                     focusRequester.requestFocus()
                 }
             },
-            onDismissRequest = { showEditDlg = false },
+            onDismissRequest = {
+                if (source.isEmpty()) {
+                    showEditDlg = false
+                }
+            },
             dismissButton = {
                 TextButton(onClick = { showEditDlg = false }) {
                     Text(text = "取消")

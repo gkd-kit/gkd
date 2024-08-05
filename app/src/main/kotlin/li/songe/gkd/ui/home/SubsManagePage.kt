@@ -145,7 +145,17 @@ fun useSubsManagePage(): ScaffoldExt {
                 },
                 isError = link.isNotEmpty() && !URLUtil.isNetworkUrl(link),
             )
-        }, onDismissRequest = { showAddLinkDialog = false }, confirmButton = {
+        }, onDismissRequest = {
+            if (link.isEmpty()) {
+                showAddLinkDialog = false
+            }
+        }, dismissButton = {
+            TextButton(onClick = {
+                showAddLinkDialog = false
+            }) {
+                Text(text = "取消")
+            }
+        }, confirmButton = {
             TextButton(enabled = link.isNotBlank(), onClick = {
                 if (!URLUtil.isNetworkUrl(link)) {
                     toast("非法链接")
@@ -166,7 +176,7 @@ fun useSubsManagePage(): ScaffoldExt {
                     vm.addSubsFromUrl(url = link)
                 }
             }) {
-                Text(text = "添加")
+                Text(text = "确认")
             }
         })
     }
