@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.component
 
+import android.view.MotionEvent
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -23,10 +24,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInteropFilter
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
@@ -53,6 +60,7 @@ import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SubsItemCard(
     modifier: Modifier = Modifier,
@@ -66,6 +74,7 @@ fun SubsItemCard(
     onCheckedChange: ((Boolean) -> Unit)? = null,
     onSelectedChange: (() -> Unit)? = null,
 ) {
+    val density = LocalDensity.current
     val subsLoadError by remember(subsItem.id) {
         subsLoadErrorsFlow.map(vm.viewModelScope) { it[subsItem.id] }
     }.collectAsState()
@@ -75,6 +84,9 @@ fun SubsItemCard(
     val subsRefreshing by subsRefreshingFlow.collectAsState()
     var expanded by remember { mutableStateOf(false) }
     val dragged by interactionSource.collectIsDraggedAsState()
+    var clickPositionX by remember {
+        mutableStateOf(0.dp)
+    }
     val onClick = {
         if (!dragged) {
             if (isSelectedMode) {
@@ -86,7 +98,14 @@ fun SubsItemCard(
     }
     Card(
         onClick = onClick,
-        modifier = modifier.padding(16.dp, 2.dp),
+        modifier = modifier
+            .padding(16.dp, 2.dp)
+            .pointerInteropFilter { event ->
+                if (event.action == MotionEvent.ACTION_DOWN) {
+                    clickPositionX = with(density) { event.x.toDp() }
+                }
+                false
+            },
         shape = MaterialTheme.shapes.small,
         interactionSource = interactionSource,
         colors = CardDefaults.cardColors(
@@ -102,6 +121,7 @@ fun SubsItemCard(
             onExpandedChange = { expanded = it },
             subItem = subsItem,
             subscription = subscription,
+            offsetX = clickPositionX,
             vm = vm
         )
         Row(
@@ -191,14 +211,24 @@ private fun SubsMenuItem(
     onExpandedChange: ((Boolean) -> Unit),
     subItem: SubsItem,
     subscription: RawSubscription?,
+    offsetX: Dp,
     vm: HomeVm
 ) {
     val navController = LocalNavController.current
     val context = LocalContext.current
     val mainVm = LocalMainViewModel.current
+    val density = LocalDensity.current
+    var halfMenuWidth by remember {
+        mutableStateOf(0.dp)
+    }
+
     DropdownMenu(
         expanded = expanded,
-        onDismissRequest = { onExpandedChange(false) }
+        onDismissRequest = { onExpandedChange(false) },
+        modifier = Modifier.onGloballyPositioned {
+            halfMenuWidth = with(density){it.size.width.toDp()} / 2
+        },
+        offset = DpOffset(if (offsetX < halfMenuWidth) 0.dp else offsetX - halfMenuWidth,0.dp)
     ) {
         if (subscription != null) {
             if (subItem.id < 0 || subscription.apps.isNotEmpty()) {
