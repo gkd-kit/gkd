@@ -53,8 +53,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
@@ -84,6 +87,7 @@ import li.songe.gkd.util.toast
 @Composable
 fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
     val navController = LocalNavController.current
+    val density = LocalDensity.current
     val vm = hiltViewModel<GlobalRuleExcludeVm>()
     val rawSubs = vm.rawSubsFlow.collectAsState().value
     val group = vm.groupFlow.collectAsState().value
@@ -93,6 +97,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
     val showSystemApp by vm.showSystemAppFlow.collectAsState()
     val showHiddenApp by vm.showHiddenAppFlow.collectAsState()
     val sortType by vm.sortTypeFlow.collectAsState()
+
 
     var showEditDlg by remember {
         mutableStateOf(false)
@@ -112,6 +117,9 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
         listState.animateScrollToItem(0)
     })
     var expanded by remember { mutableStateOf(false) }
+    var actionButtonHeight by remember {
+        mutableStateOf(0.dp)
+    }
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
             IconButton(onClick = {
@@ -161,6 +169,8 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
 
                 IconButton(onClick = {
                     expanded = true
+                },modifier = Modifier.onGloballyPositioned {
+                    actionButtonHeight = with(density){ it.size.height.toDp()}
                 }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Sort,
@@ -173,7 +183,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                 ) {
                     DropdownMenu(
                         expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        onDismissRequest = { expanded = false },offset = DpOffset(x = 0.dp, y = actionButtonHeight/2)
                     ) {
                         Text(
                             text = "排序",

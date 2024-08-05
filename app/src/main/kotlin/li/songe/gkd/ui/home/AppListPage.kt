@@ -52,11 +52,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
@@ -90,6 +93,7 @@ fun useAppListPage(): ScaffoldExt {
     val navController = LocalNavController.current
     val context = LocalContext.current as MainActivity
     val softwareKeyboardController = LocalSoftwareKeyboardController.current
+    val density = LocalDensity.current
 
     val vm = hiltViewModel<HomeVm>()
     val showSystemApp by vm.showSystemAppFlow.collectAsState()
@@ -119,6 +123,9 @@ fun useAppListPage(): ScaffoldExt {
         }
     })
     val listState = rememberLazyListState()
+    var actionButtonHeight by remember {
+        mutableStateOf(0.dp)
+    }
 
     var isFirstVisit by remember { mutableStateOf(false) }
     LaunchedEffect(key1 = orderedAppInfos, block = {
@@ -201,6 +208,8 @@ fun useAppListPage(): ScaffoldExt {
                     }
                     IconButton(onClick = {
                         expanded = true
+                    },modifier = Modifier.onGloballyPositioned {
+                        actionButtonHeight = with(density){ it.size.height.toDp()}
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Sort,
@@ -213,7 +222,7 @@ fun useAppListPage(): ScaffoldExt {
                     ) {
                         DropdownMenu(
                             expanded = expanded,
-                            onDismissRequest = { expanded = false }
+                            onDismissRequest = { expanded = false },offset = DpOffset(x = 0.dp, y = actionButtonHeight/2)
                         ) {
                             Text(
                                 text = "排序",

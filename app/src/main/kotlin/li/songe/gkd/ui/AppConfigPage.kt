@@ -43,8 +43,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
@@ -80,6 +83,7 @@ import li.songe.gkd.util.throttle
 @Composable
 fun AppConfigPage(appId: String) {
     val navController = LocalNavController.current
+    val density = LocalDensity.current
     val vm = hiltViewModel<AppConfigVm>()
     val ruleSortType by vm.ruleSortTypeFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
@@ -90,6 +94,9 @@ fun AppConfigPage(appId: String) {
     var expanded by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     var isFirstVisit by remember { mutableStateOf(true) }
+    var actionButtonHeight by remember {
+        mutableStateOf(0.dp)
+    }
     LaunchedEffect(globalGroups.size, appGroups.size, ruleSortType.value) {
         if (isFirstVisit) {
             isFirstVisit = false
@@ -119,6 +126,8 @@ fun AppConfigPage(appId: String) {
             }, actions = {
                 IconButton(onClick = {
                     expanded = true
+                },modifier = Modifier.onGloballyPositioned {
+                    actionButtonHeight = with(density){ it.size.height.toDp()}
                 }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Sort,
@@ -131,7 +140,7 @@ fun AppConfigPage(appId: String) {
                 ) {
                     DropdownMenu(
                         expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        onDismissRequest = { expanded = false },offset = DpOffset(x = 0.dp, y = actionButtonHeight/2)
                     ) {
                         Text(
                             text = "排序",

@@ -43,7 +43,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.LogUtils
@@ -82,6 +86,7 @@ fun SubsPage(
 ) {
     val navController = LocalNavController.current
     val mainVm = LocalMainViewModel.current
+    val density = LocalDensity.current
 
     val vm = hiltViewModel<SubsVm>()
     val subsItem = vm.subsItemFlow.collectAsState().value
@@ -117,6 +122,9 @@ fun SubsPage(
     val sortType by vm.sortTypeFlow.collectAsState()
     val listState = rememberLazyListState()
     var isFirstVisit by remember { mutableStateOf(false) }
+    var actionButtonHeight by remember {
+        mutableStateOf(0.dp)
+    }
     LaunchedEffect(
         appAndConfigs.size,
         sortType.value,
@@ -172,7 +180,9 @@ fun SubsPage(
                     }) {
                         Icon(Icons.Outlined.Search, contentDescription = null)
                     }
-                    IconButton(onClick = { expanded = true }) {
+                    IconButton(onClick = { expanded = true },modifier = Modifier.onGloballyPositioned {
+                        actionButtonHeight = with(density){ it.size.height.toDp()}
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Sort, contentDescription = null
                         )
@@ -180,7 +190,7 @@ fun SubsPage(
                     Box(
                         modifier = Modifier.wrapContentSize(Alignment.TopStart)
                     ) {
-                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false },offset = DpOffset(x = 0.dp, y = actionButtonHeight/2)) {
                             Text(
                                 text = "排序",
                                 modifier = Modifier.menuPadding(),
