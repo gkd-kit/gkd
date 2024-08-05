@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -344,7 +343,6 @@ fun AppItemPage(
 
     showGroupItem?.let { showGroupItemVal ->
         AlertDialog(
-            modifier = Modifier.defaultMinSize(300.dp),
             onDismissRequest = { setShowGroupItem(null) },
             title = {
                 Text(text = "规则组详情")
@@ -352,8 +350,10 @@ fun AppItemPage(
             text = {
                 Column {
                     Text(text = showGroupItemVal.name)
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(text = showGroupItemVal.desc ?: "")
+                    if (showGroupItemVal.desc != null) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(text = showGroupItemVal.desc)
+                    }
                 }
             },
             confirmButton = {
@@ -371,7 +371,15 @@ fun AppItemPage(
                         Text(text = "查看图片")
                     }
                 }
-            })
+            },
+            dismissButton = {
+                TextButton(onClick = throttle {
+                    setShowGroupItem(null)
+                }) {
+                    Text(text = "关闭")
+                }
+            }
+        )
     }
 
     if (editGroupRaw != null && subsItem != null) {

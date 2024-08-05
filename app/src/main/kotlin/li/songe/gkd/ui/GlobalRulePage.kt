@@ -484,6 +484,12 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                         Text(text = "查看图片")
                     }
                 }
-            })
+            },
+            dismissButton = {
+                TextButton(onClick = { setShowGroupItem(null) }) {
+                    Text(text = "关闭")
+                }
+            }
+        )
     }
 }
