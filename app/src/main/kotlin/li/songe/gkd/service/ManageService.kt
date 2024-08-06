@@ -37,10 +37,10 @@ class ManageService : CompositionService({
             if (!store.enableService) return@combine "服务已暂停"
             if (store.useCustomNotifText) {
                 return@combine store.customNotifText
-                    .replace("\${a}", ruleSummary.globalGroups.size.toString())
-                    .replace("\${b}", ruleSummary.appSize.toString())
-                    .replace("\${c}", ruleSummary.appGroupSize.toString())
-                    .replace("\${d}", count.toString())
+                    .replace("\${i}", ruleSummary.globalGroups.size.toString())
+                    .replace("\${k}", ruleSummary.appSize.toString())
+                    .replace("\${u}", ruleSummary.appGroupSize.toString())
+                    .replace("\${n}", count.toString())
             }
             return@combine getSubsStatus(ruleSummary, count)
         }.debounce(500L).stateIn(scope, SharingStarted.Eagerly, "").collect { text ->
