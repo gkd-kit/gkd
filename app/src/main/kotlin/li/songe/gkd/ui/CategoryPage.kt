@@ -204,7 +204,7 @@ fun CategoryPage(subsItemId: Long) {
                                     vm.viewModelScope.launchTry {
                                         mainVm.dialogFlow.waitResult(
                                             title = "删除类别",
-                                            text = "是否删除 ${category.name} ?",
+                                            text = "确定删除 ${category.name} ?",
                                             error = true,
                                         )
                                         subsItem?.apply {

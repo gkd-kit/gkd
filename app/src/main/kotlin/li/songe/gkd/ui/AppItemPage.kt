@@ -295,7 +295,8 @@ fun AppItemPage(
                                         vm.viewModelScope.launchTry {
                                             mainVm.dialogFlow.waitResult(
                                                 title = "删除规则组",
-                                                text = "确定删除规则组 ${group.name} ?"
+                                                text = "确定删除规则组 ${group.name} ?",
+                                                error = true,
                                             )
                                             val newSubsRaw = subsRaw.copy(
                                                 apps = subsRaw.apps

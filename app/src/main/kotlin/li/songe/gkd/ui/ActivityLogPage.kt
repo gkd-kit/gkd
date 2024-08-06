@@ -81,7 +81,7 @@ fun ActivityLogPage() {
                     IconButton(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                         mainVm.dialogFlow.waitResult(
                             title = "删除记录",
-                            text = "是否删除所有界面记录?",
+                            text = "确定删除所有界面记录?",
                             error = true,
                         )
                         DbSet.activityLogDao.deleteAll()

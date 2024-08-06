@@ -111,7 +111,7 @@ fun SnapshotPage() {
                     IconButton(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                         context.mainVm.dialogFlow.waitResult(
                             title = "删除记录",
-                            text = "是否删除全部快照记录?",
+                            text = "确定删除全部快照记录?",
                             error = true,
                         )
                         snapshots.forEach { s ->

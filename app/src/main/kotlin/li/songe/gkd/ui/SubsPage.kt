@@ -268,7 +268,8 @@ fun SubsPage(
                     onDelClick = throttle(fn = vm.viewModelScope.launchAsFn {
                         mainVm.dialogFlow.waitResult(
                             title = "删除规则组",
-                            text = "确定删除 ${appInfoCache[appRaw.id]?.name ?: appRaw.name ?: appRaw.id} 下所有规则组?"
+                            text = "确定删除 ${appInfoCache[appRaw.id]?.name ?: appRaw.name ?: appRaw.id} 下所有规则组?",
+                            error = true,
                         )
                         if (subsRaw != null && subsItem != null) {
                             updateSubscription(subsRaw.copy(apps = subsRaw.apps.filter { a -> a.id != appRaw.id }))
