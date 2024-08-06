@@ -216,10 +216,14 @@ fun useSubsManagePage(): ScaffoldExt {
                         selectedIds
                     }
                     if (canDeleteIds.isNotEmpty()) {
+                        val text = "是否删除所选 ${canDeleteIds.size} 个订阅?".let {
+                            if (selectedIds.contains(LOCAL_SUBS_ID)) "$it\n\n注: 不包含本地订阅" else it
+                        }
                         IconButton(onClick = vm.viewModelScope.launchAsFn {
                             mainVm.dialogFlow.waitResult(
                                 title = "删除订阅",
-                                text = "是否删除所选 ${canDeleteIds.size} 个订阅?\n\n注: 不包含本地订阅",
+                                text = text,
+                                error = true,
                             )
                             deleteSubscription(*canDeleteIds.toLongArray())
                             selectedIds = selectedIds - canDeleteIds

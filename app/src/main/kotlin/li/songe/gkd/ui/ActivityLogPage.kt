@@ -82,6 +82,7 @@ fun ActivityLogPage() {
                         mainVm.dialogFlow.waitResult(
                             title = "删除记录",
                             text = "是否删除所有界面记录?",
+                            error = true,
                         )
                         DbSet.activityLogDao.deleteAll()
                     })) {

@@ -13,7 +13,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -23,7 +22,6 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -107,9 +105,6 @@ fun ClickLogPage() {
             setPreviewConfigFlow(MutableStateFlow(null))
         }
     })
-    var showDeleteDlg by remember {
-        mutableStateOf(false)
-    }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
@@ -132,6 +127,7 @@ fun ClickLogPage() {
                         mainVm.dialogFlow.waitResult(
                             title = "删除记录",
                             text = "是否删除所有触发记录?",
+                            error = true,
                         )
                         DbSet.clickLogDao.deleteAll()
                     })) {
@@ -343,26 +339,4 @@ fun ClickLogPage() {
             }
         }
     }
-
-    if (showDeleteDlg) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDlg = false },
-            title = { Text(text = "是否删除全部点击触发记录?") },
-            confirmButton = {
-                TextButton(onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                    showDeleteDlg = false
-                    DbSet.clickLogDao.deleteAll()
-                }) {
-                    Text(text = "是", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showDeleteDlg = false
-                }) {
-                    Text(text = "否")
-                }
-            })
-    }
-
 }

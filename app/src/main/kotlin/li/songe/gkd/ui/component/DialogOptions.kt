@@ -1,11 +1,14 @@
 package li.songe.gkd.ui.component
 
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.yield
@@ -22,7 +25,7 @@ data class AlertDialogOptions(
     val dismissButton: @Composable (() -> Unit)? = null,
 )
 
-fun buildDialogOptions(
+private fun buildDialogOptions(
     title: String,
     text: String,
     confirmText: String,
@@ -30,6 +33,7 @@ fun buildDialogOptions(
     dismissText: String? = null,
     dismissAction: (() -> Unit)? = null,
     onDismissRequest: (() -> Unit)? = null,
+    error: Boolean = false,
 ): AlertDialogOptions {
     return AlertDialogOptions(
         text = {
@@ -40,13 +44,20 @@ fun buildDialogOptions(
         },
         onDismissRequest = onDismissRequest,
         confirmButton = {
-            TextButton(onClick = throttle(fn = confirmAction)) {
+            TextButton(
+                onClick = throttle(fn = confirmAction),
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = if (error) MaterialTheme.colorScheme.error else Color.Unspecified
+                )
+            ) {
                 Text(text = confirmText)
             }
         },
         dismissButton = if (dismissText != null && dismissAction != null) {
             {
-                TextButton(onClick = throttle(fn = dismissAction)) {
+                TextButton(
+                    onClick = throttle(fn = dismissAction),
+                ) {
                     Text(text = dismissText)
                 }
             }
@@ -70,14 +81,37 @@ fun BuildDialog(stateFlow: MutableStateFlow<AlertDialogOptions?>) {
     }
 }
 
+fun MutableStateFlow<AlertDialogOptions?>.updateDialogOptions(
+    title: String,
+    text: String,
+    confirmText: String = "我知道了",
+    confirmAction: (() -> Unit)? = null,
+    dismissText: String? = null,
+    dismissAction: (() -> Unit)? = null,
+    onDismissRequest: (() -> Unit)? = null,
+    error: Boolean = false,
+) {
+    value = buildDialogOptions(
+        title = title,
+        text = text,
+        confirmText = confirmText,
+        confirmAction = confirmAction ?: { value = null },
+        dismissText = dismissText,
+        dismissAction = dismissAction,
+        onDismissRequest = onDismissRequest,
+        error = error,
+    )
+}
+
 const val DEFAULT_CONFIRM_TEXT = "确定"
 const val DEFAULT_DISMISS_TEXT = "取消"
 
-suspend fun MutableStateFlow<AlertDialogOptions?>.getResult(
+private suspend fun MutableStateFlow<AlertDialogOptions?>.getResult(
     title: String,
     text: String,
     confirmText: String = DEFAULT_CONFIRM_TEXT,
     dismissText: String = DEFAULT_DISMISS_TEXT,
+    error: Boolean = false,
 ): Boolean {
     return suspendCoroutine { s ->
         this.value = buildDialogOptions(
@@ -94,6 +128,7 @@ suspend fun MutableStateFlow<AlertDialogOptions?>.getResult(
                 s.resume(false)
                 this.value = null
             },
+            error = error,
         )
     }
 }
@@ -103,12 +138,14 @@ suspend fun MutableStateFlow<AlertDialogOptions?>.waitResult(
     text: String,
     confirmText: String = DEFAULT_CONFIRM_TEXT,
     dismissText: String = DEFAULT_DISMISS_TEXT,
+    error: Boolean = false,
 ) {
     val r = getResult(
         title = title,
         text = text,
         confirmText = confirmText,
         dismissText = dismissText,
+        error = error,
     )
     if (!r) {
         coroutineContext[Job]?.cancel()

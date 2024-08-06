@@ -32,7 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import com.ramcosta.composedestinations.navigation.navigate
-import li.songe.gkd.ui.component.buildDialogOptions
+import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.style.EmptyHeight
@@ -72,11 +72,9 @@ fun SlowGroupPage() {
                 title = { Text(text = if (ruleSummary.slowGroupCount > 0) "缓慢查询-${ruleSummary.slowGroupCount}" else "缓慢查询") },
                 actions = {
                     IconButton(onClick = throttle {
-                        mainVm.dialogFlow.value = buildDialogOptions(
+                        mainVm.dialogFlow.updateDialogOptions(
                             title = "缓慢查询",
                             text = "任意单个规则同时满足以下 3 个条件即判定为缓慢查询\n\n1. 选择器右侧无法快速查询且不是主动查询, 或内部使用<<且无法快速查询\n2. preKeys 为空\n3. matchTime 为空或大于 10s",
-                            confirmText = "我知道了",
-                            confirmAction = { mainVm.dialogFlow.value = null }
                         )
                     }) {
                         Icon(Icons.Outlined.Info, contentDescription = null)

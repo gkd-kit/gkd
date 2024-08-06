@@ -57,7 +57,7 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.ui.component.buildDialogOptions
+import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.style.EmptyHeight
@@ -361,13 +361,9 @@ private fun AppGroupCard(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                 ) {
-                    mainVm.dialogFlow.value = buildDialogOptions(
+                    mainVm.dialogFlow.updateDialogOptions(
                         title = "内置禁用",
                         text = "此规则组已经在其 apps 字段中配置对当前应用的禁用, 因此无法手动开启规则组\n\n提示: 这种情况一般在此全局规则无法适配/跳过适配/单独适配当前应用时出现",
-                        confirmText = "我知道了",
-                        confirmAction = {
-                            mainVm.dialogFlow.value = null
-                        },
                     )
                 }
             )

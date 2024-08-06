@@ -256,7 +256,8 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                                         vm.viewModelScope.launchTry {
                                             mainVm.dialogFlow.waitResult(
                                                 title = "删除规则组",
-                                                text = "是否删除 ${group.name} ?"
+                                                text = "是否删除 ${group.name} ?",
+                                                error = true,
                                             )
                                             updateSubscription(
                                                 rawSubs!!.copy(
