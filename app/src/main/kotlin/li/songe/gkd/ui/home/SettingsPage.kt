@@ -161,7 +161,7 @@ fun useSettingsPage(): ScaffoldExt {
                 IconButton(onClick = throttle {
                     mainVm.dialogFlow.value = buildDialogOptions(
                         title = "文案规则",
-                        text = "通知文案支持变量替换,规则如下\n\${a} 全局规则数\n\${b} 应用数\n\${c} 应用规则组数\n\${d} 触发次数\n\n示例模板\n\${a}全局/\${b}应用/\${c}规则组/\${d}触发\n\n替换结果\n0全局/1应用/2规则组/3触发",
+                        text = "通知文案支持变量替换,规则如下\n\${i} 全局规则数\n\${k} 应用数\n\${u} 应用规则组数\n\${n} 触发次数\n\n示例模板\n\${i}全局/\${k}应用/\${u}规则组/\${n}触发\n\n替换结果\n0全局/1应用/2规则组/3触发",
                         confirmText = "知道了",
                         confirmAction = { mainVm.dialogFlow.value = null },
                     )
