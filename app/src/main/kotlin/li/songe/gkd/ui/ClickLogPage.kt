@@ -126,7 +126,7 @@ fun ClickLogPage() {
                     IconButton(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                         mainVm.dialogFlow.waitResult(
                             title = "删除记录",
-                            text = "是否删除所有触发记录?",
+                            text = "确定删除所有触发记录?",
                             error = true,
                         )
                         DbSet.clickLogDao.deleteAll()

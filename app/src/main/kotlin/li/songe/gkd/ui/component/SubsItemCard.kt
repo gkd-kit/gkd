@@ -309,7 +309,7 @@ private fun SubsMenuItem(
                     vm.viewModelScope.launchTry {
                         mainVm.dialogFlow.waitResult(
                             title = "删除订阅",
-                            text = "是否删除 ${subscription?.name ?: subItem.id} ?",
+                            text = "确定删除 ${subscription?.name ?: subItem.id} ?",
                             error = true,
                         )
                         deleteSubscription(subItem.id)
