@@ -226,9 +226,9 @@ private fun SubsMenuItem(
         expanded = expanded,
         onDismissRequest = { onExpandedChange(false) },
         modifier = Modifier.onGloballyPositioned {
-            halfMenuWidth = with(density){it.size.width.toDp()} / 2
+            halfMenuWidth = with(density) { it.size.width.toDp() } / 2
         },
-        offset = DpOffset(if (offsetX < halfMenuWidth) 0.dp else offsetX - halfMenuWidth,0.dp)
+        offset = DpOffset(if (offsetX < halfMenuWidth) 0.dp else offsetX - halfMenuWidth, 0.dp)
     ) {
         if (subscription != null) {
             if (subItem.id < 0 || subscription.apps.isNotEmpty()) {
@@ -309,7 +309,8 @@ private fun SubsMenuItem(
                     vm.viewModelScope.launchTry {
                         mainVm.dialogFlow.waitResult(
                             title = "删除订阅",
-                            text = "是否删除订阅 ${subscription?.name ?: subItem.id} ?",
+                            text = "是否删除 ${subscription?.name ?: subItem.id} ?",
+                            error = true,
                         )
                         deleteSubscription(subItem.id)
                     }

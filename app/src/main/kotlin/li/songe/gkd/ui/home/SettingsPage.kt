@@ -53,7 +53,7 @@ import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.TextSwitch
-import li.songe.gkd.ui.component.buildDialogOptions
+import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.destinations.AboutPageDestination
 import li.songe.gkd.ui.destinations.AdvancedPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
@@ -159,11 +159,9 @@ fun useSettingsPage(): ScaffoldExt {
             ) {
                 Text(text = "通知文案")
                 IconButton(onClick = throttle {
-                    mainVm.dialogFlow.value = buildDialogOptions(
+                    mainVm.dialogFlow.updateDialogOptions(
                         title = "文案规则",
                         text = "通知文案支持变量替换,规则如下\n\${i} 全局规则数\n\${k} 应用数\n\${u} 应用规则组数\n\${n} 触发次数\n\n示例模板\n\${i}全局/\${k}应用/\${u}规则组/\${n}触发\n\n替换结果\n0全局/1应用/2规则组/3触发",
-                        confirmText = "知道了",
-                        confirmAction = { mainVm.dialogFlow.value = null },
                     )
                 }) {
                     Icon(
@@ -176,7 +174,7 @@ fun useSettingsPage(): ScaffoldExt {
             OutlinedTextField(
                 value = value,
                 placeholder = {
-                    Text(text = "请输入文案内容")
+                    Text(text = "请输入文案内容,支持变量替换")
                 },
                 onValueChange = {
                     value = it.take(maxCharLen)

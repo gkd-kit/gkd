@@ -59,6 +59,7 @@ import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.permission.canWriteExternalStorage
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.ui.component.StartEllipsisText
+import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.destinations.ImagePreviewPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.IMPORT_BASE_URL
@@ -91,10 +92,6 @@ fun SnapshotPage() {
         mutableStateOf<Snapshot?>(null)
     }
 
-    var showDeleteDlg by remember {
-        mutableStateOf(false)
-    }
-
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         TopAppBar(scrollBehavior = scrollBehavior,
@@ -111,7 +108,17 @@ fun SnapshotPage() {
             title = { Text(text = if (snapshots.isEmpty()) "快照记录" else "快照记录-${snapshots.size}") },
             actions = {
                 if (snapshots.isNotEmpty()) {
-                    IconButton(onClick = { showDeleteDlg = true }) {
+                    IconButton(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                        context.mainVm.dialogFlow.waitResult(
+                            title = "删除记录",
+                            text = "是否删除全部快照记录?",
+                            error = true,
+                        )
+                        snapshots.forEach { s ->
+                            SnapshotExt.removeAssets(s.id)
+                        }
+                        DbSet.snapshotDao.deleteAll()
+                    })) {
                         Icon(
                             imageVector = Icons.Outlined.Delete,
                             contentDescription = null,
@@ -378,31 +385,6 @@ fun SnapshotPage() {
         }
 
         else -> {}
-    }
-
-    if (showDeleteDlg) {
-        AlertDialog(onDismissRequest = { showDeleteDlg = false },
-            title = { Text(text = "是否删除全部快照记录?") },
-            confirmButton = {
-                TextButton(
-                    onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                        showDeleteDlg = false
-                        snapshots.forEach { s ->
-                            SnapshotExt.removeAssets(s.id)
-                        }
-                        DbSet.snapshotDao.deleteAll()
-                    },
-                ) {
-                    Text(text = "是", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showDeleteDlg = false
-                }) {
-                    Text(text = "否")
-                }
-            })
     }
 }
 

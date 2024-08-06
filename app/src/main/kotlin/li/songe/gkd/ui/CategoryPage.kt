@@ -51,7 +51,7 @@ import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.TowLineText
-import li.songe.gkd.ui.component.buildDialogOptions
+import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
@@ -107,11 +107,9 @@ fun CategoryPage(subsItemId: Long) {
             )
         }, actions = {
             IconButton(onClick = throttle {
-                mainVm.dialogFlow.value = buildDialogOptions(
+                mainVm.dialogFlow.updateDialogOptions(
                     title = "开关优先级",
                     text = "规则手动配置 > 分类手动配置 > 分类默认 > 规则默认\n\n重置开关: 移除规则手动配置",
-                    confirmText = "我知道了",
-                    confirmAction = { mainVm.dialogFlow.value = null }
                 )
             }) {
                 Icon(Icons.Outlined.Info, contentDescription = null)
@@ -206,7 +204,8 @@ fun CategoryPage(subsItemId: Long) {
                                     vm.viewModelScope.launchTry {
                                         mainVm.dialogFlow.waitResult(
                                             title = "删除类别",
-                                            text = "是否删除类别 ${category.name} ?"
+                                            text = "是否删除 ${category.name} ?",
+                                            error = true,
                                         )
                                         subsItem?.apply {
                                             updateSubscription(subsRaw!!.copy(categories = subsRaw!!.categories.filter { c -> c.key != category.key }))
