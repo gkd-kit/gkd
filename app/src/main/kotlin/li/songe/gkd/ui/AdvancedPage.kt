@@ -15,12 +15,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
@@ -46,6 +49,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
@@ -82,12 +86,16 @@ import li.songe.gkd.util.LocalLauncher
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.buildLogFile
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openApp
 import li.songe.gkd.util.openUri
+import li.songe.gkd.util.saveFileToDownloads
+import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
 
@@ -103,9 +111,61 @@ fun AdvancedPage() {
     val snapshotCount by vm.snapshotCountFlow.collectAsState()
 
     ShizukuErrorDialog(vm.shizukuErrorFlow)
+    vm.uploadOptions.ShowDialog()
 
     var showPortDlg by remember {
         mutableStateOf(false)
+    }
+    var showShareLogDlg by remember {
+        mutableStateOf(false)
+    }
+    if (showShareLogDlg) {
+        Dialog(onDismissRequest = { showShareLogDlg = false }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                val modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                Text(
+                    text = "分享到其他应用", modifier = Modifier
+                        .clickable(onClick = throttle {
+                            showShareLogDlg = false
+                            vm.viewModelScope.launchTry(Dispatchers.IO) {
+                                val logZipFile = buildLogFile()
+                                context.shareFile(logZipFile, "分享日志文件")
+                            }
+                        })
+                        .then(modifier)
+                )
+                Text(
+                    text = "保存到下载", modifier = Modifier
+                        .clickable(onClick = throttle {
+                            showShareLogDlg = false
+                            vm.viewModelScope.launchTry(Dispatchers.IO) {
+                                val logZipFile = buildLogFile()
+                                context.saveFileToDownloads(logZipFile)
+                            }
+                        })
+                        .then(modifier)
+                )
+                Text(
+                    text = "生成链接(需科学上网)",
+                    modifier = Modifier
+                        .clickable(onClick = throttle {
+                            showShareLogDlg = false
+                            vm.viewModelScope.launchTry(Dispatchers.IO) {
+                                val logZipFile = buildLogFile()
+                                vm.uploadOptions.startTask(logZipFile)
+                            }
+                        })
+                        .then(modifier)
+                )
+            }
+        }
     }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -324,7 +384,7 @@ fun AdvancedPage() {
             }
 
             TextSwitch(
-                name = "隐藏快照状态栏",
+                name = "隐藏状态栏",
                 desc = "当保存快照时,隐藏截图里的顶部状态栏高度区域",
                 checked = store.hideSnapshotStatusBar
             ) {
@@ -334,7 +394,7 @@ fun AdvancedPage() {
             }
 
             TextSwitch(
-                name = "保存快照提示",
+                name = "保存提示",
                 desc = "保存快照时是否提示\"正在保存快照\"",
                 checked = store.showSaveSnapshotToast
             ) {
@@ -342,6 +402,37 @@ fun AdvancedPage() {
                     showSaveSnapshotToast = it
                 )
             }
+
+            Text(
+                text = "日志",
+                modifier = Modifier.titleItemPadding(),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+
+            TextSwitch(name = "保存日志",
+                desc = "保存7天日志,帮助定位BUG",
+                checked = store.log2FileSwitch,
+                onCheckedChange = {
+                    storeFlow.value = store.copy(
+                        log2FileSwitch = it
+                    )
+                    if (!it) {
+                        context.mainVm.viewModelScope.launchTry(Dispatchers.IO) {
+                            val logFiles = LogUtils.getLogFiles()
+                            if (logFiles.isNotEmpty()) {
+                                logFiles.forEach { f ->
+                                    f.delete()
+                                }
+                                toast("已删除全部日志")
+                            }
+                        }
+                    }
+                })
+
+            SettingItem(title = "导出日志", imageVector = Icons.Default.Upload, onClick = {
+                showShareLogDlg = true
+            })
 
             Text(
                 text = "其它",

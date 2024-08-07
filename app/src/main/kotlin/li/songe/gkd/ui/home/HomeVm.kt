@@ -5,16 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.LogUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.ktor.client.call.body
-import io.ktor.client.plugins.onUpload
-import io.ktor.client.request.forms.formData
-import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.Headers
-import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -22,13 +15,9 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.appScope
-import li.songe.gkd.data.GithubPoliciesAsset
 import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.util.FILE_UPLOAD_URL
-import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.clickCountFlow
@@ -44,47 +33,11 @@ import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.subsRefreshingFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
-import java.io.File
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeVm @Inject constructor() : ViewModel() {
     val tabFlow = MutableStateFlow(controlNav)
-
-    val uploadStatusFlow = MutableStateFlow<LoadStatus<GithubPoliciesAsset>?>(null)
-    var uploadJob: Job? = null
-
-    fun uploadZip(zipFile: File) {
-        uploadJob = viewModelScope.launchTry(Dispatchers.IO) {
-            uploadStatusFlow.value = LoadStatus.Loading()
-            try {
-                val response =
-                    client.submitFormWithBinaryData(url = FILE_UPLOAD_URL, formData = formData {
-                        append("\"file\"", zipFile.readBytes(), Headers.build {
-                            append(HttpHeaders.ContentType, "application/x-zip-compressed")
-                            append(HttpHeaders.ContentDisposition, "filename=\"file.zip\"")
-                        })
-                    }) {
-                        onUpload { bytesSentTotal, contentLength ->
-                            if (uploadStatusFlow.value is LoadStatus.Loading) {
-                                uploadStatusFlow.value =
-                                    LoadStatus.Loading(bytesSentTotal / contentLength.toFloat())
-                            }
-                        }
-                    }
-                if (response.headers["X_RPC_OK"] == "true") {
-                    val policiesAsset = response.body<GithubPoliciesAsset>()
-                    uploadStatusFlow.value = LoadStatus.Success(policiesAsset)
-                } else if (response.headers["X_RPC_OK"] == "false") {
-                    uploadStatusFlow.value = LoadStatus.Failure(response.body<RpcError>())
-                } else {
-                    uploadStatusFlow.value = LoadStatus.Failure(Exception(response.bodyAsText()))
-                }
-            } catch (e: Exception) {
-                uploadStatusFlow.value = LoadStatus.Failure(e)
-            }
-        }
-    }
 
     private val latestRecordFlow =
         DbSet.clickLogDao.queryLatest().stateIn(viewModelScope, SharingStarted.Eagerly, null)
