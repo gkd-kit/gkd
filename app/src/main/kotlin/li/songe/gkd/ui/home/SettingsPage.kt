@@ -9,17 +9,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -35,20 +31,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
-import com.blankj.utilcode.util.ClipboardUtils
-import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.navigation.navigate
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.BuildConfig.ENABLED_UPDATE
-import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
@@ -61,17 +49,12 @@ import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.ui.theme.supportDynamicColor
 import li.songe.gkd.util.DarkThemeOption
-import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.UpdateTimeOption
-import li.songe.gkd.util.buildLogFile
 import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.saveFileToDownloads
-import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
@@ -82,21 +65,15 @@ val settingsNav = BottomNavItem(
 
 @Composable
 fun useSettingsPage(): ScaffoldExt {
-    val context = LocalContext.current as MainActivity
     val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     val store by storeFlow.collectAsState()
     val vm = hiltViewModel<HomeVm>()
-    val uploadStatus by vm.uploadStatusFlow.collectAsState()
 
     var showToastInputDlg by remember {
         mutableStateOf(false)
     }
     var showNotifTextInputDlg by remember {
-        mutableStateOf(false)
-    }
-
-    var showShareLogDlg by remember {
         mutableStateOf(false)
     }
 
@@ -208,118 +185,6 @@ fun useSettingsPage(): ScaffoldExt {
                 )
             }
         })
-    }
-
-    if (showShareLogDlg) {
-        Dialog(onDismissRequest = { showShareLogDlg = false }) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                val modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                Text(
-                    text = "分享到其他应用", modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareLogDlg = false
-                            vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val logZipFile = buildLogFile()
-                                context.shareFile(logZipFile, "分享日志文件")
-                            }
-                        })
-                        .then(modifier)
-                )
-                Text(
-                    text = "保存到下载", modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareLogDlg = false
-                            vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val logZipFile = buildLogFile()
-                                context.saveFileToDownloads(logZipFile)
-                            }
-                        })
-                        .then(modifier)
-                )
-                Text(
-                    text = "生成链接(需科学上网)",
-                    modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareLogDlg = false
-                            vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val logZipFile = buildLogFile()
-                                vm.uploadZip(logZipFile)
-                            }
-                        })
-                        .then(modifier)
-                )
-            }
-        }
-    }
-
-    when (val uploadStatusVal = uploadStatus) {
-        is LoadStatus.Failure -> {
-            AlertDialog(
-                title = { Text(text = "上传失败") },
-                text = {
-                    Text(text = uploadStatusVal.exception.let {
-                        it.message ?: it.toString()
-                    })
-                },
-                onDismissRequest = { vm.uploadStatusFlow.value = null },
-                confirmButton = {
-                    TextButton(onClick = {
-                        vm.uploadStatusFlow.value = null
-                    }) {
-                        Text(text = "关闭")
-                    }
-                },
-            )
-        }
-
-        is LoadStatus.Loading -> {
-            AlertDialog(
-                title = { Text(text = "上传文件中") },
-                text = {
-                    LinearProgressIndicator(
-                        progress = { uploadStatusVal.progress },
-                    )
-                },
-                onDismissRequest = { },
-                confirmButton = {
-                    TextButton(onClick = {
-                        vm.uploadJob?.cancel(CancellationException("终止上传"))
-                        vm.uploadJob = null
-                    }) {
-                        Text(text = "终止上传")
-                    }
-                },
-            )
-        }
-
-        is LoadStatus.Success -> {
-            AlertDialog(title = { Text(text = "上传完成") }, text = {
-                Text(text = uploadStatusVal.result.shortHref)
-            }, onDismissRequest = {}, dismissButton = {
-                TextButton(onClick = {
-                    vm.uploadStatusFlow.value = null
-                }) {
-                    Text(text = "关闭")
-                }
-            }, confirmButton = {
-                TextButton(onClick = {
-                    ClipboardUtils.copyText(uploadStatusVal.result.shortHref)
-                    toast("复制成功")
-                    vm.uploadStatusFlow.value = null
-                }) {
-                    Text(text = "复制")
-                }
-            })
-        }
-
-        else -> {}
     }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -469,37 +334,6 @@ fun useSettingsPage(): ScaffoldExt {
                     RotatingLoadingIcon(loading = checkUpdating)
                 }
             }
-
-            Text(
-                text = "日志",
-                modifier = Modifier.titleItemPadding(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            TextSwitch(name = "保存日志",
-                desc = "保存7天日志,帮助定位BUG",
-                checked = store.log2FileSwitch,
-                onCheckedChange = {
-                    storeFlow.value = store.copy(
-                        log2FileSwitch = it
-                    )
-                    if (!it) {
-                        mainVm.viewModelScope.launchTry(Dispatchers.IO) {
-                            val logFiles = LogUtils.getLogFiles()
-                            if (logFiles.isNotEmpty()) {
-                                logFiles.forEach { f ->
-                                    f.delete()
-                                }
-                                toast("已删除全部日志")
-                            }
-                        }
-                    }
-                })
-
-            SettingItem(title = "导出日志", imageVector = Icons.Default.Upload, onClick = {
-                showShareLogDlg = true
-            })
 
             Text(
                 text = "其它",
