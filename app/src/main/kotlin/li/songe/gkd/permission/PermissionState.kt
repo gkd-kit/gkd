@@ -11,6 +11,8 @@ import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.updateAndGet
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.shizuku.newActivityTaskManager
@@ -163,20 +165,20 @@ val shizukuOkState by lazy {
     )
 }
 
-private val checkAuthLoading = MutableStateFlow(false)
+private val checkAuthMutex by lazy { Mutex() }
 suspend fun updatePermissionState() {
-    if (checkAuthLoading.value) return
-    checkAuthLoading.value = true
-    arrayOf(
-        notificationState,
-        canDrawOverlaysState,
-        canWriteExternalStorage,
-        shizukuOkState
-    ).forEach { it.updateAndGet() }
-    if (canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet()) {
-        appScope.launchTry {
-            initOrResetAppInfoCache()
+    if (checkAuthMutex.isLocked) return
+    checkAuthMutex.withLock {
+        arrayOf(
+            notificationState,
+            canDrawOverlaysState,
+            canWriteExternalStorage,
+            shizukuOkState
+        ).forEach { it.updateAndGet() }
+        if (canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet()) {
+            appScope.launchTry {
+                initOrResetAppInfoCache()
+            }
         }
     }
-    checkAuthLoading.value = false
 }
