@@ -2,6 +2,7 @@ package li.songe.gkd.ui.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
@@ -19,6 +20,7 @@ import li.songe.gkd.util.throttle
 @Composable
 fun SettingItem(
     title: String,
+    subtitle: String? = null,
     imageVector: ImageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
     onClick: () -> Unit,
 ) {
@@ -32,10 +34,24 @@ fun SettingItem(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-        )
+        if (subtitle != null) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
         Icon(imageVector = imageVector, contentDescription = title)
     }
 }

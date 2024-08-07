@@ -80,6 +80,7 @@ import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.updateDialogOptions
+import li.songe.gkd.ui.destinations.ActivityLogPageDestination
 import li.songe.gkd.ui.destinations.SnapshotPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
@@ -426,6 +427,29 @@ fun AdvancedPage() {
                     showSaveSnapshotToast = it
                 )
             }
+
+            Text(
+                text = "界面记录",
+                modifier = Modifier.titleItemPadding(),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+
+            TextSwitch(
+                name = "记录界面",
+                desc = "记录打开的应用及界面",
+                checked = store.enableActivityLog
+            ) {
+                storeFlow.value = store.copy(
+                    enableActivityLog = it
+                )
+            }
+            SettingItem(
+                title = "界面记录",
+                onClick = {
+                    navController.navigate(ActivityLogPageDestination)
+                }
+            )
 
             Text(
                 text = "日志",

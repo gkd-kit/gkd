@@ -66,6 +66,7 @@ data class Store(
     val useSystemToast: Boolean = false,
     val useCustomNotifText: Boolean = false,
     val customNotifText: String = "\${i}全局/\${k}应用/\${u}规则组/\${n}触发",
+    val enableActivityLog: Boolean = false,
 )
 
 val storeFlow by lazy {
