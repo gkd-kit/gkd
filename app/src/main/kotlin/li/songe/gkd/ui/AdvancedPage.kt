@@ -48,6 +48,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
@@ -78,6 +79,7 @@ import li.songe.gkd.shizuku.safeGetTasks
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
+import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.destinations.SnapshotPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
@@ -246,9 +248,10 @@ fun AdvancedPage() {
                                 Text(
                                     text = "http://127.0.0.1:${store.httpServerPort}",
                                     color = MaterialTheme.colorScheme.primary,
+                                    style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
                                     modifier = Modifier.clickable {
                                         context.openUri("http://127.0.0.1:${store.httpServerPort}")
-                                    }
+                                    },
                                 )
                                 Spacer(modifier = Modifier.width(2.dp))
                                 Text(text = "仅本设备可访问")
@@ -257,6 +260,7 @@ fun AdvancedPage() {
                                 Text(
                                     text = "http://${host}:${store.httpServerPort}",
                                     color = MaterialTheme.colorScheme.primary,
+                                    style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
                                     modifier = Modifier.clickable {
                                         context.openUri("http://${host}:${store.httpServerPort}")
                                     }
@@ -349,7 +353,7 @@ fun AdvancedPage() {
             val floatingRunning by FloatingService.isRunning.collectAsState()
             TextSwitch(
                 name = "悬浮窗服务",
-                desc = "显示截屏按钮,便于用户主动保存快照",
+                desc = "显示截屏按钮,点击即可保存快照",
                 checked = floatingRunning,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
@@ -365,7 +369,7 @@ fun AdvancedPage() {
 
             TextSwitch(
                 name = "音量快照",
-                desc = "音量变化时生成快照,悬浮窗按钮不工作时使用",
+                desc = "音量变化时生成快照,若悬浮按钮不工作可使用",
                 checked = store.captureVolumeChange
             ) {
                 storeFlow.value = store.copy(
@@ -375,7 +379,27 @@ fun AdvancedPage() {
 
             TextSwitch(
                 name = "截屏快照",
-                desc = "当用户截屏时保存快照(需手动替换快照图片),仅支持部分小米设备",
+                descContent = {
+                    Row {
+                        Text(
+                            text = "触发截屏时保存快照",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = "查看限制",
+                            style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline),
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.clickable(onClick = throttle {
+                                context.mainVm.dialogFlow.updateDialogOptions(
+                                    title = "限制说明",
+                                    text = "仅支持部分小米设备截屏触发\n\n只保存节点信息不保存图片, 用户需要在快照记录里替换截图",
+                                )
+                            })
+                        )
+                    }
+                },
                 checked = store.captureScreenshot
             ) {
                 storeFlow.value = store.copy(
@@ -385,7 +409,7 @@ fun AdvancedPage() {
 
             TextSwitch(
                 name = "隐藏状态栏",
-                desc = "当保存快照时,隐藏截图里的顶部状态栏高度区域",
+                desc = "隐藏快照截图顶部状态栏",
                 checked = store.hideSnapshotStatusBar
             ) {
                 storeFlow.value = store.copy(
@@ -395,7 +419,7 @@ fun AdvancedPage() {
 
             TextSwitch(
                 name = "保存提示",
-                desc = "保存快照时是否提示\"正在保存快照\"",
+                desc = "保存快照时提示\"正在保存快照\"",
                 checked = store.showSaveSnapshotToast
             ) {
                 storeFlow.value = store.copy(
@@ -410,7 +434,8 @@ fun AdvancedPage() {
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            TextSwitch(name = "保存日志",
+            TextSwitch(
+                name = "保存日志",
                 desc = "保存7天日志,帮助定位BUG",
                 checked = store.log2FileSwitch,
                 onCheckedChange = {

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -32,6 +33,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.navigation.navigate
@@ -229,7 +232,27 @@ fun useSettingsPage(): ScaffoldExt {
             if (store.toastWhenClick) {
                 TextSwitch(
                     name = "系统提示",
-                    desc = "系统样式触发提示,频率较高时不显示",
+                    descContent = {
+                        Row {
+                            Text(
+                                text = "系统样式触发提示",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(
+                                text = "查看限制",
+                                style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline),
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.clickable(onClick = throttle {
+                                    mainVm.dialogFlow.updateDialogOptions(
+                                        title = "限制说明",
+                                        text = "系统 Toast 存在频率限制, 触发过于频繁会被系统强制不显示\n\n如果只使用开屏一类低频率规则可使用系统提示, 否则建议关闭此项使用自定义样式提示",
+                                    )
+                                })
+                            )
+                        }
+                    },
                     checked = store.useSystemToast,
                     onCheckedChange = {
                         storeFlow.value = store.copy(

@@ -1,6 +1,7 @@
 package li.songe.gkd.ui.component
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
@@ -19,6 +20,7 @@ fun TextSwitch(
     modifier: Modifier = Modifier,
     name: String,
     desc: String? = null,
+    descContent: (@Composable ColumnScope.() -> Unit)? = null,
     checked: Boolean = true,
     enabled: Boolean = true,
     onCheckedChange: ((Boolean) -> Unit)? = null,
@@ -38,6 +40,8 @@ fun TextSwitch(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            } else if (descContent != null) {
+                descContent()
             }
         }
         Spacer(modifier = Modifier.width(10.dp))
