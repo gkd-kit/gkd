@@ -2,10 +2,7 @@ package li.songe.gkd.ui.home
 
 import android.content.Intent
 import android.provider.Settings
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -13,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.HorizontalDivider
@@ -26,7 +22,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -40,6 +35,7 @@ import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.ui.component.AuthCard
+import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.ActivityLogPageDestination
 import li.songe.gkd.ui.destinations.ClickLogPageDestination
@@ -133,84 +129,32 @@ fun useControlPage(): ScaffoldExt {
                     }
                 })
 
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .clickable(onClick = throttle {
-                        navController.navigate(ClickLogPageDestination)
-                    })
-                    .itemPadding(),
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "触发记录",
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Text(
-                        text = "如误触可在此快速定位关闭规则",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            SettingItem(
+                title = "触发记录",
+                subtitle = "如误触可在此快速定位关闭规则",
+                onClick = {
+                    navController.navigate(ClickLogPageDestination)
                 }
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null
-                )
-            }
+            )
 
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .clickable(onClick = throttle {
+            if (store.enableActivityLog) {
+                SettingItem(
+                    title = "界面记录",
+                    subtitle = "记录打开的应用及界面",
+                    onClick = {
                         navController.navigate(ActivityLogPageDestination)
-                    })
-                    .itemPadding(),
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "界面记录",
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Text(
-                        text = "记录打开的应用及界面",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null
+                    }
                 )
             }
 
             if (ruleSummary.slowGroupCount > 0) {
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clickable(onClick = throttle {
-                            navController.navigate(SlowGroupPageDestination)
-                        })
-                        .itemPadding(),
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "耗时查询-${ruleSummary.slowGroupCount}",
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                        Text(
-                            text = "可能导致触发缓慢或更多耗电",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                SettingItem(
+                    title = "耗时查询-${ruleSummary.slowGroupCount}",
+                    subtitle = "可能导致触发缓慢或更多耗电",
+                    onClick = {
+                        navController.navigate(SlowGroupPageDestination)
                     }
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null
-                    )
-                }
+                )
             }
             HorizontalDivider()
             Column(

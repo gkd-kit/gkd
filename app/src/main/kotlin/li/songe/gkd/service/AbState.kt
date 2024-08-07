@@ -22,6 +22,7 @@ import li.songe.gkd.util.increaseClickCount
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.recordStoreFlow
 import li.songe.gkd.util.ruleSummaryFlow
+import li.songe.gkd.util.storeFlow
 
 data class TopActivity(
     val appId: String = "",
@@ -53,17 +54,19 @@ fun updateTopActivity(topActivity: TopActivity) {
             return
         }
     }
-    appScope.launchTry(Dispatchers.IO) {
-        activityLogMutex.withLock {
-            DbSet.activityLogDao.insert(
-                ActivityLog(
-                    appId = topActivity.appId,
-                    activityId = topActivity.activityId
+    if (storeFlow.value.enableActivityLog) {
+        appScope.launchTry(Dispatchers.IO) {
+            activityLogMutex.withLock {
+                DbSet.activityLogDao.insert(
+                    ActivityLog(
+                        appId = topActivity.appId,
+                        activityId = topActivity.activityId
+                    )
                 )
-            )
-            activityLogCount++
-            if (activityLogCount % 100 == 0) {
-                DbSet.activityLogDao.deleteKeepLatest()
+                activityLogCount++
+                if (activityLogCount % 100 == 0) {
+                    DbSet.activityLogDao.deleteKeepLatest()
+                }
             }
         }
     }
