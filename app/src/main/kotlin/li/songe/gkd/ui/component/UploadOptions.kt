@@ -66,7 +66,7 @@ class UploadOptions(
     }
 
     fun startTask(file: File) {
-        if (job == null && statusFlow.value is LoadStatus.Loading) {
+        if (job != null || statusFlow.value is LoadStatus.Loading) {
             return
         }
         job = buildTask(file)
