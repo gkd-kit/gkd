@@ -4,11 +4,11 @@ plugins {
 
 android {
     namespace = "li.songe.gkd"
-    compileSdk = libs.versions.compileSdk.get().toInt()
-    buildToolsVersion = libs.versions.buildToolsVersion.get()
+    compileSdk = project.properties["android_compileSdk"].toString().toInt()
+    buildToolsVersion = project.properties["android_buildToolsVersion"].toString()
 
     defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
+        minSdk = project.properties["android_minSdk"].toString().toInt()
     }
 
     buildTypes {
