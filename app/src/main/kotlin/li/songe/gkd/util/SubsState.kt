@@ -121,7 +121,7 @@ fun getGroupRawEnable(
         enable
     } else {
         null
-    } ?: group.enable ?: true
+    } ?: group.enable != false
 }
 
 data class RuleSummary(
@@ -190,7 +190,7 @@ val ruleSummaryFlow by lazy {
                 mutableMapOf<RawSubscription.RawGlobalGroup, List<GlobalRule>>()
             rawSubs.globalGroups.filter { g ->
                 (subGlobalSubsConfigs.find { c -> c.groupKey == g.key }?.enable
-                    ?: g.enable ?: true) && g.valid
+                        ?: g.enable != false) && g.valid
             }.forEach { groupRaw ->
                 val config = subGlobalSubsConfigs.find { c -> c.groupKey == groupRaw.key }
                 val g = ResolvedGlobalGroup(
@@ -299,7 +299,7 @@ private fun loadSubs(id: Long): RawSubscription {
         error("订阅文件不存在")
     }
     val subscription = try {
-        RawSubscription.parse(file.readText())
+        RawSubscription.parse(file.readText(), json5 = false)
     } catch (e: Exception) {
         throw Exception("订阅文件解析失败", e)
     }
