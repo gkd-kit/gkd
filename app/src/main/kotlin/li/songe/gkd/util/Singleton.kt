@@ -11,7 +11,6 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import li.songe.gkd.app
 import okhttp3.OkHttpClient
@@ -20,23 +19,24 @@ import java.time.Duration
 import java.util.Locale
 
 
-val kv by lazy { MMKV.mmkvWithID("kv")!! }
+val kv by lazy { MMKV.mmkvWithID("kv") }
 
-@OptIn(ExperimentalSerializationApi::class)
 val json by lazy {
     Json {
-        isLenient = true
         ignoreUnknownKeys = true
         explicitNulls = false
         encodeDefaults = true
+
+        // support json5
+        isLenient = true // https://github.com/Kotlin/kotlinx.serialization/issues/2765
+        allowComments = true
+        allowTrailingComma = true
     }
 }
 
 val keepNullJson by lazy {
-    Json {
-        isLenient = true
-        ignoreUnknownKeys = true
-        encodeDefaults = true
+    Json(from = json) {
+        explicitNulls = true
     }
 }
 
