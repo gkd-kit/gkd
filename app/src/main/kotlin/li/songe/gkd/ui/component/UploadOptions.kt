@@ -29,47 +29,50 @@ import li.songe.gkd.util.toast
 import java.io.File
 
 class UploadOptions(
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val showHref: (GithubPoliciesAsset) -> String = { it.shortHref }
 ) {
-    private val statusFlow = MutableStateFlow<LoadStatus<GithubPoliciesAsset>?>(null)
+    val statusFlow = MutableStateFlow<LoadStatus<GithubPoliciesAsset>?>(null)
     private var job: Job? = null
-    private fun buildTask(file: File) = scope.launchTry(Dispatchers.IO) {
-        statusFlow.value = LoadStatus.Loading()
-        try {
-            val response =
-                client.submitFormWithBinaryData(url = FILE_UPLOAD_URL, formData = formData {
-                    append("\"file\"", file.readBytes(), Headers.build {
-                        append(HttpHeaders.ContentType, "application/x-zip-compressed")
-                        append(HttpHeaders.ContentDisposition, "filename=\"file.zip\"")
-                    })
-                }) {
-                    onUpload { bytesSentTotal, contentLength ->
-                        if (statusFlow.value is LoadStatus.Loading) {
-                            statusFlow.value =
-                                LoadStatus.Loading(bytesSentTotal / contentLength.toFloat())
+    private fun buildTask(file: File, onSuccessResult: ((GithubPoliciesAsset) -> Unit)?) =
+        scope.launchTry(Dispatchers.IO) {
+            statusFlow.value = LoadStatus.Loading()
+            try {
+                val response =
+                    client.submitFormWithBinaryData(url = FILE_UPLOAD_URL, formData = formData {
+                        append("\"file\"", file.readBytes(), Headers.build {
+                            append(HttpHeaders.ContentType, "application/x-zip-compressed")
+                            append(HttpHeaders.ContentDisposition, "filename=\"file.zip\"")
+                        })
+                    }) {
+                        onUpload { bytesSentTotal, contentLength ->
+                            if (statusFlow.value is LoadStatus.Loading) {
+                                statusFlow.value =
+                                    LoadStatus.Loading(bytesSentTotal / contentLength.toFloat())
+                            }
                         }
                     }
+                if (response.headers["X_RPC_OK"] == "true") {
+                    val policiesAsset = response.body<GithubPoliciesAsset>()
+                    statusFlow.value = LoadStatus.Success(policiesAsset)
+                    onSuccessResult?.invoke(policiesAsset)
+                } else if (response.headers["X_RPC_OK"] == "false") {
+                    statusFlow.value = LoadStatus.Failure(response.body<RpcError>())
+                } else {
+                    statusFlow.value = LoadStatus.Failure(Exception(response.bodyAsText()))
                 }
-            if (response.headers["X_RPC_OK"] == "true") {
-                val policiesAsset = response.body<GithubPoliciesAsset>()
-                statusFlow.value = LoadStatus.Success(policiesAsset)
-            } else if (response.headers["X_RPC_OK"] == "false") {
-                statusFlow.value = LoadStatus.Failure(response.body<RpcError>())
-            } else {
-                statusFlow.value = LoadStatus.Failure(Exception(response.bodyAsText()))
+            } catch (e: Exception) {
+                statusFlow.value = LoadStatus.Failure(e)
+            } finally {
+                job = null
             }
-        } catch (e: Exception) {
-            statusFlow.value = LoadStatus.Failure(e)
-        } finally {
-            job = null
         }
-    }
 
-    fun startTask(file: File) {
+    fun startTask(file: File, onSuccessResult: ((GithubPoliciesAsset) -> Unit)? = null) {
         if (job != null || statusFlow.value is LoadStatus.Loading) {
             return
         }
-        job = buildTask(file)
+        job = buildTask(file, onSuccessResult)
     }
 
     private fun stopTask() {
@@ -104,8 +107,9 @@ class UploadOptions(
             }
 
             is LoadStatus.Success -> {
+                val href = showHref(status.result)
                 AlertDialog(title = { Text(text = "上传完成") }, text = {
-                    Text(text = status.result.shortHref)
+                    Text(text = href)
                 }, onDismissRequest = {}, dismissButton = {
                     TextButton(onClick = {
                         statusFlow.value = null
@@ -114,7 +118,7 @@ class UploadOptions(
                     }
                 }, confirmButton = {
                     TextButton(onClick = {
-                        ClipboardUtils.copyText(status.result.shortHref)
+                        ClipboardUtils.copyText(href)
                         toast("复制成功")
                         statusFlow.value = null
                     }) {
