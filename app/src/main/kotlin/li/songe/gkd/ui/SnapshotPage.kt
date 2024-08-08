@@ -49,6 +49,7 @@ import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import li.songe.gkd.MainActivity
+import li.songe.gkd.data.GithubPoliciesAsset
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt
@@ -251,7 +252,16 @@ fun SnapshotPage() {
                         text = "生成链接(需科学上网)", modifier = Modifier
                             .clickable(onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                                 selectedSnapshot = null
-                                vm.uploadOptions.startTask(SnapshotExt.getSnapshotZipFile(snapshotVal.id))
+                                vm.uploadOptions.startTask(
+                                    file = SnapshotExt.getSnapshotZipFile(
+                                        snapshotVal.id
+                                    ),
+                                    onSuccessResult = vm.viewModelScope.launchAsFn<GithubPoliciesAsset>(
+                                        Dispatchers.IO
+                                    ) {
+                                        DbSet.snapshotDao.update(snapshotVal.copy(githubAssetId = it.id))
+                                    }
+                                )
                             })
                             .then(modifier)
                     )
