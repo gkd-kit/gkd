@@ -184,7 +184,7 @@ fun AdvancedPage() {
                         contentDescription = null,
                     )
                 }
-            }, title = { Text(text = "高级模式") }, actions = {})
+            }, title = { Text(text = "高级设置") }, actions = {})
         }
     ) { contentPadding ->
         Column(
@@ -250,9 +250,9 @@ fun AdvancedPage() {
                                     text = "http://127.0.0.1:${store.httpServerPort}",
                                     color = MaterialTheme.colorScheme.primary,
                                     style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
-                                    modifier = Modifier.clickable {
+                                    modifier = Modifier.clickable(onClick = throttle {
                                         context.openUri("http://127.0.0.1:${store.httpServerPort}")
-                                    },
+                                    }),
                                 )
                                 Spacer(modifier = Modifier.width(2.dp))
                                 Text(text = "仅本设备可访问")
@@ -262,9 +262,9 @@ fun AdvancedPage() {
                                     text = "http://${host}:${store.httpServerPort}",
                                     color = MaterialTheme.colorScheme.primary,
                                     style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
-                                    modifier = Modifier.clickable {
+                                    modifier = Modifier.clickable(onClick = throttle {
                                         context.openUri("http://${host}:${store.httpServerPort}")
-                                    }
+                                    })
                                 )
                             }
                         }
@@ -305,12 +305,12 @@ fun AdvancedPage() {
             }
 
             TextSwitch(
-                name = "保留内存订阅",
-                desc = "当HTTP服务关闭时,保留内存订阅",
-                checked = !store.autoClearMemorySubs
+                name = "清除订阅",
+                desc = "当HTTP服务关闭时,删除内存订阅",
+                checked = store.autoClearMemorySubs
             ) {
                 storeFlow.value = store.copy(
-                    autoClearMemorySubs = !it
+                    autoClearMemorySubs = it
                 )
             }
 
