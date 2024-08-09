@@ -5,6 +5,6 @@
     android:viewportWidth="32"
     android:viewportHeight="32">
     <path
-        android:fillColor="#F5A6A6"
+        android:fillColor="@color/ic_launcher_background_tint"
         android:pathData="M0,0h32v32h-32z" />
 </vector>
