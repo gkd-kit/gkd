@@ -1,6 +1,7 @@
 package li.songe.gkd.util
 
 import android.accessibilityservice.AccessibilityService
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
@@ -25,7 +26,6 @@ import kotlinx.coroutines.delay
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.service.GkdAbService
-import java.lang.ref.WeakReference
 
 
 fun toast(text: CharSequence) {
@@ -122,7 +122,11 @@ private fun showSystemToast(message: CharSequence) {
     }
 }
 
-private var cacheToastView: WeakReference<View>? = null
+// 使用 WeakReference<View> 在某些机型上导致无法取消
+// https://github.com/gkd-kit/gkd/issues/697
+// https://github.com/gkd-kit/gkd/issues/698
+@SuppressLint("StaticFieldLeak")
+private var cacheToastView: View? = null
 private suspend fun showAccessibilityToast(context: AccessibilityService, message: CharSequence) {
     val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     val textView = TextView(context).apply {
@@ -149,7 +153,7 @@ private suspend fun showAccessibilityToast(context: AccessibilityService, messag
         windowAnimations = android.R.style.Animation_Toast
     }
 
-    cacheToastView?.get()?.let {
+    cacheToastView?.let {
         if (it.context === context) {
             try {
                 wm.removeViewImmediate(it)
@@ -159,9 +163,9 @@ private suspend fun showAccessibilityToast(context: AccessibilityService, messag
         cacheToastView = null
     }
     wm.addView(textView, layoutParams)
-    cacheToastView = WeakReference(textView)
+    cacheToastView = textView
     delay(actionTriggerInterval)
-    if (GkdAbService.service != null && cacheToastView?.get() === textView) {
+    if (GkdAbService.service != null && cacheToastView === textView) {
         try {
             wm.removeViewImmediate(textView)
         } catch (_: Exception) {
