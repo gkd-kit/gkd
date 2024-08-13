@@ -7,12 +7,7 @@ plugins {
 }
 
 kotlin {
-    jvm {
-        @OptIn(ExperimentalKotlinGradlePluginApi::class)
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
+    jvm()
 //    https://kotlinlang.org/docs/js-to-kotlin-interop.html#kotlin-types-in-javascript
     js(IR) {
         binaries.executable()

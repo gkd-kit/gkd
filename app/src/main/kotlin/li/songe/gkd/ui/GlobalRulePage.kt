@@ -72,7 +72,7 @@ import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
-import li.songe.gkd.util.encodeToJson5String
+import li.songe.json5.encodeToJson5String
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
@@ -260,7 +260,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                                                 error = true,
                                             )
                                             updateSubscription(
-                                                rawSubs!!.copy(
+                                                rawSubs.copy(
                                                     globalGroups = rawSubs.globalGroups.filter { g -> g.key != group.key }
                                                 )
                                             )

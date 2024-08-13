@@ -75,15 +75,15 @@ import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
-import li.songe.gkd.util.encodeToJson5String
+import li.songe.json5.encodeToJson5String
 import li.songe.gkd.util.getGroupRawEnable
 import li.songe.gkd.util.json
-import li.songe.gkd.util.json5ToJson
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
+import li.songe.json5.Json5
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
@@ -285,7 +285,7 @@ fun AppItemPage(
                                     },
                                 )
                             }
-                            if (editable && subsItem != null && subsRaw != null) {
+                            if (editable && subsRaw != null) {
                                 DropdownMenuItem(
                                     text = {
                                         Text(text = "删除", color = MaterialTheme.colorScheme.error)
@@ -435,8 +435,9 @@ fun AppItemPage(
                         setEditGroupRaw(null)
                         return@launchAsFn
                     }
+
                     val element = try {
-                        json.parseToJsonElement(json5ToJson(source)).jsonObject
+                        Json5.parseToJson5Element(source).jsonObject
                     } catch (e: Exception) {
                         LogUtils.d(e)
                         error("非法JSON:${e.message}")
