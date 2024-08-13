@@ -42,10 +42,10 @@ data class ActivityLog(
         @Query("DELETE FROM activity_log")
         suspend fun deleteAll()
 
-        @Query("SELECT * FROM activity_log ORDER BY id DESC ")
+        @Query("SELECT * FROM activity_log WHERE activity_id IS NOT NULL ORDER BY id DESC ")
         fun pagingSource(): PagingSource<Int, ActivityLog>
 
-        @Query("SELECT COUNT(*) FROM activity_log")
+        @Query("SELECT COUNT(*) FROM activity_log WHERE activity_id IS NOT NULL")
         fun count(): Flow<Int>
 
         @Query(

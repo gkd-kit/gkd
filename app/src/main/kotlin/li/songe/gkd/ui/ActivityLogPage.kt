@@ -14,7 +14,6 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -128,11 +127,7 @@ fun ActivityLogPage() {
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     val showActivityId = activityLog.showActivityId
-                    if (showActivityId != null) {
-                        StartEllipsisText(text = showActivityId)
-                    } else {
-                        Text(text = "null", color = LocalContentColor.current.copy(alpha = 0.5f))
-                    }
+                    StartEllipsisText(text = showActivityId?:"")
                 }
             }
             item {
