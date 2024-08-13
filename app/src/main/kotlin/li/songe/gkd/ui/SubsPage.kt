@@ -65,7 +65,7 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appInfoCacheFlow
-import li.songe.gkd.util.encodeToJson5String
+import li.songe.json5.encodeToJson5String
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry

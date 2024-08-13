@@ -41,7 +41,7 @@ import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.ui.style.appItemPadding
-import li.songe.gkd.util.encodeToJson5String
+import li.songe.json5.encodeToJson5String
 import li.songe.gkd.util.json
 import li.songe.gkd.util.toast
 

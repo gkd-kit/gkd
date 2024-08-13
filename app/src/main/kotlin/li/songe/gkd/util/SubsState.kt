@@ -32,6 +32,7 @@ import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.SubsVersion
 import li.songe.gkd.db.DbSet
+import li.songe.json5.decodeFromJson5String
 import java.net.URI
 
 val subsItemsFlow by lazy {
@@ -121,7 +122,7 @@ fun getGroupRawEnable(
         enable
     } else {
         null
-    } ?: group.enable != false
+    } ?: group.enable ?: true
 }
 
 data class RuleSummary(
@@ -190,7 +191,7 @@ val ruleSummaryFlow by lazy {
                 mutableMapOf<RawSubscription.RawGlobalGroup, List<GlobalRule>>()
             rawSubs.globalGroups.filter { g ->
                 (subGlobalSubsConfigs.find { c -> c.groupKey == g.key }?.enable
-                        ?: g.enable != false) && g.valid
+                        ?: g.enable ?: true) && g.valid
             }.forEach { groupRaw ->
                 val config = subGlobalSubsConfigs.find { c -> c.groupKey == groupRaw.key }
                 val g = ResolvedGlobalGroup(
@@ -347,10 +348,8 @@ private suspend fun updateSubs(subsEntry: SubsEntry): RawSubscription? {
     val checkUpdateUrl = subsEntry.checkUpdateUrl
     if (checkUpdateUrl != null && subsRaw != null) {
         try {
-            val subsVersion = json.decodeFromString<SubsVersion>(
-                json5ToJson(
-                    client.get(checkUpdateUrl).bodyAsText()
-                )
+            val subsVersion = json.decodeFromJson5String<SubsVersion>(
+                client.get(checkUpdateUrl).bodyAsText()
             )
             LogUtils.d(
                 "快速检测更新:id=${subsRaw.id},version=${subsRaw.version}",

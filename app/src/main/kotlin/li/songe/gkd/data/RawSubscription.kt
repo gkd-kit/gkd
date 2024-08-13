@@ -16,8 +16,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import li.songe.gkd.service.checkSelector
 import li.songe.gkd.util.json
-import li.songe.gkd.util.json5ToJson
 import li.songe.gkd.util.toast
+import li.songe.json5.Json5
 import li.songe.selector.Selector
 import net.objecthunter.exp4j.Expression
 import net.objecthunter.exp4j.ExpressionBuilder
@@ -798,8 +798,9 @@ data class RawSubscription(
         }
 
         fun parse(source: String, json5: Boolean = true): RawSubscription {
-            val text = if (json5) json5ToJson(source) else source
-            val subscription = jsonToSubscriptionRaw(json.parseToJsonElement(text).jsonObject)
+            val element =
+                if (json5) Json5.parseToJson5Element(source) else json.parseToJsonElement(source)
+            val subscription = jsonToSubscriptionRaw(element.jsonObject)
             subscription.categories.findDuplicatedItem { v -> v.key }?.let { v ->
                 error("id=${subscription.id}, duplicated category: key=${v.key}")
             }
@@ -840,9 +841,8 @@ data class RawSubscription(
             return a
         }
 
-        fun parseRawApp(source: String, json5: Boolean = true): RawApp {
-            val text = if (json5) json5ToJson(source) else source
-            return parseApp(json.parseToJsonElement(text).jsonObject)
+        fun parseRawApp(source: String): RawApp {
+            return parseApp(Json5.parseToJson5Element(source).jsonObject)
         }
 
         fun parseGroup(jsonObject: JsonObject): RawAppGroup {
@@ -853,14 +853,12 @@ data class RawSubscription(
             return g
         }
 
-        fun parseRawGroup(source: String, json5: Boolean = true): RawAppGroup {
-            val text = if (json5) json5ToJson(source) else source
-            return parseGroup(json.parseToJsonElement(text).jsonObject)
+        fun parseRawGroup(source: String): RawAppGroup {
+            return parseGroup(Json5.parseToJson5Element(source).jsonObject)
         }
 
-        fun parseRawGlobalGroup(source: String, json5: Boolean = true): RawGlobalGroup {
-            val text = if (json5) json5ToJson(source) else source
-            val g = jsonToGlobalGroups(json.parseToJsonElement(text).jsonObject, 0)
+        fun parseRawGlobalGroup(source: String): RawGlobalGroup {
+            val g = jsonToGlobalGroups(Json5.parseToJson5Element(source).jsonObject, 0)
             g.rules.findDuplicatedItem { v -> v.key }?.let { v ->
                 error("duplicated global rule: key=${v.key}")
             }
