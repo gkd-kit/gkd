@@ -6,12 +6,12 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.intOrNull
 import li.songe.selector.parser.ParserSet
-import org.junit.Test
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URL
 import java.util.zip.ZipInputStream
+import kotlin.test.Test
 
 
 class ParserTest {

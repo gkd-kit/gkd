@@ -27,7 +27,7 @@ kotlin {
         jvmTest {
             dependencies {
                 implementation(libs.kotlinx.serialization.json)
-                implementation(libs.junit)
+                implementation(libs.kotlin.test)
             }
         }
     }
