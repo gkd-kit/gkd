@@ -189,7 +189,6 @@ composeCompiler {
 dependencies {
 
     implementation(project(mapOf("path" to ":selector")))
-    implementation(project(mapOf("path" to ":json5")))
 
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
@@ -259,4 +258,6 @@ dependencies {
 
     implementation(libs.toaster)
     implementation(libs.permissions)
+
+    implementation(libs.json5)
 }

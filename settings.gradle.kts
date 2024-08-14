@@ -22,5 +22,3 @@ dependencyResolutionManagement {
         maven("https://jitpack.io")
     }
 }
-
-include(":json5")
