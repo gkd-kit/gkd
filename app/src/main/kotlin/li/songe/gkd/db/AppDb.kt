@@ -11,7 +11,7 @@ import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubsItem
 
 @Database(
-    version = 7,
+    version = 8,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -27,6 +27,7 @@ import li.songe.gkd.data.SubsItem
         AutoMigration(from = 4, to = 5),
         AutoMigration(from = 5, to = 6),
         AutoMigration(from = 6, to = 7),
+        AutoMigration(from = 7, to = 8, spec = ActivityLog.ActivityLogV2Spec::class),
     ]
 )
 abstract class AppDb : RoomDatabase() {
