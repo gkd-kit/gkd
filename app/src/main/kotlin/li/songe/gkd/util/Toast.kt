@@ -1,13 +1,14 @@
 package li.songe.gkd.util
 
 import android.accessibilityservice.AccessibilityService
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Outline
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
+import android.os.Handler
+import android.os.Looper
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
@@ -22,10 +23,8 @@ import com.blankj.utilcode.util.ScreenUtils
 import com.hjq.toast.Toaster
 import com.hjq.toast.style.WhiteToastStyle
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import li.songe.gkd.app
 import li.songe.gkd.appScope
-import li.songe.gkd.service.GkdAbService
 
 
 fun toast(text: CharSequence) {
@@ -95,21 +94,22 @@ fun setReactiveToastStyle() {
     })
 }
 
-private var actionTriggerTime = 0L
-private const val actionTriggerInterval = 2000L
+private var triggerTime = 0L
+private const val triggerInterval = 2000L
 fun showActionToast(context: AccessibilityService) {
     if (!storeFlow.value.toastWhenClick) return
-    val t = System.currentTimeMillis()
-    if (t - actionTriggerTime <= actionTriggerInterval) return
-    actionTriggerTime = t
     appScope.launchTry(Dispatchers.Main) {
-        if (storeFlow.value.useSystemToast) {
-            showSystemToast(storeFlow.value.clickToast)
-        } else {
-            showAccessibilityToast(
-                context,
-                storeFlow.value.clickToast
-            )
+        val t = System.currentTimeMillis()
+        if (t - triggerTime > triggerInterval + 100) { // 100ms 保证二次显示的时候上一次已经完全消失
+            triggerTime = t
+            if (storeFlow.value.useSystemToast) {
+                showSystemToast(storeFlow.value.clickToast)
+            } else {
+                showAccessibilityToast(
+                    context,
+                    storeFlow.value.clickToast
+                )
+            }
         }
     }
 }
@@ -122,12 +122,11 @@ private fun showSystemToast(message: CharSequence) {
     }
 }
 
-// 使用 WeakReference<View> 在某些机型上导致无法取消
+// 1.使用 WeakReference<View> 在某些机型上导致无法取消
+// 2.使用协程 delay + cacheView 也可能导致无法取消
 // https://github.com/gkd-kit/gkd/issues/697
 // https://github.com/gkd-kit/gkd/issues/698
-@SuppressLint("StaticFieldLeak")
-private var cacheToastView: View? = null
-private suspend fun showAccessibilityToast(context: AccessibilityService, message: CharSequence) {
+private fun showAccessibilityToast(context: AccessibilityService, message: CharSequence) {
     val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     val textView = TextView(context).apply {
         text = message
@@ -152,24 +151,11 @@ private suspend fun showAccessibilityToast(context: AccessibilityService, messag
         y = toastYOffset
         windowAnimations = android.R.style.Animation_Toast
     }
-
-    cacheToastView?.let {
-        if (it.context === context) {
-            try {
-                wm.removeViewImmediate(it)
-            } catch (_: Exception) {
-            }
-        }
-        cacheToastView = null
-    }
     wm.addView(textView, layoutParams)
-    cacheToastView = textView
-    delay(actionTriggerInterval)
-    if (GkdAbService.service != null && cacheToastView === textView) {
+    Handler(Looper.getMainLooper()).postDelayed({
         try {
             wm.removeViewImmediate(textView)
         } catch (_: Exception) {
         }
-    }
-    cacheToastView = null
+    }, triggerInterval)
 }
