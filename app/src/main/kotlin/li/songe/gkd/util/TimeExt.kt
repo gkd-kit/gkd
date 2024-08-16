@@ -3,6 +3,7 @@ package li.songe.gkd.util
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlin.collections.hashMapOf
 
 fun formatTimeAgo(timestamp: Long): String {
     val currentTime = System.currentTimeMillis()
@@ -25,7 +26,7 @@ fun formatTimeAgo(timestamp: Long): String {
     }
 }
 
-private val formatDateMap = mutableMapOf<String, SimpleDateFormat>()
+private val formatDateMap by lazy { hashMapOf<String, SimpleDateFormat>() }
 
 fun Long.format(formatStr: String): String {
     var df = formatDateMap[formatStr]
