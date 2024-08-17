@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
@@ -51,7 +52,7 @@ class MainActivity : CompositionActivity({
 
     lifecycleScope.launch {
         storeFlow.map(lifecycleScope) { s -> s.excludeFromRecents }.collect {
-            (app.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).let { manager ->
+            (app.getSystemService(ACTIVITY_SERVICE) as ActivityManager).let { manager ->
                 manager.appTasks.forEach { task ->
                     task?.setExcludeFromRecents(it)
                 }
@@ -118,6 +119,18 @@ class MainActivity : CompositionActivity({
     override fun onStop() {
         super.onStop()
         activityVisibleFlow.update { it - 1 }
+    }
+
+    var lastBackPressedTime = 0L
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun onBackPressed() {
+        // onBackPressedDispatcher.addCallback is not work, it will be covered by compose navigation
+        val t = System.currentTimeMillis()
+        if (t - lastBackPressedTime > AnimationConstants.DefaultDurationMillis) {
+            lastBackPressedTime = t
+            @Suppress("DEPRECATION")
+            super.onBackPressed()
+        }
     }
 }
 
