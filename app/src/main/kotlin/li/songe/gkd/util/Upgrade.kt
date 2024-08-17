@@ -1,5 +1,6 @@
 package li.songe.gkd.util
 
+import android.content.Intent
 import android.util.Log
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -14,8 +15,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.viewModelScope
-import com.blankj.utilcode.util.AppUtils
 import com.blankj.utilcode.util.NetworkUtils
 import io.ktor.client.call.body
 import io.ktor.client.plugins.onDownload
@@ -31,6 +32,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import li.songe.gkd.BuildConfig
 import li.songe.gkd.MainViewModel
+import li.songe.gkd.app
 import java.io.File
 import java.net.URI
 
@@ -54,8 +56,11 @@ data class VersionLog(
 class UpdateStatus {
     val checkUpdatingFlow = MutableStateFlow(false)
     val newVersionFlow = MutableStateFlow<NewVersion?>(null)
-    val downloadStatusFlow = MutableStateFlow<LoadStatus<String>?>(null)
+    val downloadStatusFlow = MutableStateFlow<LoadStatus<File>?>(null)
 }
+
+private val UPDATE_URL: String
+    get() = UpdateChannelOption.allSubObject.findOption(storeFlow.value.updateChannel).url
 
 suspend fun UpdateStatus.checkUpdate(): NewVersion? {
     if (checkUpdatingFlow.value) return null
@@ -82,7 +87,7 @@ suspend fun UpdateStatus.checkUpdate(): NewVersion? {
 private fun UpdateStatus.startDownload(viewModel: MainViewModel, newVersion: NewVersion) {
     if (downloadStatusFlow.value is LoadStatus.Loading) return
     downloadStatusFlow.value = LoadStatus.Loading(0f)
-    val newApkFile = File(newVersionApkDir, "v${newVersion.versionCode}.apk")
+    val newApkFile = newVersionApkDir.resolve("v${newVersion.versionCode}.apk")
     if (newApkFile.exists()) {
         newApkFile.delete()
     }
@@ -105,7 +110,7 @@ private fun UpdateStatus.startDownload(viewModel: MainViewModel, newVersion: New
             }.bodyAsChannel()
             if (downloadStatusFlow.value is LoadStatus.Loading) {
                 channel.copyAndClose(newApkFile.writeChannel())
-                downloadStatusFlow.value = LoadStatus.Success(newApkFile.absolutePath)
+                downloadStatusFlow.value = LoadStatus.Success(newApkFile)
             }
         } catch (e: Exception) {
             if (downloadStatusFlow.value is LoadStatus.Loading) {
@@ -121,7 +126,7 @@ fun UpgradeDialog(status: UpdateStatus) {
     val newVersion by status.newVersionFlow.collectAsState()
     newVersion?.let { newVersionVal ->
         AlertDialog(title = {
-            Text(text = "检测到新版本")
+            Text(text = "新版本")
         }, text = {
             Text(text = "v${BuildConfig.VERSION_NAME} -> v${newVersionVal.versionName}\n\n${
                 if (newVersionVal.versionLogs.size > 1) {
@@ -156,7 +161,7 @@ fun UpgradeDialog(status: UpdateStatus) {
         when (downloadStatusVal) {
             is LoadStatus.Loading -> {
                 AlertDialog(
-                    title = { Text(text = "下载新版本中") },
+                    title = { Text(text = "下载中") },
                     text = {
                         LinearProgressIndicator(
                             progress = { downloadStatusVal.progress },
@@ -177,7 +182,7 @@ fun UpgradeDialog(status: UpdateStatus) {
 
             is LoadStatus.Failure -> {
                 AlertDialog(
-                    title = { Text(text = "新版本下载失败") },
+                    title = { Text(text = "下载失败") },
                     text = {
                         Text(text = downloadStatusVal.exception.let {
                             it.message ?: it.toString()
@@ -196,7 +201,10 @@ fun UpgradeDialog(status: UpdateStatus) {
 
             is LoadStatus.Success -> {
                 AlertDialog(
-                    title = { Text(text = "新版本下载完毕") },
+                    title = { Text(text = "下载完毕") },
+                    text = {
+                        Text(text = "可继续选择安装新版本")
+                    },
                     onDismissRequest = {},
                     dismissButton = {
                         TextButton(onClick = {
@@ -206,9 +214,9 @@ fun UpgradeDialog(status: UpdateStatus) {
                         }
                     },
                     confirmButton = {
-                        TextButton(onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
-                            AppUtils.installApp(downloadStatusVal.result)
-                        })) {
+                        TextButton(onClick = throttle {
+                            installApk(downloadStatusVal.result)
+                        }) {
                             Text(text = "安装")
                         }
                     })
@@ -217,14 +225,13 @@ fun UpgradeDialog(status: UpdateStatus) {
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
+private fun installApk(file: File) {
+    val uri = FileProvider.getUriForFile(
+        app, "${app.packageName}.provider", file
+    )
+    val intent = Intent(Intent.ACTION_VIEW)
+    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    intent.setDataAndType(uri, "application/vnd.android.package-archive")
+    app.tryStartActivity(intent)
+}

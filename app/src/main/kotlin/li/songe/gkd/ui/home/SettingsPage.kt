@@ -39,12 +39,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.BuildConfig.ENABLED_UPDATE
+import li.songe.gkd.BuildConfig
 import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.updateDialogOptions
+import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.destinations.AboutPageDestination
 import li.songe.gkd.ui.destinations.AdvancedPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
@@ -54,10 +55,12 @@ import li.songe.gkd.ui.theme.supportDynamicColor
 import li.songe.gkd.util.DarkThemeOption
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.util.UpdateChannelOption
 import li.songe.gkd.util.UpdateTimeOption
 import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
@@ -324,15 +327,34 @@ fun useSettingsPage(): ScaffoldExt {
                 storeFlow.update { s -> s.copy(updateSubsInterval = it.value) }
             }
 
-            if (ENABLED_UPDATE) {
-                TextSwitch(name = "自动更新",
+            if (BuildConfig.ENABLED_UPDATE) {
+                TextSwitch(
+                    name = "自动更新",
                     desc = "打开应用时检测新版本",
                     checked = store.autoCheckAppUpdate,
                     onCheckedChange = {
                         storeFlow.value = store.copy(
                             autoCheckAppUpdate = it
                         )
-                    })
+                    }
+                )
+
+                TextMenu(
+                    title = "更新渠道",
+                    option = UpdateChannelOption.allSubObject.findOption(store.updateChannel)
+                ) {
+                    if (it.value == UpdateChannelOption.Beta.value) {
+                        vm.viewModelScope.launchTry {
+                            mainVm.dialogFlow.waitResult(
+                                title = "版本渠道",
+                                text = "测试版本渠道更新快\n但不稳定可能存在较多BUG\n请谨慎使用",
+                            )
+                            storeFlow.update { s -> s.copy(updateChannel = it.value) }
+                        }
+                    } else {
+                        storeFlow.update { s -> s.copy(updateChannel = it.value) }
+                    }
+                }
 
                 Row(
                     modifier = Modifier

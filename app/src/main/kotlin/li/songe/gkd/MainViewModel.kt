@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import li.songe.gkd.BuildConfig.ENABLED_UPDATE
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.db.DbSet
@@ -67,7 +66,7 @@ class MainViewModel : ViewModel() {
             clearCache()
         }
 
-        if (ENABLED_UPDATE && storeFlow.value.autoCheckAppUpdate) {
+        if (BuildConfig.ENABLED_UPDATE && storeFlow.value.autoCheckAppUpdate) {
             viewModelScope.launch(Dispatchers.IO) {
                 try {
                     updateStatus.checkUpdate()

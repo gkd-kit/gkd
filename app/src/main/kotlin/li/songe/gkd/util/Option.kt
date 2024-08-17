@@ -17,6 +17,7 @@ val <T> Option<T>.allSubObject: Array<Option<T>>
         is DarkThemeOption -> DarkThemeOption.allSubObject
         is EnableGroupOption -> EnableGroupOption.allSubObject
         is RuleSortOption -> RuleSortOption.allSubObject
+        is UpdateChannelOption -> UpdateChannelOption.allSubObject
     } as Array<Option<T>>
 
 sealed class SortTypeOption(override val value: Int, override val label: String) : Option<Int> {
@@ -70,5 +71,22 @@ sealed class RuleSortOption(override val value: Int, override val label: String)
 
     companion object {
         val allSubObject by lazy { arrayOf(Default, ByTime, ByName) }
+    }
+}
+
+sealed class UpdateChannelOption(override val value: Int, override val label: String) :
+    Option<Int> {
+    abstract val url: String
+
+    data object Stable : UpdateChannelOption(0, "稳定版") {
+        override val url = "https://registry.npmmirror.com/@gkd-kit/app/latest/files/index.json"
+    }
+
+    data object Beta : UpdateChannelOption(1, "测试版") {
+        override val url = "https://registry.npmmirror.com/@gkd-kit/app-beta/latest/files/index.json"
+    }
+
+    companion object {
+        val allSubObject by lazy { arrayOf(Stable, Beta) }
     }
 }
