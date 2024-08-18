@@ -3,7 +3,6 @@ package li.songe.gkd.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -17,10 +16,8 @@ import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.map
 import li.songe.gkd.util.orderedAppInfosFlow
 import li.songe.gkd.util.subsIdToRawFlow
-import javax.inject.Inject
 
-@HiltViewModel
-class GlobalRuleExcludeVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
+class GlobalRuleExcludeVm (stateHandle: SavedStateHandle) : ViewModel() {
     private val args = GlobalRuleExcludePageDestination.argsFrom(stateHandle)
 
     val rawSubsFlow = subsIdToRawFlow.map(viewModelScope) { it[args.subsItemId] }

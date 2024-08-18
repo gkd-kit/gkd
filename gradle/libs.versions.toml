@@ -7,7 +7,6 @@ rikka = "4.4.0"
 room = "2.6.1"
 paging = "3.3.2"
 ktor = "2.3.12"
-hilt = "2.52"
 destinations = "1.10.2"
 coil = "2.7.0"
 
@@ -57,9 +56,6 @@ ktor_client_content_negotiation = { module = "io.ktor:ktor-client-content-negoti
 ktor_serialization_kotlinx_json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 kotlinx_serialization_json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.7.1" }
 kotlinx_collections_immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version = "0.3.7" }
-google_hilt_android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
-google_hilt_android_compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
-androidx_hilt_navigation_compose = { module = "androidx.hilt:hilt-navigation-compose", version = "1.2.0" }
 destinations_core = { module = "io.github.raamcosta.compose-destinations:core", version.ref = "destinations" }
 destinations_ksp = { module = "io.github.raamcosta.compose-destinations:ksp", version.ref = "destinations" }
 coil_compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
@@ -80,5 +76,4 @@ kotlin_android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin_compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 rikka_refine = { id = "dev.rikka.tools.refine", version.ref = "rikka" }
 google_ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-google_hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 androidx_room = { id = "androidx.room", version.ref = "room" }

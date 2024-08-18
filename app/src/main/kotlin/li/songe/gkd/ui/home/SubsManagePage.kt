@@ -54,8 +54,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dylanc.activityresult.launcher.launchForResult
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
@@ -101,7 +101,7 @@ fun useSubsManagePage(): ScaffoldExt {
     val launcher = LocalLauncher.current
     val mainVm = LocalMainViewModel.current
 
-    val vm = hiltViewModel<HomeVm>()
+    val vm = viewModel<HomeVm>()
     val subItems by subsItemsFlow.collectAsState()
     val subsIdToRaw by subsIdToRawFlow.collectAsState()
 

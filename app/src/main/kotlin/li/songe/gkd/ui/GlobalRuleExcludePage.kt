@@ -56,8 +56,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
@@ -84,7 +84,7 @@ import li.songe.gkd.util.toast
 @Composable
 fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
     val navController = LocalNavController.current
-    val vm = hiltViewModel<GlobalRuleExcludeVm>()
+    val vm = viewModel<GlobalRuleExcludeVm>()
     val rawSubs = vm.rawSubsFlow.collectAsState().value
     val group = vm.groupFlow.collectAsState().value
     val excludeData = vm.excludeDataFlow.collectAsState().value
@@ -221,17 +221,15 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                         )
                         DropdownMenuItem(
                             text = {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Checkbox(
-                                        checked = showHiddenApp,
-                                        onCheckedChange = {
-                                            vm.showHiddenAppFlow.value =
-                                                !vm.showHiddenAppFlow.value
-                                        })
-                                    Text("显示隐藏应用")
-                                }
+                                Text("显示隐藏应用")
+                            },
+                            trailingIcon = {
+                                Checkbox(
+                                    checked = showHiddenApp,
+                                    onCheckedChange = {
+                                        vm.showHiddenAppFlow.value =
+                                            !vm.showHiddenAppFlow.value
+                                    })
                             },
                             onClick = {
                                 vm.showHiddenAppFlow.value = !vm.showHiddenAppFlow.value

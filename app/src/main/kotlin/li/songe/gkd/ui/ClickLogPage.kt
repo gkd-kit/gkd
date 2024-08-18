@@ -38,8 +38,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.ramcosta.composedestinations.annotation.Destination
@@ -78,7 +78,7 @@ fun ClickLogPage() {
     val context = LocalContext.current as MainActivity
     val mainVm = context.mainVm
     val navController = LocalNavController.current
-    val vm = hiltViewModel<ClickLogVm>()
+    val vm = viewModel<ClickLogVm>()
     val clickLogCount by vm.clickLogCountFlow.collectAsState()
     val clickDataItems = vm.pagingDataFlow.collectAsLazyPagingItems()
     val appInfoCache by appInfoCacheFlow.collectAsState()

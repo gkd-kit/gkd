@@ -35,8 +35,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.BuildConfig
@@ -73,7 +73,7 @@ fun useSettingsPage(): ScaffoldExt {
     val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     val store by storeFlow.collectAsState()
-    val vm = hiltViewModel<HomeVm>()
+    val vm = viewModel<HomeVm>()
 
     var showToastInputDlg by remember {
         mutableStateOf(false)

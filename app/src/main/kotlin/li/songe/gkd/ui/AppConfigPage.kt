@@ -46,8 +46,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import com.ramcosta.composedestinations.navigation.navigate
@@ -80,7 +80,7 @@ import li.songe.gkd.util.throttle
 @Composable
 fun AppConfigPage(appId: String) {
     val navController = LocalNavController.current
-    val vm = hiltViewModel<AppConfigVm>()
+    val vm = viewModel<AppConfigVm>()
     val ruleSortType by vm.ruleSortTypeFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
     val appInfo = appInfoCache[appId]

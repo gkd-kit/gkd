@@ -8,7 +8,6 @@ import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.Utils
 import com.hjq.toast.Toaster
 import com.tencent.mmkv.MMKV
-import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import li.songe.gkd.debug.clearHttpSubs
@@ -38,7 +37,6 @@ val applicationInfo by lazy {
 
 val channel by lazy { applicationInfo.metaData.getString("channel") }
 
-@HiltAndroidApp
 class App : Application() {
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
