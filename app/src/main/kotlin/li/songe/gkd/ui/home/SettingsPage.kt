@@ -56,7 +56,6 @@ import li.songe.gkd.util.DarkThemeOption
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.UpdateChannelOption
-import li.songe.gkd.util.UpdateTimeOption
 import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.launchAsFn
@@ -313,21 +312,14 @@ fun useSettingsPage(): ScaffoldExt {
                     })
             }
 
-            Text(
-                text = "更新",
-                modifier = Modifier.titleItemPadding(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            TextMenu(
-                title = "更新订阅",
-                option = UpdateTimeOption.allSubObject.findOption(store.updateSubsInterval)
-            ) {
-                storeFlow.update { s -> s.copy(updateSubsInterval = it.value) }
-            }
-
             if (BuildConfig.ENABLED_UPDATE) {
+                Text(
+                    text = "更新",
+                    modifier = Modifier.titleItemPadding(),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+
                 TextSwitch(
                     name = "自动更新",
                     desc = "打开应用时检测新版本",

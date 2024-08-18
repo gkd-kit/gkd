@@ -24,6 +24,7 @@ import li.songe.gkd.util.allSubObject
 
 @Composable
 fun <T> TextMenu(
+    modifier: Modifier = Modifier,
     title: String,
     option: Option<T>,
     onOptionChange: ((Option<T>) -> Unit),
@@ -34,8 +35,13 @@ fun <T> TextMenu(
             .clickable {
                 expanded = true
             }
-            .fillMaxWidth()
-            .itemPadding(),
+            .fillMaxWidth().let {
+                if (modifier == Modifier) {
+                    it.itemPadding()
+                } else {
+                    it.then(modifier)
+                }
+            },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {

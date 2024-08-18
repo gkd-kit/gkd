@@ -51,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -58,6 +59,7 @@ import androidx.lifecycle.viewModelScope
 import com.dylanc.activityresult.launcher.launchForResult
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.Value
@@ -66,16 +68,22 @@ import li.songe.gkd.data.exportData
 import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SubsItemCard
+import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalLauncher
 import li.songe.gkd.util.LocalMainViewModel
+import li.songe.gkd.util.SafeR
+import li.songe.gkd.util.UpdateTimeOption
 import li.songe.gkd.util.checkSubsUpdate
+import li.songe.gkd.util.findOption
 import li.songe.gkd.util.isSafeUrl
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.saveFileToDownloads
 import li.songe.gkd.util.shareFile
+import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.subsRefreshingFlow
@@ -181,6 +189,29 @@ fun useSubsManagePage(): ScaffoldExt {
         })
     }
 
+    var showSettingsDlg by remember { mutableStateOf(false) }
+    if (showSettingsDlg) {
+        AlertDialog(
+            onDismissRequest = { showSettingsDlg = false },
+            title = { Text("订阅设置") },
+            text = {
+                val store by storeFlow.collectAsState()
+                TextMenu(
+                    modifier = Modifier.padding(0.dp, itemVerticalPadding),
+                    title = "更新订阅",
+                    option = UpdateTimeOption.allSubObject.findOption(store.updateSubsInterval)
+                ) {
+                    storeFlow.update { s -> s.copy(updateSubsInterval = it.value) }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSettingsDlg = false }) {
+                    Text("关闭")
+                }
+            }
+        )
+    }
+
     ShareDataDialog(vm)
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -254,6 +285,14 @@ fun useSubsManagePage(): ScaffoldExt {
                         )
                     }
                 } else {
+                    IconButton(onClick = {
+                        showSettingsDlg = true
+                    }) {
+                        Icon(
+                            painter = painterResource(id = SafeR.ic_page_info),
+                            contentDescription = null,
+                        )
+                    }
                     IconButton(onClick = {
                         if (subsRefreshingFlow.value) {
                             toast("正在刷新订阅,请稍后操作")
