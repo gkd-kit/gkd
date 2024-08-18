@@ -38,8 +38,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.ImageUtils
 import com.blankj.utilcode.util.UriUtils
@@ -80,7 +80,7 @@ fun SnapshotPage() {
 
     val pickContentLauncher = LocalPickContentLauncher.current
 
-    val vm = hiltViewModel<SnapshotVm>()
+    val vm = viewModel<SnapshotVm>()
     val snapshots by vm.snapshotsState.collectAsState()
 
     vm.uploadOptions.ShowDialog()

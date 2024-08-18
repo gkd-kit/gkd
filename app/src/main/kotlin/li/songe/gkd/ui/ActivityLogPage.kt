@@ -29,8 +29,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.ramcosta.composedestinations.annotation.Destination
@@ -52,7 +52,7 @@ import li.songe.gkd.util.throttle
 fun ActivityLogPage() {
     val context = LocalContext.current as MainActivity
     val mainVm = context.mainVm
-    val vm = hiltViewModel<ActivityLogVm>()
+    val vm = viewModel<ActivityLogVm>()
     val navController = LocalNavController.current
 
     val logCount by vm.logCountFlow.collectAsState()

@@ -14,7 +14,6 @@ import com.blankj.utilcode.util.ServiceUtils
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -42,7 +41,6 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
 
-@AndroidEntryPoint
 class MainActivity : CompositionActivity({
     this as MainActivity
     useLifeCycleLog()
@@ -120,7 +118,8 @@ class MainActivity : CompositionActivity({
         activityVisibleFlow.update { it - 1 }
     }
 
-    var lastBackPressedTime = 0L
+    private var lastBackPressedTime = 0L
+
     @Suppress("OVERRIDE_DEPRECATION")
     override fun onBackPressed() {
         // onBackPressedDispatcher.addCallback is not work, it will be covered by compose navigation

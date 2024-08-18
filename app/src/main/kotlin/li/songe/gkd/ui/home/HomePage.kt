@@ -12,8 +12,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
@@ -36,7 +36,7 @@ data class BottomNavItem(
 @Composable
 fun HomePage() {
     val context = LocalContext.current as MainActivity
-    val vm = hiltViewModel<HomeVm>()
+    val vm = viewModel<HomeVm>()
     val tab by vm.tabFlow.collectAsState()
 
     val controlPage = useControlPage()

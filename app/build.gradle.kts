@@ -44,7 +44,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.ksp)
-    alias(libs.plugins.google.hilt)
     alias(libs.plugins.rikka.refine)
 }
 
@@ -242,10 +241,6 @@ dependencies {
 
     implementation(libs.destinations.core)
     ksp(libs.destinations.ksp)
-
-    implementation(libs.google.hilt.android)
-    ksp(libs.google.hilt.android.compiler)
-    implementation(libs.androidx.hilt.navigation.compose)
 
     implementation(libs.reorderable)
 

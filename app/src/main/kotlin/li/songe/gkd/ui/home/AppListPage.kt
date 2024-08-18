@@ -58,8 +58,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.KeyboardUtils
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.ramcosta.composedestinations.navigation.navigate
@@ -91,7 +91,7 @@ fun useAppListPage(): ScaffoldExt {
     val context = LocalContext.current as MainActivity
     val softwareKeyboardController = LocalSoftwareKeyboardController.current
 
-    val vm = hiltViewModel<HomeVm>()
+    val vm = viewModel<HomeVm>()
     val showSystemApp by vm.showSystemAppFlow.collectAsState()
     val showHiddenApp by vm.showHiddenAppFlow.collectAsState()
     val sortType by vm.sortTypeFlow.collectAsState()

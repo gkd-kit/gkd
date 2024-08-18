@@ -44,8 +44,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
@@ -65,13 +65,13 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appInfoCacheFlow
-import li.songe.json5.encodeToJson5String
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
+import li.songe.json5.encodeToJson5String
 
 
 @RootNavGraph
@@ -83,7 +83,7 @@ fun SubsPage(
     val navController = LocalNavController.current
     val mainVm = LocalMainViewModel.current
 
-    val vm = hiltViewModel<SubsVm>()
+    val vm = viewModel<SubsVm>()
     val subsItem = vm.subsItemFlow.collectAsState().value
     val appAndConfigs by vm.filterAppAndConfigsFlow.collectAsState()
     val searchStr by vm.searchStrFlow.collectAsState()

@@ -3,7 +3,6 @@ package li.songe.gkd.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -20,10 +19,8 @@ import li.songe.gkd.util.collator
 import li.songe.gkd.util.getGroupRawEnable
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
-import javax.inject.Inject
 
-@HiltViewModel
-class AppConfigVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
+class AppConfigVm (stateHandle: SavedStateHandle) : ViewModel() {
     private val args = AppConfigPageDestination.argsFrom(stateHandle)
 
     private val latestGlobalLogsFlow = DbSet.clickLogDao.queryAppLatest(

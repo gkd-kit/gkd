@@ -6,7 +6,6 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import androidx.paging.map
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
@@ -14,10 +13,8 @@ import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.Tuple3
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.subsIdToRawFlow
-import javax.inject.Inject
 
-@HiltViewModel
-class ClickLogVm @Inject constructor() : ViewModel() {
+class ClickLogVm : ViewModel() {
 
     val pagingDataFlow = Pager(PagingConfig(pageSize = 100)) { DbSet.clickLogDao.pagingSource() }
         .flow.cachedIn(viewModelScope)

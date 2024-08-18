@@ -52,8 +52,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
@@ -72,13 +72,13 @@ import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
-import li.songe.json5.encodeToJson5String
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
+import li.songe.json5.encodeToJson5String
 
 @RootNavGraph
 @Destination(style = ProfileTransitions::class)
@@ -86,7 +86,7 @@ import li.songe.gkd.util.updateSubscription
 fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
     val navController = LocalNavController.current
     val mainVm = LocalMainViewModel.current
-    val vm = hiltViewModel<GlobalRuleVm>()
+    val vm = viewModel<GlobalRuleVm>()
     val subsItem by vm.subsItemFlow.collectAsState()
     val rawSubs = vm.subsRawFlow.collectAsState().value
     val subsConfigs by vm.subsConfigsFlow.collectAsState()
@@ -246,7 +246,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                                     )
                                 }
                             )
-                            if (editable) {
+                            if (editable && rawSubs != null) {
                                 DropdownMenuItem(
                                     text = {
                                         Text(text = "删除", color = MaterialTheme.colorScheme.error)

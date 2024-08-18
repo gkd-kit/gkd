@@ -1,10 +1,10 @@
 package li.songe.gkd.ui.home
 
 import android.webkit.URLUtil
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.LogUtils
-import dagger.hilt.android.lifecycle.HiltViewModel
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import li.songe.gkd.appScope
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
@@ -33,10 +34,14 @@ import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.subsRefreshingFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
-import javax.inject.Inject
 
-@HiltViewModel
-class HomeVm @Inject constructor() : ViewModel() {
+class HomeVm(stateHandle: SavedStateHandle) : ViewModel() {
+    init {
+        viewModelScope.launch {
+            LogUtils.d(this, stateHandle)
+        }
+    }
+
     val tabFlow = MutableStateFlow(controlNav)
 
     private val latestRecordFlow =

@@ -3,7 +3,6 @@ package li.songe.gkd.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -22,10 +21,8 @@ import li.songe.gkd.util.getGroupRawEnable
 import li.songe.gkd.util.map
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
-import javax.inject.Inject
 
-@HiltViewModel
-class SubsVm @Inject constructor(stateHandle: SavedStateHandle) : ViewModel() {
+class SubsVm (stateHandle: SavedStateHandle) : ViewModel() {
     private val args = SubsPageDestination.argsFrom(stateHandle)
 
     val subsItemFlow =

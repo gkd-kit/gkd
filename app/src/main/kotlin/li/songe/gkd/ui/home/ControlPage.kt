@@ -26,8 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.navigation.navigate
 import li.songe.gkd.MainActivity
 import li.songe.gkd.permission.notificationState
@@ -57,7 +57,7 @@ val controlNav = BottomNavItem(label = "主页", icon = Icons.Outlined.Home)
 fun useControlPage(): ScaffoldExt {
     val context = LocalContext.current as MainActivity
     val navController = LocalNavController.current
-    val vm = hiltViewModel<HomeVm>()
+    val vm = viewModel<HomeVm>()
     val latestRecordDesc by vm.latestRecordDescFlow.collectAsState()
     val subsStatus by vm.subsStatusFlow.collectAsState()
     val store by storeFlow.collectAsState()
