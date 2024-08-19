@@ -44,8 +44,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: fdroid-release
-          path: app/build/outputs/apk/fdroid/release
+          name: foss-release
+          path: app/build/outputs/apk/foss/release
 
       - uses: actions/upload-artifact@v4
         with:
@@ -92,8 +92,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: outputs/apk/fdroid/release/app-fdroid-release.apk
-          asset_name: gkd-x-fdroid-${{ github.ref_name }}.apk
+          asset_path: outputs/apk/foss/release/app-foss-release.apk
+          asset_name: gkd-x-foss-${{ github.ref_name }}.apk
           asset_content_type: application/vnd.android.package-archive
 
       - run: zip -r outputs.zip outputs

@@ -130,7 +130,7 @@ android {
         create(defaultName) {
             isDefault = true
         }
-        create("fdroid") {
+        create("foss") {
             buildConfigField("Boolean", "ENABLED_UPDATE", jsonStringOf(false))
         }
         all {

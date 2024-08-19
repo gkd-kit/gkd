@@ -51,5 +51,5 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: fdroid-release
-          path: app/build/outputs/apk/fdroid/release
+          name: foss-release
+          path: app/build/outputs/apk/foss/release
