@@ -234,7 +234,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.collections.immutable)
 
-    implementation(libs.others.jankson)
     implementation(libs.others.utilcodex)
     implementation(libs.others.activityResultLauncher)
     implementation(libs.others.floating.bubble.view)
