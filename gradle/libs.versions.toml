@@ -31,7 +31,6 @@ rikka_shizuku_provider = { module = "dev.rikka.shizuku:provider", version = "13.
 lsposed_hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version = "4.3" }
 others_utilcodex = { module = "com.blankj:utilcodex", version = "1.31.1" }
 others_activityResultLauncher = { module = "com.github.DylanCaiCoding:ActivityResultLauncher", version = "1.1.2" }
-others_jankson = { module = "blue.endless:jankson", version = "1.2.3" }
 others_floating_bubble_view = { module = "io.github.torrydo:floating-bubble-view", version = "0.6.5" }
 androidx_appcompat = { module = "androidx.appcompat:appcompat", version = "1.7.0" }
 androidx_core_ktx = { module = "androidx.core:core-ktx", version = "1.13.1" }
