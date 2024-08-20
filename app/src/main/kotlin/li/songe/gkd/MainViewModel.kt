@@ -25,7 +25,7 @@ import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.updateSubscription
 
 class MainViewModel : ViewModel() {
-    val enableDarkThemeFlow = storeFlow.debounce(200).map { s -> s.enableDarkTheme }.stateIn(
+    val enableDarkThemeFlow = storeFlow.debounce(300).map { s -> s.enableDarkTheme }.stateIn(
         viewModelScope,
         SharingStarted.Eagerly,
         storeFlow.value.enableDarkTheme
