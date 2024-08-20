@@ -63,7 +63,7 @@ reorderable = { module = "sh.calvin.reorderable:reorderable", version = "2.3.0" 
 exp4j = { module = "net.objecthunter:exp4j", version = "0.4.8" }
 toaster = { module = "com.github.getActivity:Toaster", version = "12.6" }
 permissions = { module = "com.github.getActivity:XXPermissions", version = "18.63" }
-json5 = { module = "io.github.lisonge:json5", version = "0.0.3" }
+json5 = { module = "li.songe:json5", version = "0.0.1" }
 
 [plugins]
 android_library = { id = "com.android.library", version.ref = "android" }
