@@ -1,10 +1,6 @@
 package li.songe.gkd.service
 
-import android.content.BroadcastReceiver
 import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.os.Build
@@ -16,7 +12,6 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.ScreenUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -46,7 +41,6 @@ import li.songe.gkd.shizuku.useSafeGetTasksFc
 import li.songe.gkd.shizuku.useSafeInputTapFc
 import li.songe.gkd.shizuku.useShizukuAliveState
 import li.songe.gkd.util.UpdateTimeOption
-import li.songe.gkd.util.VOLUME_CHANGED_ACTION
 import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
@@ -182,7 +176,7 @@ class GkdAbService : CompositionAbService({
                 latestEvent?.let { n ->
                     val refreshOk = try {
                         n.refresh()
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         false
                     }
                     if (!refreshOk) {
@@ -430,52 +424,6 @@ class GkdAbService : CompositionAbService({
     onDestroy {
         if (aliveView != null) {
             wm.removeView(aliveView)
-        }
-    }
-
-
-    fun createVolumeReceiver(): BroadcastReceiver {
-        return object : BroadcastReceiver() {
-            var lastTriggerTime = -1L
-            override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == VOLUME_CHANGED_ACTION) {
-                    val t = System.currentTimeMillis()
-                    if (t - lastTriggerTime > 3000 && !ScreenUtils.isScreenLock()) {
-                        lastTriggerTime = t
-                        scope.launchTry(Dispatchers.IO) {
-                            SnapshotExt.captureSnapshot()
-                            toast("快照成功")
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    var captureVolumeReceiver: BroadcastReceiver? = null
-    scope.launch {
-        storeFlow.map(scope) { s -> s.captureVolumeChange }.collect {
-            if (captureVolumeReceiver != null) {
-                context.unregisterReceiver(captureVolumeReceiver)
-            }
-            captureVolumeReceiver = if (it) {
-                createVolumeReceiver().apply {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        context.registerReceiver(
-                            this, IntentFilter(VOLUME_CHANGED_ACTION), Context.RECEIVER_EXPORTED
-                        )
-                    } else {
-                        context.registerReceiver(this, IntentFilter(VOLUME_CHANGED_ACTION))
-                    }
-                }
-            } else {
-                null
-            }
-        }
-    }
-    onDestroy {
-        if (captureVolumeReceiver != null) {
-            context.unregisterReceiver(captureVolumeReceiver)
         }
     }
 

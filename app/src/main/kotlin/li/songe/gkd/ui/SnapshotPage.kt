@@ -59,7 +59,7 @@ import li.songe.gkd.ui.component.StartEllipsisText
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.destinations.ImagePreviewPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.util.IMPORT_BASE_URL
+import li.songe.gkd.util.IMPORT_SHORT_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.LocalPickContentLauncher
 import li.songe.gkd.util.ProfileTransitions
@@ -242,7 +242,7 @@ fun SnapshotPage() {
                         text = "复制链接", modifier = Modifier
                             .clickable(onClick = {
                                 selectedSnapshot = null
-                                ClipboardUtils.copyText(IMPORT_BASE_URL + snapshotVal.githubAssetId)
+                                ClipboardUtils.copyText(IMPORT_SHORT_URL + snapshotVal.githubAssetId)
                                 toast("复制成功")
                             })
                             .then(modifier)

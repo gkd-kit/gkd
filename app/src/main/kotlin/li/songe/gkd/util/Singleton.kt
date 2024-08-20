@@ -26,11 +26,6 @@ val json by lazy {
         ignoreUnknownKeys = true
         explicitNulls = false
         encodeDefaults = true
-
-        // support json5
-        isLenient = true // https://github.com/Kotlin/kotlinx.serialization/issues/2765
-        allowComments = true
-        allowTrailingComma = true
     }
 }
 

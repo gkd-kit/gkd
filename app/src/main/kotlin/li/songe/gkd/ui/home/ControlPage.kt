@@ -100,8 +100,8 @@ fun useControlPage(): ScaffoldExt {
                     })
             } else {
                 TextSwitch(
-                    name = "服务开启",
-                    desc = "根据规则匹配节点,执行操作",
+                    title = "服务开启",
+                    subtitle = "根据规则匹配节点,执行操作",
                     checked = store.enableService,
                     onCheckedChange = {
                         storeFlow.value = store.copy(
@@ -111,8 +111,8 @@ fun useControlPage(): ScaffoldExt {
             }
 
             TextSwitch(
-                name = "常驻通知",
-                desc = "通知栏显示运行状态及统计数据",
+                title = "常驻通知",
+                subtitle = "通知栏显示运行状态及统计数据",
                 checked = manageRunning && store.enableStatusService,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
