@@ -273,7 +273,7 @@ fun AdvancedPage() {
             confirmButton = {
                 TextButton(onClick = {
                     showEditCookieDlg = false
-                    privacyStoreFlow.update { it.copy(githubCookie = value) }
+                    privacyStoreFlow.update { it.copy(githubCookie = value.trim()) }
                 }) {
                     Text(text = "确认")
                 }
