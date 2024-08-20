@@ -6,6 +6,7 @@ import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,6 +21,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
@@ -95,6 +97,7 @@ import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openApp
 import li.songe.gkd.util.openUri
+import li.songe.gkd.util.privacyStoreFlow
 import li.songe.gkd.util.saveFileToDownloads
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.storeFlow
@@ -116,9 +119,65 @@ fun AdvancedPage() {
     ShizukuErrorDialog(vm.shizukuErrorFlow)
     vm.uploadOptions.ShowDialog()
 
-    var showPortDlg by remember {
+    var showEditPortDlg by remember {
         mutableStateOf(false)
     }
+    if (showEditPortDlg) {
+        var value by remember {
+            mutableStateOf(store.httpServerPort.toString())
+        }
+        AlertDialog(title = { Text(text = "服务端口") }, text = {
+            OutlinedTextField(
+                value = value,
+                placeholder = {
+                    Text(text = "请输入 5000-65535 的整数")
+                },
+                onValueChange = {
+                    value = it.filter { c -> c.isDigit() }.take(5)
+                },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                supportingText = {
+                    Text(
+                        text = "${value.length} / 5",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.End,
+                    )
+                },
+            )
+        }, onDismissRequest = {
+            if (value.isEmpty()) {
+                showEditPortDlg = false
+            }
+        }, confirmButton = {
+            TextButton(
+                enabled = value.isNotEmpty(),
+                onClick = {
+                    val newPort = value.toIntOrNull()
+                    if (newPort == null || !(5000 <= newPort && newPort <= 65535)) {
+                        toast("请输入 5000-65535 的整数")
+                        return@TextButton
+                    }
+                    storeFlow.value = store.copy(
+                        httpServerPort = newPort
+                    )
+                    showEditPortDlg = false
+                }
+            ) {
+                Text(
+                    text = "确认", modifier = Modifier
+                )
+            }
+        }, dismissButton = {
+            TextButton(onClick = { showEditPortDlg = false }) {
+                Text(
+                    text = "取消"
+                )
+            }
+        })
+    }
+
     var showShareLogDlg by remember {
         mutableStateOf(false)
     }
@@ -169,6 +228,62 @@ fun AdvancedPage() {
                 )
             }
         }
+    }
+
+    var showEditCookieDlg by remember { mutableStateOf(false) }
+    if (showEditCookieDlg) {
+        val privacyStore by privacyStoreFlow.collectAsState()
+        var value by remember {
+            mutableStateOf(privacyStore.githubCookie ?: "")
+        }
+        AlertDialog(
+            onDismissRequest = {
+                if (value.isEmpty()) {
+                    showEditCookieDlg = false
+                }
+            },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(text = "Github Cookie")
+                    IconButton(onClick = throttle {
+                        context.openUri("https://gkd.li/?r=1")
+                    }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                            contentDescription = null,
+                        )
+                    }
+                }
+            },
+            text = {
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = {
+                        value = it.filter { c -> c != '\n' && c != '\r' }
+                    },
+                    placeholder = { Text(text = "请输入 Github Cookie") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 10,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showEditCookieDlg = false
+                    privacyStoreFlow.update { it.copy(githubCookie = value) }
+                }) {
+                    Text(text = "确认")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditCookieDlg = false }) {
+                    Text(text = "取消")
+                }
+            }
+        )
     }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -283,30 +398,18 @@ fun AdvancedPage() {
                 )
             }
 
-            Row(
-                modifier = Modifier
-                    .clickable { showPortDlg = true }
-                    .itemPadding(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "服务端口",
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Text(
-                        text = store.httpServerPort.toString(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            SettingItem(
+                title = "服务端口",
+                subtitle = store.httpServerPort.toString(),
+                imageVector = Icons.Default.Edit,
+                onClick = {
+                    showEditPortDlg = true
                 }
-                Spacer(modifier = Modifier.width(10.dp))
-                Icon(imageVector = Icons.Default.Edit, contentDescription = null)
-            }
+            )
 
             TextSwitch(
-                name = "清除订阅",
-                desc = "当HTTP服务关闭时,删除内存订阅",
+                title = "清除订阅",
+                subtitle = "当HTTP服务关闭时,删除内存订阅",
                 checked = store.autoClearMemorySubs
             ) {
                 storeFlow.value = store.copy(
@@ -331,8 +434,8 @@ fun AdvancedPage() {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
                 val screenshotRunning by ScreenshotService.isRunning.collectAsState()
                 TextSwitch(
-                    name = "截屏服务",
-                    desc = "生成快照需要获取屏幕截图",
+                    title = "截屏服务",
+                    subtitle = "生成快照需要获取屏幕截图",
                     checked = screenshotRunning,
                     onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                         if (it) {
@@ -353,8 +456,8 @@ fun AdvancedPage() {
 
             val floatingRunning by FloatingService.isRunning.collectAsState()
             TextSwitch(
-                name = "悬浮窗服务",
-                desc = "显示截屏按钮,点击即可保存快照",
+                title = "悬浮窗服务",
+                subtitle = "显示悬浮按钮点击保存快照",
                 checked = floatingRunning,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
@@ -369,37 +472,14 @@ fun AdvancedPage() {
             )
 
             TextSwitch(
-                name = "音量快照",
-                desc = "音量变化时生成快照,若悬浮按钮不工作可使用",
-                checked = store.captureVolumeChange
-            ) {
-                storeFlow.value = store.copy(
-                    captureVolumeChange = it
-                )
-            }
-
-            TextSwitch(
-                name = "截屏快照",
-                descContent = {
-                    Row {
-                        Text(
-                            text = "触发截屏时保存快照",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text(
-                            text = "查看限制",
-                            style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline),
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.clickable(onClick = throttle {
-                                context.mainVm.dialogFlow.updateDialogOptions(
-                                    title = "限制说明",
-                                    text = "仅支持部分小米设备截屏触发\n\n只保存节点信息不保存图片, 用户需要在快照记录里替换截图",
-                                )
-                            })
-                        )
-                    }
+                title = "截屏快照",
+                subtitle = "触发截屏时保存快照",
+                suffix = "查看限制",
+                onSuffixClick = {
+                    context.mainVm.dialogFlow.updateDialogOptions(
+                        title = "限制说明",
+                        text = "仅支持部分小米设备截屏触发\n\n只保存节点信息不保存图片, 用户需要在快照记录里替换截图",
+                    )
                 },
                 checked = store.captureScreenshot
             ) {
@@ -409,8 +489,8 @@ fun AdvancedPage() {
             }
 
             TextSwitch(
-                name = "隐藏状态栏",
-                desc = "隐藏快照截图顶部状态栏",
+                title = "隐藏状态栏",
+                subtitle = "隐藏截图顶部状态栏",
                 checked = store.hideSnapshotStatusBar
             ) {
                 storeFlow.value = store.copy(
@@ -419,14 +499,27 @@ fun AdvancedPage() {
             }
 
             TextSwitch(
-                name = "保存提示",
-                desc = "保存快照时提示\"正在保存快照\"",
+                title = "保存提示",
+                subtitle = "保存时提示\"正在保存快照\"",
                 checked = store.showSaveSnapshotToast
             ) {
                 storeFlow.value = store.copy(
                     showSaveSnapshotToast = it
                 )
             }
+
+            SettingItem(
+                title = "Github Cookie",
+                subtitle = "生成快照/日志链接",
+                suffix = "获取教程",
+                onSuffixClick = {
+                    context.openUri("https://gkd.li/?r=1")
+                },
+                imageVector = Icons.Default.Edit,
+                onClick = {
+                    showEditCookieDlg = true
+                }
+            )
 
             Text(
                 text = "界面记录",
@@ -436,8 +529,8 @@ fun AdvancedPage() {
             )
 
             TextSwitch(
-                name = "记录界面",
-                desc = "记录打开的应用及界面",
+                title = "记录界面",
+                subtitle = "记录打开的应用及界面",
                 checked = store.enableActivityLog
             ) {
                 storeFlow.value = store.copy(
@@ -459,8 +552,8 @@ fun AdvancedPage() {
             )
 
             TextSwitch(
-                name = "保存日志",
-                desc = "保存7天日志,帮助定位BUG",
+                title = "保存日志",
+                subtitle = "保存7天日志,帮助定位BUG",
                 checked = store.log2FileSwitch,
                 onCheckedChange = {
                     storeFlow.value = store.copy(
@@ -479,9 +572,15 @@ fun AdvancedPage() {
                     }
                 })
 
-            SettingItem(title = "导出日志", imageVector = Icons.Default.Upload, onClick = {
-                showShareLogDlg = true
-            })
+            if (store.log2FileSwitch) {
+                SettingItem(
+                    title = "导出日志",
+                    imageVector = Icons.Default.Upload,
+                    onClick = {
+                        showShareLogDlg = true
+                    }
+                )
+            }
 
             Text(
                 text = "其它",
@@ -490,8 +589,8 @@ fun AdvancedPage() {
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            TextSwitch(name = "前台悬浮窗",
-                desc = "添加透明悬浮窗,关闭可能导致不点击/点击缓慢",
+            TextSwitch(title = "前台悬浮窗",
+                subtitle = "添加透明悬浮窗,关闭可能导致不点击/点击缓慢",
                 checked = store.enableAbFloatWindow,
                 onCheckedChange = {
                     storeFlow.value = store.copy(
@@ -503,68 +602,13 @@ fun AdvancedPage() {
         }
     }
 
-    if (showPortDlg) {
-        var value by remember {
-            mutableStateOf(store.httpServerPort.toString())
-        }
-        AlertDialog(title = { Text(text = "服务端口") }, text = {
-            OutlinedTextField(
-                value = value,
-                placeholder = {
-                    Text(text = "请输入 5000-65535 的整数")
-                },
-                onValueChange = {
-                    value = it.filter { c -> c.isDigit() }.take(5)
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                supportingText = {
-                    Text(
-                        text = "${value.length} / 5",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.End,
-                    )
-                },
-            )
-        }, onDismissRequest = {
-            if (value.isEmpty()) {
-                showPortDlg = false
-            }
-        }, confirmButton = {
-            TextButton(
-                enabled = value.isNotEmpty(),
-                onClick = {
-                    val newPort = value.toIntOrNull()
-                    if (newPort == null || !(5000 <= newPort && newPort <= 65535)) {
-                        toast("请输入 5000-65535 的整数")
-                        return@TextButton
-                    }
-                    storeFlow.value = store.copy(
-                        httpServerPort = newPort
-                    )
-                    showPortDlg = false
-                }
-            ) {
-                Text(
-                    text = "确认", modifier = Modifier
-                )
-            }
-        }, dismissButton = {
-            TextButton(onClick = { showPortDlg = false }) {
-                Text(
-                    text = "取消"
-                )
-            }
-        })
-    }
 }
 
 @Composable
 private fun ShizukuFragment(enabled: Boolean = true) {
     val store by storeFlow.collectAsState()
-    TextSwitch(name = "Shizuku-界面识别",
-        desc = "更准确识别界面ID",
+    TextSwitch(title = "Shizuku-界面识别",
+        subtitle = "更准确识别界面ID",
         checked = store.enableShizukuActivity,
         enabled = enabled,
         onCheckedChange = { enableShizuku ->
@@ -589,8 +633,8 @@ private fun ShizukuFragment(enabled: Boolean = true) {
         })
 
     TextSwitch(
-        name = "Shizuku-模拟点击",
-        desc = "变更 clickCenter 为强制模拟点击",
+        title = "Shizuku-模拟点击",
+        subtitle = "变更 clickCenter 为强制模拟点击",
         checked = store.enableShizukuClick,
         enabled = enabled,
         onCheckedChange = { enableShizuku ->

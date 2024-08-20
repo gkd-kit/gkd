@@ -47,7 +47,6 @@ data class Store(
     val captureScreenshot: Boolean = false,
     val httpServerPort: Int = 8888,
     val updateSubsInterval: Long = UpdateTimeOption.Everyday.value,
-    val captureVolumeChange: Boolean = false,
     val autoCheckAppUpdate: Boolean = BuildConfig.ENABLED_UPDATE,
     val toastWhenClick: Boolean = true,
     val clickToast: String = "GKD",
@@ -103,8 +102,18 @@ fun increaseClickCount(n: Int = 1) {
     }
 }
 
+@Serializable
+data class PrivacyStore(
+    val githubCookie: String? = null,
+)
+
+val privacyStoreFlow by lazy {
+    createStorageFlow("privacy_store") { PrivacyStore() }
+}
+
 fun initStore() {
     storeFlow.value
     recordStoreFlow.value
+    privacyStoreFlow.value
 }
 

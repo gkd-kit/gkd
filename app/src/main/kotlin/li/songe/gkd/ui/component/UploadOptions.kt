@@ -7,25 +7,17 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import com.blankj.utilcode.util.ClipboardUtils
-import io.ktor.client.call.body
-import io.ktor.client.plugins.onUpload
-import io.ktor.client.request.forms.formData
-import io.ktor.client.request.forms.submitFormWithBinaryData
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.Headers
-import io.ktor.http.HttpHeaders
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.data.GithubPoliciesAsset
-import li.songe.gkd.data.RpcError
-import li.songe.gkd.util.FILE_UPLOAD_URL
 import li.songe.gkd.util.LoadStatus
-import li.songe.gkd.util.client
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.privacyStoreFlow
 import li.songe.gkd.util.toast
+import li.songe.gkd.util.uploadFileToGithub
 import java.io.File
 
 class UploadOptions(
@@ -34,50 +26,42 @@ class UploadOptions(
 ) {
     val statusFlow = MutableStateFlow<LoadStatus<GithubPoliciesAsset>?>(null)
     private var job: Job? = null
-    private fun buildTask(file: File, onSuccessResult: ((GithubPoliciesAsset) -> Unit)?) =
-        scope.launchTry(Dispatchers.IO) {
-            statusFlow.value = LoadStatus.Loading()
-            try {
-                val response =
-                    client.submitFormWithBinaryData(url = FILE_UPLOAD_URL, formData = formData {
-                        append("\"file\"", file.readBytes(), Headers.build {
-                            append(HttpHeaders.ContentType, "application/x-zip-compressed")
-                            append(HttpHeaders.ContentDisposition, "filename=\"file.zip\"")
-                        })
-                    }) {
-                        onUpload { bytesSentTotal, contentLength ->
-                            if (statusFlow.value is LoadStatus.Loading) {
-                                statusFlow.value =
-                                    LoadStatus.Loading(bytesSentTotal / contentLength.toFloat())
-                            }
-                        }
-                    }
-                if (response.headers["X_RPC_OK"] == "true") {
-                    val policiesAsset = response.body<GithubPoliciesAsset>()
-                    statusFlow.value = LoadStatus.Success(policiesAsset)
-                    onSuccessResult?.invoke(policiesAsset)
-                } else if (response.headers["X_RPC_OK"] == "false") {
-                    statusFlow.value = LoadStatus.Failure(response.body<RpcError>())
-                } else {
-                    statusFlow.value = LoadStatus.Failure(Exception(response.bodyAsText()))
+    private fun buildTask(
+        cookie: String,
+        file: File,
+        onSuccessResult: ((GithubPoliciesAsset) -> Unit)?
+    ) = scope.launchTry(Dispatchers.IO) {
+        statusFlow.value = LoadStatus.Loading()
+        try {
+            val policiesAsset = uploadFileToGithub(cookie, file) {
+                if (statusFlow.value is LoadStatus.Loading) {
+                    statusFlow.value = LoadStatus.Loading(it)
                 }
-            } catch (e: Exception) {
-                statusFlow.value = LoadStatus.Failure(e)
-            } finally {
-                job = null
             }
+            statusFlow.value = LoadStatus.Success(policiesAsset)
+            onSuccessResult?.invoke(policiesAsset)
+        } catch (e: Exception) {
+            statusFlow.value = LoadStatus.Failure(e)
+        } finally {
+            job = null
         }
+    }
 
     fun startTask(file: File, onSuccessResult: ((GithubPoliciesAsset) -> Unit)? = null) {
+        val cookie = privacyStoreFlow.value.githubCookie
+        if (cookie == null) {
+            toast("请先设置 cookie 后再上传")
+            return
+        }
         if (job != null || statusFlow.value is LoadStatus.Loading) {
             return
         }
-        job = buildTask(file, onSuccessResult)
+        job = buildTask(cookie, file, onSuccessResult)
     }
 
     private fun stopTask() {
         if (statusFlow.value is LoadStatus.Loading && job != null) {
-            job?.cancel(CancellationException("您取消了上传"))
+            job?.cancel("您取消了上传")
             job = null
         }
     }

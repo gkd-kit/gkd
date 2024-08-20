@@ -3,11 +3,8 @@ package li.songe.gkd.util
 import android.webkit.URLUtil
 import li.songe.gkd.BuildConfig
 
-const val VOLUME_CHANGED_ACTION = "android.media.VOLUME_CHANGED_ACTION"
-
-const val FILE_UPLOAD_URL = "https://u.gkd.li/"
 const val FILE_SHORT_URL = "https://f.gkd.li/"
-const val IMPORT_BASE_URL = "https://i.gkd.li/i/"
+const val IMPORT_SHORT_URL = "https://i.gkd.li/i/"
 
 const val SERVER_SCRIPT_URL =
     "https://registry-direct.npmmirror.com/@gkd-kit/config/latest/files/dist/server.js"

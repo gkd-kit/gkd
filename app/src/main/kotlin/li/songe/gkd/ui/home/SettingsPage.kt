@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -33,8 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.navigation.navigate
@@ -219,8 +216,8 @@ fun useSettingsPage(): ScaffoldExt {
             )
 
             TextSwitch(
-                name = "触发提示",
-                desc = store.clickToast,
+                title = "触发提示",
+                subtitle = store.clickToast,
                 checked = store.toastWhenClick,
                 modifier = Modifier.clickable {
                     showToastInputDlg = true
@@ -233,27 +230,14 @@ fun useSettingsPage(): ScaffoldExt {
 
             if (store.toastWhenClick) {
                 TextSwitch(
-                    name = "系统提示",
-                    descContent = {
-                        Row {
-                            Text(
-                                text = "系统样式触发提示",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(modifier = Modifier.width(2.dp))
-                            Text(
-                                text = "查看限制",
-                                style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline),
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.clickable(onClick = throttle {
-                                    mainVm.dialogFlow.updateDialogOptions(
-                                        title = "限制说明",
-                                        text = "系统 Toast 存在频率限制, 触发过于频繁会被系统强制不显示\n\n如果只使用开屏一类低频率规则可使用系统提示, 否则建议关闭此项使用自定义样式提示",
-                                    )
-                                })
-                            )
-                        }
+                    title = "系统提示",
+                    subtitle = "系统样式触发提示",
+                    suffix = "查看限制",
+                    onSuffixClick = {
+                        mainVm.dialogFlow.updateDialogOptions(
+                            title = "限制说明",
+                            text = "系统 Toast 存在频率限制, 触发过于频繁会被系统强制不显示\n\n如果只使用开屏一类低频率规则可使用系统提示, 否则建议关闭此项使用自定义样式提示",
+                        )
                     },
                     checked = store.useSystemToast,
                     onCheckedChange = {
@@ -265,8 +249,8 @@ fun useSettingsPage(): ScaffoldExt {
 
             val subsStatus by vm.subsStatusFlow.collectAsState()
             TextSwitch(
-                name = "通知文案",
-                desc = if (store.useCustomNotifText) store.customNotifText else subsStatus,
+                title = "通知文案",
+                subtitle = if (store.useCustomNotifText) store.customNotifText else subsStatus,
                 checked = store.useCustomNotifText,
                 modifier = Modifier.clickable {
                     showNotifTextInputDlg = true
@@ -278,8 +262,8 @@ fun useSettingsPage(): ScaffoldExt {
                 })
 
             TextSwitch(
-                name = "后台隐藏",
-                desc = "在[最近任务]中隐藏本应用",
+                title = "后台隐藏",
+                subtitle = "在[最近任务]中隐藏本应用",
                 checked = store.excludeFromRecents,
                 onCheckedChange = {
                     storeFlow.value = store.copy(
@@ -302,8 +286,8 @@ fun useSettingsPage(): ScaffoldExt {
             }
 
             if (supportDynamicColor) {
-                TextSwitch(name = "动态配色",
-                    desc = "配色跟随系统主题",
+                TextSwitch(title = "动态配色",
+                    subtitle = "配色跟随系统主题",
                     checked = store.enableDynamicColor,
                     onCheckedChange = {
                         storeFlow.value = store.copy(
@@ -321,8 +305,8 @@ fun useSettingsPage(): ScaffoldExt {
                 )
 
                 TextSwitch(
-                    name = "自动更新",
-                    desc = "打开应用时检测新版本",
+                    title = "自动更新",
+                    subtitle = "打开应用时检测新版本",
                     checked = store.autoCheckAppUpdate,
                     onCheckedChange = {
                         storeFlow.value = store.copy(
