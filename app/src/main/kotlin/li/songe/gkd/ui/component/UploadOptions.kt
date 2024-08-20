@@ -49,7 +49,7 @@ class UploadOptions(
 
     fun startTask(file: File, onSuccessResult: ((GithubPoliciesAsset) -> Unit)? = null) {
         val cookie = privacyStoreFlow.value.githubCookie
-        if (cookie == null) {
+        if (cookie == null || cookie.isBlank()) {
             toast("请先设置 cookie 后再上传")
             return
         }
