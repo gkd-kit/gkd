@@ -9,6 +9,7 @@ paging = "3.3.2"
 ktor = "2.3.12"
 destinations = "1.10.2"
 coil = "2.7.0"
+shizuku = "13.1.5"
 
 [libraries]
 android_gradle = { module = "com.android.tools.build:gradle", version.ref = "android" }
@@ -26,8 +27,8 @@ compose_activity = { module = "androidx.activity:activity-compose", version = "1
 tencent_mmkv = { module = "com.tencent:mmkv", version = "1.3.9" }
 rikka_processor = { module = "dev.rikka.tools.refine:annotation-processor", version.ref = "rikka" }
 rikka_annotation = { module = "dev.rikka.tools.refine:annotation", version.ref = "rikka" }
-rikka_shizuku_api = { module = "dev.rikka.shizuku:api", version = "13.1.5" }
-rikka_shizuku_provider = { module = "dev.rikka.shizuku:provider", version = "13.1.5" }
+rikka_shizuku_api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
+rikka_shizuku_provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
 lsposed_hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version = "4.3" }
 others_utilcodex = { module = "com.blankj:utilcodex", version = "1.31.1" }
 others_activityResultLauncher = { module = "com.github.DylanCaiCoding:ActivityResultLauncher", version = "1.1.2" }
