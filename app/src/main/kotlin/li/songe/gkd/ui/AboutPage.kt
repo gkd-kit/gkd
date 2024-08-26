@@ -21,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import li.songe.gkd.BuildConfig
@@ -143,11 +142,11 @@ fun AboutPage() {
                     .itemPadding()
             ) {
                 Text(
-                    text = "构建时间",
+                    text = "提交时间",
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 Text(
-                    text = BuildConfig.BUILD_TIME.format("yyyy-MM-dd HH:mm:ss ZZ"),
+                    text = BuildConfig.GIT_COMMIT_TIME.format("yyyy-MM-dd HH:mm:ss ZZ"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
