@@ -65,8 +65,8 @@ android {
             useSupportLibrary = true
         }
 
-        val nowTime = gitInfo?.commitTime ?: 0
-        buildConfigField("Long", "BUILD_TIME", jsonStringOf(nowTime) + "L")
+        val commitTime = gitInfo?.commitTime ?: 0
+        buildConfigField("Long", "GIT_COMMIT_TIME", jsonStringOf(commitTime) + "L")
         buildConfigField(
             "String",
             "GIT_COMMIT_ID",
