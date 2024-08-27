@@ -2,6 +2,7 @@ package li.songe.gkd.debug
 
 import android.accessibilityservice.AccessibilityService
 import android.service.quicksettings.TileService
+import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import li.songe.gkd.appScope
@@ -19,6 +20,7 @@ import li.songe.gkd.util.toast
 class SnapshotTileService : TileService() {
     override fun onClick() {
         super.onClick()
+        LogUtils.d("SnapshotTileService::onClick")
         val service = GkdAbService.service
         if (service == null) {
             toast("无障碍没有开启")
@@ -27,13 +29,24 @@ class SnapshotTileService : TileService() {
         appScope.launchTry(Dispatchers.IO) {
             val oldAppId = service.safeActiveWindow?.packageName?.toString()
                 ?: return@launchTry toast("获取界面信息根节点失败")
-            val interval = 500L
-            val waitTime = 3000L
-            var i = 0
+
+            val startTime = System.currentTimeMillis()
+            fun timeout(): Boolean {
+                return System.currentTimeMillis() - startTime > 3000L
+            }
+
+            val timeoutText = "没有检测到界面切换,捕获失败"
             while (true) {
-                val latestAppId =
-                    service.safeActiveWindow?.packageName?.toString() ?: return@launchTry
-                if (latestAppId != oldAppId) {
+                val latestAppId = service.safeActiveWindow?.packageName?.toString()
+                if (latestAppId == null) {
+                    // https://github.com/gkd-kit/gkd/issues/713
+                    delay(250)
+                    if (timeout()) {
+                        toast(timeoutText)
+                        break
+                    }
+                } else if (latestAppId != oldAppId) {
+                    LogUtils.d("SnapshotTileService::eventExecutor.execute")
                     eventExecutor.execute {
                         updateTopActivity(
                             shizukuTopActivityGetter?.invoke() ?: TopActivity(appId = latestAppId)
@@ -43,14 +56,13 @@ class SnapshotTileService : TileService() {
                             captureSnapshot()
                         }
                     }
-                    return@launchTry
+                    break
                 } else {
                     service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
-                    delay(interval)
-                    i++
-                    if (i * interval > waitTime) {
-                        toast("没有检测到界面切换,捕获失败")
-                        return@launchTry
+                    delay(500)
+                    if (timeout()) {
+                        toast(timeoutText)
+                        break
                     }
                 }
             }
