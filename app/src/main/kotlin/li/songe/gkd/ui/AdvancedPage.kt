@@ -472,6 +472,16 @@ fun AdvancedPage() {
             )
 
             TextSwitch(
+                title = "音量快照",
+                subtitle = "音量变化时保存快照",
+                checked = store.captureVolumeChange
+            ) {
+                storeFlow.value = store.copy(
+                    captureVolumeChange = it
+                )
+            }
+
+            TextSwitch(
                 title = "截屏快照",
                 subtitle = "触发截屏时保存快照",
                 suffix = "查看限制",
