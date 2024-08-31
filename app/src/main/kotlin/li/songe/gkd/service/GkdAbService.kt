@@ -1,6 +1,10 @@
 package li.songe.gkd.service
 
+import android.content.BroadcastReceiver
 import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.os.Build
@@ -12,6 +16,7 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
+import com.blankj.utilcode.util.ScreenUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -424,6 +429,50 @@ class GkdAbService : CompositionAbService({
     onDestroy {
         if (aliveView != null) {
             wm.removeView(aliveView)
+        }
+    }
+
+    val volumeChangedAction = "android.media.VOLUME_CHANGED_ACTION"
+    fun createVolumeReceiver() = object : BroadcastReceiver() {
+        var lastTriggerTime = -1L
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == volumeChangedAction) {
+                val t = System.currentTimeMillis()
+                if (t - lastTriggerTime > 3000 && !ScreenUtils.isScreenLock()) {
+                    lastTriggerTime = t
+                    scope.launchTry(Dispatchers.IO) {
+                        SnapshotExt.captureSnapshot()
+                        toast("快照成功")
+                    }
+                }
+            }
+        }
+    }
+
+    var captureVolumeReceiver: BroadcastReceiver? = null
+    scope.launch {
+        storeFlow.map(scope) { s -> s.captureVolumeChange }.collect {
+            if (captureVolumeReceiver != null) {
+                context.unregisterReceiver(captureVolumeReceiver)
+            }
+            captureVolumeReceiver = if (it) {
+                createVolumeReceiver().apply {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        context.registerReceiver(
+                            this, IntentFilter(volumeChangedAction), Context.RECEIVER_EXPORTED
+                        )
+                    } else {
+                        context.registerReceiver(this, IntentFilter(volumeChangedAction))
+                    }
+                }
+            } else {
+                null
+            }
+        }
+    }
+    onDestroy {
+        if (captureVolumeReceiver != null) {
+            context.unregisterReceiver(captureVolumeReceiver)
         }
     }
 
