@@ -444,6 +444,7 @@ data class RawSubscription(
             exp.setVariable("bottom", rect.bottom.toDouble())
             exp.setVariable("width", rect.width().toDouble())
             exp.setVariable("height", rect.height().toDouble())
+            exp.setVariable("random", Math.random())
         }
 
         private fun getExpression(value: String?): Expression? {
