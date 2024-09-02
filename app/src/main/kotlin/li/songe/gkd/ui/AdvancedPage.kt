@@ -87,7 +87,6 @@ import li.songe.gkd.ui.destinations.SnapshotPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
-import li.songe.gkd.util.LocalLauncher
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
@@ -111,7 +110,6 @@ import rikka.shizuku.Shizuku
 fun AdvancedPage() {
     val context = LocalContext.current as MainActivity
     val vm = viewModel<AdvancedVm>()
-    val launcher = LocalLauncher.current
     val navController = LocalNavController.current
     val store by storeFlow.collectAsState()
     val snapshotCount by vm.snapshotCountFlow.collectAsState()
@@ -443,7 +441,7 @@ fun AdvancedPage() {
                             val mediaProjectionManager =
                                 context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
                             val activityResult =
-                                launcher.launchForResult(mediaProjectionManager.createScreenCaptureIntent())
+                                context.launcher.launchForResult(mediaProjectionManager.createScreenCaptureIntent())
                             if (activityResult.resultCode == Activity.RESULT_OK && activityResult.data != null) {
                                 ScreenshotService.start(intent = activityResult.data!!)
                             }

@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewModelScope
@@ -31,6 +32,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import li.songe.gkd.BuildConfig
+import li.songe.gkd.MainActivity
 import li.songe.gkd.MainViewModel
 import li.songe.gkd.app
 import java.io.File
@@ -122,7 +124,7 @@ private fun UpdateStatus.startDownload(viewModel: MainViewModel, newVersion: New
 
 @Composable
 fun UpgradeDialog(status: UpdateStatus) {
-    val mainVm = LocalMainViewModel.current
+    val context = LocalContext.current as MainActivity
     val newVersion by status.newVersionFlow.collectAsState()
     newVersion?.let { newVersionVal ->
         AlertDialog(title = {
@@ -145,7 +147,7 @@ fun UpgradeDialog(status: UpdateStatus) {
         }, onDismissRequest = { }, confirmButton = {
             TextButton(onClick = {
                 status.newVersionFlow.value = null
-                status.startDownload(mainVm, newVersionVal)
+                status.startDownload(context.mainVm, newVersionVal)
             }) {
                 Text(text = "下载更新")
             }

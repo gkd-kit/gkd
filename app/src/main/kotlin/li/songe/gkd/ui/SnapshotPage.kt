@@ -61,7 +61,6 @@ import li.songe.gkd.ui.destinations.ImagePreviewPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.IMPORT_SHORT_URL
 import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.LocalPickContentLauncher
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.saveFileToDownloads
@@ -77,8 +76,6 @@ fun SnapshotPage() {
     val context = LocalContext.current as MainActivity
     val navController = LocalNavController.current
     val colorScheme = MaterialTheme.colorScheme
-
-    val pickContentLauncher = LocalPickContentLauncher.current
 
     val vm = viewModel<SnapshotVm>()
     val snapshots by vm.snapshotsState.collectAsState()
@@ -288,7 +285,7 @@ fun SnapshotPage() {
                     text = "替换截图(去除隐私)",
                     modifier = Modifier
                         .clickable(onClick = vm.viewModelScope.launchAsFn {
-                            val uri = pickContentLauncher.launchForImageResult()
+                            val uri = context.pickContentLauncher.launchForImageResult()
                             withContext(Dispatchers.IO) {
                                 val oldBitmap = ImageUtils.getBitmap(snapshotVal.screenshotFile)
                                 val newBytes = UriUtils.uri2Bytes(uri)

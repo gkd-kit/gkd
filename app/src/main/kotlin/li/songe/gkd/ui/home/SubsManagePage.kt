@@ -72,8 +72,6 @@ import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
-import li.songe.gkd.util.LocalLauncher
-import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.UpdateTimeOption
 import li.songe.gkd.util.checkSubsUpdate
@@ -98,8 +96,7 @@ val subsNav = BottomNavItem(
 
 @Composable
 fun useSubsManagePage(): ScaffoldExt {
-    val launcher = LocalLauncher.current
-    val mainVm = LocalMainViewModel.current
+    val context = LocalContext.current as MainActivity
 
     val vm = viewModel<HomeVm>()
     val subItems by subsItemsFlow.collectAsState()
@@ -175,7 +172,7 @@ fun useSubsManagePage(): ScaffoldExt {
                 }
                 vm.viewModelScope.launchTry {
                     if (!isSafeUrl(link)) {
-                        mainVm.dialogFlow.waitResult(
+                        context.mainVm.dialogFlow.waitResult(
                             title = "未知来源",
                             text = "你正在添加一个未验证的远程订阅\n\n这可能含有恶意的规则\n\n是否仍然确认添加?"
                         )
@@ -251,7 +248,7 @@ fun useSubsManagePage(): ScaffoldExt {
                             if (selectedIds.contains(LOCAL_SUBS_ID)) "$it\n\n注: 不包含本地订阅" else it
                         }
                         IconButton(onClick = vm.viewModelScope.launchAsFn {
-                            mainVm.dialogFlow.waitResult(
+                            context.mainVm.dialogFlow.waitResult(
                                 title = "删除订阅",
                                 text = text,
                                 error = true,
@@ -348,7 +345,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                 onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                                     expanded = false
                                     val result =
-                                        launcher.launchForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                                        context.launcher.launchForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                                             addCategory(Intent.CATEGORY_OPENABLE)
                                             type = "application/zip"
                                         })

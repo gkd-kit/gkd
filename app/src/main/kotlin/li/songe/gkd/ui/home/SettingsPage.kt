@@ -31,12 +31,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.BuildConfig
+import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
@@ -50,7 +52,6 @@ import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.ui.theme.supportDynamicColor
 import li.songe.gkd.util.DarkThemeOption
-import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.UpdateChannelOption
 import li.songe.gkd.util.checkUpdate
@@ -67,7 +68,7 @@ val settingsNav = BottomNavItem(
 
 @Composable
 fun useSettingsPage(): ScaffoldExt {
-    val mainVm = LocalMainViewModel.current
+    val context = LocalContext.current as MainActivity
     val navController = LocalNavController.current
     val store by storeFlow.collectAsState()
     val vm = viewModel<HomeVm>()
@@ -79,7 +80,7 @@ fun useSettingsPage(): ScaffoldExt {
         mutableStateOf(false)
     }
 
-    val checkUpdating by mainVm.updateStatus.checkUpdatingFlow.collectAsState()
+    val checkUpdating by context.mainVm.updateStatus.checkUpdatingFlow.collectAsState()
 
     if (showToastInputDlg) {
         var value by remember {
@@ -138,7 +139,7 @@ fun useSettingsPage(): ScaffoldExt {
             ) {
                 Text(text = "通知文案")
                 IconButton(onClick = throttle {
-                    mainVm.dialogFlow.updateDialogOptions(
+                    context.mainVm.dialogFlow.updateDialogOptions(
                         title = "文案规则",
                         text = "通知文案支持变量替换,规则如下\n\${i} 全局规则数\n\${k} 应用数\n\${u} 应用规则组数\n\${n} 触发次数\n\n示例模板\n\${i}全局/\${k}应用/\${u}规则组/\${n}触发\n\n替换结果\n0全局/1应用/2规则组/3触发",
                     )
@@ -234,7 +235,7 @@ fun useSettingsPage(): ScaffoldExt {
                     subtitle = "系统样式触发提示",
                     suffix = "查看限制",
                     onSuffixClick = {
-                        mainVm.dialogFlow.updateDialogOptions(
+                        context.mainVm.dialogFlow.updateDialogOptions(
                             title = "限制说明",
                             text = "系统 Toast 存在频率限制, 触发过于频繁会被系统强制不显示\n\n如果只使用开屏一类低频率规则可使用系统提示, 否则建议关闭此项使用自定义样式提示",
                         )
@@ -321,7 +322,7 @@ fun useSettingsPage(): ScaffoldExt {
                 ) {
                     if (it.value == UpdateChannelOption.Beta.value) {
                         vm.viewModelScope.launchTry {
-                            mainVm.dialogFlow.waitResult(
+                            context.mainVm.dialogFlow.waitResult(
                                 title = "版本渠道",
                                 text = "测试版本渠道更新快\n但不稳定可能存在较多BUG\n请谨慎使用",
                             )
@@ -335,9 +336,9 @@ fun useSettingsPage(): ScaffoldExt {
                 Row(
                     modifier = Modifier
                         .clickable(
-                            onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
-                                if (mainVm.updateStatus.checkUpdatingFlow.value) return@launchAsFn
-                                val newVersion = mainVm.updateStatus.checkUpdate()
+                            onClick = throttle(fn = context.mainVm.viewModelScope.launchAsFn {
+                                if (context.mainVm.updateStatus.checkUpdatingFlow.value) return@launchAsFn
+                                val newVersion = context.mainVm.updateStatus.checkUpdate()
                                 if (newVersion == null) {
                                     toast("暂无更新")
                                 }

@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -50,6 +51,7 @@ import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.MainActivity
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
@@ -60,7 +62,6 @@ import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.menuPadding
-import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SortTypeOption
@@ -80,8 +81,8 @@ import li.songe.json5.encodeToJson5String
 fun SubsPage(
     subsItemId: Long,
 ) {
+    val context = LocalContext.current as MainActivity
     val navController = LocalNavController.current
-    val mainVm = LocalMainViewModel.current
 
     val vm = viewModel<SubsVm>()
     val subsItem = vm.subsItemFlow.collectAsState().value
@@ -266,7 +267,7 @@ fun SubsPage(
                     }),
                     showMenu = editable,
                     onDelClick = throttle(fn = vm.viewModelScope.launchAsFn {
-                        mainVm.dialogFlow.waitResult(
+                        context.mainVm.dialogFlow.waitResult(
                             title = "删除规则组",
                             text = "确定删除 ${appInfoCache[appRaw.id]?.name ?: appRaw.name ?: appRaw.id} 下所有规则组?",
                             error = true,

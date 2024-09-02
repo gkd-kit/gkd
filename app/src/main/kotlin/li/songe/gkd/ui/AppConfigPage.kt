@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -52,6 +53,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.flow.update
+import li.songe.gkd.MainActivity
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
@@ -66,7 +68,6 @@ import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
-import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.ResolvedGroup
@@ -299,7 +300,7 @@ private fun AppGroupCard(
     onClick: () -> Unit,
     onCheckedChange: ((Boolean) -> Unit)?,
 ) {
-    val mainVm = LocalMainViewModel.current
+    val context = LocalContext.current as MainActivity
     Row(
         modifier = Modifier
             .clickable(onClick = onClick)
@@ -361,7 +362,7 @@ private fun AppGroupCard(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                 ) {
-                    mainVm.dialogFlow.updateDialogOptions(
+                    context.mainVm.dialogFlow.updateDialogOptions(
                         title = "内置禁用",
                         text = "此规则组已经在其 apps 字段中配置对当前应用的禁用, 因此无法手动开启规则组\n\n提示: 这种情况一般在此全局规则无法适配/跳过适配/单独适配当前应用时出现",
                     )

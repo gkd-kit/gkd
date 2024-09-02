@@ -48,6 +48,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -60,6 +61,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.Dispatchers
+import li.songe.gkd.MainActivity
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
@@ -69,7 +71,6 @@ import li.songe.gkd.ui.destinations.GlobalRuleExcludePageDestination
 import li.songe.gkd.ui.destinations.GroupImagePageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
-import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.json
@@ -84,8 +85,8 @@ import li.songe.json5.encodeToJson5String
 @Destination(style = ProfileTransitions::class)
 @Composable
 fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
+    val context = LocalContext.current as MainActivity
     val navController = LocalNavController.current
-    val mainVm = LocalMainViewModel.current
     val vm = viewModel<GlobalRuleVm>()
     val subsItem by vm.subsItemFlow.collectAsState()
     val rawSubs = vm.subsRawFlow.collectAsState().value
@@ -254,7 +255,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                                     onClick = {
                                         expanded = false
                                         vm.viewModelScope.launchTry {
-                                            mainVm.dialogFlow.waitResult(
+                                            context.mainVm.dialogFlow.waitResult(
                                                 title = "删除规则组",
                                                 text = "确定删除 ${group.name} ?",
                                                 error = true,
