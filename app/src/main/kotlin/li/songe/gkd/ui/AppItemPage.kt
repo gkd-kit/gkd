@@ -48,6 +48,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -61,6 +62,7 @@ import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonObject
+import li.songe.gkd.MainActivity
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
@@ -71,7 +73,6 @@ import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.destinations.GroupImagePageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
-import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
@@ -93,8 +94,8 @@ fun AppItemPage(
     appId: String,
     focusGroupKey: Int? = null, // 背景/边框高亮一下
 ) {
+    val context = LocalContext.current as MainActivity
     val navController = LocalNavController.current
-    val mainVm = LocalMainViewModel.current
     val vm = viewModel<AppItemVm>()
     val subsItem = vm.subsItemFlow.collectAsState().value
     val subsRaw = vm.subsRawFlow.collectAsState().value
@@ -293,7 +294,7 @@ fun AppItemPage(
                                     onClick = {
                                         expanded = false
                                         vm.viewModelScope.launchTry {
-                                            mainVm.dialogFlow.waitResult(
+                                            context.mainVm.dialogFlow.waitResult(
                                                 title = "删除规则组",
                                                 text = "确定删除规则组 ${group.name} ?",
                                                 error = true,

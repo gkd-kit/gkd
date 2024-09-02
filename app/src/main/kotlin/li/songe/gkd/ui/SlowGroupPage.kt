@@ -27,17 +27,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import com.ramcosta.composedestinations.navigation.navigate
+import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
-import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
@@ -48,8 +49,8 @@ import li.songe.gkd.util.throttle
 @Destination(style = ProfileTransitions::class)
 @Composable
 fun SlowGroupPage() {
+    val context = LocalContext.current as MainActivity
     val navController = LocalNavController.current
-    val mainVm = LocalMainViewModel.current
     val ruleSummary by ruleSummaryFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
 
@@ -72,7 +73,7 @@ fun SlowGroupPage() {
                 title = { Text(text = if (ruleSummary.slowGroupCount > 0) "缓慢查询-${ruleSummary.slowGroupCount}" else "缓慢查询") },
                 actions = {
                     IconButton(onClick = throttle {
-                        mainVm.dialogFlow.updateDialogOptions(
+                        context.mainVm.dialogFlow.updateDialogOptions(
                             title = "缓慢查询",
                             text = "任意单个规则同时满足以下 3 个条件即判定为缓慢查询\n\n1. 选择器右侧无法快速查询且不是主动查询, 或内部使用<<且无法快速查询\n2. preKeys 为空\n3. matchTime 为空或大于 10s",
                         )

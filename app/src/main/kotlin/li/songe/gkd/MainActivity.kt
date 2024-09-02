@@ -4,12 +4,20 @@ import android.app.Activity
 import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Intent
+import android.graphics.Color
+import android.os.Bundle
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
+import com.blankj.utilcode.util.BarUtils
 import com.blankj.utilcode.util.ServiceUtils
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
@@ -18,8 +26,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import li.songe.gkd.composition.CompositionActivity
-import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
 import li.songe.gkd.debug.FloatingService
 import li.songe.gkd.debug.HttpService
 import li.songe.gkd.debug.ScreenshotService
@@ -31,58 +37,58 @@ import li.songe.gkd.service.updateLauncherAppId
 import li.songe.gkd.ui.NavGraphs
 import li.songe.gkd.ui.component.BuildDialog
 import li.songe.gkd.ui.theme.AppTheme
-import li.songe.gkd.util.LocalLauncher
-import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.LocalPickContentLauncher
 import li.songe.gkd.util.UpgradeDialog
 import li.songe.gkd.util.initFolder
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
 
-class MainActivity : CompositionActivity({
-    this as MainActivity
-    useLifeCycleLog()
-    val launcher = StartActivityLauncher(this)
-    val pickContentLauncher = PickContentLauncher(this)
-
-    lifecycleScope.launch {
-        storeFlow.map(lifecycleScope) { s -> s.excludeFromRecents }.collect {
-            (app.getSystemService(ACTIVITY_SERVICE) as ActivityManager).let { manager ->
-                manager.appTasks.forEach { task ->
-                    task?.setExcludeFromRecents(it)
-                }
-            }
-        }
-    }
-
-    ManageService.autoStart(this)
-    mainVm
-
-    setContent {
-        val navController = rememberNavController()
-        AppTheme {
-            CompositionLocalProvider(
-                LocalLauncher provides launcher,
-                LocalPickContentLauncher provides pickContentLauncher,
-                LocalNavController provides navController,
-                LocalMainViewModel provides mainVm
-            ) {
-                DestinationsNavHost(
-                    navGraph = NavGraphs.root,
-                    navController = navController
-                )
-                AuthDialog(mainVm.authReasonFlow)
-                BuildDialog(mainVm.dialogFlow)
-                if (BuildConfig.ENABLED_UPDATE) {
-                    UpgradeDialog(mainVm.updateStatus)
-                }
-            }
-        }
-    }
-}) {
+class MainActivity : ComponentActivity() {
     val mainVm by viewModels<MainViewModel>()
+    val launcher by lazy { StartActivityLauncher(this) }
+    val pickContentLauncher by lazy { PickContentLauncher(this) }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+        enableEdgeToEdge()
+        fixTopPadding()
+        super.onCreate(savedInstanceState)
+
+        lifecycleScope.launch {
+            storeFlow.map(lifecycleScope) { s -> s.excludeFromRecents }.collect {
+                (app.getSystemService(ACTIVITY_SERVICE) as ActivityManager).let { manager ->
+                    manager.appTasks.forEach { task ->
+                        task?.setExcludeFromRecents(it)
+                    }
+                }
+            }
+        }
+
+        mainVm
+        launcher
+        pickContentLauncher
+        ManageService.autoStart(this)
+
+        setContent {
+            val navController = rememberNavController()
+            AppTheme {
+                CompositionLocalProvider(
+                    LocalNavController provides navController
+                ) {
+                    DestinationsNavHost(
+                        navGraph = NavGraphs.root,
+                        navController = navController
+                    )
+                    AuthDialog(mainVm.authReasonFlow)
+                    BuildDialog(mainVm.dialogFlow)
+                    if (BuildConfig.ENABLED_UPDATE) {
+                        UpgradeDialog(mainVm.updateStatus)
+                    }
+                }
+            }
+        }
+    }
 
     override fun onResume() {
         super.onResume()
@@ -153,4 +159,25 @@ private fun updateServiceRunning() {
     FloatingService.isRunning.value = ServiceUtils.isServiceRunning(FloatingService::class.java)
     ScreenshotService.isRunning.value = ServiceUtils.isServiceRunning(ScreenshotService::class.java)
     HttpService.isRunning.value = ServiceUtils.isServiceRunning(HttpService::class.java)
+}
+
+private fun Activity.fixTopPadding() {
+    // 当调用系统分享时, 会导致状态栏区域消失, 应用整体上移, 设置一个 top padding 保证不上移
+    var tempTop: Int? = null
+    ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { view, windowInsets ->
+        view.setBackgroundColor(Color.TRANSPARENT)
+        val statusBars = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars())
+        if (statusBars.top == 0) {
+            view.setPadding(
+                statusBars.left,
+                tempTop ?: BarUtils.getStatusBarHeight(),
+                statusBars.right,
+                statusBars.bottom
+            )
+        } else {
+            tempTop = statusBars.top
+            view.setPadding(statusBars.left, 0, statusBars.right, statusBars.bottom)
+        }
+        ViewCompat.onApplyWindowInsets(view, windowInsets)
+    }
 }

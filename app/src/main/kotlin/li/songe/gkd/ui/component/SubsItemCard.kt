@@ -39,6 +39,7 @@ import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
 import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.Dispatchers
+import li.songe.gkd.MainActivity
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.deleteSubscription
@@ -47,7 +48,6 @@ import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.ui.home.HomeVm
 import li.songe.gkd.util.LOCAL_SUBS_ID
-import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.formatTimeAgo
 import li.songe.gkd.util.launchTry
@@ -215,8 +215,7 @@ private fun SubsMenuItem(
     vm: HomeVm
 ) {
     val navController = LocalNavController.current
-    val context = LocalContext.current
-    val mainVm = LocalMainViewModel.current
+    val context = LocalContext.current as MainActivity
     val density = LocalDensity.current
     var halfMenuWidth by remember {
         mutableStateOf(0.dp)
@@ -307,7 +306,7 @@ private fun SubsMenuItem(
                 onClick = {
                     onExpandedChange(false)
                     vm.viewModelScope.launchTry {
-                        mainVm.dialogFlow.waitResult(
+                        context.mainVm.dialogFlow.waitResult(
                             title = "删除订阅",
                             text = "确定删除 ${subscription?.name ?: subItem.id} ?",
                             error = true,

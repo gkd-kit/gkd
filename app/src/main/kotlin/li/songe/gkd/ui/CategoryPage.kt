@@ -40,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -47,6 +48,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.coroutines.Dispatchers
+import li.songe.gkd.MainActivity
 import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
@@ -56,7 +58,6 @@ import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.EnableGroupOption
-import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.findOption
@@ -69,8 +70,8 @@ import li.songe.gkd.util.updateSubscription
 @Destination(style = ProfileTransitions::class)
 @Composable
 fun CategoryPage(subsItemId: Long) {
+    val context = LocalContext.current as MainActivity
     val navController = LocalNavController.current
-    val mainVm = LocalMainViewModel.current
 
     val vm = viewModel<CategoryVm>()
     val subsItem by vm.subsItemFlow.collectAsState()
@@ -107,7 +108,7 @@ fun CategoryPage(subsItemId: Long) {
             )
         }, actions = {
             IconButton(onClick = throttle {
-                mainVm.dialogFlow.updateDialogOptions(
+                context.mainVm.dialogFlow.updateDialogOptions(
                     title = "开关优先级",
                     text = "规则手动配置 > 分类手动配置 > 分类默认 > 规则默认\n\n重置开关: 移除规则手动配置",
                 )
@@ -202,7 +203,7 @@ fun CategoryPage(subsItemId: Long) {
                                 }, onClick = {
                                     expanded = false
                                     vm.viewModelScope.launchTry {
-                                        mainVm.dialogFlow.waitResult(
+                                        context.mainVm.dialogFlow.waitResult(
                                             title = "删除类别",
                                             text = "确定删除 ${category.name} ?",
                                             error = true,
