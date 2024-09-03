@@ -434,7 +434,13 @@ data class RawSubscription(
         }
 
         private val expVars = arrayOf(
-            "left", "top", "right", "bottom", "width", "height"
+            "left",
+            "top",
+            "right",
+            "bottom",
+            "width",
+            "height",
+            "random"
         )
 
         private fun setVariables(exp: Expression, rect: Rect) {
