@@ -1,7 +1,6 @@
 package li.songe.gkd.ui.home
 
 import android.webkit.URLUtil
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.LogUtils
@@ -14,7 +13,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import li.songe.gkd.appScope
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
@@ -35,12 +33,7 @@ import li.songe.gkd.util.subsRefreshingFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 
-class HomeVm(stateHandle: SavedStateHandle) : ViewModel() {
-    init {
-        viewModelScope.launch {
-            LogUtils.d(this, stateHandle)
-        }
-    }
+class HomeVm : ViewModel() {
 
     val tabFlow = MutableStateFlow(controlNav)
 
