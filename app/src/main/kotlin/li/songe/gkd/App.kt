@@ -1,9 +1,11 @@
 package li.songe.gkd
 
+import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Bundle
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.Utils
 import com.hjq.toast.Toaster
@@ -71,6 +73,36 @@ class App : Application() {
             "VERSION_NAME: ${BuildConfig.VERSION_NAME}",
             "CHANNEL: $channel"
         )
+
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+                LogUtils.d("onActivityCreated", activity, savedInstanceState)
+            }
+
+            override fun onActivityStarted(activity: Activity) {
+                LogUtils.d("onActivityStarted", activity)
+            }
+
+            override fun onActivityResumed(activity: Activity) {
+                LogUtils.d("onActivityResumed", activity)
+            }
+
+            override fun onActivityPaused(activity: Activity) {
+                LogUtils.d("onActivityPaused", activity)
+            }
+
+            override fun onActivityStopped(activity: Activity) {
+                LogUtils.d("onActivityStopped", activity)
+            }
+
+            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
+                LogUtils.d("onActivitySaveInstanceState", activity, outState)
+            }
+
+            override fun onActivityDestroyed(activity: Activity) {
+                LogUtils.d("onActivityDestroyed", activity)
+            }
+        })
 
         initFolder()
         appScope.launchTry(Dispatchers.IO) {
