@@ -188,6 +188,7 @@ data class RawSubscription(
         val order: Int?
         val forcedTime: Long?
         val snapshotUrls: List<String>?
+        val excludeSnapshotUrls: List<String>?
         val exampleUrls: List<String>?
     }
 
@@ -269,6 +270,7 @@ data class RawSubscription(
         override val order: Int?,
         override val forcedTime: Long?,
         override val snapshotUrls: List<String>?,
+        override val excludeSnapshotUrls: List<String>?,
         override val exampleUrls: List<String>?,
         override val matchAnyApp: Boolean?,
         override val matchSystemApp: Boolean?,
@@ -307,6 +309,7 @@ data class RawSubscription(
         override val order: Int?,
         override val forcedTime: Long?,
         override val snapshotUrls: List<String>?,
+        override val excludeSnapshotUrls: List<String>?,
         override val exampleUrls: List<String>?,
         override val name: String?,
         override val key: Int?,
@@ -343,6 +346,7 @@ data class RawSubscription(
         override val matchTime: Long?,
         override val resetMatch: String?,
         override val snapshotUrls: List<String>?,
+        override val excludeSnapshotUrls: List<String>?,
         override val exampleUrls: List<String>?,
         override val activityIds: List<String>?,
         override val excludeActivityIds: List<String>?,
@@ -387,6 +391,7 @@ data class RawSubscription(
         override val matchTime: Long?,
         override val resetMatch: String?,
         override val snapshotUrls: List<String>?,
+        override val excludeSnapshotUrls: List<String>?,
         override val exampleUrls: List<String>?,
 
         override val activityIds: List<String>?,
@@ -610,6 +615,7 @@ data class RawSubscription(
                 matchTime = getLong(jsonObject, "matchTime"),
                 resetMatch = getString(jsonObject, "resetMatch"),
                 snapshotUrls = getStringIArray(jsonObject, "snapshotUrls"),
+                excludeSnapshotUrls = getStringIArray(jsonObject, "excludeSnapshotUrls"),
                 exampleUrls = getStringIArray(jsonObject, "exampleUrls"),
                 actionMaximumKey = getInt(jsonObject, "actionMaximumKey"),
                 actionCdKey = getInt(jsonObject, "actionCdKey"),
@@ -654,6 +660,7 @@ data class RawSubscription(
                 matchTime = getLong(jsonObject, "matchTime"),
                 resetMatch = getString(jsonObject, "resetMatch"),
                 snapshotUrls = getStringIArray(jsonObject, "snapshotUrls"),
+                excludeSnapshotUrls = getStringIArray(jsonObject, "excludeSnapshotUrls"),
                 exampleUrls = getStringIArray(jsonObject, "exampleUrls"),
                 actionMaximumKey = getInt(jsonObject, "actionMaximumKey"),
                 actionCdKey = getInt(jsonObject, "actionCdKey"),
@@ -709,6 +716,7 @@ data class RawSubscription(
                 matchTime = getLong(jsonObject, "matchTime"),
                 resetMatch = getString(jsonObject, "resetMatch"),
                 snapshotUrls = getStringIArray(jsonObject, "snapshotUrls"),
+                excludeSnapshotUrls = getStringIArray(jsonObject, "excludeSnapshotUrls"),
                 exampleUrls = getStringIArray(jsonObject, "exampleUrls"),
                 actionMaximumKey = getInt(jsonObject, "actionMaximumKey"),
                 actionCdKey = getInt(jsonObject, "actionCdKey"),
@@ -747,6 +755,7 @@ data class RawSubscription(
                 matchTime = getLong(jsonObject, "matchTime"),
                 resetMatch = getString(jsonObject, "resetMatch"),
                 snapshotUrls = getStringIArray(jsonObject, "snapshotUrls"),
+                excludeSnapshotUrls = getStringIArray(jsonObject, "excludeSnapshotUrls"),
                 exampleUrls = getStringIArray(jsonObject, "exampleUrls"),
                 actionMaximumKey = getInt(jsonObject, "actionMaximumKey"),
                 actionCdKey = getInt(jsonObject, "actionCdKey"),
