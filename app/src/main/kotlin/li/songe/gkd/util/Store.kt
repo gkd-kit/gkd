@@ -42,6 +42,7 @@ private inline fun <reified T> createStorageFlow(
 @Serializable
 data class Store(
     val enableService: Boolean = true,
+    val enableMatch: Boolean = true,
     val enableStatusService: Boolean = true,
     val excludeFromRecents: Boolean = false,
     val captureScreenshot: Boolean = false,
@@ -112,9 +113,22 @@ val privacyStoreFlow by lazy {
     createStorageFlow("privacy_store") { PrivacyStore() }
 }
 
+private fun createLongFlow(key: String, defaultValue: Long): MutableStateFlow<Long> {
+    val stateFlow = MutableStateFlow(kv.getLong(key, defaultValue))
+    appScope.launch {
+        stateFlow.drop(1).collect {
+            withContext(Dispatchers.IO) { kv.encode(key, it) }
+        }
+    }
+    return stateFlow
+}
+
+val lastRestartA11yServiceTimeFlow by lazy {
+    createLongFlow("last_restart_a11y_service_time", 0)
+}
+
 fun initStore() {
     storeFlow.value
     recordStoreFlow.value
-    privacyStoreFlow.value
 }
 

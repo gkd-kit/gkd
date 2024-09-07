@@ -94,7 +94,7 @@ class GkdAbService : CompositionAbService({
         shizukuAliveFlow,
         storeFlow.map(scope) { s -> s.enableShizukuActivity }
     )
-    val safeGetTasksFc = useSafeGetTasksFc(scope, shizukuCanUsedFlow)
+    val safeGetTasksFc by lazy { useSafeGetTasksFc(scope, shizukuCanUsedFlow) }
 
     val shizukuClickCanUsedFlow = getShizukuCanUsedFlow(
         scope,
@@ -146,7 +146,7 @@ class GkdAbService : CompositionAbService({
     val events = mutableListOf<AccessibilityNodeInfo>()
     var queryTaskJob: Job? = null
     fun newQueryTask(byEvent: Boolean = false, byForced: Boolean = false) {
-        if (!storeFlow.value.enableService) return
+        if (!storeFlow.value.enableMatch) return
         queryTaskJob = scope.launchTry(queryThread) {
             var latestEvent = synchronized(events) {
                 val size = events.size
@@ -348,7 +348,7 @@ class GkdAbService : CompositionAbService({
             if (evAppId != rightAppId) {
                 return@launch
             }
-            if (!storeFlow.value.enableService) return@launch
+            if (!storeFlow.value.enableMatch) return@launch
             val eventNode = event.safeSource
             synchronized(events) {
                 val eventLog = events.lastOrNull()
@@ -363,7 +363,7 @@ class GkdAbService : CompositionAbService({
         }
     }
 
-    var lastUpdateSubsTime = 0L
+    var lastUpdateSubsTime = System.currentTimeMillis() - 25000
     onAccessibilityEvent {// 借助 无障碍事件 触发自动检测更新
         if (it.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {// 筛选降低判断频率
             val i = storeFlow.value.updateSubsInterval
@@ -378,7 +378,7 @@ class GkdAbService : CompositionAbService({
 
     scope.launch(Dispatchers.IO) {
         activityRuleFlow.debounce(300).collect {
-            if (storeFlow.value.enableService && it.currentRules.isNotEmpty()) {
+            if (storeFlow.value.enableMatch && it.currentRules.isNotEmpty()) {
                 LogUtils.d(it.topActivity, *it.currentRules.map { r ->
                     r.statusText()
                 }.toTypedArray())

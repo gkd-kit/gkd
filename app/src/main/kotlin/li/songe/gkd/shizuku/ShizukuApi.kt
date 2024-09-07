@@ -14,6 +14,7 @@ import android.view.Display
 import android.view.MotionEvent
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -178,19 +179,19 @@ fun IInputManager.safeClick(x: Float, y: Float): Boolean? {
     }
 }
 
-fun useSafeInjectClickEventFc(
-    scope: CoroutineScope,
-    usedFlow: StateFlow<Boolean>,
-): (x: Float, y: Float) -> Boolean? {
-    val inputManagerFlow = usedFlow.map(scope) { if (it) newInputManager() else null }
-    return { x, y ->
-        if (usedFlow.value) {
-            inputManagerFlow.value?.safeClick(x, y)
-        } else {
-            null
-        }
-    }
-}
+//fun useSafeInjectClickEventFc(
+//    scope: CoroutineScope,
+//    usedFlow: StateFlow<Boolean>,
+//): (x: Float, y: Float) -> Boolean? {
+//    val inputManagerFlow = usedFlow.map(scope) { if (it) newInputManager() else null }
+//    return { x, y ->
+//        if (usedFlow.value) {
+//            inputManagerFlow.value?.safeClick(x, y)
+//        } else {
+//            null
+//        }
+//    }
+//}
 
 // 在 大麦 https://i.gkd.li/i/14605104 上测试产生如下 3 种情况
 // 1. 点击不生效: 使用传统无障碍屏幕点击, 此种点击可被 大麦 通过 View.setAccessibilityDelegate 屏蔽
@@ -201,7 +202,7 @@ fun useSafeInputTapFc(
     usedFlow: StateFlow<Boolean>,
 ): (x: Float, y: Float) -> Boolean? {
     val serviceWrapperFlow = MutableStateFlow<UserServiceWrapper?>(null)
-    scope.launch {
+    scope.launch(Dispatchers.IO) {
         usedFlow.collect {
             if (it) {
                 val serviceWrapper = newUserService()

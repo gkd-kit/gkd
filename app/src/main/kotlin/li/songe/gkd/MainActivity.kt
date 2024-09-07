@@ -33,6 +33,7 @@ import li.songe.gkd.permission.AuthDialog
 import li.songe.gkd.permission.updatePermissionState
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.service.ManageService
+import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.service.updateLauncherAppId
 import li.songe.gkd.ui.NavGraphs
 import li.songe.gkd.ui.component.BuildDialog
@@ -159,6 +160,7 @@ private fun updateServiceRunning() {
     FloatingService.isRunning.value = ServiceUtils.isServiceRunning(FloatingService::class.java)
     ScreenshotService.isRunning.value = ServiceUtils.isServiceRunning(ScreenshotService::class.java)
     HttpService.isRunning.value = ServiceUtils.isServiceRunning(HttpService::class.java)
+    fixRestartService()
 }
 
 private fun Activity.fixTopPadding() {
