@@ -46,6 +46,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,6 +80,7 @@ import li.songe.gkd.util.findOption
 import li.songe.gkd.util.isSafeUrl
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.map
 import li.songe.gkd.util.saveFileToDownloads
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.storeFlow
@@ -265,7 +267,7 @@ fun useSubsManagePage(): ScaffoldExt {
                             )
                         }
                     }
-                    IconButton(onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                    IconButton(onClick = {
                         vm.showShareDataIdsFlow.value = selectedIds
                     }) {
                         Icon(
@@ -282,6 +284,24 @@ fun useSubsManagePage(): ScaffoldExt {
                         )
                     }
                 } else {
+                    IconButton(onClick = throttle {
+                        if (storeFlow.value.enableMatch) {
+                            toast("暂停规则匹配")
+                        } else {
+                            toast("开启规则匹配")
+                        }
+                        storeFlow.update { s -> s.copy(enableMatch = !s.enableMatch) }
+                    }) {
+                        val scope = rememberCoroutineScope()
+                        val enableMatch by remember {
+                            storeFlow.map(scope) { it.enableMatch }
+                        }.collectAsState()
+                        val id = if (enableMatch) SafeR.ic_flash_on else SafeR.ic_flash_off
+                        Icon(
+                            painter = painterResource(id = id),
+                            contentDescription = null,
+                        )
+                    }
                     IconButton(onClick = {
                         showSettingsDlg = true
                     }) {

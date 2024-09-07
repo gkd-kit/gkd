@@ -15,6 +15,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.app
 import li.songe.gkd.appScope
+import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.shizuku.newActivityTaskManager
 import li.songe.gkd.shizuku.safeGetTasks
 import li.songe.gkd.shizuku.shizukuIsSafeOK
@@ -24,7 +25,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 class PermissionState(
-    val check: suspend () -> Boolean,
+    val check: () -> Boolean,
     val request: (suspend (context: Activity) -> PermissionResult)? = null,
     /**
      * show it when user doNotAskAgain
@@ -32,7 +33,7 @@ class PermissionState(
     val reason: AuthReason? = null,
 ) {
     val stateFlow = MutableStateFlow(false)
-    suspend fun updateAndGet(): Boolean {
+    fun updateAndGet(): Boolean {
         return stateFlow.updateAndGet { check() }
     }
 }
@@ -74,7 +75,7 @@ private suspend fun asyncRequestPermission(
 val notificationState by lazy {
     PermissionState(
         check = {
-            checkSelfPermission(Permission.POST_NOTIFICATIONS)
+            XXPermissions.isGranted(app, Permission.NOTIFICATION_SERVICE)
         },
         request = {
             asyncRequestPermission(it, Permission.POST_NOTIFICATIONS)
@@ -121,7 +122,7 @@ val canDrawOverlaysState by lazy {
         reason = AuthReason(
             text = "当前操作需要[悬浮窗权限]\n\n您需要前往应用权限设置打开此权限",
             confirm = {
-                XXPermissions.startPermissionActivity(app, Permission.SYSTEM_ALERT_WINDOW)
+                XXPermissions.startPermissionActivity(app, Manifest.permission.SYSTEM_ALERT_WINDOW)
             }
         ),
     )
@@ -138,7 +139,7 @@ val canWriteExternalStorage by lazy {
         },
         request = {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                asyncRequestPermission(it, Permission.WRITE_EXTERNAL_STORAGE)
+                asyncRequestPermission(it, Manifest.permission.WRITE_EXTERNAL_STORAGE)
             } else {
                 PermissionResult.Granted
             }
@@ -146,9 +147,18 @@ val canWriteExternalStorage by lazy {
         reason = AuthReason(
             text = "当前操作需要[写入外部存储权限]\n\n您需要前往应用权限设置打开此权限",
             confirm = {
-                XXPermissions.startPermissionActivity(app, Permission.WRITE_EXTERNAL_STORAGE)
+                XXPermissions.startPermissionActivity(
+                    app,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                )
             }
         ),
+    )
+}
+
+val writeSecureSettingsState by lazy {
+    PermissionState(
+        check = { checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS) },
     )
 }
 
@@ -173,12 +183,15 @@ suspend fun updatePermissionState() {
             notificationState,
             canDrawOverlaysState,
             canWriteExternalStorage,
-            shizukuOkState
         ).forEach { it.updateAndGet() }
         if (canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet()) {
             appScope.launchTry {
                 initOrResetAppInfoCache()
             }
         }
+        if (writeSecureSettingsState.stateFlow.value != writeSecureSettingsState.updateAndGet()) {
+            fixRestartService()
+        }
+        shizukuOkState.updateAndGet()
     }
 }

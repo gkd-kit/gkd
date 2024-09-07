@@ -28,7 +28,13 @@ fun TextSwitch(
     onCheckedChange: ((Boolean) -> Unit)? = null,
 ) {
     Row(
-        modifier = modifier.itemPadding(),
+        modifier = modifier.let {
+            if (modifier == Modifier) {
+                it.itemPadding()
+            } else {
+                it.then(modifier)
+            }
+        },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {

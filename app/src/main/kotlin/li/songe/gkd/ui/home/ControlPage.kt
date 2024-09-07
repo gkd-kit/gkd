@@ -1,7 +1,5 @@
 package li.songe.gkd.ui.home
 
-import android.content.Intent
-import android.provider.Settings
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,10 +28,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.navigation.navigate
 import li.songe.gkd.MainActivity
+import li.songe.gkd.a11yServiceEnabledFlow
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
+import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.service.ManageService
+import li.songe.gkd.service.switchA11yService
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
@@ -45,11 +46,11 @@ import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.openA11ySettings
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
-import li.songe.gkd.util.tryStartActivity
 
 val controlNav = BottomNavItem(label = "主页", icon = Icons.Outlined.Home)
 
@@ -58,13 +59,6 @@ fun useControlPage(): ScaffoldExt {
     val context = LocalContext.current as MainActivity
     val navController = LocalNavController.current
     val vm = viewModel<HomeVm>()
-    val latestRecordDesc by vm.latestRecordDescFlow.collectAsState()
-    val subsStatus by vm.subsStatusFlow.collectAsState()
-    val store by storeFlow.collectAsState()
-    val ruleSummary by ruleSummaryFlow.collectAsState()
-
-    val gkdAccessRunning by GkdAbService.isRunning.collectAsState()
-    val manageRunning by ManageService.isRunning.collectAsState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val scrollState = rememberScrollState()
     return ScaffoldExt(navItem = controlNav,
@@ -84,29 +78,40 @@ fun useControlPage(): ScaffoldExt {
             })
         }
     ) { padding ->
+        val latestRecordDesc by vm.latestRecordDescFlow.collectAsState()
+        val subsStatus by vm.subsStatusFlow.collectAsState()
+        val store by storeFlow.collectAsState()
+        val ruleSummary by ruleSummaryFlow.collectAsState()
+
+        val a11yRunning by GkdAbService.isRunning.collectAsState()
+        val manageRunning by ManageService.isRunning.collectAsState()
+        val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
+        val a11yServiceEnabled by a11yServiceEnabledFlow.collectAsState()
+
+        // 无障碍故障: 设置中无障碍开启, 但是实际 service 没有运行
+        val a11yBroken = !writeSecureSettings && !a11yRunning && a11yServiceEnabled
+
         Column(
             modifier = Modifier
                 .verticalScroll(scrollState)
                 .padding(padding)
         ) {
-            if (!gkdAccessRunning) {
-                AuthCard(
-                    title = "无障碍权限",
-                    desc = "获取屏幕信息,匹配节点,执行操作",
-                    onAuthClick = {
-                        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        context.tryStartActivity(intent)
-                    })
-            } else {
+            if (writeSecureSettings) {
                 TextSwitch(
-                    title = "服务开启",
-                    subtitle = "根据规则匹配节点,执行操作",
+                    title = "服务状态",
+                    subtitle = if (store.enableService) "无障碍服务正在运行" else "无障碍服务已关闭",
                     checked = store.enableService,
                     onCheckedChange = {
-                        storeFlow.value = store.copy(
-                            enableService = it
-                        )
+                        switchA11yService()
+                    })
+            }
+            if (!writeSecureSettings && !a11yRunning) {
+                AuthCard(
+                    title = "无障碍授权",
+                    desc = if (a11yBroken) "服务故障,请重新授权" else "授权使无障碍服务运行",
+                    onAuthClick = {
+                        openA11ySettings()
+                        // TODO context.mainVm.showA11yAuthDlgFlow.value = true
                     })
             }
 

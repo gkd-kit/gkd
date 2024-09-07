@@ -7,12 +7,14 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.Settings
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import li.songe.gkd.MainActivity
+import li.songe.gkd.app
 import li.songe.gkd.permission.canWriteExternalStorage
 import li.songe.gkd.permission.requiredPermission
 import java.io.File
@@ -69,6 +71,12 @@ fun Context.tryStartActivity(intent: Intent) {
         // 在某些模拟器上/特定设备 ActivityNotFoundException
         toast(e.message ?: e.stackTraceToString())
     }
+}
+
+fun openA11ySettings() {
+    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    app.tryStartActivity(intent)
 }
 
 fun Context.openUri(uri: String) {

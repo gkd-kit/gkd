@@ -10,4 +10,6 @@ object SafeR {
     val app_name: Int = R.string.app_name
     val ic_status: Int = R.drawable.ic_status
     val ic_page_info: Int = R.drawable.ic_page_info
+    val ic_flash_on: Int = R.drawable.ic_flash_on
+    val ic_flash_off: Int = R.drawable.ic_flash_off
 }

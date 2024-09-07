@@ -2,18 +2,24 @@ package li.songe.gkd
 
 import android.app.Activity
 import android.app.Application
+import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
+import android.database.ContentObserver
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.text.TextUtils
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.Utils
 import com.hjq.toast.Toaster
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.debug.clearHttpSubs
 import li.songe.gkd.notif.initChannel
+import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.util.GIT_COMMIT_URL
 import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initFolder
@@ -73,7 +79,7 @@ class App : Application() {
             "VERSION_NAME: ${BuildConfig.VERSION_NAME}",
             "CHANNEL: $channel"
         )
-
+        initFolder()
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
                 LogUtils.d("onActivityCreated", activity, savedInstanceState)
@@ -103,8 +109,16 @@ class App : Application() {
                 LogUtils.d("onActivityDestroyed", activity)
             }
         })
-
-        initFolder()
+        app.contentResolver.registerContentObserver(
+            Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),
+            false,
+            object : ContentObserver(null) {
+                override fun onChange(selfChange: Boolean) {
+                    super.onChange(selfChange)
+                    a11yServiceEnabledFlow.value = getA11yServiceEnabled()
+                }
+            }
+        )
         appScope.launchTry(Dispatchers.IO) {
             initStore()
             initAppState()
@@ -113,4 +127,26 @@ class App : Application() {
             clearHttpSubs()
         }
     }
+}
+
+val a11yServiceEnabledFlow by lazy { MutableStateFlow(getA11yServiceEnabled()) }
+private fun getA11yServiceEnabled(): Boolean {
+    val value = try {
+        Settings.Secure.getString(
+            app.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        )
+    } catch (_: Exception) {
+        null
+    }
+    if (value.isNullOrEmpty()) return false
+    val colonSplitter = TextUtils.SimpleStringSplitter(':')
+    colonSplitter.setString(value)
+    val name = ComponentName(app, GkdAbService::class.java)
+    while (colonSplitter.hasNext()) {
+        if (ComponentName.unflattenFromString(colonSplitter.next()) == name) {
+            return true
+        }
+    }
+    return false
 }

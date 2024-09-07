@@ -34,7 +34,7 @@ class ManageService : CompositionService({
             clickCountFlow,
         ) { abRunning, store, ruleSummary, count ->
             if (!abRunning) return@combine "无障碍未授权"
-            if (!store.enableService) return@combine "服务已暂停"
+            if (!store.enableMatch) return@combine "暂停规则匹配"
             if (store.useCustomNotifText) {
                 return@combine store.customNotifText
                     .replace("\${i}", ruleSummary.globalGroups.size.toString())
