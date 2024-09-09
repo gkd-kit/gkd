@@ -9,7 +9,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import li.songe.gkd.BuildConfig
+import li.songe.gkd.META
 import li.songe.gkd.appScope
 
 private inline fun <reified T> createStorageFlow(
@@ -49,7 +49,7 @@ data class Store(
     val httpServerPort: Int = 8888,
     val updateSubsInterval: Long = UpdateTimeOption.Everyday.value,
     val captureVolumeChange: Boolean = false,
-    val autoCheckAppUpdate: Boolean = BuildConfig.ENABLED_UPDATE,
+    val autoCheckAppUpdate: Boolean = META.updateEnabled,
     val toastWhenClick: Boolean = true,
     val clickToast: String = "GKD",
     val autoClearMemorySubs: Boolean = true,
@@ -68,7 +68,7 @@ data class Store(
     val useCustomNotifText: Boolean = false,
     val customNotifText: String = "\${i}全局/\${k}应用/\${u}规则组/\${n}触发",
     val enableActivityLog: Boolean = false,
-    val updateChannel: Int = if (BuildConfig.VERSION_NAME.contains("beta")) UpdateChannelOption.Beta.value else UpdateChannelOption.Stable.value,
+    val updateChannel: Int = if (META.versionName.contains("beta")) UpdateChannelOption.Beta.value else UpdateChannelOption.Stable.value,
 )
 
 val storeFlow by lazy {

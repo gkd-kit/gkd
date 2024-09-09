@@ -6,7 +6,7 @@ import android.util.LruCache
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
-import li.songe.gkd.BuildConfig
+import li.songe.gkd.META
 import li.songe.selector.Context
 import li.songe.selector.FastQuery
 import li.songe.selector.MatchOption
@@ -154,7 +154,7 @@ private val typeInfo by lazy {
 
 fun Selector.checkSelector(): String? {
     val error = checkType(typeInfo) ?: return null
-    if (BuildConfig.DEBUG) {
+    if (META.debuggable) {
         LogUtils.d(
             "Selector check error",
             source,

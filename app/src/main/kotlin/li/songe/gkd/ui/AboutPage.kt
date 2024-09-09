@@ -23,11 +23,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
-import li.songe.gkd.BuildConfig
-import li.songe.gkd.channel
+import li.songe.gkd.META
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
-import li.songe.gkd.util.GIT_COMMIT_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.REPOSITORY_URL
@@ -40,8 +38,6 @@ import li.songe.gkd.util.openUri
 fun AboutPage() {
     val navController = LocalNavController.current
     val context = LocalContext.current
-
-    val buildName = channel?.let { "$it-" } + BuildConfig.BUILD_TYPE
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -96,7 +92,7 @@ fun AboutPage() {
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 Text(
-                    text = BuildConfig.VERSION_CODE.toString(),
+                    text = META.versionCode.toString(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -111,30 +107,28 @@ fun AboutPage() {
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 Text(
-                    text = BuildConfig.VERSION_NAME,
+                    text = META.versionName,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            @Suppress("SENSELESS_COMPARISON") if (GIT_COMMIT_URL != null && BuildConfig.GIT_COMMIT_ID != null) {
-                Column(
-                    modifier = Modifier
-                        .clickable {
-                            context.openUri(GIT_COMMIT_URL)
-                        }
-                        .fillMaxWidth()
-                        .itemPadding()
-                ) {
-                    Text(
-                        text = "代码记录",
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Text(
-                        text = BuildConfig.GIT_COMMIT_ID,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
+            Column(
+                modifier = Modifier
+                    .clickable {
+                        context.openUri(META.commitUrl)
+                    }
+                    .fillMaxWidth()
+                    .itemPadding()
+            ) {
+                Text(
+                    text = "代码记录",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    text = META.commitId,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
             Column(
                 modifier = Modifier
@@ -146,7 +140,7 @@ fun AboutPage() {
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 Text(
-                    text = BuildConfig.GIT_COMMIT_TIME.format("yyyy-MM-dd HH:mm:ss ZZ"),
+                    text = META.commitTime.format("yyyy-MM-dd HH:mm:ss ZZ"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -158,11 +152,11 @@ fun AboutPage() {
                     .itemPadding()
             ) {
                 Text(
-                    text = "构建类型",
+                    text = "构建渠道",
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 Text(
-                    text = buildName,
+                    text = META.channel,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

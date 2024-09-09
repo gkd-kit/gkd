@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import li.songe.gkd.BuildConfig
+import li.songe.gkd.META
 import li.songe.gkd.appScope
 import li.songe.gkd.composition.CompositionAbService
 import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
@@ -152,7 +152,7 @@ class GkdAbService : CompositionAbService({
                 val size = events.size
                 if (size == 0 && byEvent) return@launchTry
                 val pair = if (size > 1) {
-                    if (BuildConfig.DEBUG) {
+                    if (META.debuggable) {
                         Log.d("latestEvent", "丢弃事件=$size")
                     }
                     null
@@ -185,7 +185,7 @@ class GkdAbService : CompositionAbService({
                         false
                     }
                     if (!refreshOk) {
-                        if (BuildConfig.DEBUG) {
+                        if (META.debuggable) {
                             Log.d("latestEvent", "最新事件已过期")
                         }
                         latestEvent = null
@@ -284,7 +284,7 @@ class GkdAbService : CompositionAbService({
             }
             lastContentEventTime = fixedEvent.time
         }
-        if (BuildConfig.DEBUG) {
+        if (META.debuggable) {
             Log.d(
                 "AccessibilityEvent",
                 "type:${event.eventType},app:${event.packageName},cls:${event.className}"

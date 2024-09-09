@@ -22,7 +22,6 @@ android {
     }
     buildFeatures {
         aidl = true
-        buildConfig = false
     }
 }
 

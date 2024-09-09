@@ -37,7 +37,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.BuildConfig
+import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
@@ -297,7 +297,7 @@ fun useSettingsPage(): ScaffoldExt {
                     })
             }
 
-            if (BuildConfig.ENABLED_UPDATE) {
+            if (META.updateEnabled) {
                 Text(
                     text = "更新",
                     modifier = Modifier.titleItemPadding(),

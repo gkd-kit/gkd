@@ -5,7 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import li.songe.gkd.BuildConfig
+import li.songe.gkd.META
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.ActivityLog
@@ -43,7 +43,7 @@ fun updateTopActivity(topActivity: TopActivity) {
     val isSameActivity =
         topActivityFlow.value.appId == topActivity.appId && topActivityFlow.value.activityId == topActivity.activityId
     if (isSameActivity) {
-        if (isActivityVisible() && topActivity.appId == BuildConfig.APPLICATION_ID) {
+        if (isActivityVisible() && topActivity.appId == META.appId) {
             return
         }
         if (topActivityFlow.value.number == topActivity.number) {

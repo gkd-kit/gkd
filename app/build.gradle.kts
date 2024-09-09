@@ -1,4 +1,4 @@
-import com.android.build.gradle.internal.cxx.json.jsonStringOf
+import org.jetbrains.kotlin.compose.compiler.gradle.ComposeFeatureFlag
 import java.io.ByteArrayOutputStream
 
 fun String.runCommand(currentWorkingDir: File = file("./")): String {
@@ -34,6 +34,8 @@ val gitInfo = try {
     null
 }
 
+val commitTime = gitInfo?.commitTime ?: 0
+val commitId = gitInfo?.commitId ?: "unknown"
 val vnSuffix = "-${gitInfo?.commitId?.substring(0, 7) ?: "unknown"}"
 
 plugins {
@@ -64,26 +66,19 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-
-        val commitTime = gitInfo?.commitTime ?: 0
-        buildConfigField("Long", "GIT_COMMIT_TIME", jsonStringOf(commitTime) + "L")
-        buildConfigField(
-            "String",
-            "GIT_COMMIT_ID",
-            jsonStringOf(gitInfo?.commitId)
-        )
-        buildConfigField("Boolean", "ENABLED_UPDATE", jsonStringOf(true))
         resourceConfigurations.addAll(listOf("zh", "en"))
         ndk {
             // noinspection ChromeOsAbiSupport
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
+
+        manifestPlaceholders["commitId"] = commitId
+        manifestPlaceholders["commitTime"] = commitTime
     }
 
     lint {}
 
     buildFeatures {
-        buildConfig = true
         compose = true
         aidl = true
     }
@@ -109,6 +104,7 @@ android {
             }
             isMinifyEnabled = true
             isShrinkResources = true
+            isDebuggable = false
             setProguardFiles(
                 listOf(
                     // /sdk/tools/proguard/proguard-android-optimize.txt
@@ -126,12 +122,12 @@ android {
     }
     productFlavors {
         flavorDimensions += "channel"
-        val defaultName = "default"
-        create(defaultName) {
+        create("gkd") {
             isDefault = true
+            manifestPlaceholders["updateEnabled"] = true
         }
         create("foss") {
-            buildConfigField("Boolean", "ENABLED_UPDATE", jsonStringOf(false))
+            manifestPlaceholders["updateEnabled"] = false
         }
         all {
             dimension = flavorDimensionList.first()
@@ -179,8 +175,7 @@ configurations.configureEach {
 }
 
 composeCompiler {
-    // https://developer.android.com/develop/ui/compose/performance/stability/strongskipping?hl=zh-cn
-    enableStrongSkippingMode = true
+    featureFlags.addAll(ComposeFeatureFlag.StrongSkipping)
     reportsDestination = layout.buildDirectory.dir("compose_compiler")
     stabilityConfigurationFile = rootProject.layout.projectDirectory.file("stability_config.conf")
 }

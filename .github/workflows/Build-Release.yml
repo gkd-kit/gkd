@@ -39,8 +39,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: default-release
-          path: app/build/outputs/apk/default/release
+          name: gkd-release
+          path: app/build/outputs/apk/gkd/release
 
       - uses: actions/upload-artifact@v4
         with:
@@ -82,7 +82,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: outputs/apk/default/release/app-default-release.apk
+          asset_path: outputs/apk/gkd/release/app-gkd-release.apk
           asset_name: gkd-${{ github.ref_name }}.apk
           asset_content_type: application/vnd.android.package-archive
 

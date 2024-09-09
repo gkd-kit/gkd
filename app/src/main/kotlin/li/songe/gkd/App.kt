@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.content.ComponentName
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.database.ContentObserver
 import android.os.Build
@@ -17,10 +18,10 @@ import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.debug.clearHttpSubs
 import li.songe.gkd.notif.initChannel
 import li.songe.gkd.service.GkdAbService
-import li.songe.gkd.util.GIT_COMMIT_URL
 import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initFolder
 import li.songe.gkd.util.initStore
@@ -43,7 +44,17 @@ val applicationInfo by lazy {
     )
 }
 
-val channel by lazy { applicationInfo.metaData.getString("channel") }
+data object META {
+    val channel by lazy { applicationInfo.metaData.getString("channel")!! }
+    val commitId by lazy { applicationInfo.metaData.getString("commitId")!! }
+    val commitUrl by lazy { "https://github.com/gkd-kit/gkd/commit/$commitId" }
+    val commitTime by lazy { applicationInfo.metaData.getLong("commitTime") }
+    val updateEnabled by lazy { applicationInfo.metaData.getBoolean("updateEnabled") }
+    val debuggable by lazy { applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0 }
+    val versionCode by lazy { selfAppInfo.versionCode.toInt() }
+    val versionName by lazy { selfAppInfo.versionName!! }
+    val appId by lazy { selfAppInfo.id }
+}
 
 class App : Application() {
     override fun attachBaseContext(base: Context?) {
@@ -69,15 +80,12 @@ class App : Application() {
         setReactiveToastStyle()
 
         LogUtils.getConfig().apply {
-            setConsoleSwitch(BuildConfig.DEBUG)
+            setConsoleSwitch(META.debuggable)
             saveDays = 7
             isLog2FileSwitch = true
         }
         LogUtils.d(
-            "GIT_COMMIT_URL: $GIT_COMMIT_URL",
-            "VERSION_CODE: ${BuildConfig.VERSION_CODE}",
-            "VERSION_NAME: ${BuildConfig.VERSION_NAME}",
-            "CHANNEL: $channel"
+            "META", META
         )
         initFolder()
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {

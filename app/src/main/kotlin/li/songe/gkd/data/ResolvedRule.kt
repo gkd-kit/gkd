@@ -4,7 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Job
-import li.songe.gkd.BuildConfig
+import li.songe.gkd.META
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.service.createCacheTransform
 import li.songe.gkd.service.createNoCacheTransform
@@ -273,7 +273,7 @@ private const val MIN_CACHE_INTERVAL = 2000L
 
 fun clearNodeCache(t: Long = System.currentTimeMillis()) {
     lastCacheTime = t
-    if (BuildConfig.DEBUG) {
+    if (META.debuggable) {
         val sizeList = defaultCacheTransform.cache.sizeList
         if (sizeList.any { it > 0 }) {
             Log.d("cache", "clear cache, sizeList=$sizeList")
