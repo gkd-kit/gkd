@@ -4,14 +4,10 @@ package li.songe.gkd.shizuku
 import android.app.ActivityManager
 import android.app.IActivityTaskManager
 import android.content.ComponentName
-import android.content.Context
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
-import android.hardware.input.IInputManager
 import android.os.IBinder
-import android.os.SystemClock
 import android.view.Display
-import android.view.MotionEvent
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +18,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.META
+import li.songe.gkd.app
 import li.songe.gkd.composition.CanOnDestroy
 import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.util.json
@@ -103,14 +100,14 @@ fun IActivityTaskManager.safeGetTasks(log: Boolean = true): List<ActivityManager
     }
 }
 
-fun newInputManager(): IInputManager? {
-    val service = SystemServiceHelper.getSystemService(Context.INPUT_SERVICE)
-    if (service == null) {
-        LogUtils.d("shizuku 无法获取 " + Context.INPUT_SERVICE)
-        return null
-    }
-    return service.let(::ShizukuBinderWrapper).let(IInputManager.Stub::asInterface)
-}
+//fun newInputManager(): IInputManager? {
+//    val service = SystemServiceHelper.getSystemService(Context.INPUT_SERVICE)
+//    if (service == null) {
+//        LogUtils.d("shizuku 无法获取 " + Context.INPUT_SERVICE)
+//        return null
+//    }
+//    return service.let(::ShizukuBinderWrapper).let(IInputManager.Stub::asInterface)
+//}
 
 
 fun CanOnDestroy.useShizukuAliveState(): StateFlow<Boolean> {
@@ -156,28 +153,28 @@ fun useSafeGetTasksFc(
     }
 }
 
-fun IInputManager.safeClick(x: Float, y: Float): Boolean? {
-    // 模拟 abd shell input tap x y 传递的 pressure
-    // 下面除了 pressure 的常量来自 MotionEvent obtain 方法
-    val downTime = SystemClock.uptimeMillis()
-    val downEvent = MotionEvent.obtain(
-        downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 1.0f, 1.0f, 0, 1.0f, 1.0f, 0, 0
-    ) // pressure=1.0f
-    val upEvent = MotionEvent.obtain(
-        downTime, downTime, MotionEvent.ACTION_UP, x, y, 0f, 1.0f, 0, 1.0f, 1.0f, 0, 0
-    ) // pressure=0f
-    return try {
-        val r1 = injectInputEvent(downEvent, 2)
-        val r2 = injectInputEvent(upEvent, 2)
-        r1 && r2
-    } catch (e: Exception) {
-        LogUtils.d(e)
-        null
-    } finally {
-        downEvent.recycle()
-        upEvent.recycle()
-    }
-}
+//fun IInputManager.safeClick(x: Float, y: Float): Boolean? {
+//    // 模拟 abd shell input tap x y 传递的 pressure
+//    // 下面除了 pressure 的常量来自 MotionEvent obtain 方法
+//    val downTime = SystemClock.uptimeMillis()
+//    val downEvent = MotionEvent.obtain(
+//        downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 1.0f, 1.0f, 0, 1.0f, 1.0f, 0, 0
+//    ) // pressure=1.0f
+//    val upEvent = MotionEvent.obtain(
+//        downTime, downTime, MotionEvent.ACTION_UP, x, y, 0f, 1.0f, 0, 1.0f, 1.0f, 0, 0
+//    ) // pressure=0f
+//    return try {
+//        val r1 = injectInputEvent(downEvent, 2)
+//        val r2 = injectInputEvent(upEvent, 2)
+//        r1 && r2
+//    } catch (e: Exception) {
+//        LogUtils.d(e)
+//        null
+//    } finally {
+//        downEvent.recycle()
+//        upEvent.recycle()
+//    }
+//}
 
 //fun useSafeInjectClickEventFc(
 //    scope: CoroutineScope,
@@ -249,8 +246,8 @@ data class UserServiceWrapper(
 suspend fun newUserService(): UserServiceWrapper = suspendCoroutine { continuation ->
     val serviceArgs = Shizuku.UserServiceArgs(
         ComponentName(
-            META.appId,
-            UserService::class.java.name
+            app,
+            UserService::class.java
         )
     ).daemon(false).processNameSuffix(
         "service-for-${if (META.debuggable) "gkd-debug" else "gkd-release"}"
