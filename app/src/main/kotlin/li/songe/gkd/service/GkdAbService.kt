@@ -170,7 +170,7 @@ class GkdAbService : CompositionAbService({
             for (rule in (activityRule.currentRules)) { // 规则数量有可能过多导致耗时过长
                 val statusCode = rule.status
                 if (statusCode == RuleStatus.Status3 && rule.matchDelayJob == null) {
-                    rule.matchDelayJob = scope.launch(queryThread) {
+                    rule.matchDelayJob = scope.launch(actionThread) {
                         delay(rule.matchDelay)
                         rule.matchDelayJob = null
                         newQueryTask()
