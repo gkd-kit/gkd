@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
                     )
                     AuthDialog(mainVm.authReasonFlow)
                     BuildDialog(mainVm.dialogFlow)
-                    if (BuildConfig.ENABLED_UPDATE) {
+                    if (META.updateEnabled) {
                         UpgradeDialog(mainVm.updateStatus)
                     }
                 }

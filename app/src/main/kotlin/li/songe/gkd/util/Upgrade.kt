@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import li.songe.gkd.BuildConfig
+import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.MainViewModel
 import li.songe.gkd.app
@@ -73,9 +73,9 @@ suspend fun UpdateStatus.checkUpdate(): NewVersion? {
     checkUpdatingFlow.value = true
     try {
         val newVersion = client.get(UPDATE_URL).body<NewVersion>()
-        if (newVersion.versionCode > BuildConfig.VERSION_CODE) {
+        if (newVersion.versionCode > META.versionCode) {
             newVersionFlow.value =
-                newVersion.copy(versionLogs = newVersion.versionLogs.takeWhile { v -> v.code > BuildConfig.VERSION_CODE })
+                newVersion.copy(versionLogs = newVersion.versionLogs.takeWhile { v -> v.code > META.versionCode })
             return newVersion
         } else {
             Log.d("Upgrade", "no new version")
@@ -130,7 +130,7 @@ fun UpgradeDialog(status: UpdateStatus) {
         AlertDialog(title = {
             Text(text = "新版本")
         }, text = {
-            Text(text = "v${BuildConfig.VERSION_NAME} -> v${newVersionVal.versionName}\n\n${
+            Text(text = "v${META.versionName} -> v${newVersionVal.versionName}\n\n${
                 if (newVersionVal.versionLogs.size > 1) {
                     newVersionVal.versionLogs.joinToString("\n\n") { v -> "v${v.name}\n${v.desc}" }
                 } else if (newVersionVal.versionLogs.isNotEmpty()) {

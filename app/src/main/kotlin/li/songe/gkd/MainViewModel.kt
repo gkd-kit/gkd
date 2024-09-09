@@ -66,7 +66,7 @@ class MainViewModel : ViewModel() {
             clearCache()
         }
 
-        if (BuildConfig.ENABLED_UPDATE && storeFlow.value.autoCheckAppUpdate) {
+        if (META.updateEnabled && storeFlow.value.autoCheckAppUpdate) {
             viewModelScope.launch(Dispatchers.IO) {
                 try {
                     updateStatus.checkUpdate()

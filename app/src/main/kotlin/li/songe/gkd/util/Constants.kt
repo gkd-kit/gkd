@@ -1,7 +1,6 @@
 package li.songe.gkd.util
 
 import android.webkit.URLUtil
-import li.songe.gkd.BuildConfig
 
 const val FILE_SHORT_URL = "https://f.gkd.li/"
 const val IMPORT_SHORT_URL = "https://i.gkd.li/i/"
@@ -12,13 +11,6 @@ const val SERVER_SCRIPT_URL =
 const val REPOSITORY_URL = "https://github.com/gkd-kit/gkd"
 
 const val HOME_PAGE_URL = "https://gkd.li"
-
-@Suppress("SENSELESS_COMPARISON")
-val GIT_COMMIT_URL = if (BuildConfig.GIT_COMMIT_ID != null) {
-    "https://github.com/gkd-kit/gkd/commit/${BuildConfig.GIT_COMMIT_ID}"
-} else {
-    null
-}
 
 private val safeRemoteBaseUrls = arrayOf(
     "https://registry.npmmirror.com/@gkd-kit/",

@@ -46,8 +46,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: default-release
-          path: app/build/outputs/apk/default/release
+          name: gkd-release
+          path: app/build/outputs/apk/gkd/release
 
       - uses: actions/upload-artifact@v4
         with:

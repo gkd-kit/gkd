@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import li.songe.gkd.BuildConfig
+import li.songe.gkd.META
 import li.songe.gkd.composition.CanOnDestroy
 import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.util.json
@@ -249,12 +249,12 @@ data class UserServiceWrapper(
 suspend fun newUserService(): UserServiceWrapper = suspendCoroutine { continuation ->
     val serviceArgs = Shizuku.UserServiceArgs(
         ComponentName(
-            BuildConfig.APPLICATION_ID,
+            META.appId,
             UserService::class.java.name
         )
     ).daemon(false).processNameSuffix(
-        "service-for-${if (BuildConfig.DEBUG) "gkd-debug" else "gkd-release"}"
-    ).debuggable(BuildConfig.DEBUG).version(BuildConfig.VERSION_CODE)
+        "service-for-${if (META.debuggable) "gkd-debug" else "gkd-release"}"
+    ).debuggable(META.debuggable).version(META.versionCode)
 
     var resumeFc: ((UserServiceWrapper) -> Unit)? = { continuation.resume(it) }
 

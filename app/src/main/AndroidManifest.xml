@@ -44,6 +44,15 @@
         <meta-data
             android:name="channel"
             android:value="${channel}" />
+        <meta-data
+            android:name="commitId"
+            android:value="${commitId}" />
+        <meta-data
+            android:name="commitTime"
+            android:value="${commitTime}" />
+        <meta-data
+            android:name="updateEnabled"
+            android:value="${updateEnabled}" />
 
         <activity
             android:name=".MainActivity"
