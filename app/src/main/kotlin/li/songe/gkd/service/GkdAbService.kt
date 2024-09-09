@@ -36,6 +36,7 @@ import li.songe.gkd.data.ActionResult
 import li.songe.gkd.data.AppRule
 import li.songe.gkd.data.AttrInfo
 import li.songe.gkd.data.GkdAction
+import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.RuleStatus
 import li.songe.gkd.data.clearNodeCache
@@ -145,35 +146,44 @@ class GkdAbService : CompositionAbService({
     var lastContentEventTime = 0L
     val events = mutableListOf<AccessibilityNodeInfo>()
     var queryTaskJob: Job? = null
-    fun newQueryTask(byEvent: Boolean = false, byForced: Boolean = false) {
+    fun newQueryTask(
+        byEvent: Boolean = false,
+        byForced: Boolean = false,
+        delayRule: ResolvedRule? = null
+    ) {
         if (!storeFlow.value.enableMatch) return
         queryTaskJob = scope.launchTry(queryThread) {
-            var latestEvent = synchronized(events) {
-                val size = events.size
-                if (size == 0 && byEvent) return@launchTry
-                val pair = if (size > 1) {
-                    if (META.debuggable) {
-                        Log.d("latestEvent", "丢弃事件=$size")
+            var latestEvent = if (delayRule != null) {// 延迟规则不消耗事件
+                null
+            } else {
+                synchronized(events) {
+                    val size = events.size
+                    if (size == 0 && byEvent) return@launchTry
+                    val node = if (size > 1) {
+                        if (META.debuggable) {
+                            Log.d("latestEvent", "丢弃事件=$size")
+                        }
+                        null
+                    } else {
+                        events.lastOrNull()
                     }
-                    null
-                } else {
-                    events.lastOrNull()
+                    events.clear()
+                    node
                 }
-                events.clear()
-                pair
             }
             val activityRule = getAndUpdateCurrentRules()
             if (activityRule.currentRules.isEmpty()) {
                 return@launchTry
             }
             clearNodeCache()
-            for (rule in (activityRule.currentRules)) { // 规则数量有可能过多导致耗时过长
+            for (rule in activityRule.currentRules) { // 规则数量有可能过多导致耗时过长
+                if (delayRule != null && delayRule !== rule) continue
                 val statusCode = rule.status
                 if (statusCode == RuleStatus.Status3 && rule.matchDelayJob == null) {
                     rule.matchDelayJob = scope.launch(actionThread) {
                         delay(rule.matchDelay)
                         rule.matchDelayJob = null
-                        newQueryTask()
+                        newQueryTask(delayRule = rule)
                     }
                 }
                 if (statusCode != RuleStatus.StatusOk) continue
@@ -223,7 +233,7 @@ class GkdAbService : CompositionAbService({
                     rule.actionDelayJob = scope.launch(actionThread) {
                         delay(rule.actionDelay)
                         rule.actionDelayJob = null
-                        newQueryTask()
+                        newQueryTask(delayRule = rule)
                     }
                     continue
                 }
