@@ -205,12 +205,8 @@ sealed class ResolvedRule(
                     return RuleStatus.Status1 // 达到最大执行次数
                 }
             }
-            if (preRules.isNotEmpty()) { // 需要提前点击某个规则
-                return if (preRules.any { it === lastTriggerRule }) {
-                    RuleStatus.StatusOk
-                } else {
-                    RuleStatus.Status2
-                }
+            if (preRules.isNotEmpty() && !preRules.any { it === lastTriggerRule }) {
+                return RuleStatus.Status2 // 需要提前触发某个规则
             }
             val t = System.currentTimeMillis()
             if (matchDelay > 0 && t - matchChangedTime < matchDelay) {
@@ -224,7 +220,7 @@ sealed class ResolvedRule(
             }
             if (actionDelayTriggerTime > 0) {
                 if (actionDelayTriggerTime + actionDelay > t) {
-                    return RuleStatus.Status6 // 处于点击延迟中
+                    return RuleStatus.Status6 // 处于触发延迟中
                 }
             }
             return RuleStatus.StatusOk
