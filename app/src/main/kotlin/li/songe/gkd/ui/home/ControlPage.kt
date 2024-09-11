@@ -39,6 +39,7 @@ import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.destinations.ActivityLogPageDestination
+import li.songe.gkd.ui.destinations.AuthA11yPageDestination
 import li.songe.gkd.ui.destinations.ClickLogPageDestination
 import li.songe.gkd.ui.destinations.SlowGroupPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
@@ -46,7 +47,6 @@ import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.openA11ySettings
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
@@ -110,8 +110,7 @@ fun useControlPage(): ScaffoldExt {
                     title = "无障碍授权",
                     desc = if (a11yBroken) "服务故障,请重新授权" else "授权使无障碍服务运行",
                     onAuthClick = {
-                        openA11ySettings()
-                        // TODO context.mainVm.showA11yAuthDlgFlow.value = true
+                        navController.navigate(AuthA11yPageDestination)
                     })
             }
 

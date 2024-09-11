@@ -5,6 +5,7 @@ import android.app.ActivityManager
 import android.app.IActivityTaskManager
 import android.content.ComponentName
 import android.content.ServiceConnection
+import android.content.pm.IPackageManager
 import android.content.pm.PackageManager
 import android.os.IBinder
 import android.view.Display
@@ -54,6 +55,15 @@ fun newActivityTaskManager(): IActivityTaskManager? {
         return null
     }
     return service.let(::ShizukuBinderWrapper).let(IActivityTaskManager.Stub::asInterface)
+}
+
+fun newPackageManager(): IPackageManager? {
+    val service = SystemServiceHelper.getSystemService("package")
+    if (service == null) {
+        LogUtils.d("shizuku 无法获取 package")
+        return null
+    }
+    return service.let(::ShizukuBinderWrapper).let(IPackageManager.Stub::asInterface)
 }
 
 /**
