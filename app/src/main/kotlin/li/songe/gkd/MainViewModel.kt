@@ -41,6 +41,8 @@ class MainViewModel : ViewModel() {
 
     val updateStatus = UpdateStatus()
 
+    val shizukuErrorFlow = MutableStateFlow(false)
+
     init {
         viewModelScope.launchTry(Dispatchers.IO) {
             val subsItems = DbSet.subsItemDao.queryAll()

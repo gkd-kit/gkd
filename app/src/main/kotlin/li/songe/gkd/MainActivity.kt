@@ -11,7 +11,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.core.AnimationConstants
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -40,9 +45,12 @@ import li.songe.gkd.ui.component.BuildDialog
 import li.songe.gkd.ui.theme.AppTheme
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.UpgradeDialog
+import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.initFolder
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
+import li.songe.gkd.util.openApp
+import li.songe.gkd.util.openUri
 import li.songe.gkd.util.storeFlow
 
 class MainActivity : ComponentActivity() {
@@ -81,6 +89,7 @@ class MainActivity : ComponentActivity() {
                         navGraph = NavGraphs.root,
                         navController = navController
                     )
+                    ShizukuErrorDialog(mainVm.shizukuErrorFlow)
                     AuthDialog(mainVm.authReasonFlow)
                     BuildDialog(mainVm.dialogFlow)
                     if (META.updateEnabled) {
@@ -181,5 +190,50 @@ private fun Activity.fixTopPadding() {
             view.setPadding(statusBars.left, 0, statusBars.right, statusBars.bottom)
         }
         ViewCompat.onApplyWindowInsets(view, windowInsets)
+    }
+}
+
+@Composable
+private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Boolean>) {
+    val state = stateFlow.collectAsState()
+    if (state.value) {
+        val appId = "moe.shizuku.privileged.api"
+        val appInfoCache = appInfoCacheFlow.collectAsState()
+        val installed = appInfoCache.value.contains(appId)
+        AlertDialog(
+            onDismissRequest = { stateFlow.value = false },
+            title = { Text(text = "授权错误") },
+            text = {
+                Text(
+                    text = if (installed) {
+                        "Shizuku 授权失败, 请检查是否运行"
+                    } else {
+                        "Shizuku 未安装, 请先下载后安装"
+                    }
+                )
+            },
+            confirmButton = {
+                if (installed) {
+                    TextButton(onClick = {
+                        stateFlow.value = false
+                        app.openApp(appId)
+                    }) {
+                        Text(text = "打开 Shizuku")
+                    }
+                } else {
+                    TextButton(onClick = {
+                        stateFlow.value = false
+                        app.openUri("https://shizuku.rikka.app/")
+                    }) {
+                        Text(text = "去下载")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { stateFlow.value = false }) {
+                    Text(text = "我知道了")
+                }
+            }
+        )
     }
 }

@@ -16,6 +16,8 @@ public interface IPackageManager extends IInterface {
 
     PackageInfo getPackageInfo(String packageName, long flags, int userId);
 
+    void grantRuntimePermission(String packageName, String permName, int user);
+
     abstract class Stub {
 
         public static IPackageManager asInterface(IBinder obj) {

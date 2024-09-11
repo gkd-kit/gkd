@@ -62,10 +62,8 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import com.ramcosta.composedestinations.navigation.navigate
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
-import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.debug.FloatingService
 import li.songe.gkd.debug.HttpService
@@ -89,12 +87,10 @@ import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
-import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.buildLogFile
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.openApp
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.privacyStoreFlow
 import li.songe.gkd.util.saveFileToDownloads
@@ -114,7 +110,6 @@ fun AdvancedPage() {
     val store by storeFlow.collectAsState()
     val snapshotCount by vm.snapshotCountFlow.collectAsState()
 
-    ShizukuErrorDialog(vm.shizukuErrorFlow)
     vm.uploadOptions.ShowDialog()
 
     var showEditPortDlg by remember {
@@ -321,7 +316,7 @@ fun AdvancedPage() {
                             Shizuku.requestPermission(Activity.RESULT_OK)
                         } catch (e: Exception) {
                             LogUtils.d("Shizuku授权错误", e.message)
-                            vm.shizukuErrorFlow.value = true
+                            context.mainVm.shizukuErrorFlow.value = true
                         }
                     })
                 ShizukuFragment(false)
@@ -665,49 +660,4 @@ private fun ShizukuFragment(enabled: Boolean = true) {
 
         })
 
-}
-
-@Composable
-private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Boolean>) {
-    val state = stateFlow.collectAsState()
-    if (state.value) {
-        val appId = "moe.shizuku.privileged.api"
-        val appInfoCache = appInfoCacheFlow.collectAsState()
-        val installed = appInfoCache.value.contains(appId)
-        AlertDialog(
-            onDismissRequest = { stateFlow.value = false },
-            title = { Text(text = "授权错误") },
-            text = {
-                Text(
-                    text = if (installed) {
-                        "Shizuku 授权失败, 请检查是否运行"
-                    } else {
-                        "Shizuku 未安装, 请先下载后安装"
-                    }
-                )
-            },
-            confirmButton = {
-                if (installed) {
-                    TextButton(onClick = {
-                        stateFlow.value = false
-                        app.openApp(appId)
-                    }) {
-                        Text(text = "打开 Shizuku")
-                    }
-                } else {
-                    TextButton(onClick = {
-                        stateFlow.value = false
-                        app.openUri("https://shizuku.rikka.app/")
-                    }) {
-                        Text(text = "去下载")
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { stateFlow.value = false }) {
-                    Text(text = "我知道了")
-                }
-            }
-        )
-    }
 }
