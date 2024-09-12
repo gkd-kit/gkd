@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
@@ -25,9 +26,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +48,7 @@ import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.shizuku.newPackageManager
+import li.songe.gkd.util.AuthModeOption
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.launchAsFn
@@ -69,7 +68,7 @@ fun AuthA11yPage() {
     val vm = viewModel<AuthA11yVm>()
     val showCopyDlg by vm.showCopyDlgFlow.collectAsState()
     val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
-    var mode by remember { mutableIntStateOf(-1) }
+    val authModeOption by vm.authModeOptionFlow.collectAsState()
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
@@ -108,35 +107,30 @@ fun AuthA11yPage() {
                         .padding(16.dp, 0.dp)
                         .fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (mode == 0) {
+                        containerColor = if (authModeOption == AuthModeOption.Basic) {
                             MaterialTheme.colorScheme.primaryContainer
                         } else {
                             Color.Unspecified
                         }
                     ),
-                    onClick = { mode = 0 }
+                    onClick = { vm.authModeOptionFlow.value = AuthModeOption.Basic }
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
-                            selected = mode == 0,
-                            onClick = { mode = 0 }
+                            selected = authModeOption == AuthModeOption.Basic,
+                            onClick = { vm.authModeOptionFlow.value = AuthModeOption.Basic }
                         )
                         Text(
-                            text = "普通授权(简单)",
+                            text = "${AuthModeOption.Basic.label}(简单)",
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }
                     Text(
                         modifier = Modifier.padding(16.dp, 0.dp),
                         style = MaterialTheme.typography.bodyMedium,
-                        text = "1. 授予[无障碍权限]"
-                    )
-                    Text(
-                        modifier = Modifier.padding(16.dp, 0.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        text = "2. 无障碍服务关闭后需重新授权"
+                        text = "1. 授予[无障碍权限]\n2. 无障碍服务关闭后需重新授权"
                     )
                     Row(
                         modifier = Modifier
@@ -158,37 +152,27 @@ fun AuthA11yPage() {
                         .padding(16.dp, 0.dp)
                         .fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (mode == 1) {
+                        containerColor = if (authModeOption == AuthModeOption.Advanced) {
                             MaterialTheme.colorScheme.primaryContainer
                         } else {
                             Color.Unspecified
                         }
                     ),
-                    onClick = { mode = 1 }
+                    onClick = { vm.authModeOptionFlow.value = AuthModeOption.Advanced }
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
-                            selected = mode == 1,
-                            onClick = { mode = 1 }
+                            selected = authModeOption == AuthModeOption.Advanced,
+                            onClick = { vm.authModeOptionFlow.value = AuthModeOption.Advanced }
                         )
-                        Text(text = "高级授权(推荐)")
+                        Text(text = "${AuthModeOption.Advanced.label}(推荐)")
                     }
                     Text(
                         modifier = Modifier.padding(16.dp, 0.dp),
                         style = MaterialTheme.typography.bodyMedium,
-                        text = "1. 授予[写入安全设置权限]"
-                    )
-                    Text(
-                        modifier = Modifier.padding(16.dp, 0.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        text = "2. 授权永久有效, 可自动重启无障碍服务"
-                    )
-                    Text(
-                        modifier = Modifier.padding(16.dp, 0.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        text = "3. 搭配通知栏快捷图标可实现无感重启, 无限保活"
+                        text = "1. 授予[写入安全设置权限]\n2. 授权永久有效, 可自动重启无障碍服务\n3. 搭配通知栏快捷图标可实现无感重启, 无限保活"
                     )
                     Row(
                         modifier = Modifier
@@ -234,13 +218,15 @@ fun AuthA11yPage() {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(text = "1. 有一台安装了 adb 的电脑\n\n2.手机开启调试模式后连接电脑授权调试\n\n3. 在电脑 cmd/pwsh 中运行如下命令")
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = commandText,
-                        modifier = Modifier
-                            .clip(MaterialTheme.shapes.extraSmall)
-                            .background(MaterialTheme.colorScheme.secondaryContainer)
-                            .padding(4.dp)
-                    )
+                    SelectionContainer {
+                        Text(
+                            text = commandText,
+                            modifier = Modifier
+                                .clip(MaterialTheme.shapes.extraSmall)
+                                .background(MaterialTheme.colorScheme.secondaryContainer)
+                                .padding(4.dp)
+                        )
+                    }
                 }
             },
             confirmButton = {

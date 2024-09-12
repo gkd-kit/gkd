@@ -34,7 +34,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -58,6 +57,7 @@ import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.stringify
 import li.songe.gkd.data.switch
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.StartEllipsisText
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.destinations.AppItemPageDestination
@@ -196,11 +196,7 @@ fun ClickLogPage() {
             item {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (clickLogCount == 0) {
-                    Text(
-                        text = "暂无记录",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
+                    EmptyText(text = "暂无记录")
                 }
             }
         }

@@ -26,7 +26,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -37,6 +36,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import li.songe.gkd.MainActivity
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.StartEllipsisText
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
@@ -138,11 +138,7 @@ fun ActivityLogPage() {
             item {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (logCount == 0) {
-                    Text(
-                        text = "暂无记录",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                    )
+                    EmptyText(text = "暂无记录")
                 }
             }
         }

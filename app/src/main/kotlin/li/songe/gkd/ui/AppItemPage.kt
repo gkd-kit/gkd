@@ -49,7 +49,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -68,6 +67,7 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.destinations.GroupImagePageDestination
@@ -344,11 +344,7 @@ fun AppItemPage(
             item {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (appRaw.groups.isEmpty()) {
-                    Text(
-                        text = "暂无规则",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
+                    EmptyText(text = "暂无规则")
                 } else if (editable) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                 }
