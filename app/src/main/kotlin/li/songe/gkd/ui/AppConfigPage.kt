@@ -44,7 +44,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -59,6 +58,7 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.destinations.GlobalRulePageDestination
@@ -255,11 +255,7 @@ fun AppConfigPage(appId: String) {
             item {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (globalGroups.size + appGroups.size == 0) {
-                    Text(
-                        text = "暂无规则",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
+                    EmptyText(text = "暂无规则")
                 } else {
                     // 避免被 floatingActionButton 遮挡
                     Spacer(modifier = Modifier.height(EmptyHeight))

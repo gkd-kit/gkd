@@ -18,6 +18,7 @@ val <T> Option<T>.allSubObject: Array<Option<T>>
         is EnableGroupOption -> EnableGroupOption.allSubObject
         is RuleSortOption -> RuleSortOption.allSubObject
         is UpdateChannelOption -> UpdateChannelOption.allSubObject
+        is AuthModeOption -> AuthModeOption.allSubObject
     } as Array<Option<T>>
 
 sealed class SortTypeOption(override val value: Int, override val label: String) : Option<Int> {
@@ -31,7 +32,10 @@ sealed class SortTypeOption(override val value: Int, override val label: String)
     }
 }
 
-sealed class UpdateTimeOption(override val value: Long, override val label: String) : Option<Long> {
+sealed class UpdateTimeOption(
+    override val value: Long,
+    override val label: String
+) : Option<Long> {
     data object Pause : UpdateTimeOption(-1, "暂停")
     data object Everyday : UpdateTimeOption(24 * 60 * 60_000, "每天")
     data object Every3Days : UpdateTimeOption(24 * 60 * 60_000 * 3, "每3天")
@@ -42,8 +46,10 @@ sealed class UpdateTimeOption(override val value: Long, override val label: Stri
     }
 }
 
-sealed class DarkThemeOption(override val value: Boolean?, override val label: String) :
-    Option<Boolean?> {
+sealed class DarkThemeOption(
+    override val value: Boolean?,
+    override val label: String
+) : Option<Boolean?> {
     data object FollowSystem : DarkThemeOption(null, "跟随系统")
     data object AlwaysEnable : DarkThemeOption(true, "总是启用")
     data object AlwaysDisable : DarkThemeOption(false, "总是关闭")
@@ -53,8 +59,10 @@ sealed class DarkThemeOption(override val value: Boolean?, override val label: S
     }
 }
 
-sealed class EnableGroupOption(override val value: Boolean?, override val label: String) :
-    Option<Boolean?> {
+sealed class EnableGroupOption(
+    override val value: Boolean?,
+    override val label: String
+) : Option<Boolean?> {
     data object FollowSubs : DarkThemeOption(null, "跟随订阅")
     data object AllEnable : DarkThemeOption(true, "全部启用")
     data object AllDisable : DarkThemeOption(false, "全部关闭")
@@ -74,8 +82,10 @@ sealed class RuleSortOption(override val value: Int, override val label: String)
     }
 }
 
-sealed class UpdateChannelOption(override val value: Int, override val label: String) :
-    Option<Int> {
+sealed class UpdateChannelOption(
+    override val value: Int,
+    override val label: String
+) : Option<Int> {
     abstract val url: String
 
     data object Stable : UpdateChannelOption(0, "稳定版") {
@@ -83,10 +93,20 @@ sealed class UpdateChannelOption(override val value: Int, override val label: St
     }
 
     data object Beta : UpdateChannelOption(1, "测试版") {
-        override val url = "https://registry.npmmirror.com/@gkd-kit/app-beta/latest/files/index.json"
+        override val url =
+            "https://registry.npmmirror.com/@gkd-kit/app-beta/latest/files/index.json"
     }
 
     companion object {
         val allSubObject by lazy { arrayOf(Stable, Beta) }
+    }
+}
+
+sealed class AuthModeOption(override val value: Int, override val label: String) : Option<Int> {
+    data object Basic : AuthModeOption(0, "普通授权")
+    data object Advanced : AuthModeOption(1, "高级授权")
+
+    companion object {
+        val allSubObject by lazy { arrayOf(Basic, Advanced) }
     }
 }

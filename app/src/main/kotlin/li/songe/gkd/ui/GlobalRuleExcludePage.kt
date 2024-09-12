@@ -69,6 +69,8 @@ import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.service.launcherAppId
 import li.songe.gkd.ui.component.AppBarTextField
+import li.songe.gkd.ui.component.EmptyText
+import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
@@ -349,10 +351,11 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Text(text = "暂无搜索结果")
+                        EmptyText(text = "暂无搜索结果")
                         Spacer(modifier = Modifier.height(EmptyHeight))
                     }
                 }
+                QueryPkgAuthCard()
             }
         }
     })

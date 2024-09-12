@@ -44,7 +44,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.LogUtils
@@ -56,6 +55,8 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AppBarTextField
+import li.songe.gkd.ui.component.EmptyText
+import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.SubsAppCard
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.waitResult
@@ -284,14 +285,13 @@ fun SubsPage(
             item {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (appAndConfigs.isEmpty()) {
-                    Text(
+                    EmptyText(
                         text = if (searchStr.isNotEmpty()) "暂无搜索结果" else "暂无规则",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
                     )
                 } else if (editable) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                 }
+                QueryPkgAuthCard()
             }
         }
     }
