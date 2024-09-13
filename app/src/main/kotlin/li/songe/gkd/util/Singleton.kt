@@ -15,8 +15,9 @@ import kotlinx.serialization.json.Json
 import li.songe.gkd.app
 import okhttp3.OkHttpClient
 import java.text.Collator
-import java.time.Duration
 import java.util.Locale
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 
 
 val kv by lazy { MMKV.mmkvWithID("kv") }
@@ -50,9 +51,9 @@ val imageLoader by lazy {
     ImageLoader.Builder(app)
         .okHttpClient(
             OkHttpClient.Builder()
-                .connectTimeout(Duration.ofSeconds(30))
-                .readTimeout(Duration.ofSeconds(30))
-                .writeTimeout(Duration.ofSeconds(30))
+                .connectTimeout(30.seconds.toJavaDuration())
+                .readTimeout(30.seconds.toJavaDuration())
+                .writeTimeout(30.seconds.toJavaDuration())
                 .build()
         )
         .components {

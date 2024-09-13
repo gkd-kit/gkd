@@ -29,13 +29,13 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
-import com.ramcosta.composedestinations.navigation.navigate
+import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.AppItemPageDestination
+import com.ramcosta.composedestinations.generated.destinations.GlobalRulePageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.updateDialogOptions
-import li.songe.gkd.ui.destinations.AppItemPageDestination
-import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.LocalNavController
@@ -44,8 +44,7 @@ import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.throttle
 
-@RootNavGraph
-@Destination(style = ProfileTransitions::class)
+@Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun SlowGroupPage() {
     val context = LocalContext.current as MainActivity
@@ -91,7 +90,7 @@ fun SlowGroupPage() {
                 SlowGroupCard(
                     modifier = Modifier
                         .clickable(onClick = throttle {
-                            navController.navigate(
+                            navController.toDestinationsNavigator().navigate(
                                 GlobalRulePageDestination(
                                     rule.subsItem.id,
                                     group.key
@@ -110,7 +109,7 @@ fun SlowGroupPage() {
                 SlowGroupCard(
                     modifier = Modifier
                         .clickable(onClick = throttle {
-                            navController.navigate(
+                            navController.toDestinationsNavigator().navigate(
                                 AppItemPageDestination(
                                     rule.subsItem.id,
                                     rule.app.id,

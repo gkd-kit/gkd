@@ -33,7 +33,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.annotation.RootGraph
 import li.songe.gkd.MainActivity
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.EmptyText
@@ -46,8 +46,7 @@ import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
 
-@RootNavGraph
-@Destination(style = ProfileTransitions::class)
+@Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun ActivityLogPage() {
     val context = LocalContext.current as MainActivity

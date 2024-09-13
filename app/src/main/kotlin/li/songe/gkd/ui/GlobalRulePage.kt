@@ -57,8 +57,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
-import com.ramcosta.composedestinations.navigation.navigate
+import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.GlobalRuleExcludePageDestination
+import com.ramcosta.composedestinations.generated.destinations.ImagePreviewPageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.RawSubscription
@@ -67,8 +69,6 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.waitResult
-import li.songe.gkd.ui.destinations.GlobalRuleExcludePageDestination
-import li.songe.gkd.ui.destinations.GroupImagePageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.LocalNavController
@@ -81,8 +81,7 @@ import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 import li.songe.json5.encodeToJson5String
 
-@RootNavGraph
-@Destination(style = ProfileTransitions::class)
+@Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
     val context = LocalContext.current as MainActivity
@@ -239,7 +238,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                                 },
                                 onClick = throttle {
                                     expanded = false
-                                    navController.navigate(
+                                    navController.toDestinationsNavigator().navigate(
                                         GlobalRuleExcludePageDestination(
                                             subsItemId,
                                             group.key
@@ -472,10 +471,10 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                 if (showGroupItem.allExampleUrls.isNotEmpty()) {
                     TextButton(onClick = throttle {
                         setShowGroupItem(null)
-                        navController.navigate(
-                            GroupImagePageDestination(
-                                subsInt = subsItemId,
-                                groupKey = showGroupItem.key
+                        navController.toDestinationsNavigator().navigate(
+                            ImagePreviewPageDestination(
+                                title = showGroupItem.name,
+                                uris = showGroupItem.allExampleUrls.toTypedArray()
                             )
                         )
                     }) {

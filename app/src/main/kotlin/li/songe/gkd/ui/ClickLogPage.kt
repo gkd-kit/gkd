@@ -42,8 +42,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
-import com.ramcosta.composedestinations.navigation.navigate
+import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.AppItemPageDestination
+import com.ramcosta.composedestinations.generated.destinations.GlobalRulePageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -60,8 +62,6 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.StartEllipsisText
 import li.songe.gkd.ui.component.waitResult
-import li.songe.gkd.ui.destinations.AppItemPageDestination
-import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
@@ -71,8 +71,7 @@ import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
-@RootNavGraph
-@Destination(style = ProfileTransitions::class)
+@Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun ClickLogPage() {
     val context = LocalContext.current as MainActivity
@@ -221,13 +220,13 @@ fun ClickLogPage() {
                         .clickable(onClick = throttle {
                             clickLog.appId ?: return@throttle
                             if (clickLog.groupType == SubsConfig.AppGroupType) {
-                                navController.navigate(
+                                navController.toDestinationsNavigator().navigate(
                                     AppItemPageDestination(
                                         clickLog.subsId, clickLog.appId, clickLog.groupKey
                                     )
                                 )
                             } else if (clickLog.groupType == SubsConfig.GlobalGroupType) {
-                                navController.navigate(
+                                navController.toDestinationsNavigator().navigate(
                                     GlobalRulePageDestination(
                                         clickLog.subsId, clickLog.groupKey
                                     )

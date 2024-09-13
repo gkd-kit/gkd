@@ -56,8 +56,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
-import com.ramcosta.composedestinations.navigation.navigate
+import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.ImagePreviewPageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonObject
@@ -70,7 +71,6 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.waitResult
-import li.songe.gkd.ui.destinations.GroupImagePageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.LocalNavController
@@ -86,8 +86,7 @@ import li.songe.gkd.util.updateSubscription
 import li.songe.json5.Json5
 import li.songe.json5.encodeToJson5String
 
-@RootNavGraph
-@Destination(style = ProfileTransitions::class)
+@Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun AppItemPage(
     subsItemId: Long,
@@ -371,11 +370,10 @@ fun AppItemPage(
                 if (showGroupItemVal.allExampleUrls.isNotEmpty()) {
                     TextButton(onClick = throttle {
                         setShowGroupItem(null)
-                        navController.navigate(
-                            GroupImagePageDestination(
-                                subsInt = subsItemId,
-                                groupKey = showGroupItemVal.key,
-                                appId = appId,
+                        navController.toDestinationsNavigator().navigate(
+                            ImagePreviewPageDestination(
+                                title = showGroupItemVal.name,
+                                uris = showGroupItemVal.allExampleUrls.toTypedArray()
                             )
                         )
                     }) {

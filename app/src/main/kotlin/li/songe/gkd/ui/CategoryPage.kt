@@ -45,7 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.CategoryConfig
@@ -66,8 +66,7 @@ import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 
-@RootNavGraph
-@Destination(style = ProfileTransitions::class)
+@Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun CategoryPage(subsItemId: Long) {
     val context = LocalContext.current as MainActivity

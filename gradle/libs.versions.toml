@@ -2,12 +2,12 @@
 kotlin = "2.0.20"
 ksp = "2.0.20-1.0.25"
 android = "8.6.0"
-compose = "1.6.8"
+compose = "1.7.1"
 rikka = "4.4.0"
 room = "2.6.1"
 paging = "3.3.2"
 ktor = "2.3.12"
-destinations = "1.10.2"
+destinations = "2.1.0-beta12"
 coil = "2.7.0"
 shizuku = "13.1.5"
 
@@ -45,7 +45,7 @@ androidx_room_paging = { module = "androidx.room:room-paging", version.ref = "ro
 androidx_splashscreen = { module = "androidx.core:core-splashscreen", version = "1.0.1" }
 androidx_paging_runtime = { module = "androidx.paging:paging-runtime", version.ref = "paging" }
 androidx_paging_compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
-google_accompanist_drawablepainter = { module = "com.google.accompanist:accompanist-drawablepainter", version = "0.34.0" }
+google_accompanist_drawablepainter = { module = "com.google.accompanist:accompanist-drawablepainter", version = "0.36.0" }
 junit = { module = "junit:junit", version = "4.13.2" }
 ktor_server_core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor_server_cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }

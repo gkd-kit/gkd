@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.compose.compiler.gradle.ComposeFeatureFlag
 import java.io.ByteArrayOutputStream
 
 fun String.runCommand(currentWorkingDir: File = file("./")): String {
@@ -175,7 +174,7 @@ configurations.configureEach {
 }
 
 composeCompiler {
-    featureFlags.addAll(ComposeFeatureFlag.StrongSkipping)
+//    featureFlags.addAll(ComposeFeatureFlag.StrongSkipping) // default StrongSkipping
     reportsDestination = layout.buildDirectory.dir("compose_compiler")
     stabilityConfigurationFile = rootProject.layout.projectDirectory.file("stability_config.conf")
 }

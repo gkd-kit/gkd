@@ -3,6 +3,7 @@ package li.songe.gkd.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramcosta.composedestinations.generated.destinations.SubsPageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -13,7 +14,6 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.Tuple3
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.collator

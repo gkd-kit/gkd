@@ -60,7 +60,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.annotation.RootGraph
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
@@ -81,8 +81,7 @@ import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.toast
 
-@RootNavGraph
-@Destination(style = ProfileTransitions::class)
+@Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
     val navController = LocalNavController.current

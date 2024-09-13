@@ -3,6 +3,7 @@ package li.songe.gkd.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -11,7 +12,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.ui.destinations.AppConfigPageDestination
 import li.songe.gkd.util.ResolvedAppGroup
 import li.songe.gkd.util.ResolvedGlobalGroup
 import li.songe.gkd.util.RuleSortOption

@@ -27,6 +27,7 @@ import com.blankj.utilcode.util.ServiceUtils
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
+import com.ramcosta.composedestinations.generated.NavGraphs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -40,7 +41,6 @@ import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.service.updateLauncherAppId
-import li.songe.gkd.ui.NavGraphs
 import li.songe.gkd.ui.component.BuildDialog
 import li.songe.gkd.ui.theme.AppTheme
 import li.songe.gkd.util.LocalNavController
@@ -86,8 +86,8 @@ class MainActivity : ComponentActivity() {
                     LocalNavController provides navController
                 ) {
                     DestinationsNavHost(
-                        navGraph = NavGraphs.root,
-                        navController = navController
+                        navController = navController,
+                        navGraph = NavGraphs.root
                     )
                     ShizukuErrorDialog(mainVm.shizukuErrorFlow)
                     AuthDialog(mainVm.authReasonFlow)

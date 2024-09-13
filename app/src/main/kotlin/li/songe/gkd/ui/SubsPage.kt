@@ -48,8 +48,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
-import com.ramcosta.composedestinations.navigation.navigate
+import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.AppItemPageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
@@ -60,7 +61,6 @@ import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.SubsAppCard
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.waitResult
-import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.util.LocalNavController
@@ -76,8 +76,7 @@ import li.songe.gkd.util.updateSubscription
 import li.songe.json5.encodeToJson5String
 
 
-@RootNavGraph
-@Destination(style = ProfileTransitions::class)
+@Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun SubsPage(
     subsItemId: Long,
@@ -253,7 +252,7 @@ fun SubsPage(
                     subsConfig = subsConfig,
                     enableSize = enableSize,
                     onClick = throttle {
-                        navController.navigate(AppItemPageDestination(subsItemId, appRaw.id))
+                        navController.toDestinationsNavigator().navigate(AppItemPageDestination(subsItemId, appRaw.id))
                     },
                     onValueChange = throttle(fn = vm.viewModelScope.launchAsFn { enable ->
                         val newItem = subsConfig?.copy(

@@ -35,7 +35,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.navigation.navigate
+import com.ramcosta.composedestinations.generated.destinations.AboutPageDestination
+import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
@@ -45,8 +47,6 @@ import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.component.waitResult
-import li.songe.gkd.ui.destinations.AboutPageDestination
-import li.songe.gkd.ui.destinations.AdvancedPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
@@ -365,11 +365,11 @@ fun useSettingsPage(): ScaffoldExt {
             )
 
             SettingItem(title = "高级设置", onClick = {
-                navController.navigate(AdvancedPageDestination)
+                navController.toDestinationsNavigator().navigate(AdvancedPageDestination)
             })
 
             SettingItem(title = "关于", onClick = {
-                navController.navigate(AboutPageDestination)
+                navController.toDestinationsNavigator().navigate(AboutPageDestination)
             })
 
             Spacer(modifier = Modifier.height(EmptyHeight))

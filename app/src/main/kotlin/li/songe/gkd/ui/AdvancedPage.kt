@@ -59,8 +59,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.LogUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
-import com.ramcosta.composedestinations.navigation.navigate
+import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDestination
+import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
@@ -80,8 +82,6 @@ import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.updateDialogOptions
-import li.songe.gkd.ui.destinations.ActivityLogPageDestination
-import li.songe.gkd.ui.destinations.SnapshotPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
@@ -100,8 +100,7 @@ import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
 
-@RootNavGraph
-@Destination(style = ProfileTransitions::class)
+@Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun AdvancedPage() {
     val context = LocalContext.current as MainActivity
@@ -420,7 +419,7 @@ fun AdvancedPage() {
             SettingItem(
                 title = "快照记录" + (if (snapshotCount > 0) "-$snapshotCount" else ""),
                 onClick = {
-                    navController.navigate(SnapshotPageDestination)
+                    navController.toDestinationsNavigator().navigate(SnapshotPageDestination)
                 }
             )
 
@@ -543,7 +542,7 @@ fun AdvancedPage() {
             SettingItem(
                 title = "界面记录",
                 onClick = {
-                    navController.navigate(ActivityLogPageDestination)
+                    navController.toDestinationsNavigator().navigate(ActivityLogPageDestination)
                 }
             )
 

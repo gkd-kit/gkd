@@ -49,8 +49,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
-import com.ramcosta.composedestinations.navigation.navigate
+import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.AppItemPageDestination
+import com.ramcosta.composedestinations.generated.destinations.GlobalRulePageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.ExcludeData
@@ -60,8 +62,6 @@ import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.updateDialogOptions
-import li.songe.gkd.ui.destinations.AppItemPageDestination
-import li.songe.gkd.ui.destinations.GlobalRulePageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
@@ -76,8 +76,7 @@ import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.throttle
 
-@RootNavGraph
-@Destination(style = ProfileTransitions::class)
+@Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun AppConfigPage(appId: String) {
     val navController = LocalNavController.current
@@ -165,7 +164,7 @@ fun AppConfigPage(appId: String) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = throttle {
-                    navController.navigate(AppItemPageDestination(LOCAL_SUBS_ID, appId))
+                    navController.toDestinationsNavigator().navigate(AppItemPageDestination(LOCAL_SUBS_ID, appId))
                 },
                 content = {
                     Icon(
@@ -190,7 +189,7 @@ fun AppConfigPage(appId: String) {
                         group = g.group,
                         checked = checked,
                         onClick = throttle {
-                            navController.navigate(
+                            navController.toDestinationsNavigator().navigate(
                                 GlobalRulePageDestination(
                                     g.subsItem.id,
                                     g.group.key
@@ -229,7 +228,7 @@ fun AppConfigPage(appId: String) {
                         group = g.group,
                         checked = g.enable,
                         onClick = {
-                            navController.navigate(
+                            navController.toDestinationsNavigator().navigate(
                                 AppItemPageDestination(
                                     g.subsItem.id,
                                     appId,

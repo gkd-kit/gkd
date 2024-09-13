@@ -3,12 +3,12 @@ package li.songe.gkd.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramcosta.composedestinations.generated.destinations.AppItemPageDestination
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.ui.destinations.AppItemPageDestination
 import li.songe.gkd.util.map
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
