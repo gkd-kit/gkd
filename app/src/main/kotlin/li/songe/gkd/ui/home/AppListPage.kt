@@ -57,13 +57,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.KeyboardUtils
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
-import com.ramcosta.composedestinations.navigation.navigate
+import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.QueryPkgAuthCard
-import li.songe.gkd.ui.destinations.AppConfigPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
@@ -265,7 +265,7 @@ fun useAppListPage(): ScaffoldExt {
                 Row(
                     modifier = Modifier
                         .clickable(onClick = throttle {
-                            navController.navigate(AppConfigPageDestination(appInfo.id))
+                            navController.toDestinationsNavigator().navigate(AppConfigPageDestination(appInfo.id))
                         })
                         .height(IntrinsicSize.Min)
                         .appItemPadding(),

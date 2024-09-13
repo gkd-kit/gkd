@@ -39,7 +39,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import li.songe.gkd.META
@@ -58,8 +58,7 @@ import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
 import java.io.DataOutputStream
 
-@RootNavGraph
-@Destination(style = ProfileTransitions::class)
+@Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun AuthA11yPage() {
     val context = LocalContext.current as MainActivity

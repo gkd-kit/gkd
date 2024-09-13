@@ -26,7 +26,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.navigation.navigate
+import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDestination
+import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
+import com.ramcosta.composedestinations.generated.destinations.ClickLogPageDestination
+import com.ramcosta.composedestinations.generated.destinations.SlowGroupPageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import li.songe.gkd.MainActivity
 import li.songe.gkd.a11yServiceEnabledFlow
 import li.songe.gkd.permission.notificationState
@@ -38,10 +42,6 @@ import li.songe.gkd.service.switchA11yService
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
-import li.songe.gkd.ui.destinations.ActivityLogPageDestination
-import li.songe.gkd.ui.destinations.AuthA11yPageDestination
-import li.songe.gkd.ui.destinations.ClickLogPageDestination
-import li.songe.gkd.ui.destinations.SlowGroupPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.HOME_PAGE_URL
@@ -110,7 +110,7 @@ fun useControlPage(): ScaffoldExt {
                     title = "无障碍授权",
                     desc = if (a11yBroken) "服务故障,请重新授权" else "授权使无障碍服务运行",
                     onAuthClick = {
-                        navController.navigate(AuthA11yPageDestination)
+                        navController.toDestinationsNavigator().navigate(AuthA11YPageDestination)
                     })
             }
 
@@ -137,7 +137,7 @@ fun useControlPage(): ScaffoldExt {
                 title = "触发记录",
                 subtitle = "如误触可在此快速定位关闭规则",
                 onClick = {
-                    navController.navigate(ClickLogPageDestination)
+                    navController.toDestinationsNavigator().navigate(ClickLogPageDestination)
                 }
             )
 
@@ -146,7 +146,7 @@ fun useControlPage(): ScaffoldExt {
                     title = "界面记录",
                     subtitle = "记录打开的应用及界面",
                     onClick = {
-                        navController.navigate(ActivityLogPageDestination)
+                        navController.toDestinationsNavigator().navigate(ActivityLogPageDestination)
                     }
                 )
             }
@@ -156,7 +156,7 @@ fun useControlPage(): ScaffoldExt {
                     title = "耗时查询-${ruleSummary.slowGroupCount}",
                     subtitle = "可能导致触发缓慢或更多耗电",
                     onClick = {
-                        navController.navigate(SlowGroupPageDestination)
+                        navController.toDestinationsNavigator().navigate(SlowGroupPageDestination)
                     }
                 )
             }

@@ -3,6 +3,7 @@ package li.songe.gkd.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramcosta.composedestinations.generated.destinations.GlobalRuleExcludePageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -11,7 +12,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.ui.destinations.GlobalRuleExcludePageDestination
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.map
 import li.songe.gkd.util.orderedAppInfosFlow

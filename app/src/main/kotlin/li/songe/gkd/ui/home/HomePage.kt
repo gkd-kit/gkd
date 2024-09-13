@@ -16,7 +16,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.MainActivity
 import li.songe.gkd.OpenFileActivity
@@ -31,8 +31,7 @@ data class BottomNavItem(
     val icon: ImageVector,
 )
 
-@RootNavGraph(start = true)
-@Destination(style = ProfileTransitions::class)
+@Destination<RootGraph>(style = ProfileTransitions::class, start = true)
 @Composable
 fun HomePage() {
     val context = LocalContext.current as MainActivity

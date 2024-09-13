@@ -43,8 +43,9 @@ import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.ImageUtils
 import com.blankj.utilcode.util.UriUtils
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
-import com.ramcosta.composedestinations.navigation.navigate
+import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.ImagePreviewPageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import li.songe.gkd.MainActivity
@@ -57,7 +58,6 @@ import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.StartEllipsisText
 import li.songe.gkd.ui.component.waitResult
-import li.songe.gkd.ui.destinations.ImagePreviewPageDestination
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.IMPORT_SHORT_URL
 import li.songe.gkd.util.LocalNavController
@@ -69,8 +69,7 @@ import li.songe.gkd.util.snapshotZipDir
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
-@RootNavGraph
-@Destination(style = ProfileTransitions::class)
+@Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun SnapshotPage() {
     val context = LocalContext.current as MainActivity
@@ -189,12 +188,14 @@ fun SnapshotPage() {
                 Text(
                     text = "查看", modifier = Modifier
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
-                            navController.navigate(
-                                ImagePreviewPageDestination(
-                                    filePath = snapshotVal.screenshotFile.absolutePath,
-                                    title = snapshotVal.appName,
+                            navController
+                                .toDestinationsNavigator()
+                                .navigate(
+                                    ImagePreviewPageDestination(
+                                        title = snapshotVal.appName,
+                                        uri = snapshotVal.screenshotFile.absolutePath,
+                                    )
                                 )
-                            )
                             selectedSnapshot = null
                         }))
                         .then(modifier)

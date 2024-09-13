@@ -10,20 +10,23 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.navigation.NavBackStackEntry
 import com.ramcosta.composedestinations.spec.DestinationStyle
 
-object ProfileTransitions : DestinationStyle.Animated {
-    override fun AnimatedContentTransitionScope<NavBackStackEntry>.enterTransition(): EnterTransition? {
-        return slideInHorizontally(tween()) { it }
+typealias EnterTransitionType = AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition?
+typealias ExitTransitionType = AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition?
+
+object ProfileTransitions : DestinationStyle.Animated() {
+    override val enterTransition: EnterTransitionType = {
+        slideInHorizontally(tween()) { it }
     }
 
-    override fun AnimatedContentTransitionScope<NavBackStackEntry>.exitTransition(): ExitTransition? {
-        return slideOutHorizontally(tween()) { -it } + fadeOut(tween())
+    override val exitTransition: ExitTransitionType = {
+        slideOutHorizontally(tween()) { -it } + fadeOut(tween())
     }
 
-    override fun AnimatedContentTransitionScope<NavBackStackEntry>.popEnterTransition(): EnterTransition? {
-        return slideInHorizontally(tween()) { -it }
+    override val popEnterTransition: EnterTransitionType = {
+        slideInHorizontally(tween()) { -it }
     }
 
-    override fun AnimatedContentTransitionScope<NavBackStackEntry>.popExitTransition(): ExitTransition? {
-        return slideOutHorizontally(tween()) { it }
+    override val popExitTransition: ExitTransitionType = {
+        slideOutHorizontally(tween()) { it }
     }
 }

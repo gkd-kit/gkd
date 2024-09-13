@@ -37,15 +37,15 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
-import com.ramcosta.composedestinations.navigation.navigate
+import com.ramcosta.composedestinations.generated.destinations.CategoryPageDestination
+import com.ramcosta.composedestinations.generated.destinations.GlobalRulePageDestination
+import com.ramcosta.composedestinations.generated.destinations.SubsPageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.deleteSubscription
-import li.songe.gkd.ui.destinations.CategoryPageDestination
-import li.songe.gkd.ui.destinations.GlobalRulePageDestination
-import li.songe.gkd.ui.destinations.SubsPageDestination
 import li.songe.gkd.ui.home.HomeVm
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalNavController
@@ -237,7 +237,7 @@ private fun SubsMenuItem(
                     },
                     onClick = throttle {
                         onExpandedChange(false)
-                        navController.navigate(SubsPageDestination(subItem.id))
+                        navController.toDestinationsNavigator().navigate(SubsPageDestination(subItem.id))
                     }
                 )
             }
@@ -248,7 +248,7 @@ private fun SubsMenuItem(
                     },
                     onClick = throttle {
                         onExpandedChange(false)
-                        navController.navigate(CategoryPageDestination(subItem.id))
+                        navController.toDestinationsNavigator().navigate(CategoryPageDestination(subItem.id))
                     }
                 )
             }
@@ -259,7 +259,7 @@ private fun SubsMenuItem(
                     },
                     onClick = throttle {
                         onExpandedChange(false)
-                        navController.navigate(GlobalRulePageDestination(subItem.id))
+                        navController.toDestinationsNavigator().navigate(GlobalRulePageDestination(subItem.id))
                     }
                 )
             }
