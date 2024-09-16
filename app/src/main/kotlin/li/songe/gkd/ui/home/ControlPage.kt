@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -61,6 +62,7 @@ fun useControlPage(): ScaffoldExt {
     val vm = viewModel<HomeVm>()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val scrollState = rememberScrollState()
+    val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
     return ScaffoldExt(navItem = controlNav,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
@@ -69,6 +71,14 @@ fun useControlPage(): ScaffoldExt {
                     text = controlNav.label,
                 )
             }, actions = {
+                IconButton(onClick = throttle {
+                    navController.toDestinationsNavigator().navigate(AuthA11YPageDestination)
+                }) {
+                    Icon(
+                        imageVector = Icons.Outlined.RocketLaunch,
+                        contentDescription = null,
+                    )
+                }
                 IconButton(onClick = throttle { context.openUri(HOME_PAGE_URL) }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
@@ -85,7 +95,6 @@ fun useControlPage(): ScaffoldExt {
 
         val a11yRunning by GkdAbService.isRunning.collectAsState()
         val manageRunning by ManageService.isRunning.collectAsState()
-        val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
         val a11yServiceEnabled by a11yServiceEnabledFlow.collectAsState()
 
         // 无障碍故障: 设置中无障碍开启, 但是实际 service 没有运行
@@ -116,7 +125,7 @@ fun useControlPage(): ScaffoldExt {
 
             TextSwitch(
                 title = "常驻通知",
-                subtitle = "通知栏显示运行状态及统计数据",
+                subtitle = "显示运行状态及统计数据",
                 checked = manageRunning && store.enableStatusService,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {

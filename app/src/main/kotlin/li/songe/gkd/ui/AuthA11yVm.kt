@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import li.songe.gkd.permission.writeSecureSettingsState
-import li.songe.gkd.util.AuthModeOption
 
 class AuthA11yVm : ViewModel() {
     init {
@@ -22,5 +21,4 @@ class AuthA11yVm : ViewModel() {
     }
 
     val showCopyDlgFlow = MutableStateFlow(false)
-    val authModeOptionFlow = MutableStateFlow<AuthModeOption?>(null)
 }

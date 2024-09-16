@@ -2,6 +2,7 @@ package li.songe.gkd.ui
 
 import android.app.Activity
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,11 +14,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,13 +25,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -46,13 +42,16 @@ import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.permission.writeSecureSettingsState
+import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.shizuku.newPackageManager
-import li.songe.gkd.util.AuthModeOption
+import li.songe.gkd.ui.component.updateDialogOptions
+import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openA11ySettings
+import li.songe.gkd.util.openUri
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
@@ -67,7 +66,7 @@ fun AuthA11yPage() {
     val vm = viewModel<AuthA11yVm>()
     val showCopyDlg by vm.showCopyDlgFlow.collectAsState()
     val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
-    val authModeOption by vm.authModeOptionFlow.collectAsState()
+    val a11yRunning by GkdAbService.isRunning.collectAsState()
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
@@ -81,59 +80,45 @@ fun AuthA11yPage() {
                 )
             }
         }, title = {
-            Text(text = "授权说明")
+            Text(text = "授权状态")
         }, actions = {})
     }) { contentPadding ->
         Column(
             modifier = Modifier.padding(contentPadding)
         ) {
-            if (writeSecureSettings) {
-                Spacer(modifier = Modifier.height(40.dp))
+            Text(
+                text = "选择一个授权模式进行操作",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(itemHorizontalPadding)
+            )
+            Card(
+                modifier = Modifier
+                    .padding(itemHorizontalPadding, 0.dp)
+                    .fillMaxWidth(),
+                onClick = { }
+            ) {
                 Text(
-                    text = "授权成功,请关闭此页面",
+                    modifier = Modifier.padding(cardHorizontalPadding, 8.dp),
+                    text = "普通授权(简单)",
                     style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
                 )
-            } else {
                 Text(
-                    text = "选择一个授权模式",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    text = "1. 授予[无障碍权限]\n2. 无障碍服务关闭后需重新授权"
                 )
-                Card(
-                    modifier = Modifier
-                        .padding(16.dp, 0.dp)
-                        .fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (authModeOption == AuthModeOption.Basic) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            Color.Unspecified
-                        }
-                    ),
-                    onClick = { vm.authModeOptionFlow.value = AuthModeOption.Basic }
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = authModeOption == AuthModeOption.Basic,
-                            onClick = { vm.authModeOptionFlow.value = AuthModeOption.Basic }
-                        )
-                        Text(
-                            text = "${AuthModeOption.Basic.label}(简单)",
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    }
+                if (writeSecureSettings || a11yRunning) {
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        modifier = Modifier.padding(16.dp, 0.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        text = "1. 授予[无障碍权限]\n2. 无障碍服务关闭后需重新授权"
+                        modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
+                        text = "已持有[无障碍权限], 可继续使用",
+                        style = MaterialTheme.typography.bodySmall,
                     )
+                    Spacer(modifier = Modifier.height(12.dp))
+                } else {
                     Row(
                         modifier = Modifier
-                            .padding(16.dp, 0.dp)
+                            .padding(4.dp, 0.dp)
                             .fillMaxWidth(),
                     ) {
                         TextButton(onClick = throttle { openA11ySettings() }) {
@@ -143,39 +128,40 @@ fun AuthA11yPage() {
                             )
                         }
                     }
+                    Text(
+                        modifier = Modifier
+                            .padding(cardHorizontalPadding, 0.dp)
+                            .clickable {
+                                context.openUri("https://gkd.li/?r=2")
+                            },
+                        text = "无法开启无障碍?",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                Card(
-                    modifier = Modifier
-                        .padding(16.dp, 0.dp)
-                        .fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (authModeOption == AuthModeOption.Advanced) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            Color.Unspecified
-                        }
-                    ),
-                    onClick = { vm.authModeOptionFlow.value = AuthModeOption.Advanced }
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = authModeOption == AuthModeOption.Advanced,
-                            onClick = { vm.authModeOptionFlow.value = AuthModeOption.Advanced }
-                        )
-                        Text(text = "${AuthModeOption.Advanced.label}(推荐)")
-                    }
-                    Text(
-                        modifier = Modifier.padding(16.dp, 0.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        text = "1. 授予[写入安全设置权限]\n2. 授权永久有效, 可自动重启无障碍服务\n3. 搭配通知栏快捷图标可实现无感重启, 无限保活"
-                    )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Card(
+                modifier = Modifier
+                    .padding(itemHorizontalPadding, 0.dp)
+                    .fillMaxWidth(),
+                onClick = { }
+            ) {
+                Text(
+                    modifier = Modifier.padding(cardHorizontalPadding, 8.dp),
+                    text = "高级授权(推荐)",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    text = "1. 授予[写入安全设置权限]\n2. 授权永久有效, 包含[无障碍权限]\n3. 应用重启后可自动打开无障碍服务\n4. 在通知栏快捷开关可快捷重启, 无感保活"
+                )
+                if (!writeSecureSettings) {
                     Row(
                         modifier = Modifier
-                            .padding(16.dp, 0.dp)
+                            .padding(4.dp, 0.dp)
                             .fillMaxWidth(),
                     ) {
                         TextButton(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
@@ -203,8 +189,32 @@ fun AuthA11yPage() {
                             )
                         }
                     }
+                } else {
                     Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
+                        text = "已持有[写入安全设置权限], 优先使用此权限",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Row(
+                        modifier = Modifier
+                            .padding(4.dp, 0.dp)
+                            .fillMaxWidth(),
+                    ) {
+                        TextButton(onClick = throttle {
+                            context.mainVm.dialogFlow.updateDialogOptions(
+                                title = "无感保活",
+                                text = "添加通知栏快捷开关\n\n1. 下拉通知栏至[快捷开关]图标界面\n2. 找到名称为 ${META.appName} 的快捷开关\n3. 添加此开关到通知面板 \n\n只要此快捷开关在通知面板可见\n无论是系统杀后台还是自身BUG崩溃\n简单下拉打开通知即可重启"
+                            )
+                        }) {
+                            Text(
+                                text = "无感保活",
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        }
+                    }
                 }
+                Spacer(modifier = Modifier.height(4.dp))
             }
         }
     }
@@ -277,6 +287,8 @@ private suspend fun MainActivity.grantPermissionByShizuku() {
         }
     }
 }
+
+private val cardHorizontalPadding = 12.dp
 
 private fun grantPermissionByRoot() {
     var p: Process? = null
