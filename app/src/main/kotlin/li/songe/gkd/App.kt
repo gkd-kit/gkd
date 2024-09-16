@@ -22,6 +22,7 @@ import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.debug.clearHttpSubs
 import li.songe.gkd.notif.initChannel
 import li.songe.gkd.service.GkdAbService
+import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initFolder
 import li.songe.gkd.util.initStore
@@ -54,6 +55,7 @@ data object META {
     val versionCode by lazy { selfAppInfo.versionCode.toInt() }
     val versionName by lazy { selfAppInfo.versionName!! }
     val appId by lazy { selfAppInfo.id }
+    val appName by lazy { app.getString(SafeR.app_name) }
 }
 
 class App : Application() {

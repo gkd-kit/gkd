@@ -18,7 +18,6 @@ val <T> Option<T>.allSubObject: Array<Option<T>>
         is EnableGroupOption -> EnableGroupOption.allSubObject
         is RuleSortOption -> RuleSortOption.allSubObject
         is UpdateChannelOption -> UpdateChannelOption.allSubObject
-        is AuthModeOption -> AuthModeOption.allSubObject
     } as Array<Option<T>>
 
 sealed class SortTypeOption(override val value: Int, override val label: String) : Option<Int> {
@@ -99,14 +98,5 @@ sealed class UpdateChannelOption(
 
     companion object {
         val allSubObject by lazy { arrayOf(Stable, Beta) }
-    }
-}
-
-sealed class AuthModeOption(override val value: Int, override val label: String) : Option<Int> {
-    data object Basic : AuthModeOption(0, "普通授权")
-    data object Advanced : AuthModeOption(1, "高级授权")
-
-    companion object {
-        val allSubObject by lazy { arrayOf(Basic, Advanced) }
     }
 }
