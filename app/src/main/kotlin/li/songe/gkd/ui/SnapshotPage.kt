@@ -204,7 +204,7 @@ fun SnapshotPage() {
                 Text(
                     text = "分享到其他应用",
                     modifier = Modifier
-                        .clickable(onClick = vm.viewModelScope.launchAsFn {
+                        .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             selectedSnapshot = null
                             val zipFile = SnapshotExt.getSnapshotZipFile(
                                 snapshotVal.id,
@@ -212,14 +212,14 @@ fun SnapshotPage() {
                                 snapshotVal.activityId
                             )
                             context.shareFile(zipFile, "分享快照文件")
-                        })
+                        }))
                         .then(modifier)
                 )
                 HorizontalDivider()
                 Text(
                     text = "保存到下载",
                     modifier = Modifier
-                        .clickable(onClick = vm.viewModelScope.launchAsFn {
+                        .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             selectedSnapshot = null
                             val zipFile = SnapshotExt.getSnapshotZipFile(
                                 snapshotVal.id,
@@ -227,14 +227,14 @@ fun SnapshotPage() {
                                 snapshotVal.activityId
                             )
                             context.saveFileToDownloads(zipFile)
-                        })
+                        }))
                         .then(modifier)
                 )
                 HorizontalDivider()
                 if (snapshotVal.githubAssetId != null) {
                     Text(
                         text = "复制链接", modifier = Modifier
-                            .clickable(onClick = {
+                            .clickable(onClick = throttle {
                                 selectedSnapshot = null
                                 ClipboardUtils.copyText(IMPORT_SHORT_URL + snapshotVal.githubAssetId)
                                 toast("复制成功")
@@ -244,12 +244,10 @@ fun SnapshotPage() {
                 } else {
                     Text(
                         text = "生成链接(需科学上网)", modifier = Modifier
-                            .clickable(onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                            .clickable(onClick = throttle {
                                 selectedSnapshot = null
                                 vm.uploadOptions.startTask(
-                                    file = SnapshotExt.getSnapshotZipFile(
-                                        snapshotVal.id
-                                    ),
+                                    getFile = { SnapshotExt.getSnapshotZipFile(snapshotVal.id) },
                                     onSuccessResult = vm.viewModelScope.launchAsFn<GithubPoliciesAsset>(
                                         Dispatchers.IO
                                     ) {
@@ -265,7 +263,7 @@ fun SnapshotPage() {
                 Text(
                     text = "保存截图到相册",
                     modifier = Modifier
-                        .clickable(onClick = vm.viewModelScope.launchAsFn {
+                        .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             requiredPermission(context, canWriteExternalStorage)
                             ImageUtils.save2Album(
                                 ImageUtils.getBitmap(snapshotVal.screenshotFile),
@@ -274,14 +272,14 @@ fun SnapshotPage() {
                             )
                             toast("保存成功")
                             selectedSnapshot = null
-                        })
+                        }))
                         .then(modifier)
                 )
                 HorizontalDivider()
                 Text(
                     text = "替换截图(去除隐私)",
                     modifier = Modifier
-                        .clickable(onClick = vm.viewModelScope.launchAsFn {
+                        .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             val uri = context.pickContentLauncher.launchForImageResult()
                             withContext(Dispatchers.IO) {
                                 val oldBitmap = ImageUtils.getBitmap(snapshotVal.screenshotFile)
@@ -305,19 +303,19 @@ fun SnapshotPage() {
                             }
                             toast("替换成功")
                             selectedSnapshot = null
-                        })
+                        }))
                         .then(modifier)
                 )
                 HorizontalDivider()
                 Text(
                     text = "删除", modifier = Modifier
-                        .clickable(onClick = vm.viewModelScope.launchAsFn {
+                        .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             DbSet.snapshotDao.delete(snapshotVal)
                             withContext(Dispatchers.IO) {
                                 SnapshotExt.removeAssets(snapshotVal.id)
                             }
                             selectedSnapshot = null
-                        })
+                        }))
                         .then(modifier), color = colorScheme.error
                 )
             }
