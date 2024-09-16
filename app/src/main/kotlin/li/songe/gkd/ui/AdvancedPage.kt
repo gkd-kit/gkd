@@ -211,10 +211,7 @@ fun AdvancedPage() {
                     modifier = Modifier
                         .clickable(onClick = throttle {
                             showShareLogDlg = false
-                            vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val logZipFile = buildLogFile()
-                                vm.uploadOptions.startTask(logZipFile)
-                            }
+                            vm.uploadOptions.startTask(getFile = { buildLogFile() })
                         })
                         .then(modifier)
                 )

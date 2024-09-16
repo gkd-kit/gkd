@@ -24,16 +24,16 @@ class UploadOptions(
     private val scope: CoroutineScope,
     private val showHref: (GithubPoliciesAsset) -> String = { it.shortHref }
 ) {
-    val statusFlow = MutableStateFlow<LoadStatus<GithubPoliciesAsset>?>(null)
+    private val statusFlow = MutableStateFlow<LoadStatus<GithubPoliciesAsset>?>(null)
     private var job: Job? = null
     private fun buildTask(
         cookie: String,
-        file: File,
+        getFile: suspend () -> File,
         onSuccessResult: ((GithubPoliciesAsset) -> Unit)?
     ) = scope.launchTry(Dispatchers.IO) {
         statusFlow.value = LoadStatus.Loading()
         try {
-            val policiesAsset = uploadFileToGithub(cookie, file) {
+            val policiesAsset = uploadFileToGithub(cookie, getFile()) {
                 if (statusFlow.value is LoadStatus.Loading) {
                     statusFlow.value = LoadStatus.Loading(it)
                 }
@@ -47,16 +47,19 @@ class UploadOptions(
         }
     }
 
-    fun startTask(file: File, onSuccessResult: ((GithubPoliciesAsset) -> Unit)? = null) {
+    fun startTask(
+        getFile: suspend () -> File,
+        onSuccessResult: ((GithubPoliciesAsset) -> Unit)? = null
+    ) {
         val cookie = privacyStoreFlow.value.githubCookie
-        if (cookie == null || cookie.isBlank()) {
+        if (cookie.isNullOrBlank()) {
             toast("请先设置 cookie 后再上传")
             return
         }
         if (job != null || statusFlow.value is LoadStatus.Loading) {
             return
         }
-        job = buildTask(cookie, file, onSuccessResult)
+        job = buildTask(cookie, getFile, onSuccessResult)
     }
 
     private fun stopTask() {
