@@ -17,11 +17,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import li.songe.gkd.MainActivity
 import li.songe.gkd.OpenFileActivity
-import li.songe.gkd.OpenSchemeActivity
 import li.songe.gkd.data.importData
+import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.toast
@@ -35,6 +38,7 @@ data class BottomNavItem(
 @Composable
 fun HomePage() {
     val context = LocalContext.current as MainActivity
+    val navController = LocalNavController.current
     val vm = viewModel<HomeVm>()
     val tab by vm.tabFlow.collectAsState()
 
@@ -47,12 +51,11 @@ fun HomePage() {
 
     val currentPage = pages.find { p -> p.navItem.label == tab.label } ?: controlPage
 
-    val intent = context.intent
-    LaunchedEffect(key1 = intent, block = {
-        intent ?: return@LaunchedEffect
+    LaunchedEffect(key1 = null, block = {
+        val intent = context.intent ?: return@LaunchedEffect
         context.intent = null
         LogUtils.d(intent)
-        val uri = intent.data ?: return@LaunchedEffect
+        val uri = intent.data?.normalizeScheme() ?: return@LaunchedEffect
         val source = intent.getStringExtra("source")
         if (source == OpenFileActivity::class.qualifiedName) {
             vm.viewModelScope.launchTry(Dispatchers.IO) {
@@ -60,8 +63,13 @@ fun HomePage() {
                 vm.tabFlow.value = subsPage.navItem
                 importData(uri)
             }
-        } else if (source == OpenSchemeActivity::class.qualifiedName) {
-            LogUtils.d(uri)
+        } else if (uri.scheme == "gkd" && uri.host == "page") {
+            delay(300)
+            when (uri.path) {
+                "/1" -> {
+                    navController.toDestinationsNavigator().navigate(AdvancedPageDestination)
+                }
+            }
         }
     })
 
@@ -72,7 +80,8 @@ fun HomePage() {
         bottomBar = {
             NavigationBar {
                 pages.forEach { page ->
-                    NavigationBarItem(selected = tab.label == page.navItem.label,
+                    NavigationBarItem(
+                        selected = tab.label == page.navItem.label,
                         modifier = Modifier,
                         onClick = {
                             vm.tabFlow.value = page.navItem

@@ -1,5 +1,6 @@
 package li.songe.gkd.debug
 
+import android.app.Service
 import android.content.Context
 import android.content.Intent
 import com.blankj.utilcode.util.LogUtils
@@ -29,7 +30,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import li.songe.gkd.app
 import li.songe.gkd.appScope
-import li.songe.gkd.composition.CompositionService
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.data.GkdAction
@@ -57,135 +57,43 @@ import li.songe.gkd.util.updateSubscription
 import java.io.File
 
 
-class HttpService : CompositionService({
-    val context = this
-    val scope = CoroutineScope(Dispatchers.IO)
+class HttpService : Service() {
+    private val scope = CoroutineScope(Dispatchers.IO)
 
-    val httpSubsItem = SubsItem(
-        id = LOCAL_HTTP_SUBS_ID,
-        order = -1,
-        enableUpdate = false,
-    )
-
-    fun createServer(port: Int): CIOApplicationEngine {
-        return embeddedServer(CIO, port) {
-            install(KtorCorsPlugin)
-            install(KtorErrorPlugin)
-            install(ContentNegotiation) { json(keepNullJson) }
-
-            routing {
-                get("/") { call.respondText(ContentType.Text.Html) { "<script type='module' src='$SERVER_SCRIPT_URL'></script>" } }
-                route("/api") {
-                    // Deprecated
-                    get("/device") { call.respond(DeviceInfo.instance) }
-
-                    post("/getServerInfo") { call.respond(ServerInfo()) }
-
-                    // Deprecated
-                    get("/snapshot") {
-                        val id = call.request.queryParameters["id"]?.toLongOrNull()
-                            ?: throw RpcError("miss id")
-                        val fp = File(SnapshotExt.getSnapshotPath(id))
-                        if (!fp.exists()) {
-                            throw RpcError("对应快照不存在")
-                        }
-                        call.respondFile(fp)
-                    }
-                    post("/getSnapshot") {
-                        val data = call.receive<ReqId>()
-                        val fp = File(SnapshotExt.getSnapshotPath(data.id))
-                        if (!fp.exists()) {
-                            throw RpcError("对应快照不存在")
-                        }
-                        call.respond(fp)
-                    }
-
-                    // Deprecated
-                    get("/screenshot") {
-                        val id = call.request.queryParameters["id"]?.toLongOrNull()
-                            ?: throw RpcError("miss id")
-                        val fp = File(SnapshotExt.getScreenshotPath(id))
-                        if (!fp.exists()) {
-                            throw RpcError("对应截图不存在")
-                        }
-                        call.respondFile(fp)
-                    }
-                    post("/getScreenshot") {
-                        val data = call.receive<ReqId>()
-                        val fp = File(SnapshotExt.getScreenshotPath(data.id))
-                        if (!fp.exists()) {
-                            throw RpcError("对应截图不存在")
-                        }
-                        call.respondFile(fp)
-                    }
-
-                    // Deprecated
-                    get("/captureSnapshot") {
-                        call.respond(captureSnapshot())
-                    }
-                    post("/captureSnapshot") {
-                        call.respond(captureSnapshot())
-                    }
-
-                    // Deprecated
-                    get("/snapshots") {
-                        call.respond(DbSet.snapshotDao.query().first())
-                    }
-                    post("/getSnapshots") {
-                        call.respond(DbSet.snapshotDao.query().first())
-                    }
-
-                    post("/updateSubscription") {
-                        val subscription =
-                            RawSubscription.parse(call.receiveText(), json5 = false)
-                                .copy(
-                                    id = LOCAL_HTTP_SUBS_ID,
-                                    name = "内存订阅",
-                                    version = 0,
-                                    author = "@gkd-kit/inspect"
-                                )
-                        updateSubscription(subscription)
-                        DbSet.subsItemDao.insert((subsItemsFlow.value.find { s -> s.id == httpSubsItem.id }
-                            ?: httpSubsItem).copy(mtime = System.currentTimeMillis()))
-                        call.respond(RpcOk())
-                    }
-                    post("/execSelector") {
-                        if (!GkdAbService.isRunning.value) {
-                            throw RpcError("无障碍没有运行")
-                        }
-                        val gkdAction = call.receive<GkdAction>()
-                        call.respond(GkdAbService.execAction(gkdAction))
-                    }
+    private var server: CIOApplicationEngine? = null
+    override fun onCreate() {
+        super.onCreate()
+        isRunning.value = true
+        localNetworkIpsFlow.value = getIpAddressInLocalNetwork()
+        val httpServerPortFlow = storeFlow.map(scope) { s -> s.httpServerPort }
+        scope.launchTry(Dispatchers.IO) {
+            httpServerPortFlow.collect { port ->
+                server?.stop()
+                server = try {
+                    createServer(port).apply { start() }
+                } catch (e: Exception) {
+                    LogUtils.d("HTTP服务启动失败", e)
+                    null
                 }
+                if (server == null) {
+                    toast("HTTP服务启动失败,您可以尝试切换端口后重新启动")
+                    stopSelf()
+                    return@collect
+                }
+                createNotif(
+                    this@HttpService,
+                    httpChannel.id,
+                    httpNotif.copy(text = "HTTP服务-端口$port")
+                )
             }
         }
     }
 
-    var server: CIOApplicationEngine? = null
-    scope.launchTry(Dispatchers.IO) {
-        storeFlow.map(scope) { s -> s.httpServerPort }.collect { port ->
-            server?.stop()
-            server = try {
-                createServer(port).apply { start() }
-            } catch (e: Exception) {
-                LogUtils.d("HTTP服务启动失败", e)
-                null
-            }
-            if (server == null) {
-                toast("HTTP服务启动失败,您可以尝试切换端口后重新启动")
-                stopSelf()
-                return@collect
-            }
-            createNotif(
-                context, httpChannel.id, httpNotif.copy(text = "HTTP服务正在运行-端口$port")
-            )
-            LogUtils.d(*getIpAddressInLocalNetwork().map { host -> "http://${host}:${port}" }
-                .toList().toTypedArray())
-        }
-    }
+    override fun onDestroy() {
+        super.onDestroy()
+        isRunning.value = false
+        localNetworkIpsFlow.value = emptyList()
 
-
-    onDestroy {
         scope.launchTry(Dispatchers.IO) {
             server?.stop()
             if (storeFlow.value.autoClearMemorySubs) {
@@ -196,13 +104,6 @@ class HttpService : CompositionService({
         }
     }
 
-    isRunning.value = true
-    localNetworkIpsFlow.value = getIpAddressInLocalNetwork()
-    onDestroy {
-        isRunning.value = false
-        localNetworkIpsFlow.value = emptyList()
-    }
-}) {
     companion object {
         val isRunning = MutableStateFlow(false)
         val localNetworkIpsFlow = MutableStateFlow(emptyList<String>())
@@ -213,8 +114,9 @@ class HttpService : CompositionService({
         fun start(context: Context = app) {
             context.startForegroundService(Intent(context, HttpService::class.java))
         }
-
     }
+
+    override fun onBind(intent: Intent?) = null
 }
 
 @Serializable
@@ -240,6 +142,107 @@ fun clearHttpSubs() {
         delay(1000)
         if (storeFlow.value.autoClearMemorySubs) {
             deleteSubscription(LOCAL_HTTP_SUBS_ID)
+        }
+    }
+}
+
+private val httpSubsItem by lazy {
+    SubsItem(
+        id = LOCAL_HTTP_SUBS_ID,
+        order = -1,
+        enableUpdate = false,
+    )
+}
+
+private fun createServer(port: Int): CIOApplicationEngine {
+    return embeddedServer(CIO, port) {
+        install(KtorCorsPlugin)
+        install(KtorErrorPlugin)
+        install(ContentNegotiation) { json(keepNullJson) }
+        routing {
+            get("/") { call.respondText(ContentType.Text.Html) { "<script type='module' src='$SERVER_SCRIPT_URL'></script>" } }
+            route("/api") {
+                // Deprecated
+                get("/device") { call.respond(DeviceInfo.instance) }
+
+                post("/getServerInfo") { call.respond(ServerInfo()) }
+
+                // Deprecated
+                get("/snapshot") {
+                    val id = call.request.queryParameters["id"]?.toLongOrNull()
+                        ?: throw RpcError("miss id")
+                    val fp = File(SnapshotExt.getSnapshotPath(id))
+                    if (!fp.exists()) {
+                        throw RpcError("对应快照不存在")
+                    }
+                    call.respondFile(fp)
+                }
+                post("/getSnapshot") {
+                    val data = call.receive<ReqId>()
+                    val fp = File(SnapshotExt.getSnapshotPath(data.id))
+                    if (!fp.exists()) {
+                        throw RpcError("对应快照不存在")
+                    }
+                    call.respond(fp)
+                }
+
+                // Deprecated
+                get("/screenshot") {
+                    val id = call.request.queryParameters["id"]?.toLongOrNull()
+                        ?: throw RpcError("miss id")
+                    val fp = File(SnapshotExt.getScreenshotPath(id))
+                    if (!fp.exists()) {
+                        throw RpcError("对应截图不存在")
+                    }
+                    call.respondFile(fp)
+                }
+                post("/getScreenshot") {
+                    val data = call.receive<ReqId>()
+                    val fp = File(SnapshotExt.getScreenshotPath(data.id))
+                    if (!fp.exists()) {
+                        throw RpcError("对应截图不存在")
+                    }
+                    call.respondFile(fp)
+                }
+
+                // Deprecated
+                get("/captureSnapshot") {
+                    call.respond(captureSnapshot())
+                }
+                post("/captureSnapshot") {
+                    call.respond(captureSnapshot())
+                }
+
+                // Deprecated
+                get("/snapshots") {
+                    call.respond(DbSet.snapshotDao.query().first())
+                }
+                post("/getSnapshots") {
+                    call.respond(DbSet.snapshotDao.query().first())
+                }
+
+                post("/updateSubscription") {
+                    val subscription =
+                        RawSubscription.parse(call.receiveText(), json5 = false)
+                            .copy(
+                                id = LOCAL_HTTP_SUBS_ID,
+                                name = "内存订阅",
+                                version = 0,
+                                author = "@gkd-kit/inspect"
+                            )
+                    updateSubscription(subscription)
+                    DbSet.subsItemDao.insert((subsItemsFlow.value.find { s -> s.id == httpSubsItem.id }
+                        ?: httpSubsItem).copy(mtime = System.currentTimeMillis()))
+                    call.respond(RpcOk())
+                }
+                post("/execSelector") {
+                    if (!GkdAbService.isRunning.value) {
+                        throw RpcError("无障碍没有运行")
+                    }
+                    val gkdAction = call.receive<GkdAction>()
+                    call.respond(GkdAbService.execAction(gkdAction))
+                }
+            }
         }
     }
 }

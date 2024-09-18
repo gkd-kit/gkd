@@ -7,6 +7,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -21,20 +22,24 @@ fun createChannel(context: Context, notifChannel: NotifChannel) {
 }
 
 fun createNotif(context: Service, channelId: String, notif: Notif) {
-    val intent = Intent(context, MainActivity::class.java).apply {
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-    }
     val pendingIntent = PendingIntent.getActivity(
-        context, notif.id, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        context,
+        0,
+        Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            notif.uri?.let { data = Uri.parse(it) }
+        },
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
-
-    val builder = NotificationCompat.Builder(context, channelId)
+    val notification = NotificationCompat.Builder(context, channelId)
         .setSmallIcon(notif.smallIcon)
-        .setContentTitle(notif.title).setContentText(notif.text).setContentIntent(pendingIntent)
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT).setOngoing(notif.ongoing)
+        .setContentTitle(notif.title)
+        .setContentText(notif.text)
+        .setContentIntent(pendingIntent)
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .setOngoing(notif.ongoing)
         .setAutoCancel(notif.autoCancel)
-
-    val notification = builder.build()
+        .build()
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         context.startForeground(
             notif.id, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST
