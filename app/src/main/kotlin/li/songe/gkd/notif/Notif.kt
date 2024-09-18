@@ -3,6 +3,7 @@ package li.songe.gkd.notif
 import li.songe.gkd.app
 import li.songe.gkd.util.SafeR
 
+
 data class Notif(
     val id: Int,
     val smallIcon: Int = SafeR.ic_status,
@@ -10,6 +11,7 @@ data class Notif(
     val text: String,
     val ongoing: Boolean,
     val autoCancel: Boolean,
+    val uri: String? = null,
 )
 
 val abNotif by lazy {
@@ -27,6 +29,7 @@ val screenshotNotif by lazy {
         text = "截屏服务正在运行",
         ongoing = true,
         autoCancel = false,
+        uri = "gkd://page/1",
     )
 }
 
@@ -36,6 +39,7 @@ val floatingNotif by lazy {
         text = "悬浮窗按钮正在显示",
         ongoing = true,
         autoCancel = false,
+        uri = "gkd://page/1",
     )
 }
 
@@ -45,5 +49,6 @@ val httpNotif by lazy {
         text = "HTTP服务正在运行",
         ongoing = true,
         autoCancel = false,
+        uri = "gkd://page/1",
     )
 }
