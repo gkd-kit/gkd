@@ -23,7 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -574,7 +574,7 @@ fun AdvancedPage() {
             if (store.log2FileSwitch) {
                 SettingItem(
                     title = "导出日志",
-                    imageVector = Icons.Default.Upload,
+                    imageVector = Icons.Default.Share,
                     onClick = {
                         showShareLogDlg = true
                     }
