@@ -23,7 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -271,7 +271,7 @@ fun useSubsManagePage(): ScaffoldExt {
                         vm.showShareDataIdsFlow.value = selectedIds
                     }) {
                         Icon(
-                            imageVector = Icons.Default.Upload,
+                            imageVector = Icons.Default.Share,
                             contentDescription = null,
                         )
                     }
