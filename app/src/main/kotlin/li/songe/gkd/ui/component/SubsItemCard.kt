@@ -237,7 +237,8 @@ private fun SubsMenuItem(
                     },
                     onClick = throttle {
                         onExpandedChange(false)
-                        navController.toDestinationsNavigator().navigate(SubsPageDestination(subItem.id))
+                        navController.toDestinationsNavigator()
+                            .navigate(SubsPageDestination(subItem.id))
                     }
                 )
             }
@@ -248,7 +249,8 @@ private fun SubsMenuItem(
                     },
                     onClick = throttle {
                         onExpandedChange(false)
-                        navController.toDestinationsNavigator().navigate(CategoryPageDestination(subItem.id))
+                        navController.toDestinationsNavigator()
+                            .navigate(CategoryPageDestination(subItem.id))
                     }
                 )
             }
@@ -259,10 +261,22 @@ private fun SubsMenuItem(
                     },
                     onClick = throttle {
                         onExpandedChange(false)
-                        navController.toDestinationsNavigator().navigate(GlobalRulePageDestination(subItem.id))
+                        navController.toDestinationsNavigator()
+                            .navigate(GlobalRulePageDestination(subItem.id))
                     }
                 )
             }
+        }
+        subscription?.supportUri?.let { supportUri ->
+            DropdownMenuItem(
+                text = {
+                    Text(text = "问题反馈")
+                },
+                onClick = {
+                    onExpandedChange(false)
+                    context.openUri(supportUri)
+                }
+            )
         }
         DropdownMenuItem(
             text = {
@@ -286,15 +300,17 @@ private fun SubsMenuItem(
                     toast("复制成功")
                 }
             )
-        }
-        subscription?.supportUri?.let { supportUri ->
             DropdownMenuItem(
                 text = {
-                    Text(text = "问题反馈")
+                    Text(text = "修改链接")
                 },
                 onClick = {
                     onExpandedChange(false)
-                    context.openUri(supportUri)
+                    vm.viewModelScope.launchTry {
+                        val newUrl = vm.inputSubsLinkOption.getResult(initValue = it)
+                        newUrl ?: return@launchTry
+                        vm.addOrModifySubs(newUrl, subItem)
+                    }
                 }
             )
         }

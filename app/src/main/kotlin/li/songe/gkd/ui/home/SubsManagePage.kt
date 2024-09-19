@@ -1,7 +1,6 @@
 package li.songe.gkd.ui.home
 
 import android.content.Intent
-import android.webkit.URLUtil
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -32,7 +31,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -77,7 +75,6 @@ import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.UpdateTimeOption
 import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.findOption
-import li.songe.gkd.util.isSafeUrl
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
@@ -111,9 +108,6 @@ fun useSubsManagePage(): ScaffoldExt {
         orderSubItems = subItems
     }
 
-    var showAddLinkDialog by remember { mutableStateOf(false) }
-    var link by remember { mutableStateOf("") }
-
     val refreshing by subsRefreshingFlow.collectAsState()
     val pullRefreshState = rememberPullRefreshState(refreshing, { checkSubsUpdate(true) })
     var isSelectedMode by remember { mutableStateOf(false) }
@@ -133,59 +127,6 @@ fun useSubsManagePage(): ScaffoldExt {
         if (subItems.size <= 1) {
             isSelectedMode = false
         }
-    }
-
-    LaunchedEffect(showAddLinkDialog) {
-        if (!showAddLinkDialog) {
-            link = ""
-        }
-    }
-    if (showAddLinkDialog) {
-        AlertDialog(title = { Text(text = "添加订阅") }, text = {
-            OutlinedTextField(
-                value = link,
-                onValueChange = { link = it.trim() },
-                maxLines = 8,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(text = "请输入订阅链接")
-                },
-                isError = link.isNotEmpty() && !URLUtil.isNetworkUrl(link),
-            )
-        }, onDismissRequest = {
-            if (link.isEmpty()) {
-                showAddLinkDialog = false
-            }
-        }, dismissButton = {
-            TextButton(onClick = {
-                showAddLinkDialog = false
-            }) {
-                Text(text = "取消")
-            }
-        }, confirmButton = {
-            TextButton(enabled = link.isNotBlank(), onClick = {
-                if (!URLUtil.isNetworkUrl(link)) {
-                    toast("非法链接")
-                    return@TextButton
-                }
-                if (subItems.any { s -> s.updateUrl == link }) {
-                    toast("链接已存在")
-                    return@TextButton
-                }
-                vm.viewModelScope.launchTry {
-                    if (!isSafeUrl(link)) {
-                        context.mainVm.dialogFlow.waitResult(
-                            title = "未知来源",
-                            text = "你正在添加一个未验证的远程订阅\n\n这可能含有恶意的规则\n\n是否仍然确认添加?"
-                        )
-                    }
-                    showAddLinkDialog = false
-                    vm.addSubsFromUrl(url = link)
-                }
-            }) {
-                Text(text = "确认")
-            }
-        })
     }
 
     var showSettingsDlg by remember { mutableStateOf(false) }
@@ -212,6 +153,7 @@ fun useSubsManagePage(): ScaffoldExt {
     }
 
     ShareDataDialog(vm)
+    vm.inputSubsLinkOption.ContentDialog()
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     return ScaffoldExt(
@@ -389,7 +331,10 @@ fun useSubsManagePage(): ScaffoldExt {
                         toast("正在刷新订阅,请稍后操作")
                         return@FloatingActionButton
                     }
-                    showAddLinkDialog = true
+                    vm.viewModelScope.launchTry {
+                        val url = vm.inputSubsLinkOption.getResult() ?: return@launchTry
+                        vm.addOrModifySubs(url)
+                    }
                 }) {
                     Icon(
                         imageVector = Icons.Filled.Add,
