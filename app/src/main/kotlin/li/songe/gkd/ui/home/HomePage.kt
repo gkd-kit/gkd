@@ -64,7 +64,7 @@ fun HomePage() {
                 importData(uri)
             }
         } else if (uri.scheme == "gkd" && uri.host == "page") {
-            delay(300)
+            delay(200)
             when (uri.path) {
                 "/1" -> {
                     navController.toDestinationsNavigator().navigate(AdvancedPageDestination)
