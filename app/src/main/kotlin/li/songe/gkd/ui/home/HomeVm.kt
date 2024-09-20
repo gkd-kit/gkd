@@ -18,8 +18,8 @@ import li.songe.gkd.data.SubsItem
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.InputSubsLinkOption
 import li.songe.gkd.util.SortTypeOption
+import li.songe.gkd.util.actionCountFlow
 import li.songe.gkd.util.appInfoCacheFlow
-import li.songe.gkd.util.clickCountFlow
 import li.songe.gkd.util.client
 import li.songe.gkd.util.getSubsStatus
 import li.songe.gkd.util.launchTry
@@ -59,7 +59,7 @@ class HomeVm : ViewModel() {
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val subsStatusFlow by lazy {
-        combine(ruleSummaryFlow, clickCountFlow) { ruleSummary, count ->
+        combine(ruleSummaryFlow, actionCountFlow) { ruleSummary, count ->
             getSubsStatus(ruleSummary, count)
         }.stateIn(appScope, SharingStarted.Eagerly, "")
     }

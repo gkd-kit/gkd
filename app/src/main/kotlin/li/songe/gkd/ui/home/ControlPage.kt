@@ -144,7 +144,7 @@ fun useControlPage(): ScaffoldExt {
 
             SettingItem(
                 title = "触发记录",
-                subtitle = "如误触可在此快速定位关闭规则",
+                subtitle = "如误触可定位关闭规则",
                 onClick = {
                     navController.toDestinationsNavigator().navigate(ClickLogPageDestination)
                 }

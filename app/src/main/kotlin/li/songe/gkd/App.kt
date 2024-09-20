@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.debug.clearHttpSubs
 import li.songe.gkd.notif.initChannel
+import li.songe.gkd.permission.updatePermissionState
 import li.songe.gkd.service.GkdAbService
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.initAppState
@@ -135,6 +136,7 @@ class App : Application() {
             initSubsState()
             initChannel()
             clearHttpSubs()
+            updatePermissionState()
         }
     }
 }

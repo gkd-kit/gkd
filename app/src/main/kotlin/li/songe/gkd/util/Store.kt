@@ -4,7 +4,6 @@ import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -12,9 +11,10 @@ import kotlinx.serialization.encodeToString
 import li.songe.gkd.META
 import li.songe.gkd.appScope
 
-private inline fun <reified T> createStorageFlow(
+private inline fun <reified T> createJsonFlow(
     key: String,
-    crossinline init: () -> T,
+    crossinline default: () -> T,
+    crossinline transform: (T) -> T = { it }
 ): MutableStateFlow<T> {
     val str = kv.getString(key, null)
     val initValue = if (str != null) {
@@ -28,12 +28,26 @@ private inline fun <reified T> createStorageFlow(
     } else {
         null
     }
-    val stateFlow = MutableStateFlow(initValue ?: init())
+    val stateFlow = MutableStateFlow(transform(initValue ?: default()))
     appScope.launch {
         stateFlow.drop(1).collect {
             withContext(Dispatchers.IO) {
                 kv.encode(key, json.encodeToString(it))
             }
+        }
+    }
+    return stateFlow
+}
+
+private fun createLongFlow(
+    key: String,
+    default: Long = 0,
+    transform: (Long) -> Long = { it }
+): MutableStateFlow<Long> {
+    val stateFlow = MutableStateFlow(transform(kv.getLong(key, default)))
+    appScope.launch {
+        stateFlow.drop(1).collect {
+            withContext(Dispatchers.IO) { kv.encode(key, it) }
         }
     }
     return stateFlow
@@ -72,36 +86,46 @@ data class Store(
 )
 
 val storeFlow by lazy {
-    createStorageFlow("store-v2") { Store() }.apply {
-        if (UpdateTimeOption.allSubObject.all { it.value != value.updateSubsInterval }) {
-            update {
+    createJsonFlow(
+        key = "store-v2",
+        default = { Store() },
+        transform = {
+            if (UpdateTimeOption.allSubObject.all { e -> e.value != it.updateSubsInterval }) {
                 it.copy(
                     updateSubsInterval = UpdateTimeOption.Everyday.value
                 )
+            } else {
+                it
             }
         }
-    }
+    )
 }
 
+//@Deprecated("use actionCountFlow instead")
 @Serializable
-data class RecordStore(
+private data class RecordStore(
     val clickCount: Int = 0,
 )
 
-val recordStoreFlow by lazy {
-    createStorageFlow("record_store-v2") { RecordStore() }
+//@Deprecated("use actionCountFlow instead")
+private val recordStoreFlow by lazy {
+    createJsonFlow(
+        key = "record_store-v2",
+        default = { RecordStore() }
+    )
 }
 
-val clickCountFlow by lazy {
-    recordStoreFlow.map(appScope) { r -> r.clickCount }
-}
-
-fun increaseClickCount(n: Int = 1) {
-    recordStoreFlow.update {
-        it.copy(
-            clickCount = it.clickCount + n
-        )
-    }
+val actionCountFlow by lazy {
+    createLongFlow(
+        key = "action_count",
+        transform = {
+            if (it == 0L) {
+                recordStoreFlow.value.clickCount.toLong()
+            } else {
+                it
+            }
+        }
+    )
 }
 
 @Serializable
@@ -110,25 +134,17 @@ data class PrivacyStore(
 )
 
 val privacyStoreFlow by lazy {
-    createStorageFlow("privacy_store") { PrivacyStore() }
-}
-
-private fun createLongFlow(key: String, defaultValue: Long): MutableStateFlow<Long> {
-    val stateFlow = MutableStateFlow(kv.getLong(key, defaultValue))
-    appScope.launch {
-        stateFlow.drop(1).collect {
-            withContext(Dispatchers.IO) { kv.encode(key, it) }
-        }
-    }
-    return stateFlow
+    createJsonFlow(
+        key = "privacy_store",
+        default = { PrivacyStore() }
+    )
 }
 
 val lastRestartA11yServiceTimeFlow by lazy {
-    createLongFlow("last_restart_a11y_service_time", 0)
+    createLongFlow("last_restart_a11y_service_time")
 }
 
 fun initStore() {
     storeFlow.value
-    recordStoreFlow.value
+    actionCountFlow.value
 }
-
