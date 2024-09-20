@@ -16,7 +16,7 @@ import li.songe.gkd.composition.CompositionService
 import li.songe.gkd.notif.abNotif
 import li.songe.gkd.notif.createNotif
 import li.songe.gkd.notif.defaultChannel
-import li.songe.gkd.util.clickCountFlow
+import li.songe.gkd.util.actionCountFlow
 import li.songe.gkd.util.getSubsStatus
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
@@ -31,7 +31,7 @@ class ManageService : CompositionService({
             GkdAbService.isRunning,
             storeFlow,
             ruleSummaryFlow,
-            clickCountFlow,
+            actionCountFlow,
         ) { abRunning, store, ruleSummary, count ->
             if (!abRunning) return@combine "无障碍未授权"
             if (!store.enableMatch) return@combine "暂停规则匹配"

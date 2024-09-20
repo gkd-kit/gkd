@@ -17,10 +17,9 @@ import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.isActivityVisible
 import li.songe.gkd.util.RuleSummary
+import li.songe.gkd.util.actionCountFlow
 import li.songe.gkd.util.getDefaultLauncherAppId
-import li.songe.gkd.util.increaseClickCount
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.recordStoreFlow
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
 
@@ -173,7 +172,7 @@ fun updateLauncherAppId() {
 val clickLogMutex by lazy { Mutex() }
 suspend fun insertClickLog(rule: ResolvedRule) {
     clickLogMutex.withLock {
-        increaseClickCount()
+        actionCountFlow.value++
         val clickLog = ClickLog(
             appId = topActivityFlow.value.appId,
             activityId = topActivityFlow.value.activityId,
@@ -188,7 +187,7 @@ suspend fun insertClickLog(rule: ResolvedRule) {
             ruleKey = rule.key,
         )
         DbSet.clickLogDao.insert(clickLog)
-        if (recordStoreFlow.value.clickCount % 100 == 0) {
+        if (actionCountFlow.value % 100 == 0L) {
             DbSet.clickLogDao.deleteKeepLatest()
         }
     }
