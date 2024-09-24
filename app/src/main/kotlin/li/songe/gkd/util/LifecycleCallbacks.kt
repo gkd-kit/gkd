@@ -43,12 +43,15 @@ interface OnDestroy : CanOnCallback {
 }
 
 interface OnA11yEvent : CanOnCallback {
+    val a11yEventCallbacks: MutableList<(AccessibilityEvent) -> Unit>
+        get() = getCallbacks(6)
+
     fun onA11yEvent(f: (AccessibilityEvent) -> Unit) {
-        getCallbacks<(AccessibilityEvent) -> Unit>(6).add(f)
+        a11yEventCallbacks.add(f)
     }
 
     fun onA11yEvent(event: AccessibilityEvent) {
-        getCallbacks<(AccessibilityEvent) -> Unit>(6).forEach { it(event) }
+        a11yEventCallbacks.forEach { it(event) }
     }
 }
 

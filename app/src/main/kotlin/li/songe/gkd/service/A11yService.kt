@@ -76,6 +76,7 @@ class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA11yEve
         onA11yConnected()
     }
 
+    override val a11yEventCallbacks = mutableListOf<(AccessibilityEvent) -> Unit>()
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null || !event.isUseful()) return
         onA11yEvent(event)
