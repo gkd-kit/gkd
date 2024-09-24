@@ -74,10 +74,8 @@ import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.shizukuOkState
-import li.songe.gkd.shizuku.CommandResult
-import li.songe.gkd.shizuku.newActivityTaskManager
-import li.songe.gkd.shizuku.newUserService
-import li.songe.gkd.shizuku.safeGetTasks
+import li.songe.gkd.shizuku.shizukuCheckActivity
+import li.songe.gkd.shizuku.shizukuCheckUserService
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
@@ -88,7 +86,6 @@ import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.buildLogFile
-import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openUri
@@ -606,29 +603,23 @@ fun AdvancedPage() {
 @Composable
 private fun ShizukuFragment(enabled: Boolean = true) {
     val store by storeFlow.collectAsState()
-    TextSwitch(title = "Shizuku-界面识别",
+    TextSwitch(
+        title = "Shizuku-界面识别",
         subtitle = "更准确识别界面ID",
         checked = store.enableShizukuActivity,
         enabled = enabled,
-        onCheckedChange = { enableShizuku ->
-            if (enableShizuku) {
-                appScope.launchTry(Dispatchers.IO) {
-                    // 校验方法是否适配, 再允许使用 shizuku
-                    val tasks =
-                        newActivityTaskManager()?.safeGetTasks()?.firstOrNull()
-                    if (tasks != null) {
-                        storeFlow.value = store.copy(
-                            enableShizukuActivity = true
-                        )
-                    } else {
-                        toast("Shizuku-界面识别校验失败,无法使用")
-                    }
+        onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {
+            if (it) {
+                toast("检测中")
+                if (!shizukuCheckActivity()) {
+                    toast("检测失败,无法使用")
+                    return@launchAsFn
                 }
-            } else {
-                storeFlow.value = store.copy(
-                    enableShizukuActivity = false
-                )
+                toast("已启用")
             }
+            storeFlow.value = store.copy(
+                enableShizukuActivity = it
+            )
         })
 
     TextSwitch(
@@ -636,23 +627,18 @@ private fun ShizukuFragment(enabled: Boolean = true) {
         subtitle = "变更 clickCenter 为强制模拟点击",
         checked = store.enableShizukuClick,
         enabled = enabled,
-        onCheckedChange = { enableShizuku ->
-            if (enableShizuku) {
-                appScope.launchTry(Dispatchers.IO) {
-                    val service = newUserService()
-                    val result = service.userService.execCommand("input tap 0 0")
-                    service.destroy()
-                    if (json.decodeFromString<CommandResult>(result).code == 0) {
-                        storeFlow.update { it.copy(enableShizukuClick = true) }
-                    } else {
-                        toast("Shizuku-模拟点击校验失败,无法使用")
-                    }
+        onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {
+            if (it) {
+                toast("检测中")
+                if (!shizukuCheckUserService()) {
+                    toast("检测失败,无法使用")
+                    return@launchAsFn
                 }
-            } else {
-                storeFlow.value = store.copy(
-                    enableShizukuClick = false
-                )
+                toast("已启用")
             }
+            storeFlow.value = store.copy(
+                enableShizukuClick = it
+            )
 
         })
 

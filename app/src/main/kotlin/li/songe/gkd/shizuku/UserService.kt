@@ -7,8 +7,10 @@ import androidx.annotation.Keep
 import kotlinx.serialization.encodeToString
 import li.songe.gkd.util.json
 import java.io.DataOutputStream
+import kotlin.system.exitProcess
 
 
+@Suppress("unused")
 class UserService : IUserService.Stub {
     /**
      * Constructor is required.
@@ -22,11 +24,9 @@ class UserService : IUserService.Stub {
         Log.i("UserService", "constructor with Context: context=$context")
     }
 
-    /**
-     * Reserved destroy method
-     */
     override fun destroy() {
         Log.i("UserService", "destroy")
+        exitProcess(0)
     }
 
     override fun exit() {

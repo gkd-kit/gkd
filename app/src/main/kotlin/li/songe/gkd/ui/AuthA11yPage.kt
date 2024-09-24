@@ -261,9 +261,9 @@ private val commandText by lazy { "adb pm grant ${META.appId} android.permission
 private suspend fun MainActivity.grantPermissionByShizuku() {
     if (shizukuOkState.stateFlow.value) {
         try {
-            val service = newPackageManager()
-            if (service != null) {
-                service.grantRuntimePermission(
+            val manager = newPackageManager()
+            if (manager != null) {
+                manager.grantRuntimePermission(
                     META.appId,
                     "android.permission.WRITE_SECURE_SETTINGS",
                     0, // maybe others
