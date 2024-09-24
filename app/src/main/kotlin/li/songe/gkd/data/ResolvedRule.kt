@@ -5,7 +5,7 @@ import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Job
 import li.songe.gkd.META
-import li.songe.gkd.service.GkdAbService
+import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.createCacheTransform
 import li.songe.gkd.service.createNoCacheTransform
 import li.songe.gkd.service.lastTriggerRule
@@ -153,7 +153,7 @@ sealed class ResolvedRule(
             val rootNode = (if (isRootNode) {
                 node
             } else {
-                GkdAbService.service?.safeActiveWindow
+                A11yService.instance?.safeActiveWindow
             }) ?: return null
             rootNode.apply {
                 transform.cache.rootNode = this

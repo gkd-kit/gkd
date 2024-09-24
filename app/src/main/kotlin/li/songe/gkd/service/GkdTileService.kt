@@ -16,7 +16,7 @@ import li.songe.gkd.util.toast
 class GkdTileService : TileService() {
     private fun updateTile(): Boolean {
         val oldState = qsTile.state
-        val newState = if (GkdAbService.isRunning.value) {
+        val newState = if (A11yService.isRunning.value) {
             Tile.STATE_ACTIVE
         } else {
             Tile.STATE_INACTIVE
@@ -93,7 +93,7 @@ fun switchA11yService(): Boolean {
         return false
     }
     val names = getServiceNames()
-    if (GkdAbService.isRunning.value) {
+    if (A11yService.isRunning.value) {
         names.remove(a11yClsName)
         updateServiceNames(names)
         storeFlow.update { it.copy(enableService = false) }
@@ -116,7 +116,7 @@ fun fixRestartService(): Boolean {
     // 1. 服务没有运行
     // 2. 用户配置开启了服务
     // 3. 有写入系统设置权限
-    if (!GkdAbService.isRunning.value && storeFlow.value.enableService && writeSecureSettingsState.updateAndGet()) {
+    if (!A11yService.isRunning.value && storeFlow.value.enableService && writeSecureSettingsState.updateAndGet()) {
         val t = System.currentTimeMillis()
         if (t - lastRestartA11yServiceTimeFlow.value < 10_000) return false
         lastRestartA11yServiceTimeFlow.value = t
@@ -136,5 +136,5 @@ fun fixRestartService(): Boolean {
 }
 
 private val a11yClsName by lazy {
-    ComponentName(app, GkdAbService::class.java).flattenToShortString()
+    ComponentName(app, A11yService::class.java).flattenToShortString()
 }

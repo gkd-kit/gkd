@@ -42,7 +42,7 @@ import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.permission.writeSecureSettingsState
-import li.songe.gkd.service.GkdAbService
+import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.shizuku.newPackageManager
 import li.songe.gkd.ui.component.updateDialogOptions
@@ -66,7 +66,7 @@ fun AuthA11yPage() {
     val vm = viewModel<AuthA11yVm>()
     val showCopyDlg by vm.showCopyDlgFlow.collectAsState()
     val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
-    val a11yRunning by GkdAbService.isRunning.collectAsState()
+    val a11yRunning by A11yService.isRunning.collectAsState()
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {

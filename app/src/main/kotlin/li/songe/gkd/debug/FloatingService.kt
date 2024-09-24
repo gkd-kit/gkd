@@ -12,23 +12,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.torrydo.floatingbubbleview.FloatingBubbleListener
 import com.torrydo.floatingbubbleview.service.expandable.BubbleBuilder
-import kotlinx.coroutines.Dispatchers
+import com.torrydo.floatingbubbleview.service.expandable.ExpandableBubbleService
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.app
 import li.songe.gkd.appScope
-import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
-import li.songe.gkd.composition.CompositionFbService
 import li.songe.gkd.data.Tuple3
 import li.songe.gkd.notif.createNotif
 import li.songe.gkd.notif.floatingChannel
 import li.songe.gkd.notif.floatingNotif
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.toast
 import kotlin.math.sqrt
 
-class FloatingService : CompositionFbService({
-    useLifeCycleLog()
-    configBubble { resolve ->
+class FloatingService : ExpandableBubbleService() {
+    override fun configExpandedBubble() = null
+
+    override fun onCreate() {
+        super.onCreate()
+        isRunning.value = true
+        minimize()
+    }
+
+    override fun configBubble(): BubbleBuilder {
         val builder = BubbleBuilder(this).bubbleCompose {
             Icon(
                 imageVector = Icons.Default.CenterFocusWeak,
@@ -64,29 +68,23 @@ class FloatingService : CompositionFbService({
             override fun onFingerUp(x: Float, y: Float) {
                 if (System.currentTimeMillis() - fingerDownData.t0 < ViewConfiguration.getTapTimeout()) {
                     // is onClick
-                    appScope.launchTry(Dispatchers.IO) {
+                    appScope.launchTry {
                         SnapshotExt.captureSnapshot()
-                        toast("快照成功")
                     }
                 }
             }
         })
-        resolve(builder)
+        return builder
     }
 
-    isRunning.value = true
-    onDestroy {
-        isRunning.value = false
-    }
-}) {
-
-    override fun onCreate() {
-        super.onCreate()
-        minimize()
-    }
 
     override fun startNotificationForeground() {
         createNotif(this, floatingChannel.id, floatingNotif)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        isRunning.value = false
     }
 
     companion object {

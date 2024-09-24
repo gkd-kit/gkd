@@ -83,7 +83,7 @@ fun AccessibilityNodeInfo.querySelector(
         val root = if (isRootNode) {
             return this
         } else {
-            GkdAbService.service?.safeActiveWindow ?: return null
+            A11yService.instance?.safeActiveWindow ?: return null
         }
         return selector.match(root, transform, option)
     }
@@ -266,7 +266,7 @@ class NodeCache {
 
     fun getRoot(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
         if (rootNode == null) {
-            rootNode = GkdAbService.service?.safeActiveWindow
+            rootNode = A11yService.instance?.safeActiveWindow
         }
         if (node == rootNode) return null
         return rootNode

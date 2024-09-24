@@ -18,7 +18,7 @@ import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.createComplexSnapshot
 import li.songe.gkd.data.toSnapshot
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.service.GkdAbService
+import li.songe.gkd.service.A11yService
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.keepNullJson
 import li.songe.gkd.util.snapshotFolder
@@ -82,7 +82,7 @@ object SnapshotExt {
     private val captureLoading = MutableStateFlow(false)
 
     suspend fun captureSnapshot(skipScreenshot: Boolean = false): ComplexSnapshot {
-        if (!GkdAbService.isRunning.value) {
+        if (!A11yService.isRunning.value) {
             throw RpcError("无障碍不可用")
         }
         if (captureLoading.value) {
@@ -105,7 +105,7 @@ object SnapshotExt {
                             Bitmap.Config.ARGB_8888
                         )
                     } else {
-                        GkdAbService.currentScreenshot() ?: withTimeoutOrNull(3_000) {
+                        A11yService.currentScreenshot() ?: withTimeoutOrNull(3_000) {
                             if (!ScreenshotService.isRunning.value) {
                                 return@withTimeoutOrNull null
                             }
@@ -141,7 +141,7 @@ object SnapshotExt {
                 File(getSnapshotPath(snapshot.id)).writeText(text)
                 DbSet.snapshotDao.insert(snapshot.toSnapshot())
             }
-            toast("快照捕获成功")
+            toast("快照成功")
             return snapshot
         } finally {
             captureLoading.value = false

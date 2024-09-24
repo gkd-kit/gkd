@@ -11,11 +11,8 @@ import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.updateAndGet
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.app
 import li.songe.gkd.appScope
-import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.shizuku.newActivityTaskManager
 import li.songe.gkd.shizuku.safeGetTasks
 import li.songe.gkd.shizuku.shizukuIsSafeOK
@@ -175,23 +172,17 @@ val shizukuOkState by lazy {
     )
 }
 
-private val checkAuthMutex by lazy { Mutex() }
 suspend fun updatePermissionState() {
-    if (checkAuthMutex.isLocked) return
-    checkAuthMutex.withLock {
-        arrayOf(
-            notificationState,
-            canDrawOverlaysState,
-            canWriteExternalStorage,
-        ).forEach { it.updateAndGet() }
-        if (canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet()) {
-            appScope.launchTry {
-                initOrResetAppInfoCache()
-            }
+    arrayOf(
+        notificationState,
+        canDrawOverlaysState,
+        canWriteExternalStorage,
+        writeSecureSettingsState,
+        shizukuOkState,
+    ).forEach { it.updateAndGet() }
+    if (canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet()) {
+        appScope.launchTry {
+            initOrResetAppInfoCache()
         }
-        if (writeSecureSettingsState.stateFlow.value != writeSecureSettingsState.updateAndGet()) {
-            fixRestartService()
-        }
-        shizukuOkState.updateAndGet()
     }
 }

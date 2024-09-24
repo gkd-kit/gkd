@@ -3,6 +3,7 @@ package li.songe.gkd
 import android.app.Activity
 import android.app.ActivityManager
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
@@ -23,7 +24,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.blankj.utilcode.util.BarUtils
-import com.blankj.utilcode.util.ServiceUtils
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
@@ -32,12 +32,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.debug.FloatingService
 import li.songe.gkd.debug.HttpService
 import li.songe.gkd.debug.ScreenshotService
 import li.songe.gkd.permission.AuthDialog
 import li.songe.gkd.permission.updatePermissionState
-import li.songe.gkd.service.GkdAbService
+import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.service.updateLauncherAppId
@@ -52,6 +54,7 @@ import li.songe.gkd.util.map
 import li.songe.gkd.util.openApp
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.storeFlow
+import kotlin.reflect.KClass
 
 class MainActivity : ComponentActivity() {
     val mainVm by viewModels<MainViewModel>()
@@ -63,7 +66,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         fixTopPadding()
         super.onCreate(savedInstanceState)
-
+        mainVm
+        launcher
+        pickContentLauncher
+        ManageService.autoStart()
         lifecycleScope.launch {
             storeFlow.map(lifecycleScope) { s -> s.excludeFromRecents }.collect {
                 (app.getSystemService(ACTIVITY_SERVICE) as ActivityManager).let { manager ->
@@ -73,12 +79,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-
-        mainVm
-        launcher
-        pickContentLauncher
-        ManageService.autoStart(this)
-
         setContent {
             val navController = rememberNavController()
             AppTheme {
@@ -102,26 +102,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-
-        // 每次切换页面更新记录桌面 appId
-        appScope.launchTry(Dispatchers.IO) {
-            updateLauncherAppId()
-        }
-
-        // 在某些机型由于未知原因创建失败, 在此保证每次界面切换都能重新检测创建
-        appScope.launchTry(Dispatchers.IO) {
-            initFolder()
-        }
-
-        // 用户在系统权限设置中切换权限后再切换回应用时能及时更新状态
-        appScope.launchTry(Dispatchers.IO) {
-            updatePermissionState()
-        }
-
-        // 由于某些机型的进程存在 安装缓存/崩溃缓存 导致服务状态可能不正确, 在此保证每次界面切换都能重新刷新状态
-        appScope.launchTry(Dispatchers.IO) {
-            updateServiceRunning()
-        }
+        syncFixState()
     }
 
     override fun onStart() {
@@ -162,14 +143,45 @@ fun Activity.navToMainActivity() {
     finish()
 }
 
-
+@Suppress("DEPRECATION")
 private fun updateServiceRunning() {
-    ManageService.isRunning.value = ServiceUtils.isServiceRunning(ManageService::class.java)
-    GkdAbService.isRunning.value = ServiceUtils.isServiceRunning(GkdAbService::class.java)
-    FloatingService.isRunning.value = ServiceUtils.isServiceRunning(FloatingService::class.java)
-    ScreenshotService.isRunning.value = ServiceUtils.isServiceRunning(ScreenshotService::class.java)
-    HttpService.isRunning.value = ServiceUtils.isServiceRunning(HttpService::class.java)
-    fixRestartService()
+    val list = try {
+        val manager = app.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        manager.getRunningServices(Int.MAX_VALUE) ?: emptyList()
+    } catch (_: Exception) {
+        emptyList()
+    }
+
+    fun checkRunning(cls: KClass<*>): Boolean {
+        return list.any { it.service.className == cls.java.name }
+    }
+    ManageService.isRunning.value = checkRunning(ManageService::class)
+    A11yService.isRunning.value = checkRunning(A11yService::class)
+    FloatingService.isRunning.value = checkRunning(FloatingService::class)
+    ScreenshotService.isRunning.value = checkRunning(ScreenshotService::class)
+    HttpService.isRunning.value = checkRunning(HttpService::class)
+}
+
+private val syncStateMutex = Mutex()
+fun syncFixState() {
+    appScope.launchTry(Dispatchers.IO) {
+        syncStateMutex.withLock {
+            // 每次切换页面更新记录桌面 appId
+            updateLauncherAppId()
+
+            // 在某些机型由于未知原因创建失败, 在此保证每次界面切换都能重新检测创建
+            initFolder()
+
+            // 由于某些机型的进程存在 安装缓存/崩溃缓存 导致服务状态可能不正确, 在此保证每次界面切换都能重新刷新状态
+            updateServiceRunning()
+
+            // 用户在系统权限设置中切换权限后再切换回应用时能及时更新状态
+            updatePermissionState()
+
+            // 自动重启无障碍服务
+            fixRestartService()
+        }
+    }
 }
 
 private fun Activity.fixTopPadding() {

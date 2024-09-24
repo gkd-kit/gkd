@@ -1,39 +1,46 @@
 package li.songe.gkd.debug
 
 import android.annotation.SuppressLint
+import android.app.Service
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.app
-import li.songe.gkd.composition.CompositionExt.useLifeCycleLog
-import li.songe.gkd.composition.CompositionService
 import li.songe.gkd.notif.createNotif
 import li.songe.gkd.notif.screenshotChannel
 import li.songe.gkd.notif.screenshotNotif
 import li.songe.gkd.util.ScreenshotUtil
 
-class ScreenshotService : CompositionService({
-    useLifeCycleLog()
-    createNotif(this, screenshotChannel.id, screenshotNotif)
+class ScreenshotService : Service() {
+    override fun onBind(intent: Intent?) = null
 
-    onStartCommand { intent, _, _ ->
-        if (intent == null) return@onStartCommand
-        screenshotUtil?.destroy()
-        screenshotUtil = ScreenshotUtil(this, intent)
-        LogUtils.d("screenshot restart")
+    override fun onCreate() {
+        super.onCreate()
+        isRunning.value = true
+        createNotif(this, screenshotChannel.id, screenshotNotif)
     }
-    onDestroy {
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        try {
+            return super.onStartCommand(intent, flags, startId)
+        } finally {
+            intent?.let {
+                screenshotUtil?.destroy()
+                screenshotUtil = ScreenshotUtil(this, intent)
+                LogUtils.d("screenshot restart")
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        isRunning.value = false
         screenshotUtil?.destroy()
         screenshotUtil = null
     }
 
-    isRunning.value = true
-    onDestroy {
-        isRunning.value = false
-    }
-}) {
     companion object {
         suspend fun screenshot() = screenshotUtil?.execute()
 
