@@ -249,7 +249,6 @@ fun safeTap(x: Float, y: Float): Boolean? {
 private fun IUserService.execCommandForResult(command: String): Boolean? {
     return try {
         val result = execCommand(command)
-        LogUtils.d("safeTap", result)
         if (result != null) {
             json.decodeFromString<CommandResult>(result).code == 0
         } else {
