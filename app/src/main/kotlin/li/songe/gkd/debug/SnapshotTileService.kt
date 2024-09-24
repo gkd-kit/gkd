@@ -7,9 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import li.songe.gkd.appScope
 import li.songe.gkd.debug.SnapshotExt.captureSnapshot
-import li.songe.gkd.service.GkdAbService
-import li.songe.gkd.service.GkdAbService.Companion.eventExecutor
-import li.songe.gkd.service.GkdAbService.Companion.shizukuTopActivityGetter
+import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.TopActivity
 import li.songe.gkd.service.getAndUpdateCurrentRules
 import li.songe.gkd.service.safeActiveWindow
@@ -21,7 +19,7 @@ class SnapshotTileService : TileService() {
     override fun onClick() {
         super.onClick()
         LogUtils.d("SnapshotTileService::onClick")
-        val service = GkdAbService.service
+        val service = A11yService.instance
         if (service == null) {
             toast("无障碍没有开启")
             return
@@ -47,9 +45,11 @@ class SnapshotTileService : TileService() {
                     }
                 } else if (latestAppId != oldAppId) {
                     LogUtils.d("SnapshotTileService::eventExecutor.execute")
-                    eventExecutor.execute {
+                    A11yService.eventExecutor.execute {
                         updateTopActivity(
-                            shizukuTopActivityGetter?.invoke() ?: TopActivity(appId = latestAppId)
+                            A11yService.instance?.getShizukuTopActivity?.invoke() ?: TopActivity(
+                                appId = latestAppId
+                            )
                         )
                         getAndUpdateCurrentRules()
                         appScope.launchTry(Dispatchers.IO) {

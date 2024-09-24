@@ -21,8 +21,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.debug.clearHttpSubs
 import li.songe.gkd.notif.initChannel
-import li.songe.gkd.permission.updatePermissionState
-import li.songe.gkd.service.GkdAbService
+import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.service.A11yService
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initFolder
@@ -31,6 +31,7 @@ import li.songe.gkd.util.initSubsState
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.setReactiveToastStyle
 import org.lsposed.hiddenapibypass.HiddenApiBypass
+import rikka.shizuku.Shizuku
 
 
 val appScope by lazy { MainScope() }
@@ -130,13 +131,21 @@ class App : Application() {
                 }
             }
         )
+        Shizuku.addBinderReceivedListener {
+            appScope.launchTry(Dispatchers.IO) {
+                shizukuOkState.updateAndGet()
+            }
+        }
+        Shizuku.addBinderDeadListener {
+            shizukuOkState.stateFlow.value = false
+        }
         appScope.launchTry(Dispatchers.IO) {
             initStore()
             initAppState()
             initSubsState()
             initChannel()
             clearHttpSubs()
-            updatePermissionState()
+            syncFixState()
         }
     }
 }
@@ -154,7 +163,7 @@ private fun getA11yServiceEnabled(): Boolean {
     if (value.isNullOrEmpty()) return false
     val colonSplitter = TextUtils.SimpleStringSplitter(':')
     colonSplitter.setString(value)
-    val name = ComponentName(app, GkdAbService::class.java)
+    val name = ComponentName(app, A11yService::class.java)
     while (colonSplitter.hasNext()) {
         if (ComponentName.unflattenFromString(colonSplitter.next()) == name) {
             return true

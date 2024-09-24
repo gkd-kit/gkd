@@ -20,8 +20,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.META
 import li.songe.gkd.app
-import li.songe.gkd.composition.CanOnDestroy
 import li.songe.gkd.data.DeviceInfo
+import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.util.json
 import li.songe.gkd.util.map
 import li.songe.gkd.util.toast
@@ -119,30 +119,15 @@ fun IActivityTaskManager.safeGetTasks(log: Boolean = true): List<ActivityManager
 //    return service.let(::ShizukuBinderWrapper).let(IInputManager.Stub::asInterface)
 //}
 
-
-fun CanOnDestroy.useShizukuAliveState(): StateFlow<Boolean> {
-    val shizukuAliveFlow = MutableStateFlow(Shizuku.pingBinder())
-    val receivedListener = Shizuku.OnBinderReceivedListener { shizukuAliveFlow.value = true }
-    val deadListener = Shizuku.OnBinderDeadListener { shizukuAliveFlow.value = false }
-    Shizuku.addBinderReceivedListener(receivedListener)
-    Shizuku.addBinderDeadListener(deadListener)
-    onDestroy {
-        Shizuku.removeBinderReceivedListener(receivedListener)
-        Shizuku.removeBinderDeadListener(deadListener)
-    }
-    return shizukuAliveFlow
-}
-
 fun getShizukuCanUsedFlow(
     scope: CoroutineScope,
-    shizukuGrantFlow: StateFlow<Boolean>,
-    shizukuAliveFlow: StateFlow<Boolean>,
-    shizukuEnableFlow: StateFlow<Boolean>,
+    enableFlow: StateFlow<Boolean>,
 ): StateFlow<Boolean> {
     return combine(
-        shizukuAliveFlow, shizukuGrantFlow, shizukuEnableFlow
-    ) { shizukuAlive, shizukuGrant, enableShizuku ->
-        enableShizuku && shizukuAlive && shizukuGrant
+        shizukuOkState.stateFlow,
+        enableFlow
+    ) { shizukuOk, enableShizuku ->
+        shizukuOk && enableShizuku
     }.stateIn(scope, SharingStarted.Eagerly, false)
 }
 

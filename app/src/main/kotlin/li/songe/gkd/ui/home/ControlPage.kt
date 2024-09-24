@@ -37,7 +37,7 @@ import li.songe.gkd.a11yServiceEnabledFlow
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.writeSecureSettingsState
-import li.songe.gkd.service.GkdAbService
+import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.service.switchA11yService
 import li.songe.gkd.ui.component.AuthCard
@@ -93,7 +93,7 @@ fun useControlPage(): ScaffoldExt {
         val store by storeFlow.collectAsState()
         val ruleSummary by ruleSummaryFlow.collectAsState()
 
-        val a11yRunning by GkdAbService.isRunning.collectAsState()
+        val a11yRunning by A11yService.isRunning.collectAsState()
         val manageRunning by ManageService.isRunning.collectAsState()
         val a11yServiceEnabled by a11yServiceEnabledFlow.collectAsState()
 
@@ -133,12 +133,12 @@ fun useControlPage(): ScaffoldExt {
                         storeFlow.value = store.copy(
                             enableStatusService = true
                         )
-                        ManageService.start(context)
+                        ManageService.start()
                     } else {
                         storeFlow.value = store.copy(
                             enableStatusService = false
                         )
-                        ManageService.stop(context)
+                        ManageService.stop()
                     }
                 })
 

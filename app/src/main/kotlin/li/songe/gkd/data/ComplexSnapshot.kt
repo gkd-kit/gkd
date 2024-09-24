@@ -3,7 +3,7 @@ package li.songe.gkd.data
 import com.blankj.utilcode.util.ScreenUtils
 import kotlinx.serialization.Serializable
 import li.songe.gkd.app
-import li.songe.gkd.service.GkdAbService
+import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.getAndUpdateCurrentRules
 import li.songe.gkd.service.safeActiveWindow
 
@@ -34,7 +34,7 @@ data class ComplexSnapshot(
 
 
 fun createComplexSnapshot(): ComplexSnapshot {
-    val currentAbNode = GkdAbService.service?.safeActiveWindow
+    val currentAbNode = A11yService.instance?.safeActiveWindow
     val appId = currentAbNode?.packageName?.toString()
     val currentActivityId = getAndUpdateCurrentRules().topActivity.activityId
 

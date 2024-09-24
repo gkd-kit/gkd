@@ -43,7 +43,7 @@ import li.songe.gkd.debug.SnapshotExt.captureSnapshot
 import li.songe.gkd.notif.createNotif
 import li.songe.gkd.notif.httpChannel
 import li.songe.gkd.notif.httpNotif
-import li.songe.gkd.service.GkdAbService
+import li.songe.gkd.service.A11yService
 import li.songe.gkd.util.LOCAL_HTTP_SUBS_ID
 import li.songe.gkd.util.SERVER_SCRIPT_URL
 import li.songe.gkd.util.getIpAddressInLocalNetwork
@@ -58,7 +58,7 @@ import java.io.File
 
 
 class HttpService : Service() {
-    private val scope = CoroutineScope(Dispatchers.IO)
+    private val scope = CoroutineScope(Dispatchers.Default)
 
     private var server: CIOApplicationEngine? = null
     override fun onCreate() {
@@ -236,11 +236,11 @@ private fun createServer(port: Int): CIOApplicationEngine {
                     call.respond(RpcOk())
                 }
                 post("/execSelector") {
-                    if (!GkdAbService.isRunning.value) {
+                    if (!A11yService.isRunning.value) {
                         throw RpcError("无障碍没有运行")
                     }
                     val gkdAction = call.receive<GkdAction>()
-                    call.respond(GkdAbService.execAction(gkdAction))
+                    call.respond(A11yService.execAction(gkdAction))
                 }
             }
         }

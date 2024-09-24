@@ -114,7 +114,7 @@
         </provider>
 
         <service
-            android:name=".service.GkdAbService"
+            android:name=".service.A11yService"
             android:exported="false"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
