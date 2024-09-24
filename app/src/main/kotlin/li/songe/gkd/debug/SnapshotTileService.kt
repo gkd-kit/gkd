@@ -12,6 +12,7 @@ import li.songe.gkd.service.TopActivity
 import li.songe.gkd.service.getAndUpdateCurrentRules
 import li.songe.gkd.service.safeActiveWindow
 import li.songe.gkd.service.updateTopActivity
+import li.songe.gkd.shizuku.safeGetTopActivity
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.toast
 
@@ -46,11 +47,8 @@ class SnapshotTileService : TileService() {
                 } else if (latestAppId != oldAppId) {
                     LogUtils.d("SnapshotTileService::eventExecutor.execute")
                     A11yService.eventExecutor.execute {
-                        updateTopActivity(
-                            A11yService.instance?.getShizukuTopActivity?.invoke() ?: TopActivity(
-                                appId = latestAppId
-                            )
-                        )
+                        val topActivity = safeGetTopActivity() ?: TopActivity(appId = latestAppId)
+                        updateTopActivity(topActivity)
                         getAndUpdateCurrentRules()
                         appScope.launchTry(Dispatchers.IO) {
                             captureSnapshot()

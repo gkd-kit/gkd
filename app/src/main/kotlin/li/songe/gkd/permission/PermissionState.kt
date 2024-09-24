@@ -13,9 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.updateAndGet
 import li.songe.gkd.app
 import li.songe.gkd.appScope
-import li.songe.gkd.shizuku.newActivityTaskManager
-import li.songe.gkd.shizuku.safeGetTasks
-import li.songe.gkd.shizuku.shizukuIsSafeOK
+import li.songe.gkd.shizuku.shizukuCheckGranted
 import li.songe.gkd.util.initOrResetAppInfoCache
 import li.songe.gkd.util.launchTry
 import kotlin.coroutines.resume
@@ -161,14 +159,7 @@ val writeSecureSettingsState by lazy {
 
 val shizukuOkState by lazy {
     PermissionState(
-        check = {
-            shizukuIsSafeOK() && (try {
-                // 打开 shizuku 点击右上角停止, 此时 shizukuIsSafeOK() == true, 因此需要二次检查状态
-                newActivityTaskManager()?.safeGetTasks(log = false)?.isNotEmpty() == true
-            } catch (e: Exception) {
-                false
-            })
-        },
+        check = { shizukuCheckGranted() },
     )
 }
 

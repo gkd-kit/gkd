@@ -44,9 +44,8 @@ import li.songe.gkd.data.RuleStatus
 import li.songe.gkd.data.clearNodeCache
 import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.permission.shizukuOkState
-import li.songe.gkd.shizuku.getShizukuCanUsedFlow
-import li.songe.gkd.shizuku.useSafeGetTasksFc
-import li.songe.gkd.shizuku.useSafeInputTapFc
+import li.songe.gkd.shizuku.safeGetTopActivity
+import li.songe.gkd.shizuku.serviceWrapperFlow
 import li.songe.gkd.util.OnA11yConnected
 import li.songe.gkd.util.OnA11yEvent
 import li.songe.gkd.util.OnCreate
@@ -90,8 +89,6 @@ class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA11yEve
     }
 
     val scope = CoroutineScope(Dispatchers.Default)
-    val getShizukuTopActivity by lazy { useGetShizukuActivity() }
-    val getShizukuClick by lazy { useGetShizukuClick() }
 
     init {
         useRunningState()
@@ -101,8 +98,7 @@ class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA11yEve
         useAutoUpdateSubs()
         useRuleChangedLog()
         useAutoCheckShizuku()
-        getShizukuTopActivity
-        getShizukuClick
+        serviceWrapperFlow
         useMatchRule()
     }
 
@@ -140,7 +136,7 @@ class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA11yEve
 
             return ActionPerformer
                 .getAction(gkdAction.action)
-                .perform(serviceVal, targetNode, gkdAction.position, instance?.getShizukuClick)
+                .perform(serviceVal, targetNode, gkdAction.position)
         }
 
 
@@ -241,7 +237,7 @@ private fun A11yService.useMatchRule() {
                 if (topActivityFlow.value.appId != rightAppId || (!matchApp && rule is AppRule)) {
                     A11yService.eventExecutor.execute {
                         if (topActivityFlow.value.appId != rightAppId) {
-                            val shizukuTop = getShizukuTopActivity()
+                            val shizukuTop = safeGetTopActivity()
                             if (shizukuTop?.appId == rightAppId) {
                                 updateTopActivity(shizukuTop)
                             } else {
@@ -270,7 +266,7 @@ private fun A11yService.useMatchRule() {
                     continue
                 }
                 if (rule.status != RuleStatus.StatusOk) break
-                val actionResult = rule.performAction(context, target, getShizukuClick)
+                val actionResult = rule.performAction(context, target)
                 if (actionResult.result) {
                     rule.trigger()
                     scope.launch(A11yService.actionThread) {
@@ -356,7 +352,7 @@ private fun A11yService.useMatchRule() {
                     }
                 } else {
                     if (storeFlow.value.enableShizukuActivity && fixedEvent.time - lastTriggerShizukuTime > 300) {
-                        val shizukuTop = getShizukuTopActivity()
+                        val shizukuTop = safeGetTopActivity()
                         if (shizukuTop != null && shizukuTop.appId == rightAppId) {
                             if (shizukuTop.activityId == evActivityId) {
                                 updateTopActivity(
@@ -373,7 +369,7 @@ private fun A11yService.useMatchRule() {
             }
             if (rightAppId != topActivityFlow.value.appId) {
                 // 从 锁屏,下拉通知栏 返回等情况, 应用不会发送事件, 但是系统组件会发送事件
-                val shizukuTop = getShizukuTopActivity()
+                val shizukuTop = safeGetTopActivity()
                 if (shizukuTop?.appId == rightAppId) {
                     updateTopActivity(shizukuTop)
                 } else {
@@ -427,26 +423,6 @@ private fun A11yService.useRunningState() {
         A11yService.weakInstance = WeakReference(null)
         A11yService.isRunning.value = false
     }
-}
-
-private fun A11yService.useGetShizukuActivity(): () -> TopActivity? {
-    val enableShizukuActivityFlow = storeFlow.map(scope) { s -> s.enableShizukuActivity }
-    val shizukuActivityUsedFlow = getShizukuCanUsedFlow(scope, enableShizukuActivityFlow)
-    val safeGetTasksFc by lazy { useSafeGetTasksFc(scope, shizukuActivityUsedFlow) }
-    // 当锁屏/下拉通知栏时, safeActiveWindow 没有 activityId, 但是此时 shizuku 获取到是前台 app 的 appId 和 activityId
-    return fun(): TopActivity? {
-        if (!storeFlow.value.enableShizukuActivity) return null
-        // 平均耗时 5 ms
-        val top = safeGetTasksFc()?.lastOrNull()?.topActivity ?: return null
-        return TopActivity(appId = top.packageName, activityId = top.className)
-    }
-}
-
-private fun A11yService.useGetShizukuClick(): (Float, Float) -> Boolean? {
-    val shizukuClickUsedFlow =
-        getShizukuCanUsedFlow(scope, storeFlow.map(scope) { s -> s.enableShizukuClick })
-    val safeInjectClickEventFc = useSafeInputTapFc(scope, shizukuClickUsedFlow)
-    return safeInjectClickEventFc
 }
 
 private fun A11yService.useAutoCheckShizuku() {

@@ -10,7 +10,6 @@ import android.content.pm.PackageManager
 import android.os.IBinder
 import android.view.Display
 import com.blankj.utilcode.util.LogUtils
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,10 +19,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.META
 import li.songe.gkd.app
+import li.songe.gkd.appScope
 import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.service.TopActivity
 import li.songe.gkd.util.json
-import li.songe.gkd.util.map
+import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
@@ -33,12 +34,25 @@ import kotlin.coroutines.suspendCoroutine
 import kotlin.reflect.full.declaredMemberFunctions
 import kotlin.reflect.typeOf
 
-fun shizukuIsSafeOK(): Boolean {
-    return try {
+fun shizukuCheckGranted(): Boolean {
+    val granted = try {
         Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
     } catch (e: Exception) {
         false
     }
+    if (!granted) return false
+    if (storeFlow.value.enableShizukuActivity) {
+        return safeGetTopActivity() != null || shizukuCheckActivity()
+    }
+    return true
+}
+
+fun shizukuCheckActivity(): Boolean {
+    return (try {
+        newActivityTaskManager()?.safeGetTasks(log = false)?.isNotEmpty() == true
+    } catch (e: Exception) {
+        false
+    })
 }
 
 /**
@@ -48,7 +62,7 @@ fun shizukuIsSafeOK(): Boolean {
 // Context.ACTIVITY_TASK_SERVICE
 private const val ACTIVITY_TASK_SERVICE = "activity_task"
 
-fun newActivityTaskManager(): IActivityTaskManager? {
+private fun newActivityTaskManager(): IActivityTaskManager? {
     val service = SystemServiceHelper.getSystemService(ACTIVITY_TASK_SERVICE)
     if (service == null) {
         LogUtils.d("shizuku 无法获取 $ACTIVITY_TASK_SERVICE")
@@ -57,13 +71,19 @@ fun newActivityTaskManager(): IActivityTaskManager? {
     return service.let(::ShizukuBinderWrapper).let(IActivityTaskManager.Stub::asInterface)
 }
 
-fun newPackageManager(): IPackageManager? {
-    val service = SystemServiceHelper.getSystemService("package")
-    if (service == null) {
-        LogUtils.d("shizuku 无法获取 package")
-        return null
+private val shizukuActivityUsedFlow by lazy {
+    combine(shizukuOkState.stateFlow, storeFlow) { shizukuOk, store ->
+        shizukuOk && store.enableShizukuActivity
+    }.stateIn(appScope, SharingStarted.Eagerly, false)
+}
+private val taskManagerFlow by lazy<StateFlow<IActivityTaskManager?>> {
+    val stateFlow = MutableStateFlow<IActivityTaskManager?>(null)
+    appScope.launch(Dispatchers.IO) {
+        shizukuActivityUsedFlow.collect {
+            stateFlow.value = if (it) newActivityTaskManager() else null
+        }
     }
-    return service.let(::ShizukuBinderWrapper).let(IPackageManager.Stub::asInterface)
+    stateFlow
 }
 
 /**
@@ -73,8 +93,7 @@ fun newPackageManager(): IPackageManager? {
  * 4: (int, boolean, boolean, int) -> List<Task>
  */
 private var getTasksFcType: Int? = null
-
-fun IActivityTaskManager.safeGetTasks(log: Boolean = true): List<ActivityManager.RunningTaskInfo>? {
+private fun IActivityTaskManager.safeGetTasks(log: Boolean = true): List<ActivityManager.RunningTaskInfo>? {
     if (getTasksFcType == null) {
         val fcs = this::class.declaredMemberFunctions
         val parameters = fcs.find { d -> d.name == "getTasks" }?.parameters
@@ -110,118 +129,26 @@ fun IActivityTaskManager.safeGetTasks(log: Boolean = true): List<ActivityManager
     }
 }
 
-//fun newInputManager(): IInputManager? {
-//    val service = SystemServiceHelper.getSystemService(Context.INPUT_SERVICE)
-//    if (service == null) {
-//        LogUtils.d("shizuku 无法获取 " + Context.INPUT_SERVICE)
-//        return null
-//    }
-//    return service.let(::ShizukuBinderWrapper).let(IInputManager.Stub::asInterface)
-//}
-
-fun getShizukuCanUsedFlow(
-    scope: CoroutineScope,
-    enableFlow: StateFlow<Boolean>,
-): StateFlow<Boolean> {
-    return combine(
-        shizukuOkState.stateFlow,
-        enableFlow
-    ) { shizukuOk, enableShizuku ->
-        shizukuOk && enableShizuku
-    }.stateIn(scope, SharingStarted.Eagerly, false)
-}
-
-fun useSafeGetTasksFc(
-    scope: CoroutineScope,
-    shizukuCanUsedFlow: StateFlow<Boolean>,
-): () -> List<ActivityManager.RunningTaskInfo>? {
-    val activityTaskManagerFlow =
-        shizukuCanUsedFlow.map(scope) { if (it) newActivityTaskManager() else null }
-    return {
-        if (shizukuCanUsedFlow.value) {
-            // 避免直接访问方法校验 android.app.IActivityTaskManager 类型
-            // 报错 java.lang.ClassNotFoundException:Didn't find class "android.app.IActivityTaskManager" on path: DexPathList
-            activityTaskManagerFlow.value?.safeGetTasks()
-        } else {
-            null
-        }
+fun safeGetTopActivity(): TopActivity? {
+    if (!shizukuActivityUsedFlow.value) return null
+    try {
+        // 避免直接访问方法校验 android.app.IActivityTaskManager 类型
+        // 否则某些机型会报错 java.lang.ClassNotFoundException:Didn't find class "android.app.IActivityTaskManager" on path: DexPathList
+        val taskManager = taskManagerFlow.value ?: return null
+        val top = taskManager.safeGetTasks()?.lastOrNull()?.topActivity ?: return null
+        return TopActivity(appId = top.packageName, activityId = top.className)
+    } catch (e: Exception) {
+        return null
     }
 }
 
-//fun IInputManager.safeClick(x: Float, y: Float): Boolean? {
-//    // 模拟 abd shell input tap x y 传递的 pressure
-//    // 下面除了 pressure 的常量来自 MotionEvent obtain 方法
-//    val downTime = SystemClock.uptimeMillis()
-//    val downEvent = MotionEvent.obtain(
-//        downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 1.0f, 1.0f, 0, 1.0f, 1.0f, 0, 0
-//    ) // pressure=1.0f
-//    val upEvent = MotionEvent.obtain(
-//        downTime, downTime, MotionEvent.ACTION_UP, x, y, 0f, 1.0f, 0, 1.0f, 1.0f, 0, 0
-//    ) // pressure=0f
-//    return try {
-//        val r1 = injectInputEvent(downEvent, 2)
-//        val r2 = injectInputEvent(upEvent, 2)
-//        r1 && r2
-//    } catch (e: Exception) {
-//        LogUtils.d(e)
-//        null
-//    } finally {
-//        downEvent.recycle()
-//        upEvent.recycle()
-//    }
-//}
-
-//fun useSafeInjectClickEventFc(
-//    scope: CoroutineScope,
-//    usedFlow: StateFlow<Boolean>,
-//): (x: Float, y: Float) -> Boolean? {
-//    val inputManagerFlow = usedFlow.map(scope) { if (it) newInputManager() else null }
-//    return { x, y ->
-//        if (usedFlow.value) {
-//            inputManagerFlow.value?.safeClick(x, y)
-//        } else {
-//            null
-//        }
-//    }
-//}
-
-// 在 大麦 https://i.gkd.li/i/14605104 上测试产生如下 3 种情况
-// 1. 点击不生效: 使用传统无障碍屏幕点击, 此种点击可被 大麦 通过 View.setAccessibilityDelegate 屏蔽
-// 2. 点击概率生效: 使用 Shizuku 获取到的 InputManager.injectInputEvent 发出点击, 概率失效/生效, 原因未知
-// 3. 点击生效: 使用 Shizuku 获取到的 shell input tap x y 发出点击 by useSafeInputTapFc, 暂未找到屏蔽方案
-fun useSafeInputTapFc(
-    scope: CoroutineScope,
-    usedFlow: StateFlow<Boolean>,
-): (x: Float, y: Float) -> Boolean? {
-    val serviceWrapperFlow = MutableStateFlow<UserServiceWrapper?>(null)
-    scope.launch(Dispatchers.IO) {
-        usedFlow.collect {
-            if (it) {
-                val serviceWrapper = newUserService()
-                serviceWrapperFlow.value = serviceWrapper
-            } else {
-                serviceWrapperFlow.value?.destroy()
-                serviceWrapperFlow.value = null
-            }
-        }
+fun newPackageManager(): IPackageManager? {
+    val service = SystemServiceHelper.getSystemService("package")
+    if (service == null) {
+        LogUtils.d("shizuku 无法获取 package")
+        return null
     }
-    return { x, y ->
-        if (usedFlow.value) {
-            try {
-                val result = serviceWrapperFlow.value?.userService?.execCommand("input tap $x $y")
-                if (result != null) {
-                    json.decodeFromString<CommandResult>(result).code == 0
-                } else {
-                    null
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        } else {
-            null
-        }
-    }
+    return service.let(::ShizukuBinderWrapper).let(IPackageManager.Stub::asInterface)
 }
 
 data class UserServiceWrapper(
@@ -231,14 +158,16 @@ data class UserServiceWrapper(
 ) {
     fun destroy() {
         try {
-            Shizuku.unbindUserService(serviceArgs, connection, false)
+            LogUtils.d("unbindUserService", serviceArgs)
+            userService.exit()
+            Shizuku.unbindUserService(serviceArgs, connection, true)
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 }
 
-suspend fun newUserService(): UserServiceWrapper = suspendCoroutine { continuation ->
+private suspend fun serviceWrapper(): UserServiceWrapper = suspendCoroutine { continuation ->
     val serviceArgs = Shizuku.UserServiceArgs(
         ComponentName(
             app,
@@ -252,7 +181,6 @@ suspend fun newUserService(): UserServiceWrapper = suspendCoroutine { continuati
 
     val connection = object : ServiceConnection {
         override fun onServiceConnected(componentName: ComponentName, binder: IBinder?) {
-            // Shizuku.unbindUserService 并不会移除 connection, 导致后续调用此函数时 此方法仍然被调用
             LogUtils.d("onServiceConnected", componentName)
             resumeFc ?: return
             if (binder?.pingBinder() == true) {
@@ -274,4 +202,61 @@ suspend fun newUserService(): UserServiceWrapper = suspendCoroutine { continuati
         }
     }
     Shizuku.bindUserService(serviceArgs, connection)
+}
+
+suspend fun shizukuCheckUserService(): Boolean {
+    return safeTap(0f, 0f) == true || try {
+        val wrapper = serviceWrapper()
+        try {
+            wrapper.userService.execCommandForResult("input tap 0 0") == true
+        } finally {
+            wrapper.destroy()
+        }
+    } catch (e: Exception) {
+        false
+    }
+}
+
+private val shizukuServiceUsedFlow by lazy {
+    combine(shizukuOkState.stateFlow, storeFlow) { shizukuOk, store ->
+        shizukuOk && store.enableShizukuClick
+    }.stateIn(appScope, SharingStarted.Eagerly, false)
+}
+
+val serviceWrapperFlow by lazy<StateFlow<UserServiceWrapper?>> {
+    val stateFlow = MutableStateFlow<UserServiceWrapper?>(null)
+    appScope.launch(Dispatchers.IO) {
+        shizukuServiceUsedFlow.collect {
+            stateFlow.value?.destroy()
+            stateFlow.value = null
+            if (it) {
+                stateFlow.value = serviceWrapper()
+            }
+        }
+    }
+    stateFlow
+}
+
+// 在 大麦 https://i.gkd.li/i/14605104 上测试产生如下 3 种情况
+// 1. 点击不生效: 使用传统无障碍屏幕点击, 此种点击可被 大麦 通过 View.setAccessibilityDelegate 屏蔽
+// 2. 点击概率生效: 使用 Shizuku 获取到的 InputManager.injectInputEvent 发出点击, 概率失效/生效, 原因未知
+// 3. 点击生效: 使用 Shizuku 获取到的 shell input tap x y 发出点击 by safeTap, 暂未找到屏蔽方案
+fun safeTap(x: Float, y: Float): Boolean? {
+    val userService = serviceWrapperFlow.value?.userService ?: return null
+    return userService.execCommandForResult("input tap $x $y")
+}
+
+private fun IUserService.execCommandForResult(command: String): Boolean? {
+    return try {
+        val result = execCommand(command)
+        LogUtils.d("safeTap", result)
+        if (result != null) {
+            json.decodeFromString<CommandResult>(result).code == 0
+        } else {
+            null
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
 }
