@@ -196,22 +196,25 @@ fun AuthA11yPage() {
                         text = "已持有[写入安全设置权限], 优先使用此权限",
                         style = MaterialTheme.typography.bodySmall,
                     )
-                    Row(
-                        modifier = Modifier
-                            .padding(4.dp, 0.dp)
-                            .fillMaxWidth(),
-                    ) {
-                        TextButton(onClick = throttle {
-                            context.mainVm.dialogFlow.updateDialogOptions(
-                                title = "无感保活",
-                                text = "添加通知栏快捷开关\n\n1. 下拉通知栏至[快捷开关]图标界面\n2. 找到名称为 ${META.appName} 的快捷开关\n3. 添加此开关到通知面板 \n\n只要此快捷开关在通知面板可见\n无论是系统杀后台还是自身BUG崩溃\n简单下拉打开通知即可重启"
-                            )
-                        }) {
-                            Text(
-                                text = "无感保活",
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
+                }
+                Row(
+                    modifier = Modifier
+                        .padding(4.dp, 0.dp)
+                        .fillMaxWidth(),
+                ) {
+                    TextButton(onClick = throttle {
+                        if (!writeSecureSettings) {
+                            toast("请先授权")
                         }
+                        context.mainVm.dialogFlow.updateDialogOptions(
+                            title = "无感保活",
+                            text = "添加通知栏快捷开关\n\n1. 下拉通知栏至[快捷开关]图标界面\n2. 找到名称为 ${META.appName} 的快捷开关\n3. 添加此开关到通知面板 \n\n只要此快捷开关在通知面板可见\n无论是系统杀后台还是自身BUG崩溃\n简单下拉打开通知即可重启"
+                        )
+                    }) {
+                        Text(
+                            text = "无感保活",
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
