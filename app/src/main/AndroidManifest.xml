@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
-    <!--  低版本Android截屏, Android 11 上可以使用无障碍 takeScreenshot 截屏  -->
+    <!-- snapshot screenshot  -->
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"
         android:maxSdkVersion="29" />
@@ -83,7 +83,7 @@
             android:name=".OpenFileActivity"
             android:exported="true"
             android:theme="@style/TransparentTheme">
-            <intent-filter android:label="@string/import_desc">
+            <intent-filter android:label="@string/import_data">
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
@@ -126,6 +126,7 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/ab_desc" />
         </service>
+
         <service
             android:name=".debug.ScreenshotService"
             android:exported="false"
@@ -155,10 +156,10 @@
                 android:value="Display a screenshot button for users to actively save screen information." />
         </service>
         <service
-            android:name=".debug.SnapshotTileService"
+            android:name=".service.GkdTileService"
             android:exported="true"
-            android:icon="@drawable/ic_capture"
-            android:label="@string/capture_label"
+            android:icon="@drawable/ic_status"
+            android:label="@string/app_name"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
 
             <intent-filter>
@@ -166,12 +167,21 @@
             </intent-filter>
         </service>
         <service
-            android:name=".service.GkdTileService"
+            android:name=".debug.SnapshotTileService"
             android:exported="true"
-            android:icon="@drawable/ic_status"
-            android:label="@string/app_name"
+            android:icon="@drawable/ic_capture"
+            android:label="@string/capture_snapshot"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
-
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".debug.HttpTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_http"
+            android:label="@string/http_server"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
