@@ -114,9 +114,16 @@ android {
         debug {
             versionNameSuffix = vnSuffix
             applicationIdSuffix = ".debug"
-            resValue("string", "app_name", "GKD-debug")
-            resValue("string", "capture_label", "捕获快照-debug")
-            resValue("string", "import_desc", "GKD-debug-导入数据")
+
+            // add "debug" suffix
+            listOf(
+                "app_name" to "GKD",
+                "capture_snapshot" to "捕获快照",
+                "import_data" to "导入数据",
+                "http_server" to "HTTP服务",
+            ).forEach {
+                resValue("string", it.first, it.second + "-debug")
+            }
         }
     }
     productFlavors {

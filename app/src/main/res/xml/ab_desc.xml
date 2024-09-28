@@ -7,7 +7,7 @@
     android:canPerformGestures="true"
     android:canRetrieveWindowContent="true"
     android:canTakeScreenshot="true"
-    android:description="@string/ab_desc"
+    android:description="@string/a11y_desc"
     android:notificationTimeout="100"
     android:settingsActivity="li.songe.gkd.MainActivity"
     tools:ignore="UnusedAttribute" />

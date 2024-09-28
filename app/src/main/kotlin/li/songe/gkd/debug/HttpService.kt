@@ -1,7 +1,6 @@
 package li.songe.gkd.debug
 
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import com.blankj.utilcode.util.LogUtils
 import io.ktor.http.ContentType
@@ -83,7 +82,7 @@ class HttpService : Service() {
                 createNotif(
                     this@HttpService,
                     httpChannel.id,
-                    httpNotif.copy(text = "HTTP服务-端口$port")
+                    httpNotif.copy(text = "HTTP服务-$port")
                 )
             }
         }
@@ -107,12 +106,12 @@ class HttpService : Service() {
     companion object {
         val isRunning = MutableStateFlow(false)
         val localNetworkIpsFlow = MutableStateFlow(emptyList<String>())
-        fun stop(context: Context = app) {
-            context.stopService(Intent(context, HttpService::class.java))
+        fun stop() {
+            app.stopService(Intent(app, HttpService::class.java))
         }
 
-        fun start(context: Context = app) {
-            context.startForegroundService(Intent(context, HttpService::class.java))
+        fun start() {
+            app.startForegroundService(Intent(app, HttpService::class.java))
         }
     }
 
