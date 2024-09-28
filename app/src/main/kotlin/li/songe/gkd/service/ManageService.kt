@@ -12,8 +12,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.app
 import li.songe.gkd.notif.abNotif
-import li.songe.gkd.notif.createNotif
-import li.songe.gkd.notif.defaultChannel
+import li.songe.gkd.notif.notifyService
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.util.actionCountFlow
 import li.songe.gkd.util.getSubsStatus
@@ -27,7 +26,7 @@ class ManageService : Service() {
     override fun onCreate() {
         super.onCreate()
         isRunning.value = true
-        createNotif(this, defaultChannel.id, abNotif)
+        abNotif.notifyService(this)
         scope.launch {
             combine(
                 A11yService.isRunning,
@@ -46,11 +45,7 @@ class ManageService : Service() {
                 }
                 return@combine getSubsStatus(ruleSummary, count)
             }.debounce(500L).stateIn(scope, SharingStarted.Eagerly, "").collect { text ->
-                createNotif(
-                    this@ManageService,
-                    defaultChannel.id,
-                    abNotif.copy(text = text)
-                )
+                abNotif.copy(text = text).notifyService(this@ManageService)
             }
         }
     }

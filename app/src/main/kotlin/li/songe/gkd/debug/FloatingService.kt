@@ -17,9 +17,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.Tuple3
-import li.songe.gkd.notif.createNotif
-import li.songe.gkd.notif.floatingChannel
 import li.songe.gkd.notif.floatingNotif
+import li.songe.gkd.notif.notifyService
 import li.songe.gkd.util.launchTry
 import kotlin.math.sqrt
 
@@ -79,7 +78,7 @@ class FloatingService : ExpandableBubbleService() {
 
 
     override fun startNotificationForeground() {
-        createNotif(this, floatingChannel.id, floatingNotif)
+        floatingNotif.notifyService(this)
     }
 
     override fun onDestroy() {

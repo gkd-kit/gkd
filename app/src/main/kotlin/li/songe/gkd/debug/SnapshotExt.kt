@@ -18,6 +18,8 @@ import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.createComplexSnapshot
 import li.songe.gkd.data.toSnapshot
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.notif.notify
+import li.songe.gkd.notif.snapshotNotif
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.keepNullJson
@@ -142,6 +144,14 @@ object SnapshotExt {
                 DbSet.snapshotDao.insert(snapshot.toSnapshot())
             }
             toast("快照成功")
+            val desc = snapshot.appInfo?.name ?: snapshot.appId
+            snapshotNotif.copy(
+                text = if (desc != null) {
+                    "快照[$desc]已保存至记录"
+                } else {
+                    snapshotNotif.text
+                }
+            ).notify()
             return snapshot
         } finally {
             captureLoading.value = false

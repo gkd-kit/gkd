@@ -1,5 +1,7 @@
 package li.songe.gkd.notif
 
+import android.annotation.SuppressLint
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -12,6 +14,8 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import li.songe.gkd.MainActivity
+import li.songe.gkd.app
+import li.songe.gkd.permission.notificationState
 
 fun createChannel(context: Context, notifChannel: NotifChannel) {
     val importance = NotificationManager.IMPORTANCE_LOW
@@ -21,30 +25,41 @@ fun createChannel(context: Context, notifChannel: NotifChannel) {
     notificationManager.createNotificationChannel(channel)
 }
 
-fun createNotif(context: Service, channelId: String, notif: Notif) {
+private fun Notif.toNotification(): Notification {
     val pendingIntent = PendingIntent.getActivity(
-        context,
+        app,
         0,
-        Intent(context, MainActivity::class.java).apply {
+        Intent(app, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            notif.uri?.let { data = Uri.parse(it) }
+            uri?.let { data = Uri.parse(it) }
         },
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
-    val notification = NotificationCompat.Builder(context, channelId)
-        .setSmallIcon(notif.smallIcon)
-        .setContentTitle(notif.title)
-        .setContentText(notif.text)
+    val notification = NotificationCompat.Builder(app, channel.id)
+        .setSmallIcon(smallIcon)
+        .setContentTitle(title)
+        .setContentText(text)
         .setContentIntent(pendingIntent)
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-        .setOngoing(notif.ongoing)
-        .setAutoCancel(notif.autoCancel)
+        .setOngoing(ongoing)
+        .setAutoCancel(autoCancel)
         .build()
+    return notification
+}
+
+@SuppressLint("MissingPermission")
+fun Notif.notify() {
+    if (notificationState.updateAndGet()) {
+        NotificationManagerCompat.from(app).notify(id, toNotification())
+    }
+}
+
+fun Notif.notifyService(context: Service) {
+    val notification = toNotification()
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         context.startForeground(
-            notif.id, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST
+            id, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST
         )
     } else {
-        context.startForeground(notif.id, notification)
+        context.startForeground(id, notification)
     }
 }
