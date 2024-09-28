@@ -18,6 +18,7 @@ import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
+import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -68,6 +69,10 @@ fun HomePage() {
             when (uri.path) {
                 "/1" -> {
                     navController.toDestinationsNavigator().navigate(AdvancedPageDestination)
+                }
+
+                "/2" -> {
+                    navController.toDestinationsNavigator().navigate(SnapshotPageDestination)
                 }
             }
         }

@@ -70,7 +70,7 @@ private suspend fun asyncRequestPermission(
 val notificationState by lazy {
     PermissionState(
         check = {
-            XXPermissions.isGranted(app, Permission.NOTIFICATION_SERVICE)
+            XXPermissions.isGranted(app, Permission.POST_NOTIFICATIONS)
         },
         request = {
             asyncRequestPermission(it, Permission.POST_NOTIFICATIONS)

@@ -39,9 +39,8 @@ import li.songe.gkd.data.deleteSubscription
 import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt.captureSnapshot
-import li.songe.gkd.notif.createNotif
-import li.songe.gkd.notif.httpChannel
 import li.songe.gkd.notif.httpNotif
+import li.songe.gkd.notif.notifyService
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.util.LOCAL_HTTP_SUBS_ID
 import li.songe.gkd.util.SERVER_SCRIPT_URL
@@ -79,11 +78,7 @@ class HttpService : Service() {
                     stopSelf()
                     return@collect
                 }
-                createNotif(
-                    this@HttpService,
-                    httpChannel.id,
-                    httpNotif.copy(text = "HTTP服务-$port")
-                )
+                httpNotif.copy(text = "HTTP服务-$port").notifyService(this@HttpService)
             }
         }
     }

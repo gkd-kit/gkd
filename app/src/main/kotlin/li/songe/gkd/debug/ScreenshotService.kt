@@ -8,8 +8,7 @@ import android.content.Intent
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.app
-import li.songe.gkd.notif.createNotif
-import li.songe.gkd.notif.screenshotChannel
+import li.songe.gkd.notif.notifyService
 import li.songe.gkd.notif.screenshotNotif
 import li.songe.gkd.util.ScreenshotUtil
 
@@ -19,7 +18,7 @@ class ScreenshotService : Service() {
     override fun onCreate() {
         super.onCreate()
         isRunning.value = true
-        createNotif(this, screenshotChannel.id, screenshotNotif)
+        screenshotNotif.notifyService(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
