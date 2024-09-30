@@ -16,7 +16,6 @@ import android.view.Display
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
-import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
 import kotlinx.coroutines.CoroutineScope
@@ -30,6 +29,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.META
 import li.songe.gkd.app
 import li.songe.gkd.appScope
@@ -110,7 +110,7 @@ class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA11yEve
 
         // AccessibilityInteractionClient.getInstanceForThread(threadId)
         val queryThread by lazy { Executors.newSingleThreadExecutor().asCoroutineDispatcher() }
-        val eventExecutor by lazy { Executors.newSingleThreadExecutor()!! }
+        val eventThread by lazy { Executors.newSingleThreadExecutor().asCoroutineDispatcher() }
         val actionThread by lazy { Executors.newSingleThreadExecutor().asCoroutineDispatcher() }
 
         fun execAction(gkdAction: GkdAction): ActionResult {
@@ -129,13 +129,11 @@ class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA11yEve
             if (gkdAction.action == null) {
                 // 仅查询
                 return ActionResult(
-                    action = null,
-                    result = true
+                    action = null, result = true
                 )
             }
 
-            return ActionPerformer
-                .getAction(gkdAction.action)
+            return ActionPerformer.getAction(gkdAction.action)
                 .perform(serviceVal, targetNode, gkdAction.position)
         }
 
@@ -160,9 +158,7 @@ class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA11yEve
                     override fun onFailure(errorCode: Int) = it.resume(null)
                 }
                 instance!!.takeScreenshot(
-                    Display.DEFAULT_DISPLAY,
-                    instance!!.application.mainExecutor,
-                    callback
+                    Display.DEFAULT_DISPLAY, instance!!.application.mainExecutor, callback
                 )
             }
         }
@@ -174,146 +170,271 @@ private fun A11yService.useMatchRule() {
 
     var lastTriggerShizukuTime = 0L
     var lastContentEventTime = 0L
-    val events = mutableListOf<AccessibilityNodeInfo>()
-    var queryTaskJob: Job? = null
+    val queryEvents = mutableListOf<Pair<AccessibilityEvent, A11yEvent>>()
+    var queryTaskJob: Job?
     fun newQueryTask(
-        byEvent: Boolean = false, byForced: Boolean = false, delayRule: ResolvedRule? = null
-    ) {
-        if (!storeFlow.value.enableMatch) return
-        queryTaskJob = scope.launchTry(A11yService.queryThread) {
-            var latestEvent = if (delayRule != null) {// 延迟规则不消耗事件
-                null
-            } else {
-                synchronized(events) {
-                    val size = events.size
-                    if (size == 0 && byEvent) return@launchTry
-                    val node = if (size > 1) {
+        byEvent: AccessibilityEvent? = null,
+        byForced: Boolean = false,
+        delayRule: ResolvedRule? = null,
+    ): Job = scope.launchTry(A11yService.queryThread) launchQuery@{
+        queryTaskJob = coroutineContext[Job]
+        val newEvents = if (delayRule != null) {// 延迟规则不消耗事件
+            null
+        } else {
+            synchronized(queryEvents) {
+                // 不能在 synchronized 内获取节点, 否则将阻塞事件处理
+                if (byEvent != null && queryEvents.isEmpty()) {
+                    return@launchQuery
+                }
+                (if (queryEvents.size > 1) {
+                    val hasDiffItem = queryEvents.any { e ->
+                        queryEvents.any { e2 -> !e.second.sameAs(e2.second) }
+                    }
+                    if (hasDiffItem) {// 存在不同的事件节点, 全部丢弃使用 root 查询
                         if (META.debuggable) {
-                            Log.d("latestEvent", "丢弃事件=$size")
+                            Log.d(
+                                "queryEvents", "全部丢弃事件:${queryEvents.size}"
+                            )
                         }
                         null
                     } else {
-                        events.lastOrNull()
-                    }
-                    events.clear()
-                    node
-                }
-            }
-            val activityRule = getAndUpdateCurrentRules()
-            if (activityRule.currentRules.isEmpty()) {
-                return@launchTry
-            }
-            clearNodeCache()
-            for (rule in activityRule.currentRules) { // 规则数量有可能过多导致耗时过长
-                if (delayRule != null && delayRule !== rule) continue
-                val statusCode = rule.status
-                if (statusCode == RuleStatus.Status3 && rule.matchDelayJob == null) {
-                    rule.matchDelayJob = scope.launch(A11yService.actionThread) {
-                        delay(rule.matchDelay)
-                        rule.matchDelayJob = null
-                        newQueryTask(delayRule = rule)
-                    }
-                }
-                if (statusCode != RuleStatus.StatusOk) continue
-                if (byForced && !rule.checkForced()) continue
-                latestEvent?.let { n ->
-                    val refreshOk = try {
-                        n.refresh()
-                    } catch (_: Exception) {
-                        false
-                    }
-                    if (!refreshOk) {
                         if (META.debuggable) {
-                            Log.d("latestEvent", "最新事件已过期")
+                            Log.d(
+                                "queryEvents",
+                                "保留最后两个事件:${queryEvents.first().second.appId}${queryEvents.map { it.second.className }}"
+                            )
                         }
-                        latestEvent = null
-                    }
-                }
-                val nodeVal = (latestEvent ?: safeActiveWindow) ?: continue
-                val rightAppId = nodeVal.packageName?.toString() ?: break
-                val matchApp = rule.matchActivity(
-                    rightAppId
-                )
-                if (topActivityFlow.value.appId != rightAppId || (!matchApp && rule is AppRule)) {
-                    A11yService.eventExecutor.execute {
-                        if (topActivityFlow.value.appId != rightAppId) {
-                            val shizukuTop = safeGetTopActivity()
-                            if (shizukuTop?.appId == rightAppId) {
-                                updateTopActivity(shizukuTop)
-                            } else {
-                                updateTopActivity(TopActivity(appId = rightAppId))
-                            }
-                            getAndUpdateCurrentRules()
-                            scope.launch(A11yService.actionThread) {
-                                delay(300)
-                                if (queryTaskJob?.isActive != true) {
-                                    newQueryTask()
-                                }
-                            }
-                        }
-                    }
-                    return@launchTry
-                }
-                if (!matchApp) continue
-                val target = rule.query(nodeVal, latestEvent == null) ?: continue
-                if (activityRule !== getAndUpdateCurrentRules()) break
-                if (rule.checkDelay() && rule.actionDelayJob == null) {
-                    rule.actionDelayJob = scope.launch(A11yService.actionThread) {
-                        delay(rule.actionDelay)
-                        rule.actionDelayJob = null
-                        newQueryTask(delayRule = rule)
-                    }
-                    continue
-                }
-                if (rule.status != RuleStatus.StatusOk) break
-                val actionResult = rule.performAction(context, target)
-                if (actionResult.result) {
-                    rule.trigger()
-                    scope.launch(A11yService.actionThread) {
-                        delay(300)
-                        if (queryTaskJob?.isActive != true) {
-                            newQueryTask()
-                        }
-                    }
-                    showActionToast(context)
-                    appScope.launchTry(Dispatchers.IO) {
-                        insertClickLog(rule)
-                        LogUtils.d(
-                            rule.statusText(), AttrInfo.info2data(target, 0, 0), actionResult
+                        // type,appId,className 一致, 需要在 synchronized 外验证是否是同一节点
+                        arrayOf(
+                            queryEvents[queryEvents.size - 2].first,
+                            queryEvents.last().first,
                         )
                     }
+                } else if (queryEvents.size == 1) {
+                    if (META.debuggable) {
+                        Log.d(
+                            "queryEvents",
+                            "只有1个事件:${queryEvents.first().second.appId}${queryEvents.map { it.second.className }}"
+                        )
+                    }
+                    arrayOf(queryEvents.last().first)
+                } else {
+                    null
+                }).apply {
+                    queryEvents.clear()
                 }
             }
-            val t = System.currentTimeMillis()
-            if (t - lastTriggerTime < 3000L || t - appChangeTime < 5000L) {
+        }
+        val activityRule = getAndUpdateCurrentRules()
+        if (activityRule.currentRules.isEmpty() || !storeFlow.value.enableMatch) {
+            if (META.debuggable) {
+                Log.d("queryEvents", "没有规则或者禁用匹配")
+            }
+            // 如果当前应用没有规则/暂停匹配, 则不去调用获取事件节点避免阻塞
+            return@launchQuery
+        }
+        var lastNode = if (newEvents == null || newEvents.size <= 1) {
+            newEvents?.firstOrNull()?.safeSource
+        } else {
+            // 获取最后两个事件, 如果最后两个事件的节点不一致, 则丢弃
+            // 相等则是同一个节点发出的连续事件, 常见于倒计时界面
+            val lastNode = newEvents.last().safeSource
+            if (lastNode == null || lastNode == newEvents[0].safeSource) {
+                lastNode
+            } else {
+                null
+            }
+        }
+        var lastNodeUsed = false
+        clearNodeCache()
+        for (rule in activityRule.currentRules) { // 规则数量有可能过多导致耗时过长
+            if (delayRule != null && delayRule !== rule) continue
+            val statusCode = rule.status
+            if (statusCode == RuleStatus.Status3 && rule.matchDelayJob == null) {
+                rule.matchDelayJob = scope.launch(A11yService.actionThread) {
+                    delay(rule.matchDelay)
+                    rule.matchDelayJob = null
+                    newQueryTask(delayRule = rule)
+                }
+            }
+            if (statusCode != RuleStatus.StatusOk) continue
+            if (byForced && !rule.checkForced()) continue
+            lastNode?.let { n ->
+                val refreshOk = (!lastNodeUsed) || (try {
+                    n.refresh()
+                } catch (_: Exception) {
+                    false
+                })
+                lastNodeUsed = true
+                if (!refreshOk) {
+                    if (META.debuggable) {
+                        Log.d("latestEvent", "最新事件已过期")
+                    }
+                    lastNode = null
+                }
+            }
+            val nodeVal = (lastNode ?: safeActiveWindow) ?: continue
+            val rightAppId = nodeVal.packageName?.toString() ?: break
+            val matchApp = rule.matchActivity(
+                rightAppId
+            )
+            if (topActivityFlow.value.appId != rightAppId || (!matchApp && rule is AppRule)) {
+                scope.launch(A11yService.eventThread) {
+                    if (topActivityFlow.value.appId != rightAppId) {
+                        val shizukuTop = safeGetTopActivity()
+                        if (shizukuTop?.appId == rightAppId) {
+                            updateTopActivity(shizukuTop)
+                        } else {
+                            updateTopActivity(TopActivity(appId = rightAppId))
+                        }
+                        getAndUpdateCurrentRules()
+                        scope.launch(A11yService.actionThread) {
+                            delay(300)
+                            if (queryTaskJob?.isActive != true) {
+                                newQueryTask()
+                            }
+                        }
+                    }
+                }
+                return@launchQuery
+            }
+            if (!matchApp) continue
+            val target = rule.query(nodeVal, lastNode == null) ?: continue
+            if (activityRule !== getAndUpdateCurrentRules()) break
+            if (rule.checkDelay() && rule.actionDelayJob == null) {
+                rule.actionDelayJob = scope.launch(A11yService.actionThread) {
+                    delay(rule.actionDelay)
+                    rule.actionDelayJob = null
+                    newQueryTask(delayRule = rule)
+                }
+                continue
+            }
+            if (rule.status != RuleStatus.StatusOk) break
+            val actionResult = rule.performAction(context, target)
+            if (actionResult.result) {
+                rule.trigger()
                 scope.launch(A11yService.actionThread) {
                     delay(300)
                     if (queryTaskJob?.isActive != true) {
                         newQueryTask()
                     }
                 }
-            } else {
-                if (activityRule.currentRules.any { r -> r.checkForced() && r.status.let { s -> s == RuleStatus.StatusOk || s == RuleStatus.Status5 } }) {
-                    scope.launch(A11yService.actionThread) {
-                        delay(300)
-                        if (queryTaskJob?.isActive != true) {
-                            newQueryTask(byForced = true)
-                        }
+                showActionToast(context)
+                appScope.launchTry(Dispatchers.IO) {
+                    insertClickLog(rule)
+                    LogUtils.d(
+                        rule.statusText(), AttrInfo.info2data(target, 0, 0), actionResult
+                    )
+                }
+            }
+        }
+        val t = System.currentTimeMillis()
+        if (t - lastTriggerTime < 3000L || t - appChangeTime < 5000L) {
+            scope.launch(A11yService.actionThread) {
+                delay(300)
+                if (queryTaskJob?.isActive != true) {
+                    newQueryTask()
+                }
+            }
+        } else {
+            if (activityRule.currentRules.any { r -> r.checkForced() && r.status.let { s -> s == RuleStatus.StatusOk || s == RuleStatus.Status5 } }) {
+                scope.launch(A11yService.actionThread) {
+                    delay(300)
+                    if (queryTaskJob?.isActive != true) {
+                        newQueryTask(byForced = true)
                     }
                 }
             }
         }
     }
 
-    val skipAppIds = setOf("com.android.systemui")
-    onA11yEvent { event ->
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED && skipAppIds.contains(
-                event.packageName.toString()
+    var lastGetAppIdTime = 0L
+    var lastAppId: String? = null
+    suspend fun getAppIdByCache(fixedEvent: A11yEvent): String? {
+        if (fixedEvent.type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && fixedEvent.appId == META.appId && !fixedEvent.className.endsWith(
+                "Activity"
             )
         ) {
-            return@onA11yEvent
+            // 剔除非法事件
+            return lastAppId
+        }
+        val t = System.currentTimeMillis()
+        if (t - lastGetAppIdTime > 30) {// 在 30ms 内使用缓存
+            // 某些应用获取 safeActiveWindow 耗时长, 导致多个事件连续堆积堵塞, 无法检测到 appId 切换导致状态异常
+            // https://github.com/gkd-kit/gkd/issues/622
+            lastGetAppIdTime = t
+            lastAppId = if (storeFlow.value.enableShizukuActivity) {
+                withTimeoutOrNull(100) { activeWindowAppId } ?: safeGetTopActivity()?.appId
+            } else {
+                null
+            } ?: activeWindowAppId
+        }
+        return lastAppId
+    }
+
+    fun consumeEvent(
+        event: AccessibilityEvent, fixedEvent: A11yEvent
+    ) = scope.launchTry(A11yService.eventThread) launchEvent@{
+        val evAppId = fixedEvent.appId
+        val evActivityId = fixedEvent.className
+        val oldAppId = topActivityFlow.value.appId
+        val rightAppId = if (oldAppId == evAppId) {
+            oldAppId
+        } else {
+            getAppIdByCache(fixedEvent) ?: return@launchEvent
+        }
+        if (rightAppId == evAppId) {
+            if (fixedEvent.type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+                // tv.danmaku.bili, com.miui.home, com.miui.home.launcher.Launcher
+                if (isActivity(evAppId, evActivityId)) {
+                    updateTopActivity(
+                        TopActivity(
+                            evAppId, evActivityId, topActivityFlow.value.number + 1
+                        )
+                    )
+                }
+            } else {
+                if (storeFlow.value.enableShizukuActivity && fixedEvent.time - lastTriggerShizukuTime > 300) {
+                    val shizukuTop = safeGetTopActivity()
+                    if (shizukuTop?.appId == rightAppId) {
+                        if (shizukuTop.activityId == evActivityId) {
+                            updateTopActivity(
+                                TopActivity(
+                                    evAppId, evActivityId, topActivityFlow.value.number + 1
+                                )
+                            )
+                        }
+                        updateTopActivity(shizukuTop)
+                    }
+                    lastTriggerShizukuTime = fixedEvent.time
+                }
+            }
+        }
+        if (rightAppId != topActivityFlow.value.appId) {
+            // 从 锁屏,下拉通知栏 返回等情况, 应用不会发送事件, 但是系统组件会发送事件
+            val shizukuTop = safeGetTopActivity()
+            if (shizukuTop?.appId == rightAppId) {
+                updateTopActivity(shizukuTop)
+            } else {
+                updateTopActivity(TopActivity(rightAppId))
+            }
         }
 
+        if (getAndUpdateCurrentRules().currentRules.isEmpty() || !storeFlow.value.enableMatch || evAppId != rightAppId) {
+            // 放在 evAppId != rightAppId 的前面使得 TopActivity 能借助 lastTopActivity 恢复
+            return@launchEvent
+        }
+
+        synchronized(queryEvents) { queryEvents.add(event to fixedEvent) }
+        newQueryTask(event)
+    }
+
+    val skipAppId = "com.android.systemui"
+    onA11yEvent { event ->
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED && skipAppId == event.packageName.toString()) {
+            return@onA11yEvent
+        }
+        // AccessibilityEvent 的 clear 方法会在后续时间被 某些系统 调用导致内部数据丢失, 导致异步子线程获取到的数据不一致
         val fixedEvent = event.toA11yEvent() ?: return@onA11yEvent
         if (fixedEvent.type == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
             if (fixedEvent.time - lastContentEventTime < 100 && fixedEvent.time - appChangeTime > 5000 && fixedEvent.time - lastTriggerTime > 3000) {
@@ -323,81 +444,12 @@ private fun A11yService.useMatchRule() {
         }
         if (META.debuggable) {
             Log.d(
-                "AccessibilityEvent",
+                "A11yEvent",
                 "type:${event.eventType},app:${event.packageName},cls:${event.className}"
             )
         }
-
-        // AccessibilityEvent 的 clear 方法会在后续时间被 某些系统 调用导致内部数据丢失
-        // 因此不要在协程/子线程内传递引用, 此处使用 data class 保存数据
-        val evAppId = fixedEvent.appId
-        val evActivityId = fixedEvent.className
-
-        A11yService.eventExecutor.execute launch@{
-            val oldAppId = topActivityFlow.value.appId
-            val rightAppId = if (oldAppId == evAppId) {
-                oldAppId
-            } else {
-                safeActiveWindow?.packageName?.toString() ?: return@launch
-            }
-            if (rightAppId == evAppId) {
-                if (fixedEvent.type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-                    // tv.danmaku.bili, com.miui.home, com.miui.home.launcher.Launcher
-                    if (isActivity(evAppId, evActivityId)) {
-                        updateTopActivity(
-                            TopActivity(
-                                evAppId, evActivityId, topActivityFlow.value.number + 1
-                            )
-                        )
-                    }
-                } else {
-                    if (storeFlow.value.enableShizukuActivity && fixedEvent.time - lastTriggerShizukuTime > 300) {
-                        val shizukuTop = safeGetTopActivity()
-                        if (shizukuTop != null && shizukuTop.appId == rightAppId) {
-                            if (shizukuTop.activityId == evActivityId) {
-                                updateTopActivity(
-                                    TopActivity(
-                                        evAppId, evActivityId, topActivityFlow.value.number + 1
-                                    )
-                                )
-                            }
-                            updateTopActivity(shizukuTop)
-                        }
-                        lastTriggerShizukuTime = fixedEvent.time
-                    }
-                }
-            }
-            if (rightAppId != topActivityFlow.value.appId) {
-                // 从 锁屏,下拉通知栏 返回等情况, 应用不会发送事件, 但是系统组件会发送事件
-                val shizukuTop = safeGetTopActivity()
-                if (shizukuTop?.appId == rightAppId) {
-                    updateTopActivity(shizukuTop)
-                } else {
-                    updateTopActivity(TopActivity(rightAppId))
-                }
-            }
-
-            if (getAndUpdateCurrentRules().currentRules.isEmpty()) {
-                // 放在 evAppId != rightAppId 的前面使得 TopActivity 能借助 lastTopActivity 恢复
-                return@launch
-            }
-
-            if (evAppId != rightAppId) {
-                return@launch
-            }
-            if (!storeFlow.value.enableMatch) return@launch
-            val eventNode = event.safeSource
-            synchronized(events) {
-                val eventLog = events.lastOrNull()
-                if (eventNode != null) {
-                    if (eventLog == eventNode) {
-                        events.removeAt(events.lastIndex)
-                    }
-                    events.add(eventNode)
-                }
-            }
-            newQueryTask(eventNode != null)
-        }
+//        eventDeque.addLast(event to fixedEvent)
+        consumeEvent(event, fixedEvent)
     }
 }
 
@@ -597,8 +649,7 @@ private fun handleCaptureScreenshot(event: AccessibilityEvent) {
             "com.miui.screenshot"
         ) && appCls.contentEquals(
             "android.widget.RelativeLayout"
-        ) && event.text.firstOrNull()
-            ?.contentEquals("截屏缩略图") == true // [截屏缩略图, 截长屏, 发送]
+        ) && event.text.firstOrNull()?.contentEquals("截屏缩略图") == true // [截屏缩略图, 截长屏, 发送]
     ) {
         LogUtils.d("captureScreenshot", event)
         appScope.launchTry {

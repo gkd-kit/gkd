@@ -5,6 +5,7 @@ import android.service.quicksettings.TileService
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import li.songe.gkd.appScope
 import li.songe.gkd.debug.SnapshotExt.captureSnapshot
 import li.songe.gkd.service.A11yService
@@ -46,7 +47,7 @@ class SnapshotTileService : TileService() {
                     }
                 } else if (latestAppId != oldAppId) {
                     LogUtils.d("SnapshotTileService::eventExecutor.execute")
-                    A11yService.eventExecutor.execute {
+                    appScope.launch(A11yService.eventThread) {
                         val topActivity = safeGetTopActivity() ?: TopActivity(appId = latestAppId)
                         updateTopActivity(topActivity)
                         getAndUpdateCurrentRules()

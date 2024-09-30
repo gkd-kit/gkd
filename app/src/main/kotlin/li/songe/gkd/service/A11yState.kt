@@ -18,7 +18,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.isActivityVisible
 import li.songe.gkd.util.RuleSummary
 import li.songe.gkd.util.actionCountFlow
-import li.songe.gkd.util.getDefaultLauncherAppId
+import li.songe.gkd.util.getDefaultLauncherActivity
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
@@ -164,9 +164,12 @@ var lastTriggerTime = 0L
 @Volatile
 var appChangeTime = 0L
 
-var launcherAppId = ""
+var launcherActivity = TopActivity("")
+val launcherAppId: String
+    get() = launcherActivity.appId
+
 fun updateLauncherAppId() {
-    launcherAppId = app.packageManager.getDefaultLauncherAppId() ?: ""
+    launcherActivity = app.packageManager.getDefaultLauncherActivity()
 }
 
 val clickLogMutex by lazy { Mutex() }

@@ -9,6 +9,11 @@ data class A11yEvent(
     val className: String,
 )
 
+fun A11yEvent.sameAs(other: A11yEvent): Boolean {
+    if (other === this) return true
+    return type == other.type && appId == other.appId && className == other.className
+}
+
 fun AccessibilityEvent.toA11yEvent(): A11yEvent? {
     return A11yEvent(
         type = eventType,
