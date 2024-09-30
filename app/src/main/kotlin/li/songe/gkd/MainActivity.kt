@@ -55,6 +55,7 @@ import li.songe.gkd.util.openApp
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.storeFlow
 import kotlin.reflect.KClass
+import kotlin.reflect.jvm.jvmName
 
 class MainActivity : ComponentActivity() {
     val mainVm by viewModels<MainViewModel>()
@@ -153,7 +154,7 @@ private fun updateServiceRunning() {
     }
 
     fun checkRunning(cls: KClass<*>): Boolean {
-        return list.any { it.service.className == cls.java.name }
+        return list.any { it.service.className == cls.jvmName }
     }
     ManageService.isRunning.value = checkRunning(ManageService::class)
     A11yService.isRunning.value = checkRunning(A11yService::class)

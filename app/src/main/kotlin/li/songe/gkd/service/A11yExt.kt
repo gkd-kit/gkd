@@ -27,7 +27,7 @@ import li.songe.selector.getCharSequenceInvoke
 import li.songe.selector.getIntInvoke
 import li.songe.selector.initDefaultTypeInfo
 
-
+// 某些应用耗时 554ms
 val AccessibilityService.safeActiveWindow: AccessibilityNodeInfo?
     get() = try {
         // java.lang.SecurityException: Call from user 0 as user -2 without permission INTERACT_ACROSS_USERS or INTERACT_ACROSS_USERS_FULL not allowed.
@@ -38,6 +38,10 @@ val AccessibilityService.safeActiveWindow: AccessibilityNodeInfo?
         null
     }
 
+val AccessibilityService.activeWindowAppId: String?
+    get() = safeActiveWindow?.packageName?.toString()
+
+// 在某些应用耗时 300ms
 val AccessibilityEvent.safeSource: AccessibilityNodeInfo?
     get() = if (className == null) {
         null // https://github.com/gkd-kit/gkd/issues/426 event.clear 已被系统调用
