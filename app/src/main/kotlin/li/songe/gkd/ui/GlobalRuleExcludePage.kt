@@ -345,14 +345,9 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
             }
             item {
                 Spacer(modifier = Modifier.height(EmptyHeight))
-                if (showAppInfos.isEmpty()) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        EmptyText(text = "暂无搜索结果")
-                        Spacer(modifier = Modifier.height(EmptyHeight))
-                    }
+                if (showAppInfos.isEmpty() && searchStr.isNotEmpty()) {
+                    val hasShowAll = showSystemApp && showHiddenApp
+                    EmptyText(text = if (hasShowAll) "暂无搜索结果" else "暂无搜索结果,请尝试修改筛选条件")
                 }
                 QueryPkgAuthCard()
             }
