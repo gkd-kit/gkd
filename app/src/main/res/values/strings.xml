@@ -5,4 +5,5 @@
     <string name="import_data">导入数据</string>
     <string name="capture_snapshot">捕获快照</string>
     <string name="http_server">HTTP服务</string>
+    <string name="float_button">悬浮按钮</string>
 </resources>

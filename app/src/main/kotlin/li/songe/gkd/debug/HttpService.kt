@@ -41,6 +41,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt.captureSnapshot
 import li.songe.gkd.notif.httpNotif
 import li.songe.gkd.notif.notifyService
+import li.songe.gkd.permission.notificationState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.util.LOCAL_HTTP_SUBS_ID
 import li.songe.gkd.util.SERVER_SCRIPT_URL
@@ -106,6 +107,7 @@ class HttpService : Service() {
         }
 
         fun start() {
+            if (!notificationState.checkOrToast()) return
             app.startForegroundService(Intent(app, HttpService::class.java))
         }
     }

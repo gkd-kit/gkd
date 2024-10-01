@@ -59,6 +59,7 @@ class ManageService : Service() {
         val isRunning = MutableStateFlow(false)
 
         fun start() {
+            if (!notificationState.checkOrToast()) return
             app.startForegroundService(Intent(app, ManageService::class.java))
         }
 

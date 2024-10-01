@@ -2,7 +2,6 @@ package li.songe.gkd.ui
 
 import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import androidx.compose.foundation.clickable
@@ -53,7 +52,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.LogUtils
@@ -449,10 +447,9 @@ fun AdvancedPage() {
                     if (it) {
                         requiredPermission(context, notificationState)
                         requiredPermission(context, canDrawOverlaysState)
-                        val intent = Intent(context, FloatingService::class.java)
-                        ContextCompat.startForegroundService(context, intent)
+                        FloatingService.start()
                     } else {
-                        FloatingService.stop(context)
+                        FloatingService.stop()
                     }
                 }
             )

@@ -16,6 +16,7 @@ import li.songe.gkd.appScope
 import li.songe.gkd.shizuku.shizukuCheckGranted
 import li.songe.gkd.util.initOrResetAppInfoCache
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.toast
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -30,6 +31,14 @@ class PermissionState(
     val stateFlow = MutableStateFlow(false)
     fun updateAndGet(): Boolean {
         return stateFlow.updateAndGet { check() }
+    }
+
+    fun checkOrToast(): Boolean {
+        updateAndGet()
+        if (!stateFlow.value) {
+            reason?.text?.let { toast(it) }
+        }
+        return stateFlow.value
     }
 }
 

@@ -64,3 +64,31 @@ interface OnA11yConnected : CanOnCallback {
         getCallbacks<() -> Unit>(8).forEach { it() }
     }
 }
+
+interface OnChangeListen : CanOnCallback {
+    fun onStartListened(f: () -> Unit) {
+        getCallbacks<() -> Unit>(10).add(f)
+    }
+
+    fun onStartListened() {
+        getCallbacks<() -> Unit>(10).forEach { it() }
+    }
+
+    fun onStopListened(f: () -> Unit) {
+        getCallbacks<() -> Unit>(12).add(f)
+    }
+
+    fun onStopListened() {
+        getCallbacks<() -> Unit>(12).forEach { it() }
+    }
+}
+
+interface OnTileClick {
+    fun onTileClicked(f: () -> Unit) {
+        getCallbacks<() -> Unit>(14).add(f)
+    }
+
+    fun onTileClicked() {
+        getCallbacks<() -> Unit>(14).forEach { it() }
+    }
+}
