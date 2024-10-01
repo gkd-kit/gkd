@@ -284,9 +284,11 @@ fun SubsPage(
             item {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (appAndConfigs.isEmpty()) {
-                    EmptyText(
-                        text = if (searchStr.isNotEmpty()) "暂无搜索结果" else "暂无规则",
-                    )
+                    EmptyText(text = if (searchStr.isNotEmpty()) {
+                        if (showUninstallApp) "暂无搜索结果" else "暂无搜索结果,请尝试修改筛选条件"
+                    } else {
+                        "暂无规则"
+                    })
                 } else if (editable) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                 }
