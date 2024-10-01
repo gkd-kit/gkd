@@ -38,6 +38,7 @@ androidx_core_ktx = { module = "androidx.core:core-ktx", version = "1.13.1" }
 androidx_lifecycle_runtime_ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version = "2.8.6" }
 androidx_junit = { module = "androidx.test.ext:junit", version = "1.2.1" }
 androidx_espresso = { module = "androidx.test.espresso:espresso-core", version = "3.6.1" }
+junit = { module = "junit:junit", version = "4.13.2" }
 androidx_room_runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx_room_compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx_room_ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
@@ -46,7 +47,6 @@ androidx_splashscreen = { module = "androidx.core:core-splashscreen", version = 
 androidx_paging_runtime = { module = "androidx.paging:paging-runtime", version.ref = "paging" }
 androidx_paging_compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
 google_accompanist_drawablepainter = { module = "com.google.accompanist:accompanist-drawablepainter", version = "0.36.0" }
-junit = { module = "junit:junit", version = "4.13.2" }
 ktor_server_core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor_server_cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
 ktor_server_content_negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
@@ -54,13 +54,13 @@ ktor_client_core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor_client_okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor_client_content_negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor_serialization_kotlinx_json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-kotlinx_serialization_json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.7.2" }
+kotlinx_serialization_json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.7.3" }
 kotlinx_collections_immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version = "0.3.8" }
 destinations_core = { module = "io.github.raamcosta.compose-destinations:core", version.ref = "destinations" }
 destinations_ksp = { module = "io.github.raamcosta.compose-destinations:ksp", version.ref = "destinations" }
 coil_compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 coil_gif = { module = "io.coil-kt:coil-gif", version.ref = "coil" }
-reorderable = { module = "sh.calvin.reorderable:reorderable", version = "2.3.2" }
+reorderable = { module = "sh.calvin.reorderable:reorderable", version = "2.3.3" }
 exp4j = { module = "net.objecthunter:exp4j", version = "0.4.8" }
 toaster = { module = "com.github.getActivity:Toaster", version = "12.6" }
 permissions = { module = "com.github.getActivity:XXPermissions", version = "18.63" }
