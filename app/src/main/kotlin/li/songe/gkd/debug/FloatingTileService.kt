@@ -11,7 +11,7 @@ import li.songe.gkd.util.OnChangeListen
 import li.songe.gkd.util.OnDestroy
 import li.songe.gkd.util.OnTileClick
 
-class HttpTileService : TileService(), OnDestroy, OnChangeListen, OnTileClick {
+class FloatingTileService : TileService(), OnDestroy, OnChangeListen, OnTileClick {
     override fun onStartListening() {
         super.onStartListening()
         onStartListened()
@@ -43,7 +43,7 @@ class HttpTileService : TileService(), OnDestroy, OnChangeListen, OnTileClick {
     init {
         scope.launch {
             combine(
-                HttpService.isRunning,
+                FloatingService.isRunning,
                 listeningFlow
             ) { v1, v2 -> v1 to v2 }.collect { (running, listening) ->
                 if (listening) {
@@ -53,10 +53,10 @@ class HttpTileService : TileService(), OnDestroy, OnChangeListen, OnTileClick {
             }
         }
         onTileClicked {
-            if (HttpService.isRunning.value) {
-                HttpService.stop()
+            if (FloatingService.isRunning.value) {
+                FloatingService.stop()
             } else {
-                HttpService.start()
+                FloatingService.start()
             }
         }
     }

@@ -121,6 +121,7 @@ android {
                 "capture_snapshot" to "捕获快照",
                 "import_data" to "导入数据",
                 "http_server" to "HTTP服务",
+                "float_button" to "悬浮按钮",
             ).forEach {
                 resValue("string", it.first, it.second + "-debug")
             }
