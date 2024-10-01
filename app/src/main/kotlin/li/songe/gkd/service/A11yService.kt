@@ -170,10 +170,10 @@ private fun A11yService.useMatchRule() {
 
     var lastTriggerShizukuTime = 0L
     var lastContentEventTime = 0L
-    val queryEvents = mutableListOf<Pair<AccessibilityEvent, A11yEvent>>()
+    val queryEvents = mutableListOf<A11yEvent>()
     var queryTaskJob: Job?
     fun newQueryTask(
-        byEvent: AccessibilityEvent? = null,
+        byEvent: A11yEvent? = null,
         byForced: Boolean = false,
         delayRule: ResolvedRule? = null,
     ): Job = scope.launchTry(A11yService.queryThread) launchQuery@{
@@ -188,7 +188,7 @@ private fun A11yService.useMatchRule() {
                 }
                 (if (queryEvents.size > 1) {
                     val hasDiffItem = queryEvents.any { e ->
-                        queryEvents.any { e2 -> !e.second.sameAs(e2.second) }
+                        queryEvents.any { e2 -> !e.sameAs(e2) }
                     }
                     if (hasDiffItem) {// 存在不同的事件节点, 全部丢弃使用 root 查询
                         if (META.debuggable) {
@@ -201,23 +201,23 @@ private fun A11yService.useMatchRule() {
                         if (META.debuggable) {
                             Log.d(
                                 "queryEvents",
-                                "保留最后两个事件:${queryEvents.first().second.appId}${queryEvents.map { it.second.className }}"
+                                "保留最后两个事件:${queryEvents.first().appId}${queryEvents.map { it.className }}"
                             )
                         }
                         // type,appId,className 一致, 需要在 synchronized 外验证是否是同一节点
                         arrayOf(
-                            queryEvents[queryEvents.size - 2].first,
-                            queryEvents.last().first,
+                            queryEvents[queryEvents.size - 2],
+                            queryEvents.last(),
                         )
                     }
                 } else if (queryEvents.size == 1) {
                     if (META.debuggable) {
                         Log.d(
                             "queryEvents",
-                            "只有1个事件:${queryEvents.first().second.appId}${queryEvents.map { it.second.className }}"
+                            "只有1个事件:${queryEvents.first().appId}${queryEvents.map { it.className }}"
                         )
                     }
-                    arrayOf(queryEvents.last().first)
+                    arrayOf(queryEvents.last())
                 } else {
                     null
                 }).apply {
@@ -359,7 +359,7 @@ private fun A11yService.useMatchRule() {
             return lastAppId
         }
         val t = System.currentTimeMillis()
-        if (t - lastGetAppIdTime > 30) {// 在 30ms 内使用缓存
+        if (t - lastGetAppIdTime > 50) {
             // 某些应用获取 safeActiveWindow 耗时长, 导致多个事件连续堆积堵塞, 无法检测到 appId 切换导致状态异常
             // https://github.com/gkd-kit/gkd/issues/622
             lastGetAppIdTime = t
@@ -372,19 +372,31 @@ private fun A11yService.useMatchRule() {
         return lastAppId
     }
 
+    val eventDeque = ArrayDeque<A11yEvent>()
     fun consumeEvent(
-        event: AccessibilityEvent, fixedEvent: A11yEvent
+        headEvent: A11yEvent,
     ) = scope.launchTry(A11yService.eventThread) launchEvent@{
-        val evAppId = fixedEvent.appId
-        val evActivityId = fixedEvent.className
+        val consumedEvents = synchronized(eventDeque) {
+            if (eventDeque.firstOrNull() !== headEvent) return@launchEvent
+            eventDeque.filter { it.sameAs(headEvent) }.apply {
+                // 如果有多个连续的事件, 全部取出
+                repeat(size) { eventDeque.removeFirst() }
+            }
+        }
+        if (META.debuggable && consumedEvents.size > 1) {
+            Log.d("consumeEvent", "合并连续事件:${consumedEvents.size}")
+        }
+        val a11yEvent = consumedEvents.last()
+        val evAppId = a11yEvent.appId
+        val evActivityId = a11yEvent.className
         val oldAppId = topActivityFlow.value.appId
         val rightAppId = if (oldAppId == evAppId) {
             oldAppId
         } else {
-            getAppIdByCache(fixedEvent) ?: return@launchEvent
+            getAppIdByCache(a11yEvent) ?: return@launchEvent
         }
         if (rightAppId == evAppId) {
-            if (fixedEvent.type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            if (a11yEvent.type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
                 // tv.danmaku.bili, com.miui.home, com.miui.home.launcher.Launcher
                 if (isActivity(evAppId, evActivityId)) {
                     updateTopActivity(
@@ -394,7 +406,7 @@ private fun A11yService.useMatchRule() {
                     )
                 }
             } else {
-                if (storeFlow.value.enableShizukuActivity && fixedEvent.time - lastTriggerShizukuTime > 300) {
+                if (storeFlow.value.enableShizukuActivity && a11yEvent.time - lastTriggerShizukuTime > 300) {
                     val shizukuTop = safeGetTopActivity()
                     if (shizukuTop?.appId == rightAppId) {
                         if (shizukuTop.activityId == evActivityId) {
@@ -406,7 +418,7 @@ private fun A11yService.useMatchRule() {
                         }
                         updateTopActivity(shizukuTop)
                     }
-                    lastTriggerShizukuTime = fixedEvent.time
+                    lastTriggerShizukuTime = a11yEvent.time
                 }
             }
         }
@@ -425,8 +437,8 @@ private fun A11yService.useMatchRule() {
             return@launchEvent
         }
 
-        synchronized(queryEvents) { queryEvents.add(event to fixedEvent) }
-        newQueryTask(event)
+        synchronized(queryEvents) { queryEvents.addAll(consumedEvents) }
+        newQueryTask(a11yEvent)
     }
 
     val skipAppId = "com.android.systemui"
@@ -435,12 +447,12 @@ private fun A11yService.useMatchRule() {
             return@onA11yEvent
         }
         // AccessibilityEvent 的 clear 方法会在后续时间被 某些系统 调用导致内部数据丢失, 导致异步子线程获取到的数据不一致
-        val fixedEvent = event.toA11yEvent() ?: return@onA11yEvent
-        if (fixedEvent.type == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-            if (fixedEvent.time - lastContentEventTime < 100 && fixedEvent.time - appChangeTime > 5000 && fixedEvent.time - lastTriggerTime > 3000) {
+        val a11yEvent = event.toA11yEvent() ?: return@onA11yEvent
+        if (a11yEvent.type == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+            if (a11yEvent.time - lastContentEventTime < 100 && a11yEvent.time - appChangeTime > 5000 && a11yEvent.time - lastTriggerTime > 3000) {
                 return@onA11yEvent
             }
-            lastContentEventTime = fixedEvent.time
+            lastContentEventTime = a11yEvent.time
         }
         if (META.debuggable) {
             Log.d(
@@ -448,8 +460,8 @@ private fun A11yService.useMatchRule() {
                 "type:${event.eventType},app:${event.packageName},cls:${event.className}"
             )
         }
-//        eventDeque.addLast(event to fixedEvent)
-        consumeEvent(event, fixedEvent)
+        synchronized(eventDeque) { eventDeque.add(a11yEvent) }
+        consumeEvent(a11yEvent)
     }
 }
 
