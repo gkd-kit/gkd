@@ -17,12 +17,14 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.collator
+import li.songe.gkd.util.findOption
 import li.songe.gkd.util.getGroupRawEnable
 import li.songe.gkd.util.map
+import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 
-class SubsVm (stateHandle: SavedStateHandle) : ViewModel() {
+class SubsVm(stateHandle: SavedStateHandle) : ViewModel() {
     private val args = SubsPageDestination.argsFrom(stateHandle)
 
     val subsItemFlow =
@@ -43,9 +45,9 @@ class SubsVm (stateHandle: SavedStateHandle) : ViewModel() {
         DbSet.clickLogDao.queryLatestUniqueAppIds(args.subsItemId).map { appIds ->
             appIds.mapIndexed { index, appId -> appId to index }.toMap()
         }
-    val sortTypeFlow = MutableStateFlow<SortTypeOption>(SortTypeOption.SortByName)
+    val sortTypeFlow = storeFlow.map(viewModelScope) { SortTypeOption.allSubObject.findOption(it.subsAppSortType) }
 
-    val showUninstallAppFlow = MutableStateFlow(false)
+    val showUninstallAppFlow = storeFlow.map(viewModelScope) { it.subsAppShowUninstallApp }
     private val sortAppsFlow =
         combine(combine((subsRawFlow.combine(appInfoCacheFlow) { subs, appInfoCache ->
             (subs?.apps ?: emptyList()).sortedWith { a, b ->
