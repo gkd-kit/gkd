@@ -259,7 +259,7 @@ fun AuthA11yPage() {
     }
 }
 
-private val commandText by lazy { "adb pm grant ${META.appId} android.permission.WRITE_SECURE_SETTINGS" }
+private val commandText by lazy { "adb shell pm grant ${META.appId} android.permission.WRITE_SECURE_SETTINGS" }
 
 private suspend fun MainActivity.grantPermissionByShizuku() {
     if (shizukuOkState.stateFlow.value) {

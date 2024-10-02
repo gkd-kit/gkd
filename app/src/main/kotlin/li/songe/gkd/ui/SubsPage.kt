@@ -51,6 +51,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AppItemPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
+import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
@@ -70,6 +71,8 @@ import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.mapHashCode
+import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
@@ -117,16 +120,14 @@ fun SubsPage(
     val showUninstallApp by vm.showUninstallAppFlow.collectAsState()
     val sortType by vm.sortTypeFlow.collectAsState()
     val listState = rememberLazyListState()
-    var isFirstVisit by remember { mutableStateOf(false) }
+    var isFirstVisit by remember { mutableStateOf(true) }
     LaunchedEffect(
-        appAndConfigs.size,
-        sortType.value,
-        appAndConfigs.fold(0) { acc, t -> 31 * acc + t.t0.id.hashCode() }
+        key1 = appAndConfigs.mapHashCode { it.t0.id }
     ) {
         if (isFirstVisit) {
-            listState.scrollToItem(0)
+            isFirstVisit = false
         } else {
-            isFirstVisit = true
+            listState.scrollToItem(0)
         }
     }
 
@@ -197,11 +198,11 @@ fun SubsPage(
                                         RadioButton(
                                             selected = sortType == sortOption,
                                             onClick = {
-                                                vm.sortTypeFlow.value = sortOption
+                                                storeFlow.update { s -> s.copy(subsAppSortType = sortOption.value) }
                                             })
                                     },
                                     onClick = {
-                                        vm.sortTypeFlow.value = sortOption
+                                        storeFlow.update { s -> s.copy(subsAppSortType = sortOption.value) }
                                     },
                                 )
                             }
@@ -217,11 +218,11 @@ fun SubsPage(
                                 },
                                 trailingIcon = {
                                     Checkbox(checked = showUninstallApp, onCheckedChange = {
-                                        vm.showUninstallAppFlow.value = it
+                                        storeFlow.update { s -> s.copy(subsAppShowUninstallApp = it) }
                                     })
                                 },
                                 onClick = {
-                                    vm.showUninstallAppFlow.value = !showUninstallApp
+                                    storeFlow.update { s -> s.copy(subsAppShowUninstallApp = !showUninstallApp) }
                                 },
                             )
                         }
@@ -252,7 +253,8 @@ fun SubsPage(
                     subsConfig = subsConfig,
                     enableSize = enableSize,
                     onClick = throttle {
-                        navController.toDestinationsNavigator().navigate(AppItemPageDestination(subsItemId, appRaw.id))
+                        navController.toDestinationsNavigator()
+                            .navigate(AppItemPageDestination(subsItemId, appRaw.id))
                     },
                     onValueChange = throttle(fn = vm.viewModelScope.launchAsFn { enable ->
                         val newItem = subsConfig?.copy(
@@ -284,11 +286,13 @@ fun SubsPage(
             item {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (appAndConfigs.isEmpty()) {
-                    EmptyText(text = if (searchStr.isNotEmpty()) {
-                        if (showUninstallApp) "暂无搜索结果" else "暂无搜索结果,请尝试修改筛选条件"
-                    } else {
-                        "暂无规则"
-                    })
+                    EmptyText(
+                        text = if (searchStr.isNotEmpty()) {
+                            if (showUninstallApp) "暂无搜索结果" else "暂无搜索结果,请尝试修改筛选条件"
+                        } else {
+                            "暂无规则"
+                        }
+                    )
                 } else if (editable) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                 }

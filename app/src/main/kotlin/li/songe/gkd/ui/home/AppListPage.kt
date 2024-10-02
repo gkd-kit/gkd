@@ -69,6 +69,7 @@ import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SortTypeOption
+import li.songe.gkd.util.mapHashCode
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
@@ -112,14 +113,16 @@ fun useAppListPage(): ScaffoldExt {
     })
     val listState = rememberLazyListState()
 
-    var isFirstVisit by remember { mutableStateOf(false) }
-    LaunchedEffect(key1 = orderedAppInfos, block = {
+    var isFirstVisit by remember { mutableStateOf(true) }
+    LaunchedEffect(
+        key1 = orderedAppInfos.mapHashCode { it.id }
+    ) {
         if (isFirstVisit) {
-            listState.scrollToItem(0)
+            isFirstVisit = false
         } else {
-            isFirstVisit = true
+            listState.scrollToItem(0)
         }
-    })
+    }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     return ScaffoldExt(
         navItem = appListNav,
@@ -265,7 +268,9 @@ fun useAppListPage(): ScaffoldExt {
                 Row(
                     modifier = Modifier
                         .clickable(onClick = throttle {
-                            navController.toDestinationsNavigator().navigate(AppConfigPageDestination(appInfo.id))
+                            navController
+                                .toDestinationsNavigator()
+                                .navigate(AppConfigPageDestination(appInfo.id))
                         })
                         .height(IntrinsicSize.Min)
                         .appItemPadding(),

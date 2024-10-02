@@ -61,6 +61,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import kotlinx.coroutines.flow.update
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
@@ -79,6 +80,8 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.mapHashCode
+import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
@@ -109,9 +112,16 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
     })
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val listState = rememberLazyListState()
-    LaunchedEffect(key1 = showAppInfos, block = {
-        listState.animateScrollToItem(0)
-    })
+    var isFirstVisit by remember { mutableStateOf(true) }
+    LaunchedEffect(
+        key1 = showAppInfos.mapHashCode { it.id },
+    ) {
+        if (isFirstVisit) {
+            isFirstVisit = false
+        } else {
+            listState.scrollToItem(0)
+        }
+    }
     var expanded by remember { mutableStateOf(false) }
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
@@ -190,12 +200,12 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                                 trailingIcon = {
                                     RadioButton(selected = sortType == sortOption,
                                         onClick = {
-                                            vm.sortTypeFlow.value = sortOption
+                                            storeFlow.update { it.copy(subsExcludeSortType = sortOption.value) }
                                         }
                                     )
                                 },
                                 onClick = {
-                                    vm.sortTypeFlow.value = sortOption
+                                    storeFlow.update { it.copy(subsExcludeSortType = sortOption.value) }
                                 },
                             )
                         }
@@ -213,11 +223,11 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                                 Checkbox(
                                     checked = showSystemApp,
                                     onCheckedChange = {
-                                        vm.showSystemAppFlow.value = !vm.showSystemAppFlow.value
+                                        storeFlow.update { it.copy(subsExcludeShowSystemApp = !it.subsExcludeShowSystemApp) }
                                     })
                             },
                             onClick = {
-                                vm.showSystemAppFlow.value = !vm.showSystemAppFlow.value
+                                storeFlow.update { it.copy(subsExcludeShowSystemApp = !it.subsExcludeShowSystemApp) }
                             },
                         )
                         DropdownMenuItem(
@@ -228,12 +238,11 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                                 Checkbox(
                                     checked = showHiddenApp,
                                     onCheckedChange = {
-                                        vm.showHiddenAppFlow.value =
-                                            !vm.showHiddenAppFlow.value
+                                        storeFlow.update { it.copy(subsExcludeShowHiddenApp = !it.subsExcludeShowHiddenApp) }
                                     })
                             },
                             onClick = {
-                                vm.showHiddenAppFlow.value = !vm.showHiddenAppFlow.value
+                                storeFlow.update { it.copy(subsExcludeShowHiddenApp = !it.subsExcludeShowHiddenApp) }
                             },
                         )
                     }
@@ -334,11 +343,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                                 },
                             )
                         } else {
-                            Switch(
-                                enabled = false,
-                                checked = false,
-                                onCheckedChange = {},
-                            )
+                            InnerDisableSwitch()
                         }
                     }
                 }

@@ -74,6 +74,7 @@ import li.songe.gkd.util.ResolvedGroup
 import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
@@ -148,12 +149,12 @@ fun AppConfigPage(appId: String) {
                                     RadioButton(
                                         selected = ruleSortType == s,
                                         onClick = {
-                                            vm.ruleSortTypeFlow.update { s }
+                                            storeFlow.update { it.copy(appRuleSortType = s.value) }
                                         }
                                     )
                                 },
                                 onClick = {
-                                    vm.ruleSortTypeFlow.update { s }
+                                    storeFlow.update { it.copy(appRuleSortType = s.value) }
                                 },
                             )
                         }
@@ -164,7 +165,8 @@ fun AppConfigPage(appId: String) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = throttle {
-                    navController.toDestinationsNavigator().navigate(AppItemPageDestination(LOCAL_SUBS_ID, appId))
+                    navController.toDestinationsNavigator()
+                        .navigate(AppItemPageDestination(LOCAL_SUBS_ID, appId))
                 },
                 content = {
                     Icon(
@@ -295,7 +297,6 @@ private fun AppGroupCard(
     onClick: () -> Unit,
     onCheckedChange: ((Boolean) -> Unit)?,
 ) {
-    val context = LocalContext.current as MainActivity
     Row(
         modifier = Modifier
             .clickable(onClick = onClick)
@@ -349,20 +350,26 @@ private fun AppGroupCard(
         if (checked != null) {
             Switch(checked = checked, onCheckedChange = onCheckedChange)
         } else {
-            Switch(
-                checked = false,
-                enabled = false,
-                onCheckedChange = null,
-                modifier = Modifier.clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) {
-                    context.mainVm.dialogFlow.updateDialogOptions(
-                        title = "内置禁用",
-                        text = "此规则组已经在其 apps 字段中配置对当前应用的禁用, 因此无法手动开启规则组\n\n提示: 这种情况一般在此全局规则无法适配/跳过适配/单独适配当前应用时出现",
-                    )
-                }
-            )
+            InnerDisableSwitch()
         }
     }
+}
+
+@Composable
+fun InnerDisableSwitch() {
+    val context = LocalContext.current as MainActivity
+    Switch(
+        checked = false,
+        enabled = false,
+        onCheckedChange = null,
+        modifier = Modifier.clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+        ) {
+            context.mainVm.dialogFlow.updateDialogOptions(
+                title = "内置禁用",
+                text = "此规则组已经在其 apps 字段中配置对当前应用的禁用, 因此无法手动开启规则组\n\n提示: 这种情况一般在此全局规则无法适配/跳过适配/单独适配当前应用时出现",
+            )
+        }
+    )
 }

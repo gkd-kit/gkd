@@ -4,7 +4,6 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
@@ -16,11 +15,14 @@ import li.songe.gkd.util.ResolvedAppGroup
 import li.songe.gkd.util.ResolvedGlobalGroup
 import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.collator
+import li.songe.gkd.util.findOption
 import li.songe.gkd.util.getGroupRawEnable
+import li.songe.gkd.util.map
+import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 
-class AppConfigVm (stateHandle: SavedStateHandle) : ViewModel() {
+class AppConfigVm(stateHandle: SavedStateHandle) : ViewModel() {
     private val args = AppConfigPageDestination.argsFrom(stateHandle)
 
     private val latestGlobalLogsFlow = DbSet.clickLogDao.queryAppLatest(
@@ -33,7 +35,8 @@ class AppConfigVm (stateHandle: SavedStateHandle) : ViewModel() {
         SubsConfig.AppGroupType
     )
 
-    val ruleSortTypeFlow = MutableStateFlow<RuleSortOption>(RuleSortOption.Default)
+    val ruleSortTypeFlow =
+        storeFlow.map(viewModelScope) { RuleSortOption.allSubObject.findOption(it.appRuleSortType) }
 
     private val subsFlow = combine(subsIdToRawFlow, subsItemsFlow) { subsIdToRaw, subsItems ->
         subsItems.mapNotNull { if (it.enable && subsIdToRaw[it.id] != null) it to subsIdToRaw[it.id]!! else null }

@@ -13,11 +13,13 @@ import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.SortTypeOption
+import li.songe.gkd.util.findOption
 import li.songe.gkd.util.map
 import li.songe.gkd.util.orderedAppInfosFlow
+import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 
-class GlobalRuleExcludeVm (stateHandle: SavedStateHandle) : ViewModel() {
+class GlobalRuleExcludeVm(stateHandle: SavedStateHandle) : ViewModel() {
     private val args = GlobalRuleExcludePageDestination.argsFrom(stateHandle)
 
     val rawSubsFlow = subsIdToRawFlow.map(viewModelScope) { it[args.subsItemId] }
@@ -40,9 +42,11 @@ class GlobalRuleExcludeVm (stateHandle: SavedStateHandle) : ViewModel() {
         DbSet.clickLogDao.queryLatestUniqueAppIds(args.subsItemId, args.groupKey).map { appIds ->
             appIds.mapIndexed { index, appId -> appId to index }.toMap()
         }
-    val sortTypeFlow = MutableStateFlow<SortTypeOption>(SortTypeOption.SortByName)
-    val showSystemAppFlow = MutableStateFlow(true)
-    val showHiddenAppFlow = MutableStateFlow(false)
+    val sortTypeFlow = storeFlow.map(viewModelScope) {
+        SortTypeOption.allSubObject.findOption(it.subsExcludeSortType)
+    }
+    val showSystemAppFlow = storeFlow.map(viewModelScope) { it.subsExcludeShowSystemApp }
+    val showHiddenAppFlow = storeFlow.map(viewModelScope) { it.subsExcludeShowHiddenApp }
     val showAppInfosFlow =
         combine(orderedAppInfosFlow.combine(showHiddenAppFlow) { appInfos, showHiddenApp ->
             if (showHiddenApp) {
