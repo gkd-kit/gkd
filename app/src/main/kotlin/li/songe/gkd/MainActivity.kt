@@ -2,7 +2,6 @@ package li.songe.gkd
 
 import android.app.Activity
 import android.app.ActivityManager
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -48,6 +47,7 @@ import li.songe.gkd.ui.theme.AppTheme
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.UpgradeDialog
 import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.componentName
 import li.songe.gkd.util.initFolder
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
@@ -136,7 +136,7 @@ fun isActivityVisible() = activityVisibleFlow.value > 0
 fun Activity.navToMainActivity() {
     val intent = this.intent?.cloneFilter()
     if (intent != null) {
-        intent.component = ComponentName(this, MainActivity::class.java)
+        intent.component = MainActivity::class.componentName
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         intent.putExtra("source", this::class.qualifiedName)
         startActivity(intent)

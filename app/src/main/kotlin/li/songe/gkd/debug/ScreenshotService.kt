@@ -2,7 +2,6 @@ package li.songe.gkd.debug
 
 import android.annotation.SuppressLint
 import android.app.Service
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import com.blankj.utilcode.util.LogUtils
@@ -11,6 +10,7 @@ import li.songe.gkd.app
 import li.songe.gkd.notif.notifyService
 import li.songe.gkd.notif.screenshotNotif
 import li.songe.gkd.util.ScreenshotUtil
+import li.songe.gkd.util.componentName
 
 class ScreenshotService : Service() {
     override fun onBind(intent: Intent?) = null
@@ -47,7 +47,7 @@ class ScreenshotService : Service() {
         private var screenshotUtil: ScreenshotUtil? = null
 
         fun start(context: Context = app, intent: Intent) {
-            intent.component = ComponentName(context, ScreenshotService::class.java)
+            intent.component = ScreenshotService::class.componentName
             context.startForegroundService(intent)
         }
 
