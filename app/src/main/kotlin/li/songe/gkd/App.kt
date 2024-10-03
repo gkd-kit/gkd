@@ -24,6 +24,7 @@ import li.songe.gkd.notif.initChannel
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.util.SafeR
+import li.songe.gkd.util.componentName
 import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initFolder
 import li.songe.gkd.util.initStore
@@ -56,7 +57,7 @@ data object META {
     val debuggable by lazy { applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0 }
     val versionCode by lazy { selfAppInfo.versionCode.toInt() }
     val versionName by lazy { selfAppInfo.versionName!! }
-    val appId by lazy { selfAppInfo.id }
+    val appId by lazy { app.packageName!! }
     val appName by lazy { app.getString(SafeR.app_name) }
 }
 
@@ -163,7 +164,7 @@ private fun getA11yServiceEnabled(): Boolean {
     if (value.isNullOrEmpty()) return false
     val colonSplitter = TextUtils.SimpleStringSplitter(':')
     colonSplitter.setString(value)
-    val name = ComponentName(app, A11yService::class.java)
+    val name = A11yService::class.componentName
     while (colonSplitter.hasNext()) {
         if (ComponentName.unflattenFromString(colonSplitter.next()) == name) {
             return true

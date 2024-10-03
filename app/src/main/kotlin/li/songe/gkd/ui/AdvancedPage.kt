@@ -393,7 +393,7 @@ fun AdvancedPage() {
 
             TextSwitch(
                 title = "清除订阅",
-                subtitle = "当HTTP服务关闭时,删除内存订阅",
+                subtitle = "服务关闭时,删除内存订阅",
                 checked = store.autoClearMemorySubs
             ) {
                 storeFlow.value = store.copy(

@@ -1,6 +1,5 @@
 package li.songe.gkd.service
 
-import android.content.ComponentName
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
@@ -9,6 +8,7 @@ import android.service.quicksettings.TileService
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.app
 import li.songe.gkd.permission.writeSecureSettingsState
+import li.songe.gkd.util.componentName
 import li.songe.gkd.util.lastRestartA11yServiceTimeFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
@@ -135,6 +135,4 @@ fun fixRestartService(): Boolean {
     return false
 }
 
-private val a11yClsName by lazy {
-    ComponentName(app, A11yService::class.java).flattenToShortString()
-}
+val a11yClsName by lazy { A11yService::class.componentName.flattenToShortString() }
