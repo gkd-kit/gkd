@@ -196,12 +196,14 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
     implementation(libs.compose.ui)
-    implementation(libs.compose.material3)
     implementation(libs.compose.icons)
     implementation(libs.compose.preview)
     debugImplementation(libs.compose.tooling)
     androidTestImplementation(libs.compose.junit4)
+
     implementation(libs.compose.activity)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.navigation)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -238,7 +240,7 @@ dependencies {
 
     implementation(libs.others.utilcodex)
     implementation(libs.others.activityResultLauncher)
-    implementation(libs.others.floating.bubble.view)
+    implementation(libs.others.floatingBubbleView)
 
     implementation(libs.destinations.core)
     ksp(libs.destinations.ksp)
