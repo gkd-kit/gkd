@@ -238,9 +238,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.collections.immutable)
 
-    implementation(libs.others.utilcodex)
-    implementation(libs.others.activityResultLauncher)
-    implementation(libs.others.floatingBubbleView)
+    implementation(libs.utilcodex)
+    implementation(libs.activityResultLauncher)
+    implementation(libs.floatingBubbleView)
 
     implementation(libs.destinations.core)
     ksp(libs.destinations.ksp)
