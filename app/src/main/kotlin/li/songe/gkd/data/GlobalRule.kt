@@ -1,6 +1,5 @@
 package li.songe.gkd.data
 
-import kotlinx.collections.immutable.ImmutableMap
 import li.songe.gkd.service.launcherAppId
 import li.songe.gkd.util.ResolvedGlobalGroup
 import li.songe.gkd.util.systemAppsFlow
@@ -15,7 +14,7 @@ data class GlobalApp(
 class GlobalRule(
     rule: RawSubscription.RawGlobalRule,
     g: ResolvedGlobalGroup,
-    appInfoCache: ImmutableMap<String, AppInfo>,
+    appInfoCache: Map<String, AppInfo>,
 ) : ResolvedRule(
     rule = rule,
     g = g,

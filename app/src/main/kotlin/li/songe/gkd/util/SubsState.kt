@@ -4,12 +4,6 @@ import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.NetworkUtils
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.ImmutableMap
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,8 +30,7 @@ import li.songe.json5.decodeFromJson5String
 import java.net.URI
 
 val subsItemsFlow by lazy {
-    DbSet.subsItemDao.query().map { s -> s.toImmutableList() }
-        .stateIn(appScope, SharingStarted.Eagerly, persistentListOf())
+    DbSet.subsItemDao.query().stateIn(appScope, SharingStarted.Eagerly, emptyList())
 }
 
 data class SubsEntry(
@@ -56,9 +49,9 @@ data class SubsEntry(
     }
 }
 
-val subsLoadErrorsFlow = MutableStateFlow<ImmutableMap<Long, Exception>>(persistentMapOf())
-val subsRefreshErrorsFlow = MutableStateFlow<ImmutableMap<Long, Exception>>(persistentMapOf())
-val subsIdToRawFlow = MutableStateFlow<ImmutableMap<Long, RawSubscription>>(persistentMapOf())
+val subsLoadErrorsFlow = MutableStateFlow<Map<Long, Exception>>(emptyMap())
+val subsRefreshErrorsFlow = MutableStateFlow<Map<Long, Exception>>(emptyMap())
+val subsIdToRawFlow = MutableStateFlow<Map<Long, RawSubscription>>(emptyMap())
 
 val subsEntriesFlow by lazy {
     combine(
@@ -70,8 +63,8 @@ val subsEntriesFlow by lazy {
                 subsItem = s,
                 subscription = subsIdToRaw[s.id],
             )
-        }.toImmutableList()
-    }.stateIn(appScope, SharingStarted.Eagerly, persistentListOf())
+        }
+    }.stateIn(appScope, SharingStarted.Eagerly, emptyList())
 }
 
 
@@ -85,12 +78,12 @@ fun updateSubscription(subscription: RawSubscription) {
             } else {
                 newMap[subscription.id] = subscription
             }
-            subsIdToRawFlow.value = newMap.toImmutableMap()
+            subsIdToRawFlow.value = newMap
             if (subsLoadErrorsFlow.value.contains(subscription.id)) {
                 subsLoadErrorsFlow.update {
                     it.toMutableMap().apply {
                         remove(subscription.id)
-                    }.toImmutableMap()
+                    }
                 }
             }
             withContext(Dispatchers.IO) {
@@ -126,11 +119,11 @@ fun getGroupRawEnable(
 }
 
 data class RuleSummary(
-    val globalRules: ImmutableList<GlobalRule> = persistentListOf(),
-    val globalGroups: ImmutableList<ResolvedGlobalGroup> = persistentListOf(),
-    val appIdToRules: ImmutableMap<String, ImmutableList<AppRule>> = persistentMapOf(),
-    val appIdToGroups: ImmutableMap<String, ImmutableList<RawSubscription.RawAppGroup>> = persistentMapOf(),
-    val appIdToAllGroups: ImmutableMap<String, ImmutableList<ResolvedAppGroup>> = persistentMapOf(),
+    val globalRules: List<GlobalRule> = emptyList(),
+    val globalGroups: List<ResolvedGlobalGroup> = emptyList(),
+    val appIdToRules: Map<String, List<AppRule>> = emptyMap(),
+    val appIdToGroups: Map<String, List<RawSubscription.RawAppGroup>> = emptyMap(),
+    val appIdToAllGroups: Map<String, List<ResolvedAppGroup>> = emptyMap(),
 ) {
     val appSize = appIdToRules.keys.size
     val appGroupSize = appIdToGroups.values.sumOf { s -> s.size }
@@ -276,12 +269,11 @@ val ruleSummaryFlow by lazy {
             }
         }
         RuleSummary(
-            globalRules = globalRules.toImmutableList(),
-            globalGroups = globalGroups.toImmutableList(),
-            appIdToRules = appRules.mapValues { e -> e.value.toImmutableList() }.toImmutableMap(),
-            appIdToGroups = appGroups.mapValues { e -> e.value.toImmutableList() }.toImmutableMap(),
-            appIdToAllGroups = appAllGroups.mapValues { e -> e.value.toImmutableList() }
-                .toImmutableMap()
+            globalRules = globalRules,
+            globalGroups = globalGroups,
+            appIdToRules = appRules,
+            appIdToGroups = appGroups,
+            appIdToAllGroups = appAllGroups
         )
     }.flowOn(Dispatchers.Default).stateIn(appScope, SharingStarted.Eagerly, RuleSummary())
 }
@@ -321,8 +313,8 @@ private fun refreshRawSubsList(items: List<SubsItem>) {
             errors[s.id] = e
         }
     }
-    subsIdToRawFlow.value = subscriptions.toImmutableMap()
-    subsLoadErrorsFlow.value = errors.toImmutableMap()
+    subsIdToRawFlow.value = subscriptions
+    subsLoadErrorsFlow.value = errors
 }
 
 fun initSubsState() {
@@ -416,14 +408,14 @@ fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers
                     subsRefreshErrorsFlow.update {
                         it.toMutableMap().apply {
                             remove(subsEntry.subsItem.id)
-                        }.toImmutableMap()
+                        }
                     }
                 }
             } catch (e: Exception) {
                 subsRefreshErrorsFlow.update {
                     it.toMutableMap().apply {
                         set(subsEntry.subsItem.id, e)
-                    }.toImmutableMap()
+                    }
                 }
                 LogUtils.d("检测更新失败", e)
             }

@@ -10,7 +10,6 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
-import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
@@ -113,6 +112,6 @@ fun deleteSubscription(vararg subsIds: Long) {
                 }
             }
         }
-        subsIdToRawFlow.value = newMap.toImmutableMap()
+        subsIdToRawFlow.value = newMap
     }
 }
