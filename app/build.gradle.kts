@@ -236,7 +236,6 @@ dependencies {
     implementation(libs.google.accompanist.drawablepainter)
 
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.kotlinx.collections.immutable)
 
     implementation(libs.utilcodex)
     implementation(libs.activityResultLauncher)

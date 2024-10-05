@@ -17,7 +17,7 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
         override val value: String,
     ) : ValueExpression(value, "var")
 
-    data class Identifier internal constructor(
+    data class Identifier(
         override val start: Int,
         val name: String,
     ) : Variable(name) {
@@ -35,7 +35,7 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
         val isNotEqual = name == "notEqual"
     }
 
-    data class MemberExpression internal constructor(
+    data class MemberExpression(
         override val start: Int,
         override val end: Int,
         val object0: Variable,
@@ -61,7 +61,7 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
         val isPropertyIfElse = property == "ifElse"
     }
 
-    data class CallExpression internal constructor(
+    data class CallExpression(
         override val start: Int,
         override val end: Int,
         val callee: Variable,
@@ -173,26 +173,26 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
             get() = emptyArray()
     }
 
-    data class NullLiteral internal constructor(
+    data class NullLiteral(
         override val start: Int,
     ) : LiteralExpression(null, "null") {
         override val end = start + 4
     }
 
-    data class BooleanLiteral internal constructor(
+    data class BooleanLiteral(
         override val start: Int,
         override val value: Boolean
     ) : LiteralExpression(value, "boolean") {
         override val end = start + if (value) 4 else 5
     }
 
-    data class IntLiteral internal constructor(
+    data class IntLiteral(
         override val start: Int,
         override val end: Int,
         override val value: Int
     ) : LiteralExpression(value, "int")
 
-    data class StringLiteral internal constructor(
+    data class StringLiteral @JsExport.Ignore constructor(
         override val start: Int,
         override val end: Int,
         override val value: String,

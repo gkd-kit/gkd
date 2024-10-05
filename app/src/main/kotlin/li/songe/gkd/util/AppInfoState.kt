@@ -7,9 +7,6 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import com.blankj.utilcode.util.LogUtils
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
@@ -20,11 +17,11 @@ import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.toAppInfo
 
-val appInfoCacheFlow = MutableStateFlow(persistentMapOf<String, AppInfo>().toImmutableMap())
+val appInfoCacheFlow = MutableStateFlow(emptyMap<String, AppInfo>())
 
 val systemAppInfoCacheFlow by lazy {
     appInfoCacheFlow.map(appScope) { c ->
-        c.filter { a -> a.value.isSystem }.toImmutableMap()
+        c.filter { a -> a.value.isSystem }
     }
 }
 
@@ -34,7 +31,7 @@ val orderedAppInfosFlow by lazy {
     appInfoCacheFlow.map(appScope) { c ->
         c.values.sortedWith { a, b ->
             collator.compare(a.name, b.name)
-        }.toImmutableList()
+        }
     }
 }
 
@@ -92,7 +89,7 @@ private fun updateAppInfo(appId: String) {
             } else {
                 newMap.remove(appId)
             }
-            appInfoCacheFlow.value = newMap.toImmutableMap()
+            appInfoCacheFlow.value = newMap
         }
     }
 }
@@ -116,7 +113,7 @@ suspend fun initOrResetAppInfoCache() {
                 }
             }
         }
-        appInfoCacheFlow.value = appMap.toImmutableMap()
+        appInfoCacheFlow.value = appMap
     }
     appRefreshingFlow.value = false
     LogUtils.d("initOrResetAppInfoCache end")

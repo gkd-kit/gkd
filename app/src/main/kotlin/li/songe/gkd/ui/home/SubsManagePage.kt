@@ -56,7 +56,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dylanc.activityresult.launcher.launchForResult
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -354,7 +353,7 @@ fun useSubsManagePage(): ScaffoldExt {
                             this[index] = subsItem.copy(order = index)
                         }
                     }
-                }.toImmutableList()
+                }
                 draggedFlag.value = true
             }
         Box(

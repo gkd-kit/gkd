@@ -3,7 +3,7 @@ package li.songe.selector
 import kotlin.js.JsExport
 
 @JsExport
-data class SyntaxError internal constructor(
+data class SyntaxError @JsExport.Ignore constructor(
     val expectedValue: String,
     val position: Int,
     val source: String,
