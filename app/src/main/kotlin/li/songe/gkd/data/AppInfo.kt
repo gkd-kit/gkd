@@ -22,18 +22,16 @@ data class AppInfo(
 )
 
 val selfAppInfo by lazy {
-    app.packageManager.getPackageInfo(app.packageName, 0).toAppInfo()!!
+    app.packageManager.getPackageInfo(app.packageName, 0).toAppInfo()
 }
 
 /**
  * 平均单次调用时间 11ms
  */
-fun PackageInfo.toAppInfo(): AppInfo? {
-    applicationInfo ?: return null
+fun PackageInfo.toAppInfo(): AppInfo {
+    val info = applicationInfo
     return AppInfo(
         id = packageName,
-        name = applicationInfo.loadLabel(app.packageManager).toString(),
-        icon = applicationInfo.loadIcon(app.packageManager),
         versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             longVersionCode
         } else {
@@ -41,8 +39,10 @@ fun PackageInfo.toAppInfo(): AppInfo? {
             versionCode.toLong()
         },
         versionName = versionName,
-        isSystem = (ApplicationInfo.FLAG_SYSTEM and applicationInfo.flags) != 0,
         mtime = lastUpdateTime,
-        hidden = app.packageManager.getLaunchIntentForPackage(packageName) == null
+        hidden = app.packageManager.getLaunchIntentForPackage(packageName) == null,
+        name = info?.run { loadLabel(app.packageManager).toString() } ?: packageName,
+        icon = info?.loadIcon(app.packageManager),
+        isSystem = info?.run { (ApplicationInfo.FLAG_SYSTEM and flags) != 0 } ?: false,
     )
 }

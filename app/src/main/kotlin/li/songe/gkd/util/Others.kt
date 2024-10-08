@@ -1,6 +1,7 @@
 package li.songe.gkd.util
 
 import android.content.ComponentName
+import android.graphics.Bitmap
 import li.songe.gkd.META
 import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
@@ -13,3 +14,15 @@ private val componentNameCache by lazy { HashMap<String, ComponentName>() }
 
 val KClass<*>.componentName
     get() = componentNameCache.getOrPut(jvmName) { ComponentName(META.appId, jvmName) }
+
+fun Bitmap.isEmptyBitmap(): Boolean {
+    // png
+    repeat(width) { x ->
+        repeat(height) { y ->
+            if (getPixel(x, y) != 0) {
+                return false
+            }
+        }
+    }
+    return true
+}
