@@ -83,9 +83,8 @@ private fun updateAppInfo(appId: String) {
             } catch (e: PackageManager.NameNotFoundException) {
                 null
             }
-            val newAppInfo = info?.toAppInfo()
-            if (newAppInfo != null) {
-                newMap[appId] = newAppInfo
+            if (info != null) {
+                newMap[appId] = info.toAppInfo()
             } else {
                 newMap.remove(appId)
             }
@@ -106,10 +105,7 @@ suspend fun initOrResetAppInfoCache() {
         withContext(Dispatchers.IO) {
             app.packageManager.getInstalledPackages(0).forEach { packageInfo ->
                 if (!oldAppIds.contains(packageInfo.packageName)) {
-                    val info = packageInfo.toAppInfo()
-                    if (info != null) {
-                        appMap[packageInfo.packageName] = info
-                    }
+                    appMap[packageInfo.packageName] = packageInfo.toAppInfo()
                 }
             }
         }
