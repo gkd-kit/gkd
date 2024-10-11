@@ -44,8 +44,8 @@ data class NewVersion(
     val versionName: String,
     val changelog: String,
     val downloadUrl: String,
+    val fileSize: Long,
     val versionLogs: List<VersionLog> = emptyList(),
-    val fileSize: Long? = null,
 )
 
 @Serializable
@@ -97,12 +97,12 @@ private fun UpdateStatus.startDownload(viewModel: MainViewModel, newVersion: New
     job = viewModel.viewModelScope.launch(Dispatchers.IO) {
         try {
             val channel = client.get(URI(UPDATE_URL).resolve(newVersion.downloadUrl).toString()) {
-                onDownload { bytesSentTotal, contentLength ->
+                onDownload { bytesSentTotal, _ ->
                     // contentLength 在某些机型上概率错误
                     val downloadStatus = downloadStatusFlow.value
                     if (downloadStatus is LoadStatus.Loading) {
                         downloadStatusFlow.value = LoadStatus.Loading(
-                            bytesSentTotal.toFloat() / (newVersion.fileSize ?: contentLength)
+                            bytesSentTotal.toFloat() / (newVersion.fileSize)
                         )
                     } else if (downloadStatus is LoadStatus.Failure) {
                         // 提前终止下载
