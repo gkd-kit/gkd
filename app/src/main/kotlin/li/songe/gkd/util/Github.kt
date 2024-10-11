@@ -84,6 +84,7 @@ suspend fun uploadFileToGithub(
         }))
     }.body<UploadPoliciesAssetsResponse>()
 
+    val byteArray = file.readBytes()
     // upload to s3
     client.post(policiesResp.upload_url) {
         setCommonHeaders(cookie)
@@ -91,13 +92,13 @@ suspend fun uploadFileToGithub(
             policiesResp.form.forEach { (key, value) ->
                 append(key, value)
             }
-            append("file", file.readBytes(), Headers.build {
+            append("file", byteArray, Headers.build {
                 append(HttpHeaders.ContentType, "application/x-zip-compressed")
                 append(HttpHeaders.ContentDisposition, "filename=\"file.zip\"")
             })
         }))
         onUpload { bytesSentTotal, contentLength ->
-            listener(bytesSentTotal / contentLength.toFloat())
+            listener(bytesSentTotal / (contentLength ?: byteArray.size).toFloat())
         }
     }
 
