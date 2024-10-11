@@ -58,7 +58,7 @@ data class NodeInfo(
                 stack.add(TempNodeData(root, null, 0, 0))
                 while (stack.isNotEmpty()) {
                     times++
-                    val node = stack.removeLast()
+                    val node = stack.removeAt(stack.lastIndex)
                     node.id = times - 1
                     val children = getChildren(node.node).mapIndexed { i, child ->
                         TempNodeData(
@@ -131,7 +131,7 @@ data class NodeInfo(
                         } else {
                             val tempStack = mutableListOf(n)
                             while (tempStack.isNotEmpty()) {
-                                val top = tempStack.removeLast()
+                                val top = tempStack.removeAt(tempStack.lastIndex)
                                 top.idQf = n.idQf
                                 if (idTextQf) {
                                     top.textQf = n.textQf
@@ -168,7 +168,7 @@ data class NodeInfo(
                         } else {
                             val tempStack = mutableListOf(n)
                             while (tempStack.isNotEmpty()) {
-                                val top = tempStack.removeLast()
+                                val top = tempStack.removeAt(tempStack.lastIndex)
                                 top.textQf = n.textQf
                                 if (idTextQf) {
                                     top.idQf = n.idQf
