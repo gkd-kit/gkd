@@ -9,10 +9,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import li.songe.gkd.data.ResolvedAppGroup
+import li.songe.gkd.data.ResolvedGlobalGroup
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.util.ResolvedAppGroup
-import li.songe.gkd.util.ResolvedGlobalGroup
 import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.collator
 import li.songe.gkd.util.findOption

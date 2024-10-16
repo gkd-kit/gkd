@@ -48,7 +48,7 @@ fun createComplexSnapshot(): ComplexSnapshot {
         screenWidth = ScreenUtils.getScreenWidth(),
         isLandscape = ScreenUtils.isLandscape(),
 
-        nodes = NodeInfo.info2nodeList(currentAbNode)
+        nodes = info2nodeList(currentAbNode)
     )
 }
 

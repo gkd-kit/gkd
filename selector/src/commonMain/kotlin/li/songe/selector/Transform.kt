@@ -2,6 +2,7 @@ package li.songe.selector
 
 import kotlin.js.JsExport
 
+@Suppress("unused")
 @JsExport
 class Transform<T> @JsExport.Ignore constructor(
     val getAttr: (Any, String) -> Any?,
@@ -13,7 +14,7 @@ class Transform<T> @JsExport.Ignore constructor(
     val getRoot: (T) -> T? = { node ->
         var parentVar: T? = getParent(node)
         while (parentVar != null) {
-            parentVar = getParent(parentVar!!)
+            parentVar = getParent(parentVar)
         }
         parentVar
     },
@@ -59,7 +60,7 @@ class Transform<T> @JsExport.Ignore constructor(
             var parentVar: T? = getParent(node) ?: return@sequence
             var offset = 0
             while (parentVar != null) {
-                parentVar?.let {
+                parentVar.let {
                     if (connectExpression.checkOffset(offset)) {
                         yield(it)
                     }

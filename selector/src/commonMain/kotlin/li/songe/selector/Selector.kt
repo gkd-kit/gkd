@@ -69,21 +69,6 @@ class Selector(
         expressions.distinct().toTypedArray()
     }
 
-    val useCache = run {
-        if (connectWrappers.isNotEmpty()) {
-            return@run true
-        }
-        binaryExpressions.forEach { b ->
-            if (b.properties.any { useCacheProperties.contains(it) }) {
-                return@run true
-            }
-            if (b.methods.any { useCacheMethods.contains(it) }) {
-                return@run true
-            }
-        }
-        return@run false
-    }
-
     fun isSlow(matchOption: MatchOption): Boolean {
         if (matchOption.quickFind && quickFindValue == null && !isMatchRoot) {
             return true
@@ -119,17 +104,10 @@ class Selector(
         fun parse(source: String) = selectorParser(source)
         fun parseOrNull(source: String) = try {
             selectorParser(source)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
-}
-
-private val useCacheProperties by lazy {
-    arrayOf("index", "parent", "depth")
-}
-private val useCacheMethods by lazy {
-    arrayOf("getChild")
 }
 
 private fun getExpType(exp: ValueExpression, typeInfo: TypeInfo): PrimitiveType? {

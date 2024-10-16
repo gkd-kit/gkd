@@ -57,6 +57,7 @@ import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
+import li.songe.gkd.data.ResolvedGroup
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
@@ -70,7 +71,6 @@ import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
-import li.songe.gkd.util.ResolvedGroup
 import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchTry

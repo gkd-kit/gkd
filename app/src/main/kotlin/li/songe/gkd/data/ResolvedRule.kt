@@ -1,18 +1,10 @@
 package li.songe.gkd.data
 
 import android.accessibilityservice.AccessibilityService
-import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Job
-import li.songe.gkd.META
-import li.songe.gkd.service.A11yService
-import li.songe.gkd.service.createCacheTransform
-import li.songe.gkd.service.createNoCacheTransform
 import li.songe.gkd.service.lastTriggerRule
 import li.songe.gkd.service.lastTriggerTime
-import li.songe.gkd.service.querySelector
-import li.songe.gkd.service.safeActiveWindow
-import li.songe.gkd.util.ResolvedGroup
 import li.songe.selector.MatchOption
 import li.songe.selector.Selector
 
@@ -26,12 +18,13 @@ sealed class ResolvedRule(
     val config = g.config
     val key = rule.key
     val index = group.rules.indexOfFirst { r -> r === rule }
+    val excludeData = g.excludeData
     private val preKeys = (rule.preKeys ?: emptyList()).toSet()
-    private val matches =
+    val matches =
         (rule.matches ?: emptyList()).map { s -> group.cacheMap[s] ?: Selector.parse(s) }
-    private val excludeMatches =
+    val excludeMatches =
         (rule.excludeMatches ?: emptyList()).map { s -> group.cacheMap[s] ?: Selector.parse(s) }
-    private val anyMatches =
+    val anyMatches =
         (rule.anyMatches ?: emptyList()).map { s -> group.cacheMap[s] ?: Selector.parse(s) }
 
     private val resetMatch = rule.resetMatch ?: group.resetMatch
@@ -39,11 +32,11 @@ sealed class ResolvedRule(
     val actionDelay = rule.actionDelay ?: group.actionDelay ?: 0L
     private val matchTime = rule.matchTime ?: group.matchTime
     private val forcedTime = rule.forcedTime ?: group.forcedTime ?: 0L
-    private val matchOption = MatchOption(
+    val matchOption = MatchOption(
         quickFind = rule.quickFind ?: group.quickFind ?: false,
         fastQuery = rule.fastQuery ?: group.fastQuery ?: false
     )
-    private val matchRoot = rule.matchRoot ?: group.matchRoot ?: false
+    val matchRoot = rule.matchRoot ?: group.matchRoot ?: false
     val order = rule.order ?: group.order ?: 0
 
     private val actionCdKey = rule.actionCdKey ?: group.actionCdKey
@@ -62,6 +55,18 @@ sealed class ResolvedRule(
 
     private val hasSlowSelector by lazy {
         (matches + excludeMatches + anyMatches).any { s -> s.isSlow(matchOption) }
+    }
+    val priorityTime = rule.priorityTime ?: group.priorityTime ?: 0
+    val priorityActionMaximum = rule.priorityActionMaximum ?: group.priorityActionMaximum ?: 1
+    val priorityEnabled: Boolean
+        get() = priorityTime > 0
+
+    fun isPriority(): Boolean {
+        if (!priorityEnabled) return false
+        if (priorityActionMaximum <= actionCount.value) return false
+        if (!status.ok) return false
+        val t = System.currentTimeMillis()
+        return t - matchChangedTime < priorityTime + matchDelay
     }
 
     val isSlow by lazy { preKeys.isEmpty() && (matchTime == null || matchTime > 10_000L) && hasSlowSelector }
@@ -138,52 +143,6 @@ sealed class ResolvedRule(
         else -> true
     }
 
-    private val useCache = (matches + excludeMatches + anyMatches).any { s -> s.useCache }
-    private val transform = if (useCache) defaultCacheTransform else defaultTransform
-
-    fun query(
-        node: AccessibilityNodeInfo?,
-        isRootNode: Boolean,
-    ): AccessibilityNodeInfo? {
-        val t = System.currentTimeMillis()
-        if (t - lastCacheTime > MIN_CACHE_INTERVAL) {
-            clearNodeCache(t)
-        }
-        val nodeInfo = if (matchRoot) {
-            val rootNode = (if (isRootNode) {
-                node
-            } else {
-                A11yService.instance?.safeActiveWindow
-            }) ?: return null
-            rootNode.apply {
-                transform.cache.rootNode = this
-            }
-        } else {
-            node
-        }
-        if (nodeInfo == null) return null
-        var target: AccessibilityNodeInfo? = null
-        if (anyMatches.isNotEmpty()) {
-            for (selector in anyMatches) {
-                target = nodeInfo.querySelector(
-                    selector, matchOption, transform.transform, isRootNode || matchRoot
-                ) ?: break
-            }
-            if (target == null) return null
-        }
-        for (selector in matches) {
-            target = nodeInfo.querySelector(
-                selector, matchOption, transform.transform, isRootNode || matchRoot
-            ) ?: return null
-        }
-        for (selector in excludeMatches) {
-            nodeInfo.querySelector(
-                selector, matchOption, transform.transform, isRootNode || matchRoot
-            )?.let { return null }
-        }
-        return target
-    }
-
     private val performer = ActionPerformer.getAction(rule.action ?: rule.position?.let {
         ActionPerformer.ClickCenter.action
     })
@@ -229,13 +188,10 @@ sealed class ResolvedRule(
         return "id:${subsItem.id}, v:${rawSubs.version}, type:${type}, gKey=${group.key}, gName:${group.name}, index:${index}, key:${key}, status:${status.name}"
     }
 
-    val excludeData = ExcludeData.parse(config?.exclude)
-
     abstract val type: String
 
     // 范围越精确, 优先级越高
     abstract fun matchActivity(appId: String, activityId: String? = null): Boolean
-
 }
 
 sealed class RuleStatus(val name: String) {
@@ -246,34 +202,21 @@ sealed class RuleStatus(val name: String) {
     data object Status4 : RuleStatus("超出匹配时间")
     data object Status5 : RuleStatus("处于冷却时间")
     data object Status6 : RuleStatus("处于点击延迟")
+
+    val ok: Boolean
+        get() = this === StatusOk
 }
 
 fun getFixActivityIds(
     appId: String,
     activityIds: List<String>?,
 ): List<String> {
-    return (activityIds ?: emptyList()).map { activityId ->
+    if (activityIds == null || activityIds.isEmpty()) return emptyList()
+    return activityIds.map { activityId ->
         if (activityId.startsWith('.')) { // .a.b.c -> com.x.y.x.a.b.c
             appId + activityId
         } else {
             activityId
         }
     }
-}
-
-private val defaultTransform by lazy { createNoCacheTransform() }
-private val defaultCacheTransform by lazy { createCacheTransform() }
-private var lastCacheTime = 0L
-private const val MIN_CACHE_INTERVAL = 2000L
-
-fun clearNodeCache(t: Long = System.currentTimeMillis()) {
-    lastCacheTime = t
-    if (META.debuggable) {
-        val sizeList = defaultCacheTransform.cache.sizeList
-        if (sizeList.any { it > 0 }) {
-            Log.d("cache", "clear cache, sizeList=$sizeList")
-        }
-    }
-    defaultTransform.cache.clear()
-    defaultCacheTransform.cache.clear()
 }

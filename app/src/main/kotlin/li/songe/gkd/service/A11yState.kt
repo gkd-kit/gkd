@@ -31,6 +31,10 @@ data class TopActivity(
     fun format(): String {
         return "${appId}/${activityId}/${number}"
     }
+
+    fun sameAs(other: TopActivity): Boolean {
+        return appId == other.appId && activityId == other.activityId
+    }
 }
 
 val topActivityFlow = MutableStateFlow(TopActivity())
@@ -39,17 +43,16 @@ private val activityLogMutex by lazy { Mutex() }
 private var activityLogCount = 0
 private var lastActivityChangeTime = 0L
 fun updateTopActivity(topActivity: TopActivity) {
-    val isSameActivity =
-        topActivityFlow.value.appId == topActivity.appId && topActivityFlow.value.activityId == topActivity.activityId
+    val isSameActivity = topActivityFlow.value.sameAs(topActivity)
     if (isSameActivity) {
-        if (isActivityVisible() && topActivity.appId == META.appId) {
-            return
-        }
         if (topActivityFlow.value.number == topActivity.number) {
             return
         }
+        if (isActivityVisible() && topActivity.appId == META.appId) {
+            return
+        }
         val t = System.currentTimeMillis()
-        if (t - lastActivityChangeTime < 1000) {
+        if (t - lastActivityChangeTime < 1500) {
             return
         }
     }
@@ -76,13 +79,22 @@ fun updateTopActivity(topActivity: TopActivity) {
     lastActivityChangeTime = System.currentTimeMillis()
 }
 
-data class ActivityRule(
+class ActivityRule(
     val appRules: List<AppRule> = emptyList(),
     val globalRules: List<GlobalRule> = emptyList(),
     val topActivity: TopActivity = TopActivity(),
     val ruleSummary: RuleSummary = RuleSummary(),
 ) {
-    val currentRules = (appRules + globalRules).sortedBy { r -> r.order }
+    val currentRules = (appRules + globalRules).sortedBy { it.order }
+    val hasPriorityRule = currentRules.size > 1 && currentRules.any { it.priorityEnabled }
+    val activePriority: Boolean
+        get() = hasPriorityRule && currentRules.any { it.isPriority() }
+    val priorityRules: List<ResolvedRule>
+        get() = if (hasPriorityRule) {
+            currentRules.sortedBy { if (it.isPriority()) 0 else 1 }
+        } else {
+            currentRules
+        }
 }
 
 val activityRuleFlow by lazy { MutableStateFlow(ActivityRule()) }

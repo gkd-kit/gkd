@@ -41,7 +41,6 @@ import li.songe.gkd.data.GkdAction
 import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.RuleStatus
-import li.songe.gkd.data.clearNodeCache
 import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.shizuku.safeGetTopActivity
@@ -85,10 +84,9 @@ class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA11yEve
     override fun onDestroy() {
         super.onDestroy()
         onDestroyed()
-        scope.cancel()
     }
 
-    val scope = CoroutineScope(Dispatchers.Default)
+    val scope = CoroutineScope(Dispatchers.Default).apply { onDestroyed { cancel() } }
 
     init {
         useRunningState()
@@ -119,12 +117,20 @@ class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA11yEve
             selector.checkSelector()?.let {
                 throw RpcError(it)
             }
-            val targetNode = serviceVal.safeActiveWindow?.querySelector(
-                selector, MatchOption(
-                    quickFind = gkdAction.quickFind,
-                    fastQuery = gkdAction.fastQuery,
-                ), createCacheTransform().transform, isRootNode = true
-            ) ?: throw RpcError("没有查询到节点")
+            val matchOption = MatchOption(
+                quickFind = gkdAction.quickFind,
+                fastQuery = gkdAction.fastQuery,
+            )
+            val cache = A11yContext(true)
+
+            val targetNode = serviceVal.safeActiveWindow?.let {
+                cache.rootCache = it
+                cache.querySelector(
+                    it,
+                    selector,
+                    matchOption
+                )
+            } ?: throw RpcError("没有查询到节点")
 
             if (gkdAction.action == null) {
                 // 仅查询
@@ -198,17 +204,18 @@ private fun A11yService.useMatchRule() {
                         }
                         null
                     } else {
-                        if (META.debuggable) {
-                            Log.d(
-                                "queryEvents",
-                                "保留最后两个事件:${queryEvents.first().appId}${queryEvents.map { it.className }}"
-                            )
-                        }
                         // type,appId,className 一致, 需要在 synchronized 外验证是否是同一节点
                         arrayOf(
                             queryEvents[queryEvents.size - 2],
                             queryEvents.last(),
-                        )
+                        ).apply {
+                            if (META.debuggable) {
+                                Log.d(
+                                    "queryEvents",
+                                    "保留最后两个事件:${queryEvents.first().appId}=${map { it.className }}"
+                                )
+                            }
+                        }
                     }
                 } else if (queryEvents.size == 1) {
                     if (META.debuggable) {
@@ -246,8 +253,7 @@ private fun A11yService.useMatchRule() {
             }
         }
         var lastNodeUsed = false
-        clearNodeCache()
-        for (rule in activityRule.currentRules) { // 规则数量有可能过多导致耗时过长
+        for (rule in activityRule.priorityRules) { // 规则数量有可能过多导致耗时过长
             if (delayRule != null && delayRule !== rule) continue
             val statusCode = rule.status
             if (statusCode == RuleStatus.Status3 && rule.matchDelayJob == null) {
@@ -299,7 +305,7 @@ private fun A11yService.useMatchRule() {
                 return@launchQuery
             }
             if (!matchApp) continue
-            val target = rule.query(nodeVal, lastNode == null) ?: continue
+            val target = a11yContext.queryRule(rule, nodeVal) ?: continue
             if (activityRule !== getAndUpdateCurrentRules()) break
             if (rule.checkDelay() && rule.actionDelayJob == null) {
                 rule.actionDelayJob = scope.launch(A11yService.actionThread) {
@@ -364,10 +370,10 @@ private fun A11yService.useMatchRule() {
             // https://github.com/gkd-kit/gkd/issues/622
             lastGetAppIdTime = t
             lastAppId = if (storeFlow.value.enableShizukuActivity) {
-                withTimeoutOrNull(100) { activeWindowAppId } ?: safeGetTopActivity()?.appId
+                withTimeoutOrNull(100) { safeActiveWindowAppId } ?: safeGetTopActivity()?.appId
             } else {
                 null
-            } ?: activeWindowAppId
+            } ?: safeActiveWindowAppId
         }
         return lastAppId
     }
@@ -438,6 +444,7 @@ private fun A11yService.useMatchRule() {
         }
 
         synchronized(queryEvents) { queryEvents.addAll(consumedEvents) }
+        a11yContext.interruptKey++
         newQueryTask(a11yEvent)
     }
 
