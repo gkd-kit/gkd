@@ -22,6 +22,8 @@ import li.songe.gkd.data.AppRule
 import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.GlobalRule
 import li.songe.gkd.data.RawSubscription
+import li.songe.gkd.data.ResolvedAppGroup
+import li.songe.gkd.data.ResolvedGlobalGroup
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.SubsVersion

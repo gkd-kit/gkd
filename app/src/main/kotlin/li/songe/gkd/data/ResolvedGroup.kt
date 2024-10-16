@@ -1,15 +1,13 @@
-package li.songe.gkd.util
-
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.SubsItem
+package li.songe.gkd.data
 
 sealed class ResolvedGroup(
     open val group: RawSubscription.RawGroupProps,
     val subscription: RawSubscription,
     val subsItem: SubsItem,
     val config: SubsConfig?,
-)
+) {
+    val excludeData = ExcludeData.parse(config?.exclude)
+}
 
 class ResolvedAppGroup(
     override val group: RawSubscription.RawAppGroup,

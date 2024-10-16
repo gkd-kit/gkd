@@ -18,6 +18,7 @@ fun CoroutineScope.launchTry(
         block()
     } catch (e: CancellationException) {
         e.printStackTrace()
+    } catch (_: InterruptRuleMatchException) {
     } catch (e: Exception) {
         e.printStackTrace()
         LogUtils.d(e)

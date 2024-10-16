@@ -190,6 +190,8 @@ data class RawSubscription(
         val snapshotUrls: List<String>?
         val excludeSnapshotUrls: List<String>?
         val exampleUrls: List<String>?
+        val priorityTime: Long?
+        val priorityActionMaximum: Int?
     }
 
     sealed interface RawRuleProps : RawCommonProps {
@@ -267,6 +269,8 @@ data class RawSubscription(
         override val resetMatch: String?,
         override val actionCdKey: Int?,
         override val actionMaximumKey: Int?,
+        override val priorityTime: Long?,
+        override val priorityActionMaximum: Int?,
         override val order: Int?,
         override val forcedTime: Long?,
         override val snapshotUrls: List<String>?,
@@ -306,6 +310,8 @@ data class RawSubscription(
         override val resetMatch: String?,
         override val actionCdKey: Int?,
         override val actionMaximumKey: Int?,
+        override val priorityTime: Long?,
+        override val priorityActionMaximum: Int?,
         override val order: Int?,
         override val forcedTime: Long?,
         override val snapshotUrls: List<String>?,
@@ -340,6 +346,8 @@ data class RawSubscription(
         override val fastQuery: Boolean?,
         override val matchRoot: Boolean?,
         override val actionMaximum: Int?,
+        override val priorityTime: Long?,
+        override val priorityActionMaximum: Int?,
         override val order: Int?,
         override val forcedTime: Long?,
         override val matchDelay: Long?,
@@ -385,6 +393,8 @@ data class RawSubscription(
         override val fastQuery: Boolean?,
         override val matchRoot: Boolean?,
         override val actionMaximum: Int?,
+        override val priorityTime: Long?,
+        override val priorityActionMaximum: Int?,
         override val order: Int?,
         override val forcedTime: Long?,
         override val matchDelay: Long?,
@@ -626,6 +636,8 @@ data class RawSubscription(
                 excludeVersionNames = getStringIArray(jsonObject, "excludeVersionNames"),
                 position = getPosition(jsonObject),
                 forcedTime = getLong(jsonObject, "forcedTime"),
+                priorityTime = getLong(jsonObject, "priorityTime"),
+                priorityActionMaximum = getInt(jsonObject, "priorityActionMaximum"),
             )
         }
 
@@ -671,6 +683,8 @@ data class RawSubscription(
                 excludeVersionCodes = getLongIArray(jsonObject, "excludeVersionCodes"),
                 versionNames = getStringIArray(jsonObject, "versionNames"),
                 excludeVersionNames = getStringIArray(jsonObject, "excludeVersionNames"),
+                priorityTime = getLong(jsonObject, "priorityTime"),
+                priorityActionMaximum = getInt(jsonObject, "priorityActionMaximum"),
             )
         }
 
@@ -736,6 +750,8 @@ data class RawSubscription(
                 order = getInt(jsonObject, "order"),
                 forcedTime = getLong(jsonObject, "forcedTime"),
                 position = getPosition(jsonObject),
+                priorityTime = getLong(jsonObject, "priorityTime"),
+                priorityActionMaximum = getInt(jsonObject, "priorityActionMaximum"),
             )
         }
 
@@ -773,6 +789,8 @@ data class RawSubscription(
                 order = getInt(jsonObject, "order"),
                 scopeKeys = getIntIArray(jsonObject, "scopeKeys"),
                 forcedTime = getLong(jsonObject, "forcedTime"),
+                priorityTime = getLong(jsonObject, "priorityTime"),
+                priorityActionMaximum = getInt(jsonObject, "priorityActionMaximum"),
             )
         }
 

@@ -26,3 +26,5 @@ fun Bitmap.isEmptyBitmap(): Boolean {
     }
     return true
 }
+
+class InterruptRuleMatchException() : Exception()

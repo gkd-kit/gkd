@@ -11,7 +11,7 @@ import li.songe.gkd.debug.SnapshotExt.captureSnapshot
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.TopActivity
 import li.songe.gkd.service.getAndUpdateCurrentRules
-import li.songe.gkd.service.safeActiveWindow
+import li.songe.gkd.service.safeActiveWindowAppId
 import li.songe.gkd.service.updateTopActivity
 import li.songe.gkd.shizuku.safeGetTopActivity
 import li.songe.gkd.util.launchTry
@@ -27,7 +27,7 @@ class SnapshotTileService : TileService() {
             return
         }
         appScope.launchTry(Dispatchers.IO) {
-            val oldAppId = service.safeActiveWindow?.packageName?.toString()
+            val oldAppId = service.safeActiveWindowAppId
                 ?: return@launchTry toast("获取界面信息根节点失败")
 
             val startTime = System.currentTimeMillis()
@@ -37,7 +37,7 @@ class SnapshotTileService : TileService() {
 
             val timeoutText = "没有检测到界面切换,捕获失败"
             while (true) {
-                val latestAppId = service.safeActiveWindow?.packageName?.toString()
+                val latestAppId = service.safeActiveWindowAppId
                 if (latestAppId == null) {
                     // https://github.com/gkd-kit/gkd/issues/713
                     delay(250)

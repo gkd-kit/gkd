@@ -208,11 +208,11 @@ private fun Activity.fixTopPadding() {
 
 @Composable
 private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Boolean>) {
-    val state = stateFlow.collectAsState()
-    if (state.value) {
+    val state = stateFlow.collectAsState().value
+    if (state) {
         val appId = "moe.shizuku.privileged.api"
-        val appInfoCache = appInfoCacheFlow.collectAsState()
-        val installed = appInfoCache.value.contains(appId)
+        val appInfoCache = appInfoCacheFlow.collectAsState().value
+        val installed = appInfoCache.contains(appId)
         AlertDialog(
             onDismissRequest = { stateFlow.value = false },
             title = { Text(text = "授权错误") },

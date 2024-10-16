@@ -1,7 +1,5 @@
 package li.songe.gkd.data
 
-import li.songe.gkd.util.ResolvedAppGroup
-
 class AppRule(
     rule: RawSubscription.RawAppRule,
     g: ResolvedAppGroup,
