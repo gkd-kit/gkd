@@ -36,6 +36,12 @@ class A11yContext(
     var rootCache: AccessibilityNodeInfo? = null
 
     private fun clearNodeCache() {
+        if (META.debuggable) {
+            val sizeList = listOf(childCache.size(), parentCache.size(), indexCache.size())
+            if (sizeList.any { it > 0 }) {
+                Log.d("cache", "clear cache -> $sizeList")
+            }
+        }
         rootCache = null
         try {
             childCache.evictAll()
@@ -51,16 +57,17 @@ class A11yContext(
     }
 
     private var lastClearTime = 0L
+    private var lastAppChangeTime = appChangeTime
     private fun clearNodeCacheIfTimeout() {
-        val currentTime = System.currentTimeMillis()
-        if (currentTime - lastClearTime > 5000L) {
-            lastClearTime = currentTime
-            if (META.debuggable) {
-                val sizeList = listOf(childCache.size(), parentCache.size(), indexCache.size())
-                if (sizeList.any { it > 0 }) {
-                    Log.d("cache", "clear cache -> $sizeList")
-                }
-            }
+        if (appChangeTime != lastAppChangeTime) {
+            lastAppChangeTime = appChangeTime
+            lastClearTime = System.currentTimeMillis()
+            clearNodeCache()
+            return
+        }
+        val t = System.currentTimeMillis()
+        if (t - lastClearTime > 30_000L) {
+            lastClearTime = t
             clearNodeCache()
         }
     }
@@ -74,10 +81,10 @@ class A11yContext(
     private fun guardInterrupt() {
         if (disableInterrupt) return
         if (interruptInnerKey == interruptKey) return
-        if (!activityRuleFlow.value.activePriority) return
-        val rule = currentRule ?: return
-        if (rule.isPriority()) return
         interruptInnerKey = interruptKey
+        val rule = currentRule ?: return
+        if (!activityRuleFlow.value.currentRules.contains(rule)) return
+        if (rule.isPriority()) return
         if (META.debuggable) {
             Log.d("guardInterrupt", "中断 rule=${rule.statusText()}")
         }
