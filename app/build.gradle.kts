@@ -58,8 +58,8 @@ android {
         targetSdk = project.properties["android_targetSdk"].toString().toInt()
 
         applicationId = "li.songe.gkd"
-        versionCode = 43
-        versionName = "1.9.0-beta.1"
+        versionCode = 44
+        versionName = "1.9.0-beta.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
