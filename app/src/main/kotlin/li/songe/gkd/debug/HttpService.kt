@@ -45,6 +45,8 @@ import li.songe.gkd.notif.notifyService
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.util.LOCAL_HTTP_SUBS_ID
+import li.songe.gkd.util.OnCreate
+import li.songe.gkd.util.OnDestroy
 import li.songe.gkd.util.SERVER_SCRIPT_URL
 import li.songe.gkd.util.getIpAddressInLocalNetwork
 import li.songe.gkd.util.keepNullJson
@@ -54,46 +56,62 @@ import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
+import li.songe.gkd.util.useAliveFlow
+import li.songe.gkd.util.useLogLifecycle
 import java.io.File
 
 
-class HttpService : Service() {
-    private val scope = MainScope()
+class HttpService : Service(), OnCreate, OnDestroy {
+    override fun onBind(intent: Intent?) = null
+
+    override fun onCreate() {
+        super.onCreate()
+        onCreated()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        onDestroyed()
+    }
+
+    val scope = MainScope().apply { onDestroyed { cancel() } }
+
     private val httpServerPortFlow = storeFlow.map(scope) { s -> s.httpServerPort }
 
     private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? =
         null
 
-    override fun onCreate() {
-        super.onCreate()
-        isRunning.value = true
-        localNetworkIpsFlow.value = getIpAddressInLocalNetwork()
-        scope.launchTry(Dispatchers.IO) {
-            httpServerPortFlow.collect { port ->
-                server?.stop()
-                server = try {
-                    scope.createServer(port).apply { start() }
-                } catch (e: Exception) {
-                    LogUtils.d("HTTP服务启动失败", e)
-                    null
-                }
-                if (server == null) {
-                    toast("HTTP服务启动失败,您可以尝试切换端口后重新启动")
-                    stopSelf()
-                    return@collect
-                }
-                httpNotif.copy(text = "HTTP服务-$port").notifyService(this@HttpService)
+    init {
+        useLogLifecycle()
+        useAliveFlow(isRunning)
+
+        onCreated { localNetworkIpsFlow.value = getIpAddressInLocalNetwork() }
+        onDestroyed { localNetworkIpsFlow.value = emptyList() }
+
+        onDestroyed {
+            if (storeFlow.value.autoClearMemorySubs) {
+                deleteSubscription(LOCAL_HTTP_SUBS_ID)
             }
         }
-    }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        scope.cancel()
-        isRunning.value = false
-        localNetworkIpsFlow.value = emptyList()
-        if (storeFlow.value.autoClearMemorySubs) {
-            deleteSubscription(LOCAL_HTTP_SUBS_ID)
+        onCreated {
+            scope.launchTry(Dispatchers.IO) {
+                httpServerPortFlow.collect { port ->
+                    server?.stop()
+                    server = try {
+                        scope.createServer(port).apply { start() }
+                    } catch (e: Exception) {
+                        LogUtils.d("HTTP服务启动失败", e)
+                        null
+                    }
+                    if (server == null) {
+                        toast("HTTP服务启动失败,您可以尝试切换端口后重新启动")
+                        stopSelf()
+                        return@collect
+                    }
+                    httpNotif.copy(text = "HTTP服务-$port").notifyService(this@HttpService)
+                }
+            }
         }
     }
 
@@ -109,8 +127,6 @@ class HttpService : Service() {
             app.startForegroundService(Intent(app, HttpService::class.java))
         }
     }
-
-    override fun onBind(intent: Intent?) = null
 }
 
 @Serializable

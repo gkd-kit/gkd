@@ -1,6 +1,5 @@
 package li.songe.gkd.util
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Activity.RESULT_OK
 import android.content.Context
@@ -22,8 +21,10 @@ import kotlin.coroutines.suspendCoroutine
 
 // https://github.com/npes87184/ScreenShareTile/blob/master/app/src/main/java/com/npes87184/screenshottile/ScreenshotService.kt
 
-@SuppressLint("WrongConstant")
-class ScreenshotUtil(private val context: Context, private val screenshotIntent: Intent) {
+class ScreenshotUtil(
+    private val context: Context,
+    private val screenshotIntent: Intent
+) {
 
     private val handler by lazy { Handler(Looper.getMainLooper()) }
     private var virtualDisplay: VirtualDisplay? = null
@@ -36,6 +37,13 @@ class ScreenshotUtil(private val context: Context, private val screenshotIntent:
             Activity.MEDIA_PROJECTION_SERVICE
         ) as MediaProjectionManager
     }
+
+    private val width: Int
+        get() = ScreenUtils.getScreenWidth()
+    private val height: Int
+        get() = ScreenUtils.getScreenHeight()
+    private val dpi: Int
+        get() = ScreenUtils.getScreenDensityDpi()
 
     fun destroy() {
         imageReader?.setOnImageAvailableListener(null, null)
@@ -100,11 +108,5 @@ class ScreenshotUtil(private val context: Context, private val screenshotIntent:
                 image?.close()
             }
         }, handler)
-    }
-
-    companion object {
-        private val width by lazy { ScreenUtils.getScreenWidth() }
-        private val height by lazy { ScreenUtils.getScreenHeight() }
-        private val dpi by lazy { ScreenUtils.getScreenDensityDpi() }
     }
 }

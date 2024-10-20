@@ -18,6 +18,7 @@ import li.songe.gkd.util.componentName
 import li.songe.gkd.util.lastRestartA11yServiceTimeFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
+import li.songe.gkd.util.useLogLifecycle
 
 class GkdTileService : TileService(), OnDestroy, OnChangeListen, OnTileClick {
     override fun onStartListening() {
@@ -50,6 +51,7 @@ class GkdTileService : TileService(), OnDestroy, OnChangeListen, OnTileClick {
     }
 
     init {
+        useLogLifecycle()
         scope.launch {
             combine(
                 A11yService.isRunning,

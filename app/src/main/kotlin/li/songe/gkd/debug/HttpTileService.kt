@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.util.OnChangeListen
 import li.songe.gkd.util.OnDestroy
 import li.songe.gkd.util.OnTileClick
+import li.songe.gkd.util.useLogLifecycle
 
 class HttpTileService : TileService(), OnDestroy, OnChangeListen, OnTileClick {
     override fun onStartListening() {
@@ -41,6 +42,7 @@ class HttpTileService : TileService(), OnDestroy, OnChangeListen, OnTileClick {
     }
 
     init {
+        useLogLifecycle()
         scope.launch {
             combine(
                 HttpService.isRunning,

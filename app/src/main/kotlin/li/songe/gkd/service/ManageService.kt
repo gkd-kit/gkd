@@ -2,8 +2,8 @@ package li.songe.gkd.service
 
 import android.app.Service
 import android.content.Intent
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -14,45 +14,32 @@ import li.songe.gkd.app
 import li.songe.gkd.notif.abNotif
 import li.songe.gkd.notif.notifyService
 import li.songe.gkd.permission.notificationState
+import li.songe.gkd.util.OnCreate
+import li.songe.gkd.util.OnDestroy
 import li.songe.gkd.util.actionCountFlow
 import li.songe.gkd.util.getSubsStatus
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.useAliveFlow
 
-class ManageService : Service() {
+class ManageService : Service(), OnCreate, OnDestroy {
     override fun onBind(intent: Intent?) = null
-    val scope = CoroutineScope(Dispatchers.Default)
 
     override fun onCreate() {
         super.onCreate()
-        isRunning.value = true
-        abNotif.notifyService(this)
-        scope.launch {
-            combine(
-                A11yService.isRunning,
-                storeFlow,
-                ruleSummaryFlow,
-                actionCountFlow,
-            ) { abRunning, store, ruleSummary, count ->
-                if (!abRunning) return@combine "无障碍未授权"
-                if (!store.enableMatch) return@combine "暂停规则匹配"
-                if (store.useCustomNotifText) {
-                    return@combine store.customNotifText
-                        .replace("\${i}", ruleSummary.globalGroups.size.toString())
-                        .replace("\${k}", ruleSummary.appSize.toString())
-                        .replace("\${u}", ruleSummary.appGroupSize.toString())
-                        .replace("\${n}", count.toString())
-                }
-                return@combine getSubsStatus(ruleSummary, count)
-            }.debounce(500L).stateIn(scope, SharingStarted.Eagerly, "").collect { text ->
-                abNotif.copy(text = text).notifyService(this@ManageService)
-            }
-        }
+        onCreated()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        isRunning.value = false
+        onDestroyed()
+    }
+
+    val scope = MainScope().apply { onDestroyed { cancel() } }
+
+    init {
+        useAliveFlow(isRunning)
+        useNotif()
     }
 
     companion object {
@@ -79,3 +66,29 @@ class ManageService : Service() {
     }
 }
 
+private fun ManageService.useNotif() {
+    onCreated {
+        abNotif.notifyService(this)
+        scope.launch {
+            combine(
+                A11yService.isRunning,
+                storeFlow,
+                ruleSummaryFlow,
+                actionCountFlow,
+            ) { abRunning, store, ruleSummary, count ->
+                if (!abRunning) return@combine "无障碍未授权"
+                if (!store.enableMatch) return@combine "暂停规则匹配"
+                if (store.useCustomNotifText) {
+                    return@combine store.customNotifText
+                        .replace("\${i}", ruleSummary.globalGroups.size.toString())
+                        .replace("\${k}", ruleSummary.appSize.toString())
+                        .replace("\${u}", ruleSummary.appGroupSize.toString())
+                        .replace("\${n}", count.toString())
+                }
+                return@combine getSubsStatus(ruleSummary, count)
+            }.debounce(500L).stateIn(scope, SharingStarted.Eagerly, "").collect { text ->
+                abNotif.copy(text = text).notifyService(this@useNotif)
+            }
+        }
+    }
+}
