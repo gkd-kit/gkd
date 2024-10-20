@@ -4,7 +4,7 @@
 
 ## 优化和修复
 
-- 订阅字段新增 [forcedtime](https://gkd.li/api/interfaces/RawCommonProps#prioritytime) 和 [priorityActionMaximum](https://gkd.li/api/interfaces/RawCommonProps#priorityactionmaximum), 用于解决开屏类规则被其他规则阻塞, 无法及时执行的问题
+- 订阅字段新增 [priorityTime](https://gkd.li/api/interfaces/RawCommonProps#prioritytime) 和 [priorityActionMaximum](https://gkd.li/api/interfaces/RawCommonProps#priorityactionmaximum), 用于解决开屏类规则被其他规则阻塞, 无法及时执行的问题
 - 优化运行一段时间后出现系统通知提示的问题
 - 修复某些机型 java 方法 removeLast 报错不存在的问题
 - 其它优化和错误修复
