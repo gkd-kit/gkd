@@ -1,59 +1,71 @@
 package li.songe.gkd.service
 
-import android.os.Handler
-import android.os.Looper
 import android.provider.Settings
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import li.songe.gkd.app
 import li.songe.gkd.permission.writeSecureSettingsState
+import li.songe.gkd.util.OnChangeListen
+import li.songe.gkd.util.OnDestroy
+import li.songe.gkd.util.OnTileClick
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.lastRestartA11yServiceTimeFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
 
-class GkdTileService : TileService() {
-    private fun updateTile(): Boolean {
-        val oldState = qsTile.state
-        val newState = if (A11yService.isRunning.value) {
-            Tile.STATE_ACTIVE
-        } else {
-            Tile.STATE_INACTIVE
-        }
-        if (oldState != newState) {
-            qsTile.state = newState
-            qsTile.updateTile()
-            return true
-        }
-        return false
-    }
-
-    private fun autoUpdateTile() {
-        Handler(Looper.getMainLooper()).postDelayed({
-            if (!updateTile()) {
-                Handler(Looper.getMainLooper()).postDelayed(::updateTile, 250)
-            }
-        }, 250)
-    }
-
-    override fun onTileAdded() {
-        super.onTileAdded()
-        updateTile()
-    }
-
+class GkdTileService : TileService(), OnDestroy, OnChangeListen, OnTileClick {
     override fun onStartListening() {
         super.onStartListening()
-        updateTile()
-        if (fixRestartService()) {
-            autoUpdateTile()
-        }
+        onStartListened()
     }
 
     override fun onClick() {
         super.onClick()
-        if (switchA11yService()) {
-            autoUpdateTile()
+        onTileClicked()
+    }
+
+    override fun onStopListening() {
+        super.onStopListening()
+        onStopListened()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        onDestroyed()
+    }
+
+    val scope = MainScope().also { scope ->
+        onDestroyed { scope.cancel() }
+    }
+
+    private val listeningFlow = MutableStateFlow(false).also { listeningFlow ->
+        onStartListened { listeningFlow.value = true }
+        onStopListened { listeningFlow.value = false }
+    }
+
+    init {
+        scope.launch {
+            combine(
+                A11yService.isRunning,
+                listeningFlow
+            ) { v1, v2 -> v1 to v2 }.collect { (running, listening) ->
+                if (listening) {
+                    qsTile.state = if (running) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
+                    qsTile.updateTile()
+                }
+            }
+        }
+        onStartListened {
+            fixRestartService()
+        }
+        onTileClicked {
+            switchA11yService()
         }
     }
 }
@@ -93,10 +105,10 @@ fun switchA11yService(): Boolean {
         return false
     }
     val names = getServiceNames()
+    storeFlow.update { it.copy(enableService = !A11yService.isRunning.value) }
     if (A11yService.isRunning.value) {
         names.remove(a11yClsName)
         updateServiceNames(names)
-        storeFlow.update { it.copy(enableService = false) }
         toast("关闭无障碍")
     } else {
         enableA11yService()
@@ -106,7 +118,6 @@ fun switchA11yService(): Boolean {
         }
         names.add(a11yClsName)
         updateServiceNames(names)
-        storeFlow.update { it.copy(enableService = true) }
         toast("开启无障碍")
     }
     return true

@@ -485,11 +485,18 @@ private fun A11yService.useRuleChangedLog() {
 }
 
 private fun A11yService.useRunningState() {
-    onCreated {
-        A11yService.weakInstance = WeakReference(this)
-        A11yService.isRunning.value = true
-        ManageService.autoStart()
+    A11yService.weakInstance = WeakReference(this)
+    A11yService.isRunning.value = true
+    if (!storeFlow.value.enableService) {
+        // https://github.com/gkd-kit/gkd/issues/754
+        storeFlow.update { it.copy(enableService = true) }
     }
+    onDestroyed {
+        if (storeFlow.value.enableService) {
+            storeFlow.update { it.copy(enableService = false) }
+        }
+    }
+    ManageService.autoStart()
     onDestroyed {
         A11yService.weakInstance = WeakReference(null)
         A11yService.isRunning.value = false
