@@ -2,6 +2,8 @@ package li.songe.gkd.util
 
 
 import android.view.accessibility.AccessibilityEvent
+import com.blankj.utilcode.util.LogUtils
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.WeakHashMap
 
 private val callbacksMap by lazy { WeakHashMap<Any, HashMap<Int, MutableList<Any>>>() }
@@ -15,13 +17,13 @@ private fun <T> Any.getCallbacks(method: Int): MutableList<T> {
 interface CanOnCallback
 
 interface OnCreate : CanOnCallback {
-    fun onBeforeCreate(f: () -> Unit) {
-        getCallbacks<() -> Unit>(1).add(f)
-    }
-
-    fun onBeforeCreate() {
-        getCallbacks<() -> Unit>(1).forEach { it() }
-    }
+//    fun onBeforeCreate(f: () -> Unit) {
+//        getCallbacks<() -> Unit>(1).add(f)
+//    }
+//
+//    fun onBeforeCreate() {
+//        getCallbacks<() -> Unit>(1).forEach { it() }
+//    }
 
     fun onCreated(f: () -> Unit) {
         getCallbacks<() -> Unit>(2).add(f)
@@ -83,12 +85,41 @@ interface OnChangeListen : CanOnCallback {
     }
 }
 
-interface OnTileClick {
+interface OnTileClick : CanOnCallback {
     fun onTileClicked(f: () -> Unit) {
         getCallbacks<() -> Unit>(14).add(f)
     }
 
     fun onTileClicked() {
         getCallbacks<() -> Unit>(14).forEach { it() }
+    }
+}
+
+fun CanOnCallback.useAliveFlow(stateFlow: MutableStateFlow<Boolean>) {
+    if (this is OnCreate) {
+        onCreated { stateFlow.value = true }
+    }
+    if (this is OnDestroy) {
+        onDestroyed { stateFlow.value = false }
+    }
+}
+
+fun CanOnCallback.useLogLifecycle() {
+    LogUtils.d("useLogLifecycle", this)
+    if (this is OnCreate) {
+        onCreated { LogUtils.d("onCreated", this) }
+    }
+    if (this is OnDestroy) {
+        onDestroyed { LogUtils.d("onDestroyed", this) }
+    }
+    if (this is OnA11yConnected) {
+        onA11yConnected { LogUtils.d("onA11yConnected", this) }
+    }
+    if (this is OnChangeListen) {
+        onStartListened { LogUtils.d("onStartListened", this) }
+        onStopListened { LogUtils.d("onStopListened", this) }
+    }
+    if (this is OnTileClick) {
+        onTileClicked { LogUtils.d("onTileClicked", this) }
     }
 }
