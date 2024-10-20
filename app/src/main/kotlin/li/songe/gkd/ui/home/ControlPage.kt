@@ -108,8 +108,8 @@ fun useControlPage(): ScaffoldExt {
             if (writeSecureSettings) {
                 TextSwitch(
                     title = "服务状态",
-                    subtitle = if (store.enableService) "无障碍服务正在运行" else "无障碍服务已关闭",
-                    checked = store.enableService,
+                    subtitle = if (a11yRunning) "无障碍服务正在运行" else "无障碍服务已关闭",
+                    checked = a11yRunning,
                     onCheckedChange = {
                         switchA11yService()
                     })
