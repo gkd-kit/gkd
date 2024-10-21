@@ -26,6 +26,17 @@ private fun List<Any>.getInt(i: Int = 0) = get(i) as Int
 
 private const val MAX_CACHE_SIZE = MAX_DESCENDANTS_SIZE
 
+private val AccessibilityNodeInfo?.notExpiredNode: AccessibilityNodeInfo?
+    get() {
+        if (this != null) {
+            val expiryMillis = if (text == null) 2000L else 1000L
+            if (isExpired(expiryMillis)) {
+                return null
+            }
+        }
+        return this
+    }
+
 class A11yContext(
     private val disableInterrupt: Boolean = false
 ) {
@@ -35,6 +46,7 @@ class A11yContext(
     private var parentCache = LruCache<AccessibilityNodeInfo, AccessibilityNodeInfo>(MAX_CACHE_SIZE)
     var rootCache: AccessibilityNodeInfo? = null
 
+    private var lastClearTime = 0L
     private fun clearNodeCache(t: Long = System.currentTimeMillis()) {
         if (META.debuggable) {
             val sizeList = listOf(childCache.size(), parentCache.size(), indexCache.size())
@@ -59,17 +71,12 @@ class A11yContext(
         }
     }
 
-    private var lastClearTime = 0L
     private var lastAppChangeTime = appChangeTime
-    private fun clearNodeCacheIfTimeout() {
+    fun clearOldAppNodeCache() {
         if (appChangeTime != lastAppChangeTime) {
             lastAppChangeTime = appChangeTime
             clearNodeCache()
             return
-        }
-        val t = System.currentTimeMillis()
-        if (t - lastClearTime > 30_000L) {
-            clearNodeCache(t)
         }
     }
 
@@ -84,6 +91,7 @@ class A11yContext(
         if (interruptInnerKey == interruptKey) return
         interruptInnerKey = interruptKey
         val rule = currentRule ?: return
+        if (!activityRuleFlow.value.activePriority) return
         if (!activityRuleFlow.value.currentRules.any { it === rule }) return
         if (rule.isPriority()) return
         if (META.debuggable) {
@@ -99,12 +107,12 @@ class A11yContext(
 
     private fun getA11Child(node: AccessibilityNodeInfo, index: Int): AccessibilityNodeInfo? {
         guardInterrupt()
-        return node.getChild(index)
+        return node.getChild(index)?.apply { setGeneratedTime() }
     }
 
     private fun getA11Parent(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
         guardInterrupt()
-        return node.parent
+        return node.parent?.apply { setGeneratedTime() }
     }
 
     private fun getA11ByText(
@@ -112,7 +120,9 @@ class A11yContext(
         value: String
     ): List<AccessibilityNodeInfo> {
         guardInterrupt()
-        return node.findAccessibilityNodeInfosByText(value)
+        return node.findAccessibilityNodeInfosByText(value).apply {
+            forEach { it.setGeneratedTime() }
+        }
     }
 
     private fun getA11ById(
@@ -120,7 +130,9 @@ class A11yContext(
         value: String
     ): List<AccessibilityNodeInfo> {
         guardInterrupt()
-        return node.findAccessibilityNodeInfosByViewId(value)
+        return node.findAccessibilityNodeInfosByViewId(value).apply {
+            forEach { it.setGeneratedTime() }
+        }
     }
 
     private fun getFastQueryNodes(
@@ -135,11 +147,36 @@ class A11yContext(
     }
 
     private fun getCacheRoot(node: AccessibilityNodeInfo? = null): AccessibilityNodeInfo? {
-        if (rootCache == null) {
+        if (rootCache.notExpiredNode == null) {
             rootCache = getA11Root()
         }
         if (node == rootCache) return null
         return rootCache
+    }
+
+    private fun getCacheParent(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        if (getCacheRoot() == node) {
+            return null
+        }
+        parentCache[node].notExpiredNode?.let { return it }
+        return getA11Parent(node).apply {
+            if (this != null) {
+                parentCache[node] = this
+            } else {
+                rootCache = node
+            }
+        }
+    }
+
+    private fun getCacheChild(node: AccessibilityNodeInfo, index: Int): AccessibilityNodeInfo? {
+        if (index !in 0 until node.childCount) {
+            return null
+        }
+        return childCache[node to index].notExpiredNode ?: getA11Child(node, index)?.also { child ->
+            indexCache[child] = index
+            parentCache[child] = node
+            childCache[node to index] = child
+        }
     }
 
     private fun getPureIndex(node: AccessibilityNodeInfo): Int? {
@@ -148,27 +185,13 @@ class A11yContext(
 
     private fun getCacheIndex(node: AccessibilityNodeInfo): Int {
         indexCache[node]?.let { return it }
-        getCacheParent(node)?.let(::getCacheChildren)?.forEachIndexed { index, child ->
+        getCacheChildren(getCacheParent(node)).forEachIndexed { index, child ->
             if (child == node) {
                 indexCache[node] = index
                 return index
             }
         }
         return 0
-    }
-
-    private fun getCacheParent(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
-        if (rootCache == node) {
-            return null
-        }
-        parentCache[node]?.let { return it }
-        return getA11Parent(node).apply {
-            if (this != null) {
-                parentCache[node] = this
-            } else {
-                rootCache = node
-            }
-        }
     }
 
     /**
@@ -191,18 +214,8 @@ class A11yContext(
         return depth
     }
 
-    private fun getCacheChild(node: AccessibilityNodeInfo, index: Int): AccessibilityNodeInfo? {
-        if (index !in 0 until node.childCount) {
-            return null
-        }
-        return childCache[node to index] ?: getA11Child(node, index)?.also { child ->
-            indexCache[child] = index
-            parentCache[child] = node
-            childCache[node to index] = child
-        }
-    }
-
-    private fun getCacheChildren(node: AccessibilityNodeInfo): Sequence<AccessibilityNodeInfo> {
+    private fun getCacheChildren(node: AccessibilityNodeInfo?): Sequence<AccessibilityNodeInfo> {
+        if (node == null) return emptySequence()
         return sequence {
             repeat(node.childCount.coerceAtMost(MAX_CHILD_SIZE)) { index ->
                 val child = getCacheChild(node, index) ?: return@sequence
@@ -491,7 +504,6 @@ class A11yContext(
         rule: ResolvedRule,
         node: AccessibilityNodeInfo,
     ): AccessibilityNodeInfo? {
-        clearNodeCacheIfTimeout()
         currentRule = rule
         try {
             val queryNode = if (rule.matchRoot) {

@@ -255,6 +255,7 @@ private fun A11yService.useMatchRule() {
             }
         }
         var lastNodeUsed = false
+        a11yContext.clearOldAppNodeCache()
         for (rule in activityRule.priorityRules) { // 规则数量有可能过多导致耗时过长
             if (delayRule != null && delayRule !== rule) continue
             val statusCode = rule.status

@@ -23,6 +23,8 @@ val AccessibilityService.safeActiveWindow: AccessibilityNodeInfo?
         // java.lang.SecurityException: Call from user 0 as user -2 without permission INTERACT_ACROSS_USERS or INTERACT_ACROSS_USERS_FULL not allowed.
         rootInActiveWindow.apply {
             a11yContext.rootCache = this
+        }?.apply {
+            setGeneratedTime()
         }
         // 在主线程调用会阻塞界面导致卡顿
     } catch (e: Exception) {
@@ -40,7 +42,9 @@ val AccessibilityEvent.safeSource: AccessibilityNodeInfo?
     } else {
         try {
             // 原因未知, 仍然报错 Cannot perform this action on a not sealed instance.
-            source
+            source?.apply {
+                setGeneratedTime()
+            }
         } catch (_: Exception) {
             null
         }
@@ -63,6 +67,20 @@ fun AccessibilityNodeInfo.getVid(): CharSequence? {
 // 限制节点遍历的数量避免内存溢出
 const val MAX_CHILD_SIZE = 512
 const val MAX_DESCENDANTS_SIZE = 4096
+
+private const val A11Y_NODE_TIME_KEY = "generatedTime"
+fun AccessibilityNodeInfo.setGeneratedTime() {
+    extras.putLong(A11Y_NODE_TIME_KEY, System.currentTimeMillis())
+}
+
+fun AccessibilityNodeInfo.isExpired(expiryMillis: Long): Boolean {
+    val generatedTime = extras.getLong(A11Y_NODE_TIME_KEY, -1)
+    if (generatedTime == -1L) {
+        setGeneratedTime()
+        return false
+    }
+    return (System.currentTimeMillis() - generatedTime) > expiryMillis
+}
 
 private val typeInfo by lazy { initDefaultTypeInfo().globalType }
 
