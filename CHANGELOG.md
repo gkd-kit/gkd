@@ -1,15 +1,21 @@
-# v1.9.0-beta.2
+# v1.9.0-beta.3
 
 以下是本次更新的主要内容
 
 ## 优化和修复
 
+- 修复优先级规则逻辑判断错误导致规则不执行
+- 修复有写入安全设置权限下仍然到系统设置打开无障碍服务导致状态显示不正确
+- 优化节点缓存策略
+
+## 旧版本日志
+
+## v1.9.0-beta.2
+
 - 订阅字段新增 [priorityTime](https://gkd.li/api/interfaces/RawCommonProps#prioritytime) 和 [priorityActionMaximum](https://gkd.li/api/interfaces/RawCommonProps#priorityactionmaximum), 用于解决开屏类规则被其他规则阻塞, 无法及时执行的问题
 - 优化运行一段时间后出现系统通知提示的问题
 - 修复某些机型 java 方法 removeLast 报错不存在的问题
 - 其它优化和错误修复
-
-## 旧版本日志
 
 ## v1.9.0-beta.1
 
