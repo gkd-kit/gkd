@@ -36,6 +36,18 @@ data class RawSubscription(
     val categories: List<RawCategory> = emptyList(),
     val apps: List<RawApp> = emptyList(),
 ) {
+    // 重写 equals 和 hashCode 便于 compose 重组比较
+    override fun equals(other: Any?): Boolean {
+        return other === this
+    }
+
+    override fun hashCode(): Int {
+        var result = super.hashCode()
+        result = 31 * result + id.hashCode()
+        result = 31 * result + name.hashCode()
+        result = 31 * result + version
+        return result
+    }
 
     val categoryToGroupsMap by lazy {
         val allAppGroups = apps.flatMap { a -> a.groups.map { g -> g to a } }
