@@ -13,28 +13,28 @@ fun String.runCommand(currentWorkingDir: File = file("./")): String {
 
 data class GitInfo(
     val commitId: String,
-    val commitTime: Long,
+    val commitTime: String,
     val tagName: String?,
 )
 
 val gitInfo = try {
     GitInfo(
         commitId = "git rev-parse HEAD".runCommand(),
-        commitTime = "git log -1 --format=%ct".runCommand().toLong() * 1000L,
+        commitTime = "git log -1 --format=%ct".runCommand(),
         tagName = try {
             "git describe --tags --exact-match".runCommand()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             println("app: current git commit is not a tag")
             null
         },
     )
-} catch (e: Exception) {
+} catch (_: Exception) {
     println("app: git is not available")
     null
 }
 
-val commitTime = gitInfo?.commitTime ?: 0
-val commitId = gitInfo?.commitId ?: "unknown"
+println("app: $gitInfo")
+
 val vnSuffix = "-${gitInfo?.commitId?.substring(0, 7) ?: "unknown"}"
 
 plugins {
@@ -71,8 +71,8 @@ android {
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
 
-        manifestPlaceholders["commitId"] = commitId
-        manifestPlaceholders["commitTime"] = commitTime
+        manifestPlaceholders["commitId"] = gitInfo?.commitId ?: "unknown"
+        manifestPlaceholders["commitTime"] = gitInfo?.commitTime?.let { it + "000" } ?: "0"
     }
 
     lint {}

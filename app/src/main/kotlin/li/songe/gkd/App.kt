@@ -41,25 +41,27 @@ private lateinit var innerApp: Application
 val app: Application
     get() = innerApp
 
-val applicationInfo by lazy {
+private val applicationInfo by lazy {
     app.packageManager.getApplicationInfo(
         app.packageName,
         PackageManager.GET_META_DATA
     )
 }
 
-data object META {
-    val channel by lazy { applicationInfo.metaData.getString("channel")!! }
-    val commitId by lazy { applicationInfo.metaData.getString("commitId")!! }
-    val commitUrl by lazy { "https://github.com/gkd-kit/gkd/commit/$commitId" }
-    val commitTime by lazy { applicationInfo.metaData.getLong("commitTime") }
-    val updateEnabled by lazy { applicationInfo.metaData.getBoolean("updateEnabled") }
-    val debuggable by lazy { applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0 }
-    val versionCode by lazy { selfAppInfo.versionCode.toInt() }
-    val versionName by lazy { selfAppInfo.versionName!! }
-    val appId by lazy { app.packageName!! }
-    val appName by lazy { app.getString(SafeR.app_name) }
-}
+data class AppMeta(
+    val channel: String = applicationInfo.metaData.getString("channel")!!,
+    val commitId: String = applicationInfo.metaData.getString("commitId")!!,
+    val commitUrl: String = "https://github.com/gkd-kit/gkd/commit/${commitId}",
+    val commitTime: Long = applicationInfo.metaData.getString("commitTime")!!.toLong(),
+    val updateEnabled: Boolean = applicationInfo.metaData.getBoolean("updateEnabled"),
+    val debuggable: Boolean = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0,
+    val versionCode: Int = selfAppInfo.versionCode.toInt(),
+    val versionName: String = selfAppInfo.versionName!!,
+    val appId: String = app.packageName!!,
+    val appName: String = app.getString(SafeR.app_name)
+)
+
+val META by lazy { AppMeta() }
 
 class App : Application() {
     override fun attachBaseContext(base: Context?) {
@@ -90,7 +92,8 @@ class App : Application() {
             isLog2FileSwitch = true
         }
         LogUtils.d(
-            "META", META
+            "META",
+            META,
         )
         initFolder()
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
