@@ -103,7 +103,7 @@ private fun enableA11yService() {
 
 fun switchA11yService(): Boolean {
     if (!writeSecureSettingsState.updateAndGet()) {
-        toast("请先授予[写入安全设置]权限")
+        toast("请先授予[写入安全设置权限]")
         return false
     }
     val names = getServiceNames()
