@@ -21,7 +21,6 @@
 # self
 -keep class li.songe.**{*;}
 -keep interface li.songe.**{*;}
--keep class com.hjq.toast.** {*;}
 
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
 
@@ -48,13 +47,12 @@
 # https://github.com/ktorio/ktor-documentation/blob/2.3.6/codeSnippets/snippets/proguard/proguard.pro
 -keep class io.ktor.server.cio.EngineMain { *; }
 -keep class io.ktor.server.config.HoconConfigLoader { *; }
--keep class kotlin.reflect.jvm.internal.** { *; }
--keep class kotlin.text.RegexOption { *; }
 -keep class io.ktor.serialization.kotlinx.json.KotlinxSerializationJsonExtensionProvider { *; }
 
 # kotlin
 -keep class kotlin.** { *; }
 -keep class kotlin.Metadata { *; }
+-keep class kotlin.text.RegexOption { *; }
 -dontwarn kotlin.**
 -keepclassmembers class **$WhenMappings {
     <fields>;
@@ -71,12 +69,6 @@
 -dontwarn java.lang.management.RuntimeMXBean**
 -dontwarn org.slf4j.impl.StaticLoggerBinder**
 -dontwarn org.slf4j.impl.StaticMDCBinder**
-
-# <bugly-
-# https://bugly.qq.com/docs/user-guide/instruction-manual-android/
--dontwarn com.tencent.bugly.**
--keep public class com.tencent.bugly.**{*;}
-# -bugly>
 
 # <mmkv-
 # https://github.com/Tencent/MMKV/blob/master/Android/MMKV/mmkv/proguard-rules.pro
