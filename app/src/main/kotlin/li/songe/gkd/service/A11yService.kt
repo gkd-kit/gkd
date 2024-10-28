@@ -255,7 +255,12 @@ private fun A11yService.useMatchRule() {
             }
         }
         var lastNodeUsed = false
-        a11yContext.clearOldAppNodeCache()
+        if (!a11yContext.clearOldAppNodeCache()) {
+            if (byEvent != null) { // 此为多数情况
+                // 新事件到来时, 若缓存清理不及时会导致无法查询到节点
+                a11yContext.clearNodeCache(lastNode)
+            }
+        }
         for (rule in activityRule.priorityRules) { // 规则数量有可能过多导致耗时过长
             if (delayRule != null && delayRule !== rule) continue
             val statusCode = rule.status

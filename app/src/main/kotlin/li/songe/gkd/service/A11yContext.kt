@@ -46,17 +46,39 @@ class A11yContext(
     private var parentCache = LruCache<AccessibilityNodeInfo, AccessibilityNodeInfo>(MAX_CACHE_SIZE)
     var rootCache: AccessibilityNodeInfo? = null
 
-    private var lastClearTime = 0L
-    private fun clearNodeCache(t: Long = System.currentTimeMillis()) {
+    private fun clearChildCache(node: AccessibilityNodeInfo) {
+        repeat(node.childCount.coerceAtMost(MAX_CHILD_SIZE)) { i ->
+            childCache.remove(node to i)?.let {
+                clearChildCache(it)
+            }
+        }
+    }
+
+    fun clearNodeCache(eventNode: AccessibilityNodeInfo? = null) {
+        if (rootCache?.packageName != topActivityFlow.value.appId) {
+            rootCache = null
+        }
+        if (eventNode != null) {
+            clearChildCache(eventNode)
+            parentCache[eventNode]?.let { p ->
+                getPureIndex(eventNode)?.let { i ->
+                    childCache[p to i] = eventNode
+                }
+            }
+            if (rootCache == eventNode) {
+                rootCache = eventNode
+            } else {
+                if (META.debuggable) {
+                    Log.d("cache", "clear node cache ${eventNode.packageName}/${eventNode.className}")
+                }
+                return
+            }
+        }
         if (META.debuggable) {
             val sizeList = listOf(childCache.size(), parentCache.size(), indexCache.size())
             if (sizeList.any { it > 0 }) {
                 Log.d("cache", "clear cache -> $sizeList")
             }
-        }
-        lastClearTime = t
-        if (rootCache?.packageName != topActivityFlow.value.appId) {
-            rootCache = null
         }
         try {
             childCache.evictAll()
@@ -72,12 +94,13 @@ class A11yContext(
     }
 
     private var lastAppChangeTime = appChangeTime
-    fun clearOldAppNodeCache() {
+    fun clearOldAppNodeCache(): Boolean {
         if (appChangeTime != lastAppChangeTime) {
             lastAppChangeTime = appChangeTime
             clearNodeCache()
-            return
+            return true
         }
+        return false
     }
 
     var currentRule: ResolvedRule? = null
