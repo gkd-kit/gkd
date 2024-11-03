@@ -126,7 +126,6 @@ class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA11yEve
             val cache = A11yContext(true)
 
             val targetNode = serviceVal.safeActiveWindow?.let {
-                cache.rootCache = it
                 cache.querySelector(
                     it,
                     selector,
@@ -275,7 +274,11 @@ private fun A11yService.useMatchRule() {
             if (byForced && !rule.checkForced()) continue
             lastNode?.let { n ->
                 val refreshOk = (!lastNodeUsed) || (try {
-                    n.refresh()
+                    val e = n.refresh()
+                    if (e) {
+                        n.setGeneratedTime()
+                    }
+                    e
                 } catch (_: Exception) {
                     false
                 })

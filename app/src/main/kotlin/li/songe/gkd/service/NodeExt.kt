@@ -17,19 +17,21 @@ import li.songe.selector.UnknownMemberMethodException
 import li.songe.selector.UnknownMemberMethodParamsException
 import li.songe.selector.initDefaultTypeInfo
 
+// 在主线程调用任意获取新节点或刷新节点的API会阻塞界面导致卡顿
+
 // 某些应用耗时 554ms
 val AccessibilityService.safeActiveWindow: AccessibilityNodeInfo?
     get() = try {
         // java.lang.SecurityException: Call from user 0 as user -2 without permission INTERACT_ACROSS_USERS or INTERACT_ACROSS_USERS_FULL not allowed.
-        rootInActiveWindow.apply {
-            a11yContext.rootCache = this
-        }?.apply {
+        rootInActiveWindow?.apply {
+            // https://github.com/gkd-kit/gkd/issues/759
             setGeneratedTime()
         }
-        // 在主线程调用会阻塞界面导致卡顿
     } catch (e: Exception) {
         e.printStackTrace()
         null
+    }.apply {
+        a11yContext.rootCache = this
     }
 
 val AccessibilityService.safeActiveWindowAppId: String?
@@ -76,8 +78,8 @@ fun AccessibilityNodeInfo.setGeneratedTime() {
 fun AccessibilityNodeInfo.isExpired(expiryMillis: Long): Boolean {
     val generatedTime = extras.getLong(A11Y_NODE_TIME_KEY, -1)
     if (generatedTime == -1L) {
-        setGeneratedTime()
-        return false
+        // https://github.com/gkd-kit/gkd/issues/759
+        return true
     }
     return (System.currentTimeMillis() - generatedTime) > expiryMillis
 }
