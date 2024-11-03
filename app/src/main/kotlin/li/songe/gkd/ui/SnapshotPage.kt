@@ -98,13 +98,13 @@ fun SnapshotPage() {
                     )
                 }
             },
-            title = { Text(text = if (snapshots.isEmpty()) "快照记录" else "快照记录-${snapshots.size}") },
+            title = { Text(text = "快照记录") },
             actions = {
                 if (snapshots.isNotEmpty()) {
                     IconButton(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                         context.mainVm.dialogFlow.waitResult(
                             title = "删除记录",
-                            text = "确定删除全部快照记录?",
+                            text = "确定删除全部 ${snapshots.size} 条快照记录?",
                             error = true,
                         )
                         snapshots.forEach { s ->

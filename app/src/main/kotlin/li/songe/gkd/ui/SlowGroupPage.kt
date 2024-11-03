@@ -68,12 +68,12 @@ fun SlowGroupPage() {
                         )
                     }
                 },
-                title = { Text(text = if (ruleSummary.slowGroupCount > 0) "缓慢查询-${ruleSummary.slowGroupCount}" else "缓慢查询") },
+                title = { Text(text = "缓慢查询") },
                 actions = {
                     IconButton(onClick = throttle {
                         context.mainVm.dialogFlow.updateDialogOptions(
                             title = "缓慢查询",
-                            text = "任意单个规则同时满足以下 3 个条件即判定为缓慢查询\n\n1. 选择器右侧无法快速查询且不是主动查询, 或内部使用<<且无法快速查询\n2. preKeys 为空\n3. matchTime 为空或大于 10s",
+                            text = "任意单个规则同时满足以下 3 个条件即判定为缓慢查询\n\n1. 选择器右侧无法快速查询且不是主动查询, 或内部使用<<且无法快速查询\n2. preKeys 为空\n3. matchTime 为空或大于 10s\n\n缓慢查询可能导致触发缓慢或更多耗电",
                         )
                     }) {
                         Icon(Icons.Outlined.Info, contentDescription = null)
