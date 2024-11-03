@@ -408,12 +408,15 @@ fun AdvancedPage() {
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            SettingItem(
-                title = "快照记录" + (if (snapshotCount > 0) "-$snapshotCount" else ""),
-                onClick = {
-                    navController.toDestinationsNavigator().navigate(SnapshotPageDestination)
-                }
-            )
+            if (snapshotCount > 0) {
+                SettingItem(
+                    title = "快照记录",
+                    subtitle = "存在 $snapshotCount 条记录",
+                    onClick = {
+                        navController.toDestinationsNavigator().navigate(SnapshotPageDestination)
+                    }
+                )
+            }
 
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
                 val screenshotRunning by ScreenshotService.isRunning.collectAsState()
@@ -582,8 +585,16 @@ fun AdvancedPage() {
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            TextSwitch(title = "前台悬浮窗",
-                subtitle = "添加透明悬浮窗,关闭可能导致不点击/点击缓慢",
+            TextSwitch(
+                title = "前台悬浮窗",
+                subtitle = "添加透明悬浮窗",
+                suffix = "查看作用",
+                onSuffixClick = {
+                    context.mainVm.dialogFlow.updateDialogOptions(
+                        title = "悬浮窗作用",
+                        text = "1.提高 GKD 前台优先级, 降低被系统杀死概率\n2.提高点击响应速度, 关闭后可能导致点击缓慢或不点击",
+                    )
+                },
                 checked = store.enableAbFloatWindow,
                 onCheckedChange = {
                     storeFlow.value = store.copy(

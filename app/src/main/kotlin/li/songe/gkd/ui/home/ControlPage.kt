@@ -162,8 +162,8 @@ fun useControlPage(): ScaffoldExt {
 
             if (ruleSummary.slowGroupCount > 0) {
                 SettingItem(
-                    title = "耗时查询-${ruleSummary.slowGroupCount}",
-                    subtitle = "可能导致触发缓慢或更多耗电",
+                    title = "缓慢查询",
+                    subtitle = "存在 ${ruleSummary.slowGroupCount} 条记录",
                     onClick = {
                         navController.toDestinationsNavigator().navigate(SlowGroupPageDestination)
                     }
