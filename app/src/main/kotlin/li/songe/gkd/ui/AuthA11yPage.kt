@@ -172,19 +172,19 @@ fun AuthA11yPage() {
                                 style = MaterialTheme.typography.bodyLarge,
                             )
                         }
-                        TextButton(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                            grantPermissionByRoot()
-                        })) {
-                            Text(
-                                text = "ROOT授权",
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                        }
                         TextButton(onClick = {
                             vm.showCopyDlgFlow.value = true
                         }) {
                             Text(
                                 text = "手动授权",
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        }
+                        TextButton(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                            grantPermissionByRoot()
+                        })) {
+                            Text(
+                                text = "ROOT授权",
                                 style = MaterialTheme.typography.bodyLarge,
                             )
                         }
