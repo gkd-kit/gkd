@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import li.songe.gkd.META
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
@@ -32,6 +33,14 @@ val orderedAppInfosFlow by lazy {
         c.values.sortedWith { a, b ->
             collator.compare(a.name, b.name)
         }
+    }
+}
+
+// https://github.com/orgs/gkd-kit/discussions/761
+// 某些设备在应用更新后出现权限错乱/缓存错乱
+val mayQueryPkgNoAccessFlow by lazy {
+    appInfoCacheFlow.map(appScope) { c ->
+        c.values.count { a -> !a.isSystem && !a.hidden && a.id != META.appId } < 8
     }
 }
 
@@ -80,7 +89,7 @@ private fun updateAppInfo(appId: String) {
             val newMap = appInfoCacheFlow.value.toMutableMap()
             val info = try {
                 packageManager.getPackageInfo(appId, 0)
-            } catch (e: PackageManager.NameNotFoundException) {
+            } catch (_: PackageManager.NameNotFoundException) {
                 null
             }
             if (info != null) {

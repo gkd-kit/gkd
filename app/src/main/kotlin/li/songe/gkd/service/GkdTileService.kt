@@ -3,19 +3,23 @@ package li.songe.gkd.service
 import android.provider.Settings
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import li.songe.gkd.app
+import li.songe.gkd.appScope
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.util.OnChangeListen
 import li.songe.gkd.util.OnDestroy
 import li.songe.gkd.util.OnTileClick
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.lastRestartA11yServiceTimeFlow
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.useLogLifecycle
@@ -125,13 +129,13 @@ fun switchA11yService(): Boolean {
     return true
 }
 
-fun fixRestartService(): Boolean {
+fun fixRestartService() = appScope.launchTry(Dispatchers.IO) {
     // 1. 服务没有运行
     // 2. 用户配置开启了服务
     // 3. 有写入系统设置权限
     if (!A11yService.isRunning.value && storeFlow.value.enableService && writeSecureSettingsState.updateAndGet()) {
         val t = System.currentTimeMillis()
-        if (t - lastRestartA11yServiceTimeFlow.value < 10_000) return false
+        if (t - lastRestartA11yServiceTimeFlow.value < 5_000) return@launchTry
         lastRestartA11yServiceTimeFlow.value = t
         val names = getServiceNames()
         val a11yBroken = names.contains(a11yClsName)
@@ -139,13 +143,13 @@ fun fixRestartService(): Boolean {
             // 无障碍出现故障, 重启服务
             names.remove(a11yClsName)
             updateServiceNames(names)
+            // 必须等待一段时间, 否则概率不会触发系统重启无障碍服务
+            delay(500)
         }
         names.add(a11yClsName)
         updateServiceNames(names)
         toast("重启无障碍")
-        return true
     }
-    return false
 }
 
 val a11yClsName by lazy { A11yService::class.componentName.flattenToShortString() }

@@ -172,7 +172,11 @@ val shizukuOkState by lazy {
     )
 }
 
-suspend fun updatePermissionState() {
+fun startQueryPkgSettingActivity(context: Activity) {
+    XXPermissions.startPermissionActivity(context, Permission.GET_INSTALLED_APPS)
+}
+
+fun updatePermissionState() {
     arrayOf(
         notificationState,
         canDrawOverlaysState,

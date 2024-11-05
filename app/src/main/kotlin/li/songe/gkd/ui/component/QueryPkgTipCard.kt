@@ -24,15 +24,27 @@ import androidx.lifecycle.viewModelScope
 import li.songe.gkd.MainActivity
 import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.permission.requiredPermission
+import li.songe.gkd.permission.startQueryPkgSettingActivity
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.appRefreshingFlow
 import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.mayQueryPkgNoAccessFlow
 import li.songe.gkd.util.throttle
 
 @Composable
 fun QueryPkgAuthCard() {
     val canQueryPkg by canQueryPkgState.stateFlow.collectAsState()
-    if (!canQueryPkg) {
+    val mayQueryPkgNoAccess by mayQueryPkgNoAccessFlow.collectAsState()
+    val appRefreshing by appRefreshingFlow.collectAsState()
+    if (appRefreshing) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Spacer(modifier = Modifier.height(EmptyHeight / 2))
+            CircularProgressIndicator()
+        }
+    } else if (!canQueryPkg || mayQueryPkgNoAccess) {
         val context = LocalContext.current as MainActivity
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -46,26 +58,19 @@ fun QueryPkgAuthCard() {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "如需显示所有应用\n请授予[读取应用列表权限]",
+                text = if (!canQueryPkg) "如需显示所有应用\n请授予[读取应用列表权限]" else "检测到应用数量过少\n可尝试授予[读取应用列表权限]",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
             TextButton(onClick = throttle(fn = context.mainVm.viewModelScope.launchAsFn {
-                requiredPermission(context, canQueryPkgState)
+                if (!canQueryPkg) {
+                    requiredPermission(context, canQueryPkgState)
+                } else {
+                    startQueryPkgSettingActivity(context)
+                }
             })) {
                 Text(text = "申请权限")
-            }
-        }
-    } else {
-        val appRefreshing by appRefreshingFlow.collectAsState()
-        if (appRefreshing) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Spacer(modifier = Modifier.height(EmptyHeight / 2))
-                CircularProgressIndicator()
             }
         }
     }
