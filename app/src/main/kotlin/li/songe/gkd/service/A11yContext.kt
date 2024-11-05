@@ -541,7 +541,8 @@ class A11yContext(
                         queryNode,
                         selector,
                         rule.matchOption,
-                    ) ?: break
+                    )
+                    if (resultNode != null) break
                 }
                 if (resultNode == null) return null
             }
