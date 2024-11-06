@@ -239,6 +239,16 @@ fun AuthA11yPage() {
                                 .padding(4.dp)
                         )
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        modifier = Modifier
+                            .clickable {
+                                context.openUri("https://gkd.li/?r=3")
+                            },
+                        text = "运行后授权失败?",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 }
             },
             confirmButton = {
