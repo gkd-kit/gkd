@@ -189,7 +189,7 @@ fun SubsItemCard(
                 }
                 if (subsRefreshError != null) {
                     Text(
-                        text = "加载错误: ${subsRefreshError?.message}",
+                        text = "更新错误: ${subsRefreshError?.message}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error
                     )
