@@ -12,4 +12,7 @@ object SafeR {
     val ic_page_info: Int = R.drawable.ic_page_info
     val ic_flash_on: Int = R.drawable.ic_flash_on
     val ic_flash_off: Int = R.drawable.ic_flash_off
+    val ic_logo_animation: Int = R.drawable.ic_logo_animation
+    val better_black: Int = R.color.better_black
+    val better_white: Int = R.color.better_white
 }

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector
+            android:width="64dp"
+            android:height="64dp"
+            android:viewportWidth="64"
+            android:viewportHeight="64">
+            <group android:name="path1">
+                <path
+                    android:fillColor="#FFF"
+                    android:pathData="M19,17.485l8.485,-8.485l2.816,2.841l-8.485,8.485z" />
+            </group>
+            <group android:name="path2">
+                <path
+                    android:fillColor="#FFF"
+                    android:pathData="M35.816,9l8.485,8.485l-2.816,2.841l-8.485,-8.485z" />
+            </group>
+            <group android:name="path3">
+                <path
+                    android:fillColor="#FFF"
+                    android:pathData="M23.08,21.999l8.466,-8.504l8.466,8.504l-8.466,8.504z" />
+            </group>
+            <group android:name="path4">
+                <path
+                    android:fillColor="#FFF"
+                    android:pathData="M8,55C8.726,50.581 10.104,46.395 12.775,42.977C14.285,41.046 16.133,39.452 17.847,37.729C18.107,37.468 18.465,37.332 19,37C20.272,43.004 20.091,48.871 19.751,54.875C15.872,55 11.994,55 8,55Z" />
+            </group>
+            <path
+                android:name="path5"
+                android:fillColor="#FFF"
+                android:pathData="M21.912,55C21.867,52.521 22.113,50.034 21.993,47.565C21.833,44.288 21.429,41.019 21.039,37.758C20.922,36.775 21.013,36.135 22.054,35.748C27.61,33.682 33.218,33.423 38.918,35.103C39.826,35.37 40.103,35.763 39.967,36.755C39.717,38.583 39.642,40.44 39.586,42.288C39.461,46.44 39.392,50.593 39.297,54.873C33.543,55 27.792,55 21.912,55Z" />
+            <group android:name="path6">
+                <path
+                    android:fillColor="#FFF"
+                    android:pathData="M42,55C42.06,48.791 42.24,42.582 42.432,36C50.149,40.036 53.985,46.652 56,54.895C51.379,55 46.75,55 42,55Z" />
+            </group>
+        </vector>
+    </aapt:attr>
+    <target android:name="path1">
+        <aapt:attr name="android:animation">
+            <set>
+                <objectAnimator
+                    android:duration="1000"
+                    android:interpolator="@android:interpolator/accelerate_decelerate"
+                    android:propertyName="translateX"
+                    android:repeatCount="infinite"
+                    android:repeatMode="reverse"
+                    android:valueFrom="0"
+                    android:valueTo="-0.7071"
+                    android:valueType="floatType" />
+                <objectAnimator
+                    android:duration="1000"
+                    android:interpolator="@android:interpolator/accelerate_decelerate"
+                    android:propertyName="translateY"
+                    android:repeatCount="infinite"
+                    android:repeatMode="reverse"
+                    android:valueFrom="0"
+                    android:valueTo="-0.7071"
+                    android:valueType="floatType" />
+            </set>
+        </aapt:attr>
+    </target>
+    <target android:name="path2">
+        <aapt:attr name="android:animation">
+            <set>
+                <objectAnimator
+                    android:duration="1000"
+                    android:interpolator="@android:interpolator/accelerate_decelerate"
+                    android:propertyName="translateX"
+                    android:repeatCount="infinite"
+                    android:repeatMode="reverse"
+                    android:valueFrom="0"
+                    android:valueTo="0.7071"
+                    android:valueType="floatType" />
+                <objectAnimator
+                    android:duration="1000"
+                    android:interpolator="@android:interpolator/accelerate_decelerate"
+                    android:propertyName="translateY"
+                    android:repeatCount="infinite"
+                    android:repeatMode="reverse"
+                    android:valueFrom="0"
+                    android:valueTo="-0.7071"
+                    android:valueType="floatType" />
+            </set>
+        </aapt:attr>
+    </target>
+    <target android:name="path3">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="1000"
+                android:interpolator="@android:interpolator/accelerate_decelerate"
+                android:propertyName="translateY"
+                android:repeatCount="infinite"
+                android:repeatMode="reverse"
+                android:valueFrom="0"
+                android:valueTo="-1.13137"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+    <target android:name="path4">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="1000"
+                android:interpolator="@android:interpolator/accelerate_decelerate"
+                android:propertyName="translateX"
+                android:repeatCount="infinite"
+                android:repeatMode="reverse"
+                android:valueFrom="0"
+                android:valueTo="1.5"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+    <target android:name="path5">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="1000"
+                android:interpolator="@android:interpolator/accelerate_decelerate"
+                android:propertyName="fillAlpha"
+                android:repeatCount="infinite"
+                android:repeatMode="reverse"
+                android:valueFrom="0.8"
+                android:valueTo="1"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+    <target android:name="path6">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="1000"
+                android:interpolator="@android:interpolator/accelerate_decelerate"
+                android:propertyName="translateX"
+                android:repeatCount="infinite"
+                android:repeatMode="reverse"
+                android:valueFrom="-0.7"
+                android:valueTo="-2.2"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+</animated-vector>

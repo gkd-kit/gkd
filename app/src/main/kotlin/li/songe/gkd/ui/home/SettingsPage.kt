@@ -33,34 +33,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.generated.destinations.AboutPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.META
 import li.songe.gkd.MainActivity
-import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.updateDialogOptions
-import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.ui.theme.supportDynamicColor
 import li.songe.gkd.util.DarkThemeOption
 import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.UpdateChannelOption
-import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.findOption
-import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
 
 val settingsNav = BottomNavItem(
     label = "设置", icon = Icons.Outlined.Settings
@@ -80,7 +70,6 @@ fun useSettingsPage(): ScaffoldExt {
         mutableStateOf(false)
     }
 
-    val checkUpdating by context.mainVm.updateStatus.checkUpdatingFlow.collectAsState()
 
     if (showToastInputDlg) {
         var value by remember {
@@ -295,66 +284,6 @@ fun useSettingsPage(): ScaffoldExt {
                             enableDynamicColor = it
                         )
                     })
-            }
-
-            if (META.updateEnabled) {
-                Text(
-                    text = "更新",
-                    modifier = Modifier.titleItemPadding(),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-
-                TextSwitch(
-                    title = "自动更新",
-                    subtitle = "打开应用时检测新版本",
-                    checked = store.autoCheckAppUpdate,
-                    onCheckedChange = {
-                        storeFlow.value = store.copy(
-                            autoCheckAppUpdate = it
-                        )
-                    }
-                )
-
-                TextMenu(
-                    title = "更新渠道",
-                    option = UpdateChannelOption.allSubObject.findOption(store.updateChannel)
-                ) {
-                    if (it.value == UpdateChannelOption.Beta.value) {
-                        vm.viewModelScope.launchTry {
-                            context.mainVm.dialogFlow.waitResult(
-                                title = "版本渠道",
-                                text = "测试版本渠道更新快\n但不稳定可能存在较多BUG\n请谨慎使用",
-                            )
-                            storeFlow.update { s -> s.copy(updateChannel = it.value) }
-                        }
-                    } else {
-                        storeFlow.update { s -> s.copy(updateChannel = it.value) }
-                    }
-                }
-
-                Row(
-                    modifier = Modifier
-                        .clickable(
-                            onClick = throttle(fn = context.mainVm.viewModelScope.launchAsFn {
-                                if (context.mainVm.updateStatus.checkUpdatingFlow.value) return@launchAsFn
-                                val newVersion = context.mainVm.updateStatus.checkUpdate()
-                                if (newVersion == null) {
-                                    toast("暂无更新")
-                                }
-                            })
-                        )
-                        .fillMaxWidth()
-                        .itemPadding(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "检查更新",
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    RotatingLoadingIcon(loading = checkUpdating)
-                }
             }
 
             Text(

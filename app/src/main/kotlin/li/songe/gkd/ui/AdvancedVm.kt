@@ -5,11 +5,8 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.ui.component.UploadOptions
 
 class AdvancedVm : ViewModel() {
     val snapshotCountFlow =
         DbSet.snapshotDao.count().stateIn(viewModelScope, SharingStarted.Eagerly, 0)
-
-    val uploadOptions = UploadOptions(viewModelScope)
 }

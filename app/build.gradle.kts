@@ -59,7 +59,7 @@ android {
 
         applicationId = "li.songe.gkd"
         versionCode = 48
-        versionName = "v1.9.1"
+        versionName = "1.9.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -153,6 +153,7 @@ android {
         freeCompilerArgs += "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
         freeCompilerArgs += "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
         freeCompilerArgs += "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi"
+        freeCompilerArgs += "-opt-in=androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi"
     }
     dependenciesInfo.includeInApk = false
     packagingOptions.resources.excludes += setOf(
@@ -196,6 +197,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
     implementation(libs.compose.ui)
+    implementation(libs.compose.ui.graphics)
+    implementation(libs.compose.animation)
+    implementation(libs.compose.animation.graphics)
     implementation(libs.compose.icons)
     implementation(libs.compose.preview)
     debugImplementation(libs.compose.tooling)
