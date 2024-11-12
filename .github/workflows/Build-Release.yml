@@ -16,10 +16,9 @@ jobs:
           distribution: 'adopt'
           java-version: '17'
 
-      - uses: gradle/actions/setup-gradle@v3
+      - uses: gradle/actions/setup-gradle@v4
         with:
           cache-encryption-key: ${{ secrets.GRADLE_CACHE_ENCRYPTION_KEY }}
-          gradle-home-cache-cleanup: true
 
       - name: write secrets info
         run: |
@@ -84,16 +83,6 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: outputs/apk/gkd/release/app-gkd-release.apk
           asset_name: gkd-${{ github.ref_name }}.apk
-          asset_content_type: application/vnd.android.package-archive
-
-      - uses: actions/upload-release-asset@v1
-        if: ${{ !contains(github.ref_name, 'beta') }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: outputs/apk/foss/release/app-foss-release.apk
-          asset_name: gkd-x-foss-${{ github.ref_name }}.apk
           asset_content_type: application/vnd.android.package-archive
 
       - run: zip -r outputs.zip outputs
