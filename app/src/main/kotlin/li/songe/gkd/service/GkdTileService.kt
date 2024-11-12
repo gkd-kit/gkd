@@ -105,10 +105,10 @@ private fun enableA11yService() {
     )
 }
 
-fun switchA11yService(): Boolean {
+fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
     if (!writeSecureSettingsState.updateAndGet()) {
         toast("请先授予[写入安全设置权限]")
-        return false
+        return@launchTry
     }
     val names = getServiceNames()
     storeFlow.update { it.copy(enableService = !A11yService.isRunning.value) }
@@ -121,12 +121,12 @@ fun switchA11yService(): Boolean {
         if (names.contains(a11yClsName)) { // 当前无障碍异常, 重启服务
             names.remove(a11yClsName)
             updateServiceNames(names)
+            delay(500)
         }
         names.add(a11yClsName)
         updateServiceNames(names)
         toast("开启无障碍")
     }
-    return true
 }
 
 fun fixRestartService() = appScope.launchTry(Dispatchers.IO) {
