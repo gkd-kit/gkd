@@ -1,6 +1,6 @@
-name: 问题反馈 / Bug report
+name: 错误反馈 / Bug report
 title: "[BUG] "
-description: 反馈你遇到的问题 / Report the issue you are experiencing
+description: 反馈你遇到的错误 / Report the issue you are experiencing
 labels: ["pending triage"]
 
 body:
