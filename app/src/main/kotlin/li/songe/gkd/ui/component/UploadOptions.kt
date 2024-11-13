@@ -6,13 +6,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.ClipboardUtils
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import li.songe.gkd.MainViewModel
 import li.songe.gkd.data.GithubPoliciesAsset
+import li.songe.gkd.util.GithubCookieException
 import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.privacyStoreFlow
@@ -21,8 +23,7 @@ import li.songe.gkd.util.uploadFileToGithub
 import java.io.File
 
 class UploadOptions(
-    private val scope: CoroutineScope,
-    private val showHref: (GithubPoliciesAsset) -> String = { it.shortHref }
+    private val mainVm: MainViewModel,
 ) {
     private val statusFlow = MutableStateFlow<LoadStatus<GithubPoliciesAsset>?>(null)
     private var job: Job? = null
@@ -30,7 +31,7 @@ class UploadOptions(
         cookie: String,
         getFile: suspend () -> File,
         onSuccessResult: ((GithubPoliciesAsset) -> Unit)?
-    ) = scope.launchTry(Dispatchers.IO) {
+    ) = mainVm.viewModelScope.launchTry(Dispatchers.IO) {
         statusFlow.value = LoadStatus.Loading()
         try {
             val policiesAsset = uploadFileToGithub(cookie, getFile()) {
@@ -47,18 +48,23 @@ class UploadOptions(
         }
     }
 
+
+    private var showHref: (GithubPoliciesAsset) -> String = { it.shortHref }
     fun startTask(
         getFile: suspend () -> File,
+        showHref: (GithubPoliciesAsset) -> String = { it.shortHref },
         onSuccessResult: ((GithubPoliciesAsset) -> Unit)? = null
     ) {
         val cookie = privacyStoreFlow.value.githubCookie
         if (cookie.isNullOrBlank()) {
             toast("请先设置 cookie 后再上传")
+            mainVm.showEditCookieDlgFlow.value = true
             return
         }
         if (job != null || statusFlow.value is LoadStatus.Loading) {
             return
         }
+        this.showHref = showHref
         job = buildTask(cookie, getFile, onSuccessResult)
     }
 
@@ -123,6 +129,16 @@ class UploadOptions(
                         })
                     },
                     onDismissRequest = { statusFlow.value = null },
+                    dismissButton = if (status.exception is GithubCookieException) ({
+                        TextButton(onClick = {
+                            statusFlow.value = null
+                            mainVm.showEditCookieDlgFlow.value = true
+                        }) {
+                            Text(text = "更换 Cookie")
+                        }
+                    }) else {
+                        null
+                    },
                     confirmButton = {
                         TextButton(onClick = {
                             statusFlow.value = null

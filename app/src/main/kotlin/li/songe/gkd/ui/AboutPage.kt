@@ -48,7 +48,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.Dispatchers
@@ -88,10 +87,8 @@ import li.songe.gkd.util.toast
 fun AboutPage() {
     val navController = LocalNavController.current
     val context = LocalContext.current as MainActivity
-    val vm = viewModel<AboutVm>()
     val store by storeFlow.collectAsState()
 
-    vm.uploadOptions.ShowDialog()
     var showInfoDlg by remember { mutableStateOf(false) }
     if (showInfoDlg) {
         AlertDialog(
@@ -176,7 +173,9 @@ fun AboutPage() {
                     modifier = Modifier
                         .clickable(onClick = throttle {
                             showShareLogDlg = false
-                            vm.uploadOptions.startTask(getFile = { buildLogFile() })
+                            context.mainVm.uploadOptions.startTask(
+                                getFile = { buildLogFile() }
+                            )
                         })
                         .then(modifier)
                 )

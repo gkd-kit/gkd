@@ -5,7 +5,6 @@ import android.content.Context
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,7 +18,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -58,7 +56,6 @@ import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDe
 import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.appScope
 import li.songe.gkd.debug.FloatingService
@@ -81,7 +78,6 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openUri
-import li.songe.gkd.util.privacyStoreFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
@@ -153,62 +149,6 @@ fun AdvancedPage() {
                 )
             }
         })
-    }
-
-    var showEditCookieDlg by remember { mutableStateOf(false) }
-    if (showEditCookieDlg) {
-        val privacyStore by privacyStoreFlow.collectAsState()
-        var value by remember {
-            mutableStateOf(privacyStore.githubCookie ?: "")
-        }
-        AlertDialog(
-            onDismissRequest = {
-                if (value.isEmpty()) {
-                    showEditCookieDlg = false
-                }
-            },
-            title = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(text = "Github Cookie")
-                    IconButton(onClick = throttle {
-                        context.openUri("https://gkd.li/?r=1")
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
-                            contentDescription = null,
-                        )
-                    }
-                }
-            },
-            text = {
-                OutlinedTextField(
-                    value = value,
-                    onValueChange = {
-                        value = it.filter { c -> c != '\n' && c != '\r' }
-                    },
-                    placeholder = { Text(text = "请输入 Github Cookie") },
-                    modifier = Modifier.fillMaxWidth(),
-                    maxLines = 10,
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    showEditCookieDlg = false
-                    privacyStoreFlow.update { it.copy(githubCookie = value.trim()) }
-                }) {
-                    Text(text = "确认")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEditCookieDlg = false }) {
-                    Text(text = "取消")
-                }
-            }
-        )
     }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -454,7 +394,7 @@ fun AdvancedPage() {
                 },
                 imageVector = Icons.Default.Edit,
                 onClick = {
-                    showEditCookieDlg = true
+                    context.mainVm.showEditCookieDlgFlow.value = true
                 }
             )
 
