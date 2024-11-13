@@ -44,6 +44,7 @@ import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.service.updateLauncherAppId
 import li.songe.gkd.ui.component.BuildDialog
 import li.songe.gkd.ui.theme.AppTheme
+import li.songe.gkd.util.EditGithubCookieDlg
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.UpgradeDialog
 import li.songe.gkd.util.appInfoCacheFlow
@@ -93,6 +94,8 @@ class MainActivity : ComponentActivity() {
                     ShizukuErrorDialog(mainVm.shizukuErrorFlow)
                     AuthDialog(mainVm.authReasonFlow)
                     BuildDialog(mainVm.dialogFlow)
+                    mainVm.uploadOptions.ShowDialog()
+                    EditGithubCookieDlg(mainVm.showEditCookieDlgFlow)
                     if (META.updateEnabled) {
                         UpgradeDialog(mainVm.updateStatus)
                     }

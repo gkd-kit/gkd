@@ -79,8 +79,6 @@ fun SnapshotPage() {
     val vm = viewModel<SnapshotVm>()
     val snapshots by vm.snapshotsState.collectAsState()
 
-    vm.uploadOptions.ShowDialog()
-
     var selectedSnapshot by remember {
         mutableStateOf<Snapshot?>(null)
     }
@@ -246,8 +244,9 @@ fun SnapshotPage() {
                         text = "生成链接(需科学上网)", modifier = Modifier
                             .clickable(onClick = throttle {
                                 selectedSnapshot = null
-                                vm.uploadOptions.startTask(
+                                context.mainVm.uploadOptions.startTask(
                                     getFile = { SnapshotExt.getSnapshotZipFile(snapshotVal.id) },
+                                    showHref = { IMPORT_SHORT_URL + it.id },
                                     onSuccessResult = vm.viewModelScope.launchAsFn<GithubPoliciesAsset>(
                                         Dispatchers.IO
                                     ) {

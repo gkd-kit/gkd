@@ -15,6 +15,7 @@ import li.songe.gkd.data.SubsItem
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.permission.AuthReason
 import li.songe.gkd.ui.component.AlertDialogOptions
+import li.songe.gkd.ui.component.UploadOptions
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.UpdateStatus
 import li.songe.gkd.util.checkUpdate
@@ -42,6 +43,10 @@ class MainViewModel : ViewModel() {
     val updateStatus = UpdateStatus()
 
     val shizukuErrorFlow = MutableStateFlow(false)
+
+    val uploadOptions = UploadOptions(this)
+
+    val showEditCookieDlgFlow = MutableStateFlow(false)
 
     init {
         viewModelScope.launchTry(Dispatchers.IO) {
