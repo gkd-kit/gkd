@@ -67,6 +67,7 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.menuPadding
+import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalNavController
@@ -178,7 +179,7 @@ fun AppConfigPage(appId: String) {
         },
     ) { contentPadding ->
         LazyColumn(
-            modifier = Modifier.padding(contentPadding),
+            modifier = Modifier.scaffoldPadding(contentPadding),
             state = listState,
         ) {
             itemsIndexed(globalGroups) { i, g ->

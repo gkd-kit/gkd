@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -57,6 +56,7 @@ import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.EnableGroupOption
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
@@ -126,7 +126,7 @@ fun CategoryPage(subsItemId: Long) {
         }
     }) { contentPadding ->
         LazyColumn(
-            modifier = Modifier.padding(contentPadding)
+            modifier = Modifier.scaffoldPadding(contentPadding)
         ) {
             items(categories, { it.key }) { category ->
                 var selectedExpanded by remember { mutableStateOf(false) }

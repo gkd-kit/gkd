@@ -1,6 +1,8 @@
 <resources>
 
-    <style name="AppTheme" parent="android:Theme.Material.NoActionBar"></style>
+    <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowTranslucentNavigation">true</item>
+    </style>
 
     <style name="SplashScreenTheme" parent="Theme.SplashScreen">
         <item name="windowSplashScreenAnimatedIcon">

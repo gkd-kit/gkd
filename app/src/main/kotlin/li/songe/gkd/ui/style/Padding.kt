@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.style
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.ui.Modifier
@@ -23,3 +24,10 @@ fun Modifier.appItemPadding() = this.padding(10.dp, 10.dp)
 fun Modifier.menuPadding() = this
     .padding(MenuDefaults.DropdownMenuItemContentPadding)
     .padding(vertical = 8.dp)
+
+fun Modifier.scaffoldPadding(values: PaddingValues): Modifier {
+    return this.padding(
+        top = values.calculateTopPadding(),
+        // 被 LazyColumn( 使用时, 移除 bottom padding, 否则 底部导航栏 无法实现透明背景
+    )
+}

@@ -8,10 +8,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -73,6 +71,7 @@ import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
@@ -150,9 +149,7 @@ fun AppItemPage(
         }
     }) { contentPadding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(contentPadding)
+            modifier = Modifier.scaffoldPadding(contentPadding)
         ) {
             item {
                 Spacer(modifier = Modifier.height(10.dp))
@@ -285,7 +282,7 @@ fun AppItemPage(
                                     },
                                 )
                             }
-                            if (editable && subsRaw != null && subsItem != null) {
+                            if (editable && subsRaw != null) {
                                 DropdownMenuItem(
                                     text = {
                                         Text(text = "删除", color = MaterialTheme.colorScheme.error)
