@@ -71,6 +71,7 @@ import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.json
@@ -137,7 +138,9 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
             }
         },
     ) { paddingValues ->
-        LazyColumn(modifier = Modifier.padding(paddingValues)) {
+        LazyColumn(
+            modifier = Modifier.scaffoldPadding(paddingValues)
+        ) {
             items(globalGroups, { g -> g.key }) { group ->
                 Row(
                     modifier = Modifier
@@ -246,7 +249,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                                     )
                                 }
                             )
-                            if (editable && rawSubs != null) {
+                            if (editable) {
                                 DropdownMenuItem(
                                     text = {
                                         Text(text = "删除", color = MaterialTheme.colorScheme.error)

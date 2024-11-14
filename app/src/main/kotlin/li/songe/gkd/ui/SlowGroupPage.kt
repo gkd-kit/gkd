@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -38,6 +37,7 @@ import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
@@ -81,8 +81,10 @@ fun SlowGroupPage() {
                 }
             )
         }
-    ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding)) {
+    ) { contentPadding ->
+        LazyColumn(
+            modifier = Modifier.scaffoldPadding(contentPadding)
+        ) {
             items(
                 ruleSummary.slowGlobalGroups,
                 { (_, r) -> "${r.subsItem.id}-${r.group.key}" }
@@ -90,12 +92,14 @@ fun SlowGroupPage() {
                 SlowGroupCard(
                     modifier = Modifier
                         .clickable(onClick = throttle {
-                            navController.toDestinationsNavigator().navigate(
-                                GlobalRulePageDestination(
-                                    rule.subsItem.id,
-                                    group.key
+                            navController
+                                .toDestinationsNavigator()
+                                .navigate(
+                                    GlobalRulePageDestination(
+                                        rule.subsItem.id,
+                                        group.key
+                                    )
                                 )
-                            )
                         })
                         .itemPadding(),
                     title = group.name,
@@ -109,13 +113,15 @@ fun SlowGroupPage() {
                 SlowGroupCard(
                     modifier = Modifier
                         .clickable(onClick = throttle {
-                            navController.toDestinationsNavigator().navigate(
-                                AppItemPageDestination(
-                                    rule.subsItem.id,
-                                    rule.app.id,
-                                    group.key
+                            navController
+                                .toDestinationsNavigator()
+                                .navigate(
+                                    AppItemPageDestination(
+                                        rule.subsItem.id,
+                                        rule.app.id,
+                                        group.key
+                                    )
                                 )
-                            )
                         })
                         .itemPadding(),
                     title = group.name,

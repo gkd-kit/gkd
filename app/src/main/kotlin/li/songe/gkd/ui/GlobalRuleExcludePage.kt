@@ -76,6 +76,7 @@ import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
+import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SortTypeOption
@@ -249,8 +250,11 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                 }
             }
         })
-    }, content = { paddingValues ->
-        LazyColumn(modifier = Modifier.padding(paddingValues), state = listState) {
+    }, content = { contentPadding ->
+        LazyColumn(
+            modifier = Modifier.scaffoldPadding(contentPadding),
+            state = listState
+        ) {
             items(showAppInfos, { it.id }) { appInfo ->
                 Row(
                     modifier = Modifier

@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -64,6 +63,7 @@ import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.menuPadding
+import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SortTypeOption
@@ -241,9 +241,10 @@ fun SubsPage(
                 }
             }
         },
-    ) { padding ->
+    ) { contentPadding ->
         LazyColumn(
-            modifier = Modifier.padding(padding), state = listState
+            modifier = Modifier.scaffoldPadding(contentPadding),
+            state = listState
         ) {
             itemsIndexed(appAndConfigs, { i, a -> i.toString() + a.t0.id }) { _, a ->
                 val (appRaw, subsConfig, enableSize) = a
