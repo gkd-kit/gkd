@@ -87,7 +87,7 @@ fun useControlPage(): ScaffoldExt {
                 }
             })
         }
-    ) { padding ->
+    ) { contentPadding ->
         val latestRecordDesc by vm.latestRecordDescFlow.collectAsState()
         val subsStatus by vm.subsStatusFlow.collectAsState()
         val store by storeFlow.collectAsState()
@@ -103,7 +103,7 @@ fun useControlPage(): ScaffoldExt {
         Column(
             modifier = Modifier
                 .verticalScroll(scrollState)
-                .padding(padding)
+                .padding(contentPadding)
         ) {
             if (writeSecureSettings) {
                 TextSwitch(

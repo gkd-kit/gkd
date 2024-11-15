@@ -67,7 +67,6 @@ import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
-import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.mapHashCode
@@ -262,7 +261,7 @@ fun useAppListPage(): ScaffoldExt {
         }
     ) { contentPadding ->
         LazyColumn(
-            modifier = Modifier.scaffoldPadding(contentPadding),
+            modifier = Modifier.padding(contentPadding),
             state = listState
         ) {
             items(orderedAppInfos, { it.id }) { appInfo ->
