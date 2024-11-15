@@ -68,6 +68,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SubsItemCard
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.SafeR
@@ -342,7 +343,7 @@ fun useSubsManagePage(): ScaffoldExt {
                 }
             }
         },
-    ) { padding ->
+    ) { contentPadding ->
         val lazyListState = rememberLazyListState()
         val reorderableLazyColumnState =
             rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -358,7 +359,7 @@ fun useSubsManagePage(): ScaffoldExt {
             }
         Box(
             modifier = Modifier
-                .padding(padding)
+                .padding(contentPadding)
                 .fillMaxSize()
                 .pullRefresh(pullRefreshState, subItems.isNotEmpty())
         ) {
@@ -430,7 +431,7 @@ fun useSubsManagePage(): ScaffoldExt {
                     }
                 }
                 item {
-                    Spacer(modifier = Modifier.height(80.dp))
+                    Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }
             PullRefreshIndicator(

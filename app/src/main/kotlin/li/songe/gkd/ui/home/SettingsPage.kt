@@ -191,11 +191,11 @@ fun useSettingsPage(): ScaffoldExt {
                 )
             })
         },
-    ) { padding ->
+    ) { contentPadding ->
         Column(
             modifier = Modifier
                 .verticalScroll(scrollState)
-                .padding(padding)
+                .padding(contentPadding)
         ) {
 
             Text(
