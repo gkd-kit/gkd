@@ -7,7 +7,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,9 +34,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pullrefresh.PullRefreshIndicator
-import androidx.compose.material3.pullrefresh.pullRefresh
-import androidx.compose.material3.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -109,7 +107,7 @@ fun useSubsManagePage(): ScaffoldExt {
     }
 
     val refreshing by subsRefreshingFlow.collectAsState()
-    val pullRefreshState = rememberPullRefreshState(refreshing, { checkSubsUpdate(true) })
+    val pullToRefreshState = rememberPullToRefreshState()
     var isSelectedMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
     val draggedFlag = remember { Value(false) }
@@ -357,15 +355,15 @@ fun useSubsManagePage(): ScaffoldExt {
                 }
                 draggedFlag.value = true
             }
-        Box(
-            modifier = Modifier
-                .padding(contentPadding)
-                .fillMaxSize()
-                .pullRefresh(pullRefreshState, subItems.isNotEmpty())
+        PullToRefreshBox(
+            modifier = Modifier.padding(contentPadding),
+            state = pullToRefreshState,
+            isRefreshing = refreshing,
+            onRefresh = { checkSubsUpdate(true) }
         ) {
             LazyColumn(
                 state = lazyListState,
-                modifier = Modifier.fillMaxHeight(),
+                modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 itemsIndexed(orderSubItems, { _, subItem -> subItem.id }) { index, subItem ->
@@ -434,11 +432,6 @@ fun useSubsManagePage(): ScaffoldExt {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }
-            PullRefreshIndicator(
-                refreshing = refreshing,
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
-            )
         }
     }
 }
