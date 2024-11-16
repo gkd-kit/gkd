@@ -54,6 +54,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.KeyboardUtils
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
@@ -69,6 +70,7 @@ import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SortTypeOption
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mapHashCode
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
@@ -152,6 +154,14 @@ fun useAppListPage(): ScaffoldExt {
                     )
                 } else {
                     Text(
+                        modifier = Modifier.clickable(
+                            enabled = orderedAppInfos.isNotEmpty(),
+                            onClick = throttle {
+                                if (orderedAppInfos.isNotEmpty()) {
+                                    vm.viewModelScope.launchTry { listState.scrollToItem(0) }
+                                }
+                            }
+                        ),
                         text = appListNav.label,
                     )
                 }
