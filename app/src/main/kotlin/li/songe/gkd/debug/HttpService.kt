@@ -95,6 +95,7 @@ class HttpService : Service(), OnCreate, OnDestroy {
         }
 
         onCreated {
+            httpNotif.notifyService(this)
             scope.launchTry(Dispatchers.IO) {
                 httpServerPortFlow.collect { port ->
                     server?.stop()
