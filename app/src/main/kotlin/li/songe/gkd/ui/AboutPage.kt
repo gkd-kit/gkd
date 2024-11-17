@@ -252,8 +252,9 @@ fun AboutPage() {
                 Text(
                     text = REPOSITORY_URL,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.secondary,
                 )
+
             }
             Column(
                 modifier = Modifier
@@ -270,7 +271,7 @@ fun AboutPage() {
                 Text(
                     text = ISSUES_URL,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.secondary,
                 )
             }
             if (META.updateEnabled) {
