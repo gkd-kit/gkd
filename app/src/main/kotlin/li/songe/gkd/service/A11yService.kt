@@ -234,7 +234,7 @@ private fun A11yService.useMatchRule() {
             }
         }
         val activityRule = getAndUpdateCurrentRules()
-        if (activityRule.currentRules.isEmpty() || !storeFlow.value.enableMatch) {
+        if (activityRule.skipMatch) {
             if (META.debuggable) {
                 Log.d("queryEvents", "没有规则或者禁用匹配")
             }
@@ -448,8 +448,8 @@ private fun A11yService.useMatchRule() {
                 updateTopActivity(TopActivity(rightAppId))
             }
         }
-
-        if (getAndUpdateCurrentRules().currentRules.isEmpty() || !storeFlow.value.enableMatch || evAppId != rightAppId) {
+        val activityRule = getAndUpdateCurrentRules()
+        if (evAppId != rightAppId || activityRule.skipMatch) {
             // 放在 evAppId != rightAppId 的前面使得 TopActivity 能借助 lastTopActivity 恢复
             return@launchEvent
         }
