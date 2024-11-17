@@ -95,6 +95,10 @@ class ActivityRule(
         } else {
             currentRules
         }
+    val skipMatch: Boolean
+        get() {
+            return !currentRules.any { r -> r.status.ok } || !storeFlow.value.enableMatch
+        }
 }
 
 val activityRuleFlow by lazy { MutableStateFlow(ActivityRule()) }
