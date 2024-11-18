@@ -5,6 +5,7 @@ import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -67,6 +68,7 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         enableEdgeToEdge()
         fixTopPadding()
+        fixTransparentNavigationBar()
         super.onCreate(savedInstanceState)
         mainVm
         launcher
@@ -185,6 +187,16 @@ fun syncFixState() {
             // 自动重启无障碍服务
             fixRestartService()
         }
+    }
+}
+
+private fun Activity.fixTransparentNavigationBar() {
+    // 修复在浅色主题下导航栏背景不透明的问题
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        window.isNavigationBarContrastEnforced = false
+    } else {
+        @Suppress("DEPRECATION")
+        window.navigationBarColor = Color.TRANSPARENT
     }
 }
 
