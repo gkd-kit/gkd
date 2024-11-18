@@ -136,6 +136,11 @@ fun AdvancedPage() {
                         httpServerPort = newPort
                     )
                     showEditPortDlg = false
+                    if (HttpService.httpServerFlow.value != null) {
+                        toast("已更新, 重启服务")
+                    } else {
+                        toast("已更新")
+                    }
                 }
             ) {
                 Text(
@@ -196,7 +201,8 @@ fun AdvancedPage() {
                 ShizukuFragment()
             }
 
-            val httpServerRunning by HttpService.isRunning.collectAsState()
+            val server by HttpService.httpServerFlow.collectAsState()
+            val httpServerRunning = server != null
             val localNetworkIps by HttpService.localNetworkIpsFlow.collectAsState()
 
             Text(
@@ -252,14 +258,14 @@ fun AdvancedPage() {
                 }
                 Switch(
                     checked = httpServerRunning,
-                    onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
+                    onCheckedChange = throttle(fn = vm.viewModelScope.launchAsFn<Boolean> {
                         if (it) {
                             requiredPermission(context, notificationState)
                             HttpService.start()
                         } else {
                             HttpService.stop()
                         }
-                    }
+                    })
                 )
             }
 

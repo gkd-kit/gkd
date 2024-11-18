@@ -1,6 +1,3 @@
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
@@ -21,7 +18,7 @@ kotlin {
         }
         commonMain {
             dependencies {
-                implementation(libs.kotlin.stdlib.common)
+                implementation(libs.kotlin.stdlib)
             }
         }
         jvmTest {

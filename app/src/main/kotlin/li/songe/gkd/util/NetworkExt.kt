@@ -1,6 +1,7 @@
 package li.songe.gkd.util
 
 import java.net.NetworkInterface
+import java.net.ServerSocket
 
 fun getIpAddressInLocalNetwork(): List<String> {
     val networkInterfaces = try {
@@ -17,4 +18,19 @@ fun getIpAddressInLocalNetwork(): List<String> {
         }.map { inetAddress -> inetAddress.hostAddress }
     }
     return localAddresses.toList()
+}
+
+
+fun isPortAvailable(port: Int): Boolean {
+    var serverSocket: ServerSocket? = null
+    return try {
+        serverSocket = ServerSocket(port)
+        serverSocket.reuseAddress = true
+        true
+    } catch (e: Exception) {
+        e.printStackTrace()
+        false
+    } finally {
+        serverSocket?.close()
+    }
 }

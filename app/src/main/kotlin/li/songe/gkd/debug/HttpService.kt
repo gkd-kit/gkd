@@ -49,6 +49,7 @@ import li.songe.gkd.util.OnCreate
 import li.songe.gkd.util.OnDestroy
 import li.songe.gkd.util.SERVER_SCRIPT_URL
 import li.songe.gkd.util.getIpAddressInLocalNetwork
+import li.songe.gkd.util.isPortAvailable
 import li.songe.gkd.util.keepNullJson
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
@@ -78,9 +79,6 @@ class HttpService : Service(), OnCreate, OnDestroy {
 
     private val httpServerPortFlow = storeFlow.map(scope) { s -> s.httpServerPort }
 
-    private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? =
-        null
-
     init {
         useLogLifecycle()
         useAliveFlow(isRunning)
@@ -92,21 +90,28 @@ class HttpService : Service(), OnCreate, OnDestroy {
             if (storeFlow.value.autoClearMemorySubs) {
                 deleteSubscription(LOCAL_HTTP_SUBS_ID)
             }
+            httpServerFlow.value = null
         }
 
         onCreated {
             httpNotif.notifyService(this)
             scope.launchTry(Dispatchers.IO) {
                 httpServerPortFlow.collect { port ->
-                    server?.stop()
-                    server = try {
+                    httpServerFlow.value?.stop()
+                    httpServerFlow.value = null
+                    if (!isPortAvailable(port)) {
+                        toast("端口 $port 被占用, 请更换后重试")
+                        stopSelf()
+                        return@collect
+                    }
+                    httpServerFlow.value = try {
                         scope.createServer(port).apply { start() }
                     } catch (e: Exception) {
+                        toast("HTTP服务启动失败:${e.stackTraceToString()}")
                         LogUtils.d("HTTP服务启动失败", e)
                         null
                     }
-                    if (server == null) {
-                        toast("HTTP服务启动失败,您可以尝试切换端口后重新启动")
+                    if (httpServerFlow.value == null) {
                         stopSelf()
                         return@collect
                     }
@@ -117,6 +122,7 @@ class HttpService : Service(), OnCreate, OnDestroy {
     }
 
     companion object {
+        val httpServerFlow = MutableStateFlow<ServerType?>(null)
         val isRunning = MutableStateFlow(false)
         val localNetworkIpsFlow = MutableStateFlow(emptyList<String>())
         fun stop() {
@@ -129,6 +135,9 @@ class HttpService : Service(), OnCreate, OnDestroy {
         }
     }
 }
+
+typealias ServerType = EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>
+
 
 @Serializable
 data class RpcOk(

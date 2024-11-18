@@ -22,6 +22,10 @@
 -keep class li.songe.**{*;}
 -keep interface li.songe.**{*;}
 
+# fix ktor error https://youtrack.jetbrains.com/issue/KTOR-7298
+# it should the bug of agp
+-keep class com.hjq.toast.** {*;}
+
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
 
 -keep, allowobfuscation, allowoptimization @kotlinx.serialization.Serializable class * {*;}
