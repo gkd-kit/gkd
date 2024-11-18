@@ -1,3 +1,7 @@
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class, ExperimentalWasmDsl::class)
+
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -22,7 +26,7 @@ kotlin {
         }
         commonMain {
             dependencies {
-                implementation(libs.kotlin.stdlib.common)
+                implementation(libs.kotlin.stdlib)
             }
         }
     }

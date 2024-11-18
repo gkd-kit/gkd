@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.0.21"
 ksp = "2.0.21-1.0.25"
-android = "8.5.2"
+android = "8.7.2"
 compose = "1.7.5"
 rikka = "4.4.0"
 room = "2.6.1"
@@ -12,9 +12,7 @@ coil = "2.7.0"
 shizuku = "13.1.5"
 
 [libraries]
-kotlin_gradle_plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
-kotlin_serialization = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
-kotlin_stdlib_common = { module = "org.jetbrains.kotlin:kotlin-stdlib-common", version.ref = "kotlin" }
+kotlin_stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlin_test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx_serialization_json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.7.3" }
 ktor_server_core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
@@ -24,7 +22,6 @@ ktor_client_core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor_client_okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor_client_content_negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor_serialization_kotlinx_json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-android_gradle = { module = "com.android.tools.build:gradle", version.ref = "android" }
 compose_ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
 compose_ui_graphics = { module = "androidx.compose.ui:ui-graphics", version.ref = "compose" }
 compose_animation = { module = "androidx.compose.animation:animation", version.ref = "compose" }

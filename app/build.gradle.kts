@@ -1,14 +1,13 @@
-import java.io.ByteArrayOutputStream
-
-fun String.runCommand(currentWorkingDir: File = file("./")): String {
-    val byteOut = ByteArrayOutputStream()
-    project.exec {
-        workingDir = currentWorkingDir
-        commandLine = this@runCommand.split("\\s".toRegex())
-        standardOutput = byteOut
-        errorOutput = ByteArrayOutputStream()
+fun String.runCommand(): String {
+    val process = ProcessBuilder(split(" "))
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().readText().trim()
+    val exitCode = process.waitFor()
+    if (exitCode != 0) {
+        error("Command failed with exit code $exitCode: $output")
     }
-    return String(byteOut.toByteArray()).trim()
+    return output
 }
 
 data class GitInfo(
@@ -191,6 +190,7 @@ composeCompiler {
 }
 
 dependencies {
+    implementation(libs.kotlin.stdlib)
 
     implementation(project(mapOf("path" to ":selector")))
 
