@@ -72,9 +72,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
           body_path: ./CHANGELOG.md
+          prerelease: ${{ contains(github.ref_name, 'beta') }}
 
       - uses: actions/upload-release-asset@v1
         env:
