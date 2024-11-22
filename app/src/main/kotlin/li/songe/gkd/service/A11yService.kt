@@ -179,19 +179,42 @@ private fun A11yService.useMatchRule() {
     var lastContentEventTime = 0L
     val queryEvents = mutableListOf<A11yEvent>()
     var queryTaskJob: Job?
+
+
     fun newQueryTask(
         byEvent: A11yEvent? = null,
         byForced: Boolean = false,
         delayRule: ResolvedRule? = null,
     ): Job = scope.launchTry(A11yService.queryThread) launchQuery@{
         queryTaskJob = coroutineContext[Job]
+        fun checkFutureJob() {
+            val t = System.currentTimeMillis()
+            if (t - lastTriggerTime < 3000L || t - appChangeTime < 5000L) {
+                scope.launch(A11yService.actionThread) {
+                    delay(300)
+                    if (queryTaskJob?.isActive != true) {
+                        newQueryTask()
+                    }
+                }
+            } else {
+                if (getAndUpdateCurrentRules().currentRules.any { r -> r.checkForced() && r.status.let { s -> s == RuleStatus.StatusOk || s == RuleStatus.Status5 } }) {
+                    scope.launch(A11yService.actionThread) {
+                        delay(300)
+                        if (queryTaskJob?.isActive != true) {
+                            newQueryTask(byForced = true)
+                        }
+                    }
+                }
+            }
+        }
+
         val newEvents = if (delayRule != null) {// 延迟规则不消耗事件
             null
         } else {
             synchronized(queryEvents) {
                 // 不能在 synchronized 内获取节点, 否则将阻塞事件处理
                 if (byEvent != null && queryEvents.isEmpty()) {
-                    return@launchQuery
+                    return@launchQuery checkFutureJob()
                 }
                 (if (queryEvents.size > 1) {
                     val hasDiffItem = queryEvents.any { e ->
@@ -239,7 +262,7 @@ private fun A11yService.useMatchRule() {
                 Log.d("queryEvents", "没有规则或者禁用匹配")
             }
             // 如果当前应用没有规则/暂停匹配, 则不去调用获取事件节点避免阻塞
-            return@launchQuery
+            return@launchQuery checkFutureJob()
         }
         var lastNode = if (newEvents == null || newEvents.size <= 1) {
             newEvents?.firstOrNull()?.safeSource
@@ -313,7 +336,7 @@ private fun A11yService.useMatchRule() {
                         }
                     }
                 }
-                return@launchQuery
+                return@launchQuery checkFutureJob()
             }
             if (!matchApp) continue
             val target = a11yContext.queryRule(rule, nodeVal) ?: continue
@@ -345,24 +368,7 @@ private fun A11yService.useMatchRule() {
                 }
             }
         }
-        val t = System.currentTimeMillis()
-        if (t - lastTriggerTime < 3000L || t - appChangeTime < 5000L) {
-            scope.launch(A11yService.actionThread) {
-                delay(300)
-                if (queryTaskJob?.isActive != true) {
-                    newQueryTask()
-                }
-            }
-        } else {
-            if (activityRule.currentRules.any { r -> r.checkForced() && r.status.let { s -> s == RuleStatus.StatusOk || s == RuleStatus.Status5 } }) {
-                scope.launch(A11yService.actionThread) {
-                    delay(300)
-                    if (queryTaskJob?.isActive != true) {
-                        newQueryTask(byForced = true)
-                    }
-                }
-            }
-        }
+        checkFutureJob()
     }
 
     var lastGetAppIdTime = 0L
