@@ -9,7 +9,7 @@ body:
       value: |
         ## 感谢您花时间填写, 在提交问题之前, 请确保您完成以下操作
         1. 请 **确保** 您已经查阅了 [GKD 官方文档](https://gkd.li)  以及 [常见问题](https://gkd.li/guide/faq)
-        2. 请 **确保** [已有的问题](https://github.com/gkd-kit/gkd/issues?q=is%3Aissue) 中没有人提交过相似issue，否则请在已有的issue下进行讨论
+        2. 请 **确保** 已有的 [问题](https://github.com/gkd-kit/gkd/issues?q=is%3Aissue) 或 [讨论](https://github.com/orgs/gkd-kit/discussions?discussions_q=) 中没有人提交过相似问题，否则请在该问题下进行讨论
         3. 请 **不要** 开启重复相关的 issue，这将导致别人搜索 issue 时出现无关的低质量信息, 否则你的问题将会被直接关闭甚至删除
         4. 请 **确保** 你的问题能在 [releases](https://github.com/gkd-kit/gkd/releases/latest) 发布的最新版本(包含测试版本)上复现 (如果不是请先更新到最新版本复现后再提交问题)
         5. 请 **务必** 给issue填写一个简洁明了的标题，以便他人快速检索
