@@ -44,6 +44,7 @@ import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.LocalNavController
@@ -169,7 +170,7 @@ fun useControlPage(): ScaffoldExt {
                     }
                 )
             }
-            HorizontalDivider()
+            HorizontalDivider(modifier = Modifier.padding(horizontal = itemHorizontalPadding))
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
