@@ -37,14 +37,14 @@ import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.update
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.fixRestartService
-import li.songe.gkd.shizuku.newPackageManager
+import li.songe.gkd.shizuku.execCommandForResult
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.util.LocalNavController
@@ -52,6 +52,7 @@ import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openA11ySettings
 import li.songe.gkd.util.openUri
+import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
@@ -269,24 +270,22 @@ fun AuthA11yPage() {
     }
 }
 
-private val commandText by lazy { "adb shell pm grant ${META.appId} android.permission.WRITE_SECURE_SETTINGS" }
+private val innerCommandText by lazy { "pm grant ${META.appId} android.permission.WRITE_SECURE_SETTINGS; appops set ${META.appId} ACCESS_RESTRICTED_SETTINGS allow" }
+private val commandText by lazy { "adb shell \"${innerCommandText}\"" }
+
+private fun successAuthExec() {
+    if (writeSecureSettingsState.updateAndGet()) {
+        toast("授权成功")
+        storeFlow.update { it.copy(enableService = true) }
+        fixRestartService()
+    }
+}
 
 private suspend fun MainActivity.grantPermissionByShizuku() {
     if (shizukuOkState.stateFlow.value) {
         try {
-            val manager = newPackageManager()
-            if (manager != null) {
-                manager.grantRuntimePermission(
-                    META.appId,
-                    "android.permission.WRITE_SECURE_SETTINGS",
-                    0, // maybe others
-                )
-                delay(500)
-                if (writeSecureSettingsState.updateAndGet()) {
-                    toast("授权成功")
-                    fixRestartService()
-                }
-            }
+            execCommandForResult(innerCommandText)
+            successAuthExec()
         } catch (e: Exception) {
             toast("授权失败:${e.message}")
             LogUtils.d(e)
@@ -308,12 +307,12 @@ private fun grantPermissionByRoot() {
     try {
         p = Runtime.getRuntime().exec("su")
         val o = DataOutputStream(p.outputStream)
-        o.writeBytes("pm grant ${META.appId} android.permission.WRITE_SECURE_SETTINGS\nexit\n")
+        o.writeBytes("${innerCommandText}\nexit\n")
         o.flush()
         o.close()
         p.waitFor()
         if (p.exitValue() == 0) {
-            toast("授权成功")
+            successAuthExec()
         }
     } catch (e: Exception) {
         toast("授权失败:${e.message}")
