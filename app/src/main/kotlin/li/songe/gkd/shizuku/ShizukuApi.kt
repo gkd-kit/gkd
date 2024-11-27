@@ -5,7 +5,6 @@ import android.app.ActivityManager
 import android.app.IActivityTaskManager
 import android.content.ComponentName
 import android.content.ServiceConnection
-import android.content.pm.IPackageManager
 import android.content.pm.PackageManager
 import android.os.IBinder
 import android.view.Display
@@ -38,6 +37,7 @@ fun shizukuCheckGranted(): Boolean {
     val granted = try {
         Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
     } catch (e: Exception) {
+        e.printStackTrace()
         false
     }
     if (!granted) return false
@@ -51,6 +51,7 @@ fun shizukuCheckActivity(): Boolean {
     return (try {
         newActivityTaskManager()?.safeGetTasks(log = false)?.isNotEmpty() == true
     } catch (e: Exception) {
+        e.printStackTrace()
         false
     })
 }
@@ -138,18 +139,19 @@ fun safeGetTopActivity(): TopActivity? {
         val top = taskManager.safeGetTasks()?.lastOrNull()?.topActivity ?: return null
         return TopActivity(appId = top.packageName, activityId = top.className)
     } catch (e: Exception) {
+        e.printStackTrace()
         return null
     }
 }
 
-fun newPackageManager(): IPackageManager? {
-    val service = SystemServiceHelper.getSystemService("package")
-    if (service == null) {
-        LogUtils.d("shizuku 无法获取 package")
-        return null
-    }
-    return service.let(::ShizukuBinderWrapper).let(IPackageManager.Stub::asInterface)
-}
+//fun newPackageManager(): IPackageManager? {
+//    val service = SystemServiceHelper.getSystemService("package")
+//    if (service == null) {
+//        LogUtils.d("shizuku 无法获取 package")
+//        return null
+//    }
+//    return service.let(::ShizukuBinderWrapper).let(IPackageManager.Stub::asInterface)
+//}
 
 data class UserServiceWrapper(
     val userService: IUserService,
@@ -202,15 +204,23 @@ private suspend fun serviceWrapper(): UserServiceWrapper = suspendCoroutine { co
     Shizuku.bindUserService(serviceArgs, connection)
 }
 
+suspend fun execCommandForResult(command: String): Boolean {
+    serviceWrapperFlow.value?.userService?.let {
+        return it.execCommandForResult(command) == true
+    }
+    val wrapper = serviceWrapper()
+    return try {
+        wrapper.userService.execCommandForResult(command) == true
+    } finally {
+        wrapper.destroy()
+    }
+}
+
 suspend fun shizukuCheckUserService(): Boolean {
     return safeTap(0f, 0f) == true || try {
-        val wrapper = serviceWrapper()
-        try {
-            wrapper.userService.execCommandForResult("input tap 0 0") == true
-        } finally {
-            wrapper.destroy()
-        }
+        execCommandForResult("input tap 0 0")
     } catch (e: Exception) {
+        e.printStackTrace()
         false
     }
 }

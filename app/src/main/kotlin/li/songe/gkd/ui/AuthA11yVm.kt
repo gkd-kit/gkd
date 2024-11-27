@@ -12,9 +12,7 @@ class AuthA11yVm : ViewModel() {
     init {
         viewModelScope.launch {
             while (isActive) {
-                if (writeSecureSettingsState.updateAndGet()) {
-                    break
-                }
+                writeSecureSettingsState.updateAndGet()
                 delay(1000)
             }
         }
