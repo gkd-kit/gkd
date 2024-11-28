@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import li.songe.gkd.accessRestrictedSettingsShowFlow
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.permission.writeSecureSettingsState
@@ -125,6 +126,12 @@ fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
         }
         names.add(a11yClsName)
         updateServiceNames(names)
+        delay(300)
+        if (!A11yService.isRunning.value) {
+            toast("开启无障碍失败")
+            accessRestrictedSettingsShowFlow.value = true
+            return@launchTry
+        }
         toast("开启无障碍")
     }
 }
@@ -148,6 +155,12 @@ fun fixRestartService() = appScope.launchTry(Dispatchers.IO) {
         }
         names.add(a11yClsName)
         updateServiceNames(names)
+        delay(300)
+        if (!A11yService.isRunning.value) {
+            toast("重启无障碍失败")
+            accessRestrictedSettingsShowFlow.value = true
+            return@launchTry
+        }
         toast("重启无障碍")
     }
 }

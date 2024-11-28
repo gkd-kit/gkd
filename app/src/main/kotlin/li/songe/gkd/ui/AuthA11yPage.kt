@@ -160,36 +160,7 @@ fun AuthA11yPage() {
                     text = "1. 授予[写入安全设置权限]\n2. 授权永久有效, 包含[无障碍权限]\n3. 应用重启后可自动打开无障碍服务\n4. 在通知栏快捷开关可快捷重启, 无感保活"
                 )
                 if (!writeSecureSettings) {
-                    Row(
-                        modifier = Modifier
-                            .padding(4.dp, 0.dp)
-                            .fillMaxWidth(),
-                    ) {
-                        TextButton(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                            context.grantPermissionByShizuku()
-                        })) {
-                            Text(
-                                text = "Shizuku授权",
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                        }
-                        TextButton(onClick = {
-                            vm.showCopyDlgFlow.value = true
-                        }) {
-                            Text(
-                                text = "手动授权",
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                        }
-                        TextButton(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                            grantPermissionByRoot()
-                        })) {
-                            Text(
-                                text = "ROOT授权",
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                        }
-                    }
+                    AuthButtonGroup()
                 } else {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
@@ -219,6 +190,44 @@ fun AuthA11yPage() {
                     }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
+            }
+            if (writeSecureSettings && !a11yRunning) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Card(
+                    modifier = Modifier
+                        .padding(itemHorizontalPadding, 0.dp)
+                        .fillMaxWidth(),
+                    onClick = { }
+                ) {
+                    Text(
+                        modifier = Modifier.padding(cardHorizontalPadding, 8.dp),
+                        text = "解除可能受到的无障碍限制",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        text = "1.某些系统有更严格的无障碍限制\n2.会在 GKD 更新后重新限制开启\n3.重新授权可解决此问题"
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
+                        text = "若能正常开启无障碍请忽略此项",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    AuthButtonGroup()
+                    Text(
+                        modifier = Modifier
+                            .padding(cardHorizontalPadding, 0.dp)
+                            .clickable {
+                                context.openUri("https://gkd.li/?r=2")
+                            },
+                        text = "其他方式解除限制",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
         }
     }
@@ -319,5 +328,42 @@ private fun grantPermissionByRoot() {
         LogUtils.d(e)
     } finally {
         p?.destroy()
+    }
+}
+
+
+@Composable
+private fun AuthButtonGroup() {
+    val context = LocalContext.current as MainActivity
+    val vm = viewModel<AuthA11yVm>()
+    Row(
+        modifier = Modifier
+            .padding(4.dp, 0.dp)
+            .fillMaxWidth(),
+    ) {
+        TextButton(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+            context.grantPermissionByShizuku()
+        })) {
+            Text(
+                text = "Shizuku授权",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
+        TextButton(onClick = {
+            vm.showCopyDlgFlow.value = true
+        }) {
+            Text(
+                text = "手动授权",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
+        TextButton(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+            grantPermissionByRoot()
+        })) {
+            Text(
+                text = "ROOT授权",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
     }
 }
