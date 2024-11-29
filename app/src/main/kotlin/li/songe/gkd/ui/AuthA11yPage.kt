@@ -279,7 +279,12 @@ fun AuthA11yPage() {
     }
 }
 
-private val innerCommandText by lazy { "pm grant ${META.appId} android.permission.WRITE_SECURE_SETTINGS; appops set ${META.appId} ACCESS_RESTRICTED_SETTINGS allow" }
+private val innerCommandText by lazy {
+    arrayOf(
+        "appops set ${META.appId} ACCESS_RESTRICTED_SETTINGS allow",
+        "pm grant ${META.appId} android.permission.WRITE_SECURE_SETTINGS"
+    ).joinToString("; ")
+}
 private val commandText by lazy { "adb shell \"${innerCommandText}\"" }
 
 private fun successAuthExec() {

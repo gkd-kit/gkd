@@ -15,7 +15,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.META
 import li.songe.gkd.appScope
 import li.songe.gkd.data.DeviceInfo
@@ -153,45 +156,48 @@ fun safeGetTopActivity(): TopActivity? {
 //    return service.let(::ShizukuBinderWrapper).let(IPackageManager.Stub::asInterface)
 //}
 
+private fun unbindUserService(serviceArgs: Shizuku.UserServiceArgs, connection: ServiceConnection) {
+    LogUtils.d("unbindUserService", serviceArgs)
+    Shizuku.unbindUserService(serviceArgs, connection, false)
+    Shizuku.unbindUserService(serviceArgs, connection, true)
+}
+
 data class UserServiceWrapper(
     val userService: IUserService,
     val connection: ServiceConnection,
     val serviceArgs: Shizuku.UserServiceArgs
 ) {
     fun destroy() {
-        try {
-            LogUtils.d("unbindUserService", serviceArgs)
-            userService.exit()
-            Shizuku.unbindUserService(serviceArgs, connection, true)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        unbindUserService(serviceArgs, connection)
+    }
+
+    fun execCommandForResult(command: String): Boolean? {
+        return userService.execCommandForResult(command)
     }
 }
 
-private suspend fun serviceWrapper(): UserServiceWrapper = suspendCoroutine { continuation ->
+private suspend fun buildServiceWrapper(): UserServiceWrapper? {
     val serviceArgs = Shizuku
         .UserServiceArgs(UserService::class.componentName)
         .daemon(false)
         .processNameSuffix("shizuku-user-service")
         .debuggable(META.debuggable)
         .version(META.versionCode)
-
-    var resumeFc: ((UserServiceWrapper) -> Unit)? = { continuation.resume(it) }
-
+    LogUtils.d("buildServiceWrapper", serviceArgs)
+    var resumeCallback: ((UserServiceWrapper) -> Unit)? = null
     val connection = object : ServiceConnection {
         override fun onServiceConnected(componentName: ComponentName, binder: IBinder?) {
             LogUtils.d("onServiceConnected", componentName)
-            resumeFc ?: return
+            resumeCallback ?: return
             if (binder?.pingBinder() == true) {
-                resumeFc?.invoke(
+                resumeCallback?.invoke(
                     UserServiceWrapper(
                         IUserService.Stub.asInterface(binder),
                         this,
                         serviceArgs
                     )
                 )
-                resumeFc = null
+                resumeCallback = null
             } else {
                 LogUtils.d("invalid binder for $componentName received")
             }
@@ -201,27 +207,16 @@ private suspend fun serviceWrapper(): UserServiceWrapper = suspendCoroutine { co
             LogUtils.d("onServiceDisconnected", componentName)
         }
     }
-    Shizuku.bindUserService(serviceArgs, connection)
-}
-
-suspend fun execCommandForResult(command: String): Boolean {
-    serviceWrapperFlow.value?.userService?.let {
-        return it.execCommandForResult(command) == true
-    }
-    val wrapper = serviceWrapper()
-    return try {
-        wrapper.userService.execCommandForResult(command) == true
-    } finally {
-        wrapper.destroy()
-    }
-}
-
-suspend fun shizukuCheckUserService(): Boolean {
-    return safeTap(0f, 0f) == true || try {
-        execCommandForResult("input tap 0 0")
-    } catch (e: Exception) {
-        e.printStackTrace()
-        false
+    return withTimeoutOrNull(1000) {
+        suspendCoroutine { continuation ->
+            resumeCallback = { continuation.resume(it) }
+            Shizuku.bindUserService(serviceArgs, connection)
+        }
+    }.apply {
+        if (this == null) {
+            toast("Shizuku获取绑定服务超时失败")
+            unbindUserService(serviceArgs, connection)
+        }
     }
 }
 
@@ -231,18 +226,33 @@ private val shizukuServiceUsedFlow by lazy {
     }.stateIn(appScope, SharingStarted.Eagerly, false)
 }
 
-val serviceWrapperFlow by lazy<StateFlow<UserServiceWrapper?>> {
+val serviceWrapperFlow by lazy {
     val stateFlow = MutableStateFlow<UserServiceWrapper?>(null)
     appScope.launch(Dispatchers.IO) {
         shizukuServiceUsedFlow.collect {
-            stateFlow.value?.destroy()
-            stateFlow.value = null
             if (it) {
-                stateFlow.value = serviceWrapper()
+                stateFlow.update { it ?: buildServiceWrapper() }
+            } else {
+                stateFlow.update { it?.destroy(); null }
             }
         }
     }
     stateFlow
+}
+
+suspend fun shizukuCheckUserService(): Boolean {
+    return try {
+        execCommandForResult("input tap 0 0")
+    } catch (e: Exception) {
+        e.printStackTrace()
+        false
+    }
+}
+
+suspend fun execCommandForResult(command: String): Boolean {
+    return serviceWrapperFlow.updateAndGet {
+        it ?: buildServiceWrapper()
+    }?.execCommandForResult(command) == true
 }
 
 // 在 大麦 https://i.gkd.li/i/14605104 上测试产生如下 3 种情况
@@ -250,8 +260,7 @@ val serviceWrapperFlow by lazy<StateFlow<UserServiceWrapper?>> {
 // 2. 点击概率生效: 使用 Shizuku 获取到的 InputManager.injectInputEvent 发出点击, 概率失效/生效, 原因未知
 // 3. 点击生效: 使用 Shizuku 获取到的 shell input tap x y 发出点击 by safeTap, 暂未找到屏蔽方案
 fun safeTap(x: Float, y: Float): Boolean? {
-    val userService = serviceWrapperFlow.value?.userService ?: return null
-    return userService.execCommandForResult("input tap $x $y")
+    return serviceWrapperFlow.value?.execCommandForResult("input tap $x $y")
 }
 
 private fun IUserService.execCommandForResult(command: String): Boolean? {
