@@ -23,6 +23,7 @@ import li.songe.gkd.debug.clearHttpSubs
 import li.songe.gkd.notif.initChannel
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.service.A11yService
+import li.songe.gkd.shizuku.initShizuku
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.initAppState
@@ -148,6 +149,7 @@ class App : Application() {
             initAppState()
             initSubsState()
             initChannel()
+            initShizuku()
             clearHttpSubs()
             syncFixState()
         }
