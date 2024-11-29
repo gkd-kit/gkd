@@ -267,3 +267,7 @@ private fun IUserService.execCommandForResult(command: String): Boolean? {
         null
     }
 }
+
+fun initShizuku() {
+    serviceWrapperFlow.value
+}

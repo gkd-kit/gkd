@@ -31,6 +31,7 @@ import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
+import com.ramcosta.composedestinations.utils.currentDestinationAsState
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,6 +61,7 @@ import li.songe.gkd.util.map
 import li.songe.gkd.util.openApp
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.toast
 import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
 
@@ -278,9 +280,11 @@ val accessRestrictedSettingsShowFlow = MutableStateFlow(false)
 fun AccessRestrictedSettingsDlg() {
     val accessRestrictedSettingsShow by accessRestrictedSettingsShowFlow.collectAsState()
     val navController = LocalNavController.current
-    val isA11yPage = navController.currentDestination?.route == AuthA11YPageDestination.route
-    LaunchedEffect(isA11yPage) {
-        if (isA11yPage) {
+    val currentDestination by navController.currentDestinationAsState()
+    val isA11yPage = currentDestination?.route == AuthA11YPageDestination.route
+    LaunchedEffect(isA11yPage, accessRestrictedSettingsShow) {
+        if (isA11yPage && accessRestrictedSettingsShow) {
+            toast("请重新授权以解除限制")
             accessRestrictedSettingsShowFlow.value = false
         }
     }
