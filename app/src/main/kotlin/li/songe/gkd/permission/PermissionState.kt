@@ -16,6 +16,7 @@ import li.songe.gkd.appScope
 import li.songe.gkd.shizuku.shizukuCheckGranted
 import li.songe.gkd.util.initOrResetAppInfoCache
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.mayQueryPkgNoAccessFlow
 import li.songe.gkd.util.toast
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -184,7 +185,7 @@ fun updatePermissionState() {
         writeSecureSettingsState,
         shizukuOkState,
     ).forEach { it.updateAndGet() }
-    if (canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet()) {
+    if (canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet() || mayQueryPkgNoAccessFlow.value) {
         appScope.launchTry {
             initOrResetAppInfoCache()
         }
