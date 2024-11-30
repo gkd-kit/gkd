@@ -95,11 +95,11 @@ android {
     buildTypes {
         all {
             signingConfig = currentSigning
-        }
-        release {
             if (gitInfo?.tagName == null) {
                 versionNameSuffix = vnSuffix
             }
+        }
+        release {
             isMinifyEnabled = true
             isShrinkResources = true
             isDebuggable = false
@@ -111,7 +111,6 @@ android {
             )
         }
         debug {
-            versionNameSuffix = vnSuffix
             applicationIdSuffix = ".debug"
 
             // add "debug" suffix
