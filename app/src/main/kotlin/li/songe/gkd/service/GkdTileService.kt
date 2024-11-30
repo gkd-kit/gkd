@@ -21,7 +21,6 @@ import li.songe.gkd.util.OnChangeListen
 import li.songe.gkd.util.OnDestroy
 import li.songe.gkd.util.OnTileClick
 import li.songe.gkd.util.componentName
-import li.songe.gkd.util.lastRestartA11yServiceTimeFlow
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
@@ -131,7 +130,7 @@ fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
             }
             names.add(a11yClsName)
             updateServiceNames(names)
-            delay(300)
+            delay(500)
             if (!A11yService.isRunning.value) {
                 toast("开启无障碍失败")
                 accessRestrictedSettingsShowFlow.value = true
@@ -148,9 +147,6 @@ fun fixRestartService() = appScope.launchTry(Dispatchers.IO) {
         // 2. 用户配置开启了服务
         // 3. 有写入系统设置权限
         if (!A11yService.isRunning.value && storeFlow.value.enableService && writeSecureSettingsState.updateAndGet()) {
-            val t = System.currentTimeMillis()
-            if (t - lastRestartA11yServiceTimeFlow.value < 3_000) return@launchTry
-            lastRestartA11yServiceTimeFlow.value = t
             val names = getServiceNames()
             val a11yBroken = names.contains(a11yClsName)
             if (a11yBroken) {
@@ -162,7 +158,7 @@ fun fixRestartService() = appScope.launchTry(Dispatchers.IO) {
             }
             names.add(a11yClsName)
             updateServiceNames(names)
-            delay(300)
+            delay(500)
             if (!A11yService.isRunning.value) {
                 toast("重启无障碍失败")
                 accessRestrictedSettingsShowFlow.value = true

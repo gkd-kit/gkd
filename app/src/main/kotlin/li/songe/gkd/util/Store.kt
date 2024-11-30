@@ -146,10 +146,6 @@ val privacyStoreFlow by lazy {
     )
 }
 
-val lastRestartA11yServiceTimeFlow by lazy {
-    createLongFlow("last_restart_a11y_service_time")
-}
-
 fun initStore() {
     storeFlow.value
     actionCountFlow.value
