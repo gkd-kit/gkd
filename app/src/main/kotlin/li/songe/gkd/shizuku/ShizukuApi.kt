@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.META
 import li.songe.gkd.appScope
@@ -177,6 +179,7 @@ data class UserServiceWrapper(
     }
 }
 
+private val bindServiceMutex by lazy { Mutex() }
 private suspend fun buildServiceWrapper(): UserServiceWrapper? {
     val serviceArgs = Shizuku
         .UserServiceArgs(UserService::class.componentName)
@@ -208,15 +211,17 @@ private suspend fun buildServiceWrapper(): UserServiceWrapper? {
             LogUtils.d("onServiceDisconnected", componentName)
         }
     }
-    return withTimeoutOrNull(1000) {
-        suspendCoroutine { continuation ->
-            resumeCallback = { continuation.resume(it) }
-            Shizuku.bindUserService(serviceArgs, connection)
-        }
-    }.apply {
-        if (this == null) {
-            toast("Shizuku获取绑定服务超时失败")
-            unbindUserService(serviceArgs, connection)
+    bindServiceMutex.withLock {
+        return withTimeoutOrNull(3000) {
+            suspendCoroutine { continuation ->
+                resumeCallback = { continuation.resume(it) }
+                Shizuku.bindUserService(serviceArgs, connection)
+            }
+        }.apply {
+            if (this == null) {
+                toast("Shizuku获取绑定服务超时失败")
+                unbindUserService(serviceArgs, connection)
+            }
         }
     }
 }
