@@ -120,6 +120,13 @@ fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
         if (A11yService.isRunning.value) {
             names.remove(a11yClsName)
             updateServiceNames(names)
+            delay(500)
+            // https://github.com/orgs/gkd-kit/discussions/799
+            if (A11yService.isRunning.value) {
+                toast("关闭无障碍失败")
+                accessRestrictedSettingsShowFlow.value = true
+                return@launchTry
+            }
             toast("关闭无障碍")
         } else {
             enableA11yService()
@@ -142,6 +149,7 @@ fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
 }
 
 fun fixRestartService() = appScope.launchTry(Dispatchers.IO) {
+    if (modifyA11yMutex.isLocked) return@launchTry
     modifyA11yMutex.withLock {
         // 1. 服务没有运行
         // 2. 用户配置开启了服务
