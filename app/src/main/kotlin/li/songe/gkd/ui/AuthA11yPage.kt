@@ -191,7 +191,7 @@ fun AuthA11yPage() {
                 }
                 Spacer(modifier = Modifier.height(4.dp))
             }
-            if (writeSecureSettings && !a11yRunning) {
+            if (writeSecureSettings) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Card(
                     modifier = Modifier
@@ -207,12 +207,12 @@ fun AuthA11yPage() {
                     Text(
                         modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
                         style = MaterialTheme.typography.bodyMedium,
-                        text = "1.某些系统有更严格的无障碍限制\n2.会在 GKD 更新后重新限制开启\n3.重新授权可解决此问题"
+                        text = "1.某些系统有更严格的无障碍限制\n2.在 GKD 更新后会限制其开关无障碍\n3.重新授权可解决此问题"
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
-                        text = "若能正常开启无障碍请忽略此项",
+                        text = "若能正常开关无障碍请忽略此项",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     AuthButtonGroup()
