@@ -68,3 +68,13 @@ val snapshotNotif by lazy {
         uri = "gkd://page/2",
     )
 }
+
+val snapshotActionNotif by lazy {
+    Notif(
+        channel = snapshotActionChannel,
+        id = 105,
+        text = "快照服务正在运行",
+        ongoing = true,
+        autoCancel = false,
+    )
+}
