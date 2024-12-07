@@ -1,14 +1,14 @@
 [versions]
-kotlin = "2.0.21"
-ksp = "2.0.21-1.0.25"
-android = "8.7.2"
+kotlin = "2.1.0"
+ksp = "2.1.0-1.0.29"
+android = "8.7.3"
 compose = "1.7.5"
 rikka = "4.4.0"
 room = "2.6.1"
 paging = "3.3.4"
-ktor = "3.0.1"
+ktor = "3.0.2"
 destinations = "2.1.0-beta14"
-coil = "2.7.0"
+coil = "3.0.4"
 shizuku = "13.1.5"
 
 [libraries]
@@ -55,8 +55,9 @@ rikka_shizuku_provider = { module = "dev.rikka.shizuku:provider", version.ref = 
 lsposed_hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version = "4.3" }
 destinations_core = { module = "io.github.raamcosta.compose-destinations:core", version.ref = "destinations" }
 destinations_ksp = { module = "io.github.raamcosta.compose-destinations:ksp", version.ref = "destinations" }
-coil_compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
-coil_gif = { module = "io.coil-kt:coil-gif", version.ref = "coil" }
+coil_compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil_network = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
+coil_gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version = "2.4.0" }
 exp4j = { module = "net.objecthunter:exp4j", version = "0.4.8" } # deprecated, replaced by kotlin
 toaster = { module = "com.github.getActivity:Toaster", version = "12.6" }

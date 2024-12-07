@@ -183,9 +183,10 @@ configurations.configureEach {
 }
 
 composeCompiler {
-//    featureFlags.addAll(ComposeFeatureFlag.StrongSkipping) // default StrongSkipping
     reportsDestination = layout.buildDirectory.dir("compose_compiler")
-    stabilityConfigurationFile = rootProject.layout.projectDirectory.file("stability_config.conf")
+    stabilityConfigurationFiles.addAll(
+        project.layout.projectDirectory.file("stability_config.conf"),
+    )
 }
 
 dependencies {
@@ -254,6 +255,7 @@ dependencies {
     implementation(libs.androidx.splashscreen)
 
     implementation(libs.coil.compose)
+    implementation(libs.coil.network)
     implementation(libs.coil.gif)
 
     implementation(libs.exp4j)

@@ -1,7 +1,10 @@
 package li.songe.gkd.ui
 
+import android.webkit.URLUtil
 import androidx.compose.animation.core.AnimationConstants.DefaultDurationMillis
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,8 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -21,19 +27,27 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import coil.compose.SubcomposeAsyncImage
-import coil.request.ImageRequest
+import coil3.compose.AsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import li.songe.gkd.app
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.imageLoader
+import li.songe.gkd.util.openUri
+import li.songe.gkd.util.throttle
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
@@ -48,6 +62,8 @@ fun ImagePreviewPage(
             .background(MaterialTheme.colorScheme.background)
             .fillMaxSize()
     ) {
+        val showUri = uri ?: if (uris.size == 1) uris.first() else null
+        val state = rememberPagerState { uris.size }
         TopAppBar(
             modifier = Modifier
                 .zIndex(1f)
@@ -67,22 +83,35 @@ fun ImagePreviewPage(
                     Text(text = title)
                 }
             },
+            actions = {
+                val currentUri = showUri ?: uris.getOrNull(state.currentPage)
+                if (currentUri != null && URLUtil.isNetworkUrl(currentUri)) {
+                    IconButton(onClick = throttle(fn = {
+                        app.openUri(currentUri)
+                    })) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+                            contentDescription = null,
+                        )
+                    }
+                }
+            },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.5f)
+                containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.3f)
             )
         )
-        val showUri = uri ?: if (uris.size == 1) uris.first() else null
         if (showUri != null) {
             UriImage(showUri)
         } else if (uris.isNotEmpty()) {
-            val state = rememberPagerState { uris.size }
             Box(
                 modifier = Modifier.fillMaxSize()
             ) {
                 HorizontalPager(
                     modifier = Modifier.fillMaxSize(),
                     state = state,
-                    pageContent = { UriImage(uris[it]) }
+                    pageContent = {
+                        UriImage(uris[it])
+                    }
                 )
                 Box(
                     Modifier
@@ -106,13 +135,16 @@ private fun UriImage(uri: String) {
     val context = LocalContext.current
     val model = remember(uri) {
         ImageRequest.Builder(context).data(uri)
-            .crossfade(DefaultDurationMillis).build()
+            .crossfade(DefaultDurationMillis)
+            .build().apply {
+                imageLoader.enqueue(this)
+            }
     }
-    SubcomposeAsyncImage(
-        modifier = Modifier.fillMaxWidth(),
-        model = model,
-        contentDescription = null,
-        loading = {
+    val painter = rememberAsyncImagePainter(model)
+    val state by painter.state.collectAsState()
+    when (state) {
+        AsyncImagePainter.State.Empty -> {}
+        is AsyncImagePainter.State.Loading -> {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -120,20 +152,38 @@ private fun UriImage(uri: String) {
             ) {
                 CircularProgressIndicator(modifier = Modifier.size(40.dp))
             }
-        },
-        error = {
+        }
+
+        is AsyncImagePainter.State.Success -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Image(
+                    painter = painter,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = ContentScale.FillWidth,
+                    alignment = Alignment.Center,
+                )
+            }
+        }
+
+        is AsyncImagePainter.State.Error -> {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = "加载失败",
+                    modifier = Modifier.clickable(onClick = throttle { painter.restart() }),
+                    text = "加载失败, 点击重试",
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-        },
-        imageLoader = imageLoader
-    )
+        }
+    }
 }
