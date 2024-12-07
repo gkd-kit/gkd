@@ -207,7 +207,7 @@ fun AuthA11yPage() {
                     Text(
                         modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
                         style = MaterialTheme.typography.bodyMedium,
-                        text = "1.某些系统有更严格的无障碍限制\n2.在 GKD 更新后会限制其开关无障碍\n3.重新授权可解决此问题"
+                        text = "1. 某些系统有更严格的无障碍限制\n2. 在 GKD 更新后会限制其开关无障碍\n3. 重新授权可解决此问题"
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
