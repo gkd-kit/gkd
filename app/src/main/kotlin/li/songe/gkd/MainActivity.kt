@@ -258,7 +258,7 @@ private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Boolean>) {
                 } else {
                     TextButton(onClick = {
                         stateFlow.value = false
-                        app.openUri("https://gkd.li?r=4")
+                        openUri("https://gkd.li?r=4")
                     }) {
                         Text(text = "去下载")
                     }

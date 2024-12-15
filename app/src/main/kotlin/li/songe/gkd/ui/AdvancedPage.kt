@@ -237,7 +237,7 @@ fun AdvancedPage() {
                                     color = MaterialTheme.colorScheme.primary,
                                     style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
                                     modifier = Modifier.clickable(onClick = throttle {
-                                        context.openUri("http://127.0.0.1:${store.httpServerPort}")
+                                        openUri("http://127.0.0.1:${store.httpServerPort}")
                                     }),
                                 )
                                 Spacer(modifier = Modifier.width(2.dp))
@@ -249,7 +249,7 @@ fun AdvancedPage() {
                                     color = MaterialTheme.colorScheme.primary,
                                     style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
                                     modifier = Modifier.clickable(onClick = throttle {
-                                        context.openUri("http://${host}:${store.httpServerPort}")
+                                        openUri("http://${host}:${store.httpServerPort}")
                                     })
                                 )
                             }
@@ -396,7 +396,7 @@ fun AdvancedPage() {
                 subtitle = "生成快照/日志链接",
                 suffix = "获取教程",
                 onSuffixClick = {
-                    context.openUri("https://gkd.li/?r=1")
+                    openUri("https://gkd.li?r=1")
                 },
                 imageVector = Icons.Default.Edit,
                 onClick = {

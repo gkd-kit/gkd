@@ -285,7 +285,7 @@ private fun SubsMenuItem(
                 },
                 onClick = {
                     onExpandedChange(false)
-                    context.openUri(supportUri)
+                    openUri(supportUri)
                 }
             )
         }

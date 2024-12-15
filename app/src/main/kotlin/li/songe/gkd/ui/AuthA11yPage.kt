@@ -133,7 +133,7 @@ fun AuthA11yPage() {
                         modifier = Modifier
                             .padding(cardHorizontalPadding, 0.dp)
                             .clickable {
-                                context.openUri("https://gkd.li/?r=2")
+                                openUri("https://gkd.li?r=2")
                             },
                         text = "无法开启无障碍?",
                         style = MaterialTheme.typography.bodySmall,
@@ -220,7 +220,7 @@ fun AuthA11yPage() {
                         modifier = Modifier
                             .padding(cardHorizontalPadding, 0.dp)
                             .clickable {
-                                context.openUri("https://gkd.li/?r=2")
+                                openUri("https://gkd.li?r=2")
                             },
                         text = "其他方式解除限制",
                         style = MaterialTheme.typography.bodySmall,
@@ -253,7 +253,7 @@ fun AuthA11yPage() {
                     Text(
                         modifier = Modifier
                             .clickable {
-                                context.openUri("https://gkd.li/?r=3")
+                                openUri("https://gkd.li?r=3")
                             },
                         text = "运行后授权失败?",
                         style = MaterialTheme.typography.bodySmall,

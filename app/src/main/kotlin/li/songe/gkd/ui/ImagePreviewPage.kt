@@ -42,7 +42,6 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import li.songe.gkd.app
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.imageLoader
@@ -87,7 +86,7 @@ fun ImagePreviewPage(
                 val currentUri = showUri ?: uris.getOrNull(state.currentPage)
                 if (currentUri != null && URLUtil.isNetworkUrl(currentUri)) {
                     IconButton(onClick = throttle(fn = {
-                        app.openUri(currentUri)
+                        openUri(currentUri)
                     })) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
