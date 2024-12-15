@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -48,6 +49,7 @@ import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.ruleSummaryFlow
@@ -69,7 +71,7 @@ fun useControlPage(): ScaffoldExt {
         topBar = {
             TopAppBar(scrollBehavior = scrollBehavior, title = {
                 Text(
-                    text = controlNav.label,
+                    text = stringResource(SafeR.app_name),
                 )
             }, actions = {
                 IconButton(onClick = throttle {
