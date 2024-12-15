@@ -113,7 +113,7 @@ fun AboutPage() {
                     Column {
                         Text(text = "代码记录")
                         Text(
-                            modifier = Modifier.clickable { context.openUri(META.commitUrl) },
+                            modifier = Modifier.clickable { openUri(META.commitUrl) },
                             text = META.commitId.substring(0, 16),
                             color = MaterialTheme.colorScheme.primary,
                             style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
@@ -240,7 +240,7 @@ fun AboutPage() {
             Column(
                 modifier = Modifier
                     .clickable {
-                        context.openUri(REPOSITORY_URL)
+                        openUri(REPOSITORY_URL)
                     }
                     .fillMaxWidth()
                     .itemPadding()
@@ -259,7 +259,7 @@ fun AboutPage() {
             Column(
                 modifier = Modifier
                     .clickable {
-                        context.openUri(ISSUES_URL)
+                        openUri(ISSUES_URL)
                     }
                     .fillMaxWidth()
                     .itemPadding()

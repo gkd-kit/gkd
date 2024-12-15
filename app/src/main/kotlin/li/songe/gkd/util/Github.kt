@@ -35,7 +35,6 @@ import io.ktor.http.HttpMessageBuilder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
-import li.songe.gkd.app
 import li.songe.gkd.data.GithubPoliciesAsset
 import java.io.File
 
@@ -160,7 +159,7 @@ fun EditGithubCookieDlg(showEditCookieDlgFlow: MutableStateFlow<Boolean>) {
                 ) {
                     Text(text = "Github Cookie")
                     IconButton(onClick = throttle {
-                        app.openUri("https://gkd.li/?r=1")
+                        openUri("https://gkd.li?r=1")
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.HelpOutline,

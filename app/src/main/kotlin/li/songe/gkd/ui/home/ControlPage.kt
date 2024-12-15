@@ -82,7 +82,7 @@ fun useControlPage(): ScaffoldExt {
                         contentDescription = null,
                     )
                 }
-                IconButton(onClick = throttle { context.openUri(HOME_PAGE_URL) }) {
+                IconButton(onClick = throttle { openUri(HOME_PAGE_URL) }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
                         contentDescription = null,

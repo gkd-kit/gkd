@@ -1,16 +1,24 @@
 package li.songe.gkd.ui.component
 
 import android.webkit.URLUtil
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.MutableStateFlow
+import li.songe.gkd.util.openUri
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
@@ -71,7 +79,21 @@ class InputSubsLinkOption {
             val initValue by initValueFlow.collectAsState()
             AlertDialog(
                 title = {
-                    Text(text = if (initValue.isNotEmpty()) "修改订阅" else "添加订阅")
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(text = if (initValue.isNotEmpty()) "修改订阅" else "添加订阅")
+                        IconButton(onClick = throttle {
+                            openUri("https://gkd.li?r=5")
+                        }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                                contentDescription = null,
+                            )
+                        }
+                    }
                 },
                 text = {
                     OutlinedTextField(
