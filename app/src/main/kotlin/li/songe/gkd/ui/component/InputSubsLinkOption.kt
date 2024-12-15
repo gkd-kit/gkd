@@ -10,13 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import li.songe.gkd.MainActivity
-import li.songe.gkd.MainViewModel
-import li.songe.gkd.util.isSafeUrl
-import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
@@ -39,7 +33,7 @@ class InputSubsLinkOption {
         continuation = null
     }
 
-    private suspend fun submit(mainVm: MainViewModel) {
+    private fun submit() {
         val value = valueFlow.value
         if (!URLUtil.isNetworkUrl(value)) {
             toast("非法链接")
@@ -54,12 +48,6 @@ class InputSubsLinkOption {
         if (subsItemsFlow.value.any { it.updateUrl == value }) {
             toast("已有相同链接订阅")
             return
-        }
-        if (!isSafeUrl(value)) {
-            mainVm.dialogFlow.waitResult(
-                title = "未知来源",
-                text = "你正在添加一个未验证的远程订阅\n\n这可能含有恶意的规则\n\n是否仍然确认添加?"
-            )
         }
         resume(value)
     }
@@ -79,7 +67,6 @@ class InputSubsLinkOption {
     fun ContentDialog() {
         val show by showFlow.collectAsState()
         if (show) {
-            val context = LocalContext.current as MainActivity
             val value by valueFlow.collectAsState()
             val initValue by initValueFlow.collectAsState()
             AlertDialog(
@@ -108,8 +95,8 @@ class InputSubsLinkOption {
                 confirmButton = {
                     TextButton(
                         enabled = value.isNotEmpty(),
-                        onClick = throttle(fn = context.mainVm.viewModelScope.launchAsFn {
-                            submit(context.mainVm)
+                        onClick = throttle(fn = {
+                            submit()
                         }),
                     ) {
                         Text(text = "确定")

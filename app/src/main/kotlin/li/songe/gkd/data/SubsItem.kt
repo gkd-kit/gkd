@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import li.songe.gkd.appScope
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.util.isSafeUrl
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsIdToRawFlow
@@ -35,24 +34,6 @@ data class SubsItem(
     @ColumnInfo(name = "update_url") val updateUrl: String? = null,
 
     ) {
-
-    private val isSafeRemote by lazy {
-        if (updateUrl != null) {
-            isSafeUrl(updateUrl)
-        } else {
-            false
-        }
-    }
-
-    val sourceText by lazy {
-        if (id < 0) {
-            "本地来源"
-        } else if (isSafeRemote) {
-            "可信来源"
-        } else {
-            "未知来源"
-        }
-    }
 
     @Dao
     interface SubsItemDao {
