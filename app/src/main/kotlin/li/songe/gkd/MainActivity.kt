@@ -251,7 +251,7 @@ private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Boolean>) {
                 if (installed) {
                     TextButton(onClick = {
                         stateFlow.value = false
-                        app.openApp(appId)
+                        openApp(appId)
                     }) {
                         Text(text = "打开 Shizuku")
                     }
