@@ -205,6 +205,9 @@ sealed class RuleStatus(val name: String) {
 
     val ok: Boolean
         get() = this === StatusOk
+
+    val alive: Boolean
+        get() = this !== Status1 && this !== Status2 && this !== Status4
 }
 
 fun getFixActivityIds(
