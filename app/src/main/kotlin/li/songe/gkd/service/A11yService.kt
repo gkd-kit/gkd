@@ -455,8 +455,8 @@ private fun A11yService.useMatchRule() {
             }
         }
         val activityRule = getAndUpdateCurrentRules()
-        if (evAppId != rightAppId || activityRule.skipMatch) {
-            // 放在 evAppId != rightAppId 的前面使得 TopActivity 能借助 lastTopActivity 恢复
+        // 放在 evAppId != rightAppId 的前面使得 TopActivity 能借助 lastTopActivity 恢复
+        if (evAppId != rightAppId || activityRule.skipConsumeEvent || !storeFlow.value.enableMatch) {
             return@launchEvent
         }
 

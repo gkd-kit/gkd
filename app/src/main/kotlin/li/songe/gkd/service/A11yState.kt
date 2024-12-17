@@ -97,7 +97,11 @@ class ActivityRule(
         }
     val skipMatch: Boolean
         get() {
-            return !currentRules.any { r -> r.status.ok } || !storeFlow.value.enableMatch
+            return currentRules.all { r -> !r.status.ok }
+        }
+    val skipConsumeEvent: Boolean
+        get() {
+            return currentRules.all { r -> !r.status.alive }
         }
 }
 
