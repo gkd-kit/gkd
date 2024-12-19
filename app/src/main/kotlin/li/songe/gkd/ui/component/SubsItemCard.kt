@@ -57,9 +57,9 @@ import li.songe.gkd.util.map
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.subsLoadErrorsFlow
 import li.songe.gkd.util.subsRefreshErrorsFlow
-import li.songe.gkd.util.subsRefreshingFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
+import li.songe.gkd.util.updateSubsMutex
 
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -83,7 +83,7 @@ fun SubsItemCard(
     val subsRefreshError by remember(subsItem.id) {
         subsRefreshErrorsFlow.map(vm.viewModelScope) { it[subsItem.id] }
     }.collectAsState()
-    val subsRefreshing by subsRefreshingFlow.collectAsState()
+    val subsRefreshing by updateSubsMutex.state.collectAsState()
     var expanded by remember { mutableStateOf(false) }
     val dragged by interactionSource.collectIsDraggedAsState()
     var clickPositionX by remember {
@@ -93,7 +93,7 @@ fun SubsItemCard(
         if (!dragged) {
             if (isSelectedMode) {
                 onSelectedChange?.invoke()
-            } else if (!subsRefreshingFlow.value) {
+            } else if (!updateSubsMutex.mutex.isLocked) {
                 expanded = true
             }
         }

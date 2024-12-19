@@ -29,8 +29,8 @@ import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
-import li.songe.gkd.util.subsRefreshingFlow
 import li.songe.gkd.util.toast
+import li.songe.gkd.util.updateSubsMutex
 import li.songe.gkd.util.updateSubscription
 
 class HomeVm : ViewModel() {
@@ -68,10 +68,9 @@ class HomeVm : ViewModel() {
         url: String,
         oldItem: SubsItem? = null,
     ) = viewModelScope.launchTry(Dispatchers.IO) {
-        if (subsRefreshingFlow.value) return@launchTry
-        val subItems = subsItemsFlow.value
-        subsRefreshingFlow.value = true
-        try {
+        if (updateSubsMutex.mutex.isLocked) return@launchTry
+        updateSubsMutex.withLock {
+            val subItems = subsItemsFlow.value
             val text = try {
                 client.get(url).bodyAsText()
             } catch (e: Exception) {
@@ -116,8 +115,6 @@ class HomeVm : ViewModel() {
                 DbSet.subsItemDao.update(newItem)
                 toast("成功修改订阅")
             }
-        } finally {
-            subsRefreshingFlow.value = false
         }
     }
 
@@ -126,7 +123,8 @@ class HomeVm : ViewModel() {
     }
 
     val sortTypeFlow = storeFlow.map(viewModelScope) { s ->
-        SortTypeOption.allSubObject.find { o -> o.value == s.sortType } ?: SortTypeOption.SortByName
+        SortTypeOption.allSubObject.find { o -> o.value == s.sortType }
+            ?: SortTypeOption.SortByName
     }
     val showSystemAppFlow = storeFlow.map(viewModelScope) { s -> s.showSystemApp }
     val showHiddenAppFlow = storeFlow.map(viewModelScope) { s -> s.showHiddenApp }

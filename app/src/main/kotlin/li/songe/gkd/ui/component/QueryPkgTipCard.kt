@@ -26,16 +26,16 @@ import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.startQueryPkgSettingActivity
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.util.appRefreshingFlow
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.mayQueryPkgNoAccessFlow
 import li.songe.gkd.util.throttle
+import li.songe.gkd.util.updateAppMutex
 
 @Composable
 fun QueryPkgAuthCard() {
     val canQueryPkg by canQueryPkgState.stateFlow.collectAsState()
     val mayQueryPkgNoAccess by mayQueryPkgNoAccessFlow.collectAsState()
-    val appRefreshing by appRefreshingFlow.collectAsState()
+    val appRefreshing by updateAppMutex.state.collectAsState()
     if (appRefreshing) {
         Column(
             modifier = Modifier.fillMaxWidth(),

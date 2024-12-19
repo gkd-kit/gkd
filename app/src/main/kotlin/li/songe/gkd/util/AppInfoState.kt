@@ -12,8 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import li.songe.gkd.META
 import li.songe.gkd.app
@@ -92,7 +90,7 @@ private fun getAppInfo(appId: String): AppInfo? {
     }?.toAppInfo()
 }
 
-private val updateAppMutex by lazy { Mutex() }
+val updateAppMutex = MutexState()
 
 private suspend fun updateAppInfo(appIds: Set<String>) {
     if (appIds.isEmpty()) return
@@ -112,12 +110,10 @@ private suspend fun updateAppInfo(appIds: Set<String>) {
     }
 }
 
-val appRefreshingFlow = MutableStateFlow(false)
 
 suspend fun initOrResetAppInfoCache() {
-    if (updateAppMutex.isLocked) return
+    if (updateAppMutex.mutex.isLocked) return
     LogUtils.d("initOrResetAppInfoCache start")
-    appRefreshingFlow.value = true
     updateAppMutex.withLock {
         val oldAppIds = appInfoCacheFlow.value.keys
         val appMap = appInfoCacheFlow.value.toMutableMap()
@@ -130,7 +126,6 @@ suspend fun initOrResetAppInfoCache() {
         }
         appInfoCacheFlow.value = appMap
     }
-    appRefreshingFlow.value = false
     LogUtils.d("initOrResetAppInfoCache end")
 }
 

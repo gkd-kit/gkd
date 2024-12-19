@@ -81,9 +81,9 @@ import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
-import li.songe.gkd.util.subsRefreshingFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
+import li.songe.gkd.util.updateSubsMutex
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -106,7 +106,7 @@ fun useSubsManagePage(): ScaffoldExt {
         orderSubItems = subItems
     }
 
-    val refreshing by subsRefreshingFlow.collectAsState()
+    val refreshing by updateSubsMutex.state.collectAsState()
     val pullToRefreshState = rememberPullToRefreshState()
     var isSelectedMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
@@ -251,7 +251,7 @@ fun useSubsManagePage(): ScaffoldExt {
                         )
                     }
                     IconButton(onClick = {
-                        if (subsRefreshingFlow.value) {
+                        if (updateSubsMutex.mutex.isLocked) {
                             toast("正在刷新订阅,请稍后操作")
                         } else {
                             expanded = true
@@ -325,7 +325,7 @@ fun useSubsManagePage(): ScaffoldExt {
         floatingActionButton = {
             if (!isSelectedMode) {
                 FloatingActionButton(onClick = {
-                    if (subsRefreshingFlow.value) {
+                    if (updateSubsMutex.mutex.isLocked) {
                         toast("正在刷新订阅,请稍后操作")
                         return@FloatingActionButton
                     }

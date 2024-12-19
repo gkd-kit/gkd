@@ -107,7 +107,7 @@ private fun enableA11yService() {
     )
 }
 
-val modifyA11yMutex by lazy { Mutex() }
+private val modifyA11yMutex by lazy { Mutex() }
 
 fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
     modifyA11yMutex.withLock {
