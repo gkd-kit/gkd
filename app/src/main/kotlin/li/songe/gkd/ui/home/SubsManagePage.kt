@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,11 +27,13 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -49,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewModelScope
@@ -76,6 +81,7 @@ import li.songe.gkd.util.findOption
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
+import li.songe.gkd.util.openUri
 import li.songe.gkd.util.saveFileToDownloads
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.storeFlow
@@ -134,12 +140,44 @@ fun useSubsManagePage(): ScaffoldExt {
             title = { Text("订阅设置") },
             text = {
                 val store by storeFlow.collectAsState()
-                TextMenu(
-                    modifier = Modifier.padding(0.dp, itemVerticalPadding),
-                    title = "更新订阅",
-                    option = UpdateTimeOption.allSubObject.findOption(store.updateSubsInterval)
-                ) {
-                    storeFlow.update { s -> s.copy(updateSubsInterval = it.value) }
+                Column {
+                    TextMenu(
+                        modifier = Modifier.padding(0.dp, itemVerticalPadding),
+                        title = "更新订阅",
+                        option = UpdateTimeOption.allSubObject.findOption(store.updateSubsInterval)
+                    ) {
+                        storeFlow.update { s -> s.copy(updateSubsInterval = it.value) }
+                    }
+
+                    val updateValue = remember {
+                        throttle(fn = {
+                            storeFlow.update { it.copy(subsPowerWarn = !it.subsPowerWarn) }
+                        })
+                    }
+                    Row(
+                        modifier = Modifier
+                            .padding(0.dp, itemVerticalPadding)
+                            .clickable(onClick = updateValue),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "耗电警告",
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            Text(
+                                text = "启用多条订阅时弹窗确认",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        Checkbox(
+                            checked = store.subsPowerWarn,
+                            onCheckedChange = { updateValue() }
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -408,7 +446,28 @@ fun useSubsManagePage(): ScaffoldExt {
                             isSelectedMode = isSelectedMode,
                             isSelected = selectedIds.contains(subItem.id),
                             onCheckedChange = { checked ->
-                                vm.viewModelScope.launch {
+                                context.mainVm.viewModelScope.launch {
+                                    if (checked && storeFlow.value.subsPowerWarn && !subItem.isLocal && subsItemsFlow.value.count { !it.isLocal } > 1) {
+                                        context.mainVm.dialogFlow.waitResult(
+                                            title = "耗电警告",
+                                            textContent = {
+                                                Column {
+                                                    Text(text = "启用多个远程订阅可能导致执行大量重复规则, 这可能造成规则执行卡顿以及多余耗电\n\n请认真考虑后再确认开启！！！\n")
+                                                    Text(
+                                                        text = "查看耗电说明",
+                                                        modifier = Modifier.clickable(
+                                                            onClick = throttle(
+                                                                fn = { openUri("https://gkd.li?r=6") }
+                                                            )
+                                                        ),
+                                                        textDecoration = TextDecoration.Underline,
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                    )
+                                                }
+                                            },
+                                            error = true
+                                        )
+                                    }
                                     DbSet.subsItemDao.updateEnable(subItem.id, checked)
                                 }
                             },
