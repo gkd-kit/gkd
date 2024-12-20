@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import li.songe.gkd.appScope
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.util.LOCAL_SUBS_IDS
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsIdToRawFlow
@@ -28,12 +29,15 @@ data class SubsItem(
 
     @ColumnInfo(name = "ctime") val ctime: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "mtime") val mtime: Long = System.currentTimeMillis(),
-    @ColumnInfo(name = "enable") val enable: Boolean = true,
+    @ColumnInfo(name = "enable") val enable: Boolean = false,
     @ColumnInfo(name = "enable_update") val enableUpdate: Boolean = true,
     @ColumnInfo(name = "order") val order: Int,
     @ColumnInfo(name = "update_url") val updateUrl: String? = null,
 
     ) {
+
+    val isLocal: Boolean
+        get() = LOCAL_SUBS_IDS.contains(id)
 
     @Dao
     interface SubsItemDao {

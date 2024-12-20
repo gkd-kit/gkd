@@ -73,7 +73,7 @@ fun SubsItemCard(
     vm: HomeVm,
     isSelectedMode: Boolean,
     isSelected: Boolean,
-    onCheckedChange: ((Boolean) -> Unit)? = null,
+    onCheckedChange: ((Boolean) -> Unit),
     onSelectedChange: (() -> Unit)? = null,
 ) {
     val density = LocalDensity.current
@@ -210,7 +210,7 @@ fun SubsItemCard(
             Switch(
                 checked = subsItem.enable,
                 enabled = !isSelectedMode,
-                onCheckedChange = if (isSelectedMode) null else onCheckedChange,
+                onCheckedChange = if (isSelectedMode) null else throttle(fn = onCheckedChange),
             )
         }
     }

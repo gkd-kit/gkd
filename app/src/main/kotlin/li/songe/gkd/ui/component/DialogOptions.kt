@@ -18,16 +18,16 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 data class AlertDialogOptions(
-    val text: @Composable (() -> Unit)? = null,
     val title: @Composable (() -> Unit)? = null,
+    val text: @Composable (() -> Unit)? = null,
     val onDismissRequest: (() -> Unit)? = null,
     val confirmButton: @Composable () -> Unit,
     val dismissButton: @Composable (() -> Unit)? = null,
 )
 
 private fun buildDialogOptions(
-    title: String,
-    text: String,
+    title: @Composable (() -> Unit),
+    text: @Composable (() -> Unit),
     confirmText: String,
     confirmAction: () -> Unit,
     dismissText: String? = null,
@@ -36,12 +36,8 @@ private fun buildDialogOptions(
     error: Boolean = false,
 ): AlertDialogOptions {
     return AlertDialogOptions(
-        text = {
-            Text(text = text)
-        },
-        title = {
-            Text(text = title)
-        },
+        title = title,
+        text = text,
         onDismissRequest = onDismissRequest,
         confirmButton = {
             TextButton(
@@ -83,8 +79,9 @@ fun BuildDialog(stateFlow: MutableStateFlow<AlertDialogOptions?>) {
 
 fun MutableStateFlow<AlertDialogOptions?>.updateDialogOptions(
     title: String,
-    text: String,
-    confirmText: String = "我知道了",
+    text: String? = null,
+    textContent: (@Composable (() -> Unit))? = null,
+    confirmText: String = DEFAULT_IK_TEXT,
     confirmAction: (() -> Unit)? = null,
     dismissText: String? = null,
     dismissAction: (() -> Unit)? = null,
@@ -92,8 +89,8 @@ fun MutableStateFlow<AlertDialogOptions?>.updateDialogOptions(
     error: Boolean = false,
 ) {
     value = buildDialogOptions(
-        title = title,
-        text = text,
+        title = { Text(text = title) },
+        text = textContent ?: { Text(text = text ?: error("miss text")) },
         confirmText = confirmText,
         confirmAction = confirmAction ?: { value = null },
         dismissText = dismissText,
@@ -103,20 +100,23 @@ fun MutableStateFlow<AlertDialogOptions?>.updateDialogOptions(
     )
 }
 
-const val DEFAULT_CONFIRM_TEXT = "确定"
-const val DEFAULT_DISMISS_TEXT = "取消"
+private const val DEFAULT_IK_TEXT = "我知道了"
+private const val DEFAULT_CONFIRM_TEXT = "确定"
+private const val DEFAULT_DISMISS_TEXT = "取消"
 
 private suspend fun MutableStateFlow<AlertDialogOptions?>.getResult(
     title: String,
-    text: String,
+    text: String? = null,
+    textContent: (@Composable (() -> Unit))? = null,
     confirmText: String = DEFAULT_CONFIRM_TEXT,
     dismissText: String = DEFAULT_DISMISS_TEXT,
     error: Boolean = false,
 ): Boolean {
     return suspendCoroutine { s ->
-        this.value = buildDialogOptions(
+        updateDialogOptions(
             title = title,
             text = text,
+            textContent = textContent,
             onDismissRequest = {},
             confirmText = confirmText,
             confirmAction = {
@@ -135,7 +135,8 @@ private suspend fun MutableStateFlow<AlertDialogOptions?>.getResult(
 
 suspend fun MutableStateFlow<AlertDialogOptions?>.waitResult(
     title: String,
-    text: String,
+    text: String? = null,
+    textContent: (@Composable (() -> Unit))? = null,
     confirmText: String = DEFAULT_CONFIRM_TEXT,
     dismissText: String = DEFAULT_DISMISS_TEXT,
     error: Boolean = false,
@@ -143,6 +144,7 @@ suspend fun MutableStateFlow<AlertDialogOptions?>.waitResult(
     val r = getResult(
         title = title,
         text = text,
+        textContent = textContent,
         confirmText = confirmText,
         dismissText = dismissText,
         error = error,
