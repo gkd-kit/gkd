@@ -161,8 +161,14 @@ fun safeGetTopActivity(): TopActivity? {
 private fun unbindUserService(serviceArgs: Shizuku.UserServiceArgs, connection: ServiceConnection) {
     LogUtils.d("unbindUserService", serviceArgs)
     // https://github.com/RikkaApps/Shizuku-API/blob/master/server-shared/src/main/java/rikka/shizuku/server/UserServiceManager.java#L62
-    Shizuku.unbindUserService(serviceArgs, connection, false)
-    Shizuku.unbindUserService(serviceArgs, connection, true)
+    try {
+        Shizuku.unbindUserService(serviceArgs, connection, false)
+        Shizuku.unbindUserService(serviceArgs, connection, true)
+    } catch (e: Exception) {
+        // binder haven't been received
+        e.printStackTrace()
+        LogUtils.d(e)
+    }
 }
 
 data class UserServiceWrapper(
