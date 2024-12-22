@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
@@ -46,6 +48,7 @@ import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.shizuku.execCommandForResult
 import li.songe.gkd.ui.component.updateDialogOptions
+import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
@@ -85,7 +88,10 @@ fun AuthA11yPage() {
         }, actions = {})
     }) { contentPadding ->
         Column(
-            modifier = Modifier.padding(contentPadding)
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(contentPadding)
         ) {
             Text(
                 text = "选择一个授权模式进行操作",
@@ -229,6 +235,7 @@ fun AuthA11yPage() {
                     Spacer(modifier = Modifier.height(12.dp))
                 }
             }
+            Spacer(modifier = Modifier.height(EmptyHeight))
         }
     }
 
