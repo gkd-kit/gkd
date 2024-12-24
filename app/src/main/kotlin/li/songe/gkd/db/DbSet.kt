@@ -19,8 +19,8 @@ object DbSet {
         get() = db.subsConfigDao()
     val snapshotDao
         get() = db.snapshotDao()
-    val clickLogDao
-        get() = db.clickLogDao()
+    val actionLogDao
+        get() = db.actionLogDao()
     val categoryConfigDao
         get() = db.categoryConfigDao()
     val activityLogDao

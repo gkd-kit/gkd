@@ -86,7 +86,7 @@ fun deleteSubscription(vararg subsIds: Long) {
     appScope.launchTry(Dispatchers.IO) {
         DbSet.subsItemDao.deleteById(*subsIds)
         DbSet.subsConfigDao.deleteBySubsId(*subsIds)
-        DbSet.clickLogDao.deleteBySubsId(*subsIds)
+        DbSet.actionLogDao.deleteBySubsId(*subsIds)
         DbSet.categoryConfigDao.deleteBySubsId(*subsIds)
         val newMap = subsIdToRawFlow.value.toMutableMap()
         subsIds.forEach { id ->

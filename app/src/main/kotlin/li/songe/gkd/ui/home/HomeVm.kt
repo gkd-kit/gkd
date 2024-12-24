@@ -38,7 +38,7 @@ class HomeVm : ViewModel() {
     val tabFlow = MutableStateFlow(controlNav)
 
     private val latestRecordFlow =
-        DbSet.clickLogDao.queryLatest().stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        DbSet.actionLogDao.queryLatest().stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val latestRecordDescFlow = combine(
         latestRecordFlow, subsIdToRawFlow, appInfoCacheFlow
     ) { latestRecord, subsIdToRaw, appInfoCache ->
@@ -46,7 +46,7 @@ class HomeVm : ViewModel() {
         val groupName =
             subsIdToRaw[latestRecord.subsId]?.apps?.find { a -> a.id == latestRecord.appId }?.groups?.find { g -> g.key == latestRecord.groupKey }?.name
         val appName = appInfoCache[latestRecord.appId]?.name
-        val appShowName = appName ?: latestRecord.appId ?: ""
+        val appShowName = appName ?: latestRecord.appId
         if (groupName != null) {
             if (groupName.contains(appShowName)) {
                 groupName
@@ -118,7 +118,7 @@ class HomeVm : ViewModel() {
         }
     }
 
-    private val appIdToOrderFlow = DbSet.clickLogDao.queryLatestUniqueAppIds().map { appIds ->
+    private val appIdToOrderFlow = DbSet.actionLogDao.queryLatestUniqueAppIds().map { appIds ->
         appIds.mapIndexed { index, appId -> appId to index }.toMap()
     }
 

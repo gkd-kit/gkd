@@ -25,12 +25,12 @@ import li.songe.gkd.util.subsItemsFlow
 class AppConfigVm(stateHandle: SavedStateHandle) : ViewModel() {
     private val args = AppConfigPageDestination.argsFrom(stateHandle)
 
-    private val latestGlobalLogsFlow = DbSet.clickLogDao.queryAppLatest(
+    private val latestGlobalLogsFlow = DbSet.actionLogDao.queryAppLatest(
         args.appId,
         SubsConfig.GlobalGroupType
     )
 
-    private val latestAppLogsFlow = DbSet.clickLogDao.queryAppLatest(
+    private val latestAppLogsFlow = DbSet.actionLogDao.queryAppLatest(
         args.appId,
         SubsConfig.AppGroupType
     )
