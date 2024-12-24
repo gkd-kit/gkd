@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -51,8 +50,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -63,6 +60,7 @@ import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.AppBarTextField
+import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.style.EmptyHeight
@@ -318,20 +316,7 @@ fun useAppListPage(): ScaffoldExt {
                             .fillMaxHeight()
                             .weight(1f),
                     ) {
-                        Text(
-                            text = appInfo.name,
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth(),
-                            style = MaterialTheme.typography.bodyLarge.let {
-                                if (appInfo.isSystem) {
-                                    it.copy(textDecoration = TextDecoration.Underline)
-                                } else {
-                                    it
-                                }
-                            }
-                        )
+                        AppNameText(appInfo = appInfo)
                         val appGroups = ruleSummary.appIdToAllGroups[appInfo.id] ?: emptyList()
 
                         val appDesc = if (appGroups.isNotEmpty()) {

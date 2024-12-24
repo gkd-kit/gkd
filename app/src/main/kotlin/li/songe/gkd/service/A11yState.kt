@@ -3,14 +3,15 @@ package li.songe.gkd.service
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.META
 import li.songe.gkd.app
 import li.songe.gkd.appScope
+import li.songe.gkd.data.ActionLog
 import li.songe.gkd.data.ActivityLog
 import li.songe.gkd.data.AppRule
-import li.songe.gkd.data.ClickLog
 import li.songe.gkd.data.GlobalRule
 import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.SubsConfig
@@ -195,8 +196,8 @@ fun updateLauncherAppId() {
 val clickLogMutex by lazy { Mutex() }
 suspend fun insertClickLog(rule: ResolvedRule) {
     clickLogMutex.withLock {
-        actionCountFlow.value++
-        val clickLog = ClickLog(
+        actionCountFlow.update { it + 1 }
+        val actionLog = ActionLog(
             appId = topActivityFlow.value.appId,
             activityId = topActivityFlow.value.activityId,
             subsId = rule.subsItem.id,
@@ -209,9 +210,9 @@ suspend fun insertClickLog(rule: ResolvedRule) {
             ruleIndex = rule.index,
             ruleKey = rule.key,
         )
-        DbSet.clickLogDao.insert(clickLog)
+        DbSet.actionLogDao.insert(actionLog)
         if (actionCountFlow.value % 100 == 0L) {
-            DbSet.clickLogDao.deleteKeepLatest()
+            DbSet.actionLogDao.deleteKeepLatest()
         }
     }
 }

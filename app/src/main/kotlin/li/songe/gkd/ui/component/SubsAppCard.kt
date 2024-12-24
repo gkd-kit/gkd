@@ -32,7 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.blankj.utilcode.util.ClipboardUtils
@@ -41,9 +40,9 @@ import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.ui.style.appItemPadding
-import li.songe.json5.encodeToJson5String
 import li.songe.gkd.util.json
 import li.songe.gkd.util.toast
+import li.songe.json5.encodeToJson5String
 
 
 @Composable
@@ -102,19 +101,10 @@ fun SubsAppCard(
                 .weight(1f),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = appInfo?.name ?: rawApp.name ?: rawApp.id,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.bodyLarge.let {
-                    if (appInfo?.isSystem == true) {
-                        it.copy(textDecoration = TextDecoration.Underline)
-                    } else {
-                        it
-                    }
-                }
+            AppNameText(
+                appId = rawApp.id,
+                appInfo = appInfo,
+                fallbackName = rawApp.name,
             )
 
             if (rawApp.groups.isNotEmpty()) {

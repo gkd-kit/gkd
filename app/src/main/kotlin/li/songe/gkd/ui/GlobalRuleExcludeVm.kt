@@ -39,7 +39,7 @@ class GlobalRuleExcludeVm(stateHandle: SavedStateHandle) : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.Eagerly, searchStrFlow.value)
 
     private val appIdToOrderFlow =
-        DbSet.clickLogDao.queryLatestUniqueAppIds(args.subsItemId, args.groupKey).map { appIds ->
+        DbSet.actionLogDao.queryLatestUniqueAppIds(args.subsItemId, args.groupKey).map { appIds ->
             appIds.mapIndexed { index, appId -> appId to index }.toMap()
         }
     val sortTypeFlow = storeFlow.map(viewModelScope) {

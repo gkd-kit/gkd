@@ -42,7 +42,7 @@ class SubsVm(stateHandle: SavedStateHandle) : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val appIdToOrderFlow =
-        DbSet.clickLogDao.queryLatestUniqueAppIds(args.subsItemId).map { appIds ->
+        DbSet.actionLogDao.queryLatestUniqueAppIds(args.subsItemId).map { appIds ->
             appIds.mapIndexed { index, appId -> appId to index }.toMap()
         }
     val sortTypeFlow = storeFlow.map(viewModelScope) { SortTypeOption.allSubObject.findOption(it.subsAppSortType) }

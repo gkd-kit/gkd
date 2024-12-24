@@ -14,10 +14,11 @@ import li.songe.gkd.data.Tuple3
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.subsIdToRawFlow
 
-class ClickLogVm : ViewModel() {
+class ActionLogVm : ViewModel() {
 
-    val pagingDataFlow = Pager(PagingConfig(pageSize = 100)) { DbSet.clickLogDao.pagingSource() }
-        .flow.cachedIn(viewModelScope)
+    val pagingDataFlow = Pager(PagingConfig(pageSize = 100)) { DbSet.actionLogDao.pagingSource() }
+        .flow
+        .cachedIn(viewModelScope)
         .combine(subsIdToRawFlow) { pagingData, subsIdToRaw ->
             pagingData.map { c ->
                 val group = if (c.groupType == SubsConfig.AppGroupType) {
@@ -37,7 +38,7 @@ class ClickLogVm : ViewModel() {
             }
         }
 
-    val clickLogCountFlow =
-        DbSet.clickLogDao.count().stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+    val actionLogCountFlow =
+        DbSet.actionLogDao.count().stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
 }

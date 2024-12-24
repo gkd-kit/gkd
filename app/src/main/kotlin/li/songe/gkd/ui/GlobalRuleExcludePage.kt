@@ -53,7 +53,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -70,6 +69,7 @@ import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.service.launcherAppId
 import li.songe.gkd.ui.component.AppBarTextField
+import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.TowLineText
@@ -297,20 +297,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                             .weight(1f),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = appInfo.name,
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth(),
-                            style = MaterialTheme.typography.bodyLarge.let {
-                                if (appInfo.isSystem) {
-                                    it.copy(textDecoration = TextDecoration.Underline)
-                                } else {
-                                    it
-                                }
-                            }
-                        )
+                        AppNameText(appInfo = appInfo)
                         Text(
                             text = appInfo.id,
                             maxLines = 1,

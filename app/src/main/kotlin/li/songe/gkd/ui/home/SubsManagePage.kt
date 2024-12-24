@@ -465,6 +465,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                                     )
                                                 }
                                             },
+                                            confirmText = "仍然启用",
                                             error = true
                                         )
                                     }

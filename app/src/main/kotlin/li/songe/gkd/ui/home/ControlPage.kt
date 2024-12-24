@@ -28,9 +28,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
-import com.ramcosta.composedestinations.generated.destinations.ClickLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SlowGroupPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import li.songe.gkd.MainActivity
@@ -147,9 +147,9 @@ fun useControlPage(): ScaffoldExt {
 
             SettingItem(
                 title = "触发记录",
-                subtitle = "如误触可定位关闭规则",
+                subtitle = "规则误触可定位关闭",
                 onClick = {
-                    navController.toDestinationsNavigator().navigate(ClickLogPageDestination)
+                    navController.toDestinationsNavigator().navigate(ActionLogPageDestination)
                 }
             )
 
