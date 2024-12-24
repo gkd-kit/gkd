@@ -77,7 +77,13 @@ fun buildLogFile(): File {
         .resolve("appList.json")
     appListFile.writeText(json.encodeToString(appInfoCacheFlow.value.values.toList()))
     files.add(appListFile)
+    val storeFile = logZipDir
+        .resolve("store.json")
+    storeFile.writeText(json.encodeToString(storeFlow.value))
+    files.add(storeFile)
     val logZipFile = logZipDir.resolve("log-${System.currentTimeMillis()}.zip")
     ZipUtils.zipFiles(files, logZipFile)
+    appListFile.delete()
+    storeFile.delete()
     return logZipFile
 }
