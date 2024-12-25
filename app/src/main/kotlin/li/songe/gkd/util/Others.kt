@@ -29,8 +29,8 @@ fun Bitmap.isEmptyBitmap(): Boolean {
 
 class InterruptRuleMatchException() : Exception()
 
-fun getShowActivityId(appId: String, activityId: String?) {
-    if (activityId != null) {
+fun getShowActivityId(appId: String, activityId: String?): String? {
+    return if (activityId != null) {
         if (activityId.startsWith(appId) && activityId.getOrNull(appId.length) == '.') {
             activityId.substring(appId.length)
         } else {
