@@ -11,6 +11,7 @@ import androidx.room.Query
 import androidx.room.migration.AutoMigrationSpec
 import kotlinx.coroutines.flow.Flow
 import li.songe.gkd.util.format
+import li.songe.gkd.util.getShowActivityId
 
 @Entity(
     tableName = "activity_log_v2",
@@ -23,20 +24,7 @@ data class ActivityLog(
     @ColumnInfo(name = "app_id") val appId: String,
     @ColumnInfo(name = "activity_id") val activityId: String? = null,
 ) {
-    val showActivityId by lazy {
-        if (activityId != null) {
-            if (activityId.startsWith(
-                    appId
-                )
-            ) {
-                activityId.substring(appId.length)
-            } else {
-                activityId
-            }
-        } else {
-            null
-        }
-    }
+    val showActivityId by lazy { getShowActivityId(appId, activityId) }
     val date by lazy { ctime.format("MM-dd HH:mm:ss SSS") }
 
     @Dao
