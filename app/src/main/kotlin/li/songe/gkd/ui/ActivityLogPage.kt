@@ -144,9 +144,6 @@ private fun ActivityLogCard(
         }
         Row(
             modifier = Modifier
-                .clickable(onClick = throttle {
-                    copyText(actionLog.showActivityId.toString())
-                })
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min)
         ) {
@@ -171,7 +168,11 @@ private fun ActivityLogCard(
                     if (showActivityId != null) {
                         StartEllipsisText(
                             text = showActivityId,
-                            modifier = Modifier.height(LocalTextStyle.current.lineHeight.value.dp),
+                            modifier = Modifier
+                                .clickable(onClick = throttle {
+                                    copyText(showActivityId)
+                                })
+                                .height(LocalTextStyle.current.lineHeight.value.dp),
                         )
                     } else {
                         Text(
