@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.home
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -218,7 +219,7 @@ fun useSettingsPage(): ScaffoldExt {
                     )
                 })
 
-            if (store.toastWhenClick) {
+            AnimatedVisibility(visible = store.toastWhenClick) {
                 TextSwitch(
                     title = "系统提示",
                     subtitle = "系统样式触发提示",
