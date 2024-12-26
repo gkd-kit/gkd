@@ -2,7 +2,9 @@ package li.songe.gkd.ui.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.Icon
@@ -35,9 +37,10 @@ fun AppNameText(
                 imageVector = Icons.Outlined.VerifiedUser,
                 contentDescription = null,
                 modifier = Modifier
-                    .clickable(onClick = throttle(fn = { toast("${info.name} 是一个系统应用") }))
+                    .clickable(onClick = throttle(fn = { toast("${info.name} 是系统应用") }))
                     .size(style.fontSize.value.dp)
             )
+            Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = info.name,
                 maxLines = 1,
