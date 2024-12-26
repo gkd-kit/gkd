@@ -10,11 +10,13 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.SportsBasketball
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -378,6 +380,18 @@ private fun ActionLogCard(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         val groupDesc = group?.name.toString()
+                        if (actionLog.groupType == SubsConfig.GlobalGroupType) {
+                            Icon(
+                                imageVector = Icons.Default.SportsBasketball,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .clickable(onClick = throttle {
+                                        toast("${group?.name ?: "当前规则组"} 是全局规则组")
+                                    })
+                                    .size(LocalTextStyle.current.lineHeight.value.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                        }
                         Text(
                             text = groupDesc,
                             color = LocalContentColor.current.let {
