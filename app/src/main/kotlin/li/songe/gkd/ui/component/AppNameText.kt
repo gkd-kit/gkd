@@ -4,7 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
@@ -32,7 +32,7 @@ fun AppNameText(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.Memory,
+                imageVector = Icons.Outlined.VerifiedUser,
                 contentDescription = null,
                 modifier = Modifier
                     .clickable(onClick = throttle(fn = { toast("${info.name} 是一个系统应用") }))
