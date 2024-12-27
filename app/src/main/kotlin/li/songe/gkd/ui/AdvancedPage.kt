@@ -295,15 +295,14 @@ fun AdvancedPage() {
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            if (snapshotCount > 0) {
-                SettingItem(
-                    title = "快照记录",
-                    subtitle = "存在 $snapshotCount 条记录",
-                    onClick = {
-                        navController.toDestinationsNavigator().navigate(SnapshotPageDestination)
-                    }
-                )
-            }
+            SettingItem(
+                title = "快照记录",
+                subtitle = if (snapshotCount > 0) "存在 $snapshotCount 条记录" else "暂无记录",
+                onClick = {
+                    navController.toDestinationsNavigator().navigate(SnapshotPageDestination)
+                }
+            )
+
 
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
                 val screenshotRunning by ScreenshotService.isRunning.collectAsState()
