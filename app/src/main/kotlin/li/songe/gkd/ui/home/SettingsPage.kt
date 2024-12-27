@@ -120,7 +120,6 @@ fun useSettingsPage(): ScaffoldExt {
         var value by remember {
             mutableStateOf(store.customNotifText)
         }
-        val maxCharLen = 64
         AlertDialog(title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -141,15 +140,16 @@ fun useSettingsPage(): ScaffoldExt {
                 }
             }
         }, text = {
+            val maxCharLen = 64
             OutlinedTextField(
                 value = value,
                 placeholder = {
                     Text(text = "请输入文案内容,支持变量替换")
                 },
                 onValueChange = {
-                    value = it.take(maxCharLen)
+                    value = if (it.length > maxCharLen) it.take(maxCharLen) else it
                 },
-                singleLine = true,
+                maxLines = 4,
                 supportingText = {
                     Text(
                         text = "${value.length} / $maxCharLen",
