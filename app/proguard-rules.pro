@@ -23,8 +23,9 @@
 -keep interface li.songe.**{*;}
 
 # fix ktor error https://youtrack.jetbrains.com/issue/KTOR-7298
-# it should the bug of agp
--keep class com.hjq.toast.** {*;}
+# it may be the bug of agp
+-keep class io.ktor.server.** { *; }
+-dontwarn com.sun.nio.**
 
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
 
