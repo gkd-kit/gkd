@@ -22,3 +22,5 @@ local.properties
 
 /_assets
 /.kotlin
+
+/gradle/libs.versions.updates.toml
