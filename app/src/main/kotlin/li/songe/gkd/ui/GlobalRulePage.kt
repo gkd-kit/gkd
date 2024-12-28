@@ -177,13 +177,6 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
-                            } else {
-                                Text(
-                                    text = "暂无描述",
-                                    modifier = Modifier.fillMaxWidth(),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                                )
                             }
                         } else {
                             Text(
