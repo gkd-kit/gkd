@@ -16,25 +16,25 @@ data class GitInfo(
     val tagName: String?,
 )
 
-val gitInfo = try {
-    GitInfo(
-        commitId = "git rev-parse HEAD".runCommand(),
-        commitTime = "git log -1 --format=%ct".runCommand(),
-        tagName = try {
-            "git describe --tags --exact-match".runCommand()
-        } catch (_: Exception) {
-            println("app: current git commit is not a tag")
-            null
-        },
-    )
-} catch (_: Exception) {
-    println("app: git is not available")
-    null
+val gitInfo by lazy {
+    (try {
+        GitInfo(
+            commitId = "git rev-parse HEAD".runCommand(),
+            commitTime = "git log -1 --format=%ct".runCommand(),
+            tagName = try {
+                "git describe --tags --exact-match".runCommand()
+            } catch (_: Exception) {
+                println("app: current git commit is not a tag")
+                null
+            },
+        )
+    } catch (_: Exception) {
+        println("app: git is not available")
+        null
+    }).apply {
+        println("app: $this")
+    }
 }
-
-println("app: $gitInfo")
-
-val vnSuffix = "-${gitInfo?.commitId?.substring(0, 7) ?: "unknown"}"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -96,7 +96,7 @@ android {
         all {
             signingConfig = currentSigning
             if (gitInfo?.tagName == null) {
-                versionNameSuffix = vnSuffix
+                versionNameSuffix = "-${gitInfo?.commitId?.substring(0, 7) ?: "unknown"}"
             }
         }
         release {
@@ -185,7 +185,7 @@ configurations.configureEach {
 composeCompiler {
     reportsDestination = layout.buildDirectory.dir("compose_compiler")
     stabilityConfigurationFiles.addAll(
-        project.layout.projectDirectory.file("stability_config.conf"),
+        project.layout.projectDirectory.file("../stability_config.conf"),
     )
 }
 

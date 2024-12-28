@@ -13,6 +13,9 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
 
     alias(libs.plugins.rikka.refine) apply false
+
+    alias(libs.plugins.benmanes.version)
+    alias(libs.plugins.littlerobots.version)
 }
 
 // https://kotlinlang.org/docs/js-project-setup.html#use-pre-installed-node-js
