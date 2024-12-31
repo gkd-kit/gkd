@@ -78,6 +78,7 @@ import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.subsIdToRawFlow
+import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
@@ -143,6 +144,7 @@ fun ActionLogPage() {
                         Icon(
                             imageVector = Icons.Outlined.Delete,
                             contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
                         )
                     }
                 }
@@ -322,6 +324,7 @@ private fun ActionLogCard(
     lastItem: Tuple3<ActionLog, RawSubscription.RawGroupProps?, RawSubscription.RawRuleProps?>?,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current as MainActivity
     val (actionLog, group, rule) = item
     val lastActionLog = lastItem?.t0
     val isDiffApp = actionLog.appId != lastActionLog?.appId
@@ -375,7 +378,16 @@ private fun ActionLogCard(
                             color = LocalContentColor.current.copy(alpha = 0.5f),
                         )
                     }
-                    Text(text = subscription?.name ?: actionLog.subsId.toString())
+                    Text(
+                        text = subscription?.name ?: "id=${actionLog.subsId}",
+                        modifier = Modifier.clickable(onClick = throttle {
+                            if (subsItemsFlow.value.any { it.id == actionLog.subsId }) {
+                                context.mainVm.sheetSubsIdFlow.value = actionLog.subsId
+                            } else {
+                                toast("订阅不存在")
+                            }
+                        })
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth()
                     ) {

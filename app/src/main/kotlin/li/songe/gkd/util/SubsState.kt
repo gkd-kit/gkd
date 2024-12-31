@@ -315,19 +315,23 @@ private fun loadSubs(id: Long): RawSubscription {
     return subscription
 }
 
-private fun refreshRawSubsList(items: List<SubsItem>) {
+private fun refreshRawSubsList(items: List<SubsItem>): Boolean {
+    if (items.isEmpty()) return false
     val subscriptions = subsIdToRawFlow.value.toMutableMap()
     val errors = subsLoadErrorsFlow.value.toMutableMap()
+    var changed = false
     items.forEach { s ->
         try {
             subscriptions[s.id] = loadSubs(s.id)
             errors.remove(s.id)
+            changed = true
         } catch (e: Exception) {
             errors[s.id] = e
         }
     }
     subsIdToRawFlow.value = subscriptions
     subsLoadErrorsFlow.value = errors
+    return changed
 }
 
 fun initSubsState() {
@@ -399,13 +403,14 @@ fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers
             return@withLock
         }
         LogUtils.d("开始检测更新")
-        val localSubsEntries =
-            subsEntriesFlow.value.filter { e -> e.subsItem.id < 0 && e.subscription == null }
-        val subsEntries = subsEntriesFlow.value.filter { e -> e.subsItem.id >= 0 }
-        refreshRawSubsList(localSubsEntries.map { e -> e.subsItem })
-
+        // 文件不存在, 重新加载
+        val changed = refreshRawSubsList(subsEntriesFlow.value.filter { it.subscription == null }
+            .map { it.subsItem })
+        if (changed) {
+            delay(500)
+        }
         var successNum = 0
-        subsEntries.forEach { subsEntry ->
+        subsEntriesFlow.value.filter { !it.subsItem.isLocal }.forEach { subsEntry ->
             try {
                 val newSubsRaw = updateSubs(subsEntry)
                 if (newSubsRaw != null) {

@@ -49,6 +49,8 @@ import li.songe.gkd.service.ManageService
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.service.updateLauncherAppId
 import li.songe.gkd.ui.component.BuildDialog
+import li.songe.gkd.ui.component.ShareDataDialog
+import li.songe.gkd.ui.component.SubsSheet
 import li.songe.gkd.ui.theme.AppTheme
 import li.songe.gkd.util.EditGithubCookieDlg
 import li.songe.gkd.util.LocalNavController
@@ -108,6 +110,9 @@ class MainActivity : ComponentActivity() {
                     if (META.updateEnabled) {
                         UpgradeDialog(mainVm.updateStatus)
                     }
+                    SubsSheet(mainVm, mainVm.sheetSubsIdFlow)
+                    ShareDataDialog(mainVm, mainVm.showShareDataIdsFlow)
+                    mainVm.inputSubsLinkOption.ContentDialog()
                 }
             }
         }
