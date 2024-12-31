@@ -1,6 +1,5 @@
 package li.songe.gkd.ui.component
 
-import android.view.MotionEvent
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -11,8 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -20,49 +17,27 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInteropFilter
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
-import com.blankj.utilcode.util.ClipboardUtils
-import com.ramcosta.composedestinations.generated.destinations.CategoryPageDestination
-import com.ramcosta.composedestinations.generated.destinations.GlobalRulePageDestination
-import com.ramcosta.composedestinations.generated.destinations.SubsPageDestination
-import com.ramcosta.composedestinations.utils.toDestinationsNavigator
-import kotlinx.coroutines.Dispatchers
+import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
-import li.songe.gkd.data.deleteSubscription
 import li.songe.gkd.ui.home.HomeVm
-import li.songe.gkd.util.LOCAL_SUBS_ID
-import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.formatTimeAgo
-import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
-import li.songe.gkd.util.openUri
 import li.songe.gkd.util.subsLoadErrorsFlow
 import li.songe.gkd.util.subsRefreshErrorsFlow
 import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubsMutex
 
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SubsItemCard(
     modifier: Modifier = Modifier,
@@ -76,7 +51,7 @@ fun SubsItemCard(
     onCheckedChange: ((Boolean) -> Unit),
     onSelectedChange: (() -> Unit)? = null,
 ) {
-    val density = LocalDensity.current
+    val context = LocalContext.current as MainActivity
     val subsLoadError by remember(subsItem.id) {
         subsLoadErrorsFlow.map(vm.viewModelScope) { it[subsItem.id] }
     }.collectAsState()
@@ -84,30 +59,20 @@ fun SubsItemCard(
         subsRefreshErrorsFlow.map(vm.viewModelScope) { it[subsItem.id] }
     }.collectAsState()
     val subsRefreshing by updateSubsMutex.state.collectAsState()
-    var expanded by remember { mutableStateOf(false) }
     val dragged by interactionSource.collectIsDraggedAsState()
-    var clickPositionX by remember {
-        mutableStateOf(0.dp)
-    }
     val onClick = {
         if (!dragged) {
             if (isSelectedMode) {
                 onSelectedChange?.invoke()
             } else if (!updateSubsMutex.mutex.isLocked) {
-                expanded = true
+                context.mainVm.sheetSubsIdFlow.value = subsItem.id
             }
         }
     }
     Card(
         onClick = onClick,
         modifier = modifier
-            .padding(16.dp, 2.dp)
-            .pointerInteropFilter { event ->
-                if (event.action == MotionEvent.ACTION_DOWN) {
-                    clickPositionX = with(density) { event.x.toDp() }
-                }
-                false
-            },
+            .padding(16.dp, 2.dp),
         shape = MaterialTheme.shapes.small,
         interactionSource = interactionSource,
         colors = CardDefaults.cardColors(
@@ -118,15 +83,6 @@ fun SubsItemCard(
             }
         ),
     ) {
-        SubsMenuItem(
-            expanded = expanded,
-            onExpandedChange = { expanded = it },
-            subItem = subsItem,
-            subscription = subscription,
-            offsetX = clickPositionX,
-            vm = vm
-        )
-
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(8.dp),
@@ -137,7 +93,7 @@ fun SubsItemCard(
             ) {
                 if (subscription != null) {
                     Text(
-                        text = "$index.${subscription.name}",
+                        text = "$index. ${subscription.name}",
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
@@ -168,7 +124,7 @@ fun SubsItemCard(
                             )
                         } else {
                             Text(
-                                text = stringResource(SafeR.app_name),
+                                text = META.appName,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.secondary,
                             )
@@ -216,132 +172,25 @@ fun SubsItemCard(
     }
 }
 
-@Composable
-private fun SubsMenuItem(
-    expanded: Boolean,
-    onExpandedChange: ((Boolean) -> Unit),
-    subItem: SubsItem,
-    subscription: RawSubscription?,
-    offsetX: Dp,
-    vm: HomeVm
-) {
-    val navController = LocalNavController.current
-    val context = LocalContext.current as MainActivity
-    val density = LocalDensity.current
-    var halfMenuWidth by remember {
-        mutableStateOf(0.dp)
-    }
 
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = { onExpandedChange(false) },
-        modifier = Modifier.onGloballyPositioned {
-            halfMenuWidth = with(density) { it.size.width.toDp() } / 2
-        },
-        offset = DpOffset(if (offsetX < halfMenuWidth) 0.dp else offsetX - halfMenuWidth, 0.dp)
-    ) {
-        if (subscription != null) {
-            if (subItem.id < 0 || subscription.apps.isNotEmpty()) {
-                DropdownMenuItem(
-                    text = {
-                        Text(text = "应用规则")
-                    },
-                    onClick = throttle {
-                        onExpandedChange(false)
-                        navController.toDestinationsNavigator()
-                            .navigate(SubsPageDestination(subItem.id))
-                    }
-                )
-            }
-            if (subItem.id < 0 || subscription.categories.isNotEmpty()) {
-                DropdownMenuItem(
-                    text = {
-                        Text(text = "规则类别")
-                    },
-                    onClick = throttle {
-                        onExpandedChange(false)
-                        navController.toDestinationsNavigator()
-                            .navigate(CategoryPageDestination(subItem.id))
-                    }
-                )
-            }
-            if (subItem.id < 0 || subscription.globalGroups.isNotEmpty()) {
-                DropdownMenuItem(
-                    text = {
-                        Text(text = "全局规则")
-                    },
-                    onClick = throttle {
-                        onExpandedChange(false)
-                        navController.toDestinationsNavigator()
-                            .navigate(GlobalRulePageDestination(subItem.id))
-                    }
-                )
-            }
-        }
-        subscription?.supportUri?.let { supportUri ->
-            DropdownMenuItem(
-                text = {
-                    Text(text = "问题反馈")
-                },
-                onClick = {
-                    onExpandedChange(false)
-                    openUri(supportUri)
-                }
-            )
-        }
-        DropdownMenuItem(
-            text = {
-                Text(text = "导出数据")
-            },
-            onClick = {
-                onExpandedChange(false)
-                vm.viewModelScope.launchTry(Dispatchers.IO) {
-                    vm.showShareDataIdsFlow.value = setOf(subItem.id)
-                }
-            }
-        )
-        subItem.updateUrl?.let {
-            DropdownMenuItem(
-                text = {
-                    Text(text = "复制链接")
-                },
-                onClick = {
-                    onExpandedChange(false)
-                    ClipboardUtils.copyText(subItem.updateUrl)
-                    toast("复制成功")
-                }
-            )
-            DropdownMenuItem(
-                text = {
-                    Text(text = "修改链接")
-                },
-                onClick = {
-                    onExpandedChange(false)
-                    vm.viewModelScope.launchTry {
-                        val newUrl = vm.inputSubsLinkOption.getResult(initValue = it)
-                        newUrl ?: return@launchTry
-                        vm.addOrModifySubs(newUrl, subItem)
-                    }
-                }
-            )
-        }
-        if (subItem.id != LOCAL_SUBS_ID) {
-            DropdownMenuItem(
-                text = {
-                    Text(text = "删除订阅", color = MaterialTheme.colorScheme.error)
-                },
-                onClick = {
-                    onExpandedChange(false)
-                    vm.viewModelScope.launchTry {
-                        context.mainVm.dialogFlow.waitResult(
-                            title = "删除订阅",
-                            text = "确定删除 ${subscription?.name ?: subItem.id} ?",
-                            error = true,
-                        )
-                        deleteSubscription(subItem.id)
-                    }
-                }
-            )
-        }
-    }
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

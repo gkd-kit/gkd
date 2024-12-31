@@ -85,7 +85,7 @@ data class RawSubscription(
         map
     }
 
-    private val appGroups by lazy {
+    val appGroups by lazy {
         apps.flatMap { a -> a.groups }
     }
 

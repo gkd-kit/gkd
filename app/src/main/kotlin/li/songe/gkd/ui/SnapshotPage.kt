@@ -114,6 +114,7 @@ fun SnapshotPage() {
                         Icon(
                             imageVector = Icons.Outlined.Delete,
                             contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
                         )
                     }
                 }

@@ -18,7 +18,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -272,7 +272,7 @@ fun AdvancedPage() {
             SettingItem(
                 title = "服务端口",
                 subtitle = store.httpServerPort.toString(),
-                imageVector = Icons.Default.Edit,
+                imageVector = Icons.Outlined.Edit,
                 onClick = {
                     showEditPortDlg = true
                 }
@@ -397,7 +397,7 @@ fun AdvancedPage() {
                 onSuffixClick = {
                     openUri("https://gkd.li?r=1")
                 },
-                imageVector = Icons.Default.Edit,
+                imageVector = Icons.Outlined.Edit,
                 onClick = {
                     context.mainVm.showEditCookieDlgFlow.value = true
                 }

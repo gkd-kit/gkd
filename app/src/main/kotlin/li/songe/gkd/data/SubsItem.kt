@@ -16,6 +16,7 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.appScope
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.LOCAL_SUBS_IDS
+import li.songe.gkd.util.format
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsIdToRawFlow
@@ -38,6 +39,8 @@ data class SubsItem(
 
     val isLocal: Boolean
         get() = LOCAL_SUBS_IDS.contains(id)
+
+    val mtimeStr by lazy { mtime.format("yyyy-MM-dd HH:mm:ss") }
 
     @Dao
     interface SubsItemDao {

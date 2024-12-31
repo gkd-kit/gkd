@@ -10,14 +10,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Add
@@ -26,7 +24,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -55,7 +52,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dylanc.activityresult.launcher.launchForResult
@@ -65,7 +61,6 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.Value
 import li.songe.gkd.data.deleteSubscription
-import li.songe.gkd.data.exportData
 import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.SubsItemCard
@@ -82,8 +77,6 @@ import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.openUri
-import li.songe.gkd.util.saveFileToDownloads
-import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
@@ -188,9 +181,6 @@ fun useSubsManagePage(): ScaffoldExt {
         )
     }
 
-    ShareDataDialog(vm)
-    vm.inputSubsLinkOption.ContentDialog()
-
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     return ScaffoldExt(
         navItem = subsNav,
@@ -242,11 +232,12 @@ fun useSubsManagePage(): ScaffoldExt {
                             Icon(
                                 imageVector = Icons.Outlined.Delete,
                                 contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
                             )
                         }
                     }
                     IconButton(onClick = {
-                        vm.showShareDataIdsFlow.value = selectedIds
+                        context.mainVm.showShareDataIdsFlow.value = selectedIds
                     }) {
                         Icon(
                             imageVector = Icons.Default.Share,
@@ -367,9 +358,9 @@ fun useSubsManagePage(): ScaffoldExt {
                         toast("正在刷新订阅,请稍后操作")
                         return@FloatingActionButton
                     }
-                    vm.viewModelScope.launchTry {
-                        val url = vm.inputSubsLinkOption.getResult() ?: return@launchTry
-                        vm.addOrModifySubs(url)
+                    context.mainVm.viewModelScope.launchTry {
+                        val url = context.mainVm.inputSubsLinkOption.getResult() ?: return@launchTry
+                        context.mainVm.addOrModifySubs(url)
                     }
                 }) {
                     Icon(
@@ -491,49 +482,6 @@ fun useSubsManagePage(): ScaffoldExt {
                 item {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ShareDataDialog(vm: HomeVm) {
-    val context = LocalContext.current as MainActivity
-    val showShareDataIds = vm.showShareDataIdsFlow.collectAsState().value
-    if (showShareDataIds != null) {
-        Dialog(onDismissRequest = { vm.showShareDataIdsFlow.value = null }) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                val modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                Text(
-                    text = "分享到其他应用", modifier = Modifier
-                        .clickable(onClick = throttle {
-                            vm.showShareDataIdsFlow.value = null
-                            vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val file = exportData(showShareDataIds)
-                                context.shareFile(file, "分享数据文件")
-                            }
-                        })
-                        .then(modifier)
-                )
-                Text(
-                    text = "保存到下载",
-                    modifier = Modifier
-                        .clickable(onClick = throttle {
-                            vm.showShareDataIdsFlow.value = null
-                            vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val file = exportData(showShareDataIds)
-                                context.saveFileToDownloads(file)
-                            }
-                        })
-                        .then(modifier)
-                )
             }
         }
     }

@@ -19,9 +19,9 @@ import li.songe.gkd.permission.canWriteExternalStorage
 import li.songe.gkd.permission.requiredPermission
 import java.io.File
 
-fun Context.shareFile(file: File, title: String) {
+fun MainActivity.shareFile(file: File, title: String) {
     val uri = FileProvider.getUriForFile(
-        this, "${packageName}.provider", file
+        app, "${app.packageName}.provider", file
     )
     val intent = Intent().apply {
         action = Intent.ACTION_SEND
