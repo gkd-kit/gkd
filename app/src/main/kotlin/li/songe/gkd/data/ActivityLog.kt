@@ -20,7 +20,7 @@ data class ActivityLog(
     // 不使用时间戳作为主键的原因
     // https://github.com/gkd-kit/gkd/issues/704
     @PrimaryKey(autoGenerate = true) @ColumnInfo(name = "id") val id: Int = 0,
-    @ColumnInfo(name = "ctime") val ctime: Long = System.currentTimeMillis(),
+    @ColumnInfo(name = "ctime") val ctime: Long,
     @ColumnInfo(name = "app_id") val appId: String,
     @ColumnInfo(name = "activity_id") val activityId: String? = null,
 ) {

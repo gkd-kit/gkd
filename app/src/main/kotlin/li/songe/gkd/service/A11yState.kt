@@ -58,12 +58,14 @@ fun updateTopActivity(topActivity: TopActivity) {
         }
     }
     if (storeFlow.value.enableActivityLog) {
+        val ctime = System.currentTimeMillis()
         appScope.launchTry(Dispatchers.IO) {
             activityLogMutex.withLock {
                 DbSet.activityLogDao.insert(
                     ActivityLog(
                         appId = topActivity.appId,
-                        activityId = topActivity.activityId
+                        activityId = topActivity.activityId,
+                        ctime = ctime,
                     )
                 )
                 activityLogCount++
@@ -195,6 +197,7 @@ fun updateLauncherAppId() {
 
 val clickLogMutex by lazy { Mutex() }
 suspend fun insertClickLog(rule: ResolvedRule) {
+    val ctime = System.currentTimeMillis()
     clickLogMutex.withLock {
         actionCountFlow.update { it + 1 }
         val actionLog = ActionLog(
@@ -209,6 +212,7 @@ suspend fun insertClickLog(rule: ResolvedRule) {
             },
             ruleIndex = rule.index,
             ruleKey = rule.key,
+            ctime = ctime,
         )
         DbSet.actionLogDao.insert(actionLog)
         if (actionCountFlow.value % 100 == 0L) {
