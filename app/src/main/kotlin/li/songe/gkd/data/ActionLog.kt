@@ -20,7 +20,7 @@ import li.songe.gkd.util.getShowActivityId
 )
 data class ActionLog(
     @PrimaryKey(autoGenerate = true) @ColumnInfo(name = "id") val id: Int = 0,
-    @ColumnInfo(name = "ctime") val ctime: Long = System.currentTimeMillis(),
+    @ColumnInfo(name = "ctime") val ctime: Long,
     @ColumnInfo(name = "app_id") val appId: String,
     @ColumnInfo(name = "activity_id") val activityId: String? = null,
     @ColumnInfo(name = "subs_id") val subsId: Long,
