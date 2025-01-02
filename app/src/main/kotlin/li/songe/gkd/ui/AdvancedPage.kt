@@ -37,9 +37,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -99,6 +101,7 @@ fun AdvancedPage() {
         var value by remember {
             mutableStateOf(store.httpServerPort.toString())
         }
+        val inputFocused = rememberSaveable { mutableStateOf(false) }
         AlertDialog(title = { Text(text = "服务端口") }, text = {
             OutlinedTextField(
                 value = value,
@@ -109,7 +112,13 @@ fun AdvancedPage() {
                     value = it.filter { c -> c.isDigit() }.take(5)
                 },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged {
+                        if (it.isFocused) {
+                            inputFocused.value = true
+                        }
+                    },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 supportingText = {
                     Text(
@@ -120,7 +129,7 @@ fun AdvancedPage() {
                 },
             )
         }, onDismissRequest = {
-            if (value.isEmpty()) {
+            if (!inputFocused.value) {
                 showEditPortDlg = false
             }
         }, confirmButton = {

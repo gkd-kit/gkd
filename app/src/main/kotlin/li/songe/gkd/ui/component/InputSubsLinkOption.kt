@@ -17,7 +17,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import kotlinx.coroutines.flow.MutableStateFlow
+import li.songe.gkd.data.Value
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.throttle
@@ -32,6 +34,7 @@ class InputSubsLinkOption {
     private val valueFlow = MutableStateFlow("")
     private val initValueFlow = MutableStateFlow("")
     private var continuation: Continuation<String?>? = null
+    private val inputFocused = Value(false)
 
     private fun resume(value: String?) {
         showFlow.value = false
@@ -39,6 +42,7 @@ class InputSubsLinkOption {
         initValueFlow.value = ""
         continuation?.resume(value)
         continuation = null
+        inputFocused.value = false
     }
 
     private fun submit() {
@@ -102,7 +106,13 @@ class InputSubsLinkOption {
                             valueFlow.value = it.trim()
                         },
                         maxLines = 8,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged {
+                                if (it.isFocused) {
+                                    inputFocused.value = true
+                                }
+                            },
                         placeholder = {
                             Text(text = "请输入订阅链接")
                         },
@@ -110,7 +120,7 @@ class InputSubsLinkOption {
                     )
                 },
                 onDismissRequest = {
-                    if (valueFlow.value.isEmpty()) {
+                    if (!inputFocused.value) {
                         cancel()
                     }
                 },
