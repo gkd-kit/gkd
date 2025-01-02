@@ -39,11 +39,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -386,6 +388,7 @@ fun AppItemPage(
             mutableStateOf(json.encodeToJson5String(editGroupRaw))
         }
         val focusRequester = remember { FocusRequester() }
+        val inputFocused = rememberSaveable { mutableStateOf(false) }
         val oldSource = remember { source }
         AlertDialog(
             title = { Text(text = "编辑规则组") },
@@ -395,7 +398,12 @@ fun AppItemPage(
                     onValueChange = { source = it },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .focusRequester(focusRequester),
+                        .focusRequester(focusRequester)
+                        .onFocusChanged {
+                            if (it.isFocused) {
+                                inputFocused.value = true
+                            }
+                        },
                     placeholder = { Text(text = "请输入规则组") },
                     maxLines = 10,
                 )
@@ -404,7 +412,7 @@ fun AppItemPage(
                 }
             },
             onDismissRequest = {
-                if (source.isEmpty()) {
+                if (!inputFocused.value) {
                     setEditGroupRaw(null)
                 }
             },
@@ -478,6 +486,7 @@ fun AppItemPage(
         }
         val oldSource = remember { source }
         val focusRequester = remember { FocusRequester() }
+        val inputFocused = rememberSaveable { mutableStateOf(false) }
         AlertDialog(
             title = { Text(text = "编辑禁用") },
             text = {
@@ -486,7 +495,12 @@ fun AppItemPage(
                     onValueChange = { source = it },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .focusRequester(focusRequester),
+                        .focusRequester(focusRequester)
+                        .onFocusChanged {
+                            if (it.isFocused) {
+                                inputFocused.value = true
+                            }
+                        },
                     placeholder = {
                         Text(
                             text = "请填入需要禁用的 activityId\n以换行或英文逗号分割",
@@ -501,7 +515,7 @@ fun AppItemPage(
                 }
             },
             onDismissRequest = {
-                if (source.isEmpty()) {
+                if (!inputFocused.value) {
                     setExcludeGroupRaw(null)
                 }
             },
@@ -540,16 +554,23 @@ fun AppItemPage(
         var source by remember {
             mutableStateOf("")
         }
+        val inputFocused = rememberSaveable { mutableStateOf(false) }
         AlertDialog(title = { Text(text = "添加规则组") }, text = {
             OutlinedTextField(
                 value = source,
                 onValueChange = { source = it },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged {
+                        if (it.isFocused) {
+                            inputFocused.value = true
+                        }
+                    },
                 placeholder = { Text(text = "请输入规则组\n可以是APP规则\n也可以是单个规则组") },
                 maxLines = 10,
             )
         }, onDismissRequest = {
-            if (source.isEmpty()) {
+            if (!inputFocused.value) {
                 showAddDlg = false
             }
         }, confirmButton = {

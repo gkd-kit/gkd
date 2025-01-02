@@ -28,9 +28,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -76,6 +78,7 @@ fun useSettingsPage(): ScaffoldExt {
         var value by remember {
             mutableStateOf(store.clickToast)
         }
+        val inputFocused = rememberSaveable { mutableStateOf(false) }
         val maxCharLen = 32
         AlertDialog(title = { Text(text = "触发提示") }, text = {
             OutlinedTextField(
@@ -94,9 +97,14 @@ fun useSettingsPage(): ScaffoldExt {
                         textAlign = TextAlign.End,
                     )
                 },
+                modifier = Modifier.onFocusChanged {
+                    if (it.isFocused) {
+                        inputFocused.value = true
+                    }
+                }
             )
         }, onDismissRequest = {
-            if (value.isEmpty()) {
+            if (!inputFocused.value) {
                 showToastInputDlg = false
             }
         }, confirmButton = {
@@ -120,6 +128,7 @@ fun useSettingsPage(): ScaffoldExt {
         var value by remember {
             mutableStateOf(store.customNotifText)
         }
+        val inputFocused = rememberSaveable { mutableStateOf(false) }
         AlertDialog(title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -157,9 +166,14 @@ fun useSettingsPage(): ScaffoldExt {
                         textAlign = TextAlign.End,
                     )
                 },
+                modifier = Modifier.onFocusChanged {
+                    if (it.isFocused) {
+                        inputFocused.value = true
+                    }
+                }
             )
         }, onDismissRequest = {
-            if (value.isEmpty()) {
+            if (!inputFocused.value) {
                 showNotifTextInputDlg = false
             }
         }, confirmButton = {

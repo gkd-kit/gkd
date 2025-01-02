@@ -35,9 +35,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -279,16 +281,23 @@ fun CategoryPage(subsItemId: Long) {
         var source by remember {
             mutableStateOf(editNameCategory.name)
         }
+        val inputFocused = rememberSaveable { mutableStateOf(false) }
         AlertDialog(title = { Text(text = "编辑类别") }, text = {
             OutlinedTextField(
                 value = source,
                 onValueChange = { source = it.trim() },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged {
+                        if (it.isFocused) {
+                            inputFocused.value = true
+                        }
+                    },
                 placeholder = { Text(text = "请输入类别名称") },
                 singleLine = true
             )
         }, onDismissRequest = {
-            if (source.isEmpty()) {
+            if (!inputFocused.value) {
                 setEditNameCategory(null)
             }
         }, dismissButton = {
@@ -326,16 +335,23 @@ fun CategoryPage(subsItemId: Long) {
         var source by remember {
             mutableStateOf("")
         }
+        val inputFocused = rememberSaveable { mutableStateOf(false) }
         AlertDialog(title = { Text(text = "添加类别") }, text = {
             OutlinedTextField(
                 value = source,
                 onValueChange = { source = it.trim() },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged {
+                        if (it.isFocused) {
+                            inputFocused.value = true
+                        }
+                    },
                 placeholder = { Text(text = "请输入类别名称") },
                 singleLine = true
             )
         }, onDismissRequest = {
-            if (source.isEmpty()) {
+            if (!inputFocused.value) {
                 showAddDlg = false
             }
         }, dismissButton = {

@@ -52,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -356,6 +357,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                 excludeData.stringify()
             )
         }
+        val inputFocused = rememberSaveable { mutableStateOf(false) }
         val oldSource = remember { source }
         AlertDialog(
             title = { Text(text = "编辑禁用") },
@@ -365,7 +367,12 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                     onValueChange = { source = it },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .focusRequester(focusRequester),
+                        .focusRequester(focusRequester)
+                        .onFocusChanged {
+                            if (it.isFocused) {
+                                inputFocused.value = true
+                            }
+                        },
                     placeholder = {
                         Text(
                             text = tipText,
@@ -380,7 +387,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                 }
             },
             onDismissRequest = {
-                if (source.isEmpty()) {
+                if (!inputFocused.value) {
                     showEditDlg = false
                 }
             },

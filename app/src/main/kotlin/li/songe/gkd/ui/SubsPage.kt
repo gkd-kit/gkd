@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewModelScope
@@ -307,16 +308,23 @@ fun SubsPage(
         var source by remember {
             mutableStateOf("")
         }
+        val inputFocused = rememberSaveable { mutableStateOf(false) }
         AlertDialog(title = { Text(text = "添加应用规则") }, text = {
             OutlinedTextField(
                 value = source,
                 onValueChange = { source = it },
                 maxLines = 10,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged {
+                        if (it.isFocused) {
+                            inputFocused.value = true
+                        }
+                    },
                 placeholder = { Text(text = "请输入规则\n若应用规则已经存在则追加") },
             )
         }, onDismissRequest = {
-            if (source.isEmpty()) {
+            if (!inputFocused.value) {
                 showAddDlg = false
             }
         }, confirmButton = {
@@ -397,6 +405,7 @@ fun SubsPage(
         var source by remember {
             mutableStateOf(json.encodeToJson5String(editAppRawVal))
         }
+        val inputFocused = rememberSaveable { mutableStateOf(false) }
         AlertDialog(
             title = { Text(text = "编辑应用规则") },
             text = {
@@ -406,7 +415,12 @@ fun SubsPage(
                     maxLines = 10,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .focusRequester(focusRequester),
+                        .focusRequester(focusRequester)
+                        .onFocusChanged {
+                            if (it.isFocused) {
+                                inputFocused.value = true
+                            }
+                        },
                     placeholder = { Text(text = "请输入规则") },
                 )
                 LaunchedEffect(null) {
@@ -414,7 +428,7 @@ fun SubsPage(
                 }
             },
             onDismissRequest = {
-                if (source.isEmpty()) {
+                if (!inputFocused.value) {
                     editRawApp = null
                 }
             }, confirmButton = {
