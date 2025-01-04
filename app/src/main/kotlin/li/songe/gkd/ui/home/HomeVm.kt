@@ -19,6 +19,7 @@ import li.songe.gkd.util.orderedAppInfosFlow
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
+import li.songe.gkd.util.usedSubsEntriesFlow
 
 class HomeVm : ViewModel() {
 
@@ -50,6 +51,8 @@ class HomeVm : ViewModel() {
             getSubsStatus(ruleSummary, count)
         }.stateIn(appScope, SharingStarted.Eagerly, "")
     }
+
+    val usedSubsItemCountFlow = usedSubsEntriesFlow.map(viewModelScope) { it.size }
 
     private val appIdToOrderFlow = DbSet.actionLogDao.queryLatestUniqueAppIds().map { appIds ->
         appIds.mapIndexed { index, appId -> appId to index }.toMap()

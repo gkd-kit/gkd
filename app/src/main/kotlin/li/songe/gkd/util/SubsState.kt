@@ -141,7 +141,7 @@ data class RuleSummary(
             ""
         }
     } else {
-        "暂无规则"
+        EMPTY_RULE_TIP
     }
 
     val slowGlobalGroups =
@@ -153,8 +153,9 @@ data class RuleSummary(
     val slowGroupCount = slowGlobalGroups.size + slowAppGroups.size
 }
 
-private val usedSubsEntriesFlow by lazy {
+val usedSubsEntriesFlow by lazy {
     subsEntriesFlow.map { it.filter { s -> s.subsItem.enable && s.subscription != null } }
+        .stateIn(appScope, SharingStarted.Eagerly, emptyList())
 }
 
 val ruleSummaryFlow by lazy {

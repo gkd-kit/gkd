@@ -1,31 +1,49 @@
 package li.songe.gkd.ui.home
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.outlined.Eco
+import androidx.compose.material.icons.outlined.Equalizer
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.RocketLaunch
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
@@ -41,12 +59,10 @@ import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.service.switchA11yService
-import li.songe.gkd.ui.component.AuthCard
-import li.songe.gkd.ui.component.SettingItem
-import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
-import li.songe.gkd.ui.style.itemPadding
+import li.songe.gkd.ui.style.itemVerticalPadding
+import li.songe.gkd.ui.style.surfaceCardColors
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
@@ -82,17 +98,9 @@ fun useControlPage(): ScaffoldExt {
                         contentDescription = null,
                     )
                 }
-                IconButton(onClick = throttle { openUri(HOME_PAGE_URL) }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
-                        contentDescription = null,
-                    )
-                }
             })
         }
     ) { contentPadding ->
-        val latestRecordDesc by vm.latestRecordDescFlow.collectAsState()
-        val subsStatus by vm.subsStatusFlow.collectAsState()
         val store by storeFlow.collectAsState()
         val ruleSummary by ruleSummaryFlow.collectAsState()
 
@@ -109,92 +117,226 @@ fun useControlPage(): ScaffoldExt {
                 .padding(contentPadding)
         ) {
             if (writeSecureSettings) {
-                TextSwitch(
+                PageItemCard(
+                    imageVector = Icons.Default.Memory,
                     title = "服务状态",
                     subtitle = if (a11yRunning) "无障碍服务正在运行" else "无障碍服务已关闭",
-                    checked = a11yRunning,
-                    onCheckedChange = {
-                        switchA11yService()
-                    })
+                    rightContent = {
+                        Switch(
+                            checked = a11yRunning,
+                            onCheckedChange = throttle<Boolean> {
+                                switchA11yService()
+                            },
+                        )
+                    }
+                )
             }
             if (!writeSecureSettings && !a11yRunning) {
-                AuthCard(
+                PageItemCard(
+                    imageVector = Icons.Default.Memory,
                     title = "无障碍授权",
-                    desc = if (a11yBroken) "服务故障,请重新授权" else "授权使无障碍服务运行",
-                    onAuthClick = {
-                        navController.toDestinationsNavigator().navigate(AuthA11YPageDestination)
-                    })
+                    subtitle = if (a11yBroken) "服务故障,请重新授权" else "授权使无障碍服务运行",
+                    rightContent = {
+                        OutlinedButton(onClick = throttle {
+                            navController.toDestinationsNavigator()
+                                .navigate(AuthA11YPageDestination)
+                        }) {
+                            Text(text = "授权")
+                        }
+                    }
+                )
             }
 
-            TextSwitch(
+            PageItemCard(
+                imageVector = Icons.Outlined.Notifications,
                 title = "常驻通知",
                 subtitle = "显示运行状态及统计数据",
-                checked = manageRunning && store.enableStatusService,
-                onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
-                    if (it) {
-                        requiredPermission(context, notificationState)
-                        storeFlow.value = store.copy(
-                            enableStatusService = true
-                        )
-                        ManageService.start()
-                    } else {
-                        storeFlow.value = store.copy(
-                            enableStatusService = false
-                        )
-                        ManageService.stop()
-                    }
-                })
+                rightContent = {
+                    Switch(
+                        checked = manageRunning && store.enableStatusService,
+                        onCheckedChange = throttle(fn = vm.viewModelScope.launchAsFn<Boolean> {
+                            if (it) {
+                                requiredPermission(context, notificationState)
+                                storeFlow.value = store.copy(
+                                    enableStatusService = true
+                                )
+                                ManageService.start()
+                            } else {
+                                storeFlow.value = store.copy(
+                                    enableStatusService = false
+                                )
+                                ManageService.stop()
+                            }
+                        }),
+                    )
+                }
+            )
 
-            SettingItem(
+            Card(
+                modifier = Modifier
+                    .padding(itemHorizontalPadding, 4.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = surfaceCardColors,
+                onClick = {}
+            ) {
+                IconTextCard(
+                    imageVector = Icons.Outlined.Equalizer
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "数据概览",
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        val usedSubsItemCount by vm.usedSubsItemCountFlow.collectAsState()
+                        AnimatedVisibility(usedSubsItemCount > 0) {
+                            Text(
+                                text = "已开启 $usedSubsItemCount 条订阅",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = itemVerticalPadding + 8.dp,
+                        )
+                ) {
+                    val latestRecordDesc by vm.latestRecordDescFlow.collectAsState()
+                    val subsStatus by vm.subsStatusFlow.collectAsState()
+                    AnimatedVisibility(subsStatus.isNotEmpty()) {
+                        Text(
+                            text = subsStatus,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    AnimatedVisibility(latestRecordDesc != null) {
+                        Text(
+                            text = "最近点击: $latestRecordDesc",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(itemVerticalPadding))
+                }
+            }
+
+            PageItemCard(
                 title = "触发记录",
                 subtitle = "规则误触可定位关闭",
+                imageVector = Icons.Default.History,
                 onClick = {
-                    navController.toDestinationsNavigator().navigate(ActionLogPageDestination)
+                    navController.toDestinationsNavigator()
+                        .navigate(ActionLogPageDestination)
                 }
             )
 
             if (store.enableActivityLog) {
-                SettingItem(
+                PageItemCard(
                     title = "界面记录",
                     subtitle = "记录打开的应用及界面",
+                    imageVector = Icons.Outlined.Layers,
                     onClick = {
-                        navController.toDestinationsNavigator().navigate(ActivityLogPageDestination)
+                        navController.toDestinationsNavigator()
+                            .navigate(ActivityLogPageDestination)
                     }
                 )
             }
 
-            if (ruleSummary.slowGroupCount > 0) {
-                SettingItem(
+            AnimatedVisibility(ruleSummary.slowGroupCount > 0) {
+                PageItemCard(
                     title = "缓慢查询",
                     subtitle = "存在 ${ruleSummary.slowGroupCount} 条记录",
+                    imageVector = Icons.Outlined.Eco,
                     onClick = {
-                        navController.toDestinationsNavigator().navigate(SlowGroupPageDestination)
+                        navController.toDestinationsNavigator()
+                            .navigate(SlowGroupPageDestination)
                     }
                 )
             }
-            HorizontalDivider(modifier = Modifier.padding(horizontal = itemHorizontalPadding))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .itemPadding()
-            ) {
-                Text(
-                    text = subsStatus,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                if (latestRecordDesc != null) {
-                    Text(
-                        text = "最近点击: $latestRecordDesc",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
 
+            PageItemCard(
+                title = "了解 GKD",
+                subtitle = "查阅规则文档和常见问题",
+                imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                onClick = {
+                    openUri(HOME_PAGE_URL)
+                }
+            )
             Spacer(modifier = Modifier.height(EmptyHeight))
         }
+    }
+}
+
+
+@Composable
+private fun PageItemCard(
+    imageVector: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit = {},
+    rightContent: @Composable (() -> Unit)? = null,
+) {
+    Card(
+        modifier = Modifier
+            .padding(itemHorizontalPadding, 4.dp)
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = surfaceCardColors,
+        onClick = throttle(fn = onClick)
+    ) {
+        IconTextCard(
+            imageVector = imageVector,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (rightContent != null) {
+                Spacer(Modifier.width(8.dp))
+                rightContent.invoke()
+            }
+        }
+    }
+}
+
+@Composable
+private fun IconTextCard(
+    imageVector: ImageVector,
+    content: @Composable () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(itemVerticalPadding),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = imageVector,
+            contentDescription = null,
+            modifier = Modifier
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .padding(8.dp)
+                .size(24.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.width(itemHorizontalPadding))
+        content()
     }
 }
