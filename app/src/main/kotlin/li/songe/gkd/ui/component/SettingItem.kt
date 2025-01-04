@@ -1,7 +1,6 @@
 package li.songe.gkd.ui.component
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,20 +26,23 @@ fun SettingItem(
     subtitle: String? = null,
     suffix: String? = null,
     onSuffixClick: (() -> Unit)? = null,
-    imageVector: ImageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-    onClick: () -> Unit,
+    imageVector: ImageVector? = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+    onClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier
-            .clickable(
-                onClick = throttle(fn = onClick)
-            )
+            .let {
+                if (onClick != null) {
+                    it.clickable(onClick = throttle(fn = onClick))
+                } else {
+                    it
+                }
+            }
             .fillMaxWidth()
             .itemPadding(),
-        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = if (imageVector != null) Modifier.weight(1f) else Modifier.fillMaxWidth()) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
@@ -72,6 +74,8 @@ fun SettingItem(
                 }
             }
         }
-        Icon(imageVector = imageVector, contentDescription = title)
+        if (imageVector != null) {
+            Icon(imageVector = imageVector, contentDescription = title)
+        }
     }
 }

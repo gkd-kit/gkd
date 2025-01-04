@@ -18,7 +18,6 @@ class ActionLogVm : ViewModel() {
 
     val pagingDataFlow = Pager(PagingConfig(pageSize = 100)) { DbSet.actionLogDao.pagingSource() }
         .flow
-        .cachedIn(viewModelScope)
         .combine(subsIdToRawFlow) { pagingData, subsIdToRaw ->
             pagingData.map { c ->
                 val group = if (c.groupType == SubsConfig.AppGroupType) {
@@ -37,6 +36,7 @@ class ActionLogVm : ViewModel() {
                 Tuple3(c, group, rule)
             }
         }
+        .cachedIn(viewModelScope)
 
     val actionLogCountFlow =
         DbSet.actionLogDao.count().stateIn(viewModelScope, SharingStarted.Eagerly, 0)

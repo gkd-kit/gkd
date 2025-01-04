@@ -36,7 +36,7 @@ fun AuthCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(8.dp))
         OutlinedButton(onClick = throttle(fn = onAuthClick)) {
             Text(text = "授权")
         }

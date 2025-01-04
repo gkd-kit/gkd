@@ -79,7 +79,7 @@ fun SubsItemCard(
             containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.primaryContainer
             } else {
-                Color.Unspecified
+                MaterialTheme.colorScheme.surfaceContainer
             }
         ),
     ) {

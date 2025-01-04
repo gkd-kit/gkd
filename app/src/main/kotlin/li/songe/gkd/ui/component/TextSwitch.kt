@@ -63,7 +63,7 @@ fun TextSwitch(
                 }
             }
         }
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(8.dp))
         Switch(
             checked = checked,
             enabled = enabled,

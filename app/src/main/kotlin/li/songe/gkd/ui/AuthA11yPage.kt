@@ -50,6 +50,7 @@ import li.songe.gkd.shizuku.execCommandForResult
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
+import li.songe.gkd.ui.style.surfaceCardColors
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.launchAsFn
@@ -102,7 +103,8 @@ fun AuthA11yPage() {
                 modifier = Modifier
                     .padding(itemHorizontalPadding, 0.dp)
                     .fillMaxWidth(),
-                onClick = { }
+                onClick = { },
+                colors = surfaceCardColors,
             ) {
                 Text(
                     modifier = Modifier.padding(cardHorizontalPadding, 8.dp),
@@ -153,7 +155,8 @@ fun AuthA11yPage() {
                 modifier = Modifier
                     .padding(itemHorizontalPadding, 0.dp)
                     .fillMaxWidth(),
-                onClick = { }
+                onClick = { },
+                colors = surfaceCardColors,
             ) {
                 Text(
                     modifier = Modifier.padding(cardHorizontalPadding, 8.dp),
@@ -203,7 +206,8 @@ fun AuthA11yPage() {
                     modifier = Modifier
                         .padding(itemHorizontalPadding, 0.dp)
                         .fillMaxWidth(),
-                    onClick = { }
+                    onClick = { },
+                    colors = surfaceCardColors,
                 ) {
                     Text(
                         modifier = Modifier.padding(cardHorizontalPadding, 8.dp),

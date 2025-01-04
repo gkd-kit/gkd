@@ -71,6 +71,7 @@ import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.UpdateChannelOption
 import li.songe.gkd.util.buildLogFile
 import li.songe.gkd.util.checkUpdate
+import li.songe.gkd.util.copyText
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.format
 import li.songe.gkd.util.launchAsFn
@@ -253,6 +254,7 @@ fun AboutPage() {
                     text = REPOSITORY_URL,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.clickable(onClick = throttle { copyText(REPOSITORY_URL) }),
                 )
 
             }
@@ -272,6 +274,7 @@ fun AboutPage() {
                     text = ISSUES_URL,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.clickable(onClick = throttle { copyText(ISSUES_URL) }),
                 )
             }
             if (META.updateEnabled) {
