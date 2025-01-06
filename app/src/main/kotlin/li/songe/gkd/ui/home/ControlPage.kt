@@ -218,7 +218,7 @@ fun useControlPage(): ScaffoldExt {
                     }
                     AnimatedVisibility(latestRecordDesc != null) {
                         Text(
-                            text = "最近点击: $latestRecordDesc",
+                            text = "最近触发: $latestRecordDesc",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
