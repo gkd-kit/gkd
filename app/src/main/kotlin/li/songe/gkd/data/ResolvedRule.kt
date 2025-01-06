@@ -197,11 +197,11 @@ sealed class ResolvedRule(
 sealed class RuleStatus(val name: String) {
     data object StatusOk : RuleStatus("ok")
     data object Status1 : RuleStatus("达到最大执行次数")
-    data object Status2 : RuleStatus("需要提前点击某个规则")
+    data object Status2 : RuleStatus("需要提前触发某个规则")
     data object Status3 : RuleStatus("处于匹配延迟")
     data object Status4 : RuleStatus("超出匹配时间")
     data object Status5 : RuleStatus("处于冷却时间")
-    data object Status6 : RuleStatus("处于点击延迟")
+    data object Status6 : RuleStatus("处于触发延迟")
 
     val ok: Boolean
         get() = this === StatusOk
