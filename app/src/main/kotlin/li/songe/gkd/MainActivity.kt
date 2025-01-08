@@ -54,6 +54,7 @@ import li.songe.gkd.ui.component.SubsSheet
 import li.songe.gkd.ui.theme.AppTheme
 import li.songe.gkd.util.EditGithubCookieDlg
 import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.UpgradeDialog
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.componentName
@@ -263,7 +264,7 @@ private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Boolean>) {
                 } else {
                     TextButton(onClick = {
                         stateFlow.value = false
-                        openUri("https://gkd.li?r=4")
+                        openUri(ShortUrlSet.URL4)
                     }) {
                         Text(text = "去下载")
                     }

@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.data.Value
+import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.throttle
@@ -90,7 +91,7 @@ class InputSubsLinkOption {
                     ) {
                         Text(text = if (initValue.isNotEmpty()) "修改订阅" else "添加订阅")
                         IconButton(onClick = throttle {
-                            openUri("https://gkd.li?r=5")
+                            openUri(ShortUrlSet.URL5)
                         }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Outlined.HelpOutline,

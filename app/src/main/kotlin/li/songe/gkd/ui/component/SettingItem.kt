@@ -55,7 +55,7 @@ fun SettingItem(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Spacer(modifier = Modifier.width(2.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = suffix,
                             style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline),

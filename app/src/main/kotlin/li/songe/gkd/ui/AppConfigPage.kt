@@ -61,6 +61,7 @@ import li.songe.gkd.data.ResolvedGroup
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.style.EmptyHeight
@@ -112,11 +113,9 @@ fun AppConfigPage(appId: String) {
                     )
                 }
             }, title = {
-                Text(
-                    text = appInfo?.name ?: appId,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis,
+                AppNameText(
+                    appInfo = appInfo,
+                    appId = appId
                 )
             }, actions = {
                 IconButton(onClick = {

@@ -2,6 +2,9 @@ package li.songe.gkd.ui.home
 
 import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +26,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Eco
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -55,6 +59,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dylanc.activityresult.launcher.launchForResult
+import com.ramcosta.composedestinations.generated.destinations.SlowGroupPageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -69,7 +75,9 @@ import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
+import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
+import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.UpdateTimeOption
 import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.findOption
@@ -77,6 +85,7 @@ import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.openUri
+import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
@@ -93,6 +102,7 @@ val subsNav = BottomNavItem(
 @Composable
 fun useSubsManagePage(): ScaffoldExt {
     val context = LocalContext.current as MainActivity
+    val navController = LocalNavController.current
 
     val vm = viewModel<HomeVm>()
     val subItems by subsItemsFlow.collectAsState()
@@ -253,6 +263,22 @@ fun useSubsManagePage(): ScaffoldExt {
                         )
                     }
                 } else {
+                    val ruleSummary by ruleSummaryFlow.collectAsState()
+                    AnimatedVisibility(
+                        visible = ruleSummary.slowGroupCount > 0,
+                        enter = scaleIn(),
+                        exit = scaleOut(),
+                    ) {
+                        IconButton(onClick = throttle {
+                            navController.toDestinationsNavigator()
+                                .navigate(SlowGroupPageDestination)
+                        }) {
+                            Icon(
+                                imageVector = Icons.Outlined.Eco,
+                                contentDescription = null,
+                            )
+                        }
+                    }
                     IconButton(onClick = throttle {
                         if (storeFlow.value.enableMatch) {
                             toast("暂停规则匹配")
@@ -448,7 +474,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                                         text = "查看耗电说明",
                                                         modifier = Modifier.clickable(
                                                             onClick = throttle(
-                                                                fn = { openUri("https://gkd.li?r=6") }
+                                                                fn = { openUri(ShortUrlSet.URL6) }
                                                             )
                                                         ),
                                                         textDecoration = TextDecoration.Underline,

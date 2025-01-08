@@ -1,27 +1,31 @@
 package android.content.pm;
 
 import android.content.ComponentName;
+import android.content.IntentFilter;
+import android.os.Binder;
 import android.os.IBinder;
 import android.os.IInterface;
 
-import java.util.List;
-
 @SuppressWarnings("unused")
 public interface IPackageManager extends IInterface {
-    ComponentName getHomeActivities(List<ResolveInfo> outHomeCandidates);
-
-    void setComponentEnabledSetting(ComponentName componentName, int newState, int flags, int userId);
 
     ApplicationInfo getApplicationInfo(String packageName, long flags, int userId);
 
     PackageInfo getPackageInfo(String packageName, long flags, int userId);
 
-    void grantRuntimePermission(String packageName, String permName, int user);
+    ParceledListSlice<PackageInfo> getInstalledPackages(int flags, int userId);
 
-    abstract class Stub {
+    ParceledListSlice<PackageInfo> getInstalledPackages(long flags, int userId);
 
-        public static IPackageManager asInterface(IBinder obj) {
-            throw new RuntimeException("Stub!");
+    ParceledListSlice<IntentFilter> getAllIntentFilters(String packageName);
+
+    ActivityInfo getActivityInfo(ComponentName component, int flags) throws PackageManager.NameNotFoundException;
+
+    void grantRuntimePermission(String packageName, String permName, int userId);
+
+    abstract class Stub extends Binder implements IPackageManager {
+        public static IPackageManager asInterface(IBinder binder) {
+            throw new IllegalArgumentException("Stub!");
         }
     }
 }

@@ -18,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Memory
-import androidx.compose.material.icons.outlined.Eco
 import androidx.compose.material.icons.outlined.Equalizer
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Layers
@@ -49,7 +48,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SlowGroupPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import li.songe.gkd.MainActivity
 import li.songe.gkd.a11yServiceEnabledFlow
@@ -68,7 +66,6 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openUri
-import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 
@@ -102,7 +99,6 @@ fun useControlPage(): ScaffoldExt {
         }
     ) { contentPadding ->
         val store by storeFlow.collectAsState()
-        val ruleSummary by ruleSummaryFlow.collectAsState()
 
         val a11yRunning by A11yService.isRunning.collectAsState()
         val manageRunning by ManageService.isRunning.collectAsState()
@@ -245,18 +241,6 @@ fun useControlPage(): ScaffoldExt {
                     onClick = {
                         navController.toDestinationsNavigator()
                             .navigate(ActivityLogPageDestination)
-                    }
-                )
-            }
-
-            AnimatedVisibility(ruleSummary.slowGroupCount > 0) {
-                PageItemCard(
-                    title = "缓慢查询",
-                    subtitle = "存在 ${ruleSummary.slowGroupCount} 条记录",
-                    imageVector = Icons.Outlined.Eco,
-                    onClick = {
-                        navController.toDestinationsNavigator()
-                            .navigate(SlowGroupPageDestination)
                     }
                 )
             }

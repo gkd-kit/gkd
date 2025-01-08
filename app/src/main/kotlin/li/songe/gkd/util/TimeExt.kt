@@ -54,22 +54,20 @@ data class ThrottleTimer(
 private val defaultThrottleTimer by lazy { ThrottleTimer() }
 
 fun throttle(
-    timer: ThrottleTimer = defaultThrottleTimer,
     fn: (() -> Unit),
 ): (() -> Unit) {
     return {
-        if (timer.expired()) {
+        if (defaultThrottleTimer.expired()) {
             fn.invoke()
         }
     }
 }
 
 fun <T> throttle(
-    timer: ThrottleTimer = defaultThrottleTimer,
     fn: ((T) -> Unit),
 ): ((T) -> Unit) {
     return {
-        if (timer.expired()) {
+        if (defaultThrottleTimer.expired()) {
             fn.invoke(it)
         }
     }

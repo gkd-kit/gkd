@@ -4,13 +4,17 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import li.songe.gkd.META
@@ -19,7 +23,13 @@ import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.toAppInfo
 
-val appInfoCacheFlow = MutableStateFlow(emptyMap<String, AppInfo>())
+val userAppInfoMapFlow = MutableStateFlow(emptyMap<String, AppInfo>())
+val allPackageInfoMapFlow = MutableStateFlow(emptyMap<Int, List<PackageInfo>>())
+val otherUserAppInfoMapFlow = MutableStateFlow(emptyMap<String, AppInfo>())
+val appInfoCacheFlow by lazy {
+    combine(otherUserAppInfoMapFlow, userAppInfoMapFlow) { a, b -> a + b }
+        .stateIn(appScope, SharingStarted.Eagerly, emptyMap())
+}
 
 val systemAppInfoCacheFlow by lazy {
     appInfoCacheFlow.map(appScope) { c ->
@@ -84,6 +94,7 @@ private val packageReceiver by lazy {
 
 private fun getAppInfo(appId: String): AppInfo? {
     return try {
+        // flags=0 : only get basic info
         app.packageManager.getPackageInfo(appId, 0)
     } catch (_: PackageManager.NameNotFoundException) {
         null
@@ -97,7 +108,7 @@ private suspend fun updateAppInfo(appIds: Set<String>) {
     willUpdateAppIds.update { it - appIds }
     updateAppMutex.withLock {
         LogUtils.d("updateAppInfo", appIds)
-        val newMap = appInfoCacheFlow.value.toMutableMap()
+        val newMap = userAppInfoMapFlow.value.toMutableMap()
         appIds.forEach { appId ->
             val info = getAppInfo(appId)
             if (info != null) {
@@ -106,27 +117,24 @@ private suspend fun updateAppInfo(appIds: Set<String>) {
                 newMap.remove(appId)
             }
         }
-        appInfoCacheFlow.value = newMap
+        userAppInfoMapFlow.value = newMap
     }
 }
 
-
-suspend fun initOrResetAppInfoCache() {
-    if (updateAppMutex.mutex.isLocked) return
+suspend fun initOrResetAppInfoCache() = updateAppMutex.withLock {
     LogUtils.d("initOrResetAppInfoCache start")
-    updateAppMutex.withLock {
-        val oldAppIds = appInfoCacheFlow.value.keys
-        val appMap = appInfoCacheFlow.value.toMutableMap()
-        withContext(Dispatchers.IO) {
-            app.packageManager.getInstalledPackages(0).forEach { packageInfo ->
+    val oldAppIds = userAppInfoMapFlow.value.keys
+    val appMap = userAppInfoMapFlow.value.toMutableMap()
+    withContext(Dispatchers.IO) {
+        app.packageManager.getInstalledPackages(0)
+            .forEach { packageInfo ->
                 if (!oldAppIds.contains(packageInfo.packageName)) {
                     appMap[packageInfo.packageName] = packageInfo.toAppInfo()
                 }
             }
-        }
-        appInfoCacheFlow.value = appMap
     }
-    LogUtils.d("initOrResetAppInfoCache end")
+    userAppInfoMapFlow.value = appMap
+    LogUtils.d("initOrResetAppInfoCache end ${oldAppIds.size}->${appMap.size}")
 }
 
 fun initAppState() {
