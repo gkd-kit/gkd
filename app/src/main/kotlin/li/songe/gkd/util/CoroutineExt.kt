@@ -19,7 +19,7 @@ fun CoroutineScope.launchTry(
     } catch (e: CancellationException) {
         e.printStackTrace()
     } catch (_: InterruptRuleMatchException) {
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
         e.printStackTrace()
         LogUtils.d(e)
         Toaster.show(e.message ?: e.stackTraceToString())
@@ -37,7 +37,7 @@ fun CoroutineScope.launchAsFn(
                 block()
             } catch (e: CancellationException) {
                 e.printStackTrace()
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 e.printStackTrace()
                 Toaster.show(e.message ?: e.stackTraceToString())
             }
@@ -56,7 +56,7 @@ fun <T> CoroutineScope.launchAsFn(
                 block(it)
             } catch (e: CancellationException) {
                 e.printStackTrace()
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 e.printStackTrace()
                 Toaster.show(e.message ?: e.stackTraceToString())
             }

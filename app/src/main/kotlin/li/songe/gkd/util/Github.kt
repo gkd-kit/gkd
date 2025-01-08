@@ -162,7 +162,7 @@ fun EditGithubCookieDlg(showEditCookieDlgFlow: MutableStateFlow<Boolean>) {
                 ) {
                     Text(text = "Github Cookie")
                     IconButton(onClick = throttle {
-                        openUri("https://gkd.li?r=1")
+                        openUri(ShortUrlSet.URL1)
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.HelpOutline,

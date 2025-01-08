@@ -29,6 +29,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -50,6 +51,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -309,16 +311,18 @@ fun useAppListPage(): ScaffoldExt {
                                 .padding(4.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    val colHeight =
+                        (MaterialTheme.typography.bodyMedium.lineHeight.value + LocalTextStyle.current.lineHeight.value).dp
                     Column(
                         modifier = Modifier
-                            .padding(2.dp)
-                            .fillMaxHeight()
+                            .height(colHeight)
                             .weight(1f),
+                        verticalArrangement = Arrangement.Center
                     ) {
                         AppNameText(appInfo = appInfo)
                         val appGroups = ruleSummary.appIdToAllGroups[appInfo.id] ?: emptyList()
-
                         val appDesc = if (appGroups.isNotEmpty()) {
                             when (val disabledCount = appGroups.count { g -> !g.enable }) {
                                 0 -> {
@@ -336,7 +340,6 @@ fun useAppListPage(): ScaffoldExt {
                         } else {
                             null
                         }
-
                         val desc = if (globalDesc != null) {
                             if (appDesc != null) {
                                 "$globalDesc/$appDesc"
@@ -346,18 +349,14 @@ fun useAppListPage(): ScaffoldExt {
                         } else {
                             appDesc
                         }
-
                         if (desc != null) {
                             Text(
                                 text = desc,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        } else {
-                            Text(
-                                text = "暂无规则",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                softWrap = false
                             )
                         }
                     }

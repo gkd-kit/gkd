@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import li.songe.gkd.META
 import li.songe.gkd.appScope
 
@@ -70,6 +69,7 @@ data class Store(
     val hideSnapshotStatusBar: Boolean = false,
     val enableShizukuActivity: Boolean = false,
     val enableShizukuClick: Boolean = false,
+    val enableShizukuWorkProfile: Boolean = false,
     val log2FileSwitch: Boolean = true,
     val enableDarkTheme: Boolean? = null,
     val enableDynamicColor: Boolean = true,

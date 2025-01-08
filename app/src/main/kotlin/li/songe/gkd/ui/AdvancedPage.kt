@@ -58,6 +58,7 @@ import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDe
 import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.appScope
 import li.songe.gkd.debug.FloatingService
@@ -69,6 +70,7 @@ import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.shizuku.shizukuCheckActivity
 import li.songe.gkd.shizuku.shizukuCheckUserService
+import li.songe.gkd.shizuku.shizukuCheckWorkProfile
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
@@ -78,6 +80,7 @@ import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
+import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.storeFlow
@@ -404,7 +407,7 @@ fun AdvancedPage() {
                 subtitle = "生成快照/日志链接",
                 suffix = "获取教程",
                 onSuffixClick = {
-                    openUri("https://gkd.li?r=1")
+                    openUri(ShortUrlSet.URL1)
                 },
                 imageVector = Icons.Outlined.Edit,
                 onClick = {
@@ -469,8 +472,10 @@ fun AdvancedPage() {
 private fun ShizukuFragment(enabled: Boolean = true) {
     val store by storeFlow.collectAsState()
     TextSwitch(
-        title = "Shizuku-界面识别",
+        title = "界面识别",
         subtitle = "更准确识别界面ID",
+        suffix = "使用说明",
+        onSuffixClick = { openUri(ShortUrlSet.URL7) },
         checked = store.enableShizukuActivity,
         enabled = enabled,
         onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {
@@ -482,14 +487,14 @@ private fun ShizukuFragment(enabled: Boolean = true) {
                 }
                 toast("已启用")
             }
-            storeFlow.value = store.copy(
-                enableShizukuActivity = it
-            )
+            storeFlow.update { s -> s.copy(enableShizukuActivity = it) }
         })
 
     TextSwitch(
-        title = "Shizuku-模拟点击",
-        subtitle = "变更 clickCenter 为强制模拟点击",
+        title = "强制点击",
+        subtitle = "执行强制模拟点击",
+        suffix = "使用说明",
+        onSuffixClick = { openUri(ShortUrlSet.URL8) },
         checked = store.enableShizukuClick,
         enabled = enabled,
         onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {
@@ -501,10 +506,27 @@ private fun ShizukuFragment(enabled: Boolean = true) {
                 }
                 toast("已启用")
             }
-            storeFlow.value = store.copy(
-                enableShizukuClick = it
-            )
+            storeFlow.update { s -> s.copy(enableShizukuClick = it) }
+        })
 
+
+    TextSwitch(
+        title = "工作空间",
+        subtitle = "扩展工作空间应用列表",
+        suffix = "使用说明",
+        onSuffixClick = { openUri(ShortUrlSet.URL9) },
+        checked = store.enableShizukuWorkProfile,
+        enabled = enabled,
+        onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {
+            if (it) {
+                toast("检测中")
+                if (!shizukuCheckWorkProfile()) {
+                    toast("检测失败,无法使用")
+                    return@launchAsFn
+                }
+                toast("已启用")
+            }
+            storeFlow.update { s -> s.copy(enableShizukuWorkProfile = it) }
         })
 
 }

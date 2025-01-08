@@ -13,10 +13,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import kotlin.math.sin
 
 @Composable
-fun RotatingLoadingIcon(loading: Boolean) {
+fun RotatingLoadingIcon(
+    loading: Boolean,
+    imageVector: ImageVector = Icons.Default.Autorenew,
+    modifier: Modifier= Modifier
+) {
     val rotation = remember { Animatable(0f) }
     LaunchedEffect(loading) {
         if (loading) {
@@ -45,9 +50,9 @@ fun RotatingLoadingIcon(loading: Boolean) {
         }
     }
     Icon(
-        imageVector = Icons.Default.Autorenew,
+        imageVector = imageVector,
         contentDescription = null,
-        modifier = Modifier.graphicsLayer(rotationZ = rotation.value)
+        modifier = modifier.graphicsLayer(rotationZ = rotation.value)
     )
 }
 

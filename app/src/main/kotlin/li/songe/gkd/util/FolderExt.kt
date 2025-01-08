@@ -2,11 +2,10 @@ package li.songe.gkd.util
 
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ZipUtils
-import kotlinx.serialization.encodeToString
 import li.songe.gkd.app
 import java.io.File
 
-private val filesDir by lazy {
+val filesDir by lazy {
     app.getExternalFilesDir(null) ?: app.filesDir
 }
 val dbFolder by lazy { filesDir.resolve("db") }

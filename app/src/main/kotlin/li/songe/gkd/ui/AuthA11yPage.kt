@@ -53,6 +53,7 @@ import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
+import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openA11ySettings
 import li.songe.gkd.util.openUri
@@ -141,7 +142,7 @@ fun AuthA11yPage() {
                         modifier = Modifier
                             .padding(cardHorizontalPadding, 0.dp)
                             .clickable {
-                                openUri("https://gkd.li?r=2")
+                                openUri(ShortUrlSet.URL2)
                             },
                         text = "无法开启无障碍?",
                         style = MaterialTheme.typography.bodySmall,
@@ -230,7 +231,7 @@ fun AuthA11yPage() {
                         modifier = Modifier
                             .padding(cardHorizontalPadding, 0.dp)
                             .clickable {
-                                openUri("https://gkd.li?r=2")
+                                openUri(ShortUrlSet.URL2)
                             },
                         text = "其他方式解除限制",
                         style = MaterialTheme.typography.bodySmall,
@@ -264,7 +265,7 @@ fun AuthA11yPage() {
                     Text(
                         modifier = Modifier
                             .clickable {
-                                openUri("https://gkd.li?r=3")
+                                openUri(ShortUrlSet.URL3)
                             },
                         text = "运行后授权失败?",
                         style = MaterialTheme.typography.bodySmall,

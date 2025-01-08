@@ -19,6 +19,8 @@ data class AppInfo(
     val isSystem: Boolean,
     val mtime: Long,
     val hidden: Boolean,
+    // null=0
+    val userId: Int? = null,
 )
 
 val selfAppInfo by lazy {
@@ -28,8 +30,10 @@ val selfAppInfo by lazy {
 /**
  * 平均单次调用时间 11ms
  */
-fun PackageInfo.toAppInfo(): AppInfo {
-    val info = applicationInfo
+fun PackageInfo.toAppInfo(
+    userId: Int? = null,
+    hidden: Boolean? = null,
+): AppInfo {
     return AppInfo(
         id = packageName,
         versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -40,9 +44,10 @@ fun PackageInfo.toAppInfo(): AppInfo {
         },
         versionName = versionName,
         mtime = lastUpdateTime,
-        hidden = app.packageManager.getLaunchIntentForPackage(packageName) == null,
-        name = info?.run { loadLabel(app.packageManager).toString() } ?: packageName,
-        icon = info?.loadIcon(app.packageManager),
-        isSystem = info?.run { (ApplicationInfo.FLAG_SYSTEM and flags) != 0 } ?: false,
+        isSystem = applicationInfo?.let { it.flags and ApplicationInfo.FLAG_SYSTEM != 0 } ?: false,
+        name = applicationInfo?.run { loadLabel(app.packageManager).toString() } ?: packageName,
+        icon = applicationInfo?.loadIcon(app.packageManager),
+        userId = userId,
+        hidden = hidden ?: (app.packageManager.getLaunchIntentForPackage(packageName) == null),
     )
 }

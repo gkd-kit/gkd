@@ -9,6 +9,7 @@ import androidx.core.content.ContextCompat
 import com.hjq.permissions.OnPermissionCallback
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.updateAndGet
 import li.songe.gkd.app
@@ -18,6 +19,7 @@ import li.songe.gkd.util.initOrResetAppInfoCache
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mayQueryPkgNoAccessFlow
 import li.songe.gkd.util.toast
+import li.songe.gkd.util.updateAppMutex
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -185,8 +187,8 @@ fun updatePermissionState() {
         writeSecureSettingsState,
         shizukuOkState,
     ).forEach { it.updateAndGet() }
-    if (canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet() || mayQueryPkgNoAccessFlow.value) {
-        appScope.launchTry {
+    if (!updateAppMutex.mutex.isLocked && (canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet() || mayQueryPkgNoAccessFlow.value)) {
+        appScope.launchTry(Dispatchers.IO) {
             initOrResetAppInfoCache()
         }
     }

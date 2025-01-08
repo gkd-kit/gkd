@@ -16,3 +16,15 @@ const val LOCAL_HTTP_SUBS_ID = -1L
 val LOCAL_SUBS_IDS = arrayOf(LOCAL_SUBS_ID, LOCAL_HTTP_SUBS_ID)
 
 const val EMPTY_RULE_TIP = "暂无规则"
+
+object ShortUrlSet {
+    const val URL1 = "https://gkd.li?r=1"
+    const val URL2 = "https://gkd.li?r=2"
+    const val URL3 = "https://gkd.li?r=3"
+    const val URL4 = "https://gkd.li?r=4"
+    const val URL5 = "https://gkd.li?r=5"
+    const val URL6 = "https://gkd.li?r=6"
+    const val URL7 = "https://gkd.li?r=7"
+    const val URL8 = "https://gkd.li?r=8"
+    const val URL9 = "https://gkd.li?r=9"
+}
