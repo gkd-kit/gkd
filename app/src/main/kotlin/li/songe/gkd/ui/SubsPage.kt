@@ -1,5 +1,6 @@
 package li.songe.gkd.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,8 +45,10 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.blankj.utilcode.util.KeyboardUtils
 import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -115,6 +118,9 @@ fun SubsPage(
         if (showSearchBar && searchStr.isEmpty()) {
             focusRequester.requestFocus()
         }
+        if (!showSearchBar) {
+            vm.searchStrFlow.value = ""
+        }
     })
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     var expanded by remember { mutableStateOf(false) }
@@ -146,6 +152,14 @@ fun SubsPage(
                 }
             }, title = {
                 if (showSearchBar) {
+                    val softwareKeyboardController = LocalSoftwareKeyboardController.current
+                    BackHandler {
+                        if (KeyboardUtils.isSoftInputVisible(context)) {
+                            softwareKeyboardController?.hide()
+                        } else {
+                            showSearchBar = false
+                        }
+                    }
                     AppBarTextField(
                         value = searchStr,
                         onValueChange = { newValue -> vm.searchStrFlow.value = newValue.trim() },
@@ -175,61 +189,61 @@ fun SubsPage(
                     }) {
                         Icon(Icons.Outlined.Search, contentDescription = null)
                     }
-                    IconButton(onClick = { expanded = true }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Sort, contentDescription = null
+                }
+                IconButton(onClick = { expanded = true }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Sort, contentDescription = null
+                    )
+                }
+                Box(
+                    modifier = Modifier.wrapContentSize(Alignment.TopStart)
+                ) {
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        Text(
+                            text = "排序",
+                            modifier = Modifier.menuPadding(),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
                         )
-                    }
-                    Box(
-                        modifier = Modifier.wrapContentSize(Alignment.TopStart)
-                    ) {
-                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                            Text(
-                                text = "排序",
-                                modifier = Modifier.menuPadding(),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                            SortTypeOption.allSubObject.forEach { sortOption ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(sortOption.label)
-                                    },
-                                    trailingIcon = {
-                                        RadioButton(
-                                            selected = sortType == sortOption,
-                                            onClick = {
-                                                storeFlow.update { s -> s.copy(subsAppSortType = sortOption.value) }
-                                            })
-                                    },
-                                    onClick = {
-                                        storeFlow.update { s -> s.copy(subsAppSortType = sortOption.value) }
-                                    },
-                                )
-                            }
-                            Text(
-                                text = "选项",
-                                modifier = Modifier.menuPadding(),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
+                        SortTypeOption.allSubObject.forEach { sortOption ->
                             DropdownMenuItem(
                                 text = {
-                                    Text("显示未安装应用")
+                                    Text(sortOption.label)
                                 },
                                 trailingIcon = {
-                                    Checkbox(checked = showUninstallApp, onCheckedChange = {
-                                        storeFlow.update { s -> s.copy(subsAppShowUninstallApp = it) }
-                                    })
+                                    RadioButton(
+                                        selected = sortType == sortOption,
+                                        onClick = {
+                                            storeFlow.update { s -> s.copy(subsAppSortType = sortOption.value) }
+                                        })
                                 },
                                 onClick = {
-                                    storeFlow.update { s -> s.copy(subsAppShowUninstallApp = !showUninstallApp) }
+                                    storeFlow.update { s -> s.copy(subsAppSortType = sortOption.value) }
                                 },
                             )
                         }
+                        Text(
+                            text = "选项",
+                            modifier = Modifier.menuPadding(),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text("显示未安装应用")
+                            },
+                            trailingIcon = {
+                                Checkbox(checked = showUninstallApp, onCheckedChange = {
+                                    storeFlow.update { s -> s.copy(subsAppShowUninstallApp = it) }
+                                })
+                            },
+                            onClick = {
+                                storeFlow.update { s -> s.copy(subsAppShowUninstallApp = !showUninstallApp) }
+                            },
+                        )
                     }
-
                 }
+
             })
         },
         floatingActionButton = {

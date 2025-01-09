@@ -158,3 +158,10 @@ class MainViewModel : ViewModel() {
         }
     }
 }
+
+//private fun saveObjectClass(clazz: KClass<*>) {
+//    val declaredFunctionText = clazz.declaredFunctions.map {
+//        "${it.name}\n(${it.parameters.joinToString { p -> "${p.name}:${p.type}" }}):${it.returnType}"
+//    }.joinToString("\n\n")
+//    filesDir.resolve("object_class.txt").writeText(declaredFunctionText)
+//}

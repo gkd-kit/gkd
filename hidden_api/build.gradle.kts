@@ -26,6 +26,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.annotation)
     annotationProcessor(libs.rikka.processor)
     compileOnly(libs.rikka.annotation)
 }

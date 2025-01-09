@@ -258,9 +258,6 @@ private fun A11yService.useMatchRule() {
         }
         val activityRule = getAndUpdateCurrentRules()
         if (activityRule.skipMatch) {
-            if (META.debuggable) {
-                Log.d("queryEvents", "没有规则或者禁用匹配")
-            }
             // 如果当前应用没有规则/暂停匹配, 则不去调用获取事件节点避免阻塞
             return@launchQuery checkFutureJob()
         }
@@ -414,7 +411,7 @@ private fun A11yService.useMatchRule() {
         val evActivityId = a11yEvent.className
         val oldAppId = topActivityFlow.value.appId
         val rightAppId = if (oldAppId == evAppId) {
-            oldAppId
+            evAppId
         } else {
             getAppIdByCache(a11yEvent) ?: return@launchEvent
         }
@@ -448,7 +445,7 @@ private fun A11yService.useMatchRule() {
         if (rightAppId != topActivityFlow.value.appId) {
             // 从 锁屏,下拉通知栏 返回等情况, 应用不会发送事件, 但是系统组件会发送事件
             val shizukuTop = safeGetTopActivity()
-            if (shizukuTop?.appId == rightAppId) {
+            if (shizukuTop != null) {
                 updateTopActivity(shizukuTop)
             } else {
                 updateTopActivity(TopActivity(rightAppId))
@@ -465,10 +462,23 @@ private fun A11yService.useMatchRule() {
         newQueryTask(a11yEvent)
     }
 
-    val skipAppId = "com.android.systemui"
     onA11yEvent { event ->
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED && skipAppId == event.packageName.toString()) {
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED && event.packageName == "com.android.systemui") {
             return@onA11yEvent
+        }
+//        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+//            && event.packageName == defaultInputAppId
+//            && event.className == "android.inputmethodservice.SoftInputWindow"
+//        ) {
+//            return@onA11yEvent
+//        }
+        if (event.packageName == defaultInputAppId && topActivityFlow.value.appId != defaultInputAppId) {
+            if (event.className == "android.inputmethodservice.SoftInputWindow") {
+                return@onA11yEvent
+            }
+            if (event.recordCount == 0 && event.action == 0 && !event.isFullScreen) {
+                return@onA11yEvent
+            }
         }
         // AccessibilityEvent 的 clear 方法会在后续时间被 某些系统 调用导致内部数据丢失, 导致异步子线程获取到的数据不一致
         val a11yEvent = event.toA11yEvent() ?: return@onA11yEvent

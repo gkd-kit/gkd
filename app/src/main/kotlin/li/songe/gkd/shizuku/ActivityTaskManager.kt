@@ -5,16 +5,20 @@ import android.app.IActivityTaskManager
 import android.view.Display
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import li.songe.gkd.appScope
 import li.songe.gkd.data.DeviceInfo
 import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.TopActivity
+import li.songe.gkd.service.topActivityFlow
+import li.songe.gkd.service.updateTopActivity
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
 import rikka.shizuku.ShizukuBinderWrapper
@@ -66,8 +70,16 @@ private fun IActivityTaskManager.compatGetTasks(maxNum: Int = 1): List<ActivityM
 // https://github.com/gkd-kit/gkd/issues/44
 // fix java.lang.ClassNotFoundException:Didn't find class "android.app.IActivityTaskManager" on path: DexPathList
 interface SafeActivityTaskManager {
+    val value: Any
     fun compatGetTasks(maxNum: Int): List<ActivityManager.RunningTaskInfo>
     fun compatGetTasks(): List<ActivityManager.RunningTaskInfo>
+    fun registerTaskStackListener(listener: TaskListener)
+    fun unregisterTaskStackListener(listener: TaskListener)
+
+    fun getTopActivity(): TopActivity? {
+        val top = compatGetTasks().firstOrNull()?.topActivity ?: return null
+        return TopActivity(appId = top.packageName, activityId = top.className)
+    }
 }
 
 private fun newActivityTaskManager(): SafeActivityTaskManager? {
@@ -78,8 +90,16 @@ private fun newActivityTaskManager(): SafeActivityTaskManager? {
     }
     val manager = service.let(::ShizukuBinderWrapper).let(IActivityTaskManager.Stub::asInterface)
     return object : SafeActivityTaskManager {
+        override val value = manager
         override fun compatGetTasks(maxNum: Int) = manager.compatGetTasks(maxNum)
         override fun compatGetTasks() = manager.compatGetTasks()
+        override fun registerTaskStackListener(listener: TaskListener) {
+            manager.registerTaskStackListener(listener)
+        }
+
+        override fun unregisterTaskStackListener(listener: TaskListener) {
+            manager.unregisterTaskStackListener(listener)
+        }
     }
 }
 
@@ -89,11 +109,26 @@ private val shizukuActivityUsedFlow by lazy {
     }.stateIn(appScope, SharingStarted.Eagerly, false)
 }
 
-private val activityTaskManagerFlow by lazy<StateFlow<SafeActivityTaskManager?>> {
+private val taskListener by lazy {
+    TaskListener(onStackChanged = {
+        safeGetTopActivity()?.let {
+            appScope.launchTry(A11yService.eventThread) {
+                delay(200)
+                if (topActivityFlow.value != it) {
+                    updateTopActivity(it)
+                }
+            }
+        }
+    })
+}
+
+val activityTaskManagerFlow by lazy<StateFlow<SafeActivityTaskManager?>> {
     val stateFlow = MutableStateFlow<SafeActivityTaskManager?>(null)
-    appScope.launch(Dispatchers.IO) {
+    appScope.launchTry(Dispatchers.IO) {
         shizukuActivityUsedFlow.collect {
+            stateFlow.value?.unregisterTaskStackListener(taskListener)
             stateFlow.value = if (it) newActivityTaskManager() else null
+            stateFlow.value?.registerTaskStackListener(taskListener)
         }
     }
     stateFlow
@@ -101,7 +136,7 @@ private val activityTaskManagerFlow by lazy<StateFlow<SafeActivityTaskManager?>>
 
 fun shizukuCheckActivity(): Boolean {
     return (try {
-        newActivityTaskManager()?.compatGetTasks(1)?.isNotEmpty() == true
+        newActivityTaskManager()?.compatGetTasks()?.isNotEmpty() == true
     } catch (e: Throwable) {
         e.printStackTrace()
         false
@@ -111,9 +146,7 @@ fun shizukuCheckActivity(): Boolean {
 fun safeGetTopActivity(): TopActivity? {
     if (!shizukuActivityUsedFlow.value) return null
     try {
-        val taskManager = activityTaskManagerFlow.value ?: return null
-        val top = taskManager.compatGetTasks(1).lastOrNull()?.topActivity ?: return null
-        return TopActivity(appId = top.packageName, activityId = top.className)
+        return activityTaskManagerFlow.value?.getTopActivity()
     } catch (e: Throwable) {
         e.printStackTrace()
         return null

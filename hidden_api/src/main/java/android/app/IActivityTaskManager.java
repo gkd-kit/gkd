@@ -17,6 +17,9 @@ public interface IActivityTaskManager extends IInterface {
     // https://github.com/gkd-kit/gkd/issues/58#issuecomment-1732245703
     List<ActivityManager.RunningTaskInfo> getTasks(int maxNum);
 
+    void registerTaskStackListener(ITaskStackListener listener);
+    void unregisterTaskStackListener(ITaskStackListener listener);
+
     abstract class Stub extends Binder implements IActivityTaskManager {
         public static IActivityTaskManager asInterface(IBinder obj) {
             throw new RuntimeException("Stub!");

@@ -1,9 +1,9 @@
 package li.songe.gkd.shizuku
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.os.IUserManager
-import androidx.annotation.RequiresApi
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +26,7 @@ private fun IUserManager.compatGetUsers(
             getUsers(excludeDying)
         } catch (e: NoSuchFieldError) {
             LogUtils.d(e)
-            @RequiresApi(Build.VERSION_CODES.R)
+            @SuppressLint("NewApi")
             getUsers(excludePartial, excludeDying, excludePreCreated)
         }
     }).map {

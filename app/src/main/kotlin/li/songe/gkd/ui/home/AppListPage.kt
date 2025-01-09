@@ -139,7 +139,7 @@ fun useAppListPage(): ScaffoldExt {
             }
             TopAppBar(scrollBehavior = scrollBehavior, title = {
                 if (showSearchBar) {
-                    BackHandler(searchStr.isEmpty()) {
+                    BackHandler {
                         if (KeyboardUtils.isSoftInputVisible(context)) {
                             softwareKeyboardController?.hide()
                         } else {
@@ -188,85 +188,86 @@ fun useAppListPage(): ScaffoldExt {
                             contentDescription = null
                         )
                     }
-                    IconButton(onClick = {
-                        expanded = true
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Sort,
-                            contentDescription = null
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .wrapContentSize(Alignment.TopStart)
+                }
+                IconButton(onClick = {
+                    expanded = true
+                }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Sort,
+                        contentDescription = null
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .wrapContentSize(Alignment.TopStart)
+                ) {
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
                     ) {
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            Text(
-                                text = "排序",
-                                modifier = Modifier.menuPadding(),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                            SortTypeOption.allSubObject.forEach { sortOption ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(sortOption.label)
-                                    },
-                                    trailingIcon = {
-                                        RadioButton(selected = sortType == sortOption,
-                                            onClick = {
-                                                storeFlow.update { s -> s.copy(sortType = sortOption.value) }
-                                            }
-                                        )
-                                    },
-                                    onClick = {
-                                        storeFlow.update { s -> s.copy(sortType = sortOption.value) }
-                                    },
-                                )
-                            }
-                            Text(
-                                text = "选项",
-                                modifier = Modifier.menuPadding(),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
+                        Text(
+                            text = "排序",
+                            modifier = Modifier.menuPadding(),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        SortTypeOption.allSubObject.forEach { sortOption ->
                             DropdownMenuItem(
                                 text = {
-                                    Text("显示系统应用")
+                                    Text(sortOption.label)
                                 },
                                 trailingIcon = {
-                                    Checkbox(
-                                        checked = showSystemApp,
-                                        onCheckedChange = {
-                                            storeFlow.update { s -> s.copy(showSystemApp = !showSystemApp) }
+                                    RadioButton(selected = sortType == sortOption,
+                                        onClick = {
+                                            storeFlow.update { s -> s.copy(sortType = sortOption.value) }
                                         }
                                     )
                                 },
                                 onClick = {
-                                    storeFlow.update { s -> s.copy(showSystemApp = !showSystemApp) }
-                                },
-                            )
-                            DropdownMenuItem(
-                                text = {
-                                    Text("显示隐藏应用")
-                                },
-                                trailingIcon = {
-                                    Checkbox(
-                                        checked = showHiddenApp,
-                                        onCheckedChange = {
-                                            storeFlow.update { s -> s.copy(showHiddenApp = !s.showHiddenApp) }
-                                        })
-                                },
-                                onClick = {
-                                    storeFlow.update { s -> s.copy(showHiddenApp = !showHiddenApp) }
+                                    storeFlow.update { s -> s.copy(sortType = sortOption.value) }
                                 },
                             )
                         }
+                        Text(
+                            text = "选项",
+                            modifier = Modifier.menuPadding(),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text("显示系统应用")
+                            },
+                            trailingIcon = {
+                                Checkbox(
+                                    checked = showSystemApp,
+                                    onCheckedChange = {
+                                        storeFlow.update { s -> s.copy(showSystemApp = !showSystemApp) }
+                                    }
+                                )
+                            },
+                            onClick = {
+                                storeFlow.update { s -> s.copy(showSystemApp = !showSystemApp) }
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text("显示隐藏应用")
+                            },
+                            trailingIcon = {
+                                Checkbox(
+                                    checked = showHiddenApp,
+                                    onCheckedChange = {
+                                        storeFlow.update { s -> s.copy(showHiddenApp = !s.showHiddenApp) }
+                                    })
+                            },
+                            onClick = {
+                                storeFlow.update { s -> s.copy(showHiddenApp = !showHiddenApp) }
+                            },
+                        )
                     }
                 }
+
             })
         }
     ) { contentPadding ->

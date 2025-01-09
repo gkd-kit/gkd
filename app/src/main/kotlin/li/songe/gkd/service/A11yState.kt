@@ -1,5 +1,7 @@
 package li.songe.gkd.service
 
+import android.content.ComponentName
+import android.provider.Settings
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +19,7 @@ import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.isActivityVisible
+import li.songe.gkd.shizuku.activityTaskManagerFlow
 import li.songe.gkd.util.RuleSummary
 import li.songe.gkd.util.actionCountFlow
 import li.songe.gkd.util.getDefaultLauncherActivity
@@ -44,6 +47,10 @@ private val activityLogMutex by lazy { Mutex() }
 private var activityLogCount = 0
 private var lastActivityChangeTime = 0L
 fun updateTopActivity(topActivity: TopActivity) {
+    if (topActivity.activityId == null && activityTaskManagerFlow.value != null && topActivity.appId == launcherAppId) {
+        // 无障碍 appId 改变速度慢于系统 activity 栈变化
+        return
+    }
     val isSameActivity = topActivityFlow.value.sameAs(topActivity)
     if (isSameActivity) {
         if (topActivityFlow.value.number == topActivity.number) {
@@ -193,6 +200,15 @@ val launcherAppId: String
 
 fun updateLauncherAppId() {
     launcherActivity = app.packageManager.getDefaultLauncherActivity()
+}
+
+var defaultInputAppId = ""
+fun updateDefaultInputAppId() {
+    Settings.Secure.getString(app.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)?.let {
+        ComponentName.unflattenFromString(it)?.let { comp ->
+            defaultInputAppId = comp.packageName
+        }
+    }
 }
 
 val clickLogMutex by lazy { Mutex() }
