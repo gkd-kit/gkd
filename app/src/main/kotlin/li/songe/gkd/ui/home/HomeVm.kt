@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.appScope
+import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.actionCountFlow
@@ -31,15 +32,23 @@ class HomeVm : ViewModel() {
         latestRecordFlow, subsIdToRawFlow, appInfoCacheFlow
     ) { latestRecord, subsIdToRaw, appInfoCache ->
         if (latestRecord == null) return@combine null
-        val groupName =
+        val isAppRule = latestRecord.groupType == SubsConfig.AppGroupType
+        val groupName = if (isAppRule) {
             subsIdToRaw[latestRecord.subsId]?.apps?.find { a -> a.id == latestRecord.appId }?.groups?.find { g -> g.key == latestRecord.groupKey }?.name
+        } else {
+            subsIdToRaw[latestRecord.subsId]?.globalGroups?.find { g -> g.key == latestRecord.groupKey }?.name
+        }
         val appName = appInfoCache[latestRecord.appId]?.name
         val appShowName = appName ?: latestRecord.appId
         if (groupName != null) {
-            if (groupName.contains(appShowName)) {
+            if (groupName.startsWith(appShowName)) {
                 groupName
             } else {
-                "$appShowName-$groupName"
+                if (isAppRule) {
+                    "$appShowName/$groupName"
+                } else {
+                    "$groupName/$appShowName"
+                }
             }
         } else {
             appShowName
