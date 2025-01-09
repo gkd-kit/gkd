@@ -1,5 +1,6 @@
 package li.songe.gkd.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,14 +55,18 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.blankj.utilcode.util.KeyboardUtils
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.flow.update
+import li.songe.gkd.MainActivity
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
@@ -89,6 +94,7 @@ import li.songe.gkd.util.toast
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
+    val context = LocalContext.current as MainActivity
     val navController = LocalNavController.current
     val vm = viewModel<GlobalRuleExcludeVm>()
     val rawSubs = vm.rawSubsFlow.collectAsState().value
@@ -110,6 +116,9 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
     LaunchedEffect(key1 = showSearchBar, block = {
         if (showSearchBar && searchStr.isEmpty()) {
             focusRequester.requestFocus()
+        }
+        if (!showSearchBar) {
+            vm.searchStrFlow.value = ""
         }
     })
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -137,6 +146,14 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
             }
         }, title = {
             if (showSearchBar) {
+                val softwareKeyboardController = LocalSoftwareKeyboardController.current
+                BackHandler {
+                    if (KeyboardUtils.isSoftInputVisible(context)) {
+                        softwareKeyboardController?.hide()
+                    } else {
+                        showSearchBar = false
+                    }
+                }
                 AppBarTextField(
                     value = searchStr,
                     onValueChange = { newValue -> vm.searchStrFlow.value = newValue.trim() },
@@ -171,85 +188,85 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                 }) {
                     Icon(Icons.Outlined.Edit, contentDescription = null)
                 }
-
-                IconButton(onClick = {
-                    expanded = true
-                }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Sort,
-                        contentDescription = null
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .wrapContentSize(Alignment.TopStart)
+            }
+            IconButton(onClick = {
+                expanded = true
+            }) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Sort,
+                    contentDescription = null
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .wrapContentSize(Alignment.TopStart)
+            ) {
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
                 ) {
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        Text(
-                            text = "排序",
-                            modifier = Modifier.menuPadding(),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        SortTypeOption.allSubObject.forEach { sortOption ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(sortOption.label)
-                                },
-                                trailingIcon = {
-                                    RadioButton(selected = sortType == sortOption,
-                                        onClick = {
-                                            storeFlow.update { it.copy(subsExcludeSortType = sortOption.value) }
-                                        }
-                                    )
-                                },
-                                onClick = {
-                                    storeFlow.update { it.copy(subsExcludeSortType = sortOption.value) }
-                                },
-                            )
-                        }
-                        Text(
-                            text = "选项",
-                            modifier = Modifier.menuPadding(),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
+                    Text(
+                        text = "排序",
+                        modifier = Modifier.menuPadding(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    SortTypeOption.allSubObject.forEach { sortOption ->
                         DropdownMenuItem(
                             text = {
-                                Text("显示系统应用")
+                                Text(sortOption.label)
                             },
                             trailingIcon = {
-                                Checkbox(
-                                    checked = showSystemApp,
-                                    onCheckedChange = {
-                                        storeFlow.update { it.copy(subsExcludeShowSystemApp = !it.subsExcludeShowSystemApp) }
-                                    })
+                                RadioButton(selected = sortType == sortOption,
+                                    onClick = {
+                                        storeFlow.update { it.copy(subsExcludeSortType = sortOption.value) }
+                                    }
+                                )
                             },
                             onClick = {
-                                storeFlow.update { it.copy(subsExcludeShowSystemApp = !it.subsExcludeShowSystemApp) }
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Text("显示隐藏应用")
-                            },
-                            trailingIcon = {
-                                Checkbox(
-                                    checked = showHiddenApp,
-                                    onCheckedChange = {
-                                        storeFlow.update { it.copy(subsExcludeShowHiddenApp = !it.subsExcludeShowHiddenApp) }
-                                    })
-                            },
-                            onClick = {
-                                storeFlow.update { it.copy(subsExcludeShowHiddenApp = !it.subsExcludeShowHiddenApp) }
+                                storeFlow.update { it.copy(subsExcludeSortType = sortOption.value) }
                             },
                         )
                     }
+                    Text(
+                        text = "选项",
+                        modifier = Modifier.menuPadding(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Text("显示系统应用")
+                        },
+                        trailingIcon = {
+                            Checkbox(
+                                checked = showSystemApp,
+                                onCheckedChange = {
+                                    storeFlow.update { it.copy(subsExcludeShowSystemApp = !it.subsExcludeShowSystemApp) }
+                                })
+                        },
+                        onClick = {
+                            storeFlow.update { it.copy(subsExcludeShowSystemApp = !it.subsExcludeShowSystemApp) }
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Text("显示隐藏应用")
+                        },
+                        trailingIcon = {
+                            Checkbox(
+                                checked = showHiddenApp,
+                                onCheckedChange = {
+                                    storeFlow.update { it.copy(subsExcludeShowHiddenApp = !it.subsExcludeShowHiddenApp) }
+                                })
+                        },
+                        onClick = {
+                            storeFlow.update { it.copy(subsExcludeShowHiddenApp = !it.subsExcludeShowHiddenApp) }
+                        },
+                    )
                 }
             }
+
         })
     }, content = { contentPadding ->
         LazyColumn(

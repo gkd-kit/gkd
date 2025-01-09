@@ -187,7 +187,8 @@ fun updatePermissionState() {
         writeSecureSettingsState,
         shizukuOkState,
     ).forEach { it.updateAndGet() }
-    if (!updateAppMutex.mutex.isLocked && (canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet() || mayQueryPkgNoAccessFlow.value)) {
+    val stateChanged = canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet()
+    if (!updateAppMutex.mutex.isLocked && (stateChanged || mayQueryPkgNoAccessFlow.value)) {
         appScope.launchTry(Dispatchers.IO) {
             initOrResetAppInfoCache()
         }

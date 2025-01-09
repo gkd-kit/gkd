@@ -1,6 +1,5 @@
 package li.songe.gkd
 
-import android.app.Activity
 import android.app.Application
 import android.content.ComponentName
 import android.content.Context
@@ -8,7 +7,6 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.database.ContentObserver
 import android.os.Build
-import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
 import com.blankj.utilcode.util.LogUtils
@@ -97,35 +95,6 @@ class App : Application() {
             META,
         )
         initFolder()
-        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
-            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-                LogUtils.d("onActivityCreated", activity, savedInstanceState)
-            }
-
-            override fun onActivityStarted(activity: Activity) {
-                LogUtils.d("onActivityStarted", activity)
-            }
-
-            override fun onActivityResumed(activity: Activity) {
-                LogUtils.d("onActivityResumed", activity)
-            }
-
-            override fun onActivityPaused(activity: Activity) {
-                LogUtils.d("onActivityPaused", activity)
-            }
-
-            override fun onActivityStopped(activity: Activity) {
-                LogUtils.d("onActivityStopped", activity)
-            }
-
-            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
-                LogUtils.d("onActivitySaveInstanceState", activity, outState)
-            }
-
-            override fun onActivityDestroyed(activity: Activity) {
-                LogUtils.d("onActivityDestroyed", activity)
-            }
-        })
         app.contentResolver.registerContentObserver(
             Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),
             false,

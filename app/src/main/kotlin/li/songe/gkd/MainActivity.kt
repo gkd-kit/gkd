@@ -47,6 +47,7 @@ import li.songe.gkd.permission.updatePermissionState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.service.fixRestartService
+import li.songe.gkd.service.updateDefaultInputAppId
 import li.songe.gkd.service.updateLauncherAppId
 import li.songe.gkd.ui.component.BuildDialog
 import li.songe.gkd.ui.component.ShareDataDialog
@@ -187,6 +188,8 @@ fun syncFixState() {
         syncStateMutex.withLock {
             // 每次切换页面更新记录桌面 appId
             updateLauncherAppId()
+
+            updateDefaultInputAppId()
 
             // 在某些机型由于未知原因创建失败, 在此保证每次界面切换都能重新检测创建
             initFolder()

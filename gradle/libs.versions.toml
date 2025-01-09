@@ -37,6 +37,7 @@ androidx_appcompat = "androidx.appcompat:appcompat:1.7.0"
 androidx_core_ktx = "androidx.core:core-ktx:1.15.0"
 androidx_lifecycle_runtime_ktx = "androidx.lifecycle:lifecycle-runtime-ktx:2.8.7"
 androidx_junit = "androidx.test.ext:junit:1.2.1"
+androidx_annotation = "androidx.annotation:annotation:1.9.1"
 androidx_espresso = "androidx.test.espresso:espresso-core:3.6.1"
 androidx_room_runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx_room_compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
