@@ -56,7 +56,6 @@ import li.songe.gkd.MainActivity
 import li.songe.gkd.data.deleteSubscription
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
-import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.checkSubsUpdate
@@ -122,7 +121,7 @@ fun SubsSheet(
             val childModifier = remember {
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = itemHorizontalPadding, vertical = itemVerticalPadding / 2)
+                    .padding(horizontal = itemHorizontalPadding, vertical = 8.dp)
             }
             Column(
                 modifier = Modifier
@@ -138,16 +137,34 @@ fun SubsSheet(
                     modifier = childModifier
                 )
                 if (subscription != null) {
-                    if (!subsItem.isLocal) {
+                    Column(
+                        modifier = childModifier
+                    ) {
                         Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = childModifier
                         ) {
-                            Column {
-                                Text(
-                                    text = "作者",
-                                    style = MaterialTheme.typography.labelLarge,
-                                )
+                            Text(
+                                text = "作者",
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                            Text(
+                                text = "v${subscription.version}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier
+                                    .clip(MaterialTheme.shapes.extraSmall)
+                                    .background(MaterialTheme.colorScheme.tertiaryContainer)
+                                    .padding(horizontal = 2.dp),
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            if (!subsItem.isLocal) {
                                 Text(
                                     text = subscription.author ?: "未知",
                                     style = MaterialTheme.typography.labelMedium,
@@ -162,48 +179,19 @@ fun SubsSheet(
                                     softWrap = false,
                                     overflow = TextOverflow.Ellipsis,
                                 )
-                            }
-                            Column(
-                                horizontalAlignment = Alignment.End
-                            ) {
+                            } else {
                                 Text(
-                                    text = "v${subscription.version}",
+                                    text = META.appName,
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.tertiary,
-                                    modifier = Modifier
-                                        .clip(MaterialTheme.shapes.extraSmall)
-                                        .background(MaterialTheme.colorScheme.tertiaryContainer)
-                                        .padding(horizontal = 2.dp),
+                                    color = MaterialTheme.colorScheme.secondary,
                                 )
                             }
-                        }
-                    } else {
-                        Column(
-                            modifier = childModifier
-                        ) {
                             Text(
-                                text = "作者",
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                            Text(
-                                text = META.appName,
+                                text = subsItem.mtimeStr,
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.secondary,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                    }
-                    Column(
-                        modifier = childModifier
-                    ) {
-                        Text(
-                            text = "更新时间",
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                        Text(
-                            text = subsItem.mtimeStr,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
                     }
                     if (subscription.globalGroups.isNotEmpty() || subsItem.isLocal) {
                         Row(
