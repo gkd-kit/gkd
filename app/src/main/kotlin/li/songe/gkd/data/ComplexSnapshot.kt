@@ -1,11 +1,7 @@
 package li.songe.gkd.data
 
-import com.blankj.utilcode.util.ScreenUtils
 import kotlinx.serialization.Serializable
 import li.songe.gkd.app
-import li.songe.gkd.service.A11yService
-import li.songe.gkd.service.getAndUpdateCurrentRules
-import li.songe.gkd.service.safeActiveWindow
 
 @Serializable
 data class ComplexSnapshot(
@@ -31,26 +27,6 @@ data class ComplexSnapshot(
 
     val nodes: List<NodeInfo>,
 ) : BaseSnapshot
-
-
-fun createComplexSnapshot(): ComplexSnapshot {
-    val currentAbNode = A11yService.instance?.safeActiveWindow
-    val appId = currentAbNode?.packageName?.toString()
-    val currentActivityId = getAndUpdateCurrentRules().topActivity.activityId
-
-    return ComplexSnapshot(
-        id = System.currentTimeMillis(),
-
-        appId = appId,
-        activityId = currentActivityId,
-
-        screenHeight = ScreenUtils.getScreenHeight(),
-        screenWidth = ScreenUtils.getScreenWidth(),
-        isLandscape = ScreenUtils.isLandscape(),
-
-        nodes = info2nodeList(currentAbNode)
-    )
-}
 
 fun ComplexSnapshot.toSnapshot(): Snapshot {
     return Snapshot(

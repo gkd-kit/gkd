@@ -44,7 +44,10 @@ import li.songe.gkd.data.ActivityLog
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
+import li.songe.gkd.ui.component.FixedTimeText
+import li.songe.gkd.ui.component.LocalNumberCharWidth
 import li.songe.gkd.ui.component.StartEllipsisText
+import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
@@ -66,6 +69,7 @@ fun ActivityLogPage() {
     val logCount by vm.logCountFlow.collectAsState()
     val list = vm.pagingDataFlow.collectAsLazyPagingItems()
 
+    val timeTextWidth = measureNumberTextWidth(MaterialTheme.typography.bodySmall)
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         TopAppBar(
@@ -111,7 +115,11 @@ fun ActivityLogPage() {
             ) { i ->
                 val actionLog = list[i] ?: return@items
                 val lastActionLog = if (i > 0) list[i - 1] else null
-                ActivityLogCard(i = i, actionLog = actionLog, lastActionLog = lastActionLog)
+                CompositionLocalProvider(
+                    LocalNumberCharWidth provides timeTextWidth
+                ) {
+                    ActivityLogCard(i = i, actionLog = actionLog, lastActionLog = lastActionLog)
+                }
             }
             item {
                 Spacer(modifier = Modifier.height(EmptyHeight))
@@ -159,7 +167,7 @@ private fun ActivityLogCard(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
+                FixedTimeText(
                     text = actionLog.date,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.secondary,

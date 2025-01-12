@@ -68,7 +68,10 @@ import li.songe.gkd.data.switch
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
+import li.songe.gkd.ui.component.FixedTimeText
+import li.songe.gkd.ui.component.LocalNumberCharWidth
 import li.songe.gkd.ui.component.StartEllipsisText
+import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
@@ -115,6 +118,7 @@ fun ActionLogPage() {
             setPreviewConfigFlow(MutableStateFlow(null))
         }
     })
+    val timeTextWidth = measureNumberTextWidth(MaterialTheme.typography.bodySmall)
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
@@ -159,14 +163,18 @@ fun ActionLogPage() {
             ) { i ->
                 val item = actionDataItems[i] ?: return@items
                 val lastItem = if (i > 0) actionDataItems[i - 1] else null
-                ActionLogCard(
-                    i = i,
-                    item = item,
-                    lastItem = lastItem,
-                    onClick = {
-                        previewActionLog = item.t0
-                    }
-                )
+                CompositionLocalProvider(
+                    LocalNumberCharWidth provides timeTextWidth
+                ) {
+                    ActionLogCard(
+                        i = i,
+                        item = item,
+                        lastItem = lastItem,
+                        onClick = {
+                            previewActionLog = item.t0
+                        }
+                    )
+                }
             }
             item {
                 Spacer(modifier = Modifier.height(EmptyHeight))
@@ -360,7 +368,7 @@ private fun ActionLogCard(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
+                FixedTimeText(
                     text = actionLog.date,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.secondary,

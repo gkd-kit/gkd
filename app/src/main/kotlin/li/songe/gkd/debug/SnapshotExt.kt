@@ -1,6 +1,7 @@
 package li.songe.gkd.debug
 
 import android.graphics.Bitmap
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.core.graphics.set
 import com.blankj.utilcode.util.BarUtils
 import com.blankj.utilcode.util.LogUtils
@@ -12,15 +13,16 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.serialization.encodeToString
 import li.songe.gkd.data.ComplexSnapshot
 import li.songe.gkd.data.RpcError
-import li.songe.gkd.data.createComplexSnapshot
+import li.songe.gkd.data.info2nodeList
 import li.songe.gkd.data.toSnapshot
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.notif.notify
 import li.songe.gkd.notif.snapshotNotif
 import li.songe.gkd.service.A11yService
+import li.songe.gkd.service.getAndUpdateCurrentRules
+import li.songe.gkd.service.safeActiveWindow
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.keepNullJson
 import li.songe.gkd.util.snapshotFolder
@@ -83,20 +85,40 @@ object SnapshotExt {
 
     private val captureLoading = MutableStateFlow(false)
 
+    private fun createComplexSnapshot(rootNode: AccessibilityNodeInfo): ComplexSnapshot {
+        val currentActivityId = getAndUpdateCurrentRules().topActivity.activityId
+
+        return ComplexSnapshot(
+            id = System.currentTimeMillis(),
+
+            appId = rootNode.packageName.toString(),
+            activityId = currentActivityId,
+
+            screenHeight = ScreenUtils.getScreenHeight(),
+            screenWidth = ScreenUtils.getScreenWidth(),
+            isLandscape = ScreenUtils.isLandscape(),
+
+            nodes = info2nodeList(rootNode)
+        )
+    }
+
     suspend fun captureSnapshot(skipScreenshot: Boolean = false): ComplexSnapshot {
         if (!A11yService.isRunning.value) {
-            throw RpcError("无障碍不可用")
+            throw RpcError("无障碍不可用,请先授权")
         }
         if (captureLoading.value) {
             throw RpcError("正在保存快照,不可重复操作")
         }
         captureLoading.value = true
-        if (storeFlow.value.showSaveSnapshotToast) {
-            toast("正在保存快照...")
-        }
-
         try {
-            val snapshotDef = coroutineScope { async(Dispatchers.IO) { createComplexSnapshot() } }
+            val rootNode =
+                A11yService.instance?.safeActiveWindow
+                    ?: throw RpcError("当前应用没有无障碍信息,捕获失败")
+            if (storeFlow.value.showSaveSnapshotToast) {
+                toast("正在保存快照...")
+            }
+            val snapshotDef =
+                coroutineScope { async(Dispatchers.IO) { createComplexSnapshot(rootNode) } }
             val bitmapDef = coroutineScope {// TODO 也许在分屏模式下可能需要处理
                 async(Dispatchers.IO) {
                     if (skipScreenshot) {
