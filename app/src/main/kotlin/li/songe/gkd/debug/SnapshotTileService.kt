@@ -35,14 +35,13 @@ class SnapshotTileService : TileService() {
                 return System.currentTimeMillis() - startTime > 3000L
             }
 
-            val timeoutText = "没有检测到界面切换,捕获失败"
             while (true) {
                 val latestAppId = service.safeActiveWindowAppId
                 if (latestAppId == null) {
                     // https://github.com/gkd-kit/gkd/issues/713
                     delay(250)
                     if (timeout()) {
-                        toast(timeoutText)
+                        toast("当前应用没有无障碍信息,捕获失败")
                         break
                     }
                 } else if (latestAppId != oldAppId) {
@@ -60,7 +59,7 @@ class SnapshotTileService : TileService() {
                     service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
                     delay(500)
                     if (timeout()) {
-                        toast(timeoutText)
+                        toast("未检测到界面切换,捕获失败")
                         break
                     }
                 }

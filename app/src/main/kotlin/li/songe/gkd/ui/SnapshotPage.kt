@@ -1,10 +1,14 @@
 package li.songe.gkd.ui
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,11 +30,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -56,9 +62,14 @@ import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.permission.canWriteExternalStorage
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.ui.component.EmptyText
+import li.songe.gkd.ui.component.FixedTimeText
+import li.songe.gkd.ui.component.LocalNumberCharWidth
 import li.songe.gkd.ui.component.StartEllipsisText
+import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.ui.style.itemHorizontalPadding
+import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.IMPORT_SHORT_URL
 import li.songe.gkd.util.LocalNavController
@@ -83,6 +94,8 @@ fun SnapshotPage() {
     var selectedSnapshot by remember {
         mutableStateOf<Snapshot?>(null)
     }
+
+    val timeTextWidth = measureNumberTextWidth(MaterialTheme.typography.bodySmall)
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
@@ -124,44 +137,15 @@ fun SnapshotPage() {
             modifier = Modifier.scaffoldPadding(contentPadding),
         ) {
             items(snapshots, { it.id }) { snapshot ->
-                if (snapshot.id != snapshots.firstOrNull()?.id) {
-                    HorizontalDivider()
-                }
-                Column(modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        selectedSnapshot = snapshot
-                    }
-                    .padding(10.dp)) {
-                    Row {
-                        Text(
-                            text = snapshot.date,
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = snapshot.appName ?: snapshot.appId ?: snapshot.id.toString(),
-                            overflow = TextOverflow.Ellipsis,
-                            maxLines = 1,
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    val showActivityId = if (snapshot.activityId != null) {
-                        if (snapshot.appId != null && snapshot.activityId.startsWith(
-                                snapshot.appId
-                            )
-                        ) {
-                            snapshot.activityId.substring(snapshot.appId.length)
-                        } else {
-                            snapshot.activityId
+                CompositionLocalProvider(
+                    LocalNumberCharWidth provides timeTextWidth
+                ) {
+                    SnapshotCard(
+                        snapshot = snapshot,
+                        onClick = {
+                            selectedSnapshot = snapshot
                         }
-                    } else {
-                        null
-                    }
-                    if (showActivityId != null) {
-                        StartEllipsisText(text = showActivityId)
-                    } else {
-                        Text(text = "null", color = LocalContentColor.current.copy(alpha = 0.5f))
-                    }
+                    )
                 }
             }
             item {
@@ -171,7 +155,6 @@ fun SnapshotPage() {
                 }
             }
         }
-
     })
 
     selectedSnapshot?.let { snapshotVal ->
@@ -324,4 +307,77 @@ fun SnapshotPage() {
     }
 }
 
-
+@Composable
+private fun SnapshotCard(
+    snapshot: Snapshot,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+            .padding(horizontal = itemHorizontalPadding, vertical = itemVerticalPadding / 2)
+    ) {
+        Spacer(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(2.dp)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Column(
+            modifier = Modifier.weight(1f),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                val showAppName = snapshot.appName ?: snapshot.appId
+                Text(
+                    text = showAppName ?: "无障碍缺失",
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1,
+                    softWrap = false,
+                    color = LocalContentColor.current.let {
+                        if (showAppName == null) {
+                            it.copy(alpha = 0.5f)
+                        } else {
+                            it
+                        }
+                    }
+                )
+                FixedTimeText(
+                    text = snapshot.date,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            val showActivityId = if (snapshot.activityId != null) {
+                if (snapshot.appId != null && snapshot.activityId.startsWith(
+                        snapshot.appId
+                    )
+                ) {
+                    snapshot.activityId.substring(snapshot.appId.length)
+                } else {
+                    snapshot.activityId
+                }
+            } else {
+                null
+            }
+            if (showActivityId != null) {
+                StartEllipsisText(
+                    modifier = Modifier.height(MaterialTheme.typography.bodyMedium.lineHeight.value.dp),
+                    text = showActivityId,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            } else {
+                Text(
+                    text = "null",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.typography.bodyMedium.color.copy(alpha = 0.5f)
+                )
+            }
+        }
+    }
+}
