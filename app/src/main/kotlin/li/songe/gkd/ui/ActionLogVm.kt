@@ -1,22 +1,31 @@
 package li.songe.gkd.ui
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import androidx.paging.map
-import kotlinx.coroutines.flow.SharingStarted
+import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.Tuple3
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.subsIdToRawFlow
 
-class ActionLogVm : ViewModel() {
+class ActionLogVm(stateHandle: SavedStateHandle) : ViewModel() {
+    private val args = ActionLogPageDestination.argsFrom(stateHandle)
 
-    val pagingDataFlow = Pager(PagingConfig(pageSize = 100)) { DbSet.actionLogDao.pagingSource() }
+    val pagingDataFlow = Pager(PagingConfig(pageSize = 100)) {
+        if (args.subsId != null) {
+            DbSet.actionLogDao.pagingSubsSource(subsId = args.subsId)
+        } else if (args.appId != null) {
+            DbSet.actionLogDao.pagingAppSource(appId = args.appId)
+        } else {
+            DbSet.actionLogDao.pagingSource()
+        }
+    }
         .flow
         .combine(subsIdToRawFlow) { pagingData, subsIdToRaw ->
             pagingData.map { c ->
@@ -37,8 +46,5 @@ class ActionLogVm : ViewModel() {
             }
         }
         .cachedIn(viewModelScope)
-
-    val actionLogCountFlow =
-        DbSet.actionLogDao.count().stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
 }

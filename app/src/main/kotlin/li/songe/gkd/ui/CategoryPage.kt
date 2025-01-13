@@ -105,7 +105,7 @@ fun CategoryPage(subsItemId: Long) {
         }, title = {
             TowLineText(
                 title = subsRaw?.name ?: subsItemId.toString(),
-                subTitle = "规则类别"
+                subtitle = "规则类别"
             )
         }, actions = {
             IconButton(onClick = throttle {

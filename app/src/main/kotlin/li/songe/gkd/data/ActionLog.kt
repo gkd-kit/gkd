@@ -60,11 +60,23 @@ data class ActionLog(
         @Query("DELETE FROM action_log")
         suspend fun deleteAll()
 
+        @Query("DELETE FROM action_log WHERE subs_id=:subsId")
+        suspend fun deleteSubsAll(subsId: Long)
+
+        @Query("DELETE FROM action_log WHERE app_id=:appId")
+        suspend fun deleteAppAll(appId: String)
+
         @Query("SELECT * FROM action_log ORDER BY id DESC LIMIT 1000")
         fun query(): Flow<List<ActionLog>>
 
         @Query("SELECT * FROM action_log ORDER BY id DESC ")
         fun pagingSource(): PagingSource<Int, ActionLog>
+
+        @Query("SELECT * FROM action_log WHERE subs_id=:subsId ORDER BY id DESC ")
+        fun pagingSubsSource(subsId: Long): PagingSource<Int, ActionLog>
+
+        @Query("SELECT * FROM action_log WHERE app_id=:appId ORDER BY id DESC ")
+        fun pagingAppSource(appId: String): PagingSource<Int, ActionLog>
 
         @Query("SELECT COUNT(*) FROM action_log")
         fun count(): Flow<Int>

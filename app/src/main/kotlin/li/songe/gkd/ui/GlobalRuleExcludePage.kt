@@ -163,7 +163,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
             } else {
                 TowLineText(
                     title = rawSubs?.name ?: subsItemId.toString(),
-                    subTitle = (group?.name ?: groupKey.toString())
+                    subtitle = (group?.name ?: groupKey.toString())
                 )
             }
         }, actions = {

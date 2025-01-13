@@ -229,7 +229,7 @@ fun useControlPage(): ScaffoldExt {
                 imageVector = Icons.Default.History,
                 onClick = {
                     navController.toDestinationsNavigator()
-                        .navigate(ActionLogPageDestination)
+                        .navigate(ActionLogPageDestination())
                 }
             )
 

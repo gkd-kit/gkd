@@ -137,7 +137,7 @@ fun AppItemPage(
         }, title = {
             TowLineText(
                 title = subsRaw?.name ?: subsItemId.toString(),
-                subTitle = appInfoCache[appId]?.name ?: appRaw.name ?: appId
+                subtitle = appInfoCache[appId]?.name ?: appRaw.name ?: appId
             )
         }, actions = {})
     }, floatingActionButton = {
