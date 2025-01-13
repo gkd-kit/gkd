@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -50,6 +51,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AppItemPageDestination
 import com.ramcosta.composedestinations.generated.destinations.GlobalRulePageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
@@ -118,6 +120,15 @@ fun AppConfigPage(appId: String) {
                     appId = appId
                 )
             }, actions = {
+                IconButton(onClick = throttle {
+                    navController.toDestinationsNavigator()
+                        .navigate(ActionLogPageDestination(appId = appId))
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.History,
+                        contentDescription = null,
+                    )
+                }
                 IconButton(onClick = {
                     expanded = true
                 }) {

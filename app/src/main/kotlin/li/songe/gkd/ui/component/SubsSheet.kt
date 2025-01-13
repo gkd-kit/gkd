@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
@@ -42,6 +43,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.CategoryPageDestination
 import com.ramcosta.composedestinations.generated.destinations.CategoryPageDestination.invoke
 import com.ramcosta.composedestinations.generated.destinations.GlobalRulePageDestination
@@ -416,6 +418,14 @@ fun SubsSheet(
                     modifier = childModifier,
                     horizontalArrangement = Arrangement.End
                 ) {
+                    IconButton(onClick = throttle {
+                        setSubsId(null)
+                        sheetSubsIdFlow.value = null
+                        navController.toDestinationsNavigator()
+                            .navigate(ActionLogPageDestination(subsId = subsItem.id))
+                    }) {
+                        Icon(imageVector = Icons.Default.History, contentDescription = null)
+                    }
                     if (subscription != null || !subsItem.isLocal) {
                         IconButton(onClick = throttle {
                             context.mainVm.showShareDataIdsFlow.value = setOf(subsItem.id)

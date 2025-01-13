@@ -71,6 +71,7 @@ import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.FixedTimeText
 import li.songe.gkd.ui.component.LocalNumberCharWidth
 import li.songe.gkd.ui.component.StartEllipsisText
+import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
@@ -87,12 +88,14 @@ import li.songe.gkd.util.toast
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
-fun ActionLogPage() {
+fun ActionLogPage(
+    subsId: Long? = null,
+    appId: String? = null,
+) {
     val context = LocalContext.current as MainActivity
     val mainVm = context.mainVm
     val navController = LocalNavController.current
     val vm = viewModel<ActionLogVm>()
-    val actionLogCount by vm.actionLogCountFlow.collectAsState()
     val actionDataItems = vm.pagingDataFlow.collectAsLazyPagingItems()
 
     val subsIdToRaw by subsIdToRawFlow.collectAsState()
@@ -134,16 +137,46 @@ fun ActionLogPage() {
                     )
                 }
             },
-            title = { Text(text = "触发记录") },
+            title = {
+                val title = "触发记录"
+                if (subsId != null) {
+                    TowLineText(
+                        title = title,
+                        subtitle = subsIdToRaw[subsId]?.name ?: subsId.toString()
+                    )
+                } else if (appId != null) {
+                    TowLineText(
+                        title = title,
+                        subtitle = appId,
+                        showApp = true,
+                    )
+                } else {
+                    Text(text = title)
+                }
+            },
             actions = {
-                if (actionLogCount > 0) {
+                if (actionDataItems.itemCount > 0) {
                     IconButton(onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
+                        val text = if (subsId != null) {
+                            "确定删除当前订阅所有触发记录?"
+                        } else if (appId != null) {
+                            "确定删除当前应用所有触发记录?"
+                        } else {
+                            "确定删除所有触发记录?"
+                        }
                         mainVm.dialogFlow.waitResult(
                             title = "删除记录",
-                            text = "确定删除所有触发记录?",
+                            text = text,
                             error = true,
                         )
-                        DbSet.actionLogDao.deleteAll()
+                        if (subsId != null) {
+                            DbSet.actionLogDao.deleteSubsAll(subsId)
+                        } else if (appId != null) {
+                            DbSet.actionLogDao.deleteAppAll(appId)
+                        } else {
+                            DbSet.actionLogDao.deleteAll()
+                        }
+
                     })) {
                         Icon(
                             imageVector = Icons.Outlined.Delete,
@@ -172,13 +205,15 @@ fun ActionLogPage() {
                         lastItem = lastItem,
                         onClick = {
                             previewActionLog = item.t0
-                        }
+                        },
+                        subsId = subsId,
+                        appId = appId,
                     )
                 }
             }
             item {
                 Spacer(modifier = Modifier.height(EmptyHeight))
-                if (actionLogCount == 0 && actionDataItems.loadState.refresh !is LoadState.Loading) {
+                if (actionDataItems.itemCount == 0 && actionDataItems.loadState.refresh !is LoadState.Loading) {
                     EmptyText(text = "暂无记录")
                 }
             }
@@ -330,7 +365,9 @@ private fun ActionLogCard(
     i: Int,
     item: Tuple3<ActionLog, RawSubscription.RawGroupProps?, RawSubscription.RawRuleProps?>,
     lastItem: Tuple3<ActionLog, RawSubscription.RawGroupProps?, RawSubscription.RawRuleProps?>?,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    subsId: Long?,
+    appId: String?,
 ) {
     val context = LocalContext.current as MainActivity
     val (actionLog, group, rule) = item
@@ -348,7 +385,7 @@ private fun ActionLogCard(
                 top = verticalPadding
             )
     ) {
-        if (isDiffApp) {
+        if (isDiffApp && appId == null) {
             AppNameText(appId = actionLog.appId)
         }
         Row(
@@ -357,7 +394,9 @@ private fun ActionLogCard(
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min)
         ) {
-            Spacer(modifier = Modifier.width(2.dp))
+            if (appId == null) {
+                Spacer(modifier = Modifier.width(2.dp))
+            }
             Spacer(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -386,16 +425,18 @@ private fun ActionLogCard(
                             color = LocalContentColor.current.copy(alpha = 0.5f),
                         )
                     }
-                    Text(
-                        text = subscription?.name ?: "id=${actionLog.subsId}",
-                        modifier = Modifier.clickable(onClick = throttle {
-                            if (subsItemsFlow.value.any { it.id == actionLog.subsId }) {
-                                context.mainVm.sheetSubsIdFlow.value = actionLog.subsId
-                            } else {
-                                toast("订阅不存在")
-                            }
-                        })
-                    )
+                    if (subsId == null) {
+                        Text(
+                            text = subscription?.name ?: "id=${actionLog.subsId}",
+                            modifier = Modifier.clickable(onClick = throttle {
+                                if (subsItemsFlow.value.any { it.id == actionLog.subsId }) {
+                                    context.mainVm.sheetSubsIdFlow.value = actionLog.subsId
+                                } else {
+                                    toast("订阅不存在")
+                                }
+                            })
+                        )
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth()
                     ) {

@@ -169,7 +169,7 @@ fun SubsPage(
                 } else {
                     TowLineText(
                         title = subsRaw?.name ?: subsItemId.toString(),
-                        subTitle = "应用规则",
+                        subtitle = "应用规则",
                     )
                 }
             }, actions = {

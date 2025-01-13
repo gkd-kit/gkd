@@ -125,7 +125,7 @@ fun GlobalRulePage(subsItemId: Long, focusGroupKey: Int? = null) {
             }, title = {
                 TowLineText(
                     title = rawSubs?.name ?: subsItemId.toString(),
-                    subTitle = "全局规则"
+                    subtitle = "全局规则"
                 )
             })
         },
