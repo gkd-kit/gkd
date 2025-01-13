@@ -20,6 +20,30 @@ plugins {
 
 // https://kotlinlang.org/docs/js-project-setup.html#use-pre-installed-node-js
 rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
+    @Suppress("DEPRECATION")
     rootProject.the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension>().download =
         false
+}
+
+val normalVersionRegex by lazy { "^[0-9\\.]+".toRegex() }
+fun isSameTypeVersion(currentVersion: String, newVersion: String): Boolean {
+    if (normalVersionRegex.matches(currentVersion)) {
+        return normalVersionRegex.matches(newVersion)
+    }
+    arrayOf("alpha", "beta", "dev", "rc").forEach { v ->
+        if (currentVersion.contains(v, true)) {
+            return newVersion.contains(v, true)
+        }
+    }
+    throw IllegalArgumentException("Unknown version type: $currentVersion -> $newVersion")
+}
+tasks.withType<com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask> {
+    rejectVersionIf {
+        !isSameTypeVersion(currentVersion, candidate.version)
+    }
+}
+projectDir.resolve("./gradle/libs.versions.updates.toml").apply {
+    if (exists()) {
+        delete()
+    }
 }
