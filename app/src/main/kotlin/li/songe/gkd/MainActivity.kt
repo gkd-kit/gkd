@@ -64,6 +64,7 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.openApp
 import li.songe.gkd.util.openUri
+import li.songe.gkd.util.shizukuAppId
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
 import kotlin.reflect.KClass
@@ -241,9 +242,8 @@ private fun Activity.fixTopPadding() {
 private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Boolean>) {
     val state = stateFlow.collectAsState().value
     if (state) {
-        val appId = "moe.shizuku.privileged.api"
         val appInfoCache = appInfoCacheFlow.collectAsState().value
-        val installed = appInfoCache.contains(appId)
+        val installed = appInfoCache.contains(shizukuAppId)
         AlertDialog(
             onDismissRequest = { stateFlow.value = false },
             title = { Text(text = "授权错误") },
@@ -260,7 +260,7 @@ private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Boolean>) {
                 if (installed) {
                     TextButton(onClick = {
                         stateFlow.value = false
-                        openApp(appId)
+                        openApp(shizukuAppId)
                     }) {
                         Text(text = "打开 Shizuku")
                     }
