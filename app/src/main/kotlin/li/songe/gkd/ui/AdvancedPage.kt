@@ -5,6 +5,7 @@ import android.content.Context
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -81,8 +83,11 @@ import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.ShortUrlSet
+import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openUri
+import li.songe.gkd.util.shizukuAppId
+import li.songe.gkd.util.shizukuMiniVersionCode
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
@@ -190,12 +195,7 @@ fun AdvancedPage() {
                 .verticalScroll(rememberScrollState())
                 .padding(contentPadding),
         ) {
-            Text(
-                text = "Shizuku",
-                modifier = Modifier.titleItemPadding(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            ShizukuTitleCard()
             val shizukuOk by shizukuOkState.stateFlow.collectAsState()
             if (!shizukuOk) {
                 AuthCard(title = "Shizuku授权",
@@ -529,4 +529,47 @@ private fun ShizukuFragment(enabled: Boolean = true) {
             storeFlow.update { s -> s.copy(enableShizukuWorkProfile = it) }
         })
 
+}
+
+@Composable
+private fun ShizukuTitleCard() {
+    val context = LocalContext.current as MainActivity
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .titleItemPadding(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = "Shizuku",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        val appInfoCache by appInfoCacheFlow.collectAsState()
+        val shizukuVersionCode = appInfoCache[shizukuAppId]?.versionCode
+        if (shizukuVersionCode != null && shizukuVersionCode < shizukuMiniVersionCode) {
+            Row(
+                modifier = Modifier.clickable(onClick = throttle {
+                    context.mainVm.dialogFlow.updateDialogOptions(
+                        title = "版本过低",
+                        text = "检测到 Shizuku 版本过低, 可能影响 GKD 正常运行, 建议自行更新至最新版本后再使用",
+                    )
+                }),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.WarningAmber,
+                    contentDescription = null,
+                    modifier = Modifier.height(MaterialTheme.typography.bodySmall.fontSize.value.dp),
+                    tint = MaterialTheme.colorScheme.error,
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "版本过低",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+    }
 }
