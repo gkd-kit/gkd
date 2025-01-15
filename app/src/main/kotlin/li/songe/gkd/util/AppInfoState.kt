@@ -6,7 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import android.os.Build
+import androidx.core.content.ContextCompat
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,9 +60,15 @@ private val willUpdateAppIds by lazy { MutableStateFlow(emptySet<String>()) }
 
 private val packageReceiver by lazy {
     object : BroadcastReceiver() {
+        val actions = arrayOf(
+            Intent.ACTION_PACKAGE_ADDED,
+            Intent.ACTION_PACKAGE_REPLACED,
+            Intent.ACTION_PACKAGE_REMOVED
+        )
+
         override fun onReceive(context: Context?, intent: Intent?) {
             val appId = intent?.data?.schemeSpecificPart ?: return
-            if (intent.action == Intent.ACTION_PACKAGE_ADDED || intent.action == Intent.ACTION_PACKAGE_REPLACED || intent.action == Intent.ACTION_PACKAGE_REMOVED) {
+            if (actions.contains(intent.action)) {
                 /**
                  * 例: 小米应用商店更新应用产生连续 3个事件: PACKAGE_REMOVED->PACKAGE_ADDED->PACKAGE_REPLACED
                  * 使用 Flow + debounce 优化合并
@@ -71,24 +77,16 @@ private val packageReceiver by lazy {
             }
         }
     }.apply {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            app.registerReceiver(this, IntentFilter().apply {
-                addAction(Intent.ACTION_PACKAGE_ADDED)
-                addAction(Intent.ACTION_PACKAGE_REPLACED)
-                addAction(Intent.ACTION_PACKAGE_REMOVED)
-                addDataScheme("package")
-            }, Context.RECEIVER_EXPORTED)
-        } else {
-            app.registerReceiver(
-                this,
-                IntentFilter().apply {
-                    addAction(Intent.ACTION_PACKAGE_ADDED)
-                    addAction(Intent.ACTION_PACKAGE_REPLACED)
-                    addAction(Intent.ACTION_PACKAGE_REMOVED)
-                    addDataScheme("package")
-                },
-            )
+        val intentFilter = IntentFilter().apply {
+            actions.forEach { addAction(it) }
+            addDataScheme("package")
         }
+        ContextCompat.registerReceiver(
+            app,
+            this,
+            intentFilter,
+            ContextCompat.RECEIVER_EXPORTED
+        )
     }
 }
 
