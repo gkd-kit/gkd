@@ -229,7 +229,7 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                         )
                     }
                     Text(
-                        text = "选项",
+                        text = "筛选",
                         modifier = Modifier.menuPadding(),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
