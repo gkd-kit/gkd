@@ -129,7 +129,7 @@ fun SubsPage(
     val listState = rememberLazyListState()
     var isFirstVisit by remember { mutableStateOf(true) }
     LaunchedEffect(
-        key1 = appAndConfigs.mapHashCode { it.t0.id }
+        key1 = appAndConfigs.mapHashCode { it.first.id }
     ) {
         if (isFirstVisit) {
             isFirstVisit = false
@@ -261,7 +261,7 @@ fun SubsPage(
             modifier = Modifier.scaffoldPadding(contentPadding),
             state = listState
         ) {
-            itemsIndexed(appAndConfigs, { i, a -> i.toString() + a.t0.id }) { _, a ->
+            itemsIndexed(appAndConfigs, { i, a -> i.toString() + a.first.id }) { _, a ->
                 val (appRaw, subsConfig, enableSize) = a
                 SubsAppCard(
                     rawApp = appRaw,

@@ -15,7 +15,6 @@ import com.torrydo.floatingbubbleview.service.expandable.ExpandableBubbleService
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.app
 import li.songe.gkd.appScope
-import li.songe.gkd.data.Tuple3
 import li.songe.gkd.notif.floatingNotif
 import li.songe.gkd.notif.notifyService
 import li.songe.gkd.permission.canDrawOverlaysState
@@ -44,20 +43,20 @@ class FloatingService : ExpandableBubbleService() {
 
         // https://github.com/gkd-kit/gkd/issues/62
         // https://github.com/gkd-kit/gkd/issues/61
-        val defaultFingerData = Tuple3(0L, 0f, 0f)
+        val defaultFingerData = Triple(0L, 0f, 0f)
         var fingerDownData = defaultFingerData
         val maxDistanceOffset = 50
         builder.addFloatingBubbleListener(object : FloatingBubbleListener {
             override fun onFingerDown(x: Float, y: Float) {
-                fingerDownData = Tuple3(System.currentTimeMillis(), x, y)
+                fingerDownData = Triple(System.currentTimeMillis(), x, y)
             }
 
             override fun onFingerMove(x: Float, y: Float) {
                 if (fingerDownData === defaultFingerData) {
                     return
                 }
-                val dx = fingerDownData.t1 - x
-                val dy = fingerDownData.t2 - y
+                val dx = fingerDownData.second - x
+                val dy = fingerDownData.third - y
                 val distance = sqrt(dx * dx + dy * dy)
                 if (distance > maxDistanceOffset) {
                     // reset
@@ -66,7 +65,7 @@ class FloatingService : ExpandableBubbleService() {
             }
 
             override fun onFingerUp(x: Float, y: Float) {
-                if (System.currentTimeMillis() - fingerDownData.t0 < ViewConfiguration.getTapTimeout()) {
+                if (System.currentTimeMillis() - fingerDownData.first < ViewConfiguration.getTapTimeout()) {
                     // is onClick
                     appScope.launchTry {
                         SnapshotExt.captureSnapshot()

@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.update
 import li.songe.gkd.META
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
-import li.songe.gkd.data.Tuple3
 import li.songe.gkd.data.otherUserMapFlow
 import li.songe.gkd.data.toAppInfo
 import li.songe.gkd.util.allPackageInfoMapFlow
@@ -75,7 +74,7 @@ fun initShizuku() {
             packageManagerFlow,
             userAppInfoMapFlow,
             allPackageInfoMapFlow,
-        ) { a, b, c -> Tuple3(a, b, c) }.debounce(3000)
+        ) { a, b, c -> Triple(a, b, c) }.debounce(3000)
             .collect { (pkgManager, userAppInfoMap, allPackageInfoMap) ->
                 otherUserAppInfoMapFlow.update {
                     if (pkgManager != null) {

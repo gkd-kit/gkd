@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.Tuple3
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appInfoCacheFlow
@@ -107,7 +106,7 @@ class SubsVm(stateHandle: SavedStateHandle) : ViewModel() {
                     categoryConfigs.find { c -> c.categoryKey == groupToCategoryMap[g]?.key }
                 )
             }
-            Tuple3(app, appSubsConfigs.find { s -> s.appId == app.id }, enableSize)
+            Triple(app, appSubsConfigs.find { s -> s.appId == app.id }, enableSize)
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
@@ -117,11 +116,11 @@ class SubsVm(stateHandle: SavedStateHandle) : ViewModel() {
         if (searchStr.isBlank()) {
             appAndConfigs
         } else {
-            val results = mutableListOf<Tuple3<RawSubscription.RawApp, SubsConfig?, Int>>()
+            val results = mutableListOf<Triple<RawSubscription.RawApp, SubsConfig?, Int>>()
             val remnantList = appAndConfigs.toMutableList()
             //1. 搜索已安装应用名称
             remnantList.toList().apply { remnantList.clear() }.forEach { a ->
-                val name = appInfoCache[a.t0.id]?.name
+                val name = appInfoCache[a.first.id]?.name
                 if (name?.contains(searchStr, true) == true) {
                     results.add(a)
                 } else {
@@ -130,8 +129,8 @@ class SubsVm(stateHandle: SavedStateHandle) : ViewModel() {
             }
             //2. 搜索未安装应用名称
             remnantList.toList().apply { remnantList.clear() }.forEach { a ->
-                val name = a.t0.name
-                if (appInfoCache[a.t0.id] == null && name?.contains(searchStr, true) == true) {
+                val name = a.first.name
+                if (appInfoCache[a.first.id] == null && name?.contains(searchStr, true) == true) {
                     results.add(a)
                 } else {
                     remnantList.add(a)
@@ -139,7 +138,7 @@ class SubsVm(stateHandle: SavedStateHandle) : ViewModel() {
             }
             //3. 搜索应用 id
             remnantList.toList().apply { remnantList.clear() }.forEach { a ->
-                if (a.t0.id.contains(searchStr, true)) {
+                if (a.first.id.contains(searchStr, true)) {
                     results.add(a)
                 } else {
                     remnantList.add(a)

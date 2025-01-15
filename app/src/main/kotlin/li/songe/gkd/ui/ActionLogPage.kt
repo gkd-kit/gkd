@@ -62,7 +62,6 @@ import li.songe.gkd.data.ActionLog
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.Tuple3
 import li.songe.gkd.data.stringify
 import li.songe.gkd.data.switch
 import li.songe.gkd.db.DbSet
@@ -192,7 +191,7 @@ fun ActionLogPage(
         ) {
             items(
                 count = actionDataItems.itemCount,
-                key = actionDataItems.itemKey { c -> c.t0.id }
+                key = actionDataItems.itemKey { c -> c.first.id }
             ) { i ->
                 val item = actionDataItems[i] ?: return@items
                 val lastItem = if (i > 0) actionDataItems[i - 1] else null
@@ -204,7 +203,7 @@ fun ActionLogPage(
                         item = item,
                         lastItem = lastItem,
                         onClick = {
-                            previewActionLog = item.t0
+                            previewActionLog = item.first
                         },
                         subsId = subsId,
                         appId = appId,
@@ -363,15 +362,15 @@ fun ActionLogPage(
 @Composable
 private fun ActionLogCard(
     i: Int,
-    item: Tuple3<ActionLog, RawSubscription.RawGroupProps?, RawSubscription.RawRuleProps?>,
-    lastItem: Tuple3<ActionLog, RawSubscription.RawGroupProps?, RawSubscription.RawRuleProps?>?,
+    item: Triple<ActionLog, RawSubscription.RawGroupProps?, RawSubscription.RawRuleProps?>,
+    lastItem: Triple<ActionLog, RawSubscription.RawGroupProps?, RawSubscription.RawRuleProps?>?,
     onClick: () -> Unit,
     subsId: Long?,
     appId: String?,
 ) {
     val context = LocalContext.current as MainActivity
     val (actionLog, group, rule) = item
-    val lastActionLog = lastItem?.t0
+    val lastActionLog = lastItem?.first
     val isDiffApp = actionLog.appId != lastActionLog?.appId
     val verticalPadding = if (i == 0) 0.dp else if (isDiffApp) 12.dp else 8.dp
     val subsIdToRaw by subsIdToRawFlow.collectAsState()

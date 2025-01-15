@@ -10,7 +10,6 @@ import androidx.paging.map
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
 import kotlinx.coroutines.flow.combine
 import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.Tuple3
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.subsIdToRawFlow
 
@@ -42,7 +41,7 @@ class ActionLogVm(stateHandle: SavedStateHandle) : ViewModel() {
                         getOrNull(c.ruleIndex)
                     }
                 }
-                Tuple3(c, group, rule)
+                Triple(c, group, rule)
             }
         }
         .cachedIn(viewModelScope)
