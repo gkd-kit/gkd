@@ -198,8 +198,9 @@ fun AdvancedPage() {
             ShizukuTitleCard()
             val shizukuOk by shizukuOkState.stateFlow.collectAsState()
             if (!shizukuOk) {
-                AuthCard(title = "Shizuku授权",
-                    desc = "高级模式:准确区别界面ID,强制模拟点击",
+                AuthCard(
+                    title = "授权使用",
+                    subtitle = "授权后可使用下列功能",
                     onAuthClick = {
                         try {
                             Shizuku.requestPermission(Activity.RESULT_OK)
