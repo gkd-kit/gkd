@@ -51,7 +51,7 @@ val orderedAppInfosFlow by lazy {
 // 某些设备在应用更新后出现权限错乱/缓存错乱
 private const val MINIMUM_NORMAL_APP_SIZE = 8
 val mayQueryPkgNoAccessFlow by lazy {
-    appInfoCacheFlow.map(appScope) { c ->
+    userAppInfoMapFlow.map(appScope) { c ->
         c.values.count { a -> !a.isSystem && !a.hidden && a.id != META.appId } < MINIMUM_NORMAL_APP_SIZE
     }
 }
