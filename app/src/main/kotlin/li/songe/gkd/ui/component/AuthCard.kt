@@ -17,7 +17,7 @@ import li.songe.gkd.util.throttle
 @Composable
 fun AuthCard(
     title: String,
-    desc: String,
+    subtitle: String? = null,
     onAuthClick: () -> Unit,
 ) {
     Row(
@@ -25,16 +25,17 @@ fun AuthCard(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            MaterialTheme.typography.bodyLarge
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
             )
-            Text(
-                text = desc,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (subtitle!=null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         Spacer(modifier = Modifier.width(8.dp))
         OutlinedButton(onClick = throttle(fn = onAuthClick)) {
