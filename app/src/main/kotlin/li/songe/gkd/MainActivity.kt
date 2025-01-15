@@ -4,8 +4,6 @@ import android.app.Activity
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,11 +19,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
-import com.blankj.utilcode.util.BarUtils
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
@@ -59,6 +54,7 @@ import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.UpgradeDialog
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.componentName
+import li.songe.gkd.util.fixSomeProblems
 import li.songe.gkd.util.initFolder
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
@@ -78,8 +74,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         enableEdgeToEdge()
-        fixTopPadding()
-        fixTransparentNavigationBar()
+        fixSomeProblems()
         super.onCreate(savedInstanceState)
         mainVm
         launcher
@@ -204,37 +199,6 @@ fun syncFixState() {
             // 自动重启无障碍服务
             fixRestartService()
         }
-    }
-}
-
-private fun Activity.fixTransparentNavigationBar() {
-    // 修复在浅色主题下导航栏背景不透明的问题
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        window.isNavigationBarContrastEnforced = false
-    } else {
-        @Suppress("DEPRECATION")
-        window.navigationBarColor = Color.TRANSPARENT
-    }
-}
-
-private fun Activity.fixTopPadding() {
-    // 当调用系统分享时, 会导致状态栏区域消失, 应用整体上移, 设置一个 top padding 保证不上移
-    var tempTop: Int? = null
-    ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { view, windowInsets ->
-        view.setBackgroundColor(Color.TRANSPARENT)
-        val statusBars = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars())
-        if (statusBars.top == 0) {
-            view.setPadding(
-                statusBars.left,
-                tempTop ?: BarUtils.getStatusBarHeight(),
-                statusBars.right,
-                statusBars.bottom
-            )
-        } else {
-            tempTop = statusBars.top
-            view.setPadding(statusBars.left, 0, statusBars.right, statusBars.bottom)
-        }
-        ViewCompat.onApplyWindowInsets(view, windowInsets)
     }
 }
 
