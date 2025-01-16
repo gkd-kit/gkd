@@ -231,3 +231,7 @@ suspend fun execCommandForResult(command: String): Boolean {
 fun safeTap(x: Float, y: Float): Boolean? {
     return serviceWrapperFlow.value?.execCommandForResult("input tap $x $y")
 }
+
+fun safeLongTap(x: Float, y: Float, duration: Long): Boolean? {
+    return serviceWrapperFlow.value?.execCommandForResult("input swipe $x $y $x $y $duration")
+}

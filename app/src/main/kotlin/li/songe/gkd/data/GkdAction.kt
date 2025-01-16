@@ -8,6 +8,7 @@ import android.view.ViewConfiguration
 import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.ScreenUtils
 import kotlinx.serialization.Serializable
+import li.songe.gkd.shizuku.safeLongTap
 import li.songe.gkd.shizuku.safeTap
 
 @Serializable
@@ -24,6 +25,7 @@ data class ActionResult(
     val action: String?,
     val result: Boolean,
     val shizuku: Boolean = false,
+    val position: Pair<Float, Float>? = null,
 )
 
 sealed class ActionPerformer(val action: String) {
@@ -63,7 +65,7 @@ sealed class ActionPerformer(val action: String) {
                 result = if (0 <= x && 0 <= y && x <= ScreenUtils.getScreenWidth() && y <= ScreenUtils.getScreenHeight()) {
                     val result = safeTap(x, y)
                     if (result != null) {
-                        return ActionResult(action, result, true)
+                        return ActionResult(action, result, true, position = x to y)
                     }
                     val gestureDescription = GestureDescription.Builder()
                     val path = Path()
@@ -77,7 +79,8 @@ sealed class ActionPerformer(val action: String) {
                     true
                 } else {
                     false
-                }
+                },
+                position = x to y
             )
         }
     }
@@ -127,6 +130,10 @@ sealed class ActionPerformer(val action: String) {
             return ActionResult(
                 action = action,
                 result = if (0 <= x && 0 <= y && x <= ScreenUtils.getScreenWidth() && y <= ScreenUtils.getScreenHeight()) {
+                    val result = safeLongTap(x, y, 400)
+                    if (result != null) {
+                        return ActionResult(action, result, true, position = x to y)
+                    }
                     val gestureDescription = GestureDescription.Builder()
                     val path = Path()
                     path.moveTo(x, y)
@@ -140,7 +147,8 @@ sealed class ActionPerformer(val action: String) {
                     true
                 } else {
                     false
-                }
+                },
+                position = x to y
             )
         }
     }
