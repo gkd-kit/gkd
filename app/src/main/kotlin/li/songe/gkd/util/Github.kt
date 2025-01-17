@@ -25,25 +25,23 @@ import io.ktor.client.call.body
 import io.ktor.client.plugins.onUpload
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
-import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMessageBuilder
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
 import li.songe.gkd.data.GithubPoliciesAsset
 import java.io.File
 
-private const val GITHUB_UPLOAD_URL = "https://github.com/gkd-kit/inspect/issues/1"
 private fun HttpMessageBuilder.setCommonHeaders(cookie: String) {
     header("Cookie", cookie)
-    header("Referer", GITHUB_UPLOAD_URL)
+    header("Referer", "https://github.com/")
     header("Origin", "https://github.com")
     header(
         "User-Agent",
@@ -61,33 +59,7 @@ private data class UploadPoliciesAssetsResponse(
     val form: Map<String, String>,
 )
 
-private val tokenRegex by lazy {
-    Regex("<input\\s+type=\"hidden\"\\s+value=\"([0-9a-zA-Z\\-_]+)\"\\s+data-csrf=\"true\"\\s+class=\"js-data-upload-policy-url-csrf\"\\s+/>")
-}
-private val repositoryIdRegex by lazy {
-    Regex("data-upload-repository-id=\"([0-9]+)\"")
-}
-
-private data class Authenticity(
-    val repositoryId: String,
-    val authenticityToken: String,
-)
-
 data class GithubCookieException(override val message: String) : Exception(message)
-
-private suspend fun getAuthenticity(cookie: String): Authenticity {
-    val text = client.get(GITHUB_UPLOAD_URL) {
-        setCommonHeaders(cookie)
-    }.bodyAsText()
-    if (!text.contains("data-login")) {
-        throw GithubCookieException("未检测到用户登录, 请更换 cookie")
-    }
-    val repositoryId =
-        repositoryIdRegex.find(text)?.groupValues?.get(1) ?: error("repositoryId not found")
-    val authenticityToken =
-        tokenRegex.find(text)?.groupValues?.get(1) ?: error("authenticityToken not found")
-    return Authenticity(repositoryId, authenticityToken)
-}
 
 // https://github.com/lisonge/user-attachments
 suspend fun uploadFileToGithub(
@@ -95,22 +67,25 @@ suspend fun uploadFileToGithub(
     file: File,
     listener: ((progress: Float) -> Unit)
 ): GithubPoliciesAsset {
-    val authenticity = getAuthenticity(cookie)
-
     // prepare upload asset
-    val policiesResp = client.post("https://github.com/upload/policies/assets") {
+    val policiesRawResp = client.post("https://github.com/upload/policies/assets") {
         setCommonHeaders(cookie)
+        header("GitHub-Verified-Fetch", "true")
+        header("X-Requested-With", "XMLHttpRequest")
         setBody(MultiPartFormDataContent(formData {
-            append("authenticity_token", authenticity.authenticityToken)
-            append("content_type", "application/x-zip-compressed")
+            append("repository_id", "661952005")
             append("name", "file.zip")
             append("size", file.length().toString())
-            append("repository_id", authenticity.repositoryId)
+            append("content_type", "application/x-zip-compressed")
         }))
-    }.body<UploadPoliciesAssetsResponse>()
+    }
+    if (policiesRawResp.status == HttpStatusCode.Unauthorized) {
+        throw GithubCookieException("检测到 cookie 失效, 请更换")
+    }
+    val policiesResp = policiesRawResp.body<UploadPoliciesAssetsResponse>()
 
-    val byteArray = file.readBytes()
     // upload to s3
+    val byteArray = file.readBytes()
     client.post(policiesResp.upload_url) {
         setCommonHeaders(cookie)
         setBody(MultiPartFormDataContent(formData {
