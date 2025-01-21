@@ -104,7 +104,7 @@ private const val DEFAULT_IK_TEXT = "我知道了"
 private const val DEFAULT_CONFIRM_TEXT = "确定"
 private const val DEFAULT_DISMISS_TEXT = "取消"
 
-private suspend fun MutableStateFlow<AlertDialogOptions?>.getResult(
+suspend fun MutableStateFlow<AlertDialogOptions?>.getResult(
     title: String,
     text: String? = null,
     textContent: (@Composable (() -> Unit))? = null,

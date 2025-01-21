@@ -15,9 +15,11 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import li.songe.gkd.service.checkSelector
+import li.songe.gkd.util.LOCAL_SUBS_IDS
 import li.songe.gkd.util.json
 import li.songe.gkd.util.toast
 import li.songe.json5.Json5
+import li.songe.json5.encodeToJson5String
 import li.songe.selector.Selector
 import net.objecthunter.exp4j.Expression
 import net.objecthunter.exp4j.ExpressionBuilder
@@ -48,6 +50,9 @@ data class RawSubscription(
         result = 31 * result + version
         return result
     }
+
+    val isLocal: Boolean
+        get() = LOCAL_SUBS_IDS.contains(id)
 
     val categoryToGroupsMap by lazy {
         val allAppGroups = apps.flatMap { a -> a.groups.map { g -> g to a } }
@@ -115,7 +120,6 @@ data class RawSubscription(
             "暂无规则"
         }
     }
-
 
     @Serializable
     data class RawApp(
@@ -217,7 +221,6 @@ data class RawSubscription(
         val anyMatches: List<String>?
     }
 
-
     sealed interface RawGroupProps : RawCommonProps {
         val name: String
         val key: Int
@@ -230,6 +233,7 @@ data class RawSubscription(
         val errorDesc: String?
         val allExampleUrls: List<String>
         val cacheMap: MutableMap<String, Selector?>
+        val cacheStr: String
     }
 
     sealed interface RawAppRuleProps {
@@ -265,8 +269,8 @@ data class RawSubscription(
 
     @Serializable
     data class RawGlobalGroup(
-        override val name: String,
         override val key: Int,
+        override val name: String,
         override val desc: String?,
         override val enable: Boolean?,
         override val scopeKeys: List<Int>?,
@@ -291,8 +295,8 @@ data class RawSubscription(
         override val matchAnyApp: Boolean?,
         override val matchSystemApp: Boolean?,
         override val matchLauncher: Boolean?,
-        override val apps: List<RawGlobalApp>?,
         override val rules: List<RawGlobalRule>,
+        override val apps: List<RawGlobalApp>?,
     ) : RawGroupProps, RawGlobalRuleProps {
         val appIdEnable by lazy {
             (apps ?: emptyList()).associate { a -> a.id to (a.enable ?: true) }
@@ -306,11 +310,14 @@ data class RawSubscription(
                 r.exampleUrls ?: emptyList()
             }).distinct()
         }
+        override val cacheStr by lazy { json.encodeToJson5String(this) }
     }
 
 
     @Serializable
     data class RawGlobalRule(
+        override val key: Int?,
+        override val name: String?,
         override val actionCd: Long?,
         override val actionDelay: Long?,
         override val quickFind: Boolean?,
@@ -329,8 +336,6 @@ data class RawSubscription(
         override val snapshotUrls: List<String>?,
         override val excludeSnapshotUrls: List<String>?,
         override val exampleUrls: List<String>?,
-        override val name: String?,
-        override val key: Int?,
         override val preKeys: List<Int>?,
         override val action: String?,
         override val position: Position?,
@@ -345,8 +350,8 @@ data class RawSubscription(
 
     @Serializable
     data class RawAppGroup(
-        override val name: String,
         override val key: Int,
+        override val name: String,
         override val desc: String?,
         override val enable: Boolean?,
         override val scopeKeys: List<Int>?,
@@ -384,12 +389,13 @@ data class RawSubscription(
                 r.exampleUrls ?: emptyList()
             }).distinct()
         }
+        override val cacheStr by lazy { json.encodeToJson5String(this) }
     }
 
     @Serializable
     data class RawAppRule(
-        override val name: String?,
         override val key: Int?,
+        override val name: String?,
         override val preKeys: List<Int>?,
         override val action: String?,
         override val position: Position?,
@@ -794,7 +800,7 @@ data class RawSubscription(
                     jsonToGlobalApp(
                         jsonElement.jsonObject, index
                     )
-                } ?: emptyList(),
+                },
                 rules = jsonObject["rules"]?.jsonArray?.map { jsonElement ->
                     jsonToGlobalRule(jsonElement.jsonObject)
                 } ?: emptyList(),
@@ -807,7 +813,8 @@ data class RawSubscription(
         }
 
         private fun jsonToSubscriptionRaw(rootJson: JsonObject): RawSubscription {
-            return RawSubscription(id = getLong(rootJson, "id") ?: error("miss subscription.id"),
+            return RawSubscription(
+                id = getLong(rootJson, "id") ?: error("miss subscription.id"),
                 name = getString(rootJson, "name") ?: error("miss subscription.name"),
                 version = getInt(rootJson, "version") ?: error("miss subscription.version"),
                 author = getString(rootJson, "author"),
@@ -816,7 +823,8 @@ data class RawSubscription(
                 checkUpdateUrl = getString(rootJson, "checkUpdateUrl"),
                 apps = (rootJson["apps"]?.jsonArray?.mapIndexed { index, jsonElement ->
                     jsonToAppRaw(
-                        jsonElement.jsonObject, index
+                        jsonElement.jsonObject,
+                        index
                     )
                 } ?: emptyList()),
                 categories = (rootJson["categories"]?.jsonArray?.mapIndexed { index, jsonElement ->
@@ -830,7 +838,8 @@ data class RawSubscription(
                 } ?: emptyList()),
                 globalGroups = (rootJson["globalGroups"]?.jsonArray?.mapIndexed { index, jsonElement ->
                     jsonToGlobalGroups(jsonElement.jsonObject, index)
-                } ?: emptyList()))
+                } ?: emptyList())
+            )
         }
 
         private fun <T> List<T>.findDuplicatedItem(predicate: (T) -> Any?): T? {
@@ -887,9 +896,9 @@ data class RawSubscription(
             return a
         }
 
-        fun parseRawApp(source: String): RawApp {
-            return parseApp(Json5.parseToJson5Element(source).jsonObject)
-        }
+//        fun parseRawApp(source: String): RawApp {
+//            return parseApp(Json5.parseToJson5Element(source).jsonObject)
+//        }
 
         fun parseGroup(jsonObject: JsonObject): RawAppGroup {
             val g = jsonToGroupRaw(jsonObject, 0)
@@ -899,9 +908,9 @@ data class RawSubscription(
             return g
         }
 
-        fun parseRawGroup(source: String): RawAppGroup {
-            return parseGroup(Json5.parseToJson5Element(source).jsonObject)
-        }
+//        fun parseRawGroup(source: String): RawAppGroup {
+//            return parseGroup(Json5.parseToJson5Element(source).jsonObject)
+//        }
 
         fun parseRawGlobalGroup(source: String): RawGlobalGroup {
             val g = jsonToGlobalGroups(Json5.parseToJson5Element(source).jsonObject, 0)

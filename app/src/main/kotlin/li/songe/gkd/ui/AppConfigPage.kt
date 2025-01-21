@@ -1,17 +1,13 @@
 package li.songe.gkd.ui
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
+import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -20,7 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
@@ -30,7 +26,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -44,7 +39,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -52,22 +46,17 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
-import com.ramcosta.composedestinations.generated.destinations.AppItemPageDestination
-import com.ramcosta.composedestinations.generated.destinations.GlobalRulePageDestination
+import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
-import li.songe.gkd.data.ExcludeData
-import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.ResolvedGroup
-import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.stringify
-import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
-import li.songe.gkd.ui.component.updateDialogOptions
+import li.songe.gkd.ui.component.RuleGroupCard
+import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
@@ -77,13 +66,14 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.appInfoCacheFlow
-import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun AppConfigPage(appId: String) {
+    val context = LocalActivity.current as MainActivity
     val navController = LocalNavController.current
     val vm = viewModel<AppConfigVm>()
     val ruleSortType by vm.ruleSortTypeFlow.collectAsState()
@@ -91,6 +81,7 @@ fun AppConfigPage(appId: String) {
     val appInfo = appInfoCache[appId]
     val globalGroups by vm.globalGroupsFlow.collectAsState()
     val appGroups by vm.appGroupsFlow.collectAsState()
+    val firstLoading by vm.linkLoad.firstLoadingFlow.collectAsState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     var expanded by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
@@ -175,13 +166,19 @@ fun AppConfigPage(appId: String) {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = throttle {
+                onClick = throttle(context.mainVm.viewModelScope.launchAsFn {
                     navController.toDestinationsNavigator()
-                        .navigate(AppItemPageDestination(LOCAL_SUBS_ID, appId))
-                },
+                        .navigate(SubsAppGroupListPageDestination(LOCAL_SUBS_ID, appId))
+                    delay(AnimationConstants.DefaultDurationMillis + 150L)
+                    context.mainVm.ruleGroupState.editOrAddGroupFlow.value = ShowGroupState(
+                        subsId = LOCAL_SUBS_ID,
+                        appId = appId,
+                        groupKey = null
+                    )
+                }),
                 content = {
                     Icon(
-                        imageVector = Icons.Outlined.Edit,
+                        imageVector = Icons.Outlined.Add,
                         contentDescription = null,
                     )
                 }
@@ -193,39 +190,16 @@ fun AppConfigPage(appId: String) {
             state = listState,
         ) {
             itemsIndexed(globalGroups) { i, g ->
-                val excludeData = remember(g.config?.exclude) {
-                    ExcludeData.parse(g.config?.exclude)
-                }
-                val checked = getChecked(excludeData, g.group, appId, appInfo)
                 TitleGroupCard(globalGroups, i) {
-                    AppGroupCard(
+                    RuleGroupCard(
+                        subs = g.subscription,
+                        appId = appId,
                         group = g.group,
-                        checked = checked,
-                        onClick = throttle {
-                            navController.toDestinationsNavigator().navigate(
-                                GlobalRulePageDestination(
-                                    g.subsItem.id,
-                                    g.group.key
-                                )
-                            )
-                        }
-                    ) { newChecked ->
-                        vm.viewModelScope.launchTry {
-                            DbSet.subsConfigDao.insert(
-                                (g.config ?: SubsConfig(
-                                    type = SubsConfig.GlobalGroupType,
-                                    subsItemId = g.subsItem.id,
-                                    groupKey = g.group.key,
-                                )).copy(
-                                    exclude = excludeData.copy(
-                                        appIds = excludeData.appIds.toMutableMap().apply {
-                                            set(appId, !newChecked)
-                                        }
-                                    ).stringify()
-                                )
-                            )
-                        }
-                    }
+                        subsConfig = g.config,
+                        highlighted = false,
+                        category = null,
+                        categoryConfig = null,
+                    )
                 }
             }
             item {
@@ -237,36 +211,20 @@ fun AppConfigPage(appId: String) {
             }
             itemsIndexed(appGroups) { i, g ->
                 TitleGroupCard(appGroups, i) {
-                    AppGroupCard(
+                    RuleGroupCard(
+                        subs = g.subscription,
+                        appId = appId,
                         group = g.group,
-                        checked = g.enable,
-                        onClick = {
-                            navController.toDestinationsNavigator().navigate(
-                                AppItemPageDestination(
-                                    g.subsItem.id,
-                                    appId,
-                                    g.group.key,
-                                )
-                            )
-                        }
-                    ) {
-                        vm.viewModelScope.launchTry {
-                            DbSet.subsConfigDao.insert(
-                                g.config?.copy(enable = it) ?: SubsConfig(
-                                    type = SubsConfig.AppGroupType,
-                                    subsItemId = g.subsItem.id,
-                                    appId = appId,
-                                    groupKey = g.group.key,
-                                    enable = it
-                                )
-                            )
-                        }
-                    }
+                        highlighted = false,
+                        subsConfig = g.config,
+                        category = g.category,
+                        categoryConfig = g.categoryConfig,
+                    )
                 }
             }
             item {
                 Spacer(modifier = Modifier.height(EmptyHeight))
-                if (globalGroups.size + appGroups.size == 0) {
+                if (globalGroups.size + appGroups.size == 0 && !firstLoading) {
                     EmptyText(text = "暂无规则")
                 } else {
                     // 避免被 floatingActionButton 遮挡
@@ -281,7 +239,7 @@ fun AppConfigPage(appId: String) {
 private fun TitleGroupCard(groups: List<ResolvedGroup>, i: Int, content: @Composable () -> Unit) {
     val lastGroup = groups.getOrNull(i - 1)
     val g = groups[i]
-    if (g.subsItem !== lastGroup?.subsItem) {
+    if (g.subsItem.id != lastGroup?.subsItem?.id) {
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -299,81 +257,4 @@ private fun TitleGroupCard(groups: List<ResolvedGroup>, i: Int, content: @Compos
     } else {
         content()
     }
-}
-
-@Composable
-private fun AppGroupCard(
-    group: RawSubscription.RawGroupProps,
-    checked: Boolean?,
-    onClick: () -> Unit,
-    onCheckedChange: ((Boolean) -> Unit)?,
-) {
-    Row(
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .itemPadding(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight(),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = group.name,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.bodyLarge
-            )
-            if (group.valid) {
-                if (!group.desc.isNullOrBlank()) {
-                    Text(
-                        text = group.desc!!,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            } else {
-                Text(
-                    text = "非法选择器",
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-        }
-        Spacer(modifier = Modifier.width(10.dp))
-        if (checked != null) {
-            Switch(checked = checked, onCheckedChange = onCheckedChange)
-        } else {
-            InnerDisableSwitch()
-        }
-    }
-}
-
-@Composable
-fun InnerDisableSwitch() {
-    val context = LocalContext.current as MainActivity
-    Switch(
-        checked = false,
-        enabled = false,
-        onCheckedChange = null,
-        modifier = Modifier.clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,
-        ) {
-            context.mainVm.dialogFlow.updateDialogOptions(
-                title = "内置禁用",
-                text = "此规则组已经在其 apps 字段中配置对当前应用的禁用, 因此无法手动开启规则组\n\n提示: 这种情况一般在此全局规则无法适配/跳过适配/单独适配当前应用时出现",
-            )
-        }
-    )
 }

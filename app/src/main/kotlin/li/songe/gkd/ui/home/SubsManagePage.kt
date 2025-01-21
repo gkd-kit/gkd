@@ -2,6 +2,7 @@ package li.songe.gkd.ui.home
 
 import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
@@ -52,7 +53,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -92,6 +92,7 @@ import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubsMutex
+import li.songe.gkd.util.usedSubsEntriesFlow
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -101,7 +102,7 @@ val subsNav = BottomNavItem(
 
 @Composable
 fun useSubsManagePage(): ScaffoldExt {
-    val context = LocalContext.current as MainActivity
+    val context = LocalActivity.current as MainActivity
     val navController = LocalNavController.current
 
     val vm = viewModel<HomeVm>()
@@ -464,7 +465,7 @@ fun useSubsManagePage(): ScaffoldExt {
                             isSelected = selectedIds.contains(subItem.id),
                             onCheckedChange = { checked ->
                                 context.mainVm.viewModelScope.launch {
-                                    if (checked && storeFlow.value.subsPowerWarn && !subItem.isLocal && subsItemsFlow.value.count { !it.isLocal } > 1) {
+                                    if (checked && storeFlow.value.subsPowerWarn && !subItem.isLocal && usedSubsEntriesFlow.value.any { !it.subsItem.isLocal }) {
                                         context.mainVm.dialogFlow.waitResult(
                                             title = "耗电警告",
                                             textContent = {

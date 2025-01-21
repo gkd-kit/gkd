@@ -1,5 +1,6 @@
 package li.songe.gkd.ui
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,12 +26,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.AppItemPageDestination
-import com.ramcosta.composedestinations.generated.destinations.GlobalRulePageDestination
+import com.ramcosta.composedestinations.generated.destinations.GlobalGroupListPageDestination
+import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.EmptyText
@@ -47,7 +47,7 @@ import li.songe.gkd.util.throttle
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun SlowGroupPage() {
-    val context = LocalContext.current as MainActivity
+    val context = LocalActivity.current as MainActivity
     val navController = LocalNavController.current
     val ruleSummary by ruleSummaryFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
@@ -99,7 +99,7 @@ fun SlowGroupPage() {
                             navController
                                 .toDestinationsNavigator()
                                 .navigate(
-                                    GlobalRulePageDestination(
+                                    GlobalGroupListPageDestination(
                                         rule.subsItem.id,
                                         group.key
                                     )
@@ -120,7 +120,7 @@ fun SlowGroupPage() {
                             navController
                                 .toDestinationsNavigator()
                                 .navigate(
-                                    AppItemPageDestination(
+                                    SubsAppGroupListPageDestination(
                                         rule.subsItem.id,
                                         rule.app.id,
                                         group.key

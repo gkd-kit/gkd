@@ -16,6 +16,8 @@ class ResolvedAppGroup(
     config: SubsConfig?,
     val app: RawSubscription.RawApp,
     val enable: Boolean,
+    val category: RawSubscription.RawCategory?,
+    val categoryConfig: CategoryConfig?,
 ) : ResolvedGroup(group, subscription, subsItem, config)
 
 class ResolvedGlobalGroup(

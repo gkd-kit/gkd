@@ -1,18 +1,14 @@
 package li.songe.gkd.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,7 +17,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Edit
@@ -31,7 +26,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -55,14 +49,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.KeyboardUtils
-import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.flow.update
@@ -71,32 +63,35 @@ import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.stringify
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.service.launcherAppId
 import li.songe.gkd.ui.component.AppBarTextField
+import li.songe.gkd.ui.component.AppIcon
 import li.songe.gkd.ui.component.AppNameText
+import li.songe.gkd.ui.component.CardFlagBar
 import li.songe.gkd.ui.component.EmptyText
+import li.songe.gkd.ui.component.InnerDisableSwitch
 import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.appItemPadding
+import li.songe.gkd.ui.style.itemFlagPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SortTypeOption
-import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.mapHashCode
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
-fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
-    val context = LocalContext.current as MainActivity
+fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
+    val context = LocalActivity.current as MainActivity
     val navController = LocalNavController.current
-    val vm = viewModel<GlobalRuleExcludeVm>()
+    val vm = viewModel<GlobalGroupExcludeVm>()
     val rawSubs = vm.rawSubsFlow.collectAsState().value
     val group = vm.groupFlow.collectAsState().value
     val excludeData = vm.excludeDataFlow.collectAsState().value
@@ -104,7 +99,9 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
     val searchStr by vm.searchStrFlow.collectAsState()
     val showSystemApp by vm.showSystemAppFlow.collectAsState()
     val showHiddenApp by vm.showHiddenAppFlow.collectAsState()
+    val showDisabledApp by vm.showDisabledAppFlow.collectAsState()
     val sortType by vm.sortTypeFlow.collectAsState()
+    val disabledAppSet by vm.disabledAppSetFlow.collectAsState()
 
     var showEditDlg by remember {
         mutableStateOf(false)
@@ -162,8 +159,8 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                 )
             } else {
                 TowLineText(
-                    title = rawSubs?.name ?: subsItemId.toString(),
-                    subtitle = (group?.name ?: groupKey.toString())
+                    title = "编辑禁用",
+                    subtitle = "${rawSubs?.name ?: subsItemId}/${group?.name ?: groupKey}"
                 )
             }
         }, actions = {
@@ -264,6 +261,23 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                             storeFlow.update { it.copy(subsExcludeShowHiddenApp = !it.subsExcludeShowHiddenApp) }
                         },
                     )
+                    if (disabledAppSet.isNotEmpty()) {
+                        DropdownMenuItem(
+                            text = {
+                                Text("显示禁用应用")
+                            },
+                            trailingIcon = {
+                                Checkbox(
+                                    checked = showDisabledApp,
+                                    onCheckedChange = {
+                                        storeFlow.update { it.copy(subsExcludeShowDisabledApp = !it.subsExcludeShowDisabledApp) }
+                                    })
+                            },
+                            onClick = {
+                                storeFlow.update { it.copy(subsExcludeShowDisabledApp = !it.subsExcludeShowDisabledApp) }
+                            },
+                        )
+                    }
                 }
             }
 
@@ -276,42 +290,15 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
             items(showAppInfos, { it.id }) { appInfo ->
                 Row(
                     modifier = Modifier
-                        .height(IntrinsicSize.Min)
-                        .appItemPadding(),
+                        .itemFlagPadding(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (appInfo.icon != null) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .aspectRatio(1f)
-                        ) {
-                            Image(
-                                painter = rememberDrawablePainter(appInfo.icon),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .matchParentSize()
-                                    .padding(4.dp)
-                            )
-                        }
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Android,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .aspectRatio(1f)
-                                .fillMaxHeight()
-                                .padding(4.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(10.dp))
+                    AppIcon(appInfo = appInfo)
+                    Spacer(modifier = Modifier.width(12.dp))
 
                     Column(
                         modifier = Modifier
-                            .padding(2.dp)
-                            .fillMaxHeight()
                             .weight(1f),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -327,34 +314,33 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
 
                     if (group != null) {
                         val checked = getChecked(excludeData, group, appInfo.id, appInfo)
                         if (checked != null) {
                             Switch(
                                 checked = checked,
-                                onCheckedChange = {
-                                    vm.viewModelScope.launchTry {
-                                        val subsConfig = (vm.subsConfigFlow.value ?: SubsConfig(
-                                            type = SubsConfig.GlobalGroupType,
-                                            subsItemId = subsItemId,
-                                            groupKey = groupKey,
-                                        )).copy(
-                                            exclude = excludeData.copy(
-                                                appIds = excludeData.appIds.toMutableMap().apply {
-                                                    set(appInfo.id, !it)
-                                                })
-                                                .stringify()
-                                        )
-                                        DbSet.subsConfigDao.insert(subsConfig)
-                                    }
-                                },
+                                onCheckedChange = throttle(vm.viewModelScope.launchAsFn<Boolean> { newChecked ->
+                                    val subsConfig = (vm.subsConfigFlow.value ?: SubsConfig(
+                                        type = SubsConfig.GlobalGroupType,
+                                        subsItemId = subsItemId,
+                                        groupKey = groupKey,
+                                    )).copy(
+                                        exclude = excludeData.copy(
+                                            appIds = excludeData.appIds.toMutableMap().apply {
+                                                set(appInfo.id, !newChecked)
+                                            })
+                                            .stringify()
+                                    )
+                                    DbSet.subsConfigDao.insert(subsConfig)
+                                }),
                             )
                         } else {
                             InnerDisableSwitch()
                         }
                     }
+                    CardFlagBar(visible = excludeData.appIds.containsKey(appInfo.id))
                 }
             }
             item {
@@ -393,11 +379,12 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                     placeholder = {
                         Text(
                             text = tipText,
-                            style = LocalTextStyle.current.copy(fontSize = MaterialTheme.typography.bodySmall.fontSize)
+                            style = MaterialTheme.typography.bodySmall,
                         )
                     },
-                    maxLines = 10,
-                    textStyle = LocalTextStyle.current.copy(fontSize = MaterialTheme.typography.bodySmall.fontSize)
+                    minLines = 8,
+                    maxLines = 12,
+                    textStyle = MaterialTheme.typography.bodySmall
                 )
                 LaunchedEffect(null) {
                     focusRequester.requestFocus()
@@ -414,11 +401,11 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(onClick = throttle(vm.viewModelScope.launchAsFn {
                     if (oldSource == source) {
                         toast("禁用项无变动")
                         showEditDlg = false
-                        return@TextButton
+                        return@launchAsFn
                     }
                     showEditDlg = false
                     val subsConfig = (vm.subsConfigFlow.value ?: SubsConfig(
@@ -428,10 +415,9 @@ fun GlobalRuleExcludePage(subsItemId: Long, groupKey: Int) {
                     )).copy(
                         exclude = ExcludeData.parse(source).stringify()
                     )
-                    vm.viewModelScope.launchTry {
-                        DbSet.subsConfigDao.insert(subsConfig)
-                    }
-                }) {
+                    DbSet.subsConfigDao.insert(subsConfig)
+                    toast("更新成功")
+                })) {
                     Text(text = "更新")
                 }
             },

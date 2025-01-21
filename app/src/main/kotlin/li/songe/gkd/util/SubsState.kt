@@ -32,21 +32,35 @@ val subsItemsFlow by lazy {
     DbSet.subsItemDao.query().stateIn(appScope, SharingStarted.Eagerly, emptyList())
 }
 
-data class SubsEntry(
-    val subsItem: SubsItem,
-    val subscription: RawSubscription?,
-) {
-    val checkUpdateUrl = run {
-        val checkUpdateUrl = subscription?.checkUpdateUrl ?: return@run null
-        val updateUrl = subscription.updateUrl ?: subsItem.updateUrl ?: return@run checkUpdateUrl
-        try {
-            return@run URI(updateUrl).resolve(checkUpdateUrl).toString()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return@run null
+private fun getCheckUpdateUrl(
+    subsItem: SubsItem,
+    subscription: RawSubscription?,
+): String? {
+    val checkUpdateUrl = subscription?.checkUpdateUrl ?: return null
+    val updateUrl = subscription.updateUrl ?: subsItem.updateUrl ?: return checkUpdateUrl
+    try {
+        return URI(updateUrl).resolve(checkUpdateUrl).toString()
+    } catch (e: Exception) {
+        e.printStackTrace()
     }
+    return null
 }
+
+sealed class SubsEntryType {
+    abstract val subsItem: SubsItem
+    abstract val subscription: RawSubscription?
+    val checkUpdateUrl by lazy { getCheckUpdateUrl(subsItem, subscription) }
+}
+
+data class SubsEntry(
+    override val subsItem: SubsItem,
+    override val subscription: RawSubscription?,
+) : SubsEntryType()
+
+data class UsedSubsEntry(
+    override val subsItem: SubsItem,
+    override val subscription: RawSubscription,
+) : SubsEntryType()
 
 val subsLoadErrorsFlow = MutableStateFlow<Map<Long, Exception>>(emptyMap())
 val subsRefreshErrorsFlow = MutableStateFlow<Map<Long, Exception>>(emptyMap())
@@ -63,6 +77,13 @@ val subsEntriesFlow by lazy {
                 subscription = subsIdToRaw[s.id],
             )
         }
+    }.stateIn(appScope, SharingStarted.Eagerly, emptyList())
+}
+
+val usedSubsEntriesFlow by lazy {
+    subsEntriesFlow.map {
+        it.filter { s -> s.subsItem.enable && s.subscription != null }
+            .map { UsedSubsEntry(it.subsItem, it.subscription!!) }
     }.stateIn(appScope, SharingStarted.Eagerly, emptyList())
 }
 
@@ -93,26 +114,33 @@ fun updateSubscription(subscription: RawSubscription) {
     }
 }
 
-fun getGroupRawEnable(
+fun getGroupEnable(
     group: RawSubscription.RawGroupProps,
     subsConfig: SubsConfig?,
-    category: RawSubscription.RawCategory?,
-    categoryConfig: CategoryConfig?,
+    category: RawSubscription.RawCategory? = null,
+    categoryConfig: CategoryConfig? = null,
 ): Boolean {
-    // 优先级: 规则用户配置 > 批量配置 > 批量默认 > 规则默认
-    // 1.规则用户配置
-    return subsConfig?.enable ?: if (category != null) {// 这个规则被批量配置捕获
-        val enable = if (categoryConfig != null) {
-            // 2.批量配置
-            categoryConfig.enable
-        } else {
-            // 3.批量默认
-            category.enable
+    return when (group) {
+        // 优先级: 规则用户配置 > 批量配置 > 批量默认 > 规则默认
+        is RawSubscription.RawAppGroup -> {
+            subsConfig?.enable ?: if (category != null) {// 这个规则被批量配置捕获
+                val enable = if (categoryConfig != null) {
+                    // 2.批量配置
+                    categoryConfig.enable
+                } else {
+                    // 3.批量默认
+                    category.enable
+                }
+                enable
+            } else {
+                null
+            } ?: group.enable ?: true
         }
-        enable
-    } else {
-        null
-    } ?: group.enable ?: true
+
+        is RawSubscription.RawGlobalGroup -> {
+            subsConfig?.enable ?: group.enable ?: true
+        }
+    }
 }
 
 data class RuleSummary(
@@ -152,11 +180,6 @@ data class RuleSummary(
     val slowGroupCount = slowGlobalGroups.size + slowAppGroups.size
 }
 
-val usedSubsEntriesFlow by lazy {
-    subsEntriesFlow.map { it.filter { s -> s.subsItem.enable && s.subscription != null } }
-        .stateIn(appScope, SharingStarted.Eagerly, emptyList())
-}
-
 val ruleSummaryFlow by lazy {
     combine(
         usedSubsEntriesFlow,
@@ -174,8 +197,6 @@ val ruleSummaryFlow by lazy {
         val globalRules = mutableListOf<GlobalRule>()
         val globalGroups = mutableListOf<ResolvedGlobalGroup>()
         subsEntries.forEach { (subsItem, rawSubs) ->
-            rawSubs ?: return@forEach
-
             // global scope
             val subGlobalSubsConfigs = globalSubsConfigs.filter { c -> c.subsItemId == subsItem.id }
             val subGlobalGroupToRules =
@@ -222,19 +243,25 @@ val ruleSummaryFlow by lazy {
                 val appGroupConfigs = subGroupSubsConfigs.filter { c -> c.appId == appRaw.id }
                 val subAppGroupToRules = mutableMapOf<RawSubscription.RawAppGroup, List<AppRule>>()
                 val groupAndEnables = appRaw.groups.map { group ->
-                    val enable = getGroupRawEnable(
+                    val config = appGroupConfigs.find { c -> c.groupKey == group.key }
+                    val category = rawSubs.groupToCategoryMap[group]
+                    val categoryConfig =
+                        subCategoryConfigs.find { c -> c.categoryKey == category?.key }
+                    val enable = getGroupEnable(
                         group,
-                        appGroupConfigs.find { c -> c.groupKey == group.key },
-                        rawSubs.groupToCategoryMap[group],
-                        subCategoryConfigs.find { c -> c.categoryKey == rawSubs.groupToCategoryMap[group]?.key }
+                        config,
+                        category,
+                        categoryConfig
                     ) && group.valid
                     ResolvedAppGroup(
                         group = group,
                         subscription = rawSubs,
                         subsItem = subsItem,
-                        config = appGroupConfigs.find { c -> c.groupKey == group.key },
+                        config = config,
                         app = appRaw,
-                        enable = enable
+                        enable = enable,
+                        category = category,
+                        categoryConfig = categoryConfig,
                     )
                 }
                 appAllGroups[appRaw.id] = (appAllGroups[appRaw.id] ?: emptyList()) + groupAndEnables

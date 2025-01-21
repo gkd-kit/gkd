@@ -111,6 +111,7 @@ class MainActivity : ComponentActivity() {
                     SubsSheet(mainVm, mainVm.sheetSubsIdFlow)
                     ShareDataDialog(mainVm, mainVm.showShareDataIdsFlow)
                     mainVm.inputSubsLinkOption.ContentDialog()
+                    mainVm.ruleGroupState.Render()
                 }
             }
         }

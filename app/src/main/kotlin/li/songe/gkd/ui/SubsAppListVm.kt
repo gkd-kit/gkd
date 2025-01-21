@@ -3,7 +3,7 @@ package li.songe.gkd.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ramcosta.composedestinations.generated.destinations.SubsPageDestination
+import com.ramcosta.composedestinations.generated.destinations.SubsAppListPageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -17,17 +17,13 @@ import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.collator
 import li.songe.gkd.util.findOption
-import li.songe.gkd.util.getGroupRawEnable
+import li.songe.gkd.util.getGroupEnable
 import li.songe.gkd.util.map
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
-import li.songe.gkd.util.subsItemsFlow
 
-class SubsVm(stateHandle: SavedStateHandle) : ViewModel() {
-    private val args = SubsPageDestination.argsFrom(stateHandle)
-
-    val subsItemFlow =
-        subsItemsFlow.map(viewModelScope) { s -> s.find { v -> v.id == args.subsItemId } }
+class SubsAppListVm(stateHandle: SavedStateHandle) : ViewModel() {
+    private val args = SubsAppListPageDestination.argsFrom(stateHandle)
 
     val subsRawFlow = subsIdToRawFlow.map(viewModelScope) { s -> s[args.subsItemId] }
 
@@ -99,7 +95,7 @@ class SubsVm(stateHandle: SavedStateHandle) : ViewModel() {
         apps.map { app ->
             val appGroupSubsConfigs = groupSubsConfigs.filter { s -> s.appId == app.id }
             val enableSize = app.groups.count { g ->
-                getGroupRawEnable(
+                getGroupEnable(
                     g,
                     appGroupSubsConfigs.find { c -> c.groupKey == g.key },
                     groupToCategoryMap[g],

@@ -19,9 +19,22 @@ data class AppInfo(
     val isSystem: Boolean,
     val mtime: Long,
     val hidden: Boolean,
-    // null=0
-    val userId: Int? = null,
-)
+    val userId: Int? = null, // null=0
+//    val activities: List<String> = emptyList(),
+) {
+    // 重写 equals 和 hashCode 便于 compose 重组比较
+    override fun equals(other: Any?): Boolean {
+        if (other === this) return true
+        return (other is AppInfo && id == other.id && mtime == other.mtime)
+    }
+
+    override fun hashCode(): Int {
+        var result = super.hashCode()
+        result = 31 * result + id.hashCode()
+        result = 31 * result + mtime.hashCode()
+        return result
+    }
+}
 
 val selfAppInfo by lazy {
     app.packageManager.getPackageInfo(app.packageName, 0).toAppInfo()
@@ -49,5 +62,14 @@ fun PackageInfo.toAppInfo(
         icon = applicationInfo?.loadIcon(app.packageManager),
         userId = userId,
         hidden = hidden ?: (app.packageManager.getLaunchIntentForPackage(packageName) == null),
+//        activities = (activities ?: emptyArray()).map {
+//            if (
+//                it.name.startsWith(packageName) && it.name.getOrNull(packageName.length) == '.'
+//            ) {
+//                it.name.substring(packageName.length)
+//            } else {
+//                it.name
+//            }
+//        },
     )
 }
