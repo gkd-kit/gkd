@@ -89,6 +89,7 @@ data class Store(
     val subsExcludeSortType: Int = SortTypeOption.SortByName.value,
     val subsExcludeShowSystemApp: Boolean = true,
     val subsExcludeShowHiddenApp: Boolean = false,
+    val subsExcludeShowDisabledApp: Boolean = false,
     val subsPowerWarn: Boolean = true,
 )
 

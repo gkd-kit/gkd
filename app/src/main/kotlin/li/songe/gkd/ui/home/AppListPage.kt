@@ -1,16 +1,13 @@
 package li.songe.gkd.ui.home
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -20,7 +17,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -29,7 +25,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -49,19 +44,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.KeyboardUtils
-import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.AppBarTextField
+import li.songe.gkd.ui.component.AppIcon
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.QueryPkgAuthCard
@@ -83,7 +77,7 @@ val appListNav = BottomNavItem(
 @Composable
 fun useAppListPage(): ScaffoldExt {
     val navController = LocalNavController.current
-    val context = LocalContext.current as MainActivity
+    val context = LocalActivity.current as MainActivity
     val softwareKeyboardController = LocalSoftwareKeyboardController.current
 
     val vm = viewModel<HomeVm>()
@@ -167,7 +161,7 @@ fun useAppListPage(): ScaffoldExt {
                 }
             }, actions = {
                 if (showSearchBar) {
-                    IconButton(onClick = {
+                    IconButton(onClick = throttle {
                         if (vm.searchStrFlow.value.isEmpty()) {
                             showSearchBar = false
                         } else {
@@ -180,7 +174,7 @@ fun useAppListPage(): ScaffoldExt {
                         )
                     }
                 } else {
-                    IconButton(onClick = {
+                    IconButton(onClick = throttle {
                         showSearchBar = true
                     }) {
                         Icon(
@@ -283,42 +277,14 @@ fun useAppListPage(): ScaffoldExt {
                                 .toDestinationsNavigator()
                                 .navigate(AppConfigPageDestination(appInfo.id))
                         })
-                        .height(IntrinsicSize.Min)
                         .appItemPadding(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (appInfo.icon != null) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .aspectRatio(1f)
-                        ) {
-                            Image(
-                                painter = rememberDrawablePainter(appInfo.icon),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .matchParentSize()
-                                    .padding(4.dp)
-                            )
-                        }
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Android,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .aspectRatio(1f)
-                                .fillMaxHeight()
-                                .padding(4.dp)
-                        )
-                    }
+                    AppIcon(appInfo = appInfo)
                     Spacer(modifier = Modifier.width(12.dp))
-
-                    val colHeight =
-                        (MaterialTheme.typography.bodyMedium.lineHeight.value + LocalTextStyle.current.lineHeight.value).dp
                     Column(
                         modifier = Modifier
-                            .height(colHeight)
                             .weight(1f),
                         verticalArrangement = Arrangement.Center
                     ) {

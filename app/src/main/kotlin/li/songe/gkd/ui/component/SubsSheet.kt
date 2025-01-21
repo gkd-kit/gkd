@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.component
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,7 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Delete
@@ -38,7 +39,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -46,10 +46,8 @@ import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.CategoryPageDestination
 import com.ramcosta.composedestinations.generated.destinations.CategoryPageDestination.invoke
-import com.ramcosta.composedestinations.generated.destinations.GlobalRulePageDestination
-import com.ramcosta.composedestinations.generated.destinations.GlobalRulePageDestination.invoke
-import com.ramcosta.composedestinations.generated.destinations.SubsPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SubsPageDestination.invoke
+import com.ramcosta.composedestinations.generated.destinations.GlobalGroupListPageDestination
+import com.ramcosta.composedestinations.generated.destinations.SubsAppListPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -85,7 +83,7 @@ fun SubsSheet(
             }
         }
     } else {
-        val context = LocalContext.current as MainActivity
+        val context = LocalActivity.current as MainActivity
         val navController = LocalNavController.current
         val subsIdToRaw by subsIdToRawFlow.collectAsState()
         var swipeEnabled by remember { mutableStateOf(false) }
@@ -203,7 +201,7 @@ fun SubsSheet(
                                     sheetSubsIdFlow.value = null
                                     navController
                                         .toDestinationsNavigator()
-                                        .navigate(GlobalRulePageDestination(subsItem.id))
+                                        .navigate(GlobalGroupListPageDestination(subsItem.id))
                                 })
                                 .then(childModifier),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -242,7 +240,7 @@ fun SubsSheet(
                                     sheetSubsIdFlow.value = null
                                     navController
                                         .toDestinationsNavigator()
-                                        .navigate(SubsPageDestination(subsItem.id))
+                                        .navigate(SubsAppListPageDestination(subsItem.id))
                                 })
                                 .then(childModifier),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -356,40 +354,6 @@ fun SubsSheet(
                             )
                         }
                     }
-                    if (!subsItem.isLocal && subscription.supportUri != null) {
-                        Row(
-                            modifier = Modifier
-                                .clickable(onClick = throttle {
-                                    openUri(subscription.supportUri)
-                                })
-                                .then(childModifier),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = "问题反馈",
-                                    style = MaterialTheme.typography.labelLarge,
-                                )
-                                StartEllipsisText(
-                                    text = subscription.supportUri,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.secondary,
-                                    softWrap = false,
-                                    modifier = Modifier
-                                        .clickable(onClick = throttle {
-                                            copyText(subscription.supportUri)
-                                        })
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                                contentDescription = null,
-                            )
-                        }
-                    }
                 } else {
                     val loading by updateSubsMutex.state.collectAsState()
                     Column(
@@ -418,6 +382,13 @@ fun SubsSheet(
                     modifier = childModifier,
                     horizontalArrangement = Arrangement.End
                 ) {
+                    if (!subsItem.isLocal && subscription?.supportUri != null)  {
+                        IconButton(onClick = throttle {
+                            openUri(subscription.supportUri)
+                        }) {
+                            Icon(imageVector = Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = null)
+                        }
+                    }
                     IconButton(onClick = throttle {
                         setSubsId(null)
                         sheetSubsIdFlow.value = null

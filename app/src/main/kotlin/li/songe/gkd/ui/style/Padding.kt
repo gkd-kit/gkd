@@ -12,6 +12,12 @@ val EmptyHeight = 40.dp
 
 fun Modifier.itemPadding() = this.padding(itemHorizontalPadding, itemVerticalPadding)
 
+fun Modifier.itemFlagPadding() = this.padding(
+    start = itemHorizontalPadding,
+    top = itemVerticalPadding,
+    bottom = itemVerticalPadding
+)
+
 fun Modifier.titleItemPadding() = this.padding(
     itemHorizontalPadding,
     itemVerticalPadding + itemVerticalPadding / 2,
@@ -19,7 +25,7 @@ fun Modifier.titleItemPadding() = this.padding(
     itemVerticalPadding - itemVerticalPadding / 2
 )
 
-fun Modifier.appItemPadding() = this.padding(10.dp, 10.dp)
+fun Modifier.appItemPadding() = this.padding(itemHorizontalPadding, itemVerticalPadding)
 
 fun Modifier.menuPadding() = this
     .padding(MenuDefaults.DropdownMenuItemContentPadding)

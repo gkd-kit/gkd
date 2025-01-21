@@ -1,5 +1,6 @@
 package li.songe.gkd.ui
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -38,7 +39,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewModelScope
@@ -48,22 +48,19 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.AppItemPageDestination
-import com.ramcosta.composedestinations.generated.destinations.GlobalRulePageDestination
+import com.ramcosta.composedestinations.generated.destinations.GlobalGroupListPageDestination
+import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.ActionLog
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.stringify
-import li.songe.gkd.data.switch
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
@@ -91,7 +88,7 @@ fun ActionLogPage(
     subsId: Long? = null,
     appId: String? = null,
 ) {
-    val context = LocalContext.current as MainActivity
+    val context = LocalActivity.current as MainActivity
     val mainVm = context.mainVm
     val navController = LocalNavController.current
     val vm = viewModel<ActionLogVm>()
@@ -114,7 +111,7 @@ fun ActionLogPage(
                 )
             } else {
                 DbSet.subsConfigDao.queryGlobalGroupTypeConfig(log.subsId, log.groupKey)
-            }).map { s -> s.firstOrNull() }.stateIn(vm.viewModelScope, SharingStarted.Eagerly, null)
+            }).stateIn(vm.viewModelScope, SharingStarted.Eagerly, null)
             setPreviewConfigFlow(stateFlow)
         } else {
             setPreviewConfigFlow(MutableStateFlow(null))
@@ -241,7 +238,7 @@ fun ActionLogPage(
                                 navController
                                     .toDestinationsNavigator()
                                     .navigate(
-                                        AppItemPageDestination(
+                                        SubsAppGroupListPageDestination(
                                             clickLog.subsId, clickLog.appId, clickLog.groupKey
                                         )
                                     )
@@ -249,7 +246,7 @@ fun ActionLogPage(
                                 navController
                                     .toDestinationsNavigator()
                                     .navigate(
-                                        GlobalRulePageDestination(
+                                        GlobalGroupListPageDestination(
                                             clickLog.subsId, clickLog.groupKey
                                         )
                                     )
@@ -368,7 +365,7 @@ private fun ActionLogCard(
     subsId: Long?,
     appId: String?,
 ) {
-    val context = LocalContext.current as MainActivity
+    val context = LocalActivity.current as MainActivity
     val (actionLog, group, rule) = item
     val lastActionLog = lastItem?.first
     val isDiffApp = actionLog.appId != lastActionLog?.appId

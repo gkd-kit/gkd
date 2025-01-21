@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.media.projection.MediaProjectionManager
 import android.os.Build
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -45,7 +46,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -96,11 +96,10 @@ import rikka.shizuku.Shizuku
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun AdvancedPage() {
-    val context = LocalContext.current as MainActivity
+    val context = LocalActivity.current as MainActivity
     val vm = viewModel<AdvancedVm>()
     val navController = LocalNavController.current
     val store by storeFlow.collectAsState()
-    val snapshotCount by vm.snapshotCountFlow.collectAsState()
 
     var showEditPortDlg by remember {
         mutableStateOf(false)
@@ -310,7 +309,7 @@ fun AdvancedPage() {
 
             SettingItem(
                 title = "快照记录",
-                subtitle = if (snapshotCount > 0) "存在 $snapshotCount 条记录" else "暂无记录",
+                subtitle = "应用界面节点信息及截图",
                 onClick = {
                     navController.toDestinationsNavigator().navigate(SnapshotPageDestination)
                 }
@@ -534,7 +533,7 @@ private fun ShizukuFragment(enabled: Boolean = true) {
 
 @Composable
 private fun ShizukuTitleCard() {
-    val context = LocalContext.current as MainActivity
+    val context = LocalActivity.current as MainActivity
     Row(
         modifier = Modifier
             .fillMaxWidth()

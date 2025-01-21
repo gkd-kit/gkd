@@ -1,6 +1,7 @@
 package li.songe.gkd.ui
 
 import android.graphics.Bitmap
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -39,7 +40,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -84,7 +84,7 @@ import li.songe.gkd.util.toast
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun SnapshotPage() {
-    val context = LocalContext.current as MainActivity
+    val context = LocalActivity.current as MainActivity
     val navController = LocalNavController.current
     val colorScheme = MaterialTheme.colorScheme
 

@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
+
 @Serializable
 @Entity(
     tableName = "subs_config",
@@ -30,6 +31,7 @@ data class SubsConfig(
     @ColumnInfo(name = "exclude", defaultValue = "") val exclude: String = "",
 ) : Parcelable {
 
+    @Suppress("ConstPropertyName")
     companion object {
         const val AppType = 1
         const val AppGroupType = 2
@@ -58,10 +60,13 @@ data class SubsConfig(
         suspend fun deleteBySubsId(vararg subsIds: Long): Int
 
         @Query("DELETE FROM subs_config WHERE subs_item_id=:subsItemId AND app_id=:appId")
-        suspend fun delete(subsItemId: Long, appId: String): Int
+        suspend fun deleteAppConfig(subsItemId: Long, appId: String): Int
 
-        @Query("DELETE FROM subs_config WHERE subs_item_id=:subsItemId AND app_id=:appId AND group_key=:groupKey")
-        suspend fun delete(subsItemId: Long, appId: String, groupKey: Int): Int
+        @Query("DELETE FROM subs_config WHERE type=${AppGroupType} AND subs_item_id=:subsItemId AND app_id=:appId AND group_key=:groupKey")
+        suspend fun deleteAppGroupConfig(subsItemId: Long, appId: String, groupKey: Int): Int
+
+        @Query("DELETE FROM subs_config WHERE type=${GlobalGroupType} AND subs_item_id=:subsItemId AND group_key=:groupKey")
+        suspend fun deleteGlobalGroupConfig(subsItemId: Long, groupKey: Int): Int
 
         @Query("SELECT * FROM subs_config WHERE subs_item_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)")
         fun queryUsedList(): Flow<List<SubsConfig>>
@@ -78,13 +83,13 @@ data class SubsConfig(
         @Query("SELECT * FROM subs_config WHERE type=${AppGroupType} AND subs_item_id=:subsItemId AND app_id=:appId AND group_key=:groupKey")
         fun queryAppGroupTypeConfig(
             subsItemId: Long, appId: String, groupKey: Int
-        ): Flow<List<SubsConfig>>
+        ): Flow<SubsConfig?>
 
         @Query("SELECT * FROM subs_config WHERE type=${GlobalGroupType} AND subs_item_id=:subsItemId")
         fun queryGlobalGroupTypeConfig(subsItemId: Long): Flow<List<SubsConfig>>
 
         @Query("SELECT * FROM subs_config WHERE type=${GlobalGroupType} AND subs_item_id=:subsItemId AND group_key=:groupKey")
-        fun queryGlobalGroupTypeConfig(subsItemId: Long, groupKey: Int): Flow<List<SubsConfig>>
+        fun queryGlobalGroupTypeConfig(subsItemId: Long, groupKey: Int): Flow<SubsConfig?>
 
         @Query("SELECT * FROM subs_config WHERE type=${AppGroupType} AND app_id=:appId AND subs_item_id IN (:subsItemIds)")
         fun queryAppConfig(subsItemIds: List<Long>, appId: String): Flow<List<SubsConfig>>
@@ -119,11 +124,61 @@ data class ExcludeData(
     val excludeAppIds = appIds.entries.filter { e -> e.value }.map { e -> e.key }.toHashSet()
     val includeAppIds = appIds.entries.filter { e -> !e.value }.map { e -> e.key }.toHashSet()
 
+    fun stringify(appId: String? = null): String {
+        return if (appId != null) {
+            activityIds.filter { e -> e.first == appId }.map { e -> e.second }.sorted()
+                .joinToString("\n")
+        } else {
+            (appIds.entries.map { e ->
+                if (e.value) {
+                    e.key
+                } else {
+                    "!${e.key}"
+                }
+            } + activityIds.map { e -> "${e.first}/${e.second}" }).sorted().joinToString("\n")
+        }
+    }
+
+    fun clear(appId: String): ExcludeData {
+        return copy(
+            appIds = appIds.toMutableMap().apply {
+                remove(appId)
+            },
+        )
+    }
+
+    fun switch(appId: String, activityId: String? = null): ExcludeData {
+        return if (activityId == null) {
+            copy(
+                appIds = appIds.toMutableMap().apply {
+                    if (get(appId) != false) {
+                        set(appId, false)
+                    } else {
+                        set(appId, true)
+                    }
+                },
+            )
+        } else {
+            copy(activityIds = activityIds.toMutableSet().apply {
+                val e = appId to activityId
+                if (contains(e)) {
+                    remove(e)
+                } else {
+                    add(e)
+                }
+            })
+        }
+    }
+
     companion object {
+        private val empty = ExcludeData(emptyMap(), emptySet())
         fun parse(exclude: String?): ExcludeData {
+            if (exclude == null || exclude.isBlank()) {
+                return empty
+            }
             val appIds = mutableMapOf<String, Boolean>()
             val activityIds = mutableSetOf<Pair<String, String>>()
-            (exclude ?: "").split('\n', ',').filter { s -> s.isNotBlank() }.map { s -> s.trim() }
+            exclude.split('\n', ',').filter { s -> s.isNotBlank() }.map { s -> s.trim() }
                 .forEach { s ->
                     if (s[0] == '!') {
                         appIds[s.substring(1)] = false
@@ -147,43 +202,5 @@ data class ExcludeData(
         fun parse(appId: String, exclude: String?): ExcludeData {
             return parse((exclude ?: "").split('\n', ',').joinToString("\n") { "$appId/$it" })
         }
-    }
-}
-
-fun ExcludeData.stringify(): String {
-    return (appIds.entries.map { e ->
-        if (e.value) {
-            e.key
-        } else {
-            "!${e.key}"
-        }
-    } + activityIds.map { e -> "${e.first}/${e.second}" }).sorted().joinToString("\n")
-}
-
-fun ExcludeData.stringify(appId: String): String {
-    return activityIds.filter { e -> e.first == appId }.map { e -> e.second }.sorted()
-        .joinToString("\n")
-}
-
-fun ExcludeData.switch(appId: String, activityId: String? = null): ExcludeData {
-    return if (activityId == null) {
-        copy(
-            appIds = appIds.toMutableMap().apply {
-                if (get(appId) != false) {
-                    set(appId, false)
-                } else {
-                    set(appId, true)
-                }
-            },
-        )
-    } else {
-        copy(activityIds = activityIds.toMutableSet().apply {
-            val e = appId to activityId
-            if (contains(e)) {
-                remove(e)
-            } else {
-                add(e)
-            }
-        })
     }
 }

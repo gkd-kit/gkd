@@ -3,22 +3,16 @@ package li.songe.gkd.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ramcosta.composedestinations.generated.destinations.AppItemPageDestination
+import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.map
 import li.songe.gkd.util.subsIdToRawFlow
-import li.songe.gkd.util.subsItemsFlow
 
-class AppItemVm (stateHandle: SavedStateHandle) : ViewModel() {
-    private val args = AppItemPageDestination.argsFrom(stateHandle)
-
-    val subsItemFlow =
-        subsItemsFlow.map { subsItems -> subsItems.find { s -> s.id == args.subsItemId } }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+class SubsAppGroupListVm (stateHandle: SavedStateHandle) : ViewModel() {
+    private val args = SubsAppGroupListPageDestination.argsFrom(stateHandle)
 
     val subsRawFlow = subsIdToRawFlow.map(viewModelScope) { s -> s[args.subsItemId] }
 

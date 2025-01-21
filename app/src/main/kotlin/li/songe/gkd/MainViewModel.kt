@@ -18,6 +18,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.permission.AuthReason
 import li.songe.gkd.ui.component.AlertDialogOptions
 import li.songe.gkd.ui.component.InputSubsLinkOption
+import li.songe.gkd.ui.component.RuleGroupState
 import li.songe.gkd.ui.component.UploadOptions
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.UpdateStatus
@@ -114,6 +115,8 @@ class MainViewModel : ViewModel() {
             }
         }
     }
+
+    val ruleGroupState = RuleGroupState(this)
 
     init {
         viewModelScope.launchTry(Dispatchers.IO) {

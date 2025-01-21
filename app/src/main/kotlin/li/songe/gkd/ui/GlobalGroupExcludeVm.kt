@@ -3,7 +3,7 @@ package li.songe.gkd.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ramcosta.composedestinations.generated.destinations.GlobalRuleExcludePageDestination
+import com.ramcosta.composedestinations.generated.destinations.GlobalGroupExcludePageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -19,17 +19,20 @@ import li.songe.gkd.util.orderedAppInfosFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 
-class GlobalRuleExcludeVm(stateHandle: SavedStateHandle) : ViewModel() {
-    private val args = GlobalRuleExcludePageDestination.argsFrom(stateHandle)
+class GlobalGroupExcludeVm(stateHandle: SavedStateHandle) : ViewModel() {
+    private val args = GlobalGroupExcludePageDestination.argsFrom(stateHandle)
 
     val rawSubsFlow = subsIdToRawFlow.map(viewModelScope) { it[args.subsItemId] }
 
     val groupFlow =
         rawSubsFlow.map(viewModelScope) { r -> r?.globalGroups?.find { g -> g.key == args.groupKey } }
 
+    val disabledAppSetFlow = groupFlow.map { g ->
+        (g?.apps ?: emptyList()).filter { a -> a.enable == false }.map { a -> a.id }.toSet()
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
     val subsConfigFlow =
         DbSet.subsConfigDao.queryGlobalGroupTypeConfig(args.subsItemId, args.groupKey)
-            .map { it.firstOrNull() }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val excludeDataFlow = subsConfigFlow.map(viewModelScope) { s -> ExcludeData.parse(s?.exclude) }
@@ -47,8 +50,9 @@ class GlobalRuleExcludeVm(stateHandle: SavedStateHandle) : ViewModel() {
     }
     val showSystemAppFlow = storeFlow.map(viewModelScope) { it.subsExcludeShowSystemApp }
     val showHiddenAppFlow = storeFlow.map(viewModelScope) { it.subsExcludeShowHiddenApp }
+    val showDisabledAppFlow = storeFlow.map(viewModelScope) { it.subsExcludeShowDisabledApp }
     val showAppInfosFlow =
-        combine(orderedAppInfosFlow.combine(showHiddenAppFlow) { appInfos, showHiddenApp ->
+        orderedAppInfosFlow.combine(showHiddenAppFlow) { appInfos, showHiddenApp ->
             if (showHiddenApp) {
                 appInfos
             } else {
@@ -60,18 +64,20 @@ class GlobalRuleExcludeVm(stateHandle: SavedStateHandle) : ViewModel() {
             } else {
                 apps.filter { a -> !a.isSystem }
             }
-        }, sortTypeFlow, appIdToOrderFlow) { apps, sortType, appIdToOrder ->
-            when (sortType) {
-                SortTypeOption.SortByAppMtime -> {
-                    apps.sortedBy { a -> -a.mtime }
-                }
+        }.let {
+            combine(it, sortTypeFlow, appIdToOrderFlow) { apps, sortType, appIdToOrder ->
+                when (sortType) {
+                    SortTypeOption.SortByAppMtime -> {
+                        apps.sortedBy { a -> -a.mtime }
+                    }
 
-                SortTypeOption.SortByTriggerTime -> {
-                    apps.sortedBy { a -> appIdToOrder[a.id] ?: Int.MAX_VALUE }
-                }
+                    SortTypeOption.SortByTriggerTime -> {
+                        apps.sortedBy { a -> appIdToOrder[a.id] ?: Int.MAX_VALUE }
+                    }
 
-                SortTypeOption.SortByName -> {
-                    apps
+                    SortTypeOption.SortByName -> {
+                        apps
+                    }
                 }
             }
         }.combine(debounceSearchStrFlow) { apps, str ->
@@ -84,6 +90,18 @@ class GlobalRuleExcludeVm(stateHandle: SavedStateHandle) : ViewModel() {
                         true
                     )
                 }).distinct()
+            }
+        }.let {
+            combine(
+                it,
+                showDisabledAppFlow,
+                disabledAppSetFlow
+            ) { apps, showDisabledApp, disabledAppSet ->
+                if (showDisabledApp || disabledAppSet.isEmpty()) {
+                    apps
+                } else {
+                    apps.filter { a -> !disabledAppSet.contains(a.id) }
+                }
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
