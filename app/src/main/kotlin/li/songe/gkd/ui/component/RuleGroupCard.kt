@@ -156,7 +156,7 @@ fun RuleGroupCard(
                 }
             } else {
                 Text(
-                    text = group.errorDesc ?: "",
+                    text = group.errorDesc ?: "未知错误",
                     modifier = Modifier.fillMaxWidth(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error
@@ -164,7 +164,9 @@ fun RuleGroupCard(
             }
         }
         Spacer(modifier = Modifier.width(8.dp))
-        if (checked != null) {
+        if (!group.valid) {
+            InnerDisableSwitch(valid = false)
+        } else if (checked != null) {
             Switch(
                 checked = checked,
                 onCheckedChange = throttle(onCheckedChange)
@@ -183,9 +185,25 @@ fun RuleGroupCard(
     }
 }
 
+
 @Composable
-fun InnerDisableSwitch() {
+fun InnerDisableSwitch(
+    valid: Boolean = true,
+) {
     val context = LocalActivity.current as MainActivity
+    val onClick = {
+        if (valid) {
+            context.mainVm.dialogFlow.updateDialogOptions(
+                title = "内置禁用",
+                text = "此规则组已经在其 apps 字段中配置对当前应用的禁用, 因此无法手动开启规则组\n\n提示: 这种情况一般在此全局规则无法适配/跳过适配/单独适配当前应用时出现",
+            )
+        } else {
+            context.mainVm.dialogFlow.updateDialogOptions(
+                title = "非法规则",
+                text = "规则存在错误, 无法启用",
+            )
+        }
+    }
     Switch(
         checked = false,
         enabled = false,
@@ -193,12 +211,8 @@ fun InnerDisableSwitch() {
         modifier = Modifier.clickable(
             interactionSource = remember { MutableInteractionSource() },
             indication = null,
-        ) {
-            context.mainVm.dialogFlow.updateDialogOptions(
-                title = "内置禁用",
-                text = "此规则组已经在其 apps 字段中配置对当前应用的禁用, 因此无法手动开启规则组\n\n提示: 这种情况一般在此全局规则无法适配/跳过适配/单独适配当前应用时出现",
-            )
-        }
+            onClick = throttle(onClick)
+        )
     )
 }
 
