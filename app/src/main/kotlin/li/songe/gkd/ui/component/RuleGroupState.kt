@@ -3,6 +3,7 @@ package li.songe.gkd.ui.component
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.generated.destinations.GlobalGroupExcludePageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
@@ -20,9 +21,11 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.map
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
+import kotlin.collections.get
 
 data class ShowGroupState(
     val subsId: Long,
@@ -31,6 +34,12 @@ data class ShowGroupState(
     val subsConfig: SubsConfig? = null,
     val pageAppId: String? = null,
 )
+
+@Composable
+private fun useSubs(subsId: Long?): RawSubscription? {
+    val scope = rememberCoroutineScope()
+    return remember(subsId) { subsIdToRawFlow.map(scope) { it[subsId] } }.collectAsState().value
+}
 
 @Composable
 private fun useSubsGroup(
@@ -94,10 +103,9 @@ class RuleGroupState(
     @Composable
     fun Render() {
         val navController = LocalNavController.current
-        val subsIdToRaw = subsIdToRawFlow.collectAsState().value
 
         val showGroupState = showGroupFlow.collectAsState().value
-        val showSubs = subsIdToRaw[showGroupState?.subsId]
+        val showSubs = useSubs(showGroupState?.subsId)
         val showGroup = useSubsGroup(showSubs, showGroupState?.groupKey, showGroupState?.appId)
         if (showGroupState?.groupKey != null && showSubs != null && showGroup != null) {
             val subsConfig = showSubsConfigFlow.collectAsState().value ?: showGroupState.subsConfig
@@ -143,19 +151,19 @@ class RuleGroupState(
                                 null
                             }
                         } else {
-                            if (subsConfig.enable != null) {
+                            subsConfig.enable?.let {
                                 vm.viewModelScope.launchAsFn {
                                     DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
                                     toast("已重置开关至初始状态")
                                 }
-                            } else {
-                                null
                             }
                         }
                     } else {
-                        vm.viewModelScope.launchAsFn {
-                            DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
-                            toast("已重置开关至初始状态")
+                        subsConfig.enable?.let {
+                            vm.viewModelScope.launchAsFn {
+                                DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
+                                toast("已重置开关至初始状态")
+                            }
                         }
                     }
                 },
@@ -204,7 +212,7 @@ class RuleGroupState(
         }
 
         val editGroupState = editOrAddGroupFlow.collectAsState().value
-        val editSubs = subsIdToRaw[editGroupState?.subsId]
+        val editSubs = useSubs(editGroupState?.subsId)
         val editGroup = useSubsGroup(editSubs, editGroupState?.groupKey, editGroupState?.appId)
         if (editGroupState != null && editSubs != null) {
             EditOrAddRuleGroupDialog(
@@ -216,7 +224,7 @@ class RuleGroupState(
         }
 
         val excludeGroupState = editExcludeGroupFlow.collectAsState().value
-        val excludeSubs = subsIdToRaw[excludeGroupState?.subsId]
+        val excludeSubs = useSubs(excludeGroupState?.subsId)
         if (excludeGroupState?.groupKey != null && excludeSubs != null) {
             EditGroupExcludeDialog(
                 subs = excludeSubs,
