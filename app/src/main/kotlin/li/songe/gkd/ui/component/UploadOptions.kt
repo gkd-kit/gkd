@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.component
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
@@ -7,7 +8,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewModelScope
-import com.blankj.utilcode.util.ClipboardUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
@@ -16,6 +16,7 @@ import li.songe.gkd.MainViewModel
 import li.songe.gkd.data.GithubPoliciesAsset
 import li.songe.gkd.util.GithubCookieException
 import li.songe.gkd.util.LoadStatus
+import li.songe.gkd.util.copyText
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.privacyStoreFlow
 import li.songe.gkd.util.toast
@@ -70,7 +71,7 @@ class UploadOptions(
 
     private fun stopTask() {
         if (statusFlow.value is LoadStatus.Loading && job != null) {
-            job?.cancel("您取消了上传")
+            job?.cancel("上传已取消")
             job = null
         }
     }
@@ -84,9 +85,16 @@ class UploadOptions(
                 AlertDialog(
                     title = { Text(text = "上传文件中") },
                     text = {
-                        LinearProgressIndicator(
-                            progress = { status.progress },
-                        )
+                        val showExactProgress = 0f < status.progress && status.progress < 1f
+                        AnimatedContent(showExactProgress) { showExact ->
+                            if (showExact) {
+                                LinearProgressIndicator(
+                                    progress = { status.progress },
+                                )
+                            } else {
+                                LinearProgressIndicator()
+                            }
+                        }
                     },
                     onDismissRequest = { },
                     confirmButton = {
@@ -101,23 +109,26 @@ class UploadOptions(
 
             is LoadStatus.Success -> {
                 val href = showHref(status.result)
-                AlertDialog(title = { Text(text = "上传完成") }, text = {
-                    Text(text = href)
-                }, onDismissRequest = {}, dismissButton = {
-                    TextButton(onClick = {
-                        statusFlow.value = null
-                    }) {
-                        Text(text = "关闭")
+                AlertDialog(
+                    title = { Text(text = "上传完成") },
+                    text = { Text(text = href) },
+                    onDismissRequest = {},
+                    dismissButton = {
+                        TextButton(onClick = {
+                            statusFlow.value = null
+                        }) {
+                            Text(text = "关闭")
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            copyText(href)
+                            statusFlow.value = null
+                        }) {
+                            Text(text = "复制并关闭")
+                        }
                     }
-                }, confirmButton = {
-                    TextButton(onClick = {
-                        ClipboardUtils.copyText(href)
-                        toast("复制成功")
-                        statusFlow.value = null
-                    }) {
-                        Text(text = "复制并关闭")
-                    }
-                })
+                )
             }
 
             is LoadStatus.Failure -> {
