@@ -8,7 +8,9 @@ import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import androidx.paging.map
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import li.songe.gkd.data.ActionLog
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.subsIdToRawFlow
@@ -45,5 +47,7 @@ class ActionLogVm(stateHandle: SavedStateHandle) : ViewModel() {
             }
         }
         .cachedIn(viewModelScope)
+
+    val showActionLogFlow = MutableStateFlow<ActionLog?>(null)
 
 }

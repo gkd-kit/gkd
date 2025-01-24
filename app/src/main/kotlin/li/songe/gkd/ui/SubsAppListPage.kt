@@ -55,6 +55,7 @@ import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.SubsAppCard
 import li.songe.gkd.ui.component.TowLineText
+import li.songe.gkd.ui.component.useSubs
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
@@ -80,11 +81,6 @@ fun SubsAppListPage(
     val appAndConfigs by vm.filterAppAndConfigsFlow.collectAsState()
     val searchStr by vm.searchStrFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
-
-    val subsRaw = vm.subsRawFlow.collectAsState().value
-
-    // 本地订阅
-//    val editable = subsItem?.id.let { it != null && it < 0 }
 
     var showSearchBar by rememberSaveable {
         mutableStateOf(false)
@@ -144,7 +140,7 @@ fun SubsAppListPage(
                     )
                 } else {
                     TowLineText(
-                        title = subsRaw?.name ?: subsItemId.toString(),
+                        title = useSubs(subsItemId)?.name ?: subsItemId.toString(),
                         subtitle = "应用规则",
                     )
                 }
@@ -253,7 +249,8 @@ fun SubsAppListPage(
             }
             item {
                 Spacer(modifier = Modifier.height(EmptyHeight))
-                if (appAndConfigs.isEmpty()) {
+                val firstLoading by vm.linkLoad.firstLoadingFlow.collectAsState()
+                if (appAndConfigs.isEmpty() && !firstLoading) {
                     EmptyText(
                         text = if (searchStr.isNotEmpty()) {
                             if (showUninstallApp) "暂无搜索结果" else "暂无搜索结果,请尝试修改筛选条件"
@@ -266,101 +263,4 @@ fun SubsAppListPage(
             }
         }
     }
-
-
-//    if (showAddDlg && subsRaw != null && subsItem != null) {
-//        var source by remember {
-//            mutableStateOf("")
-//        }
-//        val inputFocused = rememberSaveable { mutableStateOf(false) }
-//        AlertDialog(title = { Text(text = "添加应用规则") }, text = {
-//            OutlinedTextField(
-//                value = source,
-//                onValueChange = { source = it },
-//                maxLines = 10,
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .onFocusChanged {
-//                        if (it.isFocused) {
-//                            inputFocused.value = true
-//                        }
-//                    },
-//                placeholder = { Text(text = "请输入规则\n若应用规则已经存在则追加") },
-//            )
-//        }, onDismissRequest = {
-//            if (!inputFocused.value) {
-//                showAddDlg = false
-//            }
-//        }, confirmButton = {
-//            TextButton(onClick = {
-//                val newAppRaw = try {
-//                    RawSubscription.parseRawApp(source)
-//                } catch (e: Exception) {
-//                    LogUtils.d(e)
-//                    toast("非法规则${e.message}")
-//                    return@TextButton
-//                }
-//                if (newAppRaw.groups.isEmpty()) {
-//                    toast("不允许添加空规则组")
-//                    return@TextButton
-//                }
-//                if (newAppRaw.groups.any { s -> s.name.isBlank() }) {
-//                    toast("不允许添加空白名规则组,请先命名")
-//                    return@TextButton
-//                }
-//                val oldAppRawIndex = subsRaw.apps.indexOfFirst { a -> a.id == newAppRaw.id }
-//                val oldAppRaw = subsRaw.apps.getOrNull(oldAppRawIndex)
-//                if (oldAppRaw != null) {
-//                    // check same group name
-//                    newAppRaw.groups.forEach { g ->
-//                        if (oldAppRaw.groups.any { g0 -> g0.name == g.name }) {
-//                            toast("已经存在同名规则[${g.name}]\n请修改名称后再添加")
-//                            return@TextButton
-//                        }
-//                    }
-//                }
-//                // 重写添加的规则的 key
-//                val initKey =
-//                    ((oldAppRaw?.groups ?: emptyList()).maxByOrNull { g -> g.key }?.key ?: -1) + 1
-//                val finalAppRaw = if (oldAppRaw != null) {
-//                    newAppRaw.copy(groups = oldAppRaw.groups + newAppRaw.groups.mapIndexed { i, g ->
-//                        g.copy(
-//                            key = initKey + i
-//                        )
-//                    })
-//                } else {
-//                    newAppRaw.copy(groups = newAppRaw.groups.mapIndexed { i, g ->
-//                        g.copy(
-//                            key = initKey + i
-//                        )
-//                    })
-//                }
-//                val newApps = if (oldAppRaw != null) {
-//                    subsRaw.apps.toMutableList().apply {
-//                        set(oldAppRawIndex, finalAppRaw)
-//                    }
-//                } else {
-//                    subsRaw.apps.toMutableList().apply {
-//                        add(finalAppRaw)
-//                    }
-//                }
-//                vm.viewModelScope.launchTry {
-//                    updateSubscription(
-//                        subsRaw.copy(
-//                            apps = newApps, version = subsRaw.version + 1
-//                        )
-//                    )
-//                    DbSet.subsItemDao.update(subsItem.copy(mtime = System.currentTimeMillis()))
-//                    showAddDlg = false
-//                    toast("添加成功")
-//                }
-//            }, enabled = source.isNotEmpty()) {
-//                Text(text = "添加")
-//            }
-//        }, dismissButton = {
-//            TextButton(onClick = { showAddDlg = false }) {
-//                Text(text = "取消")
-//            }
-//        })
-//    }
 }

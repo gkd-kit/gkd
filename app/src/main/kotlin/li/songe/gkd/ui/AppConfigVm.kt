@@ -4,20 +4,16 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import li.songe.gkd.data.ResolvedAppGroup
 import li.songe.gkd.data.ResolvedGlobalGroup
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.util.LinkLoad
 import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.collator
 import li.songe.gkd.util.findOption
@@ -27,31 +23,9 @@ import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.usedSubsEntriesFlow
 
 
-class LinkLoad(scope: CoroutineScope) {
-    private val firstLoadCountFlow = MutableStateFlow(0)
-    val firstLoadingFlow by lazy { firstLoadCountFlow.map(scope) { it > 0 } }
-    fun <T> invoke(targetFlow: Flow<T>): Flow<T> {
-        firstLoadCountFlow.update { it + 1 }
-        var used = false
-        return targetFlow.onEach {
-            if (!used) {
-                firstLoadCountFlow.update {
-                    if (!used) {
-                        used = true
-                        it - 1
-                    } else {
-                        it
-                    }
-                }
-            }
-        }
-    }
-}
-
 class AppConfigVm(stateHandle: SavedStateHandle) : ViewModel() {
     private val args = AppConfigPageDestination.argsFrom(stateHandle)
 
-    // 避免打开页面时短时间内数据未加载完成导致短暂显示的空数据提示
     val linkLoad = LinkLoad(viewModelScope)
 
     private val latestGlobalLogsFlow = DbSet.actionLogDao.queryAppLatest(
