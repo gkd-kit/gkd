@@ -44,10 +44,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
-import com.ramcosta.composedestinations.generated.destinations.CategoryPageDestination
-import com.ramcosta.composedestinations.generated.destinations.CategoryPageDestination.invoke
 import com.ramcosta.composedestinations.generated.destinations.GlobalGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsAppListPageDestination
+import com.ramcosta.composedestinations.generated.destinations.SubsCategoryPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -60,6 +59,7 @@ import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.copyText
+import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.subsIdToRawFlow
@@ -280,7 +280,7 @@ fun SubsSheet(
                                     sheetSubsIdFlow.value = null
                                     navController
                                         .toDestinationsNavigator()
-                                        .navigate(CategoryPageDestination(subsItem.id))
+                                        .navigate(SubsCategoryPageDestination(subsItem.id))
                                 })
                                 .then(childModifier),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -382,11 +382,14 @@ fun SubsSheet(
                     modifier = childModifier,
                     horizontalArrangement = Arrangement.End
                 ) {
-                    if (!subsItem.isLocal && subscription?.supportUri != null)  {
+                    if (!subsItem.isLocal && subscription?.supportUri != null) {
                         IconButton(onClick = throttle {
                             openUri(subscription.supportUri)
                         }) {
-                            Icon(imageVector = Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = null)
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                                contentDescription = null
+                            )
                         }
                     }
                     IconButton(onClick = throttle {
@@ -405,18 +408,16 @@ fun SubsSheet(
                         }
                     }
                     if (subsItem.id != LOCAL_SUBS_ID) {
-                        IconButton(onClick = throttle {
-                            vm.viewModelScope.launchTry {
-                                context.mainVm.dialogFlow.waitResult(
-                                    title = "删除订阅",
-                                    text = "确定删除 ${subscription?.name ?: subsItem.id} ?",
-                                    error = true,
-                                )
-                                sheetSubsIdFlow.value = null
-                                setSubsId(null)
-                                deleteSubscription(subsItem.id)
-                            }
-                        }) {
+                        IconButton(onClick = throttle(vm.viewModelScope.launchAsFn {
+                            context.mainVm.dialogFlow.waitResult(
+                                title = "删除订阅",
+                                text = "确定删除 ${subscription?.name ?: subsItem.id} ?",
+                                error = true,
+                            )
+                            sheetSubsIdFlow.value = null
+                            setSubsId(null)
+                            deleteSubscription(subsItem.id)
+                        })) {
                             Icon(
                                 imageVector = Icons.Outlined.Delete,
                                 contentDescription = null,

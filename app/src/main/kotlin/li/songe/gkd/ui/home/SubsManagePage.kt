@@ -153,10 +153,8 @@ fun useSubsManagePage(): ScaffoldExt {
                         storeFlow.update { s -> s.copy(updateSubsInterval = it.value) }
                     }
 
-                    val updateValue = remember {
-                        throttle(fn = {
-                            storeFlow.update { it.copy(subsPowerWarn = !it.subsPowerWarn) }
-                        })
+                    val updateValue = throttle {
+                        storeFlow.update { it.copy(subsPowerWarn = !it.subsPowerWarn) }
                     }
                     Row(
                         modifier = Modifier

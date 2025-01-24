@@ -1,5 +1,7 @@
 package li.songe.gkd.util
 
+import androidx.compose.ui.state.ToggleableState
+
 sealed interface Option<T> {
     val value: T
     val label: String
@@ -62,13 +64,19 @@ sealed class EnableGroupOption(
     override val value: Boolean?,
     override val label: String
 ) : Option<Boolean?> {
-    data object FollowSubs : DarkThemeOption(null, "跟随订阅")
-    data object AllEnable : DarkThemeOption(true, "全部启用")
-    data object AllDisable : DarkThemeOption(false, "全部关闭")
+    data object FollowSubs : EnableGroupOption(null, "跟随订阅")
+    data object AllEnable : EnableGroupOption(true, "全部启用")
+    data object AllDisable : EnableGroupOption(false, "全部关闭")
 
     companion object {
         val allSubObject by lazy { arrayOf(FollowSubs, AllEnable, AllDisable) }
     }
+}
+
+fun Option<Boolean?>.toToggleableState() = when (value) {
+    true -> ToggleableState.On
+    false -> ToggleableState.Off
+    null -> ToggleableState.Indeterminate
 }
 
 sealed class RuleSortOption(override val value: Int, override val label: String) : Option<Int> {
