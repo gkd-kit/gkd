@@ -167,6 +167,7 @@ fun EditGithubCookieDlg(showEditCookieDlgFlow: MutableStateFlow<Boolean>) {
                 TextButton(onClick = {
                     showEditCookieDlgFlow.value = false
                     privacyStoreFlow.update { it.copy(githubCookie = value.trim()) }
+                    toast("更新成功")
                 }) {
                     Text(text = "确认")
                 }
