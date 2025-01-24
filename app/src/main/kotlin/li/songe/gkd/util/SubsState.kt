@@ -114,32 +114,30 @@ fun updateSubscription(subscription: RawSubscription) {
     }
 }
 
+fun getCategoryEnable(
+    category: RawSubscription.RawCategory?,
+    categoryConfig: CategoryConfig?,
+): Boolean? = if (categoryConfig != null) {
+    // 批量配置
+    categoryConfig.enable
+} else {
+    // 批量默认
+    category?.enable
+}
+
 fun getGroupEnable(
     group: RawSubscription.RawGroupProps,
     subsConfig: SubsConfig?,
     category: RawSubscription.RawCategory? = null,
     categoryConfig: CategoryConfig? = null,
-): Boolean {
-    return when (group) {
-        // 优先级: 规则用户配置 > 批量配置 > 批量默认 > 规则默认
-        is RawSubscription.RawAppGroup -> {
-            subsConfig?.enable ?: if (category != null) {// 这个规则被批量配置捕获
-                val enable = if (categoryConfig != null) {
-                    // 2.批量配置
-                    categoryConfig.enable
-                } else {
-                    // 3.批量默认
-                    category.enable
-                }
-                enable
-            } else {
-                null
-            } ?: group.enable ?: true
-        }
+): Boolean = when (group) {
+    // 优先级: 规则用户配置 > 批量配置 > 批量默认 > 规则默认
+    is RawSubscription.RawAppGroup -> {
+        subsConfig?.enable ?: getCategoryEnable(category, categoryConfig) ?: group.enable ?: true
+    }
 
-        is RawSubscription.RawGlobalGroup -> {
-            subsConfig?.enable ?: group.enable ?: true
-        }
+    is RawSubscription.RawGlobalGroup -> {
+        subsConfig?.enable ?: group.enable ?: true
     }
 }
 

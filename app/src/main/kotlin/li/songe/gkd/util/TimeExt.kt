@@ -1,5 +1,7 @@
 package li.songe.gkd.util
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -37,7 +39,7 @@ fun Long.format(formatStr: String): String {
     return df.format(this)
 }
 
-data class ThrottleTimer(
+private data class ThrottleTimer(
     private val interval: Long = 500L,
     private var value: Long = 0L
 ) {
@@ -53,22 +55,28 @@ data class ThrottleTimer(
 
 private val defaultThrottleTimer by lazy { ThrottleTimer() }
 
+@Composable
 fun throttle(
     fn: (() -> Unit),
 ): (() -> Unit) {
-    return {
-        if (defaultThrottleTimer.expired()) {
-            fn.invoke()
+    return remember(fn) {
+        {
+            if (defaultThrottleTimer.expired()) {
+                fn.invoke()
+            }
         }
     }
 }
 
+@Composable
 fun <T> throttle(
     fn: ((T) -> Unit),
 ): ((T) -> Unit) {
-    return {
-        if (defaultThrottleTimer.expired()) {
-            fn.invoke(it)
+    return remember(fn) {
+        {
+            if (defaultThrottleTimer.expired()) {
+                fn.invoke(it)
+            }
         }
     }
 }

@@ -221,7 +221,7 @@ fun CardFlagBar(visible: Boolean) {
     Row(
         modifier = Modifier
             .width(itemHorizontalPadding)
-            .height(16.dp),
+            .height(20.dp),
         horizontalArrangement = Arrangement.End,
     ) {
         AnimatedVisibility(
