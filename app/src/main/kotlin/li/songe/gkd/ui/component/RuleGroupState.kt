@@ -86,6 +86,7 @@ class RuleGroupState(
             RuleGroupDialog(
                 subs = showSubs,
                 group = showGroup,
+                appId = showGroupState.appId,
                 onDismissRequest = dismissShow,
                 onClickEdit = {
                     dismissShow()

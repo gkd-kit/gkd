@@ -14,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.outlined.AppRegistration
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
@@ -26,14 +27,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.ramcosta.composedestinations.generated.destinations.GlobalGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.ImagePreviewPageDestination
 import com.ramcosta.composedestinations.generated.destinations.ImagePreviewPageDestination.invoke
+import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
+import com.ramcosta.composedestinations.utils.currentDestinationAsState
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.delay
 import li.songe.gkd.data.RawSubscription
@@ -46,6 +51,7 @@ import li.songe.gkd.util.throttle
 fun RuleGroupDialog(
     subs: RawSubscription,
     group: RawSubscription.RawGroupProps,
+    appId: String?,
     onDismissRequest: () -> Unit,
     onClickEdit: (() -> Unit) = {},
     onClickEditExclude: () -> Unit,
@@ -120,6 +126,32 @@ fun RuleGroupDialog(
         },
         confirmButton = {
             Row {
+                val currentDestination by navController.currentDestinationAsState()
+                val (direction, destination) = remember(subs.id, appId, group.key) {
+                    if (group is RawSubscription.RawGlobalGroup) {
+                        GlobalGroupListPageDestination(
+                            subsItemId = subs.id,
+                            focusGroupKey = group.key
+                        ) to GlobalGroupListPageDestination
+                    } else {
+                        SubsAppGroupListPageDestination(
+                            subsItemId = subs.id,
+                            appId = appId.toString(),
+                            focusGroupKey = group.key
+                        ) to SubsAppGroupListPageDestination
+                    }
+                }
+                if (currentDestination?.baseRoute != destination.baseRoute) {
+                    IconButton(onClick = throttle {
+                        onDismissRequest()
+                        navController.navigate(direction.route)
+                    }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null
+                        )
+                    }
+                }
                 if (group.allExampleUrls.isNotEmpty()) {
                     IconButton(onClick = throttle {
                         onDismissRequest()
