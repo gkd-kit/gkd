@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.util.LinkLoad
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.collator
@@ -24,23 +25,28 @@ import li.songe.gkd.util.subsIdToRawFlow
 
 class SubsAppListVm(stateHandle: SavedStateHandle) : ViewModel() {
     private val args = SubsAppListPageDestination.argsFrom(stateHandle)
-
+    val linkLoad = LinkLoad(viewModelScope)
     val subsRawFlow = subsIdToRawFlow.map(viewModelScope) { s -> s[args.subsItemId] }
 
     private val appSubsConfigsFlow = DbSet.subsConfigDao.queryAppTypeConfig(args.subsItemId)
+        .let(linkLoad::invoke)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val groupSubsConfigsFlow = DbSet.subsConfigDao.querySubsGroupTypeConfig(args.subsItemId)
+        .let(linkLoad::invoke)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(args.subsItemId)
+        .let(linkLoad::invoke)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val appIdToOrderFlow =
-        DbSet.actionLogDao.queryLatestUniqueAppIds(args.subsItemId).map { appIds ->
-            appIds.mapIndexed { index, appId -> appId to index }.toMap()
-        }
-    val sortTypeFlow = storeFlow.map(viewModelScope) { SortTypeOption.allSubObject.findOption(it.subsAppSortType) }
+        DbSet.actionLogDao.queryLatestUniqueAppIds(args.subsItemId).let(linkLoad::invoke)
+            .map { appIds ->
+                appIds.mapIndexed { index, appId -> appId to index }.toMap()
+            }
+    val sortTypeFlow =
+        storeFlow.map(viewModelScope) { SortTypeOption.allSubObject.findOption(it.subsAppSortType) }
 
     val showUninstallAppFlow = storeFlow.map(viewModelScope) { it.subsAppShowUninstallApp }
     private val sortAppsFlow =
