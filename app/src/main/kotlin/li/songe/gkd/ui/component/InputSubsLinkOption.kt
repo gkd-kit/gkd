@@ -13,17 +13,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.flow.MutableStateFlow
-import li.songe.gkd.data.Value
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.subsItemsFlow
@@ -39,7 +34,6 @@ class InputSubsLinkOption {
     private val valueFlow = MutableStateFlow("")
     private val initValueFlow = MutableStateFlow("")
     private var continuation: Continuation<String?>? = null
-    private val inputFocused = Value(false)
 
     private fun resume(value: String?) {
         showFlow.value = false
@@ -47,7 +41,6 @@ class InputSubsLinkOption {
         initValueFlow.value = ""
         continuation?.resume(value)
         continuation = null
-        inputFocused.value = false
     }
 
     private fun submit() {
@@ -87,6 +80,7 @@ class InputSubsLinkOption {
             val value by valueFlow.collectAsState()
             val initValue by initValueFlow.collectAsState()
             AlertDialog(
+                properties = DialogProperties(dismissOnClickOutside = false),
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -105,36 +99,21 @@ class InputSubsLinkOption {
                     }
                 },
                 text = {
-                    val focusRequester = remember { FocusRequester() }
                     OutlinedTextField(
                         value = value,
                         onValueChange = {
                             valueFlow.value = it.trim()
                         },
                         maxLines = 8,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(focusRequester)
-                            .onFocusChanged {
-                                if (it.isFocused) {
-                                    inputFocused.value = true
-                                }
-                            },
+                        modifier = Modifier.autoFocus(),
                         placeholder = {
                             Text(text = "请输入订阅链接")
                         },
                         isError = value.isNotEmpty() && !URLUtil.isNetworkUrl(value),
                     )
-                    LaunchedEffect(null) {
-                        if (initValue.isNotEmpty()) {
-                            focusRequester.requestFocus()
-                        }
-                    }
                 },
                 onDismissRequest = {
-                    if (!inputFocused.value) {
-                        cancel()
-                    }
+                    cancel()
                 },
                 confirmButton = {
                     TextButton(
@@ -155,4 +134,3 @@ class InputSubsLinkOption {
         }
     }
 }
-

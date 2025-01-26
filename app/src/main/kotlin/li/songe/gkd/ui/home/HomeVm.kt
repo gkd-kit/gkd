@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import li.songe.gkd.appScope
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
@@ -73,6 +74,7 @@ class HomeVm : ViewModel() {
     }
     val showSystemAppFlow = storeFlow.map(viewModelScope) { s -> s.showSystemApp }
     val showHiddenAppFlow = storeFlow.map(viewModelScope) { s -> s.showHiddenApp }
+    val showSearchBarFlow = MutableStateFlow(false)
     val searchStrFlow = MutableStateFlow("")
     private val debounceSearchStrFlow = searchStrFlow.debounce(200)
         .stateIn(viewModelScope, SharingStarted.Eagerly, searchStrFlow.value)
@@ -115,5 +117,15 @@ class HomeVm : ViewModel() {
                 }).distinct()
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    init {
+        viewModelScope.launch {
+            showSearchBarFlow.collect {
+                if (!it) {
+                    searchStrFlow.value = ""
+                }
+            }
+        }
+    }
 
 }

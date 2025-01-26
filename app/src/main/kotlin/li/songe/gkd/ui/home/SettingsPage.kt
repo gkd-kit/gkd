@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.home
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,14 +29,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.generated.destinations.AboutPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
@@ -45,6 +44,7 @@ import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.TextSwitch
+import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.titleItemPadding
@@ -61,7 +61,7 @@ val settingsNav = BottomNavItem(
 
 @Composable
 fun useSettingsPage(): ScaffoldExt {
-    val context = LocalContext.current as MainActivity
+    val context = LocalActivity.current as MainActivity
     val navController = LocalNavController.current
     val store by storeFlow.collectAsState()
     val vm = viewModel<HomeVm>()
@@ -78,120 +78,117 @@ fun useSettingsPage(): ScaffoldExt {
         var value by remember {
             mutableStateOf(store.clickToast)
         }
-        val inputFocused = rememberSaveable { mutableStateOf(false) }
         val maxCharLen = 32
-        AlertDialog(title = { Text(text = "触发提示") }, text = {
-            OutlinedTextField(
-                value = value,
-                placeholder = {
-                    Text(text = "请输入提示内容")
-                },
-                onValueChange = {
-                    value = it.take(maxCharLen)
-                },
-                singleLine = true,
-                supportingText = {
+        AlertDialog(
+            properties = DialogProperties(dismissOnClickOutside = false),
+            title = { Text(text = "触发提示") },
+            text = {
+                OutlinedTextField(
+                    value = value,
+                    placeholder = {
+                        Text(text = "请输入提示内容")
+                    },
+                    onValueChange = {
+                        value = it.take(maxCharLen)
+                    },
+                    singleLine = true,
+                    supportingText = {
+                        Text(
+                            text = "${value.length} / $maxCharLen",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End,
+                        )
+                    },
+                    modifier = Modifier.autoFocus()
+                )
+            },
+            onDismissRequest = { showToastInputDlg = false },
+            confirmButton = {
+                TextButton(enabled = value.isNotEmpty(), onClick = {
+                    storeFlow.update { it.copy(clickToast = value) }
+                    showToastInputDlg = false
+                }) {
                     Text(
-                        text = "${value.length} / $maxCharLen",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.End,
+                        text = "确认",
                     )
-                },
-                modifier = Modifier.onFocusChanged {
-                    if (it.isFocused) {
-                        inputFocused.value = true
-                    }
                 }
-            )
-        }, onDismissRequest = {
-            if (!inputFocused.value) {
-                showToastInputDlg = false
+            },
+            dismissButton = {
+                TextButton(onClick = { showToastInputDlg = false }) {
+                    Text(
+                        text = "取消",
+                    )
+                }
             }
-        }, confirmButton = {
-            TextButton(enabled = value.isNotEmpty(), onClick = {
-                storeFlow.update { it.copy(clickToast = value) }
-                showToastInputDlg = false
-            }) {
-                Text(
-                    text = "确认",
-                )
-            }
-        }, dismissButton = {
-            TextButton(onClick = { showToastInputDlg = false }) {
-                Text(
-                    text = "取消",
-                )
-            }
-        })
+        )
     }
     if (showNotifTextInputDlg) {
         var value by remember {
             mutableStateOf(store.customNotifText)
         }
-        val inputFocused = rememberSaveable { mutableStateOf(false) }
-        AlertDialog(title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(text = "通知文案")
-                IconButton(onClick = throttle {
-                    context.mainVm.dialogFlow.updateDialogOptions(
-                        title = "文案规则",
-                        text = "通知文案支持变量替换,规则如下\n\${i} 全局规则数\n\${k} 应用数\n\${u} 应用规则组数\n\${n} 触发次数\n\n示例模板\n\${i}全局/\${k}应用/\${u}规则组/\${n}触发\n\n替换结果\n0全局/1应用/2规则组/3触发",
-                    )
-                }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
-                        contentDescription = null,
-                    )
-                }
-            }
-        }, text = {
-            val maxCharLen = 64
-            OutlinedTextField(
-                value = value,
-                placeholder = {
-                    Text(text = "请输入文案内容,支持变量替换")
-                },
-                onValueChange = {
-                    value = if (it.length > maxCharLen) it.take(maxCharLen) else it
-                },
-                maxLines = 4,
-                supportingText = {
-                    Text(
-                        text = "${value.length} / $maxCharLen",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.End,
-                    )
-                },
-                modifier = Modifier.onFocusChanged {
-                    if (it.isFocused) {
-                        inputFocused.value = true
+        AlertDialog(
+            properties = DialogProperties(dismissOnClickOutside = false),
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(text = "通知文案")
+                    IconButton(onClick = throttle {
+                        context.mainVm.dialogFlow.updateDialogOptions(
+                            title = "文案规则",
+                            text = "通知文案支持变量替换,规则如下\n\${i} 全局规则数\n\${k} 应用数\n\${u} 应用规则组数\n\${n} 触发次数\n\n示例模板\n\${i}全局/\${k}应用/\${u}规则组/\${n}触发\n\n替换结果\n0全局/1应用/2规则组/3触发",
+                        )
+                    }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                            contentDescription = null,
+                        )
                     }
                 }
-            )
-        }, onDismissRequest = {
-            if (!inputFocused.value) {
-                showNotifTextInputDlg = false
-            }
-        }, confirmButton = {
-            TextButton(enabled = value.isNotEmpty(), onClick = {
-                storeFlow.update { it.copy(customNotifText = value) }
-                showNotifTextInputDlg = false
-            }) {
-                Text(
-                    text = "确认",
+            },
+            text = {
+                val maxCharLen = 64
+                OutlinedTextField(
+                    value = value,
+                    placeholder = {
+                        Text(text = "请输入文案内容,支持变量替换")
+                    },
+                    onValueChange = {
+                        value = if (it.length > maxCharLen) it.take(maxCharLen) else it
+                    },
+                    maxLines = 4,
+                    supportingText = {
+                        Text(
+                            text = "${value.length} / $maxCharLen",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End,
+                        )
+                    },
+                    modifier = Modifier.autoFocus()
                 )
-            }
-        }, dismissButton = {
-            TextButton(onClick = { showNotifTextInputDlg = false }) {
-                Text(
-                    text = "取消",
-                )
-            }
-        })
+            },
+            onDismissRequest = {
+                showNotifTextInputDlg = false
+            },
+            confirmButton = {
+                TextButton(enabled = value.isNotEmpty(), onClick = {
+                    storeFlow.update { it.copy(customNotifText = value) }
+                    showNotifTextInputDlg = false
+                }) {
+                    Text(
+                        text = "确认",
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNotifTextInputDlg = false }) {
+                    Text(
+                        text = "取消",
+                    )
+                }
+            })
     }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()

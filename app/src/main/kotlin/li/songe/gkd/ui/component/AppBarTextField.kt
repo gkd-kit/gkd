@@ -52,12 +52,6 @@ fun AppBarTextField(
     val mergedTextStyle = LocalTextStyle.current.merge(MaterialTheme.typography.titleMedium)
         .merge(color = LocalContentColor.current)
 
-    // request focus when this composable is first initialized
-//    val focusRequester = FocusRequester()
-//    SideEffect {
-//        focusRequester.requestFocus()
-//    }
-
     // set the correct cursor position when this composable is first initialized
     var textFieldValue by remember {
         mutableStateOf(TextFieldValue(value, TextRange(value.length)))

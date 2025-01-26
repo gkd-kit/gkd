@@ -35,8 +35,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.lifecycle.viewModelScope
@@ -55,6 +53,7 @@ import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.SubsAppCard
 import li.songe.gkd.ui.component.TowLineText
+import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.useSubs
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.menuPadding
@@ -85,11 +84,7 @@ fun SubsAppListPage(
     var showSearchBar by rememberSaveable {
         mutableStateOf(false)
     }
-    val focusRequester = remember { FocusRequester() }
     LaunchedEffect(key1 = showSearchBar, block = {
-        if (showSearchBar && searchStr.isEmpty()) {
-            focusRequester.requestFocus()
-        }
         if (!showSearchBar) {
             vm.searchStrFlow.value = ""
         }
@@ -136,7 +131,7 @@ fun SubsAppListPage(
                         value = searchStr,
                         onValueChange = { newValue -> vm.searchStrFlow.value = newValue.trim() },
                         hint = "请输入应用名称/ID",
-                        modifier = Modifier.focusRequester(focusRequester)
+                        modifier = Modifier.autoFocus()
                     )
                 } else {
                     TowLineText(

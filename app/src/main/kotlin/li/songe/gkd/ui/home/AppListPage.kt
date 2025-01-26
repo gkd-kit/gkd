@@ -37,12 +37,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,6 +56,7 @@ import li.songe.gkd.ui.component.AppIcon
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.QueryPkgAuthCard
+import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
@@ -93,20 +91,7 @@ fun useAppListPage(): ScaffoldExt {
     } else {
         null
     }
-
-    var expanded by remember { mutableStateOf(false) }
-    var showSearchBar by rememberSaveable {
-        mutableStateOf(false)
-    }
-    val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(key1 = showSearchBar, block = {
-        if (showSearchBar && searchStr.isEmpty()) {
-            focusRequester.requestFocus()
-        }
-        if (!showSearchBar) {
-            vm.searchStrFlow.value = ""
-        }
-    })
+    val showSearchBar by vm.showSearchBarFlow.collectAsState()
     val listState = rememberLazyListState()
 
     var isFirstVisit by remember { mutableStateOf(true) }
@@ -127,7 +112,7 @@ fun useAppListPage(): ScaffoldExt {
             DisposableEffect(null) {
                 onDispose {
                     if (vm.searchStrFlow.value.isEmpty()) {
-                        showSearchBar = false
+                        vm.showSearchBarFlow.value = false
                     }
                 }
             }
@@ -137,14 +122,14 @@ fun useAppListPage(): ScaffoldExt {
                         if (KeyboardUtils.isSoftInputVisible(context)) {
                             softwareKeyboardController?.hide()
                         } else {
-                            showSearchBar = false
+                            vm.showSearchBarFlow.value = false
                         }
                     }
                     AppBarTextField(
                         value = searchStr,
                         onValueChange = { newValue -> vm.searchStrFlow.value = newValue.trim() },
                         hint = "请输入应用名称/ID",
-                        modifier = Modifier.focusRequester(focusRequester)
+                        modifier = Modifier.autoFocus()
                     )
                 } else {
                     Text(
@@ -163,7 +148,7 @@ fun useAppListPage(): ScaffoldExt {
                 if (showSearchBar) {
                     IconButton(onClick = throttle {
                         if (vm.searchStrFlow.value.isEmpty()) {
-                            showSearchBar = false
+                            vm.showSearchBarFlow.value = false
                         } else {
                             vm.searchStrFlow.value = ""
                         }
@@ -175,7 +160,7 @@ fun useAppListPage(): ScaffoldExt {
                     }
                 } else {
                     IconButton(onClick = throttle {
-                        showSearchBar = true
+                        vm.showSearchBarFlow.value = true
                     }) {
                         Icon(
                             imageVector = Icons.Default.Search,
@@ -183,6 +168,7 @@ fun useAppListPage(): ScaffoldExt {
                         )
                     }
                 }
+                var expanded by remember { mutableStateOf(false) }
                 IconButton(onClick = {
                     expanded = true
                 }) {

@@ -64,7 +64,9 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-        resourceConfigurations.addAll(listOf("zh", "en"))
+        androidResources {
+            localeFilters += listOf("zh", "en")
+        }
         ndk {
             // noinspection ChromeOsAbiSupport
             abiFilters += listOf("arm64-v8a", "x86_64")
@@ -154,6 +156,7 @@ android {
             "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
             "-opt-in=androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi",
             "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
+            "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi"
         )
     }
     dependenciesInfo.includeInApk = false
