@@ -1,23 +1,18 @@
 package li.songe.gkd.ui.component
 
 import androidx.activity.compose.LocalActivity
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
@@ -145,22 +140,14 @@ fun EditOrAddRuleGroupDialog(
         }
     }
 
-    val focusRequester = remember { FocusRequester() }
-    val inputFocused = rememberSaveable { mutableStateOf(false) }
     AlertDialog(
+        properties = DialogProperties(dismissOnClickOutside = false),
         title = { Text(text = if (group != null) "编辑规则组" else "新增规则组") },
         text = {
             OutlinedTextField(
                 value = value,
                 onValueChange = { value = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester)
-                    .onFocusChanged {
-                        if (it.isFocused) {
-                            inputFocused.value = true
-                        }
-                    },
+                modifier = Modifier.autoFocus(),
                 placeholder = {
                     Text(
                         text = if (app != null) "请输入规则组\n可以是APP规则\n也可以是单个规则组" else "请输入全局规则组",
@@ -171,15 +158,8 @@ fun EditOrAddRuleGroupDialog(
                 maxLines = 12,
                 textStyle = MaterialTheme.typography.bodySmall,
             )
-            LaunchedEffect(null) {
-                focusRequester.requestFocus()
-            }
         },
-        onDismissRequest = {
-            if (!inputFocused.value) {
-                onDismissRequest()
-            }
-        },
+        onDismissRequest = onDismissRequest,
         dismissButton = {
             TextButton(onClick = throttle(onDismissRequest)) {
                 Text(text = "取消")

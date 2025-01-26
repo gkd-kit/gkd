@@ -1,9 +1,13 @@
 package li.songe.gkd.ui.component
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.util.map
 import li.songe.gkd.util.subsIdToRawFlow
@@ -33,3 +37,15 @@ fun useSubsGroup(
         }
     }
 }
+
+@Composable
+private fun useAutoFocus(): FocusRequester {
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(null) {
+        focusRequester.requestFocus()
+    }
+    return focusRequester
+}
+
+@Composable
+fun Modifier.autoFocus() = focusRequester(useAutoFocus())

@@ -40,16 +40,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.LogUtils
@@ -76,6 +75,7 @@ import li.songe.gkd.shizuku.shizukuCheckWorkProfile
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
+import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
@@ -108,68 +108,66 @@ fun AdvancedPage() {
         var value by remember {
             mutableStateOf(store.httpServerPort.toString())
         }
-        val inputFocused = rememberSaveable { mutableStateOf(false) }
-        AlertDialog(title = { Text(text = "服务端口") }, text = {
-            OutlinedTextField(
-                value = value,
-                placeholder = {
-                    Text(text = "请输入 5000-65535 的整数")
-                },
-                onValueChange = {
-                    value = it.filter { c -> c.isDigit() }.take(5)
-                },
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onFocusChanged {
-                        if (it.isFocused) {
-                            inputFocused.value = true
-                        }
+        AlertDialog(
+            properties = DialogProperties(dismissOnClickOutside = false),
+            title = { Text(text = "服务端口") },
+            text = {
+                OutlinedTextField(
+                    value = value,
+                    placeholder = {
+                        Text(text = "请输入 5000-65535 的整数")
                     },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                supportingText = {
-                    Text(
-                        text = "${value.length} / 5",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.End,
-                    )
-                },
-            )
-        }, onDismissRequest = {
-            if (!inputFocused.value) {
+                    onValueChange = {
+                        value = it.filter { c -> c.isDigit() }.take(5)
+                    },
+                    singleLine = true,
+                    modifier = Modifier.autoFocus(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    supportingText = {
+                        Text(
+                            text = "${value.length} / 5",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End,
+                        )
+                    },
+                )
+            },
+            onDismissRequest = {
                 showEditPortDlg = false
-            }
-        }, confirmButton = {
-            TextButton(
-                enabled = value.isNotEmpty(),
-                onClick = {
-                    val newPort = value.toIntOrNull()
-                    if (newPort == null || !(5000 <= newPort && newPort <= 65535)) {
-                        toast("请输入 5000-65535 的整数")
-                        return@TextButton
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = value.isNotEmpty(),
+                    onClick = {
+                        val newPort = value.toIntOrNull()
+                        if (newPort == null || !(5000 <= newPort && newPort <= 65535)) {
+                            toast("请输入 5000-65535 的整数")
+                            return@TextButton
+                        }
+                        storeFlow.value = store.copy(
+                            httpServerPort = newPort
+                        )
+                        showEditPortDlg = false
+                        if (HttpService.httpServerFlow.value != null) {
+                            toast("已更新, 重启服务")
+                        } else {
+                            toast("已更新")
+                        }
                     }
-                    storeFlow.value = store.copy(
-                        httpServerPort = newPort
+                ) {
+                    Text(
+                        text = "确认", modifier = Modifier
                     )
-                    showEditPortDlg = false
-                    if (HttpService.httpServerFlow.value != null) {
-                        toast("已更新, 重启服务")
-                    } else {
-                        toast("已更新")
-                    }
                 }
-            ) {
-                Text(
-                    text = "确认", modifier = Modifier
-                )
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditPortDlg = false }) {
+                    Text(
+                        text = "取消"
+                    )
+                }
             }
-        }, dismissButton = {
-            TextButton(onClick = { showEditPortDlg = false }) {
-                Text(
-                    text = "取消"
-                )
-            }
-        })
+        )
     }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()

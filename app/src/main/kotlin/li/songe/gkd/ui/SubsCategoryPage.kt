@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
@@ -33,7 +32,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,10 +39,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
@@ -57,6 +54,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.CardFlagBar
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.TowLineText
+import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.icon.ResetSettings
@@ -361,22 +359,17 @@ private fun AddOrEditCategoryDialog(
             toast("添加成功")
         }
     }
-    val focusRequester = remember { FocusRequester() }
     AlertDialog(
+        properties = DialogProperties(dismissOnClickOutside = false),
         title = { Text(text = if (category == null) "添加类别" else "编辑类别") },
         text = {
             OutlinedTextField(
                 value = value,
                 onValueChange = { value = it.trim() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester),
+                modifier = Modifier.autoFocus(),
                 placeholder = { Text(text = "请输入类别名称") },
                 singleLine = true
             )
-            LaunchedEffect(null) {
-                focusRequester.requestFocus()
-            }
         },
         onDismissRequest = {},
         dismissButton = {

@@ -45,13 +45,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.KeyboardUtils
@@ -73,6 +71,7 @@ import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.InnerDisableSwitch
 import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.TowLineText
+import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemFlagPadding
 import li.songe.gkd.ui.style.menuPadding
@@ -109,11 +108,7 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
     var showSearchBar by rememberSaveable {
         mutableStateOf(false)
     }
-    val focusRequester = remember { FocusRequester() }
     LaunchedEffect(key1 = showSearchBar, block = {
-        if (showSearchBar && searchStr.isEmpty()) {
-            focusRequester.requestFocus()
-        }
         if (!showSearchBar) {
             vm.searchStrFlow.value = ""
         }
@@ -155,7 +150,7 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                     value = searchStr,
                     onValueChange = { newValue -> vm.searchStrFlow.value = newValue.trim() },
                     hint = "请输入应用名称/ID",
-                    modifier = Modifier.focusRequester(focusRequester)
+                    modifier = Modifier.autoFocus()
                 )
             } else {
                 TowLineText(
@@ -360,22 +355,15 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                 excludeData.stringify()
             )
         }
-        val inputFocused = rememberSaveable { mutableStateOf(false) }
         val oldSource = remember { source }
         AlertDialog(
+            properties = DialogProperties(dismissOnClickOutside = false),
             title = { Text(text = "编辑禁用") },
             text = {
                 OutlinedTextField(
                     value = source,
                     onValueChange = { source = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focusRequester)
-                        .onFocusChanged {
-                            if (it.isFocused) {
-                                inputFocused.value = true
-                            }
-                        },
+                    modifier = Modifier.autoFocus(),
                     placeholder = {
                         Text(
                             text = tipText,
@@ -386,14 +374,9 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                     maxLines = 12,
                     textStyle = MaterialTheme.typography.bodySmall
                 )
-                LaunchedEffect(null) {
-                    focusRequester.requestFocus()
-                }
             },
             onDismissRequest = {
-                if (!inputFocused.value) {
-                    showEditDlg = false
-                }
+                showEditDlg = false
             },
             dismissButton = {
                 TextButton(onClick = { showEditDlg = false }) {

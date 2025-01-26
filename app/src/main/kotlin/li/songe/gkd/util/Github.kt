@@ -16,11 +16,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.window.DialogProperties
 import io.ktor.client.call.body
 import io.ktor.client.plugins.onUpload
 import io.ktor.client.request.forms.MultiPartFormDataContent
@@ -37,6 +36,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
 import li.songe.gkd.data.GithubPoliciesAsset
+import li.songe.gkd.ui.component.autoFocus
 import java.io.File
 
 private fun HttpMessageBuilder.setCommonHeaders(cookie: String) {
@@ -122,12 +122,10 @@ fun EditGithubCookieDlg(showEditCookieDlgFlow: MutableStateFlow<Boolean>) {
         var value by remember {
             mutableStateOf(privacyStore.githubCookie ?: "")
         }
-        val inputFocused = rememberSaveable { mutableStateOf(false) }
         AlertDialog(
+            properties = DialogProperties(dismissOnClickOutside = false),
             onDismissRequest = {
-                if (!inputFocused.value) {
-                    showEditCookieDlgFlow.value = false
-                }
+                showEditCookieDlgFlow.value = false
             },
             title = {
                 Row(
@@ -153,13 +151,7 @@ fun EditGithubCookieDlg(showEditCookieDlgFlow: MutableStateFlow<Boolean>) {
                         value = it.filter { c -> c != '\n' && c != '\r' }
                     },
                     placeholder = { Text(text = "请输入 Github Cookie") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged {
-                            if (it.isFocused) {
-                                inputFocused.value = true
-                            }
-                        },
+                    modifier = Modifier.autoFocus(),
                     maxLines = 10,
                 )
             },
