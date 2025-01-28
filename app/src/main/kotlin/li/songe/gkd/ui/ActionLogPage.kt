@@ -358,7 +358,7 @@ private fun ActionLogDialog(
         ) {
             ItemText(
                 text = "查看规则组",
-                onClick = throttle {
+                onClick = {
                     onDismissRequest()
                     if (actionLog.groupType == SubsConfig.AppGroupType) {
                         navController
