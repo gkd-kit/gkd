@@ -1,10 +1,14 @@
 package li.songe.gkd.ui
 
 import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -21,6 +25,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
@@ -79,8 +84,11 @@ fun SubsAppGroupListPage(
                 subtitle = appInfoCache[appId]?.name ?: appRaw.name ?: appId
             )
         }, actions = {
-            if (editable && subs != null && appRaw.groups.isNotEmpty()) {
+            AnimatedVisibility(
+                visible = editable && subs != null && appRaw.groups.isNotEmpty(),
+            ) {
                 IconButton(onClick = throttle(vm.viewModelScope.launchAsFn {
+                    subs ?: return@launchAsFn
                     context.mainVm.dialogFlow.waitResult(
                         title = "删除规则组",
                         text = "删除当前列表所有规则组?"
@@ -117,13 +125,21 @@ fun SubsAppGroupListPage(
         LazyColumn(
             modifier = Modifier.scaffoldPadding(contentPadding)
         ) {
-            itemsIndexed(appRaw.groups, { i, g -> i.toString() + g.key }) { _, group ->
+            items(appRaw.groups, { it.key }) { group ->
                 val category = groupToCategoryMap[group]
                 val subsConfig = subsConfigs.find { it.groupKey == group.key }
                 val categoryConfig = categoryConfigs.find {
                     it.categoryKey == category?.key
                 }
                 RuleGroupCard(
+                    modifier = Modifier.animateItem(
+                        fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        placementSpec = spring(
+                            stiffness = Spring.StiffnessMediumLow,
+                            visibilityThreshold = IntOffset.VisibilityThreshold
+                        ),
+                        fadeOutSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                    ),
                     subs = subs!!,
                     appId = appId,
                     group = group,

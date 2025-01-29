@@ -67,7 +67,6 @@ fun RuleGroupDialog(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 val maxHeight = 300.dp
-                val textStyle = MaterialTheme.typography.bodySmall
 //                val showMaxLine = ceil(maxHeight.value / textStyle.lineHeight.value).toInt()
                 Column(
                     modifier = Modifier
@@ -95,7 +94,7 @@ fun RuleGroupDialog(
                             text = textState.value,
                             modifier = Modifier.padding(4.dp),
                             color = MaterialTheme.colorScheme.secondary,
-                            style = textStyle,
+                            style = MaterialTheme.typography.bodySmall,
                         )
                     }
                 }
