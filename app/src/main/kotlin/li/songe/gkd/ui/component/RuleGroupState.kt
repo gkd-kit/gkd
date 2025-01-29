@@ -29,6 +29,7 @@ data class ShowGroupState(
     val groupKey: Int? = null,
     val subsConfig: SubsConfig? = null,
     val pageAppId: String? = null,
+    val addAppRule: Boolean = false,
 )
 
 @Composable
@@ -183,15 +184,16 @@ class RuleGroupState(
             )
         }
 
-        val editGroupState = editOrAddGroupFlow.collectAsState().value
-        val editSubs = useSubs(editGroupState?.subsId)
-        val editGroup = useSubsGroup(editSubs, editGroupState?.groupKey, editGroupState?.appId)
-        if (editGroupState != null && editSubs != null) {
+        val editOrAddGroupState = editOrAddGroupFlow.collectAsState().value
+        val editOrAddSubs = useSubs(editOrAddGroupState?.subsId)
+        val editOrAddGroup = useSubsGroup(editOrAddSubs, editOrAddGroupState?.groupKey, editOrAddGroupState?.appId)
+        if (editOrAddGroupState != null && editOrAddSubs != null) {
             EditOrAddRuleGroupDialog(
-                subs = editSubs,
-                group = editGroup,
-                app = useEditSubsApp(editSubs, editGroupState.appId),
-                onDismissRequest = dismissEditOrAdd
+                subs = editOrAddSubs,
+                group = editOrAddGroup,
+                app = useEditSubsApp(editOrAddSubs, editOrAddGroupState.appId),
+                onDismissRequest = dismissEditOrAdd,
+                addAppRule = editOrAddGroupState.addAppRule
             )
         }
 

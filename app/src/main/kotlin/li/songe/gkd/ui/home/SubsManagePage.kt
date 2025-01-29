@@ -390,7 +390,7 @@ fun useSubsManagePage(): ScaffoldExt {
                 }) {
                     Icon(
                         imageVector = Icons.Filled.Add,
-                        contentDescription = "info",
+                        contentDescription = null,
                     )
                 }
             }

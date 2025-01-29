@@ -17,6 +17,7 @@ import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.RawSubscription
@@ -32,6 +33,7 @@ fun EditOrAddRuleGroupDialog(
     subs: RawSubscription,
     group: RawSubscription.RawGroupProps?,
     app: RawSubscription.RawApp?,
+    addAppRule: Boolean,
     onDismissRequest: () -> Unit,
 ) {
     val context = LocalActivity.current as MainActivity
@@ -52,52 +54,39 @@ fun EditOrAddRuleGroupDialog(
             LogUtils.d(e)
             error("非法JSON:${e.message}")
         }
-        val newGroup = try {
-            if (app != null) {
-                if (element["groups"] is JsonArray) {
-                    // 额外支持直接编辑 app 的 groups
-                    RawSubscription.parseApp(element).groups.let {
-                        it.find { g -> g.key == group?.key } ?: it.firstOrNull()
-                    }
-                } else {
-                    null
-                } ?: RawSubscription.parseGroup(element)
-            } else {
-                RawSubscription.parseRawGlobalGroup(value)
-            }
-        } catch (e: Exception) {
-            LogUtils.d(e)
-            error("非法规则:${e.message}")
-        }
-        if (newGroup.errorDesc != null) {
-            error(newGroup.errorDesc!!)
-        }
         if (group != null) {
+            // edit mode
+            val newGroup = try {
+                if (app != null) {
+                    if (element["groups"] is JsonArray) {
+                        val id = element["id"] as? JsonPrimitive
+                        if (id != null && (!id.isString || id.content != app.id)) {
+                            error("id与当前应用不一致")
+                        }
+                        RawSubscription.parseApp(element).let { newApp ->
+                            if (newApp.groups.isEmpty()) {
+                                error("至少输入一个规则组")
+                            }
+                            newApp.groups.first()
+                        }
+                    } else {
+                        null
+                    } ?: RawSubscription.parseAppGroup(element)
+                } else {
+                    RawSubscription.parseGlobalGroup(element)
+                }
+            } catch (e: Exception) {
+                LogUtils.d(e)
+                error("非法规则:${e.message}")
+            }
+            newGroup.errorDesc?.let { error(it) }
             if (newGroup.key != group.key) {
                 error("不能更改规则组的key")
             }
-        } else {
-            if (app != null) {
-                if (app.groups.any { it.name == newGroup.name }) {
-                    error("已存在同名[${newGroup.name}]规则组")
-                }
-                if (app.groups.any { it.key == newGroup.key }) {
-                    error("已存在同 key=${newGroup.key} 规则组")
-                }
-            } else {
-                if (subs.globalGroups.any { it.name == newGroup.name }) {
-                    error("已存在同名[${newGroup.name}]规则组")
-                }
-                if (subs.globalGroups.any { it.key == newGroup.key }) {
-                    error("已存在同 key=${newGroup.key} 规则组")
-                }
-            }
-        }
-        onDismissRequest()
-        val newSubs = if (app != null) {
-            newGroup as RawSubscription.RawAppGroup
-            subs.copy(apps = subs.apps.toMutableList().apply {
-                if (group != null) {
+            onDismissRequest()
+            val newSubs = if (app != null) {
+                newGroup as RawSubscription.RawAppGroup
+                subs.copy(apps = subs.apps.toMutableList().apply {
                     set(
                         indexOfFirst { a -> a.id == app.id },
                         app.copy(groups = app.groups.toMutableList().apply {
@@ -107,32 +96,92 @@ fun EditOrAddRuleGroupDialog(
                             )
                         })
                     )
-                } else {
-                    if (all { it.id != app.id }) {
-                        add(app.copy(groups = mutableListOf(newGroup)))
-                    } else {
-                        set(
-                            indexOfFirst { a -> a.id == app.id },
-                            app.copy(groups = app.groups.toMutableList().apply {
-                                add(newGroup)
-                            })
-                        )
-                    }
-                }
-            })
+                })
+            } else {
+                newGroup as RawSubscription.RawGlobalGroup
+                subs.copy(globalGroups = subs.globalGroups.toMutableList().apply {
+                    set(indexOfFirst { g -> g.key == newGroup.key }, newGroup)
+                })
+            }
+            updateSubscription(newSubs)
         } else {
-            newGroup as RawSubscription.RawGlobalGroup
-            val newGlobalGroups = subs.globalGroups.toMutableList().apply {
-                val i = indexOfFirst { g -> g.key == newGroup.key }
-                if (i >= 0) {
-                    set(i, newGroup)
+            // add mode
+            if (app != null) {
+                val newGroups = try {
+                    if (element["groups"] is JsonArray) {
+                        val id = element["id"] ?: error("缺少id")
+                        if (!(id is JsonPrimitive && id.isString && id.content != app.id)) {
+                            error("id与当前应用不一致")
+                        }
+                        RawSubscription.parseApp(element).apply {
+                            if (groups.isEmpty()) {
+                                error("至少输入一个规则组")
+                            }
+                        }.groups
+                    } else {
+                        null
+                    } ?: listOf(RawSubscription.parseAppGroup(element))
+                } catch (e: Exception) {
+                    LogUtils.d(e)
+                    error("非法规则:${e.message}")
+                }
+                newGroups.forEach { g ->
+                    checkGroupKeyName(app.groups, g)
+                    g.errorDesc?.let { error(it) }
+                }
+                onDismissRequest()
+                updateSubscription(subs.copy(apps = subs.apps.toMutableList().apply {
+                    val i = indexOfFirst { a -> a.id == app.id }
+                    if (i >= 0) {
+                        set(
+                            i,
+                            app.copy(groups = app.groups + newGroups)
+                        )
+                    } else {
+                        add(app.copy(groups = app.groups + newGroups))
+                    }
+                }))
+            } else {
+                if (addAppRule) {
+                    val newApp = try {
+                        RawSubscription.parseApp(element).apply {
+                            if (groups.isEmpty()) {
+                                error("至少输入一个规则组")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        LogUtils.d(e)
+                        error("非法规则:${e.message}")
+                    }
+                    onDismissRequest()
+                    updateSubscription(subs.copy(apps = subs.apps.toMutableList().apply {
+                        val app = find { it.id == newApp.id }
+                        if (app != null) {
+                            newApp.groups.forEach { g ->
+                                checkGroupKeyName(app.groups, g)
+                            }
+                            add(newApp.copy(groups = newApp.groups + newApp.groups))
+                        } else {
+                            add(newApp)
+                        }
+                    }))
                 } else {
-                    add(newGroup)
+                    val newGroup = try {
+                        RawSubscription.parseGlobalGroup(element)
+                    } catch (e: Exception) {
+                        LogUtils.d(e)
+                        error("非法规则:${e.message}")
+                    }
+                    checkGroupKeyName(subs.globalGroups, newGroup)
+                    onDismissRequest()
+                    updateSubscription(
+                        subs.copy(
+                            globalGroups = subs.globalGroups + newGroup
+                        )
+                    )
                 }
             }
-            subs.copy(globalGroups = newGlobalGroups)
         }
-        updateSubscription(newSubs)
         if (group != null) {
             toast("更新成功")
         } else {
@@ -150,7 +199,11 @@ fun EditOrAddRuleGroupDialog(
                 modifier = Modifier.autoFocus(),
                 placeholder = {
                     Text(
-                        text = if (app != null) "请输入规则组\n可以是APP规则\n也可以是单个规则组" else "请输入全局规则组",
+                        text = if (app != null || addAppRule) {
+                            "请输入应用规则组\n"
+                        } else {
+                            "请输入全局规则组\n"
+                        },
                         style = MaterialTheme.typography.bodySmall,
                     )
                 },
@@ -174,4 +227,16 @@ fun EditOrAddRuleGroupDialog(
             }
         },
     )
+}
+
+private fun checkGroupKeyName(
+    groups: List<RawSubscription.RawGroupProps>,
+    newGroup: RawSubscription.RawGroupProps
+) {
+    if (groups.any { it.name == newGroup.name }) {
+        error("已存在同名[${newGroup.name}]规则组")
+    }
+    if (groups.any { it.key == newGroup.key }) {
+        error("已存在同 key=${newGroup.key} 规则组")
+    }
 }

@@ -660,7 +660,7 @@ data class RawSubscription(
         }
 
 
-        private fun jsonToGroupRaw(groupRawJson: JsonElement, groupIndex: Int): RawAppGroup {
+        private fun jsonToGroupRaw(groupRawJson: JsonElement): RawAppGroup {
             val jsonObject = when (groupRawJson) {
                 JsonNull -> error("group must not be null")
                 is JsonObject -> groupRawJson
@@ -674,7 +674,7 @@ data class RawSubscription(
                 name = getString(jsonObject, "name") ?: error("miss group name"),
                 desc = getString(jsonObject, "desc"),
                 enable = getBoolean(jsonObject, "enable"),
-                key = getInt(jsonObject, "key") ?: groupIndex,
+                key = getInt(jsonObject, "key") ?: error("miss group key"),
                 rules = when (val rulesJson = jsonObject["rules"]) {
                     null, JsonNull -> emptyList()
                     is JsonPrimitive, is JsonObject -> JsonArray(listOf(rulesJson))
@@ -706,16 +706,22 @@ data class RawSubscription(
             )
         }
 
-        private fun jsonToAppRaw(jsonObject: JsonObject, appIndex: Int): RawApp {
+        private fun jsonToAppRaw(jsonObject: JsonObject, appIndex: Int? = null): RawApp {
             return RawApp(
-                id = getString(jsonObject, "id") ?: error("miss subscription.apps[$appIndex].id"),
+                id = getString(jsonObject, "id") ?: error(
+                    if (appIndex != null) {
+                        "miss subscription.apps[$appIndex].id"
+                    } else {
+                        "miss id"
+                    }
+                ),
                 name = getString(jsonObject, "name"),
                 groups = (when (val groupsJson = jsonObject["groups"]) {
                     null, JsonNull -> emptyList()
                     is JsonPrimitive, is JsonObject -> JsonArray(listOf(groupsJson))
                     is JsonArray -> groupsJson
-                }).mapIndexed { index, jsonElement ->
-                    jsonToGroupRaw(jsonElement, index)
+                }).map { jsonElement ->
+                    jsonToGroupRaw(jsonElement)
                 },
             )
         }
@@ -773,7 +779,7 @@ data class RawSubscription(
             )
         }
 
-        private fun jsonToGlobalGroups(jsonObject: JsonObject, groupIndex: Int): RawGlobalGroup {
+        private fun jsonToGlobalGroup(jsonObject: JsonObject, groupIndex: Int): RawGlobalGroup {
             return RawGlobalGroup(
                 key = getInt(jsonObject, "key") ?: error("miss group[$groupIndex].key"),
                 name = getString(jsonObject, "name") ?: error("miss group[$groupIndex].name"),
@@ -837,7 +843,7 @@ data class RawSubscription(
                     )
                 } ?: emptyList()),
                 globalGroups = (rootJson["globalGroups"]?.jsonArray?.mapIndexed { index, jsonElement ->
-                    jsonToGlobalGroups(jsonElement.jsonObject, index)
+                    jsonToGlobalGroup(jsonElement.jsonObject, index)
                 } ?: emptyList())
             )
         }
@@ -884,7 +890,7 @@ data class RawSubscription(
         }
 
         fun parseApp(jsonObject: JsonObject): RawApp {
-            val a = jsonToAppRaw(jsonObject, 0)
+            val a = jsonToAppRaw(jsonObject)
             a.groups.findDuplicatedItem { v -> v.key }?.let { v ->
                 error("duplicated app group: key=${v.key}")
             }
@@ -896,24 +902,16 @@ data class RawSubscription(
             return a
         }
 
-//        fun parseRawApp(source: String): RawApp {
-//            return parseApp(Json5.parseToJson5Element(source).jsonObject)
-//        }
-
-        fun parseGroup(jsonObject: JsonObject): RawAppGroup {
-            val g = jsonToGroupRaw(jsonObject, 0)
+        fun parseAppGroup(jsonObject: JsonObject): RawAppGroup {
+            val g = jsonToGroupRaw(jsonObject)
             g.rules.findDuplicatedItem { v -> v.key }?.let { v ->
                 error("duplicated app rule: key=${v.key}")
             }
             return g
         }
 
-//        fun parseRawGroup(source: String): RawAppGroup {
-//            return parseGroup(Json5.parseToJson5Element(source).jsonObject)
-//        }
-
-        fun parseRawGlobalGroup(source: String): RawGlobalGroup {
-            val g = jsonToGlobalGroups(Json5.parseToJson5Element(source).jsonObject, 0)
+        fun parseGlobalGroup(jsonObject: JsonObject): RawGlobalGroup {
+            val g = jsonToGlobalGroup(jsonObject, 0)
             g.rules.findDuplicatedItem { v -> v.key }?.let { v ->
                 error("duplicated global rule: key=${v.key}")
             }

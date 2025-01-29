@@ -1,6 +1,9 @@
 package li.songe.gkd.ui
 
 import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,6 +22,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -86,6 +90,14 @@ fun GlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
             items(globalGroups, { g -> g.key }) { group ->
                 val subsConfig = subsConfigs.find { it.groupKey == group.key }
                 RuleGroupCard(
+                    modifier = Modifier.animateItem(
+                        fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        placementSpec = spring(
+                            stiffness = Spring.StiffnessMediumLow,
+                            visibilityThreshold = IntOffset.VisibilityThreshold
+                        ),
+                        fadeOutSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                    ),
                     subs = subs!!,
                     appId = null,
                     group = group,

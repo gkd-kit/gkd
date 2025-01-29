@@ -21,7 +21,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -44,6 +43,7 @@ import li.songe.gkd.util.throttle
 
 @Composable
 fun RuleGroupCard(
+    modifier: Modifier = Modifier,
     subs: RawSubscription,
     appId: String?,
     group: RawSubscription.RawGroupProps,
@@ -119,10 +119,14 @@ fun RuleGroupCard(
         )
     }
     Row(
-        modifier = Modifier
-            .background(
-                if (highlighted) MaterialTheme.colorScheme.inversePrimary else Color.Transparent
-            )
+        modifier = modifier
+            .let {
+                if (highlighted) {
+                    it.background(MaterialTheme.colorScheme.inversePrimary)
+                } else {
+                    it
+                }
+            }
             .clickable(onClick = throttle(onClick))
             .itemFlagPadding(),
         horizontalArrangement = Arrangement.SpaceBetween,

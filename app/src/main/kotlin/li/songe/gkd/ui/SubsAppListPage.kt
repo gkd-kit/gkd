@@ -12,11 +12,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +53,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.QueryPkgAuthCard
+import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.ui.component.SubsAppCard
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.autoFocus
@@ -58,6 +61,7 @@ import li.songe.gkd.ui.component.useSubs
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
+import li.songe.gkd.util.LOCAL_SUBS_IDS
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SortTypeOption
@@ -212,6 +216,21 @@ fun SubsAppListPage(
                 }
 
             })
+        },
+        floatingActionButton = {
+            if (LOCAL_SUBS_IDS.contains(subsItemId)) {
+                FloatingActionButton(onClick = throttle {
+                    context.mainVm.ruleGroupState.editOrAddGroupFlow.value = ShowGroupState(
+                        subsId = subsItemId,
+                        addAppRule = true,
+                    )
+                }) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = null,
+                    )
+                }
+            }
         },
     ) { contentPadding ->
         LazyColumn(
