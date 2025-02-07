@@ -39,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -314,23 +315,25 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                     if (group != null) {
                         val checked = getChecked(excludeData, group, appInfo.id, appInfo)
                         if (checked != null) {
-                            Switch(
-                                checked = checked,
-                                onCheckedChange = throttle(vm.viewModelScope.launchAsFn<Boolean> { newChecked ->
-                                    val subsConfig = (vm.subsConfigFlow.value ?: SubsConfig(
-                                        type = SubsConfig.GlobalGroupType,
-                                        subsItemId = subsItemId,
-                                        groupKey = groupKey,
-                                    )).copy(
-                                        exclude = excludeData.copy(
-                                            appIds = excludeData.appIds.toMutableMap().apply {
-                                                set(appInfo.id, !newChecked)
-                                            })
-                                            .stringify()
-                                    )
-                                    DbSet.subsConfigDao.insert(subsConfig)
-                                }),
-                            )
+                            key(appInfo.id) {
+                                Switch(
+                                    checked = checked,
+                                    onCheckedChange = throttle(vm.viewModelScope.launchAsFn<Boolean> { newChecked ->
+                                        val subsConfig = (vm.subsConfigFlow.value ?: SubsConfig(
+                                            type = SubsConfig.GlobalGroupType,
+                                            subsItemId = subsItemId,
+                                            groupKey = groupKey,
+                                        )).copy(
+                                            exclude = excludeData.copy(
+                                                appIds = excludeData.appIds.toMutableMap().apply {
+                                                    set(appInfo.id, !newChecked)
+                                                })
+                                                .stringify()
+                                        )
+                                        DbSet.subsConfigDao.insert(subsConfig)
+                                    }),
+                                )
+                            }
                         } else {
                             InnerDisableSwitch()
                         }

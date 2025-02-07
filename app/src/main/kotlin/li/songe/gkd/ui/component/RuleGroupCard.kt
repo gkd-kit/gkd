@@ -18,6 +18,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -168,24 +169,26 @@ fun RuleGroupCard(
             }
         }
         Spacer(modifier = Modifier.width(8.dp))
-        if (!group.valid) {
-            InnerDisableSwitch(valid = false)
-        } else if (checked != null) {
-            Switch(
-                checked = checked,
-                onCheckedChange = throttle(onCheckedChange)
-            )
-        } else {
-            InnerDisableSwitch()
-        }
-        CardFlagBar(
-            visible = if (inGlobalAppPage) {
-                excludeData != null && excludeData.appIds.contains(appId)
+        key(subs.id, appId, group.key) {
+            if (!group.valid) {
+                InnerDisableSwitch(valid = false)
+            } else if (checked != null) {
+                // 避免在 LazyColumn 滑动中出现 Switch 切换动画
+                Switch(
+                    checked = checked,
+                    onCheckedChange = throttle(onCheckedChange)
+                )
             } else {
-                subsConfig?.enable != null
+                InnerDisableSwitch()
             }
-        )
-
+            CardFlagBar(
+                visible = if (inGlobalAppPage) {
+                    excludeData != null && excludeData.appIds.contains(appId)
+                } else {
+                    subsConfig?.enable != null
+                }
+            )
+        }
     }
 }
 
