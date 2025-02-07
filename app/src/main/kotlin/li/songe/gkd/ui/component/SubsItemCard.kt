@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.component
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -17,11 +18,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -51,7 +52,7 @@ fun SubsItemCard(
     onCheckedChange: ((Boolean) -> Unit),
     onSelectedChange: (() -> Unit)? = null,
 ) {
-    val context = LocalContext.current as MainActivity
+    val context = LocalActivity.current as MainActivity
     val subsLoadError by remember(subsItem.id) {
         subsLoadErrorsFlow.map(vm.viewModelScope) { it[subsItem.id] }
     }.collectAsState()
@@ -163,11 +164,13 @@ fun SubsItemCard(
                 }
             }
             Spacer(modifier = Modifier.width(4.dp))
-            Switch(
-                checked = subsItem.enable,
-                enabled = !isSelectedMode,
-                onCheckedChange = if (isSelectedMode) null else throttle(fn = onCheckedChange),
-            )
+            key(subsItem.id) {
+                Switch(
+                    checked = subsItem.enable,
+                    enabled = !isSelectedMode,
+                    onCheckedChange = if (isSelectedMode) null else throttle(fn = onCheckedChange),
+                )
+            }
         }
     }
 }
