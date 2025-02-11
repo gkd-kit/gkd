@@ -116,17 +116,16 @@ class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA11yEve
         fun execAction(gkdAction: GkdAction): ActionResult {
             val serviceVal = instance ?: throw RpcError("无障碍没有运行")
             val selector = Selector.parseOrNull(gkdAction.selector) ?: throw RpcError("非法选择器")
-            selector.checkSelector()?.let {
-                throw RpcError(it)
+            runCatching { selector.checkType(typeInfo) }.exceptionOrNull()?.let {
+                throw RpcError("选择器类型错误:${it.message}")
             }
             val matchOption = MatchOption(
-                quickFind = gkdAction.quickFind,
                 fastQuery = gkdAction.fastQuery,
             )
             val cache = A11yContext(true)
 
             val targetNode = serviceVal.safeActiveWindow?.let {
-                cache.querySelector(
+                cache.querySelfOrSelector(
                     it,
                     selector,
                     matchOption

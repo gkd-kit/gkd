@@ -14,7 +14,6 @@ import li.songe.gkd.shizuku.safeTap
 @Serializable
 data class GkdAction(
     val selector: String,
-    val quickFind: Boolean = false,
     val fastQuery: Boolean = false,
     val action: String? = null,
     val position: RawSubscription.Position? = null,

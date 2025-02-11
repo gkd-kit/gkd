@@ -133,6 +133,7 @@ private fun getFixTopActivity(): TopActivity {
     return topActivityFlow.value
 }
 
+@Synchronized
 fun getAndUpdateCurrentRules(): ActivityRule {
     val topActivity = getFixTopActivity()
     val oldActivityRule = activityRuleFlow.value
