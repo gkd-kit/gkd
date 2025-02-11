@@ -42,6 +42,7 @@ tasks.withType<com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
         !isSameTypeVersion(currentVersion, candidate.version)
     }
 }
+// ./gradlew versionCatalogUpdate --interactive
 projectDir.resolve("./gradle/libs.versions.updates.toml").apply {
     if (exists()) {
         delete()
