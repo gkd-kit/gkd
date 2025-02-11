@@ -1,8 +1,10 @@
+@file:Suppress("unused")
+
 package li.songe.selector
 
 import kotlin.js.JsExport
 
-fun escapeString(value: String, wrapChar: Char = '"'): String {
+internal fun escapeString(value: String, wrapChar: Char = '"'): String {
     val sb = StringBuilder(value.length + 2)
     sb.append(wrapChar)
     value.forEach { c ->

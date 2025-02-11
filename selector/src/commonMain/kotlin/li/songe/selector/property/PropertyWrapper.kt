@@ -1,5 +1,11 @@
-package li.songe.selector
+package li.songe.selector.property
 
+import li.songe.selector.MatchOption
+import li.songe.selector.QueryContext
+import li.songe.selector.Stringify
+import li.songe.selector.Transform
+import li.songe.selector.connect.CompareOperator
+import li.songe.selector.connect.ConnectWrapper
 import kotlin.js.JsExport
 
 @JsExport
@@ -16,12 +22,12 @@ data class PropertyWrapper(
     }
 
     fun <T> matchContext(
-        context: Context<T>,
+        context: QueryContext<T>,
         transform: Transform<T>,
         option: MatchOption,
-    ): Context<T>? {
+    ): QueryContext<T> {
         if (!segment.match(context, transform)) {
-            return null
+            return context.mismatch()
         }
         if (to == null) {
             return context
@@ -29,12 +35,11 @@ data class PropertyWrapper(
         return to.matchContext(context, transform, option)
     }
 
-
     val isMatchRoot = segment.expressions.any { e ->
-        e is BinaryExpression && e.operator.value == CompareOperator.Equal && e.left.value == "parent" && e.right.value == "null"
+        e is BinaryExpression && e.operator == CompareOperator.Equal && e.left.value == "parent" && e.right.value == "null"
     }
 
-    val fastQueryList = getFastQueryList(segment) ?: emptyList()
+    val fastQueryList by lazy { segment.fastQueryList ?: emptyList() }
 
     val length: Int
         get() = if (to == null) 1 else to.to.length + 1

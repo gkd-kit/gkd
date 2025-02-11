@@ -1,4 +1,4 @@
-package li.songe.selector
+package li.songe.selector.connect
 
 import kotlin.js.JsExport
 

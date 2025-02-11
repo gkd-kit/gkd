@@ -1,5 +1,10 @@
-package li.songe.selector
+package li.songe.selector.connect
 
+import li.songe.selector.MatchOption
+import li.songe.selector.QueryContext
+import li.songe.selector.Stringify
+import li.songe.selector.Transform
+import li.songe.selector.property.PropertyWrapper
 import kotlin.js.JsExport
 
 @JsExport
@@ -12,31 +17,31 @@ data class ConnectWrapper(
     }
 
     fun <T> matchContext(
-        context: Context<T>,
+        context: QueryContext<T>,
         transform: Transform<T>,
         option: MatchOption
-    ): Context<T>? {
+    ): QueryContext<T> {
         if (isMatchRoot) {
             // C <<n [parent=null] >n A
-            val root = transform.getRoot(context.current) ?: return null
+            val root = transform.getRoot(context.current) ?: return context.mismatch()
             return to.matchContext(context.next(root), transform, option)
         }
         if (canFq && option.fastQuery) {
             // C[name='a'||vid='b'] <<n A
             transform.traverseFastQueryDescendants(context.current, to.fastQueryList).forEach {
                 val r = to.matchContext(context.next(it), transform, option)
-                if (r != null) return r
+                if (r.matched) return r
             }
         } else {
             segment.traversal(context.current, transform).forEach {
                 if (it == null) return@forEach
                 val r = to.matchContext(context.next(it), transform, option)
-                if (r != null) return r
+                if (r.matched) return r
             }
         }
-        return null
+        return context.mismatch()
     }
 
-    private val isMatchRoot = to.isMatchRoot && segment.isMatchAnyAncestor
+    private val isMatchRoot = segment.isMatchAnyAncestor && to.isMatchRoot
     val canFq = segment.isMatchAnyDescendant && to.fastQueryList.isNotEmpty()
 }
