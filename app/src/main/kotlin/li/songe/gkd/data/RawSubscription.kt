@@ -14,7 +14,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
-import li.songe.gkd.service.checkSelector
+import li.songe.gkd.service.typeInfo
 import li.songe.gkd.util.LOCAL_SUBS_IDS
 import li.songe.gkd.util.json
 import li.songe.gkd.util.toast
@@ -192,7 +192,6 @@ data class RawSubscription(
     sealed interface RawCommonProps {
         val actionCd: Long?
         val actionDelay: Long?
-        val quickFind: Boolean?
         val fastQuery: Boolean?
         val matchRoot: Boolean?
         val matchDelay: Long?
@@ -276,7 +275,6 @@ data class RawSubscription(
         override val scopeKeys: List<Int>?,
         override val actionCd: Long?,
         override val actionDelay: Long?,
-        override val quickFind: Boolean?,
         override val fastQuery: Boolean?,
         override val matchRoot: Boolean?,
         override val matchDelay: Long?,
@@ -320,7 +318,6 @@ data class RawSubscription(
         override val name: String?,
         override val actionCd: Long?,
         override val actionDelay: Long?,
-        override val quickFind: Boolean?,
         override val fastQuery: Boolean?,
         override val matchRoot: Boolean?,
         override val matchDelay: Long?,
@@ -359,7 +356,6 @@ data class RawSubscription(
         override val actionMaximumKey: Int?,
         override val actionCd: Long?,
         override val actionDelay: Long?,
-        override val quickFind: Boolean?,
         override val fastQuery: Boolean?,
         override val matchRoot: Boolean?,
         override val actionMaximum: Int?,
@@ -407,7 +403,6 @@ data class RawSubscription(
         override val actionMaximumKey: Int?,
         override val actionCd: Long?,
         override val actionDelay: Long?,
-        override val quickFind: Boolean?,
         override val fastQuery: Boolean?,
         override val matchRoot: Boolean?,
         override val actionMaximum: Int?,
@@ -437,26 +432,15 @@ data class RawSubscription(
             val allSelectorStrings = rules.map { r ->
                 listOfNotNull(r.matches, r.excludeMatches, r.anyMatches).flatten()
             }.flatten()
-
-            val allSelector = allSelectorStrings.map { s ->
+            allSelectorStrings.forEach { source ->
                 try {
-                    Selector.parse(s).apply {
-                        cacheMap[s] = this
-                    }
+                    val selector = Selector.parse(source)
+                    selector.checkType(typeInfo)
+                    cacheMap[source] = selector
                 } catch (e: Exception) {
-                    LogUtils.d("非法选择器", e.toString())
-                    cacheMap[s] = null
-                    null
+                    LogUtils.d("非法选择器", source, e.toString())
+                    return "非法选择器\n$source\n${e.message}"
                 }
-            }
-
-            allSelector.forEachIndexed { i, s ->
-                if (s == null) {
-                    return "非法选择器:${allSelectorStrings[i]}"
-                }
-            }
-            allSelector.forEach { s ->
-                s?.checkSelector()?.let { return it }
             }
             rules.forEach { r ->
                 if (r.position?.isValid == false) {
@@ -635,7 +619,6 @@ data class RawSubscription(
                 actionDelay = getLong(jsonObject, "actionDelay") ?: getLong(jsonObject, "delay"),
                 preKeys = getIntIArray(jsonObject, "preKeys"),
                 action = getString(jsonObject, "action"),
-                quickFind = getBoolean(jsonObject, "quickFind"),
                 fastQuery = getBoolean(jsonObject, "fastQuery"),
                 matchRoot = getBoolean(jsonObject, "matchRoot"),
                 actionMaximum = getInt(jsonObject, "actionMaximum"),
@@ -682,7 +665,6 @@ data class RawSubscription(
                 }.map {
                     jsonToRuleRaw(it)
                 },
-                quickFind = getBoolean(jsonObject, "quickFind"),
                 fastQuery = getBoolean(jsonObject, "fastQuery"),
                 matchRoot = getBoolean(jsonObject, "matchRoot"),
                 actionMaximum = getInt(jsonObject, "actionMaximum"),
@@ -746,7 +728,6 @@ data class RawSubscription(
                 name = getString(jsonObject, "name"),
                 actionCd = getLong(jsonObject, "actionCd"),
                 actionDelay = getLong(jsonObject, "actionDelay"),
-                quickFind = getBoolean(jsonObject, "quickFind"),
                 fastQuery = getBoolean(jsonObject, "fastQuery"),
                 matchRoot = getBoolean(jsonObject, "matchRoot"),
                 actionMaximum = getInt(jsonObject, "actionMaximum"),
@@ -787,7 +768,6 @@ data class RawSubscription(
                 enable = getBoolean(jsonObject, "enable"),
                 actionCd = getLong(jsonObject, "actionCd"),
                 actionDelay = getLong(jsonObject, "actionDelay"),
-                quickFind = getBoolean(jsonObject, "quickFind"),
                 fastQuery = getBoolean(jsonObject, "fastQuery"),
                 matchRoot = getBoolean(jsonObject, "matchRoot"),
                 actionMaximum = getInt(jsonObject, "actionMaximum"),

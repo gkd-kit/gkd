@@ -33,7 +33,6 @@ sealed class ResolvedRule(
     private val matchTime = rule.matchTime ?: group.matchTime
     private val forcedTime = rule.forcedTime ?: group.forcedTime ?: 0L
     val matchOption = MatchOption(
-        quickFind = rule.quickFind ?: group.quickFind ?: false,
         fastQuery = rule.fastQuery ?: group.fastQuery ?: false
     )
     val matchRoot = rule.matchRoot ?: group.matchRoot ?: false

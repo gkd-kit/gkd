@@ -7,9 +7,9 @@ import android.view.accessibility.AccessibilityNodeInfo
 import li.songe.gkd.META
 import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.util.InterruptRuleMatchException
-import li.songe.selector.Context
 import li.songe.selector.FastQuery
 import li.songe.selector.MatchOption
+import li.songe.selector.QueryContext
 import li.songe.selector.Selector
 import li.songe.selector.Transform
 import li.songe.selector.getBooleanInvoke
@@ -69,7 +69,10 @@ class A11yContext(
                 rootCache = eventNode
             } else {
                 if (META.debuggable) {
-                    Log.d("cache", "clear node cache ${eventNode.packageName}/${eventNode.className}")
+                    Log.d(
+                        "cache",
+                        "clear node cache ${eventNode.packageName}/${eventNode.className}"
+                    )
                 }
                 return
             }
@@ -302,7 +305,7 @@ class A11yContext(
     private val transform = Transform(
         getAttr = { target, name ->
             when (target) {
-                is Context<*> -> when (name) {
+                is QueryContext<*> -> when (name) {
                     "prev" -> target.prev
                     "current" -> target.current
                     else -> getCacheAttr(target.current as AccessibilityNodeInfo, name)
@@ -323,7 +326,7 @@ class A11yContext(
                     else -> null
                 }
 
-                is Context<*> -> when (name) {
+                is QueryContext<*> -> when (name) {
                     "getPrev" -> {
                         args.getInt().let { target.getPrev(it) }
                     }
@@ -384,7 +387,7 @@ class A11yContext(
         traverseBeforeBrothers = { node, connectExpression ->
             sequence {
                 val parentVal = getCacheParent(node) ?: return@sequence
-                // 如果 node 由 quickFind 得到, 则第一次调用此方法可能得到 cache.index 是空
+                // 如果 node 由 fastQuery 得到, 则第一次调用此方法可能得到 cache.index 是空
                 val index = getPureIndex(node)
                 if (index != null) {
                     var i = index - 1
@@ -482,9 +485,9 @@ class A11yContext(
                 } while (stack.isNotEmpty())
             }
         },
-        traverseFastQueryDescendants = { node, fastQueryList ->
+        traverseFastQueryDescendants = { node, list ->
             sequence {
-                for (fastQuery in fastQueryList) {
+                for (fastQuery in list) {
                     val nodes = getFastQueryNodes(node, fastQuery)
                     nodes.forEach { childNode ->
                         yield(childNode)
@@ -494,7 +497,7 @@ class A11yContext(
         }
     )
 
-    fun querySelector(
+    fun querySelfOrSelector(
         node: AccessibilityNodeInfo,
         selector: Selector,
         option: MatchOption,
@@ -506,19 +509,8 @@ class A11yContext(
                 option
             )
         }
-        if (option.fastQuery && selector.fastQueryList.isNotEmpty()) {
-            val nodes = transform.traverseFastQueryDescendants(node, selector.fastQueryList)
-            nodes.forEach { childNode ->
-                selector.match(childNode, transform, option)?.let { return it }
-            }
-            return null
-        }
-        if (option.quickFind && selector.quickFindValue != null) {
-            val nodes = getFastQueryNodes(node, selector.quickFindValue!!)
-            nodes.forEach { childNode ->
-                selector.match(childNode, transform, option)?.let { return it }
-            }
-            return null
+        selector.match(node, transform, option)?.let {
+            return it
         }
         return transform.querySelector(node, selector, option)
     }
@@ -537,7 +529,7 @@ class A11yContext(
             var resultNode: AccessibilityNodeInfo? = null
             if (rule.anyMatches.isNotEmpty()) {
                 for (selector in rule.anyMatches) {
-                    resultNode = a11yContext.querySelector(
+                    resultNode = a11yContext.querySelfOrSelector(
                         queryNode,
                         selector,
                         rule.matchOption,
@@ -547,14 +539,14 @@ class A11yContext(
                 if (resultNode == null) return null
             }
             for (selector in rule.matches) {
-                resultNode = a11yContext.querySelector(
+                resultNode = a11yContext.querySelfOrSelector(
                     queryNode,
                     selector,
                     rule.matchOption,
                 ) ?: return null
             }
             for (selector in rule.excludeMatches) {
-                a11yContext.querySelector(
+                a11yContext.querySelfOrSelector(
                     queryNode,
                     selector,
                     rule.matchOption,

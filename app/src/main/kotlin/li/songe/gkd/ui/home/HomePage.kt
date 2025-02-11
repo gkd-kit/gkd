@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Intent
 import android.os.Build
 import android.service.quicksettings.TileService
+import androidx.activity.compose.LocalActivity
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -15,7 +16,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.LogUtils
@@ -46,7 +46,7 @@ data class BottomNavItem(
 @Destination<RootGraph>(style = ProfileTransitions::class, start = true)
 @Composable
 fun HomePage() {
-    val context = LocalContext.current as MainActivity
+    val context = LocalActivity.current as MainActivity
     val navController = LocalNavController.current
     val vm = viewModel<HomeVm>()
     val tab by vm.tabFlow.collectAsState()

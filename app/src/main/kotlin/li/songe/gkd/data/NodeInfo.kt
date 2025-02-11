@@ -204,7 +204,7 @@ fun info2nodeList(root: AccessibilityNodeInfo?): List<NodeInfo> {
     LogUtils.d(
         topActivityFlow.value,
         "快照节点数量:${nodes.size}, 总耗时:${collectTime + qfTime}ms",
-        "收集节点耗时:${collectTime}ms, 收集quickFind耗时:${qfTime}ms",
+        "收集节点耗时:${collectTime}ms, 收集 fastQuery 耗时:${qfTime}ms",
     )
 
     return nodes.map { n ->
