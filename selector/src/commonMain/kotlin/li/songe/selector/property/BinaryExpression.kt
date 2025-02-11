@@ -1,24 +1,24 @@
-package li.songe.selector
+package li.songe.selector.property
 
+import li.songe.selector.QueryContext
+import li.songe.selector.Transform
+import li.songe.selector.connect.CompareOperator
 import kotlin.js.JsExport
 
 @JsExport
 data class BinaryExpression(
-    override val start: Int,
-    override val end: Int,
     val left: ValueExpression,
-    val operator: PositionImpl<CompareOperator>,
+    val operator: CompareOperator,
     val right: ValueExpression,
 ) : Expression() {
     override fun <T> match(
-        context: Context<T>,
+        context: QueryContext<T>,
         transform: Transform<T>,
     ): Boolean {
-        return operator.value.compare(context, transform, left, right)
+        return operator.compare(context, transform, left, right)
     }
 
-    override val binaryExpressions
-        get() = arrayOf(this)
+    override fun getBinaryExpressionList() = arrayOf(this)
 
     override fun stringify() = "${left.stringify()}${operator.stringify()}${right.stringify()}"
 

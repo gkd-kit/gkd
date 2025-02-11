@@ -1,13 +1,17 @@
-package li.songe.selector
+package li.songe.selector.connect
 
+import li.songe.selector.QueryContext
+import li.songe.selector.Stringify
+import li.songe.selector.Transform
+import li.songe.selector.property.ValueExpression
 import kotlin.js.JsExport
 
 @JsExport
 sealed class CompareOperator(val key: String) : Stringify {
     override fun stringify() = key
 
-    internal abstract fun <T> compare(
-        context: Context<T>,
+    abstract fun <T> compare(
+        context: QueryContext<T>,
         transform: Transform<T>,
         leftExp: ValueExpression,
         rightExp: ValueExpression,
@@ -51,7 +55,7 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object Equal : CompareOperator("=") {
         override fun <T> compare(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
             rightExp: ValueExpression,
@@ -74,7 +78,7 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object NotEqual : CompareOperator("!=") {
         override fun <T> compare(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
             rightExp: ValueExpression,
@@ -87,7 +91,7 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object Start : CompareOperator("^=") {
         override fun <T> compare(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
             rightExp: ValueExpression,
@@ -109,7 +113,7 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object NotStart : CompareOperator("!^=") {
         override fun <T> compare(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
             rightExp: ValueExpression,
@@ -130,7 +134,7 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object Include : CompareOperator("*=") {
         override fun <T> compare(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
             rightExp: ValueExpression,
@@ -151,7 +155,7 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object NotInclude : CompareOperator("!*=") {
         override fun <T> compare(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
             rightExp: ValueExpression,
@@ -172,7 +176,7 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object End : CompareOperator("$=") {
         override fun <T> compare(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
             rightExp: ValueExpression,
@@ -193,7 +197,7 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object NotEnd : CompareOperator("!$=") {
         override fun <T> compare(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
             rightExp: ValueExpression,
@@ -216,7 +220,7 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object Less : CompareOperator("<") {
         override fun <T> compare(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
             rightExp: ValueExpression,
@@ -235,7 +239,7 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object LessEqual : CompareOperator("<=") {
         override fun <T> compare(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
             rightExp: ValueExpression,
@@ -252,7 +256,7 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object More : CompareOperator(">") {
         override fun <T> compare(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
             rightExp: ValueExpression,
@@ -269,7 +273,7 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object MoreEqual : CompareOperator(">=") {
         override fun <T> compare(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
             rightExp: ValueExpression,
@@ -287,7 +291,7 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object Matches : CompareOperator("~=") {
         override fun <T> compare(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
             rightExp: ValueExpression,
@@ -308,7 +312,7 @@ sealed class CompareOperator(val key: String) : Stringify {
 
     data object NotMatches : CompareOperator("!~=") {
         override fun <T> compare(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
             leftExp: ValueExpression,
             rightExp: ValueExpression,

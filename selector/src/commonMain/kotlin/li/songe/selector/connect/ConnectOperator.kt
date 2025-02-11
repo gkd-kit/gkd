@@ -1,5 +1,7 @@
-package li.songe.selector
+package li.songe.selector.connect
 
+import li.songe.selector.Stringify
+import li.songe.selector.Transform
 import kotlin.js.JsExport
 
 @JsExport
@@ -7,7 +9,9 @@ sealed class ConnectOperator(val key: String) : Stringify {
     override fun stringify() = key
 
     internal abstract fun <T> traversal(
-        node: T, transform: Transform<T>, connectExpression: ConnectExpression
+        node: T,
+        transform: Transform<T>,
+        connectExpression: ConnectExpression
     ): Sequence<T>
 
     companion object {

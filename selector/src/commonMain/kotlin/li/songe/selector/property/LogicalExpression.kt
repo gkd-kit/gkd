@@ -1,32 +1,32 @@
-package li.songe.selector
+package li.songe.selector.property
 
+import li.songe.selector.QueryContext
+import li.songe.selector.Transform
 import kotlin.js.JsExport
 
 @JsExport
 data class LogicalExpression(
-    override val start: Int,
-    override val end: Int,
     val left: Expression,
-    val operator: PositionImpl<LogicalOperator>,
+    val operator: LogicalOperator,
     val right: Expression,
 ) : Expression() {
     override fun <T> match(
-        context: Context<T>,
+        context: QueryContext<T>,
         transform: Transform<T>,
     ): Boolean {
-        return operator.value.compare(context, transform, left, right)
+        return operator.compare(context, transform, left, right)
     }
 
-    override val binaryExpressions
-        get() = left.binaryExpressions + right.binaryExpressions
+    override fun getBinaryExpressionList() =
+        left.getBinaryExpressionList() + right.getBinaryExpressionList()
 
     override fun stringify(): String {
-        val leftStr = if (left is LogicalExpression && left.operator.value != operator.value) {
+        val leftStr = if (left is LogicalExpression && left.operator != operator) {
             "(${left.stringify()})"
         } else {
             left.stringify()
         }
-        val rightStr = if (right is LogicalExpression && right.operator.value != operator.value) {
+        val rightStr = if (right is LogicalExpression && right.operator != operator) {
             "(${right.stringify()})"
         } else {
             right.stringify()
@@ -35,10 +35,10 @@ data class LogicalExpression(
     }
 
     fun getSameExpressionArray(): Array<BinaryExpression>? {
-        if (left is LogicalExpression && left.operator.value != operator.value) {
+        if (left is LogicalExpression && left.operator != operator) {
             return null
         }
-        if (right is LogicalExpression && right.operator.value != operator.value) {
+        if (right is LogicalExpression && right.operator != operator) {
             return null
         }
         return when (left) {

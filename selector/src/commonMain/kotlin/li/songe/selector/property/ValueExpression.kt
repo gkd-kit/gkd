@@ -1,12 +1,19 @@
-package li.songe.selector
+package li.songe.selector.property
 
+import li.songe.selector.QueryContext
+import li.songe.selector.Stringify
+import li.songe.selector.Transform
+import li.songe.selector.connect.CompareOperator
+import li.songe.selector.escapeString
+import li.songe.selector.optimizeMatchString
+import li.songe.selector.whenNull
 import kotlin.js.JsExport
 
 @JsExport
-sealed class ValueExpression(open val value: Any?, open val type: String) : Position {
+sealed class ValueExpression(open val value: Any?, open val type: String) : Stringify {
     override fun stringify() = value.toString()
     internal abstract fun <T> getAttr(
-        context: Context<T>,
+        context: QueryContext<T>,
         transform: Transform<T>,
     ): Any?
 
@@ -18,11 +25,9 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
     ) : ValueExpression(value, "var")
 
     data class Identifier(
-        override val start: Int,
         val name: String,
     ) : Variable(name) {
-        override val end = start + value.length
-        override fun <T> getAttr(context: Context<T>, transform: Transform<T>): Any? {
+        override fun <T> getAttr(context: QueryContext<T>, transform: Transform<T>): Any? {
             return transform.getAttr(context, value)
         }
 
@@ -36,13 +41,11 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
     }
 
     data class MemberExpression(
-        override val start: Int,
-        override val end: Int,
         val object0: Variable,
         val property: String,
     ) : Variable(value = "${object0.stringify()}.$property") {
         override fun <T> getAttr(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
         ): Any? {
             return transform.getAttr(
@@ -62,8 +65,6 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
     }
 
     data class CallExpression(
-        override val start: Int,
-        override val end: Int,
         val callee: Variable,
         val arguments: List<ValueExpression>,
     ) : Variable(
@@ -71,7 +72,7 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
     ) {
 
         override fun <T> getAttr(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
         ): Any? {
             return when (callee) {
@@ -163,7 +164,7 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
         override val type: String,
     ) : ValueExpression(value, type) {
         override fun <T> getAttr(
-            context: Context<T>,
+            context: QueryContext<T>,
             transform: Transform<T>,
         ) = value
 
@@ -173,28 +174,13 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Posi
             get() = emptyArray()
     }
 
-    data class NullLiteral(
-        override val start: Int,
-    ) : LiteralExpression(null, "null") {
-        override val end = start + 4
-    }
+    data object NullLiteral : LiteralExpression(null, "null")
 
-    data class BooleanLiteral(
-        override val start: Int,
-        override val value: Boolean
-    ) : LiteralExpression(value, "boolean") {
-        override val end = start + if (value) 4 else 5
-    }
+    data class BooleanLiteral(override val value: Boolean) : LiteralExpression(value, "boolean")
 
-    data class IntLiteral(
-        override val start: Int,
-        override val end: Int,
-        override val value: Int
-    ) : LiteralExpression(value, "int")
+    data class IntLiteral(override val value: Int) : LiteralExpression(value, "int")
 
     data class StringLiteral @JsExport.Ignore constructor(
-        override val start: Int,
-        override val end: Int,
         override val value: String,
         internal val matches: ((CharSequence) -> Boolean)? = null
     ) : LiteralExpression(value, "string") {

@@ -5,4 +5,6 @@ actual fun String.toMatches(): (input: CharSequence) -> Boolean {
     return { input -> regex.matches(input) }
 }
 
-actual fun setWasmToMatches(wasmToMatches: (String) -> (String) -> Boolean) {}
+@Suppress("unused")
+actual fun setWasmToMatches(wasmToMatches: (String) -> (String) -> Boolean) {
+}

@@ -1,6 +1,8 @@
 package li.songe.selector
 
+import li.songe.selector.connect.ConnectExpression
 import kotlin.js.JsExport
+import kotlin.sequences.forEach
 
 @Suppress("unused")
 @JsExport
@@ -145,20 +147,21 @@ class Transform<T> @JsExport.Ignore constructor(
     fun querySelectorAll(
         node: T,
         selector: Selector,
-        option: MatchOption = defaultMatchOption,
-    ): Sequence<T> {
-        return sequence {
-            selector.match(node, this@Transform, option)?.let { yield(it) }
-            getDescendants(node).forEach { childNode ->
-                selector.match(childNode, this@Transform, option)?.let { yield(it) }
-            }
+        option: MatchOption = MatchOption.default,
+    ): Sequence<T> = sequence {
+        (if (option.fastQuery && selector.fastQueryList.isNotEmpty()) {
+            traverseFastQueryDescendants(node, selector.fastQueryList)
+        } else {
+            getDescendants(node)
+        }).forEach { childNode ->
+            selector.match(childNode, this@Transform, option)?.let { yield(it) }
         }
     }
 
     fun querySelector(
         node: T,
         selector: Selector,
-        option: MatchOption = defaultMatchOption,
+        option: MatchOption = MatchOption.default,
     ): T? {
         return querySelectorAll(node, selector, option).firstOrNull()
     }
@@ -167,12 +170,15 @@ class Transform<T> @JsExport.Ignore constructor(
     fun querySelectorAllContext(
         node: T,
         selector: Selector,
-        option: MatchOption = defaultMatchOption,
-    ): Sequence<Context<T>> {
+        option: MatchOption = MatchOption.default,
+    ): Sequence<QueryResult<T>> {
         return sequence {
-            selector.matchContext(node, this@Transform, option)?.let { yield(it) }
             getDescendants(node).forEach { childNode ->
-                selector.matchContext(childNode, this@Transform, option)?.let { yield(it) }
+                selector.matchContext(childNode, this@Transform, option).let {
+                    if (it.context.matched) {
+                        yield(it)
+                    }
+                }
             }
         }
     }
@@ -180,8 +186,8 @@ class Transform<T> @JsExport.Ignore constructor(
     fun querySelectorContext(
         node: T,
         selector: Selector,
-        option: MatchOption = defaultMatchOption,
-    ): Context<T>? {
+        option: MatchOption = MatchOption.default,
+    ): QueryResult<T>? {
         return querySelectorAllContext(node, selector, option).firstOrNull()
     }
 
@@ -189,7 +195,7 @@ class Transform<T> @JsExport.Ignore constructor(
     fun querySelectorAllArray(
         node: T,
         selector: Selector,
-        option: MatchOption = defaultMatchOption,
+        option: MatchOption = MatchOption.default,
     ): Array<T> {
         val result = querySelectorAll(node, selector, option).toList()
         return (result as List<Any>).toTypedArray() as Array<T>
@@ -198,8 +204,8 @@ class Transform<T> @JsExport.Ignore constructor(
     fun querySelectorAllContextArray(
         node: T,
         selector: Selector,
-        option: MatchOption = defaultMatchOption,
-    ): Array<Context<T>> {
+        option: MatchOption = MatchOption.default,
+    ): Array<QueryResult<T>> {
         return querySelectorAllContext(node, selector, option).toList().toTypedArray()
     }
 
