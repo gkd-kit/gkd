@@ -5,7 +5,9 @@ import li.songe.selector.QueryContext
 import li.songe.selector.QueryResult
 import li.songe.selector.Stringify
 import li.songe.selector.Transform
+import kotlin.js.JsExport
 
+@JsExport
 sealed class SelectorLogicalOperator(val key: String) : Stringify, SelectorExpressionToken {
     override fun stringify() = key
 

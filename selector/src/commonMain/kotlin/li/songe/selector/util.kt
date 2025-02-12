@@ -350,3 +350,23 @@ fun getCharSequenceAttr(target: CharSequence, name: String): Any? {
         else -> null
     }
 }
+
+// example
+// id="com.lptiyu.tanke:id/ab1"
+// id="com.lptiyu.tanke:id/ab2"
+internal fun CharSequence.contentReversedEquals(other: CharSequence): Boolean {
+    if (this === other) return true
+    if (this.length != other.length) return false
+    for (i in this.length - 1 downTo 0) {
+        if (this[i] != other[i]) return false
+    }
+    return true
+}
+
+internal fun comparePrimitiveValue(left: Any?, right: Any?): Boolean {
+    return if (left is CharSequence && right is CharSequence) {
+        left.contentReversedEquals(right)
+    } else {
+        left == right
+    }
+}

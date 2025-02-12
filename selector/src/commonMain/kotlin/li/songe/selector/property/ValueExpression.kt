@@ -3,7 +3,7 @@ package li.songe.selector.property
 import li.songe.selector.QueryContext
 import li.songe.selector.Stringify
 import li.songe.selector.Transform
-import li.songe.selector.connect.CompareOperator
+import li.songe.selector.comparePrimitiveValue
 import li.songe.selector.escapeString
 import li.songe.selector.optimizeMatchString
 import li.songe.selector.whenNull
@@ -84,14 +84,14 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Stri
                 is Identifier -> {
                     when {
                         callee.isEqual -> {
-                            CompareOperator.Equal.compare(
+                            comparePrimitiveValue(
                                 arguments[0].getAttr(context, transform),
                                 arguments[1].getAttr(context, transform)
                             )
                         }
 
                         callee.isNotEqual -> {
-                            !CompareOperator.Equal.compare(
+                            !comparePrimitiveValue(
                                 arguments[0].getAttr(context, transform),
                                 arguments[1].getAttr(context, transform)
                             )
@@ -180,7 +180,8 @@ sealed class ValueExpression(open val value: Any?, open val type: String) : Stri
 
     data class IntLiteral(override val value: Int) : LiteralExpression(value, "int")
 
-    data class StringLiteral @JsExport.Ignore constructor(
+    @ConsistentCopyVisibility
+    data class StringLiteral internal constructor(
         override val value: String,
         internal val matches: ((CharSequence) -> Boolean)? = null
     ) : LiteralExpression(value, "string") {

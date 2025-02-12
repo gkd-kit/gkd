@@ -23,7 +23,9 @@ import li.songe.selector.property.BinaryExpression
 import li.songe.selector.property.PropertyWrapper
 import li.songe.selector.property.ValueExpression
 import kotlin.collections.addAll
+import kotlin.js.JsExport
 
+@JsExport
 data class UnitSelectorExpression(
     val propertyWrapper: PropertyWrapper,
 ) : SelectorExpression() {

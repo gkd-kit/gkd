@@ -5,7 +5,9 @@ import li.songe.selector.MatchOption
 import li.songe.selector.QueryContext
 import li.songe.selector.Transform
 import li.songe.selector.TypeInfo
+import kotlin.js.JsExport
 
+@JsExport
 data class LogicalSelectorExpression(
     val left: SelectorExpression,
     val operator: SelectorLogicalOperator,
