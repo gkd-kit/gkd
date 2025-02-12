@@ -3,6 +3,7 @@ package li.songe.selector.connect
 import li.songe.selector.QueryContext
 import li.songe.selector.Stringify
 import li.songe.selector.Transform
+import li.songe.selector.comparePrimitiveValue
 import li.songe.selector.property.ValueExpression
 import kotlin.js.JsExport
 
@@ -40,17 +41,6 @@ sealed class CompareOperator(val key: String) : Stringify {
             ).sortedBy { -it.key.length }.toTypedArray()
         }
 
-        // example
-        // id="com.lptiyu.tanke:id/ab1"
-        // id="com.lptiyu.tanke:id/ab2"
-        private fun CharSequence.contentReversedEquals(other: CharSequence): Boolean {
-            if (this === other) return true
-            if (this.length != other.length) return false
-            for (i in this.length - 1 downTo 0) {
-                if (this[i] != other[i]) return false
-            }
-            return true
-        }
     }
 
     data object Equal : CompareOperator("=") {
@@ -62,18 +52,11 @@ sealed class CompareOperator(val key: String) : Stringify {
         ): Boolean {
             val left = leftExp.getAttr(context, transform)
             val right = rightExp.getAttr(context, transform)
-            return compare(left, right)
+            return comparePrimitiveValue(left, right)
         }
 
         override fun allowType(left: ValueExpression, right: ValueExpression) = true
 
-        fun compare(left: Any?, right: Any?): Boolean {
-            return if (left is CharSequence && right is CharSequence) {
-                left.contentReversedEquals(right)
-            } else {
-                left == right
-            }
-        }
     }
 
     data object NotEqual : CompareOperator("!=") {

@@ -6,8 +6,9 @@ import li.songe.selector.QueryContext
 import li.songe.selector.QueryResult
 import li.songe.selector.Transform
 import li.songe.selector.TypeInfo
+import kotlin.js.JsExport
 
-
+@JsExport
 data class NotSelectorExpression(
     val expression: SelectorExpression,
 ) : SelectorExpression() {

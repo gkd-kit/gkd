@@ -7,9 +7,11 @@ import li.songe.selector.QueryResult
 import li.songe.selector.Stringify
 import li.songe.selector.Transform
 import li.songe.selector.TypeInfo
+import kotlin.js.JsExport
 
 internal sealed interface SelectorExpressionToken
 
+@JsExport
 sealed class SelectorExpression : Stringify, SelectorExpressionToken {
 
     abstract fun <T> match(
