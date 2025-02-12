@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.1.10"
-ksp = "2.1.0-1.0.29"
+ksp = "2.1.10-1.0.29"
 android = "8.8.0"
 compose = "1.7.7"
 rikka = "4.4.0"
