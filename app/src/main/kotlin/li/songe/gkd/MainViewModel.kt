@@ -74,7 +74,7 @@ class MainViewModel : ViewModel() {
             } catch (e: Exception) {
                 e.printStackTrace()
                 LogUtils.d(e)
-                toast("下载订阅文件失败")
+                toast("下载订阅文件失败\n${e.message}".trimEnd())
                 return@launchTry
             }
             val newSubsRaw = try {
@@ -82,7 +82,7 @@ class MainViewModel : ViewModel() {
             } catch (e: Exception) {
                 e.printStackTrace()
                 LogUtils.d(e)
-                toast("解析订阅文件失败")
+                toast("解析订阅文件失败\n${e.message}".trimEnd())
                 return@launchTry
             }
             if (oldItem == null) {

@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.home
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -40,7 +41,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -61,6 +61,7 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
+import li.songe.gkd.util.EMPTY_RULE_TIP
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
@@ -73,7 +74,7 @@ val controlNav = BottomNavItem(label = "主页", icon = Icons.Outlined.Home)
 
 @Composable
 fun useControlPage(): ScaffoldExt {
-    val context = LocalContext.current as MainActivity
+    val context = LocalActivity.current as MainActivity
     val navController = LocalNavController.current
     val vm = viewModel<HomeVm>()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -168,59 +169,9 @@ fun useControlPage(): ScaffoldExt {
                 }
             )
 
-            Card(
-                modifier = Modifier
-                    .padding(itemHorizontalPadding, 4.dp)
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = surfaceCardColors,
-                onClick = {}
-            ) {
-                IconTextCard(
-                    imageVector = Icons.Outlined.Equalizer
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "数据概览",
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                        val usedSubsItemCount by vm.usedSubsItemCountFlow.collectAsState()
-                        AnimatedVisibility(usedSubsItemCount > 0) {
-                            Text(
-                                text = "已开启 $usedSubsItemCount 条订阅",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            horizontal = itemVerticalPadding + 8.dp,
-                        )
-                ) {
-                    val latestRecordDesc by vm.latestRecordDescFlow.collectAsState()
-                    val subsStatus by vm.subsStatusFlow.collectAsState()
-                    AnimatedVisibility(subsStatus.isNotEmpty()) {
-                        Text(
-                            text = subsStatus,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    AnimatedVisibility(latestRecordDesc != null) {
-                        Text(
-                            text = "最近触发: $latestRecordDesc",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(itemVerticalPadding))
-                }
+            val subsStatus by vm.subsStatusFlow.collectAsState()
+            AnimatedVisibility(subsStatus != EMPTY_RULE_TIP) {
+                ServerStatusCard(vm)
             }
 
             PageItemCard(
@@ -322,5 +273,63 @@ private fun IconTextCard(
         )
         Spacer(modifier = Modifier.width(itemHorizontalPadding))
         content()
+    }
+}
+
+@Composable
+private fun ServerStatusCard(vm: HomeVm) {
+    Card(
+        modifier = Modifier
+            .padding(itemHorizontalPadding, 4.dp)
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = surfaceCardColors,
+        onClick = {}
+    ) {
+        IconTextCard(
+            imageVector = Icons.Outlined.Equalizer
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "数据概览",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                val usedSubsItemCount by vm.usedSubsItemCountFlow.collectAsState()
+                AnimatedVisibility(usedSubsItemCount > 0) {
+                    Text(
+                        text = "已开启 $usedSubsItemCount 条订阅",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = itemVerticalPadding + 8.dp,
+                )
+        ) {
+            val latestRecordDesc by vm.latestRecordDescFlow.collectAsState()
+            val subsStatus by vm.subsStatusFlow.collectAsState()
+            AnimatedVisibility(subsStatus.isNotEmpty()) {
+                Text(
+                    text = subsStatus,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            AnimatedVisibility(latestRecordDesc != null) {
+                Text(
+                    text = "最近触发: $latestRecordDesc",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(modifier = Modifier.height(itemVerticalPadding))
+        }
     }
 }
