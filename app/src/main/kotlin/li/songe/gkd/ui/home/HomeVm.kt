@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.appScope
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.util.EMPTY_RULE_TIP
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.actionCountFlow
 import li.songe.gkd.util.appInfoCacheFlow
@@ -59,7 +60,7 @@ class HomeVm : ViewModel() {
     val subsStatusFlow by lazy {
         combine(ruleSummaryFlow, actionCountFlow) { ruleSummary, count ->
             getSubsStatus(ruleSummary, count)
-        }.stateIn(appScope, SharingStarted.Eagerly, "")
+        }.stateIn(appScope, SharingStarted.Eagerly, EMPTY_RULE_TIP)
     }
 
     val usedSubsItemCountFlow = usedSubsEntriesFlow.map(viewModelScope) { it.size }

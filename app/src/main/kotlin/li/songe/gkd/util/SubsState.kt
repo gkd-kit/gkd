@@ -421,7 +421,7 @@ fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers
         return@launchTry
     }
     updateSubsMutex.withLock {
-        if (!NetworkUtils.isAvailable()) {
+        if (subsEntriesFlow.value.any { !it.subsItem.isLocal } && !NetworkUtils.isAvailable()) {
             if (showToast) {
                 toast("网络不可用")
             }
