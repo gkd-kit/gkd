@@ -36,4 +36,14 @@ class QueryUnitTest {
         val nodes = transform.querySelectorAll(node3, selector).toList()
         assert(nodes.single().id == 17)
     }
+
+    @Test
+    fun example3() {
+        val selector = Selector.parse(
+            "[text=\"搜索历史\"] + [_id=161] -> [text=\"清除\"] <2 [id=\"com.coolapk.market:id/close_view\"]"
+        )
+        println(selector)
+        val nodes = transform.querySelectorAll(node1, selector).toList()
+        assert(nodes.single().id == 161)
+    }
 }

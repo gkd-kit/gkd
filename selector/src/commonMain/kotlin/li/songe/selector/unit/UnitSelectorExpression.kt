@@ -18,6 +18,7 @@ import li.songe.selector.UnknownMemberException
 import li.songe.selector.UnknownMemberMethodException
 import li.songe.selector.UnknownMemberMethodParamsException
 import li.songe.selector.connect.ConnectOperator
+import li.songe.selector.connect.ConnectSegment
 import li.songe.selector.connect.ConnectWrapper
 import li.songe.selector.property.BinaryExpression
 import li.songe.selector.property.PropertyWrapper
@@ -84,16 +85,20 @@ data class UnitSelectorExpression(
             }
         }
 
-    private fun getBinaryExpressionList(): List<BinaryExpression> {
-        var p: PropertyWrapper? = propertyWrapper
-        val expressions = mutableListOf<BinaryExpression>()
-        while (p != null) {
-            val s = p.segment
-            expressions.addAll(s.getBinaryExpressionList())
-            p = p.to?.to
+    override val binaryExpressionList: List<BinaryExpression>
+        get() {
+            var p: PropertyWrapper? = propertyWrapper
+            val expressions = mutableListOf<BinaryExpression>()
+            while (p != null) {
+                val s = p.segment
+                expressions.addAll(s.getBinaryExpressionList())
+                p = p.to?.to
+            }
+            return expressions
         }
-        return expressions
-    }
+    override val connectSegmentList: List<ConnectSegment>
+        get() = connectWrappers.map { it.segment }.toList()
+
 
     override fun isSlow(matchOption: MatchOption): Boolean {
         if ((!matchOption.fastQuery || propertyWrapper.fastQueryList.isEmpty()) && !isMatchRoot) {
@@ -107,7 +112,7 @@ data class UnitSelectorExpression(
 
     @Throws(TypeException::class)
     override fun checkType(typeInfo: TypeInfo) {
-        getBinaryExpressionList().forEach { exp ->
+        binaryExpressionList.forEach { exp ->
             if (!exp.operator.allowType(exp.left, exp.right)) {
                 throw MismatchOperatorTypeException(exp)
             }

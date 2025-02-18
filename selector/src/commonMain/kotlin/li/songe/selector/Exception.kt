@@ -5,7 +5,12 @@ import li.songe.selector.property.ValueExpression
 import kotlin.js.JsExport
 
 @JsExport
-sealed class GkdException(override val message: String) : Exception(message)
+sealed class GkdException(override val message: String) : Exception(message) {
+    // for kotlin js
+    @Suppress("unused")
+    val outMessage: String
+        get() = message
+}
 
 @JsExport
 data class SyntaxException(override val message: String) : GkdException(message)

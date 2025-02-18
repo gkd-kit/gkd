@@ -1,12 +1,13 @@
 package li.songe.selector
 
+import li.songe.selector.parser.AstParser
 import li.songe.selector.parser.SelectorParser
 import li.songe.selector.unit.SelectorExpression
 import kotlin.js.JsExport
 
 @JsExport
 class Selector(
-    internal val expression: SelectorExpression,
+    val expression: SelectorExpression,
 ) {
     override fun toString(): String {
         return expression.stringify()
@@ -36,10 +37,13 @@ class Selector(
 
     companion object {
         fun parse(source: String) = SelectorParser(source).readSelector()
+
         fun parseOrNull(source: String) = try {
             SelectorParser(source).readSelector()
         } catch (_: Exception) {
             null
         }
+
+        fun parseAst(source: String) = AstParser(source).readAst()
     }
 }

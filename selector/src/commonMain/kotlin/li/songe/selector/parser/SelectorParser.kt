@@ -13,11 +13,12 @@ import li.songe.selector.unit.SelectorExpressionToken
 import li.songe.selector.unit.SelectorLogicalOperator
 import li.songe.selector.unit.UnitSelectorExpression
 
-internal class SelectorParser(
+internal open class SelectorParser(
     override val source: CharSequence,
 ) : PropertyParser, ConnectParser {
     override var i = 0
-    fun readUnitSelectorExpression(): UnitSelectorExpression {
+
+    open fun readUnitSelectorExpression(): UnitSelectorExpression {
         val top = readPropertySegment()
         val pairs = mutableListOf<Pair<ConnectSegment, PropertySegment>>()
         while (char.inStr(WHITESPACE_CHAR)) {
@@ -49,7 +50,7 @@ internal class SelectorParser(
     }
 
     // !(A > B)
-    fun readNotSelectorExpression(): NotSelectorExpression {
+    open fun readNotSelectorExpression(): NotSelectorExpression {
         expectChar('!')
         i++
         expectChar('(')
@@ -62,7 +63,9 @@ internal class SelectorParser(
         }
     }
 
-    fun readSelectorLogicalOperator(): SelectorLogicalOperator {
+    // (A + B) || (A - B)
+    // (A + B) && (A - B)
+    open fun readSelectorLogicalOperator(): SelectorLogicalOperator {
         val operator = SelectorLogicalOperator.allSubClasses.find { v ->
             source.startsWith(v.key, i)
         }
@@ -73,7 +76,8 @@ internal class SelectorParser(
         return operator
     }
 
-    fun readSelectorExpression(): SelectorExpression {
+    // A + B
+    open fun readSelectorExpression(): SelectorExpression {
         val tokens = mutableListOf<SelectorExpressionToken>()
         while (true) {
             if (tokens.lastOrNull() is SelectorLogicalOperator) {
@@ -146,7 +150,7 @@ internal class SelectorParser(
         return tokens.first() as SelectorExpression
     }
 
-    fun readSelector(): Selector {
+    open fun readSelector(): Selector {
         readWhiteSpace()
         return Selector(
             expression = readSelectorExpression()
@@ -158,48 +162,3 @@ internal class SelectorParser(
         }
     }
 }
-
-//data class AstNode(
-//    val type: Int,
-//    val start: Int,
-//    val end: Int,
-//    val value: Any?,
-//    val children: List<AstNode>,
-//)
-//
-//data class AstContext(
-//    val parent: AstContext? = null,
-//    val children: MutableList<AstNode> = mutableListOf()
-//)
-
-//internal class AstParser(
-//    source: CharSequence,
-//) : Parser(source) {
-//
-//    var tempAstContext = AstContext()
-//
-//    fun <T> createAstNode(type: Int, block: () -> T): T {
-//        tempAstContext = AstContext(tempAstContext)
-//        val start = i
-//        return block().apply {
-//            val end = i
-//            val value = this
-//            tempAstContext.parent?.let {
-//                it.children.add(AstNode(type, start, end, value, tempAstContext.children))
-//                tempAstContext = it
-//            }
-//        }
-//    }
-//
-//    fun readSelectorAndAst(): Pair<Selector, AstNode> {
-//        return readSelector() to tempAstContext.children.single()
-//    }
-//
-//    override fun readSelector(): Selector {
-//        return createAstNode(0) { super.readSelector() }
-//    }
-//
-//    override fun readExpression(): Expression {
-//        return createAstNode(2) { super.readExpression() }
-//    }
-//}

@@ -1,11 +1,11 @@
-package li.songe.selector.connect
+package li.songe.selector.property
 
 import li.songe.selector.QueryContext
 import li.songe.selector.Stringify
 import li.songe.selector.Transform
 import li.songe.selector.comparePrimitiveValue
-import li.songe.selector.property.ValueExpression
 import kotlin.js.JsExport
+
 
 @JsExport
 sealed class CompareOperator(val key: String) : Stringify {

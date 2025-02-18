@@ -6,6 +6,8 @@ import li.songe.selector.QueryContext
 import li.songe.selector.QueryResult
 import li.songe.selector.Transform
 import li.songe.selector.TypeInfo
+import li.songe.selector.connect.ConnectSegment
+import li.songe.selector.property.BinaryExpression
 import kotlin.js.JsExport
 
 @JsExport
@@ -51,4 +53,10 @@ data class NotSelectorExpression(
 
     override val fastQueryList: List<FastQuery>
         get() = emptyList()
+
+    override val binaryExpressionList: List<BinaryExpression>
+        get() = expression.binaryExpressionList
+
+    override val connectSegmentList: List<ConnectSegment>
+        get() = expression.connectSegmentList
 }

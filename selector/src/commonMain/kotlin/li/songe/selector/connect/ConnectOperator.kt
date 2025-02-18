@@ -1,5 +1,6 @@
 package li.songe.selector.connect
 
+import li.songe.selector.QueryContext
 import li.songe.selector.Stringify
 import li.songe.selector.Transform
 import kotlin.js.JsExport
@@ -9,7 +10,7 @@ sealed class ConnectOperator(val key: String) : Stringify {
     override fun stringify() = key
 
     internal abstract fun <T> traversal(
-        node: T,
+        context: QueryContext<T>,
         transform: Transform<T>,
         connectExpression: ConnectExpression
     ): Sequence<T>
@@ -18,7 +19,7 @@ sealed class ConnectOperator(val key: String) : Stringify {
         // https://stackoverflow.com/questions/47648689
         val allSubClasses by lazy {
             listOf(
-                BeforeBrother, AfterBrother, Ancestor, Child, Descendant
+                BeforeBrother, AfterBrother, Ancestor, Child, Descendant, Previous
             ).sortedBy { -it.key.length }
         }
     }
@@ -28,8 +29,8 @@ sealed class ConnectOperator(val key: String) : Stringify {
      */
     data object BeforeBrother : ConnectOperator("+") {
         override fun <T> traversal(
-            node: T, transform: Transform<T>, connectExpression: ConnectExpression
-        ) = transform.traverseBeforeBrothers(node, connectExpression)
+            context: QueryContext<T>, transform: Transform<T>, connectExpression: ConnectExpression
+        ) = transform.traverseBeforeBrothers(context.current, connectExpression)
 
     }
 
@@ -38,8 +39,8 @@ sealed class ConnectOperator(val key: String) : Stringify {
      */
     data object AfterBrother : ConnectOperator("-") {
         override fun <T> traversal(
-            node: T, transform: Transform<T>, connectExpression: ConnectExpression
-        ) = transform.traverseAfterBrothers(node, connectExpression)
+            context: QueryContext<T>, transform: Transform<T>, connectExpression: ConnectExpression
+        ) = transform.traverseAfterBrothers(context.current, connectExpression)
     }
 
     /**
@@ -47,8 +48,8 @@ sealed class ConnectOperator(val key: String) : Stringify {
      */
     data object Ancestor : ConnectOperator(">") {
         override fun <T> traversal(
-            node: T, transform: Transform<T>, connectExpression: ConnectExpression
-        ) = transform.traverseAncestors(node, connectExpression)
+            context: QueryContext<T>, transform: Transform<T>, connectExpression: ConnectExpression
+        ) = transform.traverseAncestors(context.current, connectExpression)
 
     }
 
@@ -57,8 +58,8 @@ sealed class ConnectOperator(val key: String) : Stringify {
      */
     data object Child : ConnectOperator("<") {
         override fun <T> traversal(
-            node: T, transform: Transform<T>, connectExpression: ConnectExpression
-        ) = transform.traverseChildren(node, connectExpression)
+            context: QueryContext<T>, transform: Transform<T>, connectExpression: ConnectExpression
+        ) = transform.traverseChildren(context.current, connectExpression)
     }
 
     /**
@@ -66,8 +67,31 @@ sealed class ConnectOperator(val key: String) : Stringify {
      */
     data object Descendant : ConnectOperator("<<") {
         override fun <T> traversal(
-            node: T, transform: Transform<T>, connectExpression: ConnectExpression
-        ) = transform.traverseDescendants(node, connectExpression)
+            context: QueryContext<T>, transform: Transform<T>, connectExpression: ConnectExpression
+        ) = transform.traverseDescendants(context.current, connectExpression)
+    }
+
+    /**
+     * A -> B + C, A is the context previous node of B, A==C
+     * A ->2 B + C + D, A==D
+     */
+    data object Previous : ConnectOperator("->") {
+        override fun <T> traversal(
+            context: QueryContext<T>, transform: Transform<T>, connectExpression: ConnectExpression
+        ) = sequence<T> {
+            var prev = context.getPrev(connectExpression.minOffset)
+            var offset = connectExpression.minOffset
+            while (prev != null) {
+                if (connectExpression.checkOffset(offset)) {
+                    yield(prev.current)
+                }
+                prev = prev.prev
+                offset++
+                if (connectExpression.maxOffset?.let { offset > it } == true) {
+                    break
+                }
+            }
+        }
     }
 
 }
