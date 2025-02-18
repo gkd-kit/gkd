@@ -61,7 +61,6 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
-import li.songe.gkd.util.EMPTY_RULE_TIP
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
@@ -169,10 +168,7 @@ fun useControlPage(): ScaffoldExt {
                 }
             )
 
-            val subsStatus by vm.subsStatusFlow.collectAsState()
-            AnimatedVisibility(subsStatus != EMPTY_RULE_TIP) {
-                ServerStatusCard(vm)
-            }
+            ServerStatusCard(vm)
 
             PageItemCard(
                 title = "触发记录",
