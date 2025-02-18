@@ -46,6 +46,7 @@ private val activityLogMutex by lazy { Mutex() }
 
 private var activityLogCount = 0
 private var lastActivityChangeTime = 0L
+@Synchronized
 fun updateTopActivity(topActivity: TopActivity) {
     if (topActivity.activityId == null && activityTaskManagerFlow.value != null && topActivity.appId == launcherAppId) {
         // 无障碍 appId 改变速度慢于系统 activity 栈变化
