@@ -72,6 +72,7 @@ class ParserUnitTest {
     @Test
     fun connectSegment() {
         assert(SelectorParser("+").readConnectSegment() == ConnectSegment(ConnectOperator.BeforeBrother))
+        assert(SelectorParser("->").readConnectSegment() == ConnectSegment(ConnectOperator.Previous))
         assert(
             SelectorParser(">(1,2,3)").readConnectSegment() == ConnectSegment(
                 ConnectOperator.Ancestor,

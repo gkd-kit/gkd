@@ -4,7 +4,6 @@ import li.songe.selector.MatchOption
 import li.songe.selector.QueryContext
 import li.songe.selector.Stringify
 import li.songe.selector.Transform
-import li.songe.selector.connect.CompareOperator
 import li.songe.selector.connect.ConnectWrapper
 import kotlin.js.JsExport
 

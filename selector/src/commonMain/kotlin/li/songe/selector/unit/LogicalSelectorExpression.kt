@@ -5,6 +5,8 @@ import li.songe.selector.MatchOption
 import li.songe.selector.QueryContext
 import li.songe.selector.Transform
 import li.songe.selector.TypeInfo
+import li.songe.selector.connect.ConnectSegment
+import li.songe.selector.property.BinaryExpression
 import kotlin.js.JsExport
 
 @JsExport
@@ -59,4 +61,10 @@ data class LogicalSelectorExpression(
 
     override val fastQueryList: List<FastQuery>
         get() = left.fastQueryList + right.fastQueryList
+
+    override val binaryExpressionList: List<BinaryExpression>
+        get() = left.binaryExpressionList + right.binaryExpressionList
+
+    override val connectSegmentList: List<ConnectSegment>
+        get() = left.connectSegmentList + right.connectSegmentList
 }

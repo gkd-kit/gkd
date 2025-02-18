@@ -1,7 +1,7 @@
 package li.songe.selector.parser
 
-import li.songe.selector.connect.CompareOperator
 import li.songe.selector.property.BinaryExpression
+import li.songe.selector.property.CompareOperator
 import li.songe.selector.property.Expression
 import li.songe.selector.property.ExpressionToken
 import li.songe.selector.property.LogicalExpression

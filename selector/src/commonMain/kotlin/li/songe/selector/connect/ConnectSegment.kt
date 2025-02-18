@@ -1,5 +1,6 @@
 package li.songe.selector.connect
 
+import li.songe.selector.QueryContext
 import li.songe.selector.Stringify
 import li.songe.selector.Transform
 import kotlin.js.JsExport
@@ -16,8 +17,8 @@ data class ConnectSegment(
         return operator.stringify() + connectExpression.stringify()
     }
 
-    internal fun <T> traversal(node: T, transform: Transform<T>): Sequence<T?> {
-        return operator.traversal(node, transform, connectExpression)
+    internal fun <T> traversal(context: QueryContext<T>, transform: Transform<T>): Sequence<T?> {
+        return operator.traversal(context, transform, connectExpression)
     }
 
     val isMatchAnyAncestor = operator == ConnectOperator.Ancestor

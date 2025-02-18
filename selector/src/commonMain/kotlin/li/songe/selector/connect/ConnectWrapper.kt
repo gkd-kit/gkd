@@ -33,7 +33,7 @@ data class ConnectWrapper(
                 if (r.matched) return r
             }
         } else {
-            segment.traversal(context.current, transform).forEach {
+            segment.traversal(context, transform).forEach {
                 if (it == null) return@forEach
                 val r = to.matchContext(context.next(it), transform, option)
                 if (r.matched) return r

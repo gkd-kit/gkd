@@ -2,7 +2,6 @@ package li.songe.selector.property
 
 import li.songe.selector.QueryContext
 import li.songe.selector.Transform
-import li.songe.selector.connect.CompareOperator
 import kotlin.js.JsExport
 
 @JsExport
