@@ -54,15 +54,15 @@ private fun checkSelfPermission(permission: String): Boolean {
 
 private suspend fun asyncRequestPermission(
     context: Activity,
-    permission: String,
+    vararg permissions: String,
 ): PermissionResult {
-    if (XXPermissions.isGranted(context, permission)) {
+    if (XXPermissions.isGranted(context, *permissions)) {
         return PermissionResult.Granted
     }
     return suspendCoroutine { continuation ->
         XXPermissions.with(context)
             .unchecked()
-            .permission(permission)
+            .permission(*permissions)
             .request(object : OnPermissionCallback {
                 override fun onGranted(permissions: MutableList<String>, allGranted: Boolean) {
                     if (allGranted) {
@@ -79,13 +79,31 @@ private suspend fun asyncRequestPermission(
     }
 }
 
+private val notificationPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        arrayOf(
+            Permission.POST_NOTIFICATIONS,
+            Manifest.permission.FOREGROUND_SERVICE,
+            // https://github.com/gkd-kit/gkd/issues/887
+            Manifest.permission.FOREGROUND_SERVICE_SPECIAL_USE
+        )
+    } else {
+        arrayOf(
+            Permission.POST_NOTIFICATIONS,
+            Manifest.permission.FOREGROUND_SERVICE
+        )
+    }
+} else {
+    arrayOf(Permission.POST_NOTIFICATIONS)
+}
+
 val notificationState by lazy {
     PermissionState(
         check = {
-            XXPermissions.isGranted(app, Permission.POST_NOTIFICATIONS)
+            XXPermissions.isGranted(app, notificationPermissions)
         },
         request = {
-            asyncRequestPermission(it, Permission.POST_NOTIFICATIONS)
+            asyncRequestPermission(it, *notificationPermissions)
         },
         reason = AuthReason(
             text = "当前操作需要[通知权限]\n\n您需要前往应用权限设置打开此权限",
