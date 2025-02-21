@@ -59,8 +59,8 @@ fun EditOrAddRuleGroupDialog(
             val newGroup = try {
                 if (app != null) {
                     if (element["groups"] is JsonArray) {
-                        val id = element["id"] as? JsonPrimitive
-                        if (id != null && (!id.isString || id.content != app.id)) {
+                        val id = element["id"] ?: error("缺少id")
+                        if (!(id is JsonPrimitive && id.isString && id.content == app.id)) {
                             error("id与当前应用不一致")
                         }
                         RawSubscription.parseApp(element).let { newApp ->
@@ -110,7 +110,7 @@ fun EditOrAddRuleGroupDialog(
                 val newGroups = try {
                     if (element["groups"] is JsonArray) {
                         val id = element["id"] ?: error("缺少id")
-                        if (!(id is JsonPrimitive && id.isString && id.content != app.id)) {
+                        if (!(id is JsonPrimitive && id.isString && id.content == app.id)) {
                             error("id与当前应用不一致")
                         }
                         RawSubscription.parseApp(element).apply {
