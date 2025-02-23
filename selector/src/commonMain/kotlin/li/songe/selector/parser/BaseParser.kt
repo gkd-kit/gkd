@@ -53,6 +53,12 @@ internal sealed interface BaseParser {
         }
     }
 
+    fun rollbackWhiteSpace() {
+        while (source[i - 1] in WHITESPACE_CHAR) {
+            i--
+        }
+    }
+
     fun readUInt(): Int {
         val start = i
         expectOneOfChar(DIGIT_CHAR, "digit")
@@ -163,6 +169,17 @@ internal sealed interface BaseParser {
             return true
         }
         return false
+    }
+
+    fun <T> readBracketExpression(block: () -> T): T {
+        expectChar('(')
+        i++
+        readWhiteSpace()
+        return block().apply {
+            readWhiteSpace()
+            expectChar(')')
+            i++
+        }
     }
 }
 

@@ -34,7 +34,8 @@ data class PropertyWrapper(
         return to.matchContext(context, transform, option)
     }
 
-    val isMatchRoot = segment.expressions.any { e ->
+    val isMatchRoot = segment.units.any {
+        val e = it.expression
         e is BinaryExpression && e.operator == CompareOperator.Equal && e.left.value == "parent" && e.right.value == "null"
     }
 

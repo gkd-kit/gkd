@@ -76,6 +76,8 @@ internal open class SelectorParser(
         return operator
     }
 
+    open fun mergeLogicalSelectorExpression(expression: LogicalSelectorExpression) {}
+
     // A + B
     open fun readSelectorExpression(): SelectorExpression {
         val tokens = mutableListOf<SelectorExpressionToken>()
@@ -128,7 +130,7 @@ internal open class SelectorParser(
                     left = left,
                     operator = token,
                     right = right
-                )
+                ).apply { mergeLogicalSelectorExpression(this) }
                 tokens.removeAt(index - 1)
                 tokens.removeAt(index + 1 - 1)
             } else {
@@ -143,7 +145,7 @@ internal open class SelectorParser(
                 left = left,
                 operator = operator,
                 right = right
-            )
+            ).apply { mergeLogicalSelectorExpression(this) }
             tokens.removeAt(0)
             tokens.removeAt(2 - 1)
         }

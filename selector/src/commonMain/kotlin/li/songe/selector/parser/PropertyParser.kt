@@ -8,6 +8,7 @@ import li.songe.selector.property.LogicalExpression
 import li.songe.selector.property.LogicalOperator
 import li.songe.selector.property.NotExpression
 import li.songe.selector.property.PropertySegment
+import li.songe.selector.property.PropertyUnit
 import li.songe.selector.property.ValueExpression
 import li.songe.selector.toMatches
 
@@ -50,6 +51,12 @@ internal sealed interface PropertyParser : BaseParser {
         return v
     }
 
+    fun mergeIdentifier(expression: ValueExpression.Identifier) {}
+
+    fun mergeMemberExpression(expression: ValueExpression.MemberExpression) {}
+
+    fun mergeCallExpression(expression: ValueExpression.CallExpression) {}
+
     fun readValueExpression(): ValueExpression {
         expectOneOfChar(VALUE_START_CHAR, "VAL_START_CHAR")
         if (readLiteral("null")) {
@@ -75,7 +82,8 @@ internal sealed interface PropertyParser : BaseParser {
                 if (lastToken != null) {
                     errorExpect("Variable End")
                 }
-                lastToken = ValueExpression.Identifier(readVariableName())
+                lastToken =
+                    ValueExpression.Identifier(readVariableName()).apply { mergeIdentifier(this) }
             } else if (c == '.') {
                 if (lastToken !is ValueExpression.Variable) {
                     errorExpect("Variable End")
@@ -85,7 +93,7 @@ internal sealed interface PropertyParser : BaseParser {
                 lastToken = ValueExpression.MemberExpression(
                     lastToken,
                     readVariableName()
-                )
+                ).apply { mergeMemberExpression(this) }
             } else if (c == '(') {
                 i++
                 readWhiteSpace()
@@ -108,7 +116,7 @@ internal sealed interface PropertyParser : BaseParser {
                     lastToken = ValueExpression.CallExpression(
                         lastToken,
                         arguments
-                    )
+                    ).apply { mergeCallExpression(this) }
                 } else {
                     return readValueExpression().apply {
                         readWhiteSpace()
@@ -123,6 +131,7 @@ internal sealed interface PropertyParser : BaseParser {
         if (lastToken == null) {
             errorExpect("Variable")
         }
+        rollbackWhiteSpace()
         return lastToken
     }
 
@@ -165,6 +174,8 @@ internal sealed interface PropertyParser : BaseParser {
         }
     }
 
+    fun mergeLogicalExpression(expression: LogicalExpression) {}
+
     // a>1 && a>1 || a>1
     // (a>1 || a>1) && a>1
     fun readExpression(): Expression {
@@ -190,12 +201,8 @@ internal sealed interface PropertyParser : BaseParser {
                     break
                 }
             } else if (c == '(') {
-                i++
-                readWhiteSpace()
-                readExpression().apply {
-                    readWhiteSpace()
-                    expectChar(')')
-                    i++
+                readBracketExpression {
+                    readExpression()
                 }
             } else if (c == '!') {
                 readNotExpression()
@@ -205,6 +212,7 @@ internal sealed interface PropertyParser : BaseParser {
             tokens.add(token)
             readWhiteSpace()
         }
+        rollbackWhiteSpace()
         if (tokens.size == 1) {
             return tokens.first() as Expression
         }
@@ -221,7 +229,7 @@ internal sealed interface PropertyParser : BaseParser {
                     left = left,
                     operator = token,
                     right = right
-                )
+                ).apply { mergeLogicalExpression(this) }
                 tokens.removeAt(index - 1)
                 tokens.removeAt(index + 1 - 1)
             } else {
@@ -237,7 +245,7 @@ internal sealed interface PropertyParser : BaseParser {
                 left = left,
                 operator = operator,
                 right = right
-            )
+            ).apply { mergeLogicalExpression(this) }
             tokens.removeAt(0)
             tokens.removeAt(2 - 1)
         }
@@ -273,11 +281,11 @@ internal sealed interface PropertyParser : BaseParser {
     }
 
     // [a=b||c=d]
-    fun readPropertyUnit(): Expression {
+    fun readPropertyUnit(): PropertyUnit {
         expectChar('[')
         i++
         readWhiteSpace()
-        return readExpression().apply {
+        return PropertyUnit(readExpression()).apply {
             readWhiteSpace()
             expectChar(']')
             i++
@@ -298,7 +306,7 @@ internal sealed interface PropertyParser : BaseParser {
         if (name.isEmpty()) {
             expectChar('[')
         }
-        val expressions = mutableListOf<Expression>()
+        val expressions = mutableListOf<PropertyUnit>()
         while (char == '[') {
             expressions.add(readPropertyUnit())
         }
