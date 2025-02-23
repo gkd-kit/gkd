@@ -10,17 +10,17 @@ import kotlin.js.JsExport
 data class PropertySegment(
     val at: Boolean,
     val name: String,
-    val expressions: List<Expression>,
+    val units: List<PropertyUnit>,
 ) : Stringify {
     private val matchAnyName = name.isEmpty() || name == "*"
 
-    fun getBinaryExpressionList() = expressions.flatMap {
-        it.getBinaryExpressionList().toList()
+    fun getBinaryExpressionList() = units.flatMap {
+        it.expression.getBinaryExpressionList().toList()
     }.toTypedArray()
 
     override fun stringify(): String {
         val matchTag = if (at) "@" else ""
-        return matchTag + name + expressions.joinToString("") { "[${it.stringify()}]" }
+        return matchTag + name + units.joinToString("") { it.stringify() }
     }
 
     private fun <T> matchName(node: T, transform: Transform<T>): Boolean {
@@ -38,8 +38,8 @@ data class PropertySegment(
         context: QueryContext<T>,
         transform: Transform<T>,
     ): Boolean {
-        return matchName(context.current, transform) && expressions.all { ex ->
-            ex.match(
+        return matchName(context.current, transform) && units.all { ex ->
+            ex.expression.match(
                 context,
                 transform
             )
@@ -48,7 +48,7 @@ data class PropertySegment(
 
     val fastQueryList: List<FastQuery>?
         get() {
-            val exp = expressions.firstOrNull() ?: return null
+            val exp = units.firstOrNull()?.expression ?: return null
             if (exp is LogicalExpression) {
                 if (exp.operator != LogicalOperator.OrOperator) return null
                 val expArray = exp.getSameExpressionArray() ?: return null

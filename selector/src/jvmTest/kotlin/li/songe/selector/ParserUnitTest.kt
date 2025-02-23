@@ -38,7 +38,7 @@ class ParserUnitTest {
             .readUnitSelectorExpression()
             .stringify().let {
                 println(it)
-                assert(it == "[x~=\"\\\\d+\"]")
+                assert(it == "[x!~=\"\\\\d+\"]")
             }
     }
 
@@ -153,5 +153,12 @@ class ParserUnitTest {
             .count()
 
         println("$x1->$x1N, $x2->$x2N, ($x1,$x2)->$x12N")
+    }
+
+    @Test
+    fun ast() {
+        val ast = Selector.parseAst("(A + B) || (A +(3n+1) @B[a.b.c(a,b)>1 || b>null && (b~=`233` ) && a=1 ][b=true][(a>b || (c> 0  ))][(a>1 || a>1) && a>1])")
+        println("selector: ${ast.value}")
+        println("ast: ${ast.stringify()}")
     }
 }
