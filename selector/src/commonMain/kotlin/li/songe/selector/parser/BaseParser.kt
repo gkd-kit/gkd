@@ -171,7 +171,7 @@ internal sealed interface BaseParser {
         return false
     }
 
-    fun <T> readBracketExpression(block: () -> T): T {
+    fun <T: Any> readBracketExpression(block: () -> T): T {
         expectChar('(')
         i++
         readWhiteSpace()
