@@ -7,13 +7,13 @@ import li.songe.selector.unit.LogicalSelectorExpression
 
 private data class AstContext(
     val parent: AstContext? = null,
-    val children: MutableList<AstNode<*>> = mutableListOf()
+    val children: MutableList<AstNode<Any>> = mutableListOf()
 )
 
 internal class AstParser(override val source: String) : SelectorParser(source) {
     private var tempAstContext = AstContext()
 
-    private fun <T> createAstNode(block: () -> T): T {
+    private fun <T : Any> createAstNode(block: () -> T): T {
         tempAstContext = AstContext(tempAstContext)
         val start = i
         return block().apply {
@@ -42,7 +42,7 @@ internal class AstParser(override val source: String) : SelectorParser(source) {
             if (children.size == 1) {
                 val child = children.first()
                 if (child.children.isEmpty() && child.start == node.start && child.end == node.end) {
-                    if (child.value is String || child.value is Boolean || child.value is Int || child.value == null) {
+                    if (child.value is String || child.value is Boolean || child.value is Int) {
                         children.clear()
                         changed = true
                     }
@@ -187,7 +187,7 @@ internal class AstParser(override val source: String) : SelectorParser(source) {
         )
     }
 
-    override fun <T> readBracketExpression(block: () -> T) = createAstNode {
+    override fun <T : Any> readBracketExpression(block: () -> T) = createAstNode {
         super.readBracketExpression(block)
     }
 
