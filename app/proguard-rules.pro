@@ -25,6 +25,7 @@
 # fix ktor error https://youtrack.jetbrains.com/issue/KTOR-7298
 # it may be the bug of agp
 -keep class io.ktor.server.** { *; }
+-keep class io.ktor.network.** { *; }
 -dontwarn com.sun.nio.**
 
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
