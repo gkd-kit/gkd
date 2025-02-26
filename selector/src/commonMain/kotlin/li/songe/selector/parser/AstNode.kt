@@ -15,7 +15,7 @@ data class AstNode<T : Any>(
     val outChildren by lazy { children.toTypedArray() }
 
     val name: String
-        get() = value.let { it::class.simpleName }.toString()
+        get() = value::class.simpleName.toString()
 
     override fun stringify(): String {
         if (children.isEmpty()) {

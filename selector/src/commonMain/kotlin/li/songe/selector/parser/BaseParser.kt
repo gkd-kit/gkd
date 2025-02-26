@@ -171,20 +171,23 @@ internal sealed interface BaseParser {
         return false
     }
 
-    fun <T: Any> readBracketExpression(block: () -> T): T {
-        expectChar('(')
+    fun readPlainChar(v: Char) {
+        expectChar(v)
         i++
+    }
+
+    fun <T : Any> readBracketExpression(block: () -> T): T {
+        readPlainChar('(')
         readWhiteSpace()
         return block().apply {
             readWhiteSpace()
-            expectChar(')')
-            i++
+            readPlainChar(')')
         }
     }
 }
 
 internal fun BaseParser.errorExpect(name: String): Nothing {
-    throw SyntaxException("Expect $name, got ${char.escapeString()} at index $i")
+    throw SyntaxException("Expect $name, got ${char.escapeString()} at index $i", name, i)
 }
 
 internal fun BaseParser.expectOneOfChar(v: String, name: String? = null): Char {

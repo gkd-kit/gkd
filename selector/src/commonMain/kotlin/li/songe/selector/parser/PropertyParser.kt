@@ -88,14 +88,14 @@ internal sealed interface PropertyParser : BaseParser {
                 if (lastToken !is ValueExpression.Variable) {
                     errorExpect("Variable End")
                 }
-                i++
+                readPlainChar('.')
                 readWhiteSpace()
                 lastToken = ValueExpression.MemberExpression(
                     lastToken,
                     readVariableName()
                 ).apply { mergeMemberExpression(this) }
             } else if (c == '(') {
-                i++
+                readPlainChar('(')
                 readWhiteSpace()
                 if (lastToken != null) {
                     // 暂不支持 object()()
@@ -106,13 +106,12 @@ internal sealed interface PropertyParser : BaseParser {
                     while (char.inStr(VALUE_START_CHAR)) {
                         arguments.add(readValueExpression())
                         if (char == ',') {
-                            i++
+                            readPlainChar(',')
                             readWhiteSpace()
                         }
                     }
                     readWhiteSpace()
-                    expectChar(')')
-                    i++
+                    readPlainChar(')')
                     lastToken = ValueExpression.CallExpression(
                         lastToken,
                         arguments
@@ -120,8 +119,7 @@ internal sealed interface PropertyParser : BaseParser {
                 } else {
                     return readValueExpression().apply {
                         readWhiteSpace()
-                        expectChar(')')
-                        i++
+                        readPlainChar(')')
                     }
                 }
             } else {
@@ -145,8 +143,8 @@ internal sealed interface PropertyParser : BaseParser {
             if (it is ValueExpression.StringLiteral && (operator == CompareOperator.Matches || operator == CompareOperator.NotMatches)) {
                 val matches = try {
                     it.value.toMatches()
-                } catch (_: Exception) {
-                    i = regexIndex
+                } catch (_: Throwable) {// support kotlin js
+                    i = regexIndex + 1
                     errorExpect("valid regex string")
                 }
                 it.copy(matches = matches)
@@ -162,16 +160,10 @@ internal sealed interface PropertyParser : BaseParser {
     }
 
     fun readNotExpression(): NotExpression {
-        expectChar('!')
-        i++
-        expectChar('(')
-        i++
-        readWhiteSpace()
-        return NotExpression(readExpression()).apply {
-            readWhiteSpace()
-            expectChar(')')
-            i++
-        }
+        readPlainChar('!')
+        return NotExpression(readBracketExpression {
+            readExpression()
+        })
     }
 
     fun mergeLogicalExpression(expression: LogicalExpression) {}
@@ -213,6 +205,9 @@ internal sealed interface PropertyParser : BaseParser {
             readWhiteSpace()
         }
         rollbackWhiteSpace()
+        if (tokens.isEmpty()) {
+            errorExpect("EXP_START_CHAR")
+        }
         if (tokens.size == 1) {
             return tokens.first() as Expression
         }
@@ -282,13 +277,11 @@ internal sealed interface PropertyParser : BaseParser {
 
     // [a=b||c=d]
     fun readPropertyUnit(): PropertyUnit {
-        expectChar('[')
-        i++
+        readPlainChar('[')
         readWhiteSpace()
         return PropertyUnit(readExpression()).apply {
             readWhiteSpace()
-            expectChar(']')
-            i++
+            readPlainChar(']')
         }
     }
 
@@ -296,7 +289,7 @@ internal sealed interface PropertyParser : BaseParser {
     fun readPropertySegment(): PropertySegment {
         val at = char == '@'
         if (at) {
-            i++
+            readPlainChar('@')
         }
         val name = if (char == '[') {
             ""

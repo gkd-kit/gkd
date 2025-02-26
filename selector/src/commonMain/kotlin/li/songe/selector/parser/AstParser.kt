@@ -167,11 +167,9 @@ internal class AstParser(override val source: String) : SelectorParser(source) {
     }
 
     override fun mergeCallExpression(expression: ValueExpression.CallExpression) {
-        if (source[i - 1] != ')') {
-            errorExpect("CallExpression End")
-        }
+        // [lastToken, (, ...arguments, ',', )]
         val children = tempAstContext.children.subList(
-            tempAstContext.children.size - expression.arguments.size - 1,
+            tempAstContext.children.indexOfFirst { it.value === expression.callee },
             tempAstContext.children.size
         ).toMutableList()
         repeat(children.size) {
@@ -223,9 +221,7 @@ internal class AstParser(override val source: String) : SelectorParser(source) {
 
     override fun readString() = createAstNode { super.readString() }
 
-    override fun readUnitSelectorExpression() = createAstNode {
-        super.readUnitSelectorExpression()
-    }
+    override fun readUnitSelectorExpression() = createAstNode { super.readUnitSelectorExpression() }
 
     override fun readValueExpression() = createAstNode { super.readValueExpression() }
 
@@ -241,4 +237,10 @@ internal class AstParser(override val source: String) : SelectorParser(source) {
 
     override fun readTupleExpression() = createAstNode { super.readTupleExpression() }
 
+    override fun readPlainChar(v: Char) {
+        createAstNode {
+            super.readPlainChar(v)
+            v.toString()
+        }
+    }
 }

@@ -13,7 +13,11 @@ sealed class GkdException(override val message: String) : Exception(message) {
 }
 
 @JsExport
-data class SyntaxException(override val message: String) : GkdException(message)
+data class SyntaxException(
+    override val message: String,
+    val expectedValue: String,
+    val index: Int
+) : GkdException(message)
 
 @JsExport
 sealed class TypeException(override val message: String) : GkdException(message)
