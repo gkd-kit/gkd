@@ -1,6 +1,5 @@
 package li.songe.selector.connect
 
-import li.songe.selector.SyntaxException
 import kotlin.js.JsExport
 
 /**
@@ -43,7 +42,7 @@ data class PolynomialExpression(val a: Int = 0, val b: Int = 1) : ConnectExpress
     }
 
     private fun invalidValue(): Nothing {
-        throw SyntaxException("invalid Polynomial: a=$a, b=$b")
+        error("invalid Polynomial: a=$a, b=$b")
     }
 
     override val minOffset = if (a > 0) {

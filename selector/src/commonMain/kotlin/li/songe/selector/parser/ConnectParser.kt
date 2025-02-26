@@ -1,6 +1,5 @@
 package li.songe.selector.parser
 
-import li.songe.selector.SyntaxException
 import li.songe.selector.connect.ConnectExpression
 import li.songe.selector.connect.ConnectOperator
 import li.songe.selector.connect.ConnectSegment
@@ -82,8 +81,7 @@ internal sealed interface ConnectParser : BaseParser {
 
     // (1,2,3)
     fun readTupleExpression(): TupleExpression {
-        expectChar('(')
-        i++
+        readPlainChar('(')
         readWhiteSpace()
         val numbers = mutableListOf<Int>()
         expectOneOfChar(POSITIVE_DIGIT_CHAR, "POSITIVE_DIGIT_CHAR")
@@ -99,12 +97,11 @@ internal sealed interface ConnectParser : BaseParser {
             numbers.add(v)
             readWhiteSpace()
             if (char == ',') {
-                i++
+                readPlainChar(',')
                 readWhiteSpace()
             }
         }
-        expectChar(')')
-        i++
+        readPlainChar(')')
         return TupleExpression(numbers)
     }
 
@@ -114,7 +111,7 @@ internal sealed interface ConnectParser : BaseParser {
         val start = i
         val monomials = mutableListOf<Monomial>()
         if (char == '(') {
-            i++
+            readPlainChar('(')
             readWhiteSpace()
             while (true) {
                 if (monomials.isNotEmpty()) {
@@ -135,8 +132,7 @@ internal sealed interface ConnectParser : BaseParser {
                     break
                 }
             }
-            expectChar(')')
-            i++
+            readPlainChar(')')
         } else {
             monomials.add(readMonomial())
         }
@@ -146,7 +142,7 @@ internal sealed interface ConnectParser : BaseParser {
                 a = monomials.find { it.power == 1 }?.coefficient ?: 0,
                 b = monomials.find { it.power == 0 }?.coefficient ?: 0
             )
-        } catch (_: SyntaxException) {
+        } catch (_: Throwable) {
             i = start
             errorExpect("valid an+b polynomial")
         }

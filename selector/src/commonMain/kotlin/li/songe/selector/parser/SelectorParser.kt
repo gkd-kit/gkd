@@ -51,16 +51,10 @@ internal open class SelectorParser(
 
     // !(A > B)
     open fun readNotSelectorExpression(): NotSelectorExpression {
-        expectChar('!')
-        i++
-        expectChar('(')
-        i++
-        readWhiteSpace()
-        return NotSelectorExpression(readSelectorExpression()).apply {
-            readWhiteSpace()
-            expectChar(')')
-            i++
-        }
+        readPlainChar('!')
+        return NotSelectorExpression(readBracketExpression {
+            readSelectorExpression()
+        })
     }
 
     // (A + B) || (A - B)
@@ -100,12 +94,8 @@ internal open class SelectorParser(
                     break
                 }
             } else if (c == '(') {
-                i++
-                readWhiteSpace()
-                readSelectorExpression().apply {
-                    readWhiteSpace()
-                    expectChar(')')
-                    i++
+                readBracketExpression {
+                    readSelectorExpression()
                 }
             } else if (c == '!') {
                 readNotSelectorExpression()
@@ -116,6 +106,10 @@ internal open class SelectorParser(
             }
             tokens.add(token)
             readWhiteSpace()
+        }
+        rollbackWhiteSpace()
+        if (tokens.isEmpty()) {
+            errorExpect("selector")
         }
         if (tokens.size == 1) {
             return tokens.first() as SelectorExpression
