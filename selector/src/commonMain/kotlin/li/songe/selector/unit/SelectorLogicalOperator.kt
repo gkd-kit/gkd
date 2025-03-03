@@ -98,7 +98,7 @@ sealed class SelectorLogicalOperator(val key: String) : Stringify, SelectorExpre
             expression: LogicalSelectorExpression,
         ): QueryResult<T> {
             val leftValue = expression.left.matchContext(context, transform, option)
-            if (leftValue.context.matched) {
+            if (leftValue.matched) {
                 return QueryResult.OrResult(expression, leftValue)
             }
             return QueryResult.OrResult(
