@@ -175,7 +175,7 @@ class Transform<T> @JsExport.Ignore constructor(
         return sequence {
             getDescendants(node).forEach { childNode ->
                 selector.matchContext(childNode, this@Transform, option).let {
-                    if (it.context.matched) {
+                    if (it.matched) {
                         yield(it)
                     }
                 }
