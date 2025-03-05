@@ -8,6 +8,15 @@ import kotlin.js.JsExport
 @JsExport
 sealed class ConnectOperator(val key: String) : Stringify {
     override fun stringify() = key
+    fun formatOffset(offset: Int): String {
+        require(offset >= 0)
+        val n = offset + 1
+        return if (n == 1) {
+            key
+        } else {
+            key + n
+        }
+    }
 
     internal abstract fun <T> traversal(
         context: QueryContext<T>,

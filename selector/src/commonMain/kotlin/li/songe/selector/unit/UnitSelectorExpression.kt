@@ -76,7 +76,7 @@ data class UnitSelectorExpression(
     override val fastQueryList = propertyWrapper.fastQueryList
     override val isMatchRoot = propertyWrapper.isMatchRoot
 
-    private val connectWrappers: Sequence<ConnectWrapper>
+    internal val connectWrappers: Sequence<ConnectWrapper>
         get() = sequence {
             var c = propertyWrapper.to
             while (c != null) {
