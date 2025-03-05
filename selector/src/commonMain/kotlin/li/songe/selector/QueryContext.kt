@@ -42,6 +42,16 @@ data class QueryContext<T>(
         return list
     }
 
+    fun toContextList(): List<QueryContext<T>> {
+        val list = mutableListOf(this)
+        var context = prev
+        while (context != null) {
+            list.add(context)
+            context = context.prev
+        }
+        return list
+    }
+
     @Suppress("UNCHECKED_CAST", "unused")
     fun toArray(): Array<T> {
         return (toList() as List<Any>).toTypedArray() as Array<T>
