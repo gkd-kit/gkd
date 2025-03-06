@@ -5,6 +5,7 @@ import android.content.Context
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -233,35 +234,33 @@ fun AdvancedPage() {
                     CompositionLocalProvider(
                         LocalTextStyle provides MaterialTheme.typography.bodyMedium
                     ) {
-                        if (!httpServerRunning) {
-                            Text(
-                                text = "在浏览器下连接调试工具",
-                            )
-                        } else {
-                            Text(
-                                text = "点击下面任意链接打开即可自动连接",
-                            )
-                            Row {
-                                Text(
-                                    text = "http://127.0.0.1:${store.httpServerPort}",
-                                    color = MaterialTheme.colorScheme.primary,
-                                    style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
-                                    modifier = Modifier.clickable(onClick = throttle {
-                                        openUri("http://127.0.0.1:${store.httpServerPort}")
-                                    }),
-                                )
-                                Spacer(modifier = Modifier.width(2.dp))
-                                Text(text = "仅本设备可访问")
-                            }
-                            localNetworkIps.forEach { host ->
-                                Text(
-                                    text = "http://${host}:${store.httpServerPort}",
-                                    color = MaterialTheme.colorScheme.primary,
-                                    style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
-                                    modifier = Modifier.clickable(onClick = throttle {
-                                        openUri("http://${host}:${store.httpServerPort}")
-                                    })
-                                )
+                        Text(text = if (httpServerRunning) "点击链接打开即可自动连接" else "在浏览器下连接调试工具")
+                        AnimatedVisibility(httpServerRunning) {
+                            Column {
+                                Row {
+                                    val localUrl = "http://127.0.0.1:${store.httpServerPort}"
+                                    Text(
+                                        text = localUrl,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
+                                        modifier = Modifier.clickable(onClick = throttle {
+                                            openUri(localUrl)
+                                        }),
+                                    )
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text(text = "仅本设备可访问")
+                                }
+                                localNetworkIps.forEach { host ->
+                                    val lanUrl = "http://${host}:${store.httpServerPort}"
+                                    Text(
+                                        text = lanUrl,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
+                                        modifier = Modifier.clickable(onClick = throttle {
+                                            openUri(lanUrl)
+                                        })
+                                    )
+                                }
                             }
                         }
                     }
