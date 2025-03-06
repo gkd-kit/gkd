@@ -1,6 +1,7 @@
 package li.songe.gkd.ui
 
 import android.app.Activity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -30,7 +31,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -51,6 +51,7 @@ import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.ShortUrlSet
@@ -66,7 +67,7 @@ import java.io.DataOutputStream
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun AuthA11yPage() {
-    val context = LocalContext.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
 
     val vm = viewModel<AuthA11yVm>()
@@ -188,7 +189,7 @@ fun AuthA11yPage() {
                         if (!writeSecureSettings) {
                             toast("请先授权")
                         }
-                        context.mainVm.dialogFlow.updateDialogOptions(
+                        mainVm.dialogFlow.updateDialogOptions(
                             title = "无感保活",
                             text = "添加通知栏快捷开关\n\n1. 下拉通知栏至[快捷开关]图标界面\n2. 找到名称为 ${META.appName} 的快捷开关\n3. 添加此开关到通知面板 \n\n只要此快捷开关在通知面板可见\n无论是系统杀后台还是自身BUG崩溃\n简单下拉打开通知即可重启"
                         )
@@ -351,7 +352,7 @@ private fun grantPermissionByRoot() {
 
 @Composable
 private fun AuthButtonGroup() {
-    val context = LocalContext.current as MainActivity
+    val context = LocalActivity.current as MainActivity
     val vm = viewModel<AuthA11yVm>()
     Row(
         modifier = Modifier

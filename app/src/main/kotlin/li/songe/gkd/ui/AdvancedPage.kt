@@ -81,6 +81,7 @@ import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.ShortUrlSet
@@ -98,6 +99,7 @@ import rikka.shizuku.Shizuku
 @Composable
 fun AdvancedPage() {
     val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val vm = viewModel<AdvancedVm>()
     val navController = LocalNavController.current
     val store by storeFlow.collectAsState()
@@ -204,7 +206,7 @@ fun AdvancedPage() {
                             Shizuku.requestPermission(Activity.RESULT_OK)
                         } catch (e: Exception) {
                             LogUtils.d("Shizuku授权错误", e.message)
-                            context.mainVm.shizukuErrorFlow.value = true
+                            mainVm.shizukuErrorFlow.value = true
                         }
                     })
                 ShizukuFragment(false)
@@ -367,7 +369,7 @@ fun AdvancedPage() {
                 subtitle = "触发截屏时保存快照",
                 suffix = "查看限制",
                 onSuffixClick = {
-                    context.mainVm.dialogFlow.updateDialogOptions(
+                    mainVm.dialogFlow.updateDialogOptions(
                         title = "限制说明",
                         text = "仅支持部分小米设备截屏触发\n\n只保存节点信息不保存图片, 用户需要在快照记录里替换截图",
                     )
@@ -408,7 +410,7 @@ fun AdvancedPage() {
                 },
                 imageVector = Icons.Outlined.Edit,
                 onClick = {
-                    context.mainVm.showEditCookieDlgFlow.value = true
+                    mainVm.showEditCookieDlgFlow.value = true
                 }
             )
 
@@ -447,7 +449,7 @@ fun AdvancedPage() {
                 subtitle = "添加透明悬浮窗",
                 suffix = "查看作用",
                 onSuffixClick = {
-                    context.mainVm.dialogFlow.updateDialogOptions(
+                    mainVm.dialogFlow.updateDialogOptions(
                         title = "悬浮窗作用",
                         text = "1.提高 GKD 前台优先级, 降低被系统杀死概率\n2.提高点击响应速度, 关闭后可能导致点击缓慢或不点击",
                     )
@@ -530,7 +532,7 @@ private fun ShizukuFragment(enabled: Boolean = true) {
 
 @Composable
 private fun ShizukuTitleCard() {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -547,7 +549,7 @@ private fun ShizukuTitleCard() {
         if (shizukuVersionCode != null && shizukuVersionCode < shizukuMiniVersionCode) {
             Row(
                 modifier = Modifier.clickable(onClick = throttle {
-                    context.mainVm.dialogFlow.updateDialogOptions(
+                    mainVm.dialogFlow.updateDialogOptions(
                         title = "版本过低",
                         text = "检测到 Shizuku 版本过低, 可能影响 GKD 正常运行, 建议自行更新至最新版本后再使用",
                     )

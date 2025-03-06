@@ -57,7 +57,6 @@ import com.blankj.utilcode.util.KeyboardUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.MainActivity
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
@@ -89,7 +88,7 @@ import li.songe.gkd.util.toast
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
-    val context = LocalActivity.current as MainActivity
+    val context = LocalActivity.current!!
     val navController = LocalNavController.current
     val vm = viewModel<GlobalGroupExcludeVm>()
     val rawSubs = vm.rawSubsFlow.collectAsState().value

@@ -75,6 +75,7 @@ import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.ShortUrlSet
@@ -103,6 +104,7 @@ val subsNav = BottomNavItem(
 @Composable
 fun useSubsManagePage(): ScaffoldExt {
     val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
 
     val vm = viewModel<HomeVm>()
@@ -227,7 +229,7 @@ fun useSubsManagePage(): ScaffoldExt {
                             if (selectedIds.contains(LOCAL_SUBS_ID)) "$it\n\n注: 不包含本地订阅" else it
                         }
                         IconButton(onClick = vm.viewModelScope.launchAsFn {
-                            context.mainVm.dialogFlow.waitResult(
+                            mainVm.dialogFlow.waitResult(
                                 title = "删除订阅",
                                 text = text,
                                 error = true,
@@ -246,7 +248,7 @@ fun useSubsManagePage(): ScaffoldExt {
                         }
                     }
                     IconButton(onClick = {
-                        context.mainVm.showShareDataIdsFlow.value = selectedIds
+                        mainVm.showShareDataIdsFlow.value = selectedIds
                     }) {
                         Icon(
                             imageVector = Icons.Default.Share,
@@ -383,9 +385,9 @@ fun useSubsManagePage(): ScaffoldExt {
                         toast("正在刷新订阅,请稍后操作")
                         return@FloatingActionButton
                     }
-                    context.mainVm.viewModelScope.launchTry {
-                        val url = context.mainVm.inputSubsLinkOption.getResult() ?: return@launchTry
-                        context.mainVm.addOrModifySubs(url)
+                    mainVm.viewModelScope.launchTry {
+                        val url = mainVm.inputSubsLinkOption.getResult() ?: return@launchTry
+                        mainVm.addOrModifySubs(url)
                     }
                 }) {
                     Icon(
@@ -462,9 +464,9 @@ fun useSubsManagePage(): ScaffoldExt {
                             isSelectedMode = isSelectedMode,
                             isSelected = selectedIds.contains(subItem.id),
                             onCheckedChange = { checked ->
-                                context.mainVm.viewModelScope.launch {
+                                mainVm.viewModelScope.launch {
                                     if (checked && storeFlow.value.subsPowerWarn && !subItem.isLocal && usedSubsEntriesFlow.value.any { !it.subsItem.isLocal }) {
-                                        context.mainVm.dialogFlow.waitResult(
+                                        mainVm.dialogFlow.waitResult(
                                             title = "耗电警告",
                                             textContent = {
                                                 Column {

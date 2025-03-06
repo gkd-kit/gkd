@@ -1,6 +1,5 @@
 package li.songe.gkd.ui
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,7 +49,6 @@ import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListP
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.MainActivity
 import li.songe.gkd.data.ResolvedGroup
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
@@ -62,6 +60,7 @@ import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.RuleSortOption
@@ -73,7 +72,7 @@ import li.songe.gkd.util.throttle
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun AppConfigPage(appId: String) {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     val vm = viewModel<AppConfigVm>()
     val ruleSortType by vm.ruleSortTypeFlow.collectAsState()
@@ -166,11 +165,11 @@ fun AppConfigPage(appId: String) {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = throttle(context.mainVm.viewModelScope.launchAsFn {
+                onClick = throttle(mainVm.viewModelScope.launchAsFn {
                     navController.toDestinationsNavigator()
                         .navigate(SubsAppGroupListPageDestination(LOCAL_SUBS_ID, appId))
                     delay(AnimationConstants.DefaultDurationMillis + 150L)
-                    context.mainVm.ruleGroupState.editOrAddGroupFlow.value = ShowGroupState(
+                    mainVm.ruleGroupState.editOrAddGroupFlow.value = ShowGroupState(
                         subsId = LOCAL_SUBS_ID,
                         appId = appId,
                         groupKey = null

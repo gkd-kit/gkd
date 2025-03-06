@@ -1,6 +1,5 @@
 package li.songe.gkd.ui
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,12 +31,12 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.GlobalGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
-import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.scaffoldPadding
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
@@ -47,7 +46,7 @@ import li.songe.gkd.util.throttle
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun SlowGroupPage() {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     val ruleSummary by ruleSummaryFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
@@ -71,7 +70,7 @@ fun SlowGroupPage() {
                 title = { Text(text = "缓慢查询") },
                 actions = {
                     IconButton(onClick = throttle {
-                        context.mainVm.dialogFlow.updateDialogOptions(
+                        mainVm.dialogFlow.updateDialogOptions(
                             title = "缓慢查询",
                             text = arrayOf(
                                 "任意单个规则同时满足以下 3 个条件即判定为缓慢查询",

@@ -1,6 +1,5 @@
 package li.songe.gkd.ui
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -54,7 +53,6 @@ import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListP
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
-import li.songe.gkd.MainActivity
 import li.songe.gkd.data.ActionLog
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
@@ -72,6 +70,7 @@ import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
@@ -88,7 +87,7 @@ fun ActionLogPage(
     subsId: Long? = null,
     appId: String? = null,
 ) {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     val vm = viewModel<ActionLogVm>()
     val actionDataItems = vm.pagingDataFlow.collectAsLazyPagingItems()
@@ -128,7 +127,7 @@ fun ActionLogPage(
             },
             actions = {
                 if (actionDataItems.itemCount > 0) {
-                    IconButton(onClick = throttle(fn = context.mainVm.viewModelScope.launchAsFn {
+                    IconButton(onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
                         val text = if (subsId != null) {
                             "确定删除当前订阅所有触发记录?"
                         } else if (appId != null) {
@@ -136,7 +135,7 @@ fun ActionLogPage(
                         } else {
                             "确定删除所有触发记录?"
                         }
-                        context.mainVm.dialogFlow.waitResult(
+                        mainVm.dialogFlow.waitResult(
                             title = "删除记录",
                             text = text,
                             error = true,
@@ -213,7 +212,7 @@ private fun ActionLogCard(
     subsId: Long?,
     appId: String?,
 ) {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val (actionLog, group, rule) = item
     val lastActionLog = lastItem?.first
     val isDiffApp = actionLog.appId != lastActionLog?.appId
@@ -274,7 +273,7 @@ private fun ActionLogCard(
                             text = subscription?.name ?: "id=${actionLog.subsId}",
                             modifier = Modifier.clickable(onClick = throttle {
                                 if (subsItemsFlow.value.any { it.id == actionLog.subsId }) {
-                                    context.mainVm.sheetSubsIdFlow.value = actionLog.subsId
+                                    mainVm.sheetSubsIdFlow.value = actionLog.subsId
                                 } else {
                                     toast("订阅不存在")
                                 }

@@ -11,6 +11,7 @@ import li.songe.gkd.util.OnCreate
 import li.songe.gkd.util.OnDestroy
 import li.songe.gkd.util.ScreenshotUtil
 import li.songe.gkd.util.componentName
+import li.songe.gkd.util.stopServiceByClass
 import li.songe.gkd.util.useAliveFlow
 import li.songe.gkd.util.useLogLifecycle
 import java.lang.ref.WeakReference
@@ -61,8 +62,6 @@ class ScreenshotService : Service(), OnCreate, OnDestroy {
             app.startForegroundService(intent)
         }
 
-        fun stop() {
-            app.stopService(Intent(app, ScreenshotService::class.java))
-        }
+        fun stop() = stopServiceByClass(ScreenshotService::class)
     }
 }

@@ -1,6 +1,7 @@
 package li.songe.gkd.ui.theme
 
 import android.os.Build
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -15,9 +16,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowInsetsControllerCompat
-import li.songe.gkd.MainActivity
+import li.songe.gkd.util.LocalMainViewModel
 
 val LightColorScheme = lightColorScheme()
 val DarkColorScheme = darkColorScheme()
@@ -28,9 +28,10 @@ fun AppTheme(
     content: @Composable () -> Unit,
 ) {
     // https://developer.android.com/jetpack/compose/designsystems/material3?hl=zh-cn
-    val context = LocalContext.current as MainActivity
-    val enableDarkTheme by context.mainVm.enableDarkThemeFlow.collectAsState()
-    val enableDynamicColor by context.mainVm.enableDynamicColorFlow.collectAsState()
+    val context = LocalActivity.current!!
+    val mainVm = LocalMainViewModel.current
+    val enableDarkTheme by mainVm.enableDarkThemeFlow.collectAsState()
+    val enableDynamicColor by mainVm.enableDynamicColorFlow.collectAsState()
     val systemInDarkTheme = isSystemInDarkTheme()
     val darkTheme = enableDarkTheme ?: systemInDarkTheme
     val colorScheme = when {

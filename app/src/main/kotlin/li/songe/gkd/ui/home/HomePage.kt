@@ -26,7 +26,6 @@ import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDesti
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import li.songe.gkd.MainActivity
 import li.songe.gkd.OpenFileActivity
 import li.songe.gkd.data.importData
 import li.songe.gkd.debug.FloatingTileService
@@ -46,7 +45,7 @@ data class BottomNavItem(
 @Destination<RootGraph>(style = ProfileTransitions::class, start = true)
 @Composable
 fun HomePage() {
-    val context = LocalActivity.current as MainActivity
+    val context = LocalActivity.current!!
     val navController = LocalNavController.current
     val vm = viewModel<HomeVm>()
     val tab by vm.tabFlow.collectAsState()

@@ -72,6 +72,7 @@ import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.IMPORT_SHORT_URL
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.launchAsFn
@@ -85,6 +86,7 @@ import li.songe.gkd.util.toast
 @Composable
 fun SnapshotPage() {
     val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     val colorScheme = MaterialTheme.colorScheme
 
@@ -114,7 +116,7 @@ fun SnapshotPage() {
             actions = {
                 if (snapshots.isNotEmpty()) {
                     IconButton(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                        context.mainVm.dialogFlow.waitResult(
+                        mainVm.dialogFlow.waitResult(
                             title = "删除记录",
                             text = "确定删除全部 ${snapshots.size} 条快照记录?",
                             error = true,
@@ -229,7 +231,7 @@ fun SnapshotPage() {
                         text = "生成链接(需科学上网)", modifier = Modifier
                             .clickable(onClick = throttle {
                                 selectedSnapshot = null
-                                context.mainVm.uploadOptions.startTask(
+                                mainVm.uploadOptions.startTask(
                                     getFile = { SnapshotExt.getSnapshotZipFile(snapshotVal.id) },
                                     showHref = { IMPORT_SHORT_URL + it.id },
                                     onSuccessResult = vm.viewModelScope.launchAsFn<GithubPoliciesAsset>(

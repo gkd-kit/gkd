@@ -47,7 +47,6 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.MainActivity
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AppBarTextField
@@ -62,6 +61,7 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LOCAL_SUBS_IDS
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SortTypeOption
@@ -77,7 +77,8 @@ import li.songe.gkd.util.throttle
 fun SubsAppListPage(
     subsItemId: Long,
 ) {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
+    val context = LocalActivity.current!!
     val navController = LocalNavController.current
 
     val vm = viewModel<SubsAppListVm>()
@@ -220,7 +221,7 @@ fun SubsAppListPage(
         floatingActionButton = {
             if (LOCAL_SUBS_IDS.contains(subsItemId)) {
                 FloatingActionButton(onClick = throttle {
-                    context.mainVm.ruleGroupState.editOrAddGroupFlow.value = ShowGroupState(
+                    mainVm.ruleGroupState.editOrAddGroupFlow.value = ShowGroupState(
                         subsId = subsItemId,
                         addAppRule = true,
                     )

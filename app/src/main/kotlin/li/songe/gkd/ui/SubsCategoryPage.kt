@@ -1,6 +1,5 @@
 package li.songe.gkd.ui
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,7 +45,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import li.songe.gkd.MainActivity
 import li.songe.gkd.appScope
 import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.RawSubscription
@@ -62,6 +60,7 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemFlagPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.EnableGroupOption
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.findOption
@@ -75,7 +74,7 @@ import li.songe.gkd.util.updateSubscription
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun SubsCategoryPage(subsItemId: Long) {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
 
     val vm = viewModel<SubsCategoryVm>()
@@ -102,7 +101,7 @@ fun SubsCategoryPage(subsItemId: Long) {
             )
         }, actions = {
             IconButton(onClick = throttle {
-                context.mainVm.dialogFlow.updateDialogOptions(
+                mainVm.dialogFlow.updateDialogOptions(
                     title = "类别说明",
                     text = arrayOf(
                         "类别会捕获以当前类别开头的所有应用规则组, 因此可调整类别开关(分类手动配置)来批量开关规则组",
@@ -245,7 +244,7 @@ private fun CategoryMenu(
     expanded: Boolean,
     onCheckedChange: ((Boolean) -> Unit),
 ) {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val groups = subs.categoryToGroupsMap[category] ?: emptyList()
     Box(
         modifier = Modifier.wrapContentSize(Alignment.TopStart)
@@ -302,7 +301,7 @@ private fun CategoryMenu(
                     },
                     onClick = throttle(vm.viewModelScope.launchAsFn {
                         onCheckedChange(false)
-                        context.mainVm.dialogFlow.waitResult(
+                        mainVm.dialogFlow.waitResult(
                             title = "删除类别",
                             text = "确定删除 ${category.name} ?",
                             error = true,

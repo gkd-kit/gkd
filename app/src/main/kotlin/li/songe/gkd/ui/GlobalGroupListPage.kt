@@ -1,6 +1,5 @@
 package li.songe.gkd.ui
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
@@ -26,13 +25,13 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.RuleGroupCard
 import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.scaffoldPadding
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.throttle
@@ -40,7 +39,7 @@ import li.songe.gkd.util.throttle
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun GlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     val vm = viewModel<GlobalGroupListVm>()
     val subs = vm.subsRawFlow.collectAsState().value
@@ -72,7 +71,7 @@ fun GlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
         floatingActionButton = {
             if (editable) {
                 FloatingActionButton(onClick = throttle {
-                    context.mainVm.ruleGroupState.editOrAddGroupFlow.value = ShowGroupState(
+                    mainVm.ruleGroupState.editOrAddGroupFlow.value = ShowGroupState(
                         subsId = subsItemId,
                     )
                 }) {

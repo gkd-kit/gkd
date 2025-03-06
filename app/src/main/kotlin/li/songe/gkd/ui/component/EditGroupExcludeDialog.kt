@@ -1,6 +1,5 @@
 package li.songe.gkd.ui.component
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -14,11 +13,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewModelScope
-import li.songe.gkd.MainActivity
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
@@ -31,7 +30,7 @@ fun EditGroupExcludeDialog(
     subsConfig: SubsConfig?,
     onDismissRequest: () -> Unit,
 ) {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     var value by remember {
         mutableStateOf(
             ExcludeData.parse(subsConfig?.exclude).stringify(appId)
@@ -76,7 +75,7 @@ fun EditGroupExcludeDialog(
                         appId = appId!!,
                         groupKey = groupKey,
                     )).copy(exclude = ExcludeData.parse(appId!!, value).stringify())
-                    context.mainVm.viewModelScope.launchTry {
+                    mainVm.viewModelScope.launchTry {
                         DbSet.subsConfigDao.insert(newSubsConfig)
                         toast("更新成功")
                     }
