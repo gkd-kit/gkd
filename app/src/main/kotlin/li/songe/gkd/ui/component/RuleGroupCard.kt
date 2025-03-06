@@ -1,6 +1,5 @@
 package li.songe.gkd.ui.component
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,7 +25,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
-import li.songe.gkd.MainActivity
 import li.songe.gkd.appScope
 import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.ExcludeData
@@ -36,6 +34,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.getChecked
 import li.songe.gkd.ui.style.itemFlagPadding
 import li.songe.gkd.ui.style.itemHorizontalPadding
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.getGroupEnable
 import li.songe.gkd.util.launchAsFn
@@ -53,7 +52,7 @@ fun RuleGroupCard(
     categoryConfig: CategoryConfig?,
     highlighted: Boolean,
 ) {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
 
     val inGlobalAppPage = appId != null && group is RawSubscription.RawGlobalGroup
 
@@ -109,9 +108,9 @@ fun RuleGroupCard(
         }
         DbSet.subsConfigDao.insert(newConfig)
     }
-    val onClick = context.mainVm.viewModelScope.launchAsFn(Dispatchers.Default) {
+    val onClick = mainVm.viewModelScope.launchAsFn(Dispatchers.Default) {
         group.cacheStr // load cache
-        context.mainVm.ruleGroupState.showGroupFlow.value = ShowGroupState(
+        mainVm.ruleGroupState.showGroupFlow.value = ShowGroupState(
             subsId = subs.id,
             appId = if (group is RawSubscription.RawAppGroup) appId else null,
             groupKey = group.key,
@@ -197,15 +196,15 @@ fun RuleGroupCard(
 fun InnerDisableSwitch(
     valid: Boolean = true,
 ) {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val onClick = {
         if (valid) {
-            context.mainVm.dialogFlow.updateDialogOptions(
+            mainVm.dialogFlow.updateDialogOptions(
                 title = "内置禁用",
                 text = "此规则组已经在其 apps 字段中配置对当前应用的禁用, 因此无法手动开启规则组\n\n提示: 这种情况一般在此全局规则无法适配/跳过适配/单独适配当前应用时出现",
             )
         } else {
-            context.mainVm.dialogFlow.updateDialogOptions(
+            mainVm.dialogFlow.updateDialogOptions(
                 title = "非法规则",
                 text = "规则存在错误, 无法启用",
             )

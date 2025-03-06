@@ -18,9 +18,9 @@ import kotlin.math.sin
 
 @Composable
 fun RotatingLoadingIcon(
+    modifier: Modifier = Modifier,
     loading: Boolean,
     imageVector: ImageVector = Icons.Default.Autorenew,
-    modifier: Modifier= Modifier
 ) {
     val rotation = remember { Animatable(0f) }
     LaunchedEffect(loading) {

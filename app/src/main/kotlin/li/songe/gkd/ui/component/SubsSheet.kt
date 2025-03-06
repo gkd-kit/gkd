@@ -1,6 +1,5 @@
 package li.songe.gkd.ui.component
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -51,11 +50,11 @@ import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import li.songe.gkd.META
-import li.songe.gkd.MainActivity
 import li.songe.gkd.data.deleteSubscription
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.copyText
@@ -83,7 +82,7 @@ fun SubsSheet(
             }
         }
     } else {
-        val context = LocalActivity.current as MainActivity
+        val mainVm = LocalMainViewModel.current
         val navController = LocalNavController.current
         val subsIdToRaw by subsIdToRawFlow.collectAsState()
         var swipeEnabled by remember { mutableStateOf(false) }
@@ -319,11 +318,11 @@ fun SubsSheet(
                                         toast("正在刷新订阅,请稍后操作")
                                         return@throttle
                                     }
-                                    context.mainVm.viewModelScope.launchTry {
+                                    mainVm.viewModelScope.launchTry {
                                         val url =
-                                            context.mainVm.inputSubsLinkOption.getResult(initValue = subsItem.updateUrl)
+                                            mainVm.inputSubsLinkOption.getResult(initValue = subsItem.updateUrl)
                                                 ?: return@launchTry
-                                        context.mainVm.addOrModifySubs(url, subsItem)
+                                        mainVm.addOrModifySubs(url, subsItem)
                                     }
                                 })
                                 .then(childModifier),
@@ -402,14 +401,14 @@ fun SubsSheet(
                     }
                     if (subscription != null || !subsItem.isLocal) {
                         IconButton(onClick = throttle {
-                            context.mainVm.showShareDataIdsFlow.value = setOf(subsItem.id)
+                            mainVm.showShareDataIdsFlow.value = setOf(subsItem.id)
                         }) {
                             Icon(imageVector = Icons.Default.Share, contentDescription = null)
                         }
                     }
                     if (subsItem.id != LOCAL_SUBS_ID) {
                         IconButton(onClick = throttle(vm.viewModelScope.launchAsFn {
-                            context.mainVm.dialogFlow.waitResult(
+                            mainVm.dialogFlow.waitResult(
                                 title = "删除订阅",
                                 text = "确定删除 ${subscription?.name ?: subsItem.id} ?",
                                 error = true,

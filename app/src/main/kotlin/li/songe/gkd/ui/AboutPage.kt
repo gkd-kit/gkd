@@ -1,5 +1,6 @@
 package li.songe.gkd.ui
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
@@ -42,7 +43,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -64,6 +64,7 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.ISSUES_URL
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.REPOSITORY_URL
@@ -87,7 +88,8 @@ import li.songe.gkd.util.toast
 @Composable
 fun AboutPage() {
     val navController = LocalNavController.current
-    val context = LocalContext.current as MainActivity
+    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val store by storeFlow.collectAsState()
 
     var showInfoDlg by remember { mutableStateOf(false) }
@@ -151,7 +153,7 @@ fun AboutPage() {
                     text = "分享到其他应用", modifier = Modifier
                         .clickable(onClick = throttle {
                             showShareLogDlg = false
-                            context.mainVm.viewModelScope.launchTry(Dispatchers.IO) {
+                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
                                 val logZipFile = buildLogFile()
                                 context.shareFile(logZipFile, "分享日志文件")
                             }
@@ -162,7 +164,7 @@ fun AboutPage() {
                     text = "保存到下载", modifier = Modifier
                         .clickable(onClick = throttle {
                             showShareLogDlg = false
-                            context.mainVm.viewModelScope.launchTry(Dispatchers.IO) {
+                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
                                 val logZipFile = buildLogFile()
                                 context.saveFileToDownloads(logZipFile)
                             }
@@ -174,7 +176,7 @@ fun AboutPage() {
                     modifier = Modifier
                         .clickable(onClick = throttle {
                             showShareLogDlg = false
-                            context.mainVm.uploadOptions.startTask(
+                            mainVm.uploadOptions.startTask(
                                 getFile = { buildLogFile() }
                             )
                         })
@@ -278,7 +280,7 @@ fun AboutPage() {
                 )
             }
             if (META.updateEnabled) {
-                val checkUpdating by context.mainVm.updateStatus.checkUpdatingFlow.collectAsState()
+                val checkUpdating by mainVm.updateStatus.checkUpdatingFlow.collectAsState()
                 Text(
                     text = "更新",
                     modifier = Modifier.titleItemPadding(),
@@ -299,10 +301,10 @@ fun AboutPage() {
                     title = "更新渠道",
                     option = UpdateChannelOption.allSubObject.findOption(store.updateChannel)
                 ) {
-                    if (context.mainVm.updateStatus.checkUpdatingFlow.value) return@TextMenu
+                    if (mainVm.updateStatus.checkUpdatingFlow.value) return@TextMenu
                     if (it.value == UpdateChannelOption.Beta.value) {
-                        context.mainVm.viewModelScope.launchTry {
-                            context.mainVm.dialogFlow.waitResult(
+                        mainVm.viewModelScope.launchTry {
+                            mainVm.dialogFlow.waitResult(
                                 title = "版本渠道",
                                 text = "测试版本渠道更新快\n但不稳定可能存在较多BUG\n请谨慎使用",
                             )
@@ -316,9 +318,9 @@ fun AboutPage() {
                 Row(
                     modifier = Modifier
                         .clickable(
-                            onClick = throttle(fn = context.mainVm.viewModelScope.launchAsFn {
-                                if (context.mainVm.updateStatus.checkUpdatingFlow.value) return@launchAsFn
-                                val newVersion = context.mainVm.updateStatus.checkUpdate()
+                            onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
+                                if (mainVm.updateStatus.checkUpdatingFlow.value) return@launchAsFn
+                                val newVersion = mainVm.updateStatus.checkUpdate()
                                 if (newVersion == null) {
                                     toast("暂无更新")
                                 }
@@ -372,8 +374,8 @@ fun AboutPage() {
 private fun AnimatedLogoIcon(
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current as MainActivity
-    val enableDarkTheme by context.mainVm.enableDarkThemeFlow.collectAsState()
+    val mainVm = LocalMainViewModel.current
+    val enableDarkTheme by mainVm.enableDarkThemeFlow.collectAsState()
     val darkTheme = enableDarkTheme ?: isSystemInDarkTheme()
     var atEnd by remember { mutableStateOf(false) }
     val animation = AnimatedImageVector.animatedVectorResource(id = SafeR.ic_logo_animation)

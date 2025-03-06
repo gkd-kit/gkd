@@ -1,6 +1,5 @@
 package li.songe.gkd.ui.component
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -19,8 +18,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
-import li.songe.gkd.MainActivity
 import li.songe.gkd.data.RawSubscription
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
@@ -36,13 +35,13 @@ fun EditOrAddRuleGroupDialog(
     addAppRule: Boolean,
     onDismissRequest: () -> Unit,
 ) {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     var value by remember {
         mutableStateOf(group?.cacheStr ?: "")
     }
     val oldValue = remember { value }
 
-    val updateText = context.mainVm.viewModelScope.launchAsFn(Dispatchers.Default) {
+    val updateText = mainVm.viewModelScope.launchAsFn(Dispatchers.Default) {
         if (oldValue.isNotEmpty() && oldValue == value) {
             toast("规则组无变动")
             onDismissRequest()

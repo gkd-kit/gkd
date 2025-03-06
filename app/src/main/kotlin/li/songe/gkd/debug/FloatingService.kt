@@ -20,6 +20,7 @@ import li.songe.gkd.notif.notifyService
 import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.stopServiceByClass
 import kotlin.math.sqrt
 
 class FloatingService : ExpandableBubbleService() {
@@ -94,8 +95,6 @@ class FloatingService : ExpandableBubbleService() {
             if (!canDrawOverlaysState.checkOrToast()) return
             app.startForegroundService(Intent(app, FloatingService::class.java))
         }
-        fun stop() {
-            app.stopService(Intent(app, FloatingService::class.java))
-        }
+        fun stop() = stopServiceByClass(FloatingService::class)
     }
 }

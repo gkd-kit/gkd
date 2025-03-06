@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.component
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +18,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -26,6 +26,7 @@ import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.startQueryPkgSettingActivity
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.mayQueryPkgNoAccessFlow
 import li.songe.gkd.util.throttle
@@ -45,7 +46,8 @@ fun QueryPkgAuthCard() {
             CircularProgressIndicator()
         }
     } else if (!canQueryPkg || mayQueryPkgNoAccess) {
-        val context = LocalContext.current as MainActivity
+        val mainVm = LocalMainViewModel.current
+        val context = LocalActivity.current as MainActivity
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -63,7 +65,7 @@ fun QueryPkgAuthCard() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
-            TextButton(onClick = throttle(fn = context.mainVm.viewModelScope.launchAsFn {
+            TextButton(onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
                 if (!canQueryPkg) {
                     requiredPermission(context, canQueryPkgState)
                 } else {

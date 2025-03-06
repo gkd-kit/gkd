@@ -49,6 +49,7 @@ import li.songe.gkd.ui.component.ShareDataDialog
 import li.songe.gkd.ui.component.SubsSheet
 import li.songe.gkd.ui.theme.AppTheme
 import li.songe.gkd.util.EditGithubCookieDlg
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.UpgradeDialog
@@ -91,10 +92,11 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             val navController = rememberNavController()
-            AppTheme {
-                CompositionLocalProvider(
-                    LocalNavController provides navController
-                ) {
+            CompositionLocalProvider(
+                LocalNavController provides navController,
+                LocalMainViewModel provides mainVm
+            ) {
+                AppTheme {
                     DestinationsNavHost(
                         navController = navController,
                         navGraph = NavGraphs.root

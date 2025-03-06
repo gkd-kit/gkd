@@ -1,6 +1,5 @@
 package li.songe.gkd.ui
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
@@ -30,7 +29,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import li.songe.gkd.MainActivity
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.RuleGroupCard
@@ -39,6 +37,7 @@ import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.scaffoldPadding
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
@@ -54,7 +53,7 @@ fun SubsAppGroupListPage(
     appId: String,
     focusGroupKey: Int? = null, // 背景/边框高亮一下
 ) {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     val vm = viewModel<SubsAppGroupListVm>()
     val subs = vm.subsRawFlow.collectAsState().value
@@ -89,7 +88,7 @@ fun SubsAppGroupListPage(
             ) {
                 IconButton(onClick = throttle(vm.viewModelScope.launchAsFn {
                     subs ?: return@launchAsFn
-                    context.mainVm.dialogFlow.waitResult(
+                    mainVm.dialogFlow.waitResult(
                         title = "删除规则组",
                         text = "删除当前列表所有规则组?"
                     )
@@ -110,7 +109,7 @@ fun SubsAppGroupListPage(
     }, floatingActionButton = {
         if (editable) {
             FloatingActionButton(onClick = throttle {
-                context.mainVm.ruleGroupState.editOrAddGroupFlow.value = ShowGroupState(
+                mainVm.ruleGroupState.editOrAddGroupFlow.value = ShowGroupState(
                     subsId = subsItemId,
                     appId = appId,
                 )

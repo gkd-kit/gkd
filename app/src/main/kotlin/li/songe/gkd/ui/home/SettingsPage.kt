@@ -1,6 +1,5 @@
 package li.songe.gkd.ui.home
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,7 +39,6 @@ import com.ramcosta.composedestinations.generated.destinations.AboutPageDestinat
 import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.TextSwitch
@@ -50,6 +48,7 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.ui.theme.supportDynamicColor
 import li.songe.gkd.util.DarkThemeOption
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.storeFlow
@@ -61,7 +60,7 @@ val settingsNav = BottomNavItem(
 
 @Composable
 fun useSettingsPage(): ScaffoldExt {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     val store by storeFlow.collectAsState()
     val vm = viewModel<HomeVm>()
@@ -136,7 +135,7 @@ fun useSettingsPage(): ScaffoldExt {
                 ) {
                     Text(text = "通知文案")
                     IconButton(onClick = throttle {
-                        context.mainVm.dialogFlow.updateDialogOptions(
+                        mainVm.dialogFlow.updateDialogOptions(
                             title = "文案规则",
                             text = "通知文案支持变量替换,规则如下\n\${i} 全局规则数\n\${k} 应用数\n\${u} 应用规则组数\n\${n} 触发次数\n\n示例模板\n\${i}全局/\${k}应用/\${u}规则组/\${n}触发\n\n替换结果\n0全局/1应用/2规则组/3触发",
                         )
@@ -236,7 +235,7 @@ fun useSettingsPage(): ScaffoldExt {
                     subtitle = "系统样式触发提示",
                     suffix = "查看限制",
                     onSuffixClick = {
-                        context.mainVm.dialogFlow.updateDialogOptions(
+                        mainVm.dialogFlow.updateDialogOptions(
                             title = "限制说明",
                             text = "系统 Toast 存在频率限制, 触发过于频繁会被系统强制不显示\n\n如果只使用开屏一类低频率规则可使用系统提示, 否则建议关闭此项使用自定义样式提示",
                         )

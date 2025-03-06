@@ -1,6 +1,5 @@
 package li.songe.gkd.ui.component
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -27,10 +26,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import li.songe.gkd.META
-import li.songe.gkd.MainActivity
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.ui.home.HomeVm
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.formatTimeAgo
 import li.songe.gkd.util.map
 import li.songe.gkd.util.subsLoadErrorsFlow
@@ -52,7 +51,7 @@ fun SubsItemCard(
     onCheckedChange: ((Boolean) -> Unit),
     onSelectedChange: (() -> Unit)? = null,
 ) {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val subsLoadError by remember(subsItem.id) {
         subsLoadErrorsFlow.map(vm.viewModelScope) { it[subsItem.id] }
     }.collectAsState()
@@ -66,7 +65,7 @@ fun SubsItemCard(
             if (isSelectedMode) {
                 onSelectedChange?.invoke()
             } else if (!updateSubsMutex.mutex.isLocked) {
-                context.mainVm.sheetSubsIdFlow.value = subsItem.id
+                mainVm.sheetSubsIdFlow.value = subsItem.id
             }
         }
     }

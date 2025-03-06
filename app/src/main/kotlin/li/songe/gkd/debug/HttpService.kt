@@ -53,6 +53,7 @@ import li.songe.gkd.util.isPortAvailable
 import li.songe.gkd.util.keepNullJson
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
+import li.songe.gkd.util.stopServiceByClass
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
@@ -125,9 +126,7 @@ class HttpService : Service(), OnCreate, OnDestroy {
         val httpServerFlow = MutableStateFlow<ServerType?>(null)
         val isRunning = MutableStateFlow(false)
         val localNetworkIpsFlow = MutableStateFlow(emptyList<String>())
-        fun stop() {
-            app.stopService(Intent(app, HttpService::class.java))
-        }
+        fun stop() = stopServiceByClass(HttpService::class)
 
         fun start() {
             if (!notificationState.checkOrToast()) return
