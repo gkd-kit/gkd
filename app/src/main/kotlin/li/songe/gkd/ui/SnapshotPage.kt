@@ -55,7 +55,6 @@ import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import li.songe.gkd.MainActivity
-import li.songe.gkd.data.GithubPoliciesAsset
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt
@@ -101,7 +100,8 @@ fun SnapshotPage() {
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        TopAppBar(scrollBehavior = scrollBehavior,
+        TopAppBar(
+            scrollBehavior = scrollBehavior,
             navigationIcon = {
                 IconButton(onClick = {
                     navController.popBackStack()
@@ -234,9 +234,7 @@ fun SnapshotPage() {
                                 mainVm.uploadOptions.startTask(
                                     getFile = { SnapshotExt.getSnapshotZipFile(snapshotVal.id) },
                                     showHref = { IMPORT_SHORT_URL + it.id },
-                                    onSuccessResult = vm.viewModelScope.launchAsFn<GithubPoliciesAsset>(
-                                        Dispatchers.IO
-                                    ) {
+                                    onSuccessResult = {
                                         DbSet.snapshotDao.update(snapshotVal.copy(githubAssetId = it.id))
                                     }
                                 )

@@ -1,5 +1,6 @@
 package li.songe.gkd.util
 
+import androidx.compose.runtime.Composable
 import com.blankj.utilcode.util.LogUtils
 import com.hjq.toast.Toaster
 import kotlinx.coroutines.CancellationException
@@ -26,40 +27,38 @@ fun CoroutineScope.launchTry(
     }
 }
 
+@Composable
 fun CoroutineScope.launchAsFn(
     context: CoroutineContext = EmptyCoroutineContext,
     start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit,
-): () -> Unit {
-    return {
-        launch(context, start) {
-            try {
-                block()
-            } catch (e: CancellationException) {
-                e.printStackTrace()
-            } catch (e: Throwable) {
-                e.printStackTrace()
-                Toaster.show(e.message ?: e.stackTraceToString())
-            }
+): () -> Unit = {
+    launch(context, start) {
+        try {
+            block()
+        } catch (e: CancellationException) {
+            e.printStackTrace()
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            Toaster.show(e.message ?: e.stackTraceToString())
         }
     }
 }
 
+@Composable
 fun <T> CoroutineScope.launchAsFn(
     context: CoroutineContext = EmptyCoroutineContext,
     start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.(T) -> Unit,
-): (T) -> Unit {
-    return {
-        launch(context, start) {
-            try {
-                block(it)
-            } catch (e: CancellationException) {
-                e.printStackTrace()
-            } catch (e: Throwable) {
-                e.printStackTrace()
-                Toaster.show(e.message ?: e.stackTraceToString())
-            }
+): (T) -> Unit = {
+    launch(context, start) {
+        try {
+            block(it)
+        } catch (e: CancellationException) {
+            e.printStackTrace()
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            Toaster.show(e.message ?: e.stackTraceToString())
         }
     }
 }

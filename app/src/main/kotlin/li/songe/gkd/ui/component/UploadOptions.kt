@@ -31,7 +31,7 @@ class UploadOptions(
     private fun buildTask(
         cookie: String,
         getFile: suspend () -> File,
-        onSuccessResult: ((GithubPoliciesAsset) -> Unit)?
+        onSuccessResult: (suspend (GithubPoliciesAsset) -> Unit)?
     ) = mainVm.viewModelScope.launchTry(Dispatchers.IO) {
         statusFlow.value = LoadStatus.Loading()
         try {
@@ -54,7 +54,7 @@ class UploadOptions(
     fun startTask(
         getFile: suspend () -> File,
         showHref: (GithubPoliciesAsset) -> String = { it.shortHref },
-        onSuccessResult: ((GithubPoliciesAsset) -> Unit)? = null
+        onSuccessResult: (suspend (GithubPoliciesAsset) -> Unit)? = null
     ) {
         val cookie = privacyStoreFlow.value.githubCookie
         if (cookie.isNullOrBlank()) {
