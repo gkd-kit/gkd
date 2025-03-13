@@ -268,7 +268,7 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
     IconButton(onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
         mainVm.dialogFlow.waitResult(
             title = "操作提示",
-            text = "是否将所选规则全部关闭?"
+            text = "是否将所选规则全部关闭?\n\n注: 也可在「订阅-规则类别」操作"
         )
         val list = batchUpdateGroupEnable(selectedDataSet, false)
         if (list.isNotEmpty()) {
@@ -285,7 +285,7 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
     IconButton(onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
         mainVm.dialogFlow.waitResult(
             title = "操作提示",
-            text = "是否将所选规则全部启用?"
+            text = "是否将所选规则全部启用?\n\n注: 也可在「订阅-规则类别」操作"
         )
         val list = batchUpdateGroupEnable(selectedDataSet, true)
         if (list.isNotEmpty()) {
@@ -302,7 +302,7 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
     IconButton(onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
         mainVm.dialogFlow.waitResult(
             title = "操作提示",
-            text = "是否将所选规则重置开关至初始状态?"
+            text = "是否将所选规则重置开关至初始状态?\n\n注: 也可在「订阅-规则类别」操作"
         )
         val list = batchUpdateGroupEnable(selectedDataSet, null)
         if (list.isNotEmpty()) {

@@ -233,7 +233,7 @@ private fun checkGroupKeyName(
     newGroup: RawSubscription.RawGroupProps
 ) {
     if (groups.any { it.name == newGroup.name }) {
-        error("已存在同名[${newGroup.name}]规则组")
+        error("已存在同名「${newGroup.name}」规则组")
     }
     if (groups.any { it.key == newGroup.key }) {
         error("已存在同 key=${newGroup.key} 规则组")

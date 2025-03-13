@@ -60,7 +60,7 @@ fun QueryPkgAuthCard() {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = if (!canQueryPkg) "如需显示所有应用\n请授予[读取应用列表权限]" else "检测到当前用户应用数量过少\n可尝试授予[读取应用列表权限]\n或关闭权限后重新授权",
+                text = if (!canQueryPkg) "如需显示所有应用\n请授予「读取应用列表权限」" else "检测到当前用户应用数量过少\n可尝试授予「读取应用列表权限」n或关闭权限后重新授权",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

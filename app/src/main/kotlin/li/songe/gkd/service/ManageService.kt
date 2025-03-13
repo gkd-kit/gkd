@@ -54,7 +54,7 @@ class ManageService : Service(), OnCreate, OnDestroy {
         fun stop() = stopServiceByClass(ManageService::class)
 
         fun autoStart() {
-            // 在[系统重启]/[被其它高权限应用重启]时自动打开通知栏状态服务
+            // 在「系统重启」「被其它高权限应用重启」自动打开通知栏状态服务
             if (storeFlow.value.enableStatusService
                 && !isRunning.value
                 && notificationState.updateAndGet()

@@ -112,7 +112,7 @@ private val modifyA11yMutex by lazy { Mutex() }
 fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
     modifyA11yMutex.withLock {
         if (!writeSecureSettingsState.updateAndGet()) {
-            toast("请先授予[写入安全设置权限]")
+            toast("请先授予「写入安全设置权限」")
             return@launchTry
         }
         val names = getServiceNames()
