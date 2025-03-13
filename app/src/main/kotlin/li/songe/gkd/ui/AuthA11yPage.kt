@@ -120,13 +120,13 @@ fun AuthA11yPage() {
                 Text(
                     modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
                     style = MaterialTheme.typography.bodyMedium,
-                    text = "1. 授予[无障碍权限]\n2. 无障碍服务关闭后需重新授权"
+                    text = "1. 授予「无障碍权限」\n2. 无障碍服务关闭后需重新授权"
                 )
                 if (writeSecureSettings || a11yRunning) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
-                        text = "已持有[无障碍权限], 可继续使用",
+                        text = "已持有「无障碍权限」, 可继续使用",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -172,7 +172,7 @@ fun AuthA11yPage() {
                 Text(
                     modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
                     style = MaterialTheme.typography.bodyMedium,
-                    text = "1. 授予[写入安全设置权限]\n2. 授权永久有效, 包含[无障碍权限]\n3. 应用重启后可自动打开无障碍服务\n4. 在通知栏快捷开关可快捷重启, 无感保活"
+                    text = "1. 授予「写入安全设置权限」\n2. 授权永久有效, 包含「无障碍权限」n3. 应用重启后可自动打开无障碍服务\n4. 在通知栏快捷开关可快捷重启, 无感保活"
                 )
                 if (!writeSecureSettings) {
                     AuthButtonGroup()
@@ -180,7 +180,7 @@ fun AuthA11yPage() {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
-                        text = "已持有[写入安全设置权限], 优先使用此权限",
+                        text = "已持有「写入安全设置权限」 优先使用此权限",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -195,7 +195,7 @@ fun AuthA11yPage() {
                         }
                         mainVm.dialogFlow.updateDialogOptions(
                             title = "无感保活",
-                            text = "添加通知栏快捷开关\n\n1. 下拉通知栏至[快捷开关]图标界面\n2. 找到名称为 ${META.appName} 的快捷开关\n3. 添加此开关到通知面板 \n\n只要此快捷开关在通知面板可见\n无论是系统杀后台还是自身BUG崩溃\n简单下拉打开通知即可重启"
+                            text = "添加通知栏快捷开关\n\n1. 下拉通知栏至「快捷开关」标界面\n2. 找到名称为 ${META.appName} 的快捷开关\n3. 添加此开关到通知面板 \n\n只要此快捷开关在通知面板可见\n无论是系统杀后台还是自身BUG崩溃\n简单下拉打开通知即可重启"
                         )
                     }) {
                         Text(

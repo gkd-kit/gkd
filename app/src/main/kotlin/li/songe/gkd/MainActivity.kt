@@ -272,7 +272,7 @@ fun AccessRestrictedSettingsDlg() {
                 Text(text = "访问受限")
             },
             text = {
-                Text(text = "尽管 GKD 已持有[写入安全设置权限], 但无法生效, 系统可能在更新 GKD 后用更高级的权限(访问受限设置)限制了 GKD, 请重新授权解除限制")
+                Text(text = "尽管 GKD 已持有「写入安全设置权限」, 但无法生效, 系统可能在更新 GKD 后用更高级的权限「访问受限设置」限制了 GKD, 请重新授权解除限制")
             },
             onDismissRequest = {
                 accessRestrictedSettingsShowFlow.value = false

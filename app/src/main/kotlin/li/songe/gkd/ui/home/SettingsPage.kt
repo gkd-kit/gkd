@@ -264,7 +264,7 @@ fun useSettingsPage(): ScaffoldExt {
 
             TextSwitch(
                 title = "后台隐藏",
-                subtitle = "在[最近任务]中隐藏本应用",
+                subtitle = "在「最近任务」隐藏本应用",
                 checked = store.excludeFromRecents,
                 onCheckedChange = {
                     storeFlow.value = store.copy(

@@ -169,7 +169,7 @@ object SnapshotExt {
             val desc = snapshot.appInfo?.name ?: snapshot.appId
             snapshotNotif.copy(
                 text = if (desc != null) {
-                    "快照[$desc]已保存至记录"
+                    "快照「$desc」已保存至记录"
                 } else {
                     snapshotNotif.text
                 }
