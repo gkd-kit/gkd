@@ -73,6 +73,7 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemFlagPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
+import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SafeR
@@ -125,9 +126,13 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
         }
     }
     var expanded by remember { mutableStateOf(false) }
+    val softwareKeyboardController = LocalSoftwareKeyboardController.current
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
-            IconButton(onClick = {
+            IconButton(onClick = throttle {
+                if (KeyboardUtils.isSoftInputVisible(context)) {
+                    softwareKeyboardController?.hide()
+                }
                 navController.popBackStack()
             }) {
                 Icon(
@@ -137,7 +142,6 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
             }
         }, title = {
             if (showSearchBar) {
-                val softwareKeyboardController = LocalSoftwareKeyboardController.current
                 BackHandler {
                     if (KeyboardUtils.isSoftInputVisible(context)) {
                         softwareKeyboardController?.hide()
@@ -334,7 +338,7 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                     CardFlagBar(visible = excludeData.appIds.containsKey(appInfo.id))
                 }
             }
-            item {
+            item(LIST_PLACEHOLDER_KEY) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (showAppInfos.isEmpty() && searchStr.isNotEmpty()) {
                     val hasShowAll = showSystemApp && showHiddenApp

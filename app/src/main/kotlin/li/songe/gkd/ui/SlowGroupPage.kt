@@ -36,6 +36,7 @@ import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.scaffoldPadding
+import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
@@ -90,7 +91,7 @@ fun SlowGroupPage() {
         ) {
             items(
                 ruleSummary.slowGlobalGroups,
-                { (_, r) -> "${r.subsItem.id}-${r.group.key}" }
+                { (_, r) -> r.subsItem.id to r.group.key }
             ) { (group, rule) ->
                 SlowGroupCard(
                     modifier = Modifier
@@ -111,7 +112,7 @@ fun SlowGroupPage() {
             }
             items(
                 ruleSummary.slowAppGroups,
-                { (_, r) -> "${r.subsItem.id}-${r.appId}-${r.group.key}" }
+                { (_, r) -> Triple(r.subsItem.id, r.appId, r.group.key) }
             ) { (group, rule) ->
                 SlowGroupCard(
                     modifier = Modifier
@@ -131,7 +132,7 @@ fun SlowGroupPage() {
                     desc = "${rule.rawSubs.name}/应用规则/${appInfoCache[rule.app.id]?.name ?: rule.app.name ?: rule.app.id}"
                 )
             }
-            item {
+            item(LIST_PLACEHOLDER_KEY) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (ruleSummary.slowGroupCount == 0) {
                     EmptyText(text = "暂无规则")

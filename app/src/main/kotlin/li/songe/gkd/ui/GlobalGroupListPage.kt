@@ -53,6 +53,7 @@ import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.icon.BackCloseIcon
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.scaffoldPadding
+import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
@@ -275,7 +276,7 @@ fun GlobalGroupListPage(subsItemId: Long, @Suppress("unused") focusGroupKey: Int
                     }
                 )
             }
-            item {
+            item(LIST_PLACEHOLDER_KEY) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (globalGroups.isEmpty()) {
                     EmptyText(text = "暂无规则")

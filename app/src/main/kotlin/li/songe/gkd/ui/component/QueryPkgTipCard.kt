@@ -75,6 +75,7 @@ fun QueryPkgAuthCard() {
                 Text(text = "申请权限")
             }
             Spacer(modifier = Modifier.height(EmptyHeight / 2))
+
         }
     }
 }

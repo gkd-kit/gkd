@@ -43,6 +43,9 @@ class AppConfigVm(stateHandle: SavedStateHandle) : ViewModel() {
     val ruleSortTypeFlow =
         storeFlow.map(viewModelScope) { RuleSortOption.allSubObject.findOption(it.appRuleSortType) }
 
+    val appShowInnerDisableFlow =
+        storeFlow.map(viewModelScope) { it.appShowInnerDisable }
+
     private val rawGlobalGroups = usedSubsEntriesFlow.map {
         it.map { (subsItem, subscription) ->
             subscription.globalGroups.map { g ->
@@ -55,7 +58,14 @@ class AppConfigVm(stateHandle: SavedStateHandle) : ViewModel() {
                 )
             }
         }.flatten()
+    }.combine(appShowInnerDisableFlow) { list, show ->
+        if (show) {
+            list
+        } else {
+            list.filter { g -> g.group.appIdEnable[args.appId] != false }
+        }
     }
+
     private val sortedGlobalGroupsFlow = combine(
         rawGlobalGroups,
         ruleSortTypeFlow,
@@ -146,6 +156,7 @@ class AppConfigVm(stateHandle: SavedStateHandle) : ViewModel() {
         DbSet.categoryConfigDao.queryBySubsIds(subs.map { it.subsItem.id })
     }.flatMapLatest { it }.let(linkLoad::invoke)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
     val appGroupsFlow = combine(
         sortedAppGroupsFlow,
         appConfigsFlow,

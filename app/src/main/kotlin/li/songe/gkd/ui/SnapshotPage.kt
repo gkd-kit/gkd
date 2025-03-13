@@ -70,6 +70,7 @@ import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.IMPORT_SHORT_URL
+import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
@@ -149,7 +150,7 @@ fun SnapshotPage() {
                     )
                 }
             }
-            item {
+            item(LIST_PLACEHOLDER_KEY) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (snapshots.isEmpty()) {
                     EmptyText(text = "暂无记录")

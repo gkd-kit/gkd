@@ -59,6 +59,7 @@ import li.songe.gkd.ui.component.useSubs
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
+import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.LOCAL_SUBS_IDS
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
@@ -109,12 +110,15 @@ fun SubsAppListPage(
             listState.scrollToItem(0)
         }
     }
-
+    val softwareKeyboardController = LocalSoftwareKeyboardController.current
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
-                IconButton(onClick = {
+                IconButton(onClick = throttle {
+                    if (KeyboardUtils.isSoftInputVisible(context)) {
+                        softwareKeyboardController?.hide()
+                    }
                     navController.popBackStack()
                 }) {
                     Icon(
@@ -124,7 +128,6 @@ fun SubsAppListPage(
                 }
             }, title = {
                 if (showSearchBar) {
-                    val softwareKeyboardController = LocalSoftwareKeyboardController.current
                     BackHandler {
                         if (KeyboardUtils.isSoftInputVisible(context)) {
                             softwareKeyboardController?.hide()
@@ -244,6 +247,9 @@ fun SubsAppListPage(
                     subsConfig = subsConfig,
                     enableSize = enableSize,
                     onClick = throttle {
+                        if (KeyboardUtils.isSoftInputVisible(context)) {
+                            softwareKeyboardController?.hide()
+                        }
                         navController.toDestinationsNavigator()
                             .navigate(SubsAppGroupListPageDestination(subsItemId, appRaw.id))
                     },
@@ -260,7 +266,7 @@ fun SubsAppListPage(
                     }),
                 )
             }
-            item {
+            item(LIST_PLACEHOLDER_KEY) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 val firstLoading by vm.linkLoad.firstLoadingFlow.collectAsState()
                 if (appAndConfigs.isEmpty() && !firstLoading) {
