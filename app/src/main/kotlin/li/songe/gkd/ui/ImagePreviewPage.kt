@@ -42,10 +42,10 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.imageLoader
-import li.songe.gkd.util.openUri
 import li.songe.gkd.util.throttle
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
@@ -55,6 +55,7 @@ fun ImagePreviewPage(
     uri: String? = null,
     uris: Array<String> = emptyArray(),
 ) {
+    val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     Box(
         modifier = Modifier
@@ -86,7 +87,7 @@ fun ImagePreviewPage(
                 val currentUri = showUri ?: uris.getOrNull(state.currentPage)
                 if (currentUri != null && URLUtil.isNetworkUrl(currentUri)) {
                     IconButton(onClick = throttle(fn = {
-                        openUri(currentUri)
+                        mainVm.openUrl(currentUri)
                     })) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.OpenInNew,

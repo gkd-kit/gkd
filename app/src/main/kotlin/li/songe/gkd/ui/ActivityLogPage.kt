@@ -100,7 +100,6 @@ fun ActivityLogPage() {
                         Icon(
                             imageVector = Icons.Outlined.Delete,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
                         )
                     }
                 }

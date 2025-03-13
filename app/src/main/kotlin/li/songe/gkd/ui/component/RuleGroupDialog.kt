@@ -36,7 +36,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.generated.destinations.GlobalGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.ImagePreviewPageDestination
-import com.ramcosta.composedestinations.generated.destinations.ImagePreviewPageDestination.invoke
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.utils.currentDestinationAsState
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
@@ -74,7 +73,7 @@ fun RuleGroupDialog(
                         .fillMaxWidth()
                         .heightIn(min = 100.dp, max = maxHeight)
                         .clip(MaterialTheme.shapes.extraSmall)
-                        .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                        .background(MaterialTheme.colorScheme.secondaryContainer)
                         .verticalScroll(rememberScrollState())
                 ) {
                     SelectionContainer {
@@ -100,11 +99,11 @@ fun RuleGroupDialog(
                 }
                 Icon(
                     modifier = Modifier
-                        .padding(end = 4.dp, top = 4.dp)
                         .align(Alignment.TopEnd)
                         .clickable(onClick = throttle {
                             copyText(group.cacheStr)
                         })
+                        .padding(4.dp)
                         .size(16.dp),
                     imageVector = Icons.Outlined.ContentCopy,
                     contentDescription = null,
@@ -116,7 +115,7 @@ fun RuleGroupDialog(
                         .padding(end = 4.dp, bottom = 4.dp)
                         .align(Alignment.BottomEnd)
                         .clip(MaterialTheme.shapes.extraSmall)
-                        .background(MaterialTheme.colorScheme.tertiaryContainer)
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
                         .padding(horizontal = 2.dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.tertiary,
@@ -190,7 +189,6 @@ fun RuleGroupDialog(
                         Icon(
                             imageVector = Icons.Outlined.Delete,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
                         )
                     }
                 }

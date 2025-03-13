@@ -130,7 +130,7 @@ fun getGroupEnable(
     subsConfig: SubsConfig?,
     category: RawSubscription.RawCategory? = null,
     categoryConfig: CategoryConfig? = null,
-): Boolean = when (group) {
+): Boolean = group.valid && when (group) {
     // 优先级: 规则用户配置 > 批量配置 > 批量默认 > 规则默认
     is RawSubscription.RawAppGroup -> {
         subsConfig?.enable ?: getCategoryEnable(category, categoryConfig) ?: group.enable ?: true

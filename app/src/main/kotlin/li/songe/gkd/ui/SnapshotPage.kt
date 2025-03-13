@@ -45,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.ImageUtils
 import com.blankj.utilcode.util.UriUtils
 import com.ramcosta.composedestinations.annotation.Destination
@@ -74,6 +73,7 @@ import li.songe.gkd.util.IMPORT_SHORT_URL
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
+import li.songe.gkd.util.copyText
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.saveFileToDownloads
 import li.songe.gkd.util.shareFile
@@ -129,7 +129,6 @@ fun SnapshotPage() {
                         Icon(
                             imageVector = Icons.Outlined.Delete,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
                         )
                     }
                 }
@@ -221,8 +220,7 @@ fun SnapshotPage() {
                         text = "复制链接", modifier = Modifier
                             .clickable(onClick = throttle {
                                 selectedSnapshot = null
-                                ClipboardUtils.copyText(IMPORT_SHORT_URL + snapshotVal.githubAssetId)
-                                toast("复制成功")
+                                copyText(IMPORT_SHORT_URL + snapshotVal.githubAssetId)
                             })
                             .then(modifier)
                     )

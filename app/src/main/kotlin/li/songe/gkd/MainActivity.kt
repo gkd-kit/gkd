@@ -47,6 +47,7 @@ import li.songe.gkd.service.updateLauncherAppId
 import li.songe.gkd.ui.component.BuildDialog
 import li.songe.gkd.ui.component.ShareDataDialog
 import li.songe.gkd.ui.component.SubsSheet
+import li.songe.gkd.ui.component.UrlDetailDialog
 import li.songe.gkd.ui.theme.AppTheme
 import li.songe.gkd.util.EditGithubCookieDlg
 import li.songe.gkd.util.LocalMainViewModel
@@ -114,6 +115,7 @@ class MainActivity : ComponentActivity() {
                     ShareDataDialog(mainVm, mainVm.showShareDataIdsFlow)
                     mainVm.inputSubsLinkOption.ContentDialog()
                     mainVm.ruleGroupState.Render()
+                    UrlDetailDialog(mainVm.urlFlow)
                 }
             }
         }

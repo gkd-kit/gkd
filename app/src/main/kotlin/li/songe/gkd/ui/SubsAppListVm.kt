@@ -50,7 +50,8 @@ class SubsAppListVm(stateHandle: SavedStateHandle) : ViewModel() {
 
     val showUninstallAppFlow = storeFlow.map(viewModelScope) { it.subsAppShowUninstallApp }
     private val sortAppsFlow =
-        combine(combine((subsRawFlow.combine(appInfoCacheFlow) { subs, appInfoCache ->
+        combine(
+            combine((subsRawFlow.combine(appInfoCacheFlow) { subs, appInfoCache ->
             (subs?.apps ?: emptyList()).sortedWith { a, b ->
                 // 顺序: 已安装(有名字->无名字)->未安装(有名字(来自订阅)->无名字)
                 collator.compare(appInfoCache[a.id]?.name ?: a.name?.let { "\uFFFF" + it }

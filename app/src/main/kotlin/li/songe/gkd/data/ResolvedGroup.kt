@@ -7,6 +7,8 @@ sealed class ResolvedGroup(
     val config: SubsConfig?,
 ) {
     val excludeData = ExcludeData.parse(config?.exclude)
+
+    abstract val appId: String?
 }
 
 class ResolvedAppGroup(
@@ -18,11 +20,17 @@ class ResolvedAppGroup(
     val enable: Boolean,
     val category: RawSubscription.RawCategory?,
     val categoryConfig: CategoryConfig?,
-) : ResolvedGroup(group, subscription, subsItem, config)
+) : ResolvedGroup(group, subscription, subsItem, config) {
+    override val appId: String?
+        get() = app.id
+}
 
 class ResolvedGlobalGroup(
     override val group: RawSubscription.RawGlobalGroup,
     subscription: RawSubscription,
     subsItem: SubsItem,
     config: SubsConfig?,
-) : ResolvedGroup(group, subscription, subsItem, config)
+) : ResolvedGroup(group, subscription, subsItem, config) {
+    override val appId: String?
+        get() = null
+}

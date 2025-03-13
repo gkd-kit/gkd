@@ -17,9 +17,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -57,12 +54,12 @@ import com.blankj.utilcode.util.KeyboardUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.service.launcherAppId
+import li.songe.gkd.ui.component.AnimatedIcon
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.AppIcon
 import li.songe.gkd.ui.component.AppNameText
@@ -78,10 +75,12 @@ import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
+import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.mapHashCode
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.systemAppsFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
@@ -159,27 +158,21 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                 )
             }
         }, actions = {
-            if (showSearchBar) {
-                IconButton(onClick = {
+            IconButton(onClick = {
+                if (showSearchBar) {
                     if (vm.searchStrFlow.value.isEmpty()) {
                         showSearchBar = false
                     } else {
                         vm.searchStrFlow.value = ""
                     }
-                }) {
-                    Icon(Icons.Outlined.Close, contentDescription = null)
-                }
-            } else {
-                IconButton(onClick = {
+                } else {
                     showSearchBar = true
-                }) {
-                    Icon(Icons.Default.Search, contentDescription = null)
                 }
-                IconButton(onClick = {
-                    showEditDlg = true
-                }) {
-                    Icon(Icons.Outlined.Edit, contentDescription = null)
-                }
+            }) {
+                AnimatedIcon(
+                    id = SafeR.ic_anim_search_close,
+                    atEnd = showSearchBar,
+                )
             }
             IconButton(onClick = {
                 expanded = true
@@ -209,7 +202,8 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                                 Text(sortOption.label)
                             },
                             trailingIcon = {
-                                RadioButton(selected = sortType == sortOption,
+                                RadioButton(
+                                    selected = sortType == sortOption,
                                     onClick = {
                                         storeFlow.update { it.copy(subsExcludeSortType = sortOption.value) }
                                     }
@@ -312,7 +306,7 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                     Spacer(modifier = Modifier.width(8.dp))
 
                     if (group != null) {
-                        val checked = getChecked(excludeData, group, appInfo.id, appInfo)
+                        val checked = getGlobalGroupChecked(excludeData, group, appInfo.id)
                         if (checked != null) {
                             key(appInfo.id) {
                                 Switch(
@@ -414,11 +408,10 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
 // null - 内置禁用
 // true - 启用
 // false - 禁用
-fun getChecked(
+fun getGlobalGroupChecked(
     excludeData: ExcludeData,
     group: RawSubscription.RawGlobalGroup,
     appId: String,
-    appInfo: AppInfo? = null
 ): Boolean? {
     val enable = group.appIdEnable[appId]
     if (enable == false) {
@@ -426,10 +419,10 @@ fun getChecked(
     }
     excludeData.appIds[appId]?.let { return !it }
     if (enable == true) return true
-    if (appInfo?.id == launcherAppId) {
+    if (appId == launcherAppId) {
         return group.matchLauncher ?: false
     }
-    if (appInfo?.isSystem == true) {
+    if (systemAppsFlow.value.contains(appId)) {
         return group.matchSystemApp ?: false
     }
     return group.matchAnyApp ?: true

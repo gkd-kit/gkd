@@ -13,8 +13,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -49,6 +47,7 @@ import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.AnimatedIcon
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.QueryPkgAuthCard
@@ -64,6 +63,7 @@ import li.songe.gkd.util.LOCAL_SUBS_IDS
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
+import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
@@ -145,22 +145,21 @@ fun SubsAppListPage(
                     )
                 }
             }, actions = {
-                if (showSearchBar) {
-                    IconButton(onClick = {
+                IconButton(onClick = {
+                    if (showSearchBar) {
                         if (vm.searchStrFlow.value.isEmpty()) {
                             showSearchBar = false
                         } else {
                             vm.searchStrFlow.value = ""
                         }
-                    }) {
-                        Icon(Icons.Outlined.Close, contentDescription = null)
-                    }
-                } else {
-                    IconButton(onClick = {
+                    } else {
                         showSearchBar = true
-                    }) {
-                        Icon(Icons.Outlined.Search, contentDescription = null)
                     }
+                }) {
+                    AnimatedIcon(
+                        id = SafeR.ic_anim_search_close,
+                        atEnd = showSearchBar,
+                    )
                 }
                 IconButton(onClick = { expanded = true }) {
                     Icon(
@@ -215,7 +214,6 @@ fun SubsAppListPage(
                         )
                     }
                 }
-
             })
         },
         floatingActionButton = {

@@ -16,7 +16,6 @@ import li.songe.gkd.MainViewModel
 import li.songe.gkd.data.GithubPoliciesAsset
 import li.songe.gkd.util.GithubCookieException
 import li.songe.gkd.util.LoadStatus
-import li.songe.gkd.util.copyText
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.privacyStoreFlow
 import li.songe.gkd.util.toast
@@ -111,21 +110,13 @@ class UploadOptions(
                 val href = showHref(status.result)
                 AlertDialog(
                     title = { Text(text = "上传完成") },
-                    text = { Text(text = href) },
+                    text = { UrlCopyText(text = href) },
                     onDismissRequest = {},
-                    dismissButton = {
+                    confirmButton = {
                         TextButton(onClick = {
                             statusFlow.value = null
                         }) {
                             Text(text = "关闭")
-                        }
-                    },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            copyText(href)
-                            statusFlow.value = null
-                        }) {
-                            Text(text = "复制并关闭")
                         }
                     }
                 )

@@ -16,13 +16,27 @@ import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
 
+private var lastId = 0L
+
+@Synchronized
+private fun buildUniqueTimeMillisId(): Long {
+    while (true) {
+        val id = System.currentTimeMillis()
+        if (id != lastId) {
+            lastId = id
+            return id
+        }
+        Thread.sleep(1)
+    }
+}
+
 @Serializable
 @Entity(
     tableName = "subs_config",
 )
 @Parcelize
 data class SubsConfig(
-    @PrimaryKey @ColumnInfo(name = "id") val id: Long = System.currentTimeMillis(),
+    @PrimaryKey @ColumnInfo(name = "id") val id: Long = buildUniqueTimeMillisId(),
     @ColumnInfo(name = "type") val type: Int,
     @ColumnInfo(name = "enable") val enable: Boolean? = null,
     @ColumnInfo(name = "subs_item_id") val subsItemId: Long,
@@ -53,6 +67,12 @@ data class SubsConfig(
         @Delete
         suspend fun delete(vararg users: SubsConfig): Int
 
+        @Transaction
+        suspend fun insertAndDelete(newList: List<SubsConfig>, deleteList: List<SubsConfig>){
+            insert(*newList.toTypedArray())
+            delete(*deleteList.toTypedArray())
+        }
+
         @Query("DELETE FROM subs_config WHERE subs_item_id=:subsItemId")
         suspend fun delete(subsItemId: Long): Int
 
@@ -65,8 +85,19 @@ data class SubsConfig(
         @Query("DELETE FROM subs_config WHERE type=${AppGroupType} AND subs_item_id=:subsItemId AND app_id=:appId AND group_key=:groupKey")
         suspend fun deleteAppGroupConfig(subsItemId: Long, appId: String, groupKey: Int): Int
 
+
+        @Query("DELETE FROM subs_config WHERE type=${AppGroupType} AND subs_item_id=:subsItemId AND app_id=:appId AND group_key IN (:keyList)")
+        suspend fun batchDeleteAppGroupConfig(
+            subsItemId: Long,
+            appId: String,
+            keyList: List<Int>
+        ): Int
+
         @Query("DELETE FROM subs_config WHERE type=${GlobalGroupType} AND subs_item_id=:subsItemId AND group_key=:groupKey")
         suspend fun deleteGlobalGroupConfig(subsItemId: Long, groupKey: Int): Int
+
+        @Query("DELETE FROM subs_config WHERE type=${GlobalGroupType} AND subs_item_id=:subsItemId AND group_key IN (:keyList)")
+        suspend fun batchDeleteGlobalGroupConfig(subsItemId: Long, keyList: List<Int>): Int
 
         @Query("SELECT * FROM subs_config WHERE subs_item_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)")
         fun queryUsedList(): Flow<List<SubsConfig>>

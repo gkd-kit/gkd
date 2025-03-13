@@ -18,9 +18,9 @@ fun Modifier.itemFlagPadding() = this.padding(
     bottom = itemVerticalPadding
 )
 
-fun Modifier.titleItemPadding() = this.padding(
+fun Modifier.titleItemPadding(showTop: Boolean = true) = this.padding(
     itemHorizontalPadding,
-    itemVerticalPadding + itemVerticalPadding / 2,
+    if (showTop) itemVerticalPadding + itemVerticalPadding / 2 else 0.dp,
     itemHorizontalPadding,
     itemVerticalPadding - itemVerticalPadding / 2
 )

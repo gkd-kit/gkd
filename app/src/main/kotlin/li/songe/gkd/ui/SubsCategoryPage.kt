@@ -1,11 +1,12 @@
 package li.songe.gkd.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,6 +18,8 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
@@ -57,7 +60,6 @@ import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.icon.ResetSettings
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.itemFlagPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.EnableGroupOption
 import li.songe.gkd.util.LocalMainViewModel
@@ -132,6 +134,7 @@ fun SubsCategoryPage(subsItemId: Long) {
                     subs = subs!!,
                     category = category,
                     categoryConfig = categoryConfigMap[category.key],
+                    showBottom = categories.last() != category
                 )
             }
             item {
@@ -171,6 +174,7 @@ private fun CategoryItemCard(
     subs: RawSubscription,
     category: RawSubscription.RawCategory,
     categoryConfig: CategoryConfig?,
+    showBottom: Boolean,
 ) {
     val groups = subs.categoryToGroupsMap[category] ?: emptyList()
     var expanded by remember { mutableStateOf(false) }
@@ -179,60 +183,71 @@ private fun CategoryItemCard(
             expanded = true
         }
     }
-    Row(
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .itemFlagPadding(),
-        verticalAlignment = Alignment.CenterVertically
+    Card(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.extraSmall,
+        modifier = Modifier.padding(
+            start = 8.dp,
+            end = 8.dp,
+            bottom = if (showBottom) 4.dp else 0.dp
+        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = category.name,
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            if (groups.isNotEmpty()) {
-                val appSize = subs.categoryToAppMap[category]?.size ?: 0
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 8.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "${appSize}应用/${groups.size}规则组",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = category.name,
+                    style = MaterialTheme.typography.bodyLarge,
                 )
-            } else {
-                Text(
-                    text = "暂无规则",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                )
-            }
-        }
-        CategoryMenu(
-            vm = vm,
-            subs = subs,
-            category = category,
-            expanded = expanded,
-            onCheckedChange = { expanded = it }
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        val enable = getCategoryEnable(category, categoryConfig)
-        TriStateCheckbox(
-            state = EnableGroupOption.allSubObject.findOption(enable).toToggleableState(),
-            onClick = throttle(appScope.launchAsFn {
-                val option = when (enable) {
-                    false -> EnableGroupOption.FollowSubs
-                    null -> EnableGroupOption.AllEnable
-                    true -> EnableGroupOption.AllDisable
+                if (groups.isNotEmpty()) {
+                    val appSize = subs.categoryToAppMap[category]?.size ?: 0
+                    Text(
+                        text = "${appSize}应用/${groups.size}规则组",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Text(
+                        text = "暂无规则",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
                 }
-                DbSet.categoryConfigDao.insert(
-                    (categoryConfig ?: CategoryConfig(
-                        enable = option.value,
-                        subsItemId = subs.id,
-                        categoryKey = category.key
-                    )).copy(enable = option.value)
-                )
-                toast(option.label)
-            })
-        )
-        CardFlagBar(visible = enable != null)
+            }
+            CategoryMenu(
+                vm = vm,
+                subs = subs,
+                category = category,
+                expanded = expanded,
+                onCheckedChange = { expanded = it }
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            val enable = getCategoryEnable(category, categoryConfig)
+            TriStateCheckbox(
+                state = EnableGroupOption.allSubObject.findOption(enable).toToggleableState(),
+                onClick = throttle(appScope.launchAsFn {
+                    val option = when (enable) {
+                        false -> EnableGroupOption.FollowSubs
+                        null -> EnableGroupOption.AllEnable
+                        true -> EnableGroupOption.AllDisable
+                    }
+                    DbSet.categoryConfigDao.insert(
+                        (categoryConfig ?: CategoryConfig(
+                            enable = option.value,
+                            subsItemId = subs.id,
+                            categoryKey = category.key
+                        )).copy(enable = option.value)
+                    )
+                    toast(option.label)
+                })
+            )
+            CardFlagBar(visible = enable != null, width = 8.dp)
+        }
     }
 }
 
@@ -296,7 +311,6 @@ private fun CategoryMenu(
                         Icon(
                             imageVector = Icons.Outlined.Delete,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
                         )
                     },
                     onClick = throttle(vm.viewModelScope.launchAsFn {

@@ -1,45 +1,64 @@
 package li.songe.gkd.ui.component
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ToggleOff
+import androidx.compose.material.icons.outlined.ToggleOn
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.isActive
 import li.songe.gkd.appScope
 import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.ui.getChecked
-import li.songe.gkd.ui.style.itemFlagPadding
-import li.songe.gkd.ui.style.itemHorizontalPadding
+import li.songe.gkd.ui.getGlobalGroupChecked
+import li.songe.gkd.ui.icon.ResetSettings
 import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.getGroupEnable
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
+import li.songe.gkd.util.toast
 
+
+interface RuleGroupExtVm {
+    val focusGroupKeyFlow: MutableStateFlow<Int?>
+}
 
 @Composable
 fun RuleGroupCard(
@@ -50,18 +69,39 @@ fun RuleGroupCard(
     subsConfig: SubsConfig?,
     category: RawSubscription.RawCategory?,
     categoryConfig: CategoryConfig?,
-    highlighted: Boolean,
+    showBottom: Boolean,
+    vm: RuleGroupExtVm? = null,
+    isSelectedMode: Boolean = false,
+    isSelected: Boolean = false,
+    onLongClick: () -> Unit = {},
+    onSelectedChange: () -> Unit = {},
 ) {
     val mainVm = LocalMainViewModel.current
 
     val inGlobalAppPage = appId != null && group is RawSubscription.RawGlobalGroup
 
+    var highlighted by remember { mutableStateOf(false) }
+    if (vm != null) {
+        val focusGroupKey = vm.focusGroupKeyFlow.collectAsState()
+        LaunchedEffect(group.key, focusGroupKey.value) {
+            if (group.key == focusGroupKey.value) {
+                var i = 0
+                while (isActive && i < 4) {
+                    delay(500)
+                    highlighted = !highlighted
+                    i++
+                }
+                highlighted = false
+                vm.focusGroupKeyFlow.value = null
+            }
+        }
+    }
+
     val (checked, excludeData) = if (inGlobalAppPage) {
-        val appInfo = appInfoCacheFlow.collectAsState().value[appId]
         val excludeData = remember(subsConfig?.exclude) {
             ExcludeData.parse(subsConfig?.exclude)
         }
-        getChecked(excludeData, group, appId, appInfo) to excludeData
+        getGlobalGroupChecked(excludeData, group, appId) to excludeData
     } else {
         getGroupEnable(
             group,
@@ -108,137 +148,172 @@ fun RuleGroupCard(
         }
         DbSet.subsConfigDao.insert(newConfig)
     }
-    val onClick = mainVm.viewModelScope.launchAsFn(Dispatchers.Default) {
+    val onClick = if (isSelectedMode)
+        (onSelectedChange)
+    else throttle(mainVm.viewModelScope.launchAsFn(Dispatchers.Default) {
         group.cacheStr // load cache
         mainVm.ruleGroupState.showGroupFlow.value = ShowGroupState(
             subsId = subs.id,
             appId = if (group is RawSubscription.RawAppGroup) appId else null,
             groupKey = group.key,
-            subsConfig = subsConfig,
             pageAppId = appId,
-        )
-    }
-    Row(
+        ).apply {
+            this.subsConfig = subsConfig
+        }
+    })
+    val horizontal = 8.dp
+    val vertical = 8.dp
+    val containerColor = animateColorAsState(
+        if (isSelected || highlighted) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainer
+        },
+        tween()
+    )
+    Card(
         modifier = modifier
-            .let {
-                if (highlighted) {
-                    it.background(MaterialTheme.colorScheme.inversePrimary)
-                } else {
-                    it
-                }
-            }
-            .clickable(onClick = throttle(onClick))
-            .itemFlagPadding(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight(),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = group.name,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.bodyLarge,
+            .padding(
+                start = 8.dp,
+                end = 8.dp,
+                bottom = if (showBottom) 4.dp else 0.dp
             )
-            if (group.valid) {
-                if (!group.desc.isNullOrBlank()) {
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+        shape = MaterialTheme.shapes.extraSmall,
+        colors = CardDefaults.cardColors(
+            containerColor = containerColor.value
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = horizontal, top = vertical, bottom = vertical),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = group.name,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                if (group.valid) {
+                    if (!group.desc.isNullOrBlank()) {
+                        Text(
+                            text = group.desc!!,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else {
                     Text(
-                        text = group.desc!!,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
+                        text = group.errorDesc ?: "未知错误",
                         modifier = Modifier.fillMaxWidth(),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = MaterialTheme.colorScheme.error
                     )
                 }
-            } else {
-                Text(
-                    text = group.errorDesc ?: "未知错误",
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
             }
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-        key(subs.id, appId, group.key) {
-            if (!group.valid) {
-                InnerDisableSwitch(valid = false)
-            } else if (checked != null) {
-                // 避免在 LazyColumn 滑动中出现 Switch 切换动画
-                Switch(
-                    checked = checked,
-                    onCheckedChange = throttle(onCheckedChange)
+            Spacer(modifier = Modifier.width(8.dp))
+            key(subs.id, appId, group.key) {
+                val percent = usePercentAnimatable(!isSelectedMode)
+                val switchModifier = Modifier.graphicsLayer(
+                    alpha = 0.5f + (1 - 0.5f) * percent.value,
                 )
-            } else {
-                InnerDisableSwitch()
-            }
-            CardFlagBar(
-                visible = if (inGlobalAppPage) {
+                if (!group.valid) {
+                    InnerDisableSwitch(
+                        modifier = switchModifier,
+                        valid = false,
+                        isSelectedMode = isSelectedMode,
+                    )
+                } else if (checked != null) {
+                    Switch(
+                        modifier = switchModifier.minimumInteractiveComponentSize(),
+                        checked = checked,
+                        onCheckedChange = if (isSelectedMode) null else throttle(onCheckedChange)
+                    )
+                } else {
+                    InnerDisableSwitch(
+                        modifier = switchModifier,
+                        isSelectedMode = isSelectedMode,
+                    )
+                }
+                val visible = if (inGlobalAppPage) {
                     excludeData != null && excludeData.appIds.contains(appId)
                 } else {
                     subsConfig?.enable != null
                 }
-            )
+                CardFlagBar(visible = visible, width = horizontal)
+            }
         }
     }
 }
 
 
 @Composable
-fun InnerDisableSwitch(
-    valid: Boolean = true,
-) {
+fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) {
     val mainVm = LocalMainViewModel.current
-    val onClick = {
-        if (valid) {
-            mainVm.dialogFlow.updateDialogOptions(
-                title = "内置禁用",
-                text = "此规则组已经在其 apps 字段中配置对当前应用的禁用, 因此无法手动开启规则组\n\n提示: 这种情况一般在此全局规则无法适配/跳过适配/单独适配当前应用时出现",
-            )
-        } else {
-            mainVm.dialogFlow.updateDialogOptions(
-                title = "非法规则",
-                text = "规则存在错误, 无法启用",
-            )
-        }
-    }
-    Switch(
-        checked = false,
-        enabled = false,
-        onCheckedChange = null,
-        modifier = Modifier.clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,
-            onClick = throttle(onClick)
+    IconButton(onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
+        mainVm.dialogFlow.waitResult(
+            title = "操作提示",
+            text = "是否将所选规则全部关闭?"
         )
-    )
-}
-
-@Composable
-fun CardFlagBar(visible: Boolean) {
-    Row(
-        modifier = Modifier
-            .width(itemHorizontalPadding)
-            .height(20.dp),
-        horizontalArrangement = Arrangement.End,
-    ) {
-        AnimatedVisibility(
-            visible = visible,
-        ) {
-            Spacer(
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.tertiary)
-                    .fillMaxHeight()
-                    .width(2.dp)
-            )
+        val list = batchUpdateGroupEnable(selectedDataSet, false)
+        if (list.isNotEmpty()) {
+            toast("已关闭 ${list.size} 条规则")
+        } else {
+            toast("无规则被改变")
         }
+    })) {
+        Icon(
+            imageVector = Icons.Outlined.ToggleOff,
+            contentDescription = null,
+        )
+    }
+    IconButton(onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
+        mainVm.dialogFlow.waitResult(
+            title = "操作提示",
+            text = "是否将所选规则全部启用?"
+        )
+        val list = batchUpdateGroupEnable(selectedDataSet, true)
+        if (list.isNotEmpty()) {
+            toast("已启用 ${list.size} 条规则")
+        } else {
+            toast("无规则被改变")
+        }
+    })) {
+        Icon(
+            imageVector = Icons.Outlined.ToggleOn,
+            contentDescription = null,
+        )
+    }
+    IconButton(onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
+        mainVm.dialogFlow.waitResult(
+            title = "操作提示",
+            text = "是否将所选规则重置开关至初始状态?"
+        )
+        val list = batchUpdateGroupEnable(selectedDataSet, null)
+        if (list.isNotEmpty()) {
+            toast("已重置 ${list.size} 条规则开关至初始状态")
+        } else {
+            toast("无规则被改变")
+        }
+    })) {
+        Icon(
+            imageVector = ResetSettings,
+            contentDescription = null,
+        )
     }
 }
