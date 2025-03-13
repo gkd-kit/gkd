@@ -1,5 +1,6 @@
 package li.songe.gkd
 
+import android.webkit.URLUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.LogUtils
@@ -27,6 +28,7 @@ import li.songe.gkd.util.clearCache
 import li.songe.gkd.util.client
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
+import li.songe.gkd.util.openUri
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
@@ -117,6 +119,15 @@ class MainViewModel : ViewModel() {
     }
 
     val ruleGroupState = RuleGroupState(this)
+
+    val urlFlow = MutableStateFlow<String?>(null)
+    fun openUrl(url: String) {
+        if (URLUtil.isNetworkUrl(url)) {
+            urlFlow.value = url
+        } else {
+            openUri(url)
+        }
+    }
 
     init {
         viewModelScope.launchTry(Dispatchers.IO) {

@@ -1,5 +1,7 @@
 package li.songe.gkd.ui.component
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +16,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -22,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -69,18 +73,21 @@ fun SubsItemCard(
             }
         }
     }
+    val containerColor = animateColorAsState(
+        if (isSelected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainer
+        },
+        tween()
+    )
     Card(
         onClick = onClick,
-        modifier = modifier
-            .padding(16.dp, 2.dp),
+        modifier = modifier.padding(16.dp, 4.dp),
         shape = MaterialTheme.shapes.small,
         interactionSource = interactionSource,
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainer
-            }
+            containerColor = containerColor.value
         ),
     ) {
         Row(
@@ -164,9 +171,19 @@ fun SubsItemCard(
             }
             Spacer(modifier = Modifier.width(4.dp))
             key(subsItem.id) {
+                val percent = usePercentAnimatable(!isSelectedMode)
+                val switchModifier = Modifier.graphicsLayer(
+                    alpha = 0.5f + (1 - 0.5f) * percent.value,
+                ).run {
+                    if (isSelectedMode) {
+                        minimumInteractiveComponentSize()
+                    } else {
+                        this
+                    }
+                }
                 Switch(
+                    modifier = switchModifier,
                     checked = subsItem.enable,
-                    enabled = !isSelectedMode,
                     onCheckedChange = if (isSelectedMode) null else throttle(fn = onCheckedChange),
                 )
             }

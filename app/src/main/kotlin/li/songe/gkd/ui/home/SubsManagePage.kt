@@ -3,6 +3,7 @@ package li.songe.gkd.ui.home
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
@@ -32,7 +33,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +46,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -69,6 +70,7 @@ import li.songe.gkd.data.Value
 import li.songe.gkd.data.deleteSubscription
 import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.SubsItemCard
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.waitResult
@@ -82,6 +84,7 @@ import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.UpdateTimeOption
 import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.findOption
+import li.songe.gkd.util.getUpDownTransform
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
@@ -128,10 +131,8 @@ fun useSubsManagePage(): ScaffoldExt {
             selectedIds = emptySet()
         }
     }
-    if (isSelectedMode) {
-        BackHandler {
-            isSelectedMode = false
-        }
+    BackHandler(isSelectedMode) {
+        isSelectedMode = false
     }
     LaunchedEffect(key1 = subItems.size) {
         if (subItems.size <= 1) {
@@ -218,183 +219,188 @@ fun useSubsManagePage(): ScaffoldExt {
                 }
             }, actions = {
                 var expanded by remember { mutableStateOf(false) }
-                if (isSelectedMode) {
-                    val canDeleteIds = if (selectedIds.contains(LOCAL_SUBS_ID)) {
-                        selectedIds - LOCAL_SUBS_ID
-                    } else {
-                        selectedIds
-                    }
-                    if (canDeleteIds.isNotEmpty()) {
-                        val text = "确定删除所选 ${canDeleteIds.size} 个订阅?".let {
-                            if (selectedIds.contains(LOCAL_SUBS_ID)) "$it\n\n注: 不包含本地订阅" else it
-                        }
-                        IconButton(onClick = vm.viewModelScope.launchAsFn {
-                            mainVm.dialogFlow.waitResult(
-                                title = "删除订阅",
-                                text = text,
-                                error = true,
-                            )
-                            deleteSubscription(*canDeleteIds.toLongArray())
-                            selectedIds = selectedIds - canDeleteIds
-                            if (selectedIds.size == canDeleteIds.size) {
-                                isSelectedMode = false
+                AnimatedContent(
+                    targetState = isSelectedMode,
+                    transitionSpec = { getUpDownTransform() },
+                    contentAlignment = Alignment.TopEnd,
+                ) {
+                    Row {
+                        if (it) {
+                            IconButton(onClick = {
+                                mainVm.showShareDataIdsFlow.value = selectedIds
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = null,
+                                )
                             }
-                        }) {
-                            Icon(
-                                imageVector = Icons.Outlined.Delete,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
-                            )
+                            val canDeleteIds = if (selectedIds.contains(LOCAL_SUBS_ID)) {
+                                selectedIds - LOCAL_SUBS_ID
+                            } else {
+                                selectedIds
+                            }
+                            if (canDeleteIds.isNotEmpty()) {
+                                val text = "确定删除所选 ${canDeleteIds.size} 个订阅?".let {
+                                    if (selectedIds.contains(LOCAL_SUBS_ID)) "$it\n\n注: 不包含本地订阅" else it
+                                }
+                                IconButton(onClick = vm.viewModelScope.launchAsFn {
+                                    mainVm.dialogFlow.waitResult(
+                                        title = "删除订阅",
+                                        text = text,
+                                        error = true,
+                                    )
+                                    deleteSubscription(*canDeleteIds.toLongArray())
+                                    selectedIds = selectedIds - canDeleteIds
+                                    if (selectedIds.size == canDeleteIds.size) {
+                                        isSelectedMode = false
+                                    }
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Delete,
+                                        contentDescription = null,
+                                    )
+                                }
+                            }
+                        } else {
+                            val ruleSummary by ruleSummaryFlow.collectAsState()
+                            AnimatedVisibility(
+                                visible = ruleSummary.slowGroupCount > 0,
+                                enter = scaleIn(),
+                                exit = scaleOut(),
+                            ) {
+                                IconButton(onClick = throttle {
+                                    navController.toDestinationsNavigator()
+                                        .navigate(SlowGroupPageDestination)
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Eco,
+                                        contentDescription = null,
+                                    )
+                                }
+                            }
+                            IconButton(onClick = throttle {
+                                if (storeFlow.value.enableMatch) {
+                                    toast("暂停规则匹配")
+                                } else {
+                                    toast("开启规则匹配")
+                                }
+                                storeFlow.update { s -> s.copy(enableMatch = !s.enableMatch) }
+                            }) {
+                                val scope = rememberCoroutineScope()
+                                val enableMatch by remember {
+                                    storeFlow.map(scope) { it.enableMatch }
+                                }.collectAsState()
+                                val id = if (enableMatch) SafeR.ic_flash_on else SafeR.ic_flash_off
+                                Icon(
+                                    painter = painterResource(id = id),
+                                    contentDescription = null,
+                                )
+                            }
+                            IconButton(onClick = {
+                                showSettingsDlg = true
+                            }) {
+                                Icon(
+                                    painter = painterResource(id = SafeR.ic_page_info),
+                                    contentDescription = null,
+                                )
+                            }
                         }
                     }
-                    IconButton(onClick = {
-                        mainVm.showShareDataIdsFlow.value = selectedIds
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = null,
-                        )
-                    }
-                    IconButton(onClick = {
+                }
+                IconButton(onClick = {
+                    if (updateSubsMutex.mutex.isLocked) {
+                        toast("正在刷新订阅,请稍后操作")
+                    } else {
                         expanded = true
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = null,
-                        )
                     }
-                } else {
-                    val ruleSummary by ruleSummaryFlow.collectAsState()
-                    AnimatedVisibility(
-                        visible = ruleSummary.slowGroupCount > 0,
-                        enter = scaleIn(),
-                        exit = scaleOut(),
-                    ) {
-                        IconButton(onClick = throttle {
-                            navController.toDestinationsNavigator()
-                                .navigate(SlowGroupPageDestination)
-                        }) {
-                            Icon(
-                                imageVector = Icons.Outlined.Eco,
-                                contentDescription = null,
-                            )
-                        }
-                    }
-                    IconButton(onClick = throttle {
-                        if (storeFlow.value.enableMatch) {
-                            toast("暂停规则匹配")
-                        } else {
-                            toast("开启规则匹配")
-                        }
-                        storeFlow.update { s -> s.copy(enableMatch = !s.enableMatch) }
-                    }) {
-                        val scope = rememberCoroutineScope()
-                        val enableMatch by remember {
-                            storeFlow.map(scope) { it.enableMatch }
-                        }.collectAsState()
-                        val id = if (enableMatch) SafeR.ic_flash_on else SafeR.ic_flash_off
-                        Icon(
-                            painter = painterResource(id = id),
-                            contentDescription = null,
-                        )
-                    }
-                    IconButton(onClick = {
-                        showSettingsDlg = true
-                    }) {
-                        Icon(
-                            painter = painterResource(id = SafeR.ic_page_info),
-                            contentDescription = null,
-                        )
-                    }
-                    IconButton(onClick = {
-                        if (updateSubsMutex.mutex.isLocked) {
-                            toast("正在刷新订阅,请稍后操作")
-                        } else {
-                            expanded = true
-                        }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = null,
-                        )
-                    }
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = null,
+                    )
                 }
                 Box(
                     modifier = Modifier.wrapContentSize(Alignment.TopStart)
                 ) {
-                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        if (isSelectedMode) {
-                            DropdownMenuItem(
-                                text = {
-                                    Text(text = "全选")
-                                },
-                                onClick = {
-                                    expanded = false
-                                    selectedIds = subItems.map { it.id }.toSet()
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = {
-                                    Text(text = "反选")
-                                },
-                                onClick = {
-                                    expanded = false
-                                    val newSelectedIds =
-                                        subItems.map { it.id }.toSet() - selectedIds
-                                    if (newSelectedIds.isEmpty()) {
-                                        isSelectedMode = false
+                    key(isSelectedMode) {
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            if (isSelectedMode) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(text = "全选")
+                                    },
+                                    onClick = {
+                                        expanded = false
+                                        selectedIds = subItems.map { it.id }.toSet()
                                     }
-                                    selectedIds = newSelectedIds
-                                }
-                            )
-                        } else {
-                            DropdownMenuItem(
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Add,
-                                        contentDescription = null,
-                                    )
-                                },
-                                text = {
-                                    Text(text = "导入数据")
-                                },
-                                onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                                    expanded = false
-                                    val result =
-                                        context.launcher.launchForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                                            addCategory(Intent.CATEGORY_OPENABLE)
-                                            type = "application/zip"
-                                        })
-                                    val uri = result.data?.data
-                                    if (uri == null) {
-                                        toast("未选择文件")
-                                        return@launchAsFn
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(text = "反选")
+                                    },
+                                    onClick = {
+                                        expanded = false
+                                        val newSelectedIds =
+                                            subItems.map { it.id }.toSet() - selectedIds
+                                        if (newSelectedIds.isEmpty()) {
+                                            isSelectedMode = false
+                                        }
+                                        selectedIds = newSelectedIds
                                     }
-                                    importData(uri)
-                                },
-                            )
+                                )
+                            } else {
+                                DropdownMenuItem(
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Add,
+                                            contentDescription = null,
+                                        )
+                                    },
+                                    text = {
+                                        Text(text = "导入数据")
+                                    },
+                                    onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                                        expanded = false
+                                        val result =
+                                            context.launcher.launchForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                                                addCategory(Intent.CATEGORY_OPENABLE)
+                                                type = "application/zip"
+                                            })
+                                        val uri = result.data?.data
+                                        if (uri == null) {
+                                            toast("未选择文件")
+                                            return@launchAsFn
+                                        }
+                                        importData(uri)
+                                    },
+                                )
+                            }
                         }
                     }
                 }
             })
         },
         floatingActionButton = {
-            if (!isSelectedMode) {
-                FloatingActionButton(onClick = {
+            AnimationFloatingActionButton(
+                visible = !isSelectedMode,
+                onClick = {
                     if (updateSubsMutex.mutex.isLocked) {
                         toast("正在刷新订阅,请稍后操作")
-                        return@FloatingActionButton
+                    } else {
+                        mainVm.viewModelScope.launchTry {
+                            val url = mainVm.inputSubsLinkOption.getResult() ?: return@launchTry
+                            mainVm.addOrModifySubs(url)
+                        }
                     }
-                    mainVm.viewModelScope.launchTry {
-                        val url = mainVm.inputSubsLinkOption.getResult() ?: return@launchTry
-                        mainVm.addOrModifySubs(url)
-                    }
-                }) {
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = null,
-                    )
                 }
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = null,
+                )
             }
         },
     ) { contentPadding ->
@@ -420,7 +426,6 @@ fun useSubsManagePage(): ScaffoldExt {
             LazyColumn(
                 state = lazyListState,
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 itemsIndexed(orderSubItems, { _, subItem -> subItem.id }) { index, subItem ->
                     val canDrag = !refreshing && orderSubItems.size > 1

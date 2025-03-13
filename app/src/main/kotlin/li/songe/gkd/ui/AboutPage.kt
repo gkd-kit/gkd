@@ -243,7 +243,7 @@ fun AboutPage() {
             Column(
                 modifier = Modifier
                     .clickable {
-                        openUri(REPOSITORY_URL)
+                        mainVm.openUrl(REPOSITORY_URL)
                     }
                     .fillMaxWidth()
                     .itemPadding()
@@ -263,7 +263,7 @@ fun AboutPage() {
             Column(
                 modifier = Modifier
                     .clickable {
-                        openUri(ISSUES_URL)
+                        mainVm.openUrl(ISSUES_URL)
                     }
                     .fillMaxWidth()
                     .itemPadding()
@@ -378,7 +378,7 @@ private fun AnimatedLogoIcon(
     val enableDarkTheme by mainVm.enableDarkThemeFlow.collectAsState()
     val darkTheme = enableDarkTheme ?: isSystemInDarkTheme()
     var atEnd by remember { mutableStateOf(false) }
-    val animation = AnimatedImageVector.animatedVectorResource(id = SafeR.ic_logo_animation)
+    val animation = AnimatedImageVector.animatedVectorResource(id = SafeR.ic_anim_logo)
     val painter = rememberAnimatedVectorPainter(
         animation,
         atEnd

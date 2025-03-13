@@ -812,7 +812,13 @@ data class RawSubscription(
                         jsonElement.jsonObject,
                         index
                     )
-                } ?: emptyList()).distinctBy { it.id },
+                } ?: emptyList()).distinctBy { it.id }.run {
+                    if (any { it.groups.isEmpty() }) {
+                        filterNot { it.groups.isEmpty() }
+                    } else {
+                        this
+                    }
+                },
                 categories = (rootJson["categories"]?.jsonArray?.mapIndexed { index, jsonElement ->
                     RawCategory(
                         key = getInt(jsonElement.jsonObject, "key")

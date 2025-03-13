@@ -19,6 +19,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
 import com.blankj.utilcode.util.ScreenUtils
 import com.hjq.toast.Toaster
 import com.hjq.toast.style.WhiteToastStyle
@@ -72,7 +73,7 @@ private fun View.updateToastView() {
         setTextColor(if (darkTheme) Color.WHITE else Color.BLACK)
     }
     background = GradientDrawable().apply {
-        setColor(Color.parseColor(if (darkTheme) "#303030" else "#fafafa"))
+        setColor((if (darkTheme) "#303030" else "#fafafa").toColorInt())
     }
     outlineProvider = circleOutlineProvider
     clipToOutline = true

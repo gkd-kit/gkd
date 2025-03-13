@@ -73,7 +73,6 @@ import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
-import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.map
 import li.songe.gkd.util.subsIdToRawFlow
@@ -152,7 +151,6 @@ fun ActionLogPage(
                         Icon(
                             imageVector = Icons.Outlined.Delete,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
                         )
                     }
                 }
@@ -331,9 +329,6 @@ private fun ActionLogDialog(
 ) {
     val navController = LocalNavController.current
     val scope = rememberCoroutineScope()
-    val appInfo = remember(actionLog.appId) {
-        appInfoCacheFlow.map(scope) { it[actionLog.appId] }
-    }.collectAsState().value
     val subsConfig = remember(actionLog) {
         (if (actionLog.groupType == SubsConfig.AppGroupType) {
             DbSet.subsConfigDao.queryAppGroupTypeConfig(
@@ -386,11 +381,10 @@ private fun ActionLogDialog(
                 }.collectAsState().value
                 val group = subs?.globalGroups?.find { g -> g.key == actionLog.groupKey }
                 val appChecked = if (group != null) {
-                    getChecked(
+                    getGlobalGroupChecked(
                         oldExclude,
                         group,
                         actionLog.appId,
-                        appInfo
                     )
                 } else {
                     null

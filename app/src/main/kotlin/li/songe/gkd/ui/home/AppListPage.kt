@@ -18,8 +18,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -51,6 +49,7 @@ import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDest
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
+import li.songe.gkd.ui.component.AnimatedIcon
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.AppIcon
 import li.songe.gkd.ui.component.AppNameText
@@ -61,6 +60,7 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mapHashCode
@@ -145,28 +145,21 @@ fun useAppListPage(): ScaffoldExt {
                     )
                 }
             }, actions = {
-                if (showSearchBar) {
-                    IconButton(onClick = throttle {
+                IconButton(onClick = throttle {
+                    if (showSearchBar) {
                         if (vm.searchStrFlow.value.isEmpty()) {
                             vm.showSearchBarFlow.value = false
                         } else {
                             vm.searchStrFlow.value = ""
                         }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = null
-                        )
-                    }
-                } else {
-                    IconButton(onClick = throttle {
+                    } else {
                         vm.showSearchBarFlow.value = true
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null
-                        )
                     }
+                }) {
+                    AnimatedIcon(
+                        id = SafeR.ic_anim_search_close,
+                        atEnd = showSearchBar,
+                    )
                 }
                 var expanded by remember { mutableStateOf(false) }
                 IconButton(onClick = {
@@ -197,7 +190,8 @@ fun useAppListPage(): ScaffoldExt {
                                     Text(sortOption.label)
                                 },
                                 trailingIcon = {
-                                    RadioButton(selected = sortType == sortOption,
+                                    RadioButton(
+                                        selected = sortType == sortOption,
                                         onClick = {
                                             storeFlow.update { s -> s.copy(sortType = sortOption.value) }
                                         }

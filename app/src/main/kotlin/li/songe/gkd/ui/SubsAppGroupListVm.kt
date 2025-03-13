@@ -4,14 +4,17 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.RuleGroupExtVm
+import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.util.map
 import li.songe.gkd.util.subsIdToRawFlow
 
-class SubsAppGroupListVm (stateHandle: SavedStateHandle) : ViewModel() {
+class SubsAppGroupListVm(stateHandle: SavedStateHandle) : ViewModel(), RuleGroupExtVm {
     private val args = SubsAppGroupListPageDestination.argsFrom(stateHandle)
 
     val subsRawFlow = subsIdToRawFlow.map(viewModelScope) { s -> s[args.subsItemId] }
@@ -22,10 +25,13 @@ class SubsAppGroupListVm (stateHandle: SavedStateHandle) : ViewModel() {
     val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(args.subsItemId)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    val subsAppFlow =
-        subsIdToRawFlow.map(viewModelScope) { subsIdToRaw ->
-            subsIdToRaw[args.subsItemId]?.apps?.find { it.id == args.appId }
-                ?: RawSubscription.RawApp(id = args.appId, name = null)
-        }
+    val subsAppFlow = subsIdToRawFlow.map(viewModelScope) { subsIdToRaw ->
+        subsIdToRaw[args.subsItemId]?.apps?.find { it.id == args.appId }
+            ?: RawSubscription.RawApp(id = args.appId, name = null)
+    }
 
+    val isSelectedModeFlow = MutableStateFlow(false)
+    val selectedDataSetFlow = MutableStateFlow(emptySet<ShowGroupState>())
+
+    override val focusGroupKeyFlow = MutableStateFlow<Int?>(args.focusGroupKey)
 }

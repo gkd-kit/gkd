@@ -4,17 +4,20 @@ import android.app.Activity
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -28,13 +31,13 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -55,6 +58,7 @@ import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.ShortUrlSet
+import li.songe.gkd.util.copyText
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openA11ySettings
 import li.songe.gkd.util.openUri
@@ -253,13 +257,33 @@ fun AuthA11yPage() {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(text = "1. 有一台安装了 adb 的电脑\n\n2.手机开启调试模式后连接电脑授权调试\n\n3. 在电脑 cmd/pwsh 中运行如下命令")
                     Spacer(modifier = Modifier.height(4.dp))
-                    SelectionContainer {
-                        Text(
-                            text = commandText,
+                    Box(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        SelectionContainer(
                             modifier = Modifier
-                                .clip(MaterialTheme.shapes.extraSmall)
-                                .background(MaterialTheme.colorScheme.secondaryContainer)
+                                .align(Alignment.TopStart)
+                                .fillMaxWidth()
+                        ) {
+                            Text(
+                                text = commandText,
+                                modifier = Modifier
+                                    .clip(MaterialTheme.shapes.extraSmall)
+                                    .background(MaterialTheme.colorScheme.secondaryContainer)
+                                    .padding(4.dp)
+                            )
+                        }
+                        Icon(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .clickable(onClick = throttle {
+                                    copyText(commandText)
+                                })
                                 .padding(4.dp)
+                                .size(16.dp),
+                            imageVector = Icons.Outlined.ContentCopy,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.tertiary,
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -277,17 +301,10 @@ fun AuthA11yPage() {
             confirmButton = {
                 TextButton(onClick = {
                     vm.showCopyDlgFlow.value = false
-                    ClipboardUtils.copyText(commandText)
-                    toast("复制成功")
                 }) {
-                    Text(text = "复制并关闭")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { vm.showCopyDlgFlow.value = false }) {
                     Text(text = "关闭")
                 }
-            }
+            },
         )
     }
 }

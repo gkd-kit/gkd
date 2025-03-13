@@ -57,10 +57,8 @@ import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.checkSubsUpdate
-import li.songe.gkd.util.copyText
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.openUri
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.throttle
@@ -341,8 +339,8 @@ fun SubsSheet(
                                     color = MaterialTheme.colorScheme.secondary,
                                     softWrap = false,
                                     modifier = Modifier
-                                        .clickable(onClick = throttle {
-                                            copyText(subsItem.updateUrl)
+                                        .clickable(onClick = {
+                                            mainVm.urlFlow.value = subsItem.updateUrl
                                         })
                                 )
                             }
@@ -383,7 +381,7 @@ fun SubsSheet(
                 ) {
                     if (!subsItem.isLocal && subscription?.supportUri != null) {
                         IconButton(onClick = throttle {
-                            openUri(subscription.supportUri)
+                            mainVm.urlFlow.value = subscription.supportUri
                         }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
@@ -420,7 +418,6 @@ fun SubsSheet(
                             Icon(
                                 imageVector = Icons.Outlined.Delete,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
                             )
                         }
                     }

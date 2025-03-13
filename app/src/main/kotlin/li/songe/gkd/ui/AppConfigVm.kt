@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
@@ -13,6 +14,7 @@ import li.songe.gkd.data.ResolvedAppGroup
 import li.songe.gkd.data.ResolvedGlobalGroup
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.util.LinkLoad
 import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.collator
@@ -173,6 +175,10 @@ class AppConfigVm(stateHandle: SavedStateHandle) : ViewModel() {
             )
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+
+    val isSelectedModeFlow = MutableStateFlow(false)
+    val selectedDataSetFlow = MutableStateFlow(emptySet<ShowGroupState>())
 
 }
 

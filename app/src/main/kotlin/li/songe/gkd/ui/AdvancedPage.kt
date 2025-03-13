@@ -246,7 +246,7 @@ fun AdvancedPage() {
                                         color = MaterialTheme.colorScheme.primary,
                                         style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
                                         modifier = Modifier.clickable(onClick = throttle {
-                                            openUri(localUrl)
+                                            mainVm.openUrl(localUrl)
                                         }),
                                     )
                                     Spacer(modifier = Modifier.width(2.dp))
@@ -259,7 +259,7 @@ fun AdvancedPage() {
                                         color = MaterialTheme.colorScheme.primary,
                                         style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
                                         modifier = Modifier.clickable(onClick = throttle {
-                                            openUri(lanUrl)
+                                            mainVm.openUrl(lanUrl)
                                         })
                                     )
                                 }
@@ -536,7 +536,7 @@ private fun ShizukuTitleCard() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .titleItemPadding(),
+            .titleItemPadding(showTop = false),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
