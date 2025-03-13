@@ -84,6 +84,7 @@ data class Store(
     val showSystemApp: Boolean = true,
     val showHiddenApp: Boolean = false,
     val appRuleSortType: Int = RuleSortOption.Default.value,
+    val appShowInnerDisable: Boolean = false,
     val subsAppSortType: Int = SortTypeOption.SortByName.value,
     val subsAppShowUninstallApp: Boolean = false,
     val subsExcludeSortType: Int = SortTypeOption.SortByName.value,

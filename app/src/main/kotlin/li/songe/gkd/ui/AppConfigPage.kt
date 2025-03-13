@@ -3,8 +3,12 @@ package li.songe.gkd.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.AnimationConstants
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -43,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -98,7 +104,7 @@ fun AppConfigPage(appId: String) {
         if (isFirstVisit) {
             isFirstVisit = false
         } else {
-            listState.scrollToItem(0)
+            listState.animateScrollToItem(0)
         }
     }
     val isSelectedMode = vm.isSelectedModeFlow.collectAsState().value
@@ -228,16 +234,39 @@ fun AppConfigPage(appId: String) {
                                         trailingIcon = {
                                             RadioButton(
                                                 selected = ruleSortType == s,
-                                                onClick = {
+                                                onClick = throttle {
                                                     storeFlow.update { it.copy(appRuleSortType = s.value) }
                                                 }
                                             )
                                         },
-                                        onClick = {
+                                        onClick = throttle {
                                             storeFlow.update { it.copy(appRuleSortType = s.value) }
                                         },
                                     )
                                 }
+                                Text(
+                                    text = "筛选",
+                                    modifier = Modifier.menuPadding(),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Text("显示禁用规则")
+                                    },
+                                    trailingIcon = {
+                                        val appShowInnerDisable by vm.appShowInnerDisableFlow.collectAsState()
+                                        Checkbox(
+                                            checked = appShowInnerDisable,
+                                            onCheckedChange = throttle<Boolean> {
+                                                storeFlow.update { s -> s.copy(appShowInnerDisable = !s.appShowInnerDisable) }
+                                            }
+                                        )
+                                    },
+                                    onClick = throttle {
+                                        storeFlow.update { s -> s.copy(appShowInnerDisable = !s.appShowInnerDisable) }
+                                    },
+                                )
                             }
                         }
                     }
@@ -279,7 +308,12 @@ fun AppConfigPage(appId: String) {
             modifier = Modifier.scaffoldPadding(contentPadding),
             state = listState,
         ) {
-            itemsIndexed(globalGroups) { i, g ->
+            itemsIndexed(
+                globalGroups,
+                { _, g ->
+                    Pair(g.subscription.id, g.group.key)
+                }
+            ) { i, g ->
                 TitleGroupCard(globalGroups, i, isSelectedMode) {
                     RuleGroupCard(
                         subs = g.subscription,
@@ -296,14 +330,19 @@ fun AppConfigPage(appId: String) {
                     )
                 }
             }
-            item {
-                if (globalGroups.isNotEmpty() && appGroups.isNotEmpty()) {
+            if (globalGroups.isNotEmpty() && appGroups.isNotEmpty()) {
+                item("divider") {
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                 }
             }
-            itemsIndexed(appGroups) { i, g ->
+            itemsIndexed(
+                appGroups,
+                { _, g ->
+                    Triple(g.subscription.id, g.appId, g.group.key)
+                }
+            ) { i, g ->
                 TitleGroupCard(appGroups, i, isSelectedMode) {
                     RuleGroupCard(
                         subs = g.subscription,
@@ -342,31 +381,47 @@ private fun LazyItemScope.TitleGroupCard(
 ) {
     val lastGroup = groups.getOrNull(i - 1)
     val g = groups[i]
-    if (g.subsItem.id != lastGroup?.subsItem?.id) {
-        val navController = LocalNavController.current
-        Text(
-            text = g.subscription.name,
-            modifier = Modifier
-                .titleItemPadding(showTop = i > 0)
-                .run {
-                    if (g is ResolvedAppGroup && !isSelectedMode) {
-                        clickable(onClick = throttle {
-                            navController.toDestinationsNavigator()
-                                .navigate(SubsAppGroupListPageDestination(g.subsItem.id, g.app.id))
-                        })
-                    } else {
-                        this
+    Column(
+        modifier = Modifier.animateItem(
+            fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
+            placementSpec = spring(
+                stiffness = Spring.StiffnessMediumLow,
+                visibilityThreshold = IntOffset.VisibilityThreshold
+            ),
+            fadeOutSpec = spring(stiffness = Spring.StiffnessMediumLow)
+        ),
+    ) {
+        if (g.subsItem.id != lastGroup?.subsItem?.id) {
+            val navController = LocalNavController.current
+            Text(
+                text = g.subscription.name,
+                modifier = Modifier
+                    .titleItemPadding(showTop = i > 0)
+                    .run {
+                        if (g is ResolvedAppGroup && !isSelectedMode) {
+                            clickable(onClick = throttle {
+                                navController.toDestinationsNavigator()
+                                    .navigate(
+                                        SubsAppGroupListPageDestination(
+                                            g.subsItem.id,
+                                            g.app.id
+                                        )
+                                    )
+                            })
+                        } else {
+                            this
+                        }
                     }
-                }
-                .fillMaxWidth(),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
-            maxLines = 1,
-            softWrap = false,
-            overflow = TextOverflow.Ellipsis,
-        )
-        content()
-    } else {
-        content()
+                    .fillMaxWidth(),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+            )
+            content()
+        } else {
+            content()
+        }
     }
 }

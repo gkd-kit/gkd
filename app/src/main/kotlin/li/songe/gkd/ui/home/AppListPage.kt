@@ -59,6 +59,7 @@ import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
+import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.SortTypeOption
@@ -253,6 +254,9 @@ fun useAppListPage(): ScaffoldExt {
                 Row(
                     modifier = Modifier
                         .clickable(onClick = throttle {
+                            if (KeyboardUtils.isSoftInputVisible(context)) {
+                                softwareKeyboardController?.hide()
+                            }
                             navController
                                 .toDestinationsNavigator()
                                 .navigate(AppConfigPageDestination(appInfo.id))
@@ -309,7 +313,7 @@ fun useAppListPage(): ScaffoldExt {
                     }
                 }
             }
-            item {
+            item(LIST_PLACEHOLDER_KEY) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (orderedAppInfos.isEmpty() && searchStr.isNotEmpty()) {
                     val hasShowAll = showSystemApp && showHiddenApp

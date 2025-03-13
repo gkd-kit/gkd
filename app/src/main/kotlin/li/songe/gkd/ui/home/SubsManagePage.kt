@@ -76,6 +76,7 @@ import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemVerticalPadding
+import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
@@ -511,7 +512,7 @@ fun useSubsManagePage(): ScaffoldExt {
                         )
                     }
                 }
-                item {
+                item(LIST_PLACEHOLDER_KEY) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }

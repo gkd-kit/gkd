@@ -297,7 +297,35 @@ data class RawSubscription(
         override val apps: List<RawGlobalApp>?,
     ) : RawGroupProps, RawGlobalRuleProps {
         val appIdEnable by lazy {
-            (apps ?: emptyList()).associate { a -> a.id to (a.enable ?: true) }
+            if (rules.all { r -> r.apps.isNullOrEmpty() }) {
+                apps?.associate { a -> a.id to (a.enable ?: true) } ?: emptyMap()
+            } else {
+                val allIds = mutableSetOf<String>()
+                apps?.forEach { a ->
+                    allIds.add(a.id)
+                }
+                rules.forEach { r ->
+                    r.apps?.forEach { a ->
+                        allIds.add(a.id)
+                    }
+                }
+                val dataMap = mutableMapOf<String, Boolean>()
+                allIds.forEach forEachId@{ id ->
+                    var temp: Boolean? = null
+                    rules.forEach { r ->
+                        val v = (r.apps ?: apps)?.find { it.id == id }?.enable ?: return@forEachId
+                        if (temp == null) {
+                            temp = v
+                        } else if (temp != v) {
+                            return@forEachId
+                        }
+                    }
+                    if (temp != null) {
+                        dataMap[id] = temp
+                    }
+                }
+                dataMap
+            }
         }
 
         override val cacheMap by lazy { HashMap<String, Selector?>() }
