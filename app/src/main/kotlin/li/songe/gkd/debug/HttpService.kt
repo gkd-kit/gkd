@@ -85,7 +85,6 @@ class HttpService : Service(), OnCreate, OnDestroy {
         useAliveFlow(isRunning)
 
         onCreated { localNetworkIpsFlow.value = getIpAddressInLocalNetwork() }
-        onDestroyed { localNetworkIpsFlow.value = emptyList() }
 
         onDestroyed {
             if (storeFlow.value.autoClearMemorySubs) {
