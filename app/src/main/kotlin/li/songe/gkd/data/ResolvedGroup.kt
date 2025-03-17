@@ -6,7 +6,7 @@ sealed class ResolvedGroup(
     val subsItem: SubsItem,
     val config: SubsConfig?,
 ) {
-    val excludeData = ExcludeData.parse(config?.exclude)
+    val excludeData by lazy { ExcludeData.parse(config?.exclude) }
 
     abstract val appId: String?
 }
@@ -18,8 +18,6 @@ class ResolvedAppGroup(
     config: SubsConfig?,
     val app: RawSubscription.RawApp,
     val enable: Boolean,
-    val category: RawSubscription.RawCategory?,
-    val categoryConfig: CategoryConfig?,
 ) : ResolvedGroup(group, subscription, subsItem, config) {
     override val appId: String?
         get() = app.id

@@ -78,6 +78,10 @@ data class RawSubscription(
         map
     }
 
+    fun getAppGroups(appId: String): List<RawAppGroup> {
+        return apps.find { a -> a.id == appId }?.groups ?: emptyList()
+    }
+
     val groupToCategoryMap by lazy {
         val map = mutableMapOf<RawAppGroup, RawCategory>()
         categoryToGroupsMap.forEach { (key, value) ->
@@ -233,6 +237,12 @@ data class RawSubscription(
         val allExampleUrls: List<String>
         val cacheMap: MutableMap<String, Selector?>
         val cacheStr: String
+
+        val groupType: Int
+            get() = when (this) {
+                is RawAppGroup -> SubsConfig.AppGroupType
+                is RawGlobalGroup -> SubsConfig.GlobalGroupType
+            }
     }
 
     sealed interface RawAppRuleProps {

@@ -3,12 +3,8 @@ package li.songe.gkd.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.AnimationConstants
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,8 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyItemScope
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
@@ -27,7 +22,6 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,7 +42,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -59,26 +52,26 @@ import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListP
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.data.ResolvedAppGroup
-import li.songe.gkd.data.ResolvedGroup
+import li.songe.gkd.data.RawSubscription
+import li.songe.gkd.data.Value
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.BatchActionButtonGroup
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.RuleGroupCard
 import li.songe.gkd.ui.component.ShowGroupState
+import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.toGroupState
 import li.songe.gkd.ui.icon.BackCloseIcon
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
-import li.songe.gkd.ui.style.titleItemPadding
+import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.RuleSortOption
-import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.getUpDownTransform
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.storeFlow
@@ -92,19 +85,16 @@ fun AppConfigPage(appId: String) {
     val navController = LocalNavController.current
     val vm = viewModel<AppConfigVm>()
     val ruleSortType by vm.ruleSortTypeFlow.collectAsState()
-    val appInfoCache by appInfoCacheFlow.collectAsState()
-    val appInfo = appInfoCache[appId]
-    val globalGroups by vm.globalGroupsFlow.collectAsState()
-    val appGroups by vm.appGroupsFlow.collectAsState()
+    val groupSize by vm.groupSizeFlow.collectAsState()
     val firstLoading by vm.linkLoad.firstLoadingFlow.collectAsState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    val listState = rememberLazyListState()
-    var isFirstVisit by remember { mutableStateOf(true) }
-    LaunchedEffect(globalGroups.size, appGroups.size, ruleSortType.value) {
-        if (isFirstVisit) {
-            isFirstVisit = false
+    val listState = key(groupSize > 0) { rememberLazyListState() }
+    val isFirstVisit = remember { Value(true) }
+    LaunchedEffect(ruleSortType.value) {
+        if (isFirstVisit.value) {
+            isFirstVisit.value = false
         } else {
-            listState.animateScrollToItem(0)
+            listState.scrollToItem(0)
         }
     }
     val isSelectedMode = vm.isSelectedModeFlow.collectAsState().value
@@ -143,7 +133,6 @@ fun AppConfigPage(appId: String) {
                     )
                 } else {
                     AppNameText(
-                        appInfo = appInfo,
                         appId = appId
                     )
                 }
@@ -202,9 +191,7 @@ fun AppConfigPage(appId: String) {
                                     },
                                     onClick = {
                                         expanded = false
-                                        vm.selectedDataSetFlow.value =
-                                            (globalGroups + appGroups).map { it.toGroupState(appId) }
-                                                .toSet()
+                                        vm.selectAll()
                                     }
                                 )
                                 DropdownMenuItem(
@@ -213,10 +200,7 @@ fun AppConfigPage(appId: String) {
                                     },
                                     onClick = {
                                         expanded = false
-                                        val newSelectedIds =
-                                            (globalGroups + appGroups).map { it.toGroupState(appId) }
-                                                .toSet() - selectedDataSet
-                                        vm.selectedDataSetFlow.value = newSelectedIds
+                                        vm.invertSelect()
                                     }
                                 )
                             } else {
@@ -295,133 +279,92 @@ fun AppConfigPage(appId: String) {
             )
         },
     ) { contentPadding ->
-        val onLongClick: (ResolvedGroup) -> Unit = { g ->
-            if (globalGroups.size + appGroups.size > 1 && !isSelectedMode) {
-                vm.isSelectedModeFlow.value = true
-                vm.selectedDataSetFlow.value = setOf(g.toGroupState(appId))
-            }
-        }
-        val onSelectedChange: (ResolvedGroup) -> Unit = { g ->
-            vm.selectedDataSetFlow.value = selectedDataSet.switchItem(g.toGroupState(appId))
-        }
+        val globalSubsConfigs by vm.globalSubsConfigsFlow.collectAsState()
+        val categoryConfigs by vm.categoryConfigsFlow.collectAsState()
+        val appSubsConfigs by vm.appSubsConfigsFlow.collectAsState()
+        val subsPairs by vm.subsPairsFlow.collectAsState()
         LazyColumn(
             modifier = Modifier.scaffoldPadding(contentPadding),
             state = listState,
         ) {
-            itemsIndexed(
-                globalGroups,
-                { _, g ->
-                    Pair(g.subscription.id, g.group.key)
+            subsPairs.forEach { (entry, groups) ->
+                val subsId = entry.subsItem.id
+                stickyHeader(entry.subsItem.id) {
+                    Text(
+                        text = entry.subscription.name,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.background)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
-            ) { i, g ->
-                TitleGroupCard(globalGroups, i, isSelectedMode) {
+                items(groups, { Triple(subsId, it.groupType, it.key) }) { group ->
+                    val subsConfig = when (group) {
+                        is RawSubscription.RawAppGroup -> appSubsConfigs
+                        is RawSubscription.RawGlobalGroup -> globalSubsConfigs
+                    }.find { it.subsId == entry.subsItem.id && it.groupKey == group.key }
+                    val category = when (group) {
+                        is RawSubscription.RawAppGroup -> entry.subscription.groupToCategoryMap[group]
+                        is RawSubscription.RawGlobalGroup -> null
+                    }
+                    val categoryConfig = if (category != null) {
+                        categoryConfigs.find { it.subsId == subsId && it.categoryKey == category.key }
+                    } else {
+                        null
+                    }
+                    val isSelected = selectedDataSet.any {
+                        it.subsId == subsId && it.groupType == group.groupType && it.groupKey == group.key
+                    }
+                    val onLongClick = {
+                        if (groups.size > 1 && !isSelectedMode) {
+                            vm.isSelectedModeFlow.value = true
+                            vm.selectedDataSetFlow.value = setOf(
+                                group.toGroupState(
+                                    subsId = subsId,
+                                    appId = appId,
+                                )
+                            )
+                        }
+                    }
+                    val onSelectedChange = {
+                        vm.selectedDataSetFlow.value =
+                            selectedDataSet.switchItem(
+                                group.toGroupState(
+                                    subsId = subsId,
+                                    appId = appId,
+                                )
+                            )
+                    }
                     RuleGroupCard(
-                        subs = g.subscription,
+                        modifier = Modifier.animateListItem(this),
+                        subs = entry.subscription,
                         appId = appId,
-                        group = g.group,
-                        subsConfig = g.config,
-                        category = null,
-                        categoryConfig = null,
-                        showBottom = g !== globalGroups.last(),
-                        onLongClick = { onLongClick(g) },
+                        group = group,
+                        subsConfig = subsConfig,
+                        category = category,
+                        categoryConfig = categoryConfig,
+                        showBottom = true,
+                        onLongClick = onLongClick,
                         isSelectedMode = isSelectedMode,
-                        isSelected = selectedDataSet.any { it.equalResolvedGroup(g) },
-                        onSelectedChange = { onSelectedChange(g) }
+                        isSelected = isSelected,
+                        onSelectedChange = onSelectedChange
                     )
                 }
             }
-            if (globalGroups.isNotEmpty() && appGroups.isNotEmpty()) {
-                item("divider") {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                }
-            }
-            itemsIndexed(
-                appGroups,
-                { _, g ->
-                    Triple(g.subscription.id, g.appId, g.group.key)
-                }
-            ) { i, g ->
-                TitleGroupCard(appGroups, i, isSelectedMode) {
-                    RuleGroupCard(
-                        subs = g.subscription,
-                        appId = appId,
-                        group = g.group,
-                        subsConfig = g.config,
-                        category = g.category,
-                        categoryConfig = g.categoryConfig,
-                        showBottom = g !== appGroups.last(),
-                        onLongClick = { onLongClick(g) },
-                        isSelectedMode = isSelectedMode,
-                        isSelected = selectedDataSet.any { it.equalResolvedGroup(g) },
-                        onSelectedChange = { onSelectedChange(g) }
-                    )
-                }
-            }
-            item {
+            item(LIST_PLACEHOLDER_KEY) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
-                if (globalGroups.size + appGroups.size == 0 && !firstLoading) {
+                if (groupSize == 0 && !firstLoading) {
                     EmptyText(text = "暂无规则")
                 } else {
                     // 避免被 floatingActionButton 遮挡
                     Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun LazyItemScope.TitleGroupCard(
-    groups: List<ResolvedGroup>,
-    i: Int,
-    isSelectedMode: Boolean,
-    content: @Composable () -> Unit
-) {
-    val lastGroup = groups.getOrNull(i - 1)
-    val g = groups[i]
-    Column(
-        modifier = Modifier.animateItem(
-            fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
-            placementSpec = spring(
-                stiffness = Spring.StiffnessMediumLow,
-                visibilityThreshold = IntOffset.VisibilityThreshold
-            ),
-            fadeOutSpec = spring(stiffness = Spring.StiffnessMediumLow)
-        ),
-    ) {
-        if (g.subsItem.id != lastGroup?.subsItem?.id) {
-            val navController = LocalNavController.current
-            Text(
-                text = g.subscription.name,
-                modifier = Modifier
-                    .titleItemPadding(showTop = i > 0)
-                    .run {
-                        if (g is ResolvedAppGroup && !isSelectedMode) {
-                            clickable(onClick = throttle {
-                                navController.toDestinationsNavigator()
-                                    .navigate(
-                                        SubsAppGroupListPageDestination(
-                                            g.subsItem.id,
-                                            g.app.id
-                                        )
-                                    )
-                            })
-                        } else {
-                            this
-                        }
-                    }
-                    .fillMaxWidth(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis,
-            )
-            content()
-        } else {
-            content()
         }
     }
 }

@@ -2,9 +2,6 @@ package li.songe.gkd.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -35,7 +32,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
@@ -47,6 +43,7 @@ import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.RuleGroupCard
 import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.ui.component.TowLineText
+import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.toGroupState
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.icon.BackCloseIcon
@@ -207,8 +204,6 @@ fun SubsAppGroupListPage(
                                     it.toGroupState(
                                         subsId = subsItemId,
                                         appId = appId,
-                                        subsConfig = subsConfigs.find { s -> s.groupKey == it.key },
-                                        categoryConfig = categoryConfigs.find { c -> c.categoryKey == groupToCategoryMap[it]?.key }
                                     )
                                 }.toSet()
                             }
@@ -223,8 +218,6 @@ fun SubsAppGroupListPage(
                                     it.toGroupState(
                                         subsId = subsItemId,
                                         appId = appId,
-                                        subsConfig = subsConfigs.find { s -> s.groupKey == it.key },
-                                        categoryConfig = categoryConfigs.find { c -> c.categoryKey == groupToCategoryMap[it]?.key }
                                     )
                                 }.toSet() - selectedDataSet
                                 vm.selectedDataSetFlow.value = newSelectedIds
@@ -274,14 +267,7 @@ fun SubsAppGroupListPage(
                     it.categoryKey == category?.key
                 }
                 RuleGroupCard(
-                    modifier = Modifier.animateItem(
-                        fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                        placementSpec = spring(
-                            stiffness = Spring.StiffnessMediumLow,
-                            visibilityThreshold = IntOffset.VisibilityThreshold
-                        ),
-                        fadeOutSpec = spring(stiffness = Spring.StiffnessMediumLow)
-                    ),
+                    modifier = Modifier.animateListItem(this),
                     subs = subs!!,
                     appId = appId,
                     group = group,
@@ -296,7 +282,7 @@ fun SubsAppGroupListPage(
                         if (app.groups.size > 1) {
                             vm.isSelectedModeFlow.value = true
                             vm.selectedDataSetFlow.value = setOf(
-                                group.toGroupState(subsItemId, appId, subsConfig, categoryConfig)
+                                group.toGroupState(subsItemId, appId)
                             )
                         }
                     },
@@ -305,8 +291,6 @@ fun SubsAppGroupListPage(
                             group.toGroupState(
                                 subsItemId,
                                 appId,
-                                subsConfig,
-                                categoryConfig
                             )
                         )
                     }

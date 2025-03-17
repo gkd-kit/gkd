@@ -57,6 +57,7 @@ import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.service.switchA11yService
+import li.songe.gkd.ui.component.GroupNameText
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
@@ -79,7 +80,8 @@ fun useControlPage(): ScaffoldExt {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val scrollState = rememberScrollState()
     val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
-    return ScaffoldExt(navItem = controlNav,
+    return ScaffoldExt(
+        navItem = controlNav,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(scrollBehavior = scrollBehavior, title = {
@@ -319,8 +321,11 @@ private fun ServerStatusCard(vm: HomeVm) {
                 )
             }
             AnimatedVisibility(latestRecordDesc != null) {
-                Text(
-                    text = "最近触发: $latestRecordDesc",
+                val isGlobal by vm.latestRecordIsGlobalFlow.collectAsState()
+                GroupNameText(
+                    preText = "最近触发: ",
+                    isGlobal = isGlobal,
+                    text = latestRecordDesc!!,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

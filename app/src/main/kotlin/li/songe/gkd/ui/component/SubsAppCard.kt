@@ -16,9 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import li.songe.gkd.data.AppConfig
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.ui.style.appItemPadding
 
 
@@ -26,7 +26,7 @@ import li.songe.gkd.ui.style.appItemPadding
 fun SubsAppCard(
     rawApp: RawSubscription.RawApp,
     appInfo: AppInfo? = null,
-    subsConfig: SubsConfig? = null,
+    appConfig: AppConfig? = null,
     enableSize: Int = rawApp.groups.count { g -> g.enable ?: true },
     onClick: (() -> Unit)? = null,
     onValueChange: ((Boolean) -> Unit)? = null,
@@ -72,7 +72,7 @@ fun SubsAppCard(
         Spacer(modifier = Modifier.width(8.dp))
         key(rawApp.id) {
             Switch(
-                checked = subsConfig?.enable ?: (appInfo != null),
+                checked = appConfig?.enable ?: (appInfo != null),
                 onCheckedChange = onValueChange,
             )
         }

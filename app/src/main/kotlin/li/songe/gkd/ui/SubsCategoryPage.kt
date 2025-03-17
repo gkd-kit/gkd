@@ -240,7 +240,7 @@ private fun CategoryItemCard(
                     DbSet.categoryConfigDao.insert(
                         (categoryConfig ?: CategoryConfig(
                             enable = option.value,
-                            subsItemId = subs.id,
+                            subsId = subs.id,
                             categoryKey = category.key
                         )).copy(enable = option.value)
                     )

@@ -39,7 +39,7 @@ data class SubsConfig(
     @PrimaryKey @ColumnInfo(name = "id") val id: Long = buildUniqueTimeMillisId(),
     @ColumnInfo(name = "type") val type: Int,
     @ColumnInfo(name = "enable") val enable: Boolean? = null,
-    @ColumnInfo(name = "subs_item_id") val subsItemId: Long,
+    @ColumnInfo(name = "subs_id") val subsId: Long,
     @ColumnInfo(name = "app_id") val appId: String = "",
     @ColumnInfo(name = "group_key") val groupKey: Int = -1,
     @ColumnInfo(name = "exclude", defaultValue = "") val exclude: String = "",
@@ -47,7 +47,6 @@ data class SubsConfig(
 
     @Suppress("ConstPropertyName")
     companion object {
-        const val AppType = 1
         const val AppGroupType = 2
         const val GlobalGroupType = 3
     }
@@ -68,70 +67,70 @@ data class SubsConfig(
         suspend fun delete(vararg users: SubsConfig): Int
 
         @Transaction
-        suspend fun insertAndDelete(newList: List<SubsConfig>, deleteList: List<SubsConfig>){
+        suspend fun insertAndDelete(newList: List<SubsConfig>, deleteList: List<SubsConfig>) {
             insert(*newList.toTypedArray())
             delete(*deleteList.toTypedArray())
         }
 
-        @Query("DELETE FROM subs_config WHERE subs_item_id=:subsItemId")
+        @Query("DELETE FROM subs_config WHERE subs_id=:subsItemId")
         suspend fun delete(subsItemId: Long): Int
 
-        @Query("DELETE FROM subs_config WHERE subs_item_id IN (:subsIds)")
+        @Query("DELETE FROM subs_config WHERE subs_id IN (:subsIds)")
         suspend fun deleteBySubsId(vararg subsIds: Long): Int
 
-        @Query("DELETE FROM subs_config WHERE subs_item_id=:subsItemId AND app_id=:appId")
+        @Query("DELETE FROM subs_config WHERE subs_id=:subsItemId AND app_id=:appId")
         suspend fun deleteAppConfig(subsItemId: Long, appId: String): Int
 
-        @Query("DELETE FROM subs_config WHERE type=${AppGroupType} AND subs_item_id=:subsItemId AND app_id=:appId AND group_key=:groupKey")
+        @Query("DELETE FROM subs_config WHERE type=${AppGroupType} AND subs_id=:subsItemId AND app_id=:appId AND group_key=:groupKey")
         suspend fun deleteAppGroupConfig(subsItemId: Long, appId: String, groupKey: Int): Int
 
 
-        @Query("DELETE FROM subs_config WHERE type=${AppGroupType} AND subs_item_id=:subsItemId AND app_id=:appId AND group_key IN (:keyList)")
+        @Query("DELETE FROM subs_config WHERE type=${AppGroupType} AND subs_id=:subsItemId AND app_id=:appId AND group_key IN (:keyList)")
         suspend fun batchDeleteAppGroupConfig(
             subsItemId: Long,
             appId: String,
             keyList: List<Int>
         ): Int
 
-        @Query("DELETE FROM subs_config WHERE type=${GlobalGroupType} AND subs_item_id=:subsItemId AND group_key=:groupKey")
+        @Query("DELETE FROM subs_config WHERE type=${GlobalGroupType} AND subs_id=:subsItemId AND group_key=:groupKey")
         suspend fun deleteGlobalGroupConfig(subsItemId: Long, groupKey: Int): Int
 
-        @Query("DELETE FROM subs_config WHERE type=${GlobalGroupType} AND subs_item_id=:subsItemId AND group_key IN (:keyList)")
+        @Query("DELETE FROM subs_config WHERE type=${GlobalGroupType} AND subs_id=:subsItemId AND group_key IN (:keyList)")
         suspend fun batchDeleteGlobalGroupConfig(subsItemId: Long, keyList: List<Int>): Int
 
-        @Query("SELECT * FROM subs_config WHERE subs_item_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)")
+        @Query("SELECT * FROM subs_config WHERE subs_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)")
         fun queryUsedList(): Flow<List<SubsConfig>>
 
-        @Query("SELECT * FROM subs_config WHERE type=${AppType} AND subs_item_id=:subsItemId")
-        fun queryAppTypeConfig(subsItemId: Long): Flow<List<SubsConfig>>
-
-        @Query("SELECT * FROM subs_config WHERE type=${AppGroupType} AND subs_item_id=:subsItemId")
+        @Query("SELECT * FROM subs_config WHERE type=${AppGroupType} AND subs_id=:subsItemId")
         fun querySubsGroupTypeConfig(subsItemId: Long): Flow<List<SubsConfig>>
 
-        @Query("SELECT * FROM subs_config WHERE type=${AppGroupType} AND subs_item_id=:subsItemId AND app_id=:appId")
+        @Query("SELECT * FROM subs_config WHERE type=${AppGroupType} AND subs_id=:subsItemId AND app_id=:appId")
         fun queryAppGroupTypeConfig(subsItemId: Long, appId: String): Flow<List<SubsConfig>>
 
-        @Query("SELECT * FROM subs_config WHERE type=${AppGroupType} AND subs_item_id=:subsItemId AND app_id=:appId AND group_key=:groupKey")
+        @Query("SELECT * FROM subs_config WHERE type=${AppGroupType} AND subs_id=:subsItemId AND app_id=:appId AND group_key=:groupKey")
         fun queryAppGroupTypeConfig(
             subsItemId: Long, appId: String, groupKey: Int
         ): Flow<SubsConfig?>
 
-        @Query("SELECT * FROM subs_config WHERE type=${GlobalGroupType} AND subs_item_id=:subsItemId")
+        @Query("SELECT * FROM subs_config WHERE type=${GlobalGroupType} AND subs_id=:subsItemId")
         fun queryGlobalGroupTypeConfig(subsItemId: Long): Flow<List<SubsConfig>>
 
-        @Query("SELECT * FROM subs_config WHERE type=${GlobalGroupType} AND subs_item_id=:subsItemId AND group_key=:groupKey")
+        @Query("SELECT * FROM subs_config WHERE type=${GlobalGroupType} AND subs_id=:subsItemId AND group_key=:groupKey")
         fun queryGlobalGroupTypeConfig(subsItemId: Long, groupKey: Int): Flow<SubsConfig?>
 
-        @Query("SELECT * FROM subs_config WHERE type=${AppGroupType} AND app_id=:appId AND subs_item_id IN (:subsItemIds)")
+        @Query("SELECT * FROM subs_config WHERE type=${AppGroupType} AND app_id=:appId AND subs_id IN (:subsItemIds)")
         fun queryAppConfig(subsItemIds: List<Long>, appId: String): Flow<List<SubsConfig>>
 
-        @Query("SELECT * FROM subs_config WHERE type=${GlobalGroupType} AND subs_item_id IN (:subsItemIds)")
+        @Query("SELECT * FROM subs_config WHERE type=${GlobalGroupType} AND subs_id IN (:subsItemIds)")
         fun queryGlobalConfig(subsItemIds: List<Long>): Flow<List<SubsConfig>>
 
-        @Query("SELECT * FROM subs_config WHERE subs_item_id IN (:subsItemIds) ")
+        @Query("SELECT * FROM subs_config WHERE type=${GlobalGroupType} AND subs_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)")
+        fun queryUsedGlobalConfig(): Flow<List<SubsConfig>>
+
+        @Query("SELECT * FROM subs_config WHERE subs_id IN (:subsItemIds) ")
         suspend fun querySubsItemConfig(subsItemIds: List<Long>): List<SubsConfig>
 
-        @Query("UPDATE subs_config SET enable = null WHERE type=${AppGroupType} AND subs_item_id=:subsItemId AND app_id=:appId AND group_key=:groupKey AND enable IS NOT NULL")
+        @Query("UPDATE subs_config SET enable = null WHERE type=${AppGroupType} AND subs_id=:subsItemId AND app_id=:appId AND group_key=:groupKey AND enable IS NOT NULL")
         suspend fun resetAppGroupTypeEnable(subsItemId: Long, appId: String, groupKey: Int): Int
 
         @Transaction
@@ -143,7 +142,6 @@ data class SubsConfig(
                 resetAppGroupTypeEnable(subsItemId, a.id, g.key) > 0
             }
         }
-
     }
 
 }

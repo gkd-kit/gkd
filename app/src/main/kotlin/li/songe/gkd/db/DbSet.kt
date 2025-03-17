@@ -25,4 +25,6 @@ object DbSet {
         get() = db.categoryConfigDao()
     val activityLogDao
         get() = db.activityLogDao()
+    val appConfigDao
+        get() = db.appConfigDao()
 }

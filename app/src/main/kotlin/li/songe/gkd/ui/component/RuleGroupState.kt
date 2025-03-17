@@ -8,6 +8,7 @@ import com.ramcosta.composedestinations.generated.destinations.GlobalGroupExclud
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -16,8 +17,6 @@ import li.songe.gkd.MainViewModel
 import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.ResolvedAppGroup
-import li.songe.gkd.data.ResolvedGroup
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.getGlobalGroupChecked
@@ -36,50 +35,52 @@ data class ShowGroupState(
     val pageAppId: String? = null,
     val addAppRule: Boolean = false,
 ) {
-    // 违反 immutable 原则, 需要优化
-    var subsConfig: SubsConfig? = null
-    var categoryConfig: CategoryConfig? = null
+    val groupType: Int
+        get() = if (appId != null) {
+            SubsConfig.AppGroupType
+        } else {
+            SubsConfig.GlobalGroupType
+        }
 
-    fun equalResolvedGroup(group: ResolvedGroup): Boolean {
-        return group.subscription.id == subsId && group.group.key == groupKey && group.appId == appId
+    suspend fun querySubsConfig(): SubsConfig? {
+        groupKey ?: error("require groupKey")
+        return if (groupType == SubsConfig.AppGroupType) {
+            appId ?: error("require appId")
+            DbSet.subsConfigDao.queryAppGroupTypeConfig(subsId, appId, groupKey).first()
+        } else {
+            DbSet.subsConfigDao.queryGlobalGroupTypeConfig(subsId, groupKey).first()
+        }
+    }
+
+    suspend fun queryCategoryConfig(): CategoryConfig? {
+        groupKey ?: error("require groupKey")
+        val subs = subsIdToRawFlow.value[subsId] ?: error("require subs")
+        val group = if (groupType == SubsConfig.AppGroupType) {
+            subs.apps.find { it.id == appId }?.groups
+        } else {
+            subs.globalGroups
+        }?.find { it.key == groupKey } ?: error("require group")
+        val category = subs.groupToCategoryMap[group] ?: return null
+        return DbSet.categoryConfigDao.queryCategoryConfig(subsId, category.key)
     }
 }
 
-fun ResolvedGroup.toGroupState(
-    pageAppId: String?,
-) = ShowGroupState(
-    subsId = subscription.id,
-    appId = (this as? ResolvedAppGroup)?.app?.id,
-    groupKey = group.key,
-    pageAppId = pageAppId,
-).apply {
-    subsConfig = config
-    categoryConfig = (this@toGroupState as? ResolvedAppGroup)?.categoryConfig
-}
-
-fun RawSubscription.RawAppGroup.toGroupState(
+fun RawSubscription.RawGroupProps.toGroupState(
     subsId: Long,
-    appId: String,
-    subsConfig: SubsConfig?,
-    categoryConfig: CategoryConfig?,
-) = ShowGroupState(
-    subsId = subsId,
-    appId = appId,
-    groupKey = key,
-    pageAppId = appId,
-).apply {
-    this.subsConfig = subsConfig
-    this.categoryConfig = categoryConfig
-}
+    appId: String? = null,
+) = when (this) {
+    is RawSubscription.RawAppGroup -> ShowGroupState(
+        subsId = subsId,
+        appId = appId ?: error("require appId"),
+        groupKey = key,
+        pageAppId = appId,
+    )
 
-fun RawSubscription.RawGlobalGroup.toGroupState(
-    subsId: Long,
-    subsConfig: SubsConfig?,
-) = ShowGroupState(
-    subsId = subsId,
-    groupKey = key,
-).apply {
-    this.subsConfig = subsConfig
+    is RawSubscription.RawGlobalGroup -> ShowGroupState(
+        subsId = subsId,
+        groupKey = key,
+        pageAppId = appId,
+    )
 }
 
 suspend fun batchUpdateGroupEnable(
@@ -99,21 +100,23 @@ suspend fun batchUpdateGroupEnable(
         if (targetGroup?.valid != true) {
             return@map null
         }
-        if (enable == null && g.subsConfig?.enable == null && g.subsConfig?.exclude.isNullOrEmpty()) {
+        val subsConfig = g.querySubsConfig()
+        val categoryConfig = g.queryCategoryConfig()
+        if (enable == null && subsConfig?.enable == null && subsConfig?.exclude.isNullOrEmpty()) {
             return@map null
         }
-        g to if (g.appId != null) {
+        val newSubsConfig = if (g.appId != null) {
             targetGroup as RawSubscription.RawAppGroup
             val oldEnable = getGroupEnable(
                 targetGroup,
-                g.subsConfig,
+                subsConfig,
                 subscription.groupToCategoryMap[targetGroup],
-                g.categoryConfig
+                categoryConfig
             )
             // app rule
-            val newSubsConfig = (g.subsConfig?.copy(enable = enable) ?: SubsConfig(
+            val newSubsConfig = (subsConfig?.copy(enable = enable) ?: SubsConfig(
                 type = SubsConfig.AppGroupType,
-                subsItemId = g.subsId,
+                subsId = g.subsId,
                 appId = g.appId,
                 groupKey = g.groupKey,
                 enable = enable
@@ -122,7 +125,7 @@ suspend fun batchUpdateGroupEnable(
                 targetGroup,
                 newSubsConfig,
                 subscription.groupToCategoryMap[targetGroup],
-                g.categoryConfig
+                categoryConfig
             )
             if (enable == newEnable && oldEnable == newEnable) {
                 return@map null
@@ -133,13 +136,13 @@ suspend fun batchUpdateGroupEnable(
             if (g.pageAppId != null) {
                 // global rule for some app
                 targetGroup as RawSubscription.RawGlobalGroup
-                val excludeData = ExcludeData.parse(g.subsConfig?.exclude)
+                val excludeData = ExcludeData.parse(subsConfig?.exclude)
                 getGlobalGroupChecked(excludeData, targetGroup, g.pageAppId).let {
                     if (it == null) return@map null
                 }
-                (g.subsConfig ?: SubsConfig(
+                (subsConfig ?: SubsConfig(
                     type = SubsConfig.GlobalGroupType,
-                    subsItemId = g.subsId,
+                    subsId = g.subsId,
                     groupKey = g.groupKey,
                 )).copy(
                     exclude = excludeData.copy(
@@ -160,15 +163,15 @@ suspend fun batchUpdateGroupEnable(
                 )
             } else {
                 // full global rule
-                val newSubsConfig = (g.subsConfig?.copy(enable = enable) ?: SubsConfig(
+                val newSubsConfig = (subsConfig?.copy(enable = enable) ?: SubsConfig(
                     type = SubsConfig.GlobalGroupType,
-                    subsItemId = g.subsId,
+                    subsId = g.subsId,
                     groupKey = g.groupKey,
                     enable = enable
                 ))
                 val oldEnable = getGroupEnable(
                     targetGroup,
-                    g.subsConfig,
+                    subsConfig,
                 )
                 val newEnable = getGroupEnable(targetGroup, newSubsConfig)
                 if (enable == newEnable && oldEnable == newEnable) {
@@ -177,7 +180,13 @@ suspend fun batchUpdateGroupEnable(
                 newSubsConfig
             }
         }
-    }.filterNotNull().filter { it.first.subsConfig != it.second }
+
+        if (subsConfig != newSubsConfig) {
+            g to newSubsConfig
+        } else {
+            null
+        }
+    }.filterNotNull()
     val newSubsConfigs = diffDataList.map { it.second }
     val canDeleteList = newSubsConfigs.filter {
         it.type == SubsConfig.AppGroupType && it.enable == null && it.exclude.isEmpty()
@@ -186,13 +195,6 @@ suspend fun batchUpdateGroupEnable(
         newSubsConfigs.filterNot { canDeleteList.contains(it) },
         canDeleteList
     )
-    diffDataList.forEach {
-        if (canDeleteList.contains(it.second)) {
-            it.first.subsConfig = null
-        } else {
-            it.first.subsConfig = it.second
-        }
-    }
     return diffDataList
 }
 
@@ -244,7 +246,7 @@ class RuleGroupState(
         val showSubs = useSubs(showGroupState?.subsId)
         val showGroup = useSubsGroup(showSubs, showGroupState?.groupKey, showGroupState?.appId)
         if (showGroupState?.groupKey != null && showSubs != null && showGroup != null) {
-            val subsConfig = showSubsConfigFlow.collectAsState().value ?: showGroupState.subsConfig
+            val subsConfig = showSubsConfigFlow.collectAsState().value
             val excludeData = remember(subsConfig?.exclude) {
                 ExcludeData.parse(subsConfig?.exclude)
             }

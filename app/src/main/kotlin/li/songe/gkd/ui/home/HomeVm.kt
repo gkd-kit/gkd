@@ -30,6 +30,8 @@ class HomeVm : ViewModel() {
 
     private val latestRecordFlow =
         DbSet.actionLogDao.queryLatest().stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    val latestRecordIsGlobalFlow = latestRecordFlow.map(viewModelScope) { it?.groupType == SubsConfig.GlobalGroupType }
     val latestRecordDescFlow = combine(
         latestRecordFlow, subsIdToRawFlow, appInfoCacheFlow
     ) { latestRecord, subsIdToRaw, appInfoCache ->

@@ -89,17 +89,16 @@ data class ActionLog(
             """
             SELECT cl.* FROM action_log AS cl
             INNER JOIN (
-                SELECT subs_id, group_key, MAX(ctime) AS max_id FROM action_log
-                WHERE app_id = :appId
-                  AND group_type = :groupType
-                  AND subs_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)
-                GROUP BY subs_id, group_key
-            ) AS latest_logs ON cl.subs_id = latest_logs.subs_id 
-            AND cl.group_key = latest_logs.group_key 
-            AND cl.id = latest_logs.max_id
+                SELECT subs_id, group_type, group_key, MAX(id) AS max_id FROM action_log
+                WHERE app_id = :appId AND subs_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)
+                GROUP BY subs_id, group_type, group_key
+            ) AS latest_log ON cl.subs_id = latest_log.subs_id 
+            AND cl.group_type = latest_log.group_type
+            AND cl.group_key = latest_log.group_key
+            AND cl.id = latest_log.max_id
         """
         )
-        fun queryAppLatest(appId: String, groupType: Int): Flow<List<ActionLog>>
+        fun queryLatestByAppId(appId: String): Flow<List<ActionLog>>
 
 
         @Query(

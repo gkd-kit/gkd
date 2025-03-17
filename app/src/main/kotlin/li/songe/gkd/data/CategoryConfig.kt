@@ -19,7 +19,7 @@ import kotlinx.serialization.Serializable
 data class CategoryConfig(
     @PrimaryKey @ColumnInfo(name = "id") val id: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "enable") val enable: Boolean? = null,
-    @ColumnInfo(name = "subs_item_id") val subsItemId: Long,
+    @ColumnInfo(name = "subs_id") val subsId: Long,
     @ColumnInfo(name = "category_key") val categoryKey: Int,
 ) {
     @Dao
@@ -37,25 +37,28 @@ data class CategoryConfig(
         @Delete
         suspend fun delete(vararg objects: CategoryConfig): Int
 
-        @Query("DELETE FROM category_config WHERE subs_item_id=:subsItemId")
+        @Query("DELETE FROM category_config WHERE subs_id=:subsItemId")
         suspend fun deleteBySubsItemId(subsItemId: Long): Int
 
-        @Query("DELETE FROM category_config WHERE subs_item_id IN (:subsIds)")
+        @Query("DELETE FROM category_config WHERE subs_id IN (:subsIds)")
         suspend fun deleteBySubsId(vararg subsIds: Long): Int
 
-        @Query("DELETE FROM category_config WHERE subs_item_id=:subsItemId AND category_key=:categoryKey")
+        @Query("DELETE FROM category_config WHERE subs_id=:subsItemId AND category_key=:categoryKey")
         suspend fun deleteByCategoryKey(subsItemId: Long, categoryKey: Int): Int
 
-        @Query("SELECT * FROM category_config WHERE subs_item_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)")
+        @Query("SELECT * FROM category_config WHERE subs_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)")
         fun queryUsedList(): Flow<List<CategoryConfig>>
 
-        @Query("SELECT * FROM category_config WHERE subs_item_id=:subsItemId")
+        @Query("SELECT * FROM category_config WHERE subs_id=:subsItemId")
         fun queryConfig(subsItemId: Long): Flow<List<CategoryConfig>>
 
-        @Query("SELECT * FROM category_config WHERE subs_item_id IN (:subsItemIds)")
+        @Query("SELECT * FROM category_config WHERE subs_id=:subsId AND category_key=:categoryKey")
+        suspend fun queryCategoryConfig(subsId: Long, categoryKey: Int): CategoryConfig?
+
+        @Query("SELECT * FROM category_config WHERE subs_id IN (:subsItemIds)")
         suspend fun querySubsItemConfig(subsItemIds: List<Long>): List<CategoryConfig>
 
-        @Query("SELECT * FROM category_config WHERE subs_item_id IN (:subsItemIds)")
+        @Query("SELECT * FROM category_config WHERE subs_id IN (:subsItemIds)")
         fun queryBySubsIds(subsItemIds: List<Long>): Flow<List<CategoryConfig>>
 
     }

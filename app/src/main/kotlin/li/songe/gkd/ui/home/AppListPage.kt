@@ -30,9 +30,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -93,18 +93,7 @@ fun useAppListPage(): ScaffoldExt {
         null
     }
     val showSearchBar by vm.showSearchBarFlow.collectAsState()
-    val listState = rememberLazyListState()
-
-    var isFirstVisit by remember { mutableStateOf(true) }
-    LaunchedEffect(
-        key1 = orderedAppInfos.mapHashCode { it.id }
-    ) {
-        if (isFirstVisit) {
-            isFirstVisit = false
-        } else {
-            listState.scrollToItem(0)
-        }
-    }
+    val listState = key(orderedAppInfos.mapHashCode { it.id }) { rememberLazyListState() }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     return ScaffoldExt(
         navItem = appListNav,
