@@ -117,7 +117,7 @@ fun RuleGroupCard(
                 val excludeData = ExcludeData.parse(subsConfig?.exclude)
                 (subsConfig ?: SubsConfig(
                     type = SubsConfig.GlobalGroupType,
-                    subsItemId = subs.id,
+                    subsId = subs.id,
                     groupKey = group.key,
                 )).copy(
                     exclude = excludeData.copy(
@@ -130,7 +130,7 @@ fun RuleGroupCard(
                 // 订阅详情页面 - APP 规则
                 (subsConfig?.copy(enable = newChecked) ?: SubsConfig(
                     type = SubsConfig.AppGroupType,
-                    subsItemId = subs.id,
+                    subsId = subs.id,
                     appId = appId,
                     groupKey = group.key,
                     enable = newChecked
@@ -141,7 +141,7 @@ fun RuleGroupCard(
             group as RawSubscription.RawGlobalGroup
             (subsConfig?.copy(enable = newChecked) ?: SubsConfig(
                 type = SubsConfig.GlobalGroupType,
-                subsItemId = subs.id,
+                subsId = subs.id,
                 groupKey = group.key,
                 enable = newChecked
             ))
@@ -157,9 +157,7 @@ fun RuleGroupCard(
             appId = if (group is RawSubscription.RawAppGroup) appId else null,
             groupKey = group.key,
             pageAppId = appId,
-        ).apply {
-            this.subsConfig = subsConfig
-        }
+        )
     })
     val horizontal = 8.dp
     val vertical = 8.dp
@@ -197,13 +195,14 @@ fun RuleGroupCard(
                     .fillMaxHeight(),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
+                GroupNameText(
+                    modifier = Modifier.fillMaxWidth(),
                     text = group.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    isGlobal = group is RawSubscription.RawGlobalGroup,
                     maxLines = 1,
                     softWrap = false,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.bodyLarge,
                 )
                 if (group.valid) {
                     if (!group.desc.isNullOrBlank()) {

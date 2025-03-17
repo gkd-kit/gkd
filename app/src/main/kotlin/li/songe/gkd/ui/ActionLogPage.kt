@@ -10,13 +10,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.SportsBasketball
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
@@ -61,6 +59,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.FixedTimeText
+import li.songe.gkd.ui.component.GroupNameText
 import li.songe.gkd.ui.component.LocalNumberCharWidth
 import li.songe.gkd.ui.component.StartEllipsisText
 import li.songe.gkd.ui.component.TowLineText
@@ -283,25 +282,14 @@ private fun ActionLogCard(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         val groupDesc = group?.name.toString()
-                        if (actionLog.groupType == SubsConfig.GlobalGroupType) {
-                            Icon(
-                                imageVector = Icons.Default.SportsBasketball,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .clickable(onClick = throttle {
-                                        toast("${group?.name ?: "当前规则组"} 是全局规则组")
-                                    })
-                                    .size(LocalTextStyle.current.lineHeight.value.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
+                        val textColor = LocalContentColor.current.let {
+                            if (group?.name == null) it.copy(alpha = 0.5f) else it
                         }
-                        Text(
+                        GroupNameText(
+                            isGlobal = actionLog.groupType == SubsConfig.GlobalGroupType,
                             text = groupDesc,
-                            color = LocalContentColor.current.let {
-                                if (group?.name == null) it.copy(alpha = 0.5f) else it
-                            },
+                            color = textColor,
                         )
-
                         val ruleDesc = rule?.name ?: (if ((group?.rules?.size ?: 0) > 1) {
                             val keyDesc = actionLog.ruleKey?.let { "key=$it, " } ?: ""
                             "${keyDesc}index=${actionLog.ruleIndex}"
@@ -396,7 +384,7 @@ private fun ActionLogDialog(
                         onClick = vm.viewModelScope.launchAsFn {
                             val subsConfig = subsConfig ?: SubsConfig(
                                 type = SubsConfig.GlobalGroupType,
-                                subsItemId = actionLog.subsId,
+                                subsId = actionLog.subsId,
                                 groupKey = actionLog.groupKey,
                             )
                             val newSubsConfig = subsConfig.copy(
@@ -426,14 +414,14 @@ private fun ActionLogDialog(
                         val subsConfig = if (actionLog.groupType == SubsConfig.AppGroupType) {
                             subsConfig ?: SubsConfig(
                                 type = SubsConfig.AppGroupType,
-                                subsItemId = actionLog.subsId,
+                                subsId = actionLog.subsId,
                                 appId = actionLog.appId,
                                 groupKey = actionLog.groupKey,
                             )
                         } else {
                             subsConfig ?: SubsConfig(
                                 type = SubsConfig.GlobalGroupType,
-                                subsItemId = actionLog.subsId,
+                                subsId = actionLog.subsId,
                                 groupKey = actionLog.groupKey,
                             )
                         }

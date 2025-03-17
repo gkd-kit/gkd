@@ -71,7 +71,7 @@ fun EditGroupExcludeDialog(
                     onDismissRequest()
                     val newSubsConfig = (subsConfig ?: SubsConfig(
                         type = SubsConfig.AppGroupType,
-                        subsItemId = subs.id,
+                        subsId = subs.id,
                         appId = appId!!,
                         groupKey = groupKey,
                     )).copy(exclude = ExcludeData.parse(appId!!, value).stringify())

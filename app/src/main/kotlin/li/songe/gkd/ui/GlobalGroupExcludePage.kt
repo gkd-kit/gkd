@@ -318,7 +318,7 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                                     onCheckedChange = throttle(vm.viewModelScope.launchAsFn<Boolean> { newChecked ->
                                         val subsConfig = (vm.subsConfigFlow.value ?: SubsConfig(
                                             type = SubsConfig.GlobalGroupType,
-                                            subsItemId = subsItemId,
+                                            subsId = subsItemId,
                                             groupKey = groupKey,
                                         )).copy(
                                             exclude = excludeData.copy(
@@ -393,7 +393,7 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                     showEditDlg = false
                     val subsConfig = (vm.subsConfigFlow.value ?: SubsConfig(
                         type = SubsConfig.GlobalGroupType,
-                        subsItemId = subsItemId,
+                        subsId = subsItemId,
                         groupKey = groupKey,
                     )).copy(
                         exclude = ExcludeData.parse(source).stringify()

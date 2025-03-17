@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import li.songe.gkd.data.AppConfig
 import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.LinkLoad
 import li.songe.gkd.util.SortTypeOption
@@ -28,7 +28,7 @@ class SubsAppListVm(stateHandle: SavedStateHandle) : ViewModel() {
     val linkLoad = LinkLoad(viewModelScope)
     val subsRawFlow = subsIdToRawFlow.map(viewModelScope) { s -> s[args.subsItemId] }
 
-    private val appSubsConfigsFlow = DbSet.subsConfigDao.queryAppTypeConfig(args.subsItemId)
+    private val appConfigsFlow = DbSet.appConfigDao.queryAppTypeConfig(args.subsItemId)
         .let(linkLoad::invoke)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
@@ -95,7 +95,7 @@ class SubsAppListVm(stateHandle: SavedStateHandle) : ViewModel() {
         subsRawFlow,
         sortAppsFlow,
         categoryConfigsFlow,
-        appSubsConfigsFlow,
+        appConfigsFlow,
         groupSubsConfigsFlow,
     ) { subsRaw, apps, categoryConfigs, appSubsConfigs, groupSubsConfigs ->
         val groupToCategoryMap = subsRaw?.groupToCategoryMap ?: emptyMap()
@@ -119,7 +119,7 @@ class SubsAppListVm(stateHandle: SavedStateHandle) : ViewModel() {
         if (searchStr.isBlank()) {
             appAndConfigs
         } else {
-            val results = mutableListOf<Triple<RawSubscription.RawApp, SubsConfig?, Int>>()
+            val results = mutableListOf<Triple<RawSubscription.RawApp, AppConfig?, Int>>()
             val remnantList = appAndConfigs.toMutableList()
             //1. 搜索已安装应用名称
             remnantList.toList().apply { remnantList.clear() }.forEach { a ->

@@ -45,7 +45,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.data.SubsConfig
+import li.songe.gkd.data.AppConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AnimatedIcon
 import li.songe.gkd.ui.component.AppBarTextField
@@ -240,11 +240,11 @@ fun SubsAppListPage(
             state = listState
         ) {
             itemsIndexed(appAndConfigs, { i, a -> i.toString() + a.first.id }) { _, a ->
-                val (appRaw, subsConfig, enableSize) = a
+                val (appRaw, appConfig, enableSize) = a
                 SubsAppCard(
                     rawApp = appRaw,
                     appInfo = appInfoCache[appRaw.id],
-                    subsConfig = subsConfig,
+                    appConfig = appConfig,
                     enableSize = enableSize,
                     onClick = throttle {
                         if (KeyboardUtils.isSoftInputVisible(context)) {
@@ -254,15 +254,14 @@ fun SubsAppListPage(
                             .navigate(SubsAppGroupListPageDestination(subsItemId, appRaw.id))
                     },
                     onValueChange = throttle(fn = vm.viewModelScope.launchAsFn { enable ->
-                        val newItem = subsConfig?.copy(
+                        val newItem = appConfig?.copy(
                             enable = enable
-                        ) ?: SubsConfig(
+                        ) ?: AppConfig(
                             enable = enable,
-                            type = SubsConfig.AppType,
-                            subsItemId = subsItemId,
+                            subsId = subsItemId,
                             appId = appRaw.id,
                         )
-                        DbSet.subsConfigDao.insert(newItem)
+                        DbSet.appConfigDao.insert(newItem)
                     }),
                 )
             }

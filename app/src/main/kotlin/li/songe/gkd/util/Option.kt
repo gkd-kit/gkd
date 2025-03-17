@@ -80,7 +80,7 @@ fun Option<Boolean?>.toToggleableState() = when (value) {
 }
 
 sealed class RuleSortOption(override val value: Int, override val label: String) : Option<Int> {
-    data object Default : RuleSortOption(0, "按订阅顺序")
+    data object Default : RuleSortOption(0, "按默认顺序")
     data object ByTime : RuleSortOption(1, "按触发时间")
     data object ByName : RuleSortOption(2, "按名称")
 

@@ -2,9 +2,6 @@ package li.songe.gkd.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -35,7 +32,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
@@ -48,6 +44,7 @@ import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.RuleGroupCard
 import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.ui.component.TowLineText
+import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.toGroupState
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.icon.BackCloseIcon
@@ -128,26 +125,35 @@ fun GlobalGroupListPage(subsItemId: Long, @Suppress("unused") focusGroupKey: Int
                         Row {
                             BatchActionButtonGroup(vm, selectedDataSet)
                             if (editable) {
-                                IconButton(onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
-                                    subs
-                                    mainVm.dialogFlow.waitResult(
-                                        title = "删除规则组",
-                                        text = "删除当前所选规则组?",
-                                        error = true,
-                                    )
-                                    val keys = selectedDataSet.mapNotNull { it.groupKey }
-                                    vm.isSelectedModeFlow.value = false
-                                    updateSubscription(
-                                        subs.copy(
-                                            globalGroups = globalGroups.filterNot { keys.contains(it.key) }
-                                        )
-                                    )
-                                    DbSet.subsConfigDao.batchDeleteGlobalGroupConfig(
-                                        subsItemId,
-                                        keys
-                                    )
-                                    toast("删除成功")
-                                })) {
+                                IconButton(
+                                    onClick = throttle(
+                                        vm.viewModelScope.launchAsFn(
+                                            Dispatchers.Default
+                                        ) {
+                                            subs
+                                            mainVm.dialogFlow.waitResult(
+                                                title = "删除规则组",
+                                                text = "删除当前所选规则组?",
+                                                error = true,
+                                            )
+                                            val keys = selectedDataSet.mapNotNull { it.groupKey }
+                                            vm.isSelectedModeFlow.value = false
+                                            updateSubscription(
+                                                subs.copy(
+                                                    globalGroups = globalGroups.filterNot {
+                                                        keys.contains(
+                                                            it.key
+                                                        )
+                                                    }
+                                                )
+                                            )
+                                            DbSet.subsConfigDao.batchDeleteGlobalGroupConfig(
+                                                subsItemId,
+                                                keys
+                                            )
+                                            toast("删除成功")
+                                        })
+                                ) {
                                     Icon(
                                         imageVector = Icons.Outlined.Delete,
                                         contentDescription = null,
@@ -183,7 +189,6 @@ fun GlobalGroupListPage(subsItemId: Long, @Suppress("unused") focusGroupKey: Int
                                     vm.selectedDataSetFlow.value = globalGroups.map {
                                         it.toGroupState(
                                             subsId = subsItemId,
-                                            subsConfig = subsConfigs.find { s -> s.groupKey == it.key },
                                         )
                                     }.toSet()
                                 }
@@ -197,7 +202,6 @@ fun GlobalGroupListPage(subsItemId: Long, @Suppress("unused") focusGroupKey: Int
                                     val newSelectedIds = globalGroups.map {
                                         it.toGroupState(
                                             subsId = subsItemId,
-                                            subsConfig = subsConfigs.find { s -> s.groupKey == it.key },
                                         )
                                     }.toSet() - selectedDataSet
                                     vm.selectedDataSetFlow.value = newSelectedIds
@@ -240,14 +244,7 @@ fun GlobalGroupListPage(subsItemId: Long, @Suppress("unused") focusGroupKey: Int
             items(globalGroups, { g -> g.key }) { group ->
                 val subsConfig = subsConfigs.find { it.groupKey == group.key }
                 RuleGroupCard(
-                    modifier = Modifier.animateItem(
-                        fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                        placementSpec = spring(
-                            stiffness = Spring.StiffnessMediumLow,
-                            visibilityThreshold = IntOffset.VisibilityThreshold
-                        ),
-                        fadeOutSpec = spring(stiffness = Spring.StiffnessMediumLow)
-                    ),
+                    modifier = Modifier.animateListItem(this),
                     subs = subs!!,
                     appId = null,
                     group = group,
@@ -262,16 +259,13 @@ fun GlobalGroupListPage(subsItemId: Long, @Suppress("unused") focusGroupKey: Int
                         if (globalGroups.size > 1) {
                             vm.isSelectedModeFlow.value = true
                             vm.selectedDataSetFlow.value = setOf(
-                                group.toGroupState(subsItemId, subsConfig)
+                                group.toGroupState(subsId = subsItemId)
                             )
                         }
                     },
                     onSelectedChange = {
                         vm.selectedDataSetFlow.value = selectedDataSet.switchItem(
-                            group.toGroupState(
-                                subsItemId,
-                                subsConfig,
-                            )
+                            group.toGroupState(subsId = subsItemId)
                         )
                     }
                 )
