@@ -26,9 +26,7 @@ fun AppIcon(
     } else {
         null
     }
-    val iconModifier = Modifier
-        .size(32.dp)
-        .then(modifier)
+    val iconModifier = modifier.size(32.dp)
     if (icon != null) {
         Image(
             painter = rememberDrawablePainter(icon),
