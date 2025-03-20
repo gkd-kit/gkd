@@ -321,7 +321,7 @@ fun AppConfigPage(appId: String) {
                         it.subsId == subsId && it.groupType == group.groupType && it.groupKey == group.key
                     }
                     val onLongClick = {
-                        if (groups.size > 1 && !isSelectedMode) {
+                        if (groupSize > 1 && !isSelectedMode) {
                             vm.isSelectedModeFlow.value = true
                             vm.selectedDataSetFlow.value = setOf(
                                 group.toGroupState(
