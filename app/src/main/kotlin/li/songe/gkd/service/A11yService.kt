@@ -186,6 +186,7 @@ private fun A11yService.useMatchRule() {
         delayRule: ResolvedRule? = null,
     ): Job = scope.launchTry(A11yService.queryThread) launchQuery@{
         queryTaskJob = coroutineContext[Job]
+        if (!storeFlow.value.enableMatch) return@launchQuery
         fun checkFutureJob() {
             val t = System.currentTimeMillis()
             if (t - lastTriggerTime < 3000L || t - appChangeTime < 5000L) {
@@ -280,6 +281,8 @@ private fun A11yService.useMatchRule() {
             }
         }
         for (rule in activityRule.priorityRules) { // 规则数量有可能过多导致耗时过长
+            // https://github.com/gkd-kit/gkd/issues/915
+            if (activityRule !== getAndUpdateCurrentRules()) break
             if (delayRule != null && delayRule !== rule) continue
             val statusCode = rule.status
             if (statusCode == RuleStatus.Status3 && rule.matchDelayJob == null) {
