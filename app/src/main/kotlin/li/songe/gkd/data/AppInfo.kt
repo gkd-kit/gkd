@@ -59,7 +59,14 @@ fun PackageInfo.toAppInfo(
         mtime = lastUpdateTime,
         isSystem = applicationInfo?.let { it.flags and ApplicationInfo.FLAG_SYSTEM != 0 } ?: false,
         name = applicationInfo?.run { loadLabel(app.packageManager).toString() } ?: packageName,
-        icon = applicationInfo?.loadIcon(app.packageManager),
+        icon = applicationInfo?.loadIcon(app.packageManager)?.run {
+            if (intrinsicHeight == 0 || intrinsicWidth == 0) {
+                // https://github.com/gkd-kit/gkd/issues/924
+                null
+            } else {
+                this
+            }
+        },
         userId = userId,
         hidden = hidden ?: (app.packageManager.getLaunchIntentForPackage(packageName) == null),
 //        activities = (activities ?: emptyArray()).map {
