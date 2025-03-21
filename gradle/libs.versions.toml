@@ -1,13 +1,13 @@
 [versions]
-kotlin = "2.1.10"
-ksp = "2.1.10-1.0.29"
+kotlin = "2.1.20"
+ksp = "2.1.20-1.0.31"
 android = "8.9.0"
 compose = "1.7.8"
 rikka = "4.4.0"
 room = "2.6.1"
 paging = "3.3.6"
 ktor = "3.1.1"
-destinations = "2.1.0-beta16"
+destinations = "2.1.0"
 coil = "3.1.0"
 shizuku = "13.1.5"
 
@@ -32,7 +32,7 @@ compose_junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = 
 compose_icons = { module = "androidx.compose.material:material-icons-extended", version.ref = "compose" }
 compose_material3 = "androidx.compose.material3:material3:1.3.1"
 compose_activity = "androidx.activity:activity-compose:1.10.1"
-compose_navigation = "androidx.navigation:navigation-compose:2.8.8"
+compose_navigation = "androidx.navigation:navigation-compose:2.8.9"
 androidx_appcompat = "androidx.appcompat:appcompat:1.7.0"
 androidx_core_ktx = "androidx.core:core-ktx:1.15.0"
 androidx_lifecycle_runtime_ktx = "androidx.lifecycle:lifecycle-runtime-ktx:2.8.7"
