@@ -134,6 +134,7 @@ val canQueryPkgState by lazy {
 val canDrawOverlaysState by lazy {
     PermissionState(
         check = {
+            // 需要注意, 即使有悬浮权限, 在某些特殊的页面如 微信支付完毕 页面, 下面的方法会返回 false
             Settings.canDrawOverlays(app)
         },
         request = {
