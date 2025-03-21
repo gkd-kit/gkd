@@ -45,7 +45,7 @@ data class RawSubscription(
     }
 
     override fun hashCode(): Int {
-        return Objects.hash(super.hashCode(), id, name, version)
+        return Objects.hash(id, name, version)
     }
 
     val isLocal: Boolean
