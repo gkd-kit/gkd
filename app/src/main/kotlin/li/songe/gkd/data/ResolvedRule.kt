@@ -15,17 +15,18 @@ sealed class ResolvedRule(
     private val group = g.group
     val subsItem = g.subsItem
     val rawSubs = g.subscription
-    val config = g.config
     val key = rule.key
     val index = group.rules.indexOfFirst { r -> r === rule }
     val excludeData = g.excludeData
     private val preKeys = (rule.preKeys ?: emptyList()).toSet()
     val matches =
         (rule.matches ?: emptyList()).map { s -> group.cacheMap[s] ?: Selector.parse(s) }
-    val excludeMatches =
-        (rule.excludeMatches ?: emptyList()).map { s -> group.cacheMap[s] ?: Selector.parse(s) }
     val anyMatches =
         (rule.anyMatches ?: emptyList()).map { s -> group.cacheMap[s] ?: Selector.parse(s) }
+    val excludeMatches =
+        (rule.excludeMatches ?: emptyList()).map { s -> group.cacheMap[s] ?: Selector.parse(s) }
+    val excludeAllMatches =
+        (rule.excludeAllMatches ?: emptyList()).map { s -> group.cacheMap[s] ?: Selector.parse(s) }
 
     private val resetMatch = rule.resetMatch ?: group.resetMatch
     val matchDelay = rule.matchDelay ?: group.matchDelay ?: 0L
@@ -53,7 +54,7 @@ sealed class ResolvedRule(
     } ?: group.actionMaximum
 
     private val hasSlowSelector by lazy {
-        (matches + excludeMatches + anyMatches).any { s -> s.isSlow(matchOption) }
+        (matches + excludeMatches + anyMatches + excludeAllMatches).any { s -> s.isSlow(matchOption) }
     }
     val priorityTime = rule.priorityTime ?: group.priorityTime ?: 0
     val priorityActionMaximum = rule.priorityActionMaximum ?: group.priorityActionMaximum ?: 1

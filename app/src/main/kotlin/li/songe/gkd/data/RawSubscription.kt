@@ -220,8 +220,13 @@ data class RawSubscription(
         val action: String?
         val position: Position?
         val matches: List<String>?
-        val excludeMatches: List<String>?
         val anyMatches: List<String>?
+        val excludeMatches: List<String>?
+        val excludeAllMatches: List<String>?
+
+        fun getAllSelectorStrings(): List<String> {
+            return listOfNotNull(matches, excludeMatches, anyMatches, excludeAllMatches).flatten()
+        }
     }
 
     sealed interface RawGroupProps : RawCommonProps {
@@ -376,6 +381,7 @@ data class RawSubscription(
         override val position: Position?,
         override val matches: List<String>?,
         override val excludeMatches: List<String>?,
+        override val excludeAllMatches: List<String>?,
         override val anyMatches: List<String>?,
         override val matchAnyApp: Boolean?,
         override val matchSystemApp: Boolean?,
@@ -435,6 +441,7 @@ data class RawSubscription(
         override val position: Position?,
         override val matches: List<String>?,
         override val excludeMatches: List<String>?,
+        override val excludeAllMatches: List<String>?,
         override val anyMatches: List<String>?,
 
         override val actionCdKey: Int?,
@@ -468,7 +475,7 @@ data class RawSubscription(
 
         private fun RawGroupProps.getErrorDesc(): String? {
             val allSelectorStrings = rules.map { r ->
-                listOfNotNull(r.matches, r.excludeMatches, r.anyMatches).flatten()
+                r.getAllSelectorStrings()
             }.flatten()
             allSelectorStrings.forEach { source ->
                 try {
@@ -650,6 +657,7 @@ data class RawSubscription(
                 excludeActivityIds = getStringIArray(jsonObject, "excludeActivityIds"),
                 matches = getStringIArray(jsonObject, "matches"),
                 excludeMatches = getStringIArray(jsonObject, "excludeMatches"),
+                excludeAllMatches = getStringIArray(jsonObject, "excludeAllMatches"),
                 anyMatches = getStringIArray(jsonObject, "anyMatches"),
                 key = getInt(jsonObject, "key"),
                 name = getString(jsonObject, "name"),
@@ -788,6 +796,7 @@ data class RawSubscription(
                 action = getString(jsonObject, "action"),
                 preKeys = getIntIArray(jsonObject, "preKeys"),
                 excludeMatches = getStringIArray(jsonObject, "excludeMatches"),
+                excludeAllMatches = getStringIArray(jsonObject, "excludeAllMatches"),
                 matches = getStringIArray(jsonObject, "matches"),
                 anyMatches = getStringIArray(jsonObject, "anyMatches"),
                 order = getInt(jsonObject, "order"),
