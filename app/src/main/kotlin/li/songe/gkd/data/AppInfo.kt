@@ -60,7 +60,7 @@ fun PackageInfo.toAppInfo(
         isSystem = applicationInfo?.let { it.flags and ApplicationInfo.FLAG_SYSTEM != 0 } ?: false,
         name = applicationInfo?.run { loadLabel(app.packageManager).toString() } ?: packageName,
         icon = applicationInfo?.loadIcon(app.packageManager)?.run {
-            if (intrinsicHeight == 0 || intrinsicWidth == 0) {
+            if (intrinsicHeight <= 0 || intrinsicWidth <= 0) {
                 // https://github.com/gkd-kit/gkd/issues/924
                 null
             } else {
