@@ -14,30 +14,10 @@ sealed class PrimitiveType(val key: String) {
 data class MethodInfo(
     val name: String,
     val returnType: TypeInfo,
-    val params: Array<TypeInfo> = emptyArray(),
+    val params: List<TypeInfo> = emptyList(),
 ) : Stringify {
     override fun stringify(): String {
         return "$name(${params.joinToString(", ") { it.stringify() }}): ${returnType.stringify()}"
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as MethodInfo
-
-        if (name != other.name) return false
-        if (returnType != other.returnType) return false
-        if (!params.contentEquals(other.params)) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = name.hashCode()
-        result = 31 * result + returnType.hashCode()
-        result = 31 * result + params.contentHashCode()
-        return result
     }
 }
 
@@ -50,8 +30,8 @@ data class PropInfo(
 @JsExport
 data class TypeInfo(
     val type: PrimitiveType,
-    var props: Array<PropInfo> = arrayOf(),
-    var methods: Array<MethodInfo> = arrayOf(),
+    var props: List<PropInfo> = emptyList(),
+    var methods: List<MethodInfo> = emptyList(),
 ) : Stringify {
     override fun stringify(): String {
         return if (type is PrimitiveType.ObjectType) {
@@ -59,25 +39,5 @@ data class TypeInfo(
         } else {
             type.key
         }
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as TypeInfo
-
-        if (type != other.type) return false
-        if (!props.contentEquals(other.props)) return false
-        if (!methods.contentEquals(other.methods)) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = type.hashCode()
-        result = 31 * result + props.contentHashCode()
-        result = 31 * result + methods.contentHashCode()
-        return result
     }
 }

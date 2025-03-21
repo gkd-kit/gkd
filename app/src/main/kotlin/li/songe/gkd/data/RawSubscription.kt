@@ -23,6 +23,7 @@ import li.songe.json5.encodeToJson5String
 import li.songe.selector.Selector
 import net.objecthunter.exp4j.Expression
 import net.objecthunter.exp4j.ExpressionBuilder
+import java.util.Objects
 
 
 @Serializable
@@ -44,11 +45,7 @@ data class RawSubscription(
     }
 
     override fun hashCode(): Int {
-        var result = super.hashCode()
-        result = 31 * result + id.hashCode()
-        result = 31 * result + name.hashCode()
-        result = 31 * result + version
-        return result
+        return Objects.hash(super.hashCode(), id, name, version)
     }
 
     val isLocal: Boolean

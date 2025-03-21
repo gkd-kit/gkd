@@ -7,6 +7,7 @@ import android.os.Build
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import li.songe.gkd.app
+import java.util.Objects
 
 @Serializable
 data class AppInfo(
@@ -29,10 +30,7 @@ data class AppInfo(
     }
 
     override fun hashCode(): Int {
-        var result = super.hashCode()
-        result = 31 * result + id.hashCode()
-        result = 31 * result + mtime.hashCode()
-        return result
+        return Objects.hash(super.hashCode(), id, mtime)
     }
 }
 
