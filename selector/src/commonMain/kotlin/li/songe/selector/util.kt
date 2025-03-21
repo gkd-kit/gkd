@@ -91,51 +91,50 @@ fun initDefaultTypeInfo(webField: Boolean = false): DefaultTypeInfo {
     val contextType = TypeInfo(PrimitiveType.ObjectType("context"))
     val globalType = TypeInfo(PrimitiveType.ObjectType("global"))
 
-    fun buildMethods(name: String, returnType: TypeInfo, paramsSize: Int): Array<MethodInfo> {
-        return arrayOf(
-            MethodInfo(name, returnType, Array(paramsSize) { booleanType }),
-            MethodInfo(name, returnType, Array(paramsSize) { intType }),
-            MethodInfo(name, returnType, Array(paramsSize) { stringType }),
-            MethodInfo(name, returnType, Array(paramsSize) { nodeType }),
-            MethodInfo(name, returnType, Array(paramsSize) { contextType }),
+    fun buildMethods(name: String, returnType: TypeInfo, paramsSize: Int): List<MethodInfo> {
+        return listOf(
+            MethodInfo(name, returnType, List(paramsSize) { booleanType }),
+            MethodInfo(name, returnType, List(paramsSize) { intType }),
+            MethodInfo(name, returnType, List(paramsSize) { stringType }),
+            MethodInfo(name, returnType, List(paramsSize) { nodeType }),
+            MethodInfo(name, returnType, List(paramsSize) { contextType }),
         )
     }
 
-    booleanType.methods = arrayOf(
+    booleanType.methods = listOf(
         MethodInfo("toInt", intType),
-        MethodInfo("or", booleanType, arrayOf(booleanType)),
-        MethodInfo("and", booleanType, arrayOf(booleanType)),
+        MethodInfo("or", booleanType, listOf(booleanType)),
+        MethodInfo("and", booleanType, listOf(booleanType)),
         MethodInfo("not", booleanType),
-        *buildMethods("ifElse", booleanType, 2),
-    )
+    ) + buildMethods("ifElse", booleanType, 2)
 
-    intType.methods = arrayOf(
+    intType.methods = listOf(
         MethodInfo("toString", stringType),
-        MethodInfo("toString", stringType, arrayOf(intType)),
-        MethodInfo("plus", intType, arrayOf(intType)),
-        MethodInfo("minus", intType, arrayOf(intType)),
-        MethodInfo("times", intType, arrayOf(intType)),
-        MethodInfo("div", intType, arrayOf(intType)),
-        MethodInfo("rem", intType, arrayOf(intType)),
-        MethodInfo("more", booleanType, arrayOf(intType)),
-        MethodInfo("moreEqual", booleanType, arrayOf(intType)),
-        MethodInfo("less", booleanType, arrayOf(intType)),
-        MethodInfo("lessEqual", booleanType, arrayOf(intType)),
+        MethodInfo("toString", stringType, listOf(intType)),
+        MethodInfo("plus", intType, listOf(intType)),
+        MethodInfo("minus", intType, listOf(intType)),
+        MethodInfo("times", intType, listOf(intType)),
+        MethodInfo("div", intType, listOf(intType)),
+        MethodInfo("rem", intType, listOf(intType)),
+        MethodInfo("more", booleanType, listOf(intType)),
+        MethodInfo("moreEqual", booleanType, listOf(intType)),
+        MethodInfo("less", booleanType, listOf(intType)),
+        MethodInfo("lessEqual", booleanType, listOf(intType)),
     )
-    stringType.props = arrayOf(
+    stringType.props = listOf(
         PropInfo("length", intType),
     )
-    stringType.methods = arrayOf(
-        MethodInfo("get", stringType, arrayOf(intType)),
-        MethodInfo("at", stringType, arrayOf(intType)),
-        MethodInfo("substring", stringType, arrayOf(intType)),
-        MethodInfo("substring", stringType, arrayOf(intType, intType)),
+    stringType.methods = listOf(
+        MethodInfo("get", stringType, listOf(intType)),
+        MethodInfo("at", stringType, listOf(intType)),
+        MethodInfo("substring", stringType, listOf(intType)),
+        MethodInfo("substring", stringType, listOf(intType, intType)),
         MethodInfo("toInt", intType),
-        MethodInfo("toInt", intType, arrayOf(intType)),
-        MethodInfo("indexOf", intType, arrayOf(stringType)),
-        MethodInfo("indexOf", intType, arrayOf(stringType, intType)),
+        MethodInfo("toInt", intType, listOf(intType)),
+        MethodInfo("indexOf", intType, listOf(stringType)),
+        MethodInfo("indexOf", intType, listOf(stringType, intType)),
     )
-    nodeType.props = arrayOf(
+    nodeType.props = listOf(
         * (if (webField) {
             arrayOf(
                 PropInfo("_id", intType),
@@ -172,24 +171,21 @@ fun initDefaultTypeInfo(webField: Boolean = false): DefaultTypeInfo {
 
         PropInfo("parent", nodeType),
     )
-    nodeType.methods = arrayOf(
-        MethodInfo("getChild", nodeType, arrayOf(intType)),
+    nodeType.methods = listOf(
+        MethodInfo("getChild", nodeType, listOf(intType)),
     )
-    contextType.methods = arrayOf(
-        *nodeType.methods,
-        MethodInfo("getPrev", contextType, arrayOf(intType))
+    contextType.methods = nodeType.methods + listOf(
+        MethodInfo("getPrev", contextType, listOf(intType))
     )
-    contextType.props = arrayOf(
-        *nodeType.props,
+    contextType.props = nodeType.props + listOf(
         PropInfo("prev", contextType),
         PropInfo("current", nodeType),
     )
-    globalType.methods = arrayOf(
-        *contextType.methods,
-        *buildMethods("equal", booleanType, 2),
-        *buildMethods("notEqual", booleanType, 2),
-    )
-    globalType.props = arrayOf(*contextType.props)
+    globalType.methods = contextType.methods +
+            buildMethods("equal", booleanType, 2) +
+            buildMethods("notEqual", booleanType, 2)
+
+    globalType.props = contextType.props.toList()
     return DefaultTypeInfo(
         booleanType = booleanType,
         intType = intType,
