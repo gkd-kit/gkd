@@ -26,11 +26,11 @@ data class AppInfo(
     // 重写 equals 和 hashCode 便于 compose 重组比较
     override fun equals(other: Any?): Boolean {
         if (other === this) return true
-        return (other is AppInfo && id == other.id && mtime == other.mtime)
+        return (other is AppInfo && id == other.id && mtime == other.mtime && userId == other.userId)
     }
 
     override fun hashCode(): Int {
-        return Objects.hash(super.hashCode(), id, mtime)
+        return Objects.hash(id, mtime)
     }
 }
 
