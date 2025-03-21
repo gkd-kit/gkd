@@ -72,16 +72,24 @@ class AppConfigVm(stateHandle: SavedStateHandle) : ViewModelExt() {
 
     private val temp1ListFlow = combine(
         usedSubsEntriesFlow,
-        appShowInnerDisableFlow
-    ) { list, show ->
+        appShowInnerDisableFlow,
+        globalSubsConfigsFlow,
+    ) { list, show, configs ->
         list.map { e ->
-            val globalGroups = e.subscription.globalGroups.let {
-                if (show) {
-                    it
-                } else {
-                    it.filter { g -> g.appIdEnable[args.appId] != false }
+            val globalGroups = e.subscription.globalGroups
+                .filter { g -> configs.find { it.subsId == e.subsItem.id && it.groupKey == g.key }?.enable != false }
+                .let {
+                    if (show) {
+                        it
+                    } else {
+                        it.filter { g ->
+                            !e.subscription.getGlobalGroupInnerDisabled(
+                                g,
+                                args.appId
+                            )
+                        }
+                    }
                 }
-            }
             val appGroups = e.subscription.getAppGroups(args.appId)
             e to (globalGroups + appGroups)
         }.filter { it.second.isNotEmpty() }
