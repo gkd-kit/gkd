@@ -124,12 +124,14 @@ sealed class ActionPerformer(val action: String) {
             val p = position?.calc(rect)
             val x = p?.first ?: ((rect.right + rect.left) / 2f)
             val y = p?.second ?: ((rect.bottom + rect.top) / 2f)
-            // 内部的 DEFAULT_LONG_PRESS_TIMEOUT 常量是 400
-            // 而 ViewConfiguration.getLongPressTimeout() 返回 300, 这将导致触发普通的 click 事件
+            // 500 https://cs.android.com/android/platform/superproject/+/android-8.1.0_r81:frameworks/base/core/java/android/view/ViewConfiguration.java;l=65
+            // 400 https://cs.android.com/android/platform/superproject/main/+/main:frameworks/base/core/java/android/view/ViewConfiguration.java;drc=8b948e548b782592ae280a3cd9a91798afe6df9d;l=82
+            // 某些系统的 ViewConfiguration.getLongPressTimeout() 返回 300 , 这将导致触发普通的 click 事件
+            val longClickDuration = 500L
             return ActionResult(
                 action = action,
                 result = if (0 <= x && 0 <= y && x <= ScreenUtils.getScreenWidth() && y <= ScreenUtils.getScreenHeight()) {
-                    val result = safeLongTap(x, y, 400)
+                    val result = safeLongTap(x, y, longClickDuration)
                     if (result != null) {
                         return ActionResult(action, result, true, position = x to y)
                     }
@@ -138,7 +140,7 @@ sealed class ActionPerformer(val action: String) {
                     path.moveTo(x, y)
                     gestureDescription.addStroke(
                         GestureDescription.StrokeDescription(
-                            path, 0, 400L
+                            path, 0, longClickDuration
                         )
                     )
                     // TODO 传入处理 callback
