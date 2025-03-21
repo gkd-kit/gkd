@@ -552,6 +552,18 @@ class A11yContext(
                     rule.matchOption,
                 )?.let { return null }
             }
+            if (rule.excludeAllMatches.isNotEmpty()) {
+                val allExclude = rule.excludeAllMatches.all {
+                    a11yContext.querySelfOrSelector(
+                        queryNode,
+                        it,
+                        rule.matchOption,
+                    ) == null
+                }
+                if (!allExclude) {
+                    return null
+                }
+            }
             return resultNode
         } finally {
             currentRule = null
