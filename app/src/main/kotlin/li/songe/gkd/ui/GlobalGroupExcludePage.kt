@@ -310,7 +310,12 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                     Spacer(modifier = Modifier.width(8.dp))
 
                     if (group != null) {
-                        val checked = getGlobalGroupChecked(excludeData, group, appInfo.id)
+                        val checked = getGlobalGroupChecked(
+                            rawSubs!!,
+                            excludeData,
+                            group,
+                            appInfo.id
+                        )
                         if (checked != null) {
                             key(appInfo.id) {
                                 Switch(
@@ -413,16 +418,16 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
 // true - 启用
 // false - 禁用
 fun getGlobalGroupChecked(
+    subscription: RawSubscription,
     excludeData: ExcludeData,
     group: RawSubscription.RawGlobalGroup,
     appId: String,
 ): Boolean? {
-    val enable = group.appIdEnable[appId]
-    if (enable == false) {
+    if (subscription.getGlobalGroupInnerDisabled(group, appId)) {
         return null
     }
     excludeData.appIds[appId]?.let { return !it }
-    if (enable == true) return true
+    if (group.appIdEnable[appId] == true) return true
     if (appId == launcherAppId) {
         return group.matchLauncher ?: false
     }

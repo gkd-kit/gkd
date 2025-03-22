@@ -31,6 +31,7 @@ fun GroupNameText(
     overflow: TextOverflow = TextOverflow.Clip,
     softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
+    clickDisabled: Boolean = false,
 ) {
     if (isGlobal) {
         val text = remember(preText, text) {
@@ -43,7 +44,7 @@ fun GroupNameText(
             }
         }
         val fontSize = style.fontSize
-        val inlineContent = remember(fontSize) {
+        val inlineContent = remember(fontSize, clickDisabled) {
             mapOf(
                 "icon" to InlineTextContent(
                     placeholder = Placeholder(
@@ -55,7 +56,9 @@ fun GroupNameText(
                     Icon(
                         imageVector = SportsBasketball,
                         modifier = Modifier
-                            .clickable(onClick = throttle { toast("当前是全局规则组") })
+                            .runIf(!clickDisabled) {
+                                clickable(onClick = throttle { toast("当前是全局规则组") })
+                            }
                             .fillMaxSize(),
                         contentDescription = null,
                     )

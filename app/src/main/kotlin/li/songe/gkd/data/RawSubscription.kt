@@ -99,6 +99,38 @@ data class RawSubscription(
         appGroups.size + globalGroups.size
     }
 
+    val globalGroupAppGroupNameDisableMap by lazy {
+        globalGroups.mapNotNull { g ->
+            val n = g.disableIfAppGroupMatch
+            if (n != null) {
+                val gName = if (n.isNotEmpty()) {
+                    n
+                } else {
+                    g.name
+                }
+                g.key to apps.filter { a ->
+                    a.groups.any { ag ->
+                        ag.ignoreGlobalGroupMatch != true && ag.name.startsWith(gName)
+                    }
+                }.map { it.id }.toHashSet()
+            } else {
+                null
+            }
+        }.toMap()
+    }
+
+    fun getGlobalGroupInnerDisabled(globalGroup: RawGlobalGroup, appId: String): Boolean {
+        globalGroup.appIdEnable[appId]?.let {
+            if (it == false) return true
+        }
+        globalGroupAppGroupNameDisableMap[globalGroup.key]?.let {
+            if (it.contains(appId)) {
+                return true
+            }
+        }
+        return false
+    }
+
     val numText by lazy {
         val appsSize = apps.size
         val appGroupsSize = appGroups.size
@@ -305,10 +337,11 @@ data class RawSubscription(
         override val matchAnyApp: Boolean?,
         override val matchSystemApp: Boolean?,
         override val matchLauncher: Boolean?,
+        val disableIfAppGroupMatch: String?,
         override val rules: List<RawGlobalRule>,
         override val apps: List<RawGlobalApp>?,
     ) : RawGroupProps, RawGlobalRuleProps {
-        val appIdEnable by lazy {
+        val appIdEnable: Map<String, Boolean> by lazy {
             if (rules.all { r -> r.apps.isNullOrEmpty() }) {
                 apps?.associate { a -> a.id to (a.enable ?: true) } ?: emptyMap()
             } else {
@@ -417,6 +450,7 @@ data class RawSubscription(
         override val excludeVersionNames: List<String>?,
         override val versionCodes: List<Long>?,
         override val excludeVersionCodes: List<Long>?,
+        val ignoreGlobalGroupMatch: Boolean?,
     ) : RawGroupProps, RawAppRuleProps {
         override val cacheMap by lazy { HashMap<String, Selector?>() }
         override val errorDesc by lazy { getErrorDesc() }
@@ -606,11 +640,11 @@ data class RawSubscription(
                     if (p.isString) {
                         p.content
                     } else {
-                        error("Element $p is not a string")
+                        null
                     }
                 }
 
-                else -> error("Element $p is not a string")
+                else -> null
             }
 
         private fun getLong(jsonObject: JsonObject? = null, key: String): Long? =
@@ -620,7 +654,7 @@ data class RawSubscription(
                     p.long
                 }
 
-                else -> error("Element $p is not a long")
+                else -> null
             }
 
         private fun getInt(jsonObject: JsonObject? = null, key: String): Int? =
@@ -630,7 +664,7 @@ data class RawSubscription(
                     p.int
                 }
 
-                else -> error("Element $p is not a int")
+                else -> null
             }
 
         private fun getBoolean(jsonObject: JsonObject? = null, key: String): Boolean? =
@@ -640,7 +674,7 @@ data class RawSubscription(
                     p.boolean
                 }
 
-                else -> error("Element $p is not a boolean")
+                else -> null
             }
 
         private fun jsonToRuleRaw(rulesRawJson: JsonElement): RawAppRule {
@@ -728,6 +762,7 @@ data class RawSubscription(
                 excludeVersionNames = getStringIArray(jsonObject, "excludeVersionNames"),
                 priorityTime = getLong(jsonObject, "priorityTime"),
                 priorityActionMaximum = getInt(jsonObject, "priorityActionMaximum"),
+                ignoreGlobalGroupMatch = getBoolean(jsonObject, "ignoreGlobalGroupMatch"),
             )
         }
 
@@ -839,6 +874,7 @@ data class RawSubscription(
                 forcedTime = getLong(jsonObject, "forcedTime"),
                 priorityTime = getLong(jsonObject, "priorityTime"),
                 priorityActionMaximum = getInt(jsonObject, "priorityActionMaximum"),
+                disableIfAppGroupMatch = getString(jsonObject, "disableIfAppGroupMatch"),
             )
         }
 

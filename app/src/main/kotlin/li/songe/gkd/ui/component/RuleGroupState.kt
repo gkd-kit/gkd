@@ -137,7 +137,7 @@ suspend fun batchUpdateGroupEnable(
                 // global rule for some app
                 targetGroup as RawSubscription.RawGlobalGroup
                 val excludeData = ExcludeData.parse(subsConfig?.exclude)
-                getGlobalGroupChecked(excludeData, targetGroup, g.pageAppId).let {
+                getGlobalGroupChecked(subscription, excludeData, targetGroup, g.pageAppId).let {
                     if (it == null) return@map null
                 }
                 (subsConfig ?: SubsConfig(

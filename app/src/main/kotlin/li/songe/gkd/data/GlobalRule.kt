@@ -18,6 +18,7 @@ class GlobalRule(
     rule = rule,
     g = g,
 ) {
+    val groupExcludeAppIds = g.groupExcludeAppIds
     val group = g.group
     private val matchAnyApp = rule.matchAnyApp ?: group.matchAnyApp ?: true
     private val matchLauncher = rule.matchLauncher ?: group.matchLauncher ?: false
@@ -53,7 +54,10 @@ class GlobalRule(
 
     override val type = "global"
 
-    private val excludeAppIds = apps.filter { e -> !e.value.enable }.keys
+    private val excludeAppIds = apps.filter { e ->
+        !e.value.enable
+    }.keys
+
     private val enableApps = apps.filter { e -> e.value.enable }
 
     /**
@@ -62,7 +66,7 @@ class GlobalRule(
      */
     override fun matchActivity(appId: String, activityId: String?): Boolean {
         // 规则自带禁用
-        if (excludeAppIds.contains(appId)) {
+        if (excludeAppIds.contains(appId) || groupExcludeAppIds.contains(appId)) {
             return false
         }
 
