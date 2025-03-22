@@ -270,7 +270,8 @@ fun AuthA11yPage() {
                                 modifier = Modifier
                                     .clip(MaterialTheme.shapes.extraSmall)
                                     .background(MaterialTheme.colorScheme.secondaryContainer)
-                                    .padding(4.dp)
+                                    .padding(8.dp),
+                                style = MaterialTheme.typography.bodySmall,
                             )
                         }
                         Icon(
