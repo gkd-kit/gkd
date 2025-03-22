@@ -3,7 +3,7 @@ package li.songe.gkd.data
 class AppRule(
     rule: RawSubscription.RawAppRule,
     g: ResolvedAppGroup,
-    val appInfo: AppInfo?,
+    appInfo: AppInfo?,
 ) : ResolvedRule(
     rule = rule,
     g = g,

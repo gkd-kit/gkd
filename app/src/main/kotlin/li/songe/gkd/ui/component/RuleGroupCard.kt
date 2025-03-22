@@ -101,7 +101,7 @@ fun RuleGroupCard(
         val excludeData = remember(subsConfig?.exclude) {
             ExcludeData.parse(subsConfig?.exclude)
         }
-        getGlobalGroupChecked(excludeData, group, appId) to excludeData
+        getGlobalGroupChecked(subs, excludeData, group, appId) to excludeData
     } else {
         getGroupEnable(
             group,
@@ -203,6 +203,7 @@ fun RuleGroupCard(
                     maxLines = 1,
                     softWrap = false,
                     overflow = TextOverflow.Ellipsis,
+                    clickDisabled = isSelectedMode,
                 )
                 if (group.valid) {
                     if (!group.desc.isNullOrBlank()) {

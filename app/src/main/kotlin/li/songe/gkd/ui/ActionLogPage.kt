@@ -371,6 +371,7 @@ private fun ActionLogDialog(
                 val group = subs?.globalGroups?.find { g -> g.key == actionLog.groupKey }
                 val appChecked = if (group != null) {
                     getGlobalGroupChecked(
+                        subs,
                         oldExclude,
                         group,
                         actionLog.appId,

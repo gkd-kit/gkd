@@ -31,4 +31,8 @@ class ResolvedGlobalGroup(
 ) : ResolvedGroup(group, subscription, subsItem, config) {
     override val appId: String?
         get() = null
+
+    val groupExcludeAppIds by lazy {
+        subscription.globalGroupAppGroupNameDisableMap[group.key] ?: emptySet()
+    }
 }
