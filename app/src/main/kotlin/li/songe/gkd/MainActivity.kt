@@ -84,10 +84,8 @@ class MainActivity : ComponentActivity() {
         ManageService.autoStart()
         lifecycleScope.launch {
             storeFlow.map(lifecycleScope) { s -> s.excludeFromRecents }.collect {
-                (app.getSystemService(ACTIVITY_SERVICE) as ActivityManager).let { manager ->
-                    manager.appTasks.forEach { task ->
-                        task?.setExcludeFromRecents(it)
-                    }
+                activityManager.appTasks.forEach { task ->
+                    task.setExcludeFromRecents(it)
                 }
             }
         }
@@ -121,14 +119,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        syncFixState()
-    }
-
     override fun onStart() {
         super.onStart()
         activityVisibleFlow.update { it + 1 }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        syncFixState()
     }
 
     override fun onStop() {
