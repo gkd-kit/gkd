@@ -91,6 +91,7 @@ fun SnapshotPage() {
     val colorScheme = MaterialTheme.colorScheme
 
     val vm = viewModel<SnapshotVm>()
+    val firstLoading by vm.linkLoad.firstLoadingFlow.collectAsState()
     val snapshots by vm.snapshotsState.collectAsState()
 
     var selectedSnapshot by remember {
@@ -152,7 +153,7 @@ fun SnapshotPage() {
             }
             item(LIST_PLACEHOLDER_KEY) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
-                if (snapshots.isEmpty()) {
+                if (snapshots.isEmpty() && !firstLoading) {
                     EmptyText(text = "暂无记录")
                 }
             }
