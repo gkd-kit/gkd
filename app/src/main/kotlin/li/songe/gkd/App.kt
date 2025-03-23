@@ -1,8 +1,10 @@
 package li.songe.gkd
 
+import android.app.ActivityManager
 import android.app.Application
 import android.content.ComponentName
 import android.content.Context
+import android.content.Context.ACTIVITY_SERVICE
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.database.ContentObserver
@@ -46,6 +48,8 @@ private val applicationInfo by lazy {
         PackageManager.GET_META_DATA
     )
 }
+
+val activityManager by lazy { app.getSystemService(ACTIVITY_SERVICE) as ActivityManager }
 
 data class AppMeta(
     val channel: String = applicationInfo.metaData.getString("channel")!!,

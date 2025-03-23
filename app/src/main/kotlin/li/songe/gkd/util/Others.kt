@@ -18,7 +18,10 @@ import androidx.compose.animation.togetherWith
 import androidx.core.graphics.get
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import li.songe.gkd.META
+import li.songe.gkd.MainActivity
+import li.songe.gkd.activityManager
 import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
 
@@ -57,31 +60,24 @@ fun getShowActivityId(appId: String, activityId: String?): String? {
     }
 }
 
-fun Activity.fixSomeProblems() {
-    fixTopPadding()
+fun MainActivity.fixSomeProblems() {
+    fixStatusPaddingTopWhenSystemShare()
     fixTransparentNavigationBar()
 }
 
-private fun Activity.fixTopPadding() {
-    // 当调用系统分享时, 会导致状态栏区域消失, 应用整体上移, 设置一个 top padding 保证不上移
-    // 当系统存在工作空间时, 分享界面展示不一样, 不会产生上移行为
+// 当调用系统分享时来到 android/com.android.internal.app.MiuiChooserActivity
+// 在某些设备上此界面有时不显示状态栏, 导致应用整体上移
+private fun MainActivity.fixStatusPaddingTopWhenSystemShare() {
     var tempTop = Resources.getSystem().run {
         @SuppressLint("DiscouragedApi", "InternalInsetResource")
         getDimensionPixelSize(getIdentifier("status_bar_height", "dimen", "android"))
     }
     ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { view, windowInsets ->
-        view.setBackgroundColor(Color.TRANSPARENT)
-        val statusBars = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars())
-        if (statusBars.top == 0) {
-            view.setPadding(
-                statusBars.left,
-                tempTop,
-                statusBars.right,
-                statusBars.bottom
-            )
-        } else {
-            tempTop = statusBars.top
-            view.setPadding(statusBars.left, 0, statusBars.right, statusBars.bottom)
+        view.updatePadding(top = 0)
+        val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+        if (insets.top == 0 && activityManager.appTasks.firstOrNull()?.taskInfo?.topActivity?.packageName != packageName) {
+            view.setBackgroundColor(Color.TRANSPARENT)
+            view.updatePadding(top = tempTop)
         }
         ViewCompat.onApplyWindowInsets(view, windowInsets)
     }
