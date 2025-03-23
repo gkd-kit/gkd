@@ -172,7 +172,7 @@ fun AuthA11yPage() {
                 Text(
                     modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
                     style = MaterialTheme.typography.bodyMedium,
-                    text = "1. 授予「写入安全设置权限」\n2. 授权永久有效, 包含「无障碍权限」n3. 应用重启后可自动打开无障碍服务\n4. 在通知栏快捷开关可快捷重启, 无感保活"
+                    text = "1. 授予「写入安全设置权限」\n2. 授权永久有效, 包含「无障碍权限」\n3. 应用重启后可自动打开无障碍服务\n4. 在通知栏快捷开关可快捷重启, 无感保活"
                 )
                 if (!writeSecureSettings) {
                     AuthButtonGroup()
