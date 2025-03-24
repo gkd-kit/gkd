@@ -77,7 +77,7 @@ private fun expToFastQuery(e: BinaryExpression): FastQuery? {
     } else if (e.left.value == "vid" && e.operator == CompareOperator.Equal) {
         return FastQuery.Vid(e.right.value)
     } else if (e.left.value == "text" && (e.operator == CompareOperator.Equal || e.operator == CompareOperator.Start || e.operator == CompareOperator.Include || e.operator == CompareOperator.End)) {
-        return FastQuery.Text(e.right.value)
+        return FastQuery.Text(e.right.value, e.operator)
     }
     return null
 }
