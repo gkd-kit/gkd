@@ -6,6 +6,7 @@ import li.songe.selector.connect.ConnectSegment
 import li.songe.selector.connect.PolynomialExpression
 import li.songe.selector.connect.TupleExpression
 import li.songe.selector.parser.SelectorParser
+import li.songe.selector.property.CompareOperator
 import kotlin.test.Test
 
 class ParserUnitTest {
@@ -108,10 +109,10 @@ class ParserUnitTest {
             SelectorParser("([text=`a`||id=`b`||vid=`c`])||([text=`d`||id=`e`||vid=`f`])")
                 .readSelector()
                 .fastQueryList == listOf(
-                FastQuery.Text("a"),
+                FastQuery.Text("a", CompareOperator.Equal),
                 FastQuery.Id("b"),
                 FastQuery.Vid("c"),
-                FastQuery.Text("d"),
+                FastQuery.Text("d", CompareOperator.Equal),
                 FastQuery.Id("e"),
                 FastQuery.Vid("f"),
             )
@@ -157,7 +158,8 @@ class ParserUnitTest {
 
     @Test
     fun ast() {
-        val ast = Selector.parseAst("(A + B) || (A +(3n+1) @B[a.b.c(a,b)>1 || b>null && (b~=`233` ) && a=1 ][b=true][(a>b || (c> 0  ))][(a>1 || a>1) && a>1])")
+        val ast =
+            Selector.parseAst("(A + B) || (A +(3n+1) @B[a.b.c(a,b)>1 || b>null && (b~=`233` ) && a=1 ][b=true][(a>b || (c> 0  ))][(a>1 || a>1) && a>1])")
         println("selector: ${ast.value}")
         println("ast: ${ast.stringify()}")
     }
