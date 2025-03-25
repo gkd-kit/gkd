@@ -22,7 +22,7 @@ fun InnerDisableSwitch(
         if (valid) {
             mainVm.dialogFlow.updateDialogOptions(
                 title = "内置禁用",
-                text = "此规则组已经在其 apps 字段中配置对当前应用的禁用, 因此无法手动开启规则组\n\n提示: 这种情况一般在此全局规则无法适配/跳过适配/单独适配当前应用时出现",
+                text = "此规则组已经在内部配置对当前应用的禁用, 因此无法手动开启规则组\n\n提示: 这种情况一般在此全局规则无法适配/跳过适配/单独适配当前应用时出现",
             )
         } else {
             mainVm.dialogFlow.updateDialogOptions(
