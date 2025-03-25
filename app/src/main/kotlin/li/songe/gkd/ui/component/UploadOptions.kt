@@ -8,6 +8,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewModelScope
+import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
@@ -42,6 +43,7 @@ class UploadOptions(
             statusFlow.value = LoadStatus.Success(policiesAsset)
             onSuccessResult?.invoke(policiesAsset)
         } catch (e: Exception) {
+            LogUtils.d(e)
             statusFlow.value = LoadStatus.Failure(e)
         } finally {
             job = null
