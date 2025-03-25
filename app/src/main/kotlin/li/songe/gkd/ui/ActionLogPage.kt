@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -31,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -90,6 +92,7 @@ fun ActionLogPage(
     val navController = LocalNavController.current
     val vm = viewModel<ActionLogVm>()
     val actionDataItems = vm.pagingDataFlow.collectAsLazyPagingItems()
+    val listState = key(actionDataItems.itemCount > 0) { rememberLazyListState() }
 
     val timeTextWidth = measureNumberTextWidth(MaterialTheme.typography.bodySmall)
 
@@ -158,6 +161,7 @@ fun ActionLogPage(
     }, content = { contentPadding ->
         LazyColumn(
             modifier = Modifier.scaffoldPadding(contentPadding),
+            state = listState,
         ) {
             items(
                 count = actionDataItems.itemCount,
