@@ -71,4 +71,14 @@ class QueryUnitTest {
             }
         })
     }
+
+    @Test
+    fun example5() {
+        val selector = Selector.parse("[parent=null]")
+        println(selector)
+        val targetNode = selector.match(node4, transform, MatchOption.default)
+        assert(node4 === targetNode)
+        val nodes = transform.querySelectorAllContext(node4, selector).toList()
+        assert(nodes.isEmpty())
+    }
 }
