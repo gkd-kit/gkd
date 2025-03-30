@@ -1,12 +1,12 @@
 [versions]
 kotlin = "2.1.20"
-ksp = "2.1.20-1.0.31"
-android = "8.9.0"
+ksp = "2.1.20-1.0.32"
+android = "8.9.1"
 compose = "1.7.8"
 rikka = "4.4.0"
 room = "2.6.1"
 paging = "3.3.6"
-ktor = "3.1.1"
+ktor = "3.1.2"
 destinations = "2.1.0"
 coil = "3.1.0"
 shizuku = "13.1.5"
@@ -80,4 +80,4 @@ androidx_room = { id = "androidx.room", version.ref = "room" }
 google_ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 rikka_refine = { id = "dev.rikka.tools.refine", version.ref = "rikka" }
 benmanes_version = "com.github.ben-manes.versions:0.52.0"
-littlerobots_version = "nl.littlerobots.version-catalog-update:0.8.5"
+littlerobots_version = "nl.littlerobots.version-catalog-update:1.0.0"
