@@ -254,17 +254,23 @@ val accessRestrictedSettingsShowFlow = MutableStateFlow(false)
 
 @Composable
 fun AccessRestrictedSettingsDlg() {
+    val a11yRunning by A11yService.isRunning.collectAsState()
+    LaunchedEffect(a11yRunning) {
+        if (a11yRunning) {
+            accessRestrictedSettingsShowFlow.value = false
+        }
+    }
     val accessRestrictedSettingsShow by accessRestrictedSettingsShowFlow.collectAsState()
     val navController = LocalNavController.current
     val currentDestination by navController.currentDestinationAsState()
     val isA11yPage = currentDestination?.route == AuthA11YPageDestination.route
     LaunchedEffect(isA11yPage, accessRestrictedSettingsShow) {
-        if (isA11yPage && accessRestrictedSettingsShow) {
+        if (isA11yPage && accessRestrictedSettingsShow && !a11yRunning) {
             toast("请重新授权以解除限制")
             accessRestrictedSettingsShowFlow.value = false
         }
     }
-    if (accessRestrictedSettingsShow && !isA11yPage) {
+    if (accessRestrictedSettingsShow && !isA11yPage && !a11yRunning) {
         AlertDialog(
             title = {
                 Text(text = "访问受限")

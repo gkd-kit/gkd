@@ -111,24 +111,16 @@ private val modifyA11yMutex by lazy { Mutex() }
 
 fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
     modifyA11yMutex.withLock {
-        if (!writeSecureSettingsState.updateAndGet()) {
-            toast("请先授予「写入安全设置权限」")
-            return@launchTry
-        }
-        val names = getServiceNames()
-        storeFlow.update { it.copy(enableService = !A11yService.isRunning.value) }
+        val newEnableService = !A11yService.isRunning.value
         if (A11yService.isRunning.value) {
-            names.remove(a11yClsName)
-            updateServiceNames(names)
-            delay(500)
-            // https://github.com/orgs/gkd-kit/discussions/799
-            if (A11yService.isRunning.value) {
-                toast("关闭无障碍失败")
-                accessRestrictedSettingsShowFlow.value = true
-                return@launchTry
-            }
+            A11yService.instance?.disableSelf()
             toast("关闭无障碍")
         } else {
+            if (!writeSecureSettingsState.updateAndGet()) {
+                toast("请先授予「写入安全设置权限」")
+                return@launchTry
+            }
+            val names = getServiceNames()
             enableA11yService()
             if (names.contains(a11yClsName)) { // 当前无障碍异常, 重启服务
                 names.remove(a11yClsName)
@@ -138,6 +130,7 @@ fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
             names.add(a11yClsName)
             updateServiceNames(names)
             delay(500)
+            // https://github.com/orgs/gkd-kit/discussions/799
             if (!A11yService.isRunning.value) {
                 toast("开启无障碍失败")
                 accessRestrictedSettingsShowFlow.value = true
@@ -145,6 +138,7 @@ fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
             }
             toast("开启无障碍")
         }
+        storeFlow.update { it.copy(enableService = newEnableService) }
     }
 }
 
