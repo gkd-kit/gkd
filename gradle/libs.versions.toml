@@ -14,7 +14,7 @@ shizuku = "13.1.5"
 [libraries]
 kotlin_stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlin_test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-kotlinx_serialization_json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0"
+kotlinx_serialization_json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1"
 ktor_server_core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor_server_cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
 ktor_server_content_negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
@@ -62,7 +62,7 @@ coil_gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil" }
 reorderable = "sh.calvin.reorderable:reorderable:2.4.3"
 exp4j = "net.objecthunter:exp4j:0.4.8"
 toaster = "com.github.getActivity:Toaster:12.8"
-permissions = "com.github.getActivity:XXPermissions:20.0"
+permissions = "com.github.getActivity:XXPermissions:21.0"
 json5 = "li.songe:json5:0.0.1"
 utilcodex = "com.blankj:utilcodex:1.31.1"
 activityResultLauncher = "com.github.DylanCaiCoding:ActivityResultLauncher:1.1.2"
