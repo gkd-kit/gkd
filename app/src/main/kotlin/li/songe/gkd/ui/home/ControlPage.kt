@@ -28,7 +28,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -107,43 +106,31 @@ fun useControlPage(): ScaffoldExt {
         val a11yServiceEnabled by a11yServiceEnabledFlow.collectAsState()
 
         // 无障碍故障: 设置中无障碍开启, 但是实际 service 没有运行
-        val a11yBroken = !writeSecureSettings && !a11yRunning && a11yServiceEnabled
+        val a11yBroken = !a11yRunning && a11yServiceEnabled
 
         Column(
             modifier = Modifier
                 .verticalScroll(scrollState)
                 .padding(contentPadding)
         ) {
-            if (writeSecureSettings) {
-                PageItemCard(
-                    imageVector = Icons.Default.Memory,
-                    title = "服务状态",
-                    subtitle = if (a11yRunning) "无障碍服务正在运行" else "无障碍服务已关闭",
-                    rightContent = {
-                        Switch(
-                            checked = a11yRunning,
-                            onCheckedChange = throttle<Boolean> {
+            PageItemCard(
+                imageVector = Icons.Default.Memory,
+                title = "服务状态",
+                subtitle = if (a11yRunning) "无障碍服务正在运行" else if (a11yBroken) "无障碍服务发生故障" else if (writeSecureSettings) "无障碍服务已关闭" else "无障碍服务未授权",
+                rightContent = {
+                    Switch(
+                        checked = a11yRunning,
+                        onCheckedChange = throttle(vm.viewModelScope.launchAsFn<Boolean> { newEnabled ->
+                            if (writeSecureSettings || !newEnabled) {
                                 switchA11yService()
-                            },
-                        )
-                    }
-                )
-            }
-            if (!writeSecureSettings && !a11yRunning) {
-                PageItemCard(
-                    imageVector = Icons.Default.Memory,
-                    title = "无障碍授权",
-                    subtitle = if (a11yBroken) "服务故障,请重新授权" else "授权使无障碍服务运行",
-                    rightContent = {
-                        OutlinedButton(onClick = throttle {
-                            navController.toDestinationsNavigator()
-                                .navigate(AuthA11YPageDestination)
-                        }) {
-                            Text(text = "授权")
-                        }
-                    }
-                )
-            }
+                            } else {
+                                navController.toDestinationsNavigator()
+                                    .navigate(AuthA11YPageDestination)
+                            }
+                        }),
+                    )
+                }
+            )
 
             PageItemCard(
                 imageVector = Icons.Outlined.Notifications,
