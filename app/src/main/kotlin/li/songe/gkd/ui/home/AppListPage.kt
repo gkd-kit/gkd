@@ -93,8 +93,9 @@ fun useAppListPage(): ScaffoldExt {
         null
     }
     val showSearchBar by vm.showSearchBarFlow.collectAsState()
-    val listState = key(orderedAppInfos.mapHashCode { it.id }) { rememberLazyListState() }
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val resetKey = orderedAppInfos.mapHashCode { it.id }
+    val scrollBehavior = key(resetKey) { TopAppBarDefaults.enterAlwaysScrollBehavior() }
+    val listState = key(resetKey) { rememberLazyListState() }
     return ScaffoldExt(
         navItem = appListNav,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),

@@ -125,9 +125,11 @@ class MainActivity : ComponentActivity() {
         activityVisibleFlow.update { it + 1 }
     }
 
+    var isFirstResume = true
     override fun onResume() {
         super.onResume()
-        if (startTime - app.startTime < 2000) {
+        if (isFirstResume && startTime - app.startTime < 2000) {
+            isFirstResume = false
             return
         }
         syncFixState()

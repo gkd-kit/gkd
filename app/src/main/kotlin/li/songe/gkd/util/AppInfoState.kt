@@ -22,6 +22,7 @@ import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.toAppInfo
+import li.songe.gkd.permission.canQueryPkgState
 
 val userAppInfoMapFlow = MutableStateFlow(emptyMap<String, AppInfo>())
 val allPackageInfoMapFlow = MutableStateFlow(emptyMap<Int, List<PackageInfo>>())
@@ -47,13 +48,15 @@ val orderedAppInfosFlow by lazy {
     }
 }
 
+private fun Map<String, AppInfo>.getMayQueryPkgNoAccess(): Boolean {
+    return values.count { a -> !a.isSystem && !a.hidden && a.id != META.appId } < MINIMUM_NORMAL_APP_SIZE
+}
+
 // https://github.com/orgs/gkd-kit/discussions/761
 // 某些设备在应用更新后出现权限错乱/缓存错乱
 private const val MINIMUM_NORMAL_APP_SIZE = 8
 val mayQueryPkgNoAccessFlow by lazy {
-    userAppInfoMapFlow.map(appScope) { c ->
-        c.values.count { a -> !a.isSystem && !a.hidden && a.id != META.appId } < MINIMUM_NORMAL_APP_SIZE
-    }
+    userAppInfoMapFlow.map(appScope) { it.getMayQueryPkgNoAccess() }
 }
 
 private val willUpdateAppIds by lazy { MutableStateFlow(emptySet<String>()) }
@@ -131,6 +134,20 @@ suspend fun initOrResetAppInfoCache() = updateAppMutex.withLock {
                 }
             }
     }
+    if (!canQueryPkgState.updateAndGet() || appMap.getMayQueryPkgNoAccess()) {
+        withContext(Dispatchers.IO) {
+            app.packageManager.queryIntentActivities(
+                Intent(Intent.ACTION_MAIN),
+                0
+            ).map { it.activityInfo.packageName }.toSet().forEach { appId ->
+                if (!appMap.contains(appId)) {
+                    getAppInfo(appId)?.let {
+                        appMap[appId] = it
+                    }
+                }
+            }
+        }
+    }
     userAppInfoMapFlow.value = appMap
     LogUtils.d("initOrResetAppInfoCache end ${oldAppIds.size}->${appMap.size}")
 }
@@ -138,7 +155,6 @@ suspend fun initOrResetAppInfoCache() = updateAppMutex.withLock {
 fun initAppState() {
     packageReceiver
     appScope.launchTry(Dispatchers.IO) {
-        initOrResetAppInfoCache()
         willUpdateAppIds.debounce(1000)
             .filter { it.isNotEmpty() }
             .collect { updateAppInfo(it) }

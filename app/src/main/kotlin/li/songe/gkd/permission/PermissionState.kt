@@ -255,6 +255,12 @@ fun startQueryPkgSettingActivity(context: Activity) {
 }
 
 fun updatePermissionState() {
+    val stateChanged = canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet()
+    if (!updateAppMutex.mutex.isLocked && (stateChanged || mayQueryPkgNoAccessFlow.value)) {
+        appScope.launchTry(Dispatchers.IO) {
+            initOrResetAppInfoCache()
+        }
+    }
     arrayOf(
         notificationState,
         canDrawOverlaysState,
@@ -262,10 +268,4 @@ fun updatePermissionState() {
         writeSecureSettingsState,
         shizukuOkState,
     ).forEach { it.updateAndGet() }
-    val stateChanged = canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet()
-    if (!updateAppMutex.mutex.isLocked && (stateChanged || mayQueryPkgNoAccessFlow.value)) {
-        appScope.launchTry(Dispatchers.IO) {
-            initOrResetAppInfoCache()
-        }
-    }
 }

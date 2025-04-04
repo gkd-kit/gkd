@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -95,21 +96,13 @@ fun SubsAppListPage(
             vm.searchStrFlow.value = ""
         }
     })
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val resetKey = appAndConfigs.mapHashCode { it.first.id }
+    val scrollBehavior = key(resetKey) { TopAppBarDefaults.enterAlwaysScrollBehavior() }
+    val listState = key(resetKey) { rememberLazyListState() }
     var expanded by remember { mutableStateOf(false) }
     val showUninstallApp by vm.showUninstallAppFlow.collectAsState()
     val sortType by vm.sortTypeFlow.collectAsState()
-    val listState = rememberLazyListState()
-    var isFirstVisit by remember { mutableStateOf(true) }
-    LaunchedEffect(
-        key1 = appAndConfigs.mapHashCode { it.first.id }
-    ) {
-        if (isFirstVisit) {
-            isFirstVisit = false
-        } else {
-            listState.scrollToItem(0)
-        }
-    }
+
     val softwareKeyboardController = LocalSoftwareKeyboardController.current
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
