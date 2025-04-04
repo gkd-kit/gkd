@@ -69,6 +69,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
 
 class MainActivity : ComponentActivity() {
+    val startTime = System.currentTimeMillis()
     val mainVm by viewModels<MainViewModel>()
     val launcher by lazy { StartActivityLauncher(this) }
     val pickContentLauncher by lazy { PickContentLauncher(this) }
@@ -126,6 +127,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (startTime - app.startTime < 2000) {
+            return
+        }
         syncFixState()
     }
 

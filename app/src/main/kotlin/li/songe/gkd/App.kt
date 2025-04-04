@@ -38,8 +38,8 @@ import rikka.shizuku.Shizuku
 
 val appScope by lazy { MainScope() }
 
-private lateinit var innerApp: Application
-val app: Application
+private lateinit var innerApp: App
+val app: App
     get() = innerApp
 
 private val applicationInfo by lazy {
@@ -73,6 +73,8 @@ class App : Application() {
             HiddenApiBypass.addHiddenApiExemptions("L")
         }
     }
+
+    val startTime = System.currentTimeMillis()
 
     override fun onCreate() {
         super.onCreate()
