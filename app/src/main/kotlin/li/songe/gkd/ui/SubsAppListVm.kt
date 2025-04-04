@@ -44,14 +44,17 @@ class SubsAppListVm(stateHandle: SavedStateHandle) : ViewModelExt() {
         storeFlow.map(viewModelScope) { SortTypeOption.allSubObject.findOption(it.subsAppSortType) }
 
     val showUninstallAppFlow = storeFlow.map(viewModelScope) { it.subsAppShowUninstallApp }
-    private val temp0ListFlow = combine(subsRawFlow, appInfoCacheFlow) { subs, appInfoCache ->
-        (subs?.apps ?: emptyList()).run {
+    private val rawAppsFlow = subsRawFlow.map(viewModelScope) {
+        (it?.apps ?: emptyList()).run {
             if (any { it.groups.isEmpty() }) {
                 filterNot { it.groups.isEmpty() }
             } else {
                 this
             }
-        }.sortedWith { a, b ->
+        }
+    }
+    private val temp0ListFlow = combine(rawAppsFlow, appInfoCacheFlow) { rawApps, appInfoCache ->
+        rawApps.sortedWith { a, b ->
             // 顺序: 已安装(有名字->无名字)->未安装(有名字(来自订阅)->无名字)
             collator.compare(appInfoCache[a.id]?.name ?: a.name?.let { "\uFFFF" + it }
             ?: ("\uFFFF\uFFFF" + a.id),

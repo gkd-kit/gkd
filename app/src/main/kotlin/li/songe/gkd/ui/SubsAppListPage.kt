@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -232,7 +232,7 @@ fun SubsAppListPage(
             modifier = Modifier.scaffoldPadding(contentPadding),
             state = listState
         ) {
-            itemsIndexed(appAndConfigs, { i, a -> i.toString() + a.first.id }) { _, a ->
+            items(appAndConfigs, { a -> a.first.id }) { a ->
                 val (appRaw, appConfig, enableSize) = a
                 SubsAppCard(
                     rawApp = appRaw,
