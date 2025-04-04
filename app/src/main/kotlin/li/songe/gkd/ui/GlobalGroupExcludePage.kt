@@ -113,18 +113,9 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
             vm.searchStrFlow.value = ""
         }
     })
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    val listState = rememberLazyListState()
-    var isFirstVisit by remember { mutableStateOf(true) }
-    LaunchedEffect(
-        key1 = showAppInfos.mapHashCode { it.id },
-    ) {
-        if (isFirstVisit) {
-            isFirstVisit = false
-        } else {
-            listState.scrollToItem(0)
-        }
-    }
+    val resetKey = showAppInfos.mapHashCode { it.id }
+    val scrollBehavior = key(resetKey) { TopAppBarDefaults.enterAlwaysScrollBehavior() }
+    val listState = key(resetKey) { rememberLazyListState() }
     var expanded by remember { mutableStateOf(false) }
     val softwareKeyboardController = LocalSoftwareKeyboardController.current
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {

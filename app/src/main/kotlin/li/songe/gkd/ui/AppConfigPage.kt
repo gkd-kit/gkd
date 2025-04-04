@@ -53,7 +53,6 @@ import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.Value
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.BatchActionButtonGroup
@@ -77,6 +76,7 @@ import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.switchItem
 import li.songe.gkd.util.throttle
+import java.util.Objects
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
@@ -87,16 +87,10 @@ fun AppConfigPage(appId: String) {
     val ruleSortType by vm.ruleSortTypeFlow.collectAsState()
     val groupSize by vm.groupSizeFlow.collectAsState()
     val firstLoading by vm.linkLoad.firstLoadingFlow.collectAsState()
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    val listState = key(groupSize > 0) { rememberLazyListState() }
-    val isFirstVisit = remember { Value(true) }
-    LaunchedEffect(ruleSortType.value) {
-        if (isFirstVisit.value) {
-            isFirstVisit.value = false
-        } else {
-            listState.scrollToItem(0)
-        }
-    }
+    val resetKey = Objects.hash(groupSize > 0, ruleSortType.value)
+    val scrollBehavior = key(resetKey) { TopAppBarDefaults.enterAlwaysScrollBehavior() }
+    val listState = key(resetKey) { rememberLazyListState() }
+
     val isSelectedMode = vm.isSelectedModeFlow.collectAsState().value
     val selectedDataSet = vm.selectedDataSetFlow.collectAsState().value
     LaunchedEffect(key1 = isSelectedMode) {
