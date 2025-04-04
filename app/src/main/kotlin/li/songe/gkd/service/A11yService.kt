@@ -18,6 +18,7 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
+import com.google.android.accessibility.selecttospeak.SelectToSpeakService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -51,6 +52,7 @@ import li.songe.gkd.util.OnCreate
 import li.songe.gkd.util.OnDestroy
 import li.songe.gkd.util.UpdateTimeOption
 import li.songe.gkd.util.checkSubsUpdate
+import li.songe.gkd.util.componentName
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.showActionToast
@@ -64,7 +66,7 @@ import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA11yEvent, OnDestroy {
+open class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA11yEvent, OnDestroy {
     override fun onCreate() {
         super.onCreate()
         onCreated()
@@ -103,6 +105,10 @@ class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA11yEve
     }
 
     companion object {
+
+        val a11yComponentName by lazy { SelectToSpeakService::class.componentName }
+        val a11yClsName by lazy { a11yComponentName.flattenToShortString() }
+
         internal var weakInstance = WeakReference<A11yService>(null)
         val instance: A11yService?
             get() = weakInstance.get()

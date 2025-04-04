@@ -170,6 +170,7 @@ fun Activity.navToMainActivity() {
 
 @Suppress("DEPRECATION")
 private fun updateServiceRunning() {
+    A11yService.isRunning.value = A11yService.instance != null
     val list = try {
         val manager = app.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         manager.getRunningServices(Int.MAX_VALUE) ?: emptyList()
@@ -181,7 +182,6 @@ private fun updateServiceRunning() {
         return list.any { it.service.className == cls.jvmName }
     }
     ManageService.isRunning.value = checkRunning(ManageService::class)
-    A11yService.isRunning.value = checkRunning(A11yService::class)
     FloatingService.isRunning.value = checkRunning(FloatingService::class)
     ScreenshotService.isRunning.value = checkRunning(ScreenshotService::class)
     HttpService.isRunning.value = checkRunning(HttpService::class)
