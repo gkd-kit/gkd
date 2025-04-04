@@ -6,11 +6,16 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
 import androidx.core.content.ContextCompat
+import com.blankj.utilcode.util.LogUtils
 import com.hjq.permissions.OnPermissionCallback
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import li.songe.gkd.app
 import li.songe.gkd.appScope
@@ -20,8 +25,6 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mayQueryPkgNoAccessFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateAppMutex
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 class PermissionState(
     val check: () -> Boolean,
@@ -52,6 +55,23 @@ private fun checkSelfPermission(permission: String): Boolean {
     ) == PackageManager.PERMISSION_GRANTED
 }
 
+private sealed class XXPermissionResult {
+    data class Granted(
+        val permissions: MutableList<String>,
+        val allGranted: Boolean,
+    ) : XXPermissionResult()
+
+    data class Denied(
+        val permissions: MutableList<String>,
+        val doNotAskAgain: Boolean,
+    ) : XXPermissionResult()
+
+    data class Both(
+        val granted: Granted,
+        val denied: Denied,
+    ) : XXPermissionResult()
+}
+
 private suspend fun asyncRequestPermission(
     context: Activity,
     vararg permissions: String,
@@ -59,23 +79,59 @@ private suspend fun asyncRequestPermission(
     if (XXPermissions.isGranted(context, *permissions)) {
         return PermissionResult.Granted
     }
-    return suspendCoroutine { continuation ->
-        XXPermissions.with(context)
-            .unchecked()
-            .permission(*permissions)
-            .request(object : OnPermissionCallback {
-                override fun onGranted(permissions: MutableList<String>, allGranted: Boolean) {
-                    if (allGranted) {
-                        continuation.resume(PermissionResult.Granted)
+
+    val permissionResultFlow = MutableStateFlow<XXPermissionResult?>(null)
+    XXPermissions.with(context)
+        .unchecked()
+        .permission(*permissions)
+        .request(object : OnPermissionCallback {
+            override fun onGranted(permissions: MutableList<String>, allGranted: Boolean) {
+                LogUtils.d("allGranted: $allGranted", permissions)
+                permissionResultFlow.update {
+                   val granted = XXPermissionResult.Granted(permissions, allGranted)
+                    if (it == null) {
+                        granted
                     } else {
-                        continuation.resume(PermissionResult.Denied(false))
+                        XXPermissionResult.Both(
+                            granted = granted,
+                            denied = it as XXPermissionResult.Denied
+                        )
                     }
                 }
+            }
 
-                override fun onDenied(permissions: MutableList<String>, doNotAskAgain: Boolean) {
-                    continuation.resume(PermissionResult.Denied(doNotAskAgain))
+            override fun onDenied(permissions: MutableList<String>, doNotAskAgain: Boolean) {
+                LogUtils.d("doNotAskAgain: $doNotAskAgain", permissions)
+                permissionResultFlow.update {
+                    val denied = XXPermissionResult.Denied(permissions, doNotAskAgain)
+                    if (it == null) {
+                        denied
+                    } else {
+                        XXPermissionResult.Both(
+                            granted = it as XXPermissionResult.Granted,
+                            denied = denied
+                        )
+                    }
                 }
-            })
+            }
+        })
+    val result = permissionResultFlow.debounce(100L).filterNotNull().first()
+    return when (result) {
+        is XXPermissionResult.Granted -> {
+            if (result.allGranted) {
+                PermissionResult.Granted
+            } else {
+                PermissionResult.Denied(false)
+            }
+        }
+
+        is XXPermissionResult.Denied -> {
+            PermissionResult.Denied(result.doNotAskAgain)
+        }
+
+        is XXPermissionResult.Both -> {
+            PermissionResult.Denied(result.denied.doNotAskAgain)
+        }
     }
 }
 
