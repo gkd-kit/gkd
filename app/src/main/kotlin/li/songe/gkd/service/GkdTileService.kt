@@ -20,7 +20,6 @@ import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.util.OnChangeListen
 import li.songe.gkd.util.OnDestroy
 import li.songe.gkd.util.OnTileClick
-import li.songe.gkd.util.componentName
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
@@ -122,12 +121,12 @@ fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
             }
             val names = getServiceNames()
             enableA11yService()
-            if (names.contains(a11yClsName)) { // 当前无障碍异常, 重启服务
-                names.remove(a11yClsName)
+            if (names.contains(A11yService.a11yClsName)) { // 当前无障碍异常, 重启服务
+                names.remove(A11yService.a11yClsName)
                 updateServiceNames(names)
                 delay(500)
             }
-            names.add(a11yClsName)
+            names.add(A11yService.a11yClsName)
             updateServiceNames(names)
             delay(500)
             // https://github.com/orgs/gkd-kit/discussions/799
@@ -150,15 +149,15 @@ fun fixRestartService() = appScope.launchTry(Dispatchers.IO) {
         // 3. 有写入系统设置权限
         if (!A11yService.isRunning.value && storeFlow.value.enableService && writeSecureSettingsState.updateAndGet()) {
             val names = getServiceNames()
-            val a11yBroken = names.contains(a11yClsName)
+            val a11yBroken = names.contains(A11yService.a11yClsName)
             if (a11yBroken) {
                 // 无障碍出现故障, 重启服务
-                names.remove(a11yClsName)
+                names.remove(A11yService.a11yClsName)
                 updateServiceNames(names)
                 // 必须等待一段时间, 否则概率不会触发系统重启无障碍服务
                 delay(500)
             }
-            names.add(a11yClsName)
+            names.add(A11yService.a11yClsName)
             updateServiceNames(names)
             delay(500)
             if (!A11yService.isRunning.value) {
@@ -171,4 +170,3 @@ fun fixRestartService() = appScope.launchTry(Dispatchers.IO) {
     }
 }
 
-val a11yClsName by lazy { A11yService::class.componentName.flattenToShortString() }
