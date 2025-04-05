@@ -122,4 +122,13 @@ class TaskListener(private val onStackChanged: () -> Unit) : ITaskStackListener.
     override fun onTaskMovedToBack(taskInfo: ActivityManager.RunningTaskInfo?) {}
 
     override fun onLockTaskModeChanged(mode: Int) {}
+    override fun onActivityDismissingSplitTask(str: String?) {}
+
+    override fun onOccludeChangeNotice(
+        componentName: ComponentName?,
+        z: Boolean
+    ) {
+    }
+
+    override fun onTaskWindowingModeChanged(i: Int) {}
 }
