@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppRule
@@ -90,26 +91,59 @@ val usedSubsEntriesFlow by lazy {
 fun updateSubscription(subscription: RawSubscription) {
     appScope.launchTry {
         updateSubsMutex.withLock {
+            val subsId = subscription.id
+            val subsName = subscription.name
             val newMap = subsIdToRawFlow.value.toMutableMap()
-            if (subscription.id < 0 && newMap[subscription.id]?.version == subscription.version) {
-                newMap[subscription.id] = subscription.copy(version = subscription.version + 1)
+            if (subsId < 0 && newMap[subsId]?.version == subscription.version) {
+                newMap[subsId] = subscription.run {
+                    copy(
+                        version = version + 1,
+                        apps = apps.filterIfNotAll { it.groups.isNotEmpty() }
+                            .distinctByIfAny { it.id },
+                    )
+                }
             } else {
-                newMap[subscription.id] = subscription
+                newMap[subsId] = subscription
             }
             subsIdToRawFlow.value = newMap
-            if (subsLoadErrorsFlow.value.contains(subscription.id)) {
+            if (subsLoadErrorsFlow.value.contains(subsId)) {
                 subsLoadErrorsFlow.update {
                     it.toMutableMap().apply {
-                        remove(subscription.id)
+                        remove(subsId)
                     }
                 }
             }
             withContext(Dispatchers.IO) {
-                DbSet.subsItemDao.updateMtime(subscription.id, System.currentTimeMillis())
-                subsFolder.resolve("${subscription.id}.json")
-                    .writeText(json.encodeToString(subscription))
+                DbSet.subsItemDao.updateMtime(subsId, System.currentTimeMillis())
+                subsFolder.resolve("${subsId}.json")
+                    .writeText(json.encodeToString(newMap[subsId]))
             }
-            LogUtils.d("更新订阅文件:id=${subscription.id},name=${subscription.name}")
+            LogUtils.d("更新订阅文件:id=${subsId},name=${subsName}")
+        }
+    }
+}
+
+fun deleteSubscription(vararg subsIds: Long) {
+    appScope.launchTry(Dispatchers.IO) {
+        updateSubsMutex.mutex.withLock {
+            val deleteSize = DbSet.subsItemDao.deleteById(*subsIds)
+            if (deleteSize > 0) {
+                DbSet.subsConfigDao.deleteBySubsId(*subsIds)
+                DbSet.actionLogDao.deleteBySubsId(*subsIds)
+                DbSet.categoryConfigDao.deleteBySubsId(*subsIds)
+                val newMap = subsIdToRawFlow.value.toMutableMap()
+                subsIds.forEach { id ->
+                    newMap.remove(id)
+                    subsFolder.resolve("$id.json").apply {
+                        if (exists()) {
+                            delete()
+                        }
+                    }
+                }
+                subsIdToRawFlow.value = newMap
+                toast("删除订阅成功")
+                LogUtils.d("deleteSubscription", subsIds)
+            }
         }
     }
 }

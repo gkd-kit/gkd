@@ -67,7 +67,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.Value
-import li.songe.gkd.data.deleteSubscription
 import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
@@ -84,6 +83,7 @@ import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.UpdateTimeOption
 import li.songe.gkd.util.checkSubsUpdate
+import li.songe.gkd.util.deleteSubscription
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.getUpDownTransform
 import li.songe.gkd.util.launchAsFn
