@@ -20,6 +20,7 @@ import li.songe.gkd.util.format
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsIdToRawFlow
+import li.songe.gkd.util.toast
 
 @Serializable
 @Entity(
@@ -101,5 +102,6 @@ fun deleteSubscription(vararg subsIds: Long) {
             }
         }
         subsIdToRawFlow.value = newMap
+        toast("删除订阅成功")
     }
 }
