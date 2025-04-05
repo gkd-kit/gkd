@@ -92,7 +92,11 @@ data class Store(
     val subsExcludeShowHiddenApp: Boolean = false,
     val subsExcludeShowDisabledApp: Boolean = false,
     val subsPowerWarn: Boolean = true,
-)
+) {
+    val enableShizukuAnyFeat by lazy {
+        enableShizukuActivity || enableShizukuClick || enableShizukuWorkProfile
+    }
+}
 
 val storeFlow by lazy {
     createJsonFlow(

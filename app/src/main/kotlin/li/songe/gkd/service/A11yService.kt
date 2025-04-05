@@ -542,7 +542,7 @@ private fun A11yService.useAutoCheckShizuku() {
     var lastCheckShizukuTime = 0L
     onA11yEvent {
         // 借助无障碍轮询校验 shizuku 权限, 因为 shizuku 可能无故被关闭
-        if ((storeFlow.value.enableShizukuActivity || storeFlow.value.enableShizukuClick) && it.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && it.packageName == launcherAppId) {// 筛选降低判断频率
+        if (storeFlow.value.enableShizukuAnyFeat && it.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && it.packageName == launcherAppId) {// 筛选降低判断频率
             val t = System.currentTimeMillis()
             if (t - lastCheckShizukuTime > 10 * 60_000L) {
                 lastCheckShizukuTime = t
