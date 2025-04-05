@@ -197,7 +197,7 @@ fun AdvancedPage() {
         ) {
             ShizukuTitleCard()
             val shizukuOk by shizukuOkState.stateFlow.collectAsState()
-            if (!shizukuOk) {
+            AnimatedVisibility(!shizukuOk) {
                 AuthCard(
                     title = "授权使用",
                     subtitle = "授权后可使用下列功能",
@@ -209,10 +209,8 @@ fun AdvancedPage() {
                             mainVm.shizukuErrorFlow.value = true
                         }
                     })
-                ShizukuFragment(false)
-            } else {
-                ShizukuFragment()
             }
+            ShizukuFragment(shizukuOk)
 
             val server by HttpService.httpServerFlow.collectAsState()
             val httpServerRunning = server != null
