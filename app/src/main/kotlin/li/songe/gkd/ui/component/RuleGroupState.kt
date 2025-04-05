@@ -358,9 +358,13 @@ class RuleGroupState(
             EditOrAddRuleGroupDialog(
                 subs = editOrAddSubs,
                 group = editOrAddGroup,
-                app = useEditSubsApp(editOrAddSubs, editOrAddGroupState.appId),
+                app = if (editOrAddGroupState.addAppRule) {
+                    null
+                } else {
+                    useEditSubsApp(editOrAddSubs, editOrAddGroupState.appId)
+                },
                 onDismissRequest = dismissEditOrAdd,
-                addAppRule = editOrAddGroupState.addAppRule
+                addAnyAppRule = editOrAddGroupState.addAppRule
             )
         }
 

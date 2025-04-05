@@ -32,7 +32,7 @@ fun EditOrAddRuleGroupDialog(
     subs: RawSubscription,
     group: RawSubscription.RawGroupProps?,
     app: RawSubscription.RawApp?,
-    addAppRule: Boolean,
+    addAnyAppRule: Boolean,
     onDismissRequest: () -> Unit,
 ) {
     val mainVm = LocalMainViewModel.current
@@ -104,8 +104,37 @@ fun EditOrAddRuleGroupDialog(
             }
             updateSubscription(newSubs)
         } else {
-            // add mode
-            if (app != null) {
+            if (addAnyAppRule) {
+                // add any app group, appId is must be exist
+                val newApp = try {
+                    RawSubscription.parseApp(element).apply {
+                        if (groups.isEmpty()) {
+                            error("至少输入一个规则组")
+                        }
+                    }
+                } catch (e: Exception) {
+                    LogUtils.d(e)
+                    error("非法规则:${e.message}")
+                }
+                val oldApp = subs.apps.find { it.id == newApp.id }
+                if (oldApp != null) {
+                    newApp.groups.forEach { g ->
+                        checkGroupKeyName(oldApp.groups, g)
+                    }
+                }
+                onDismissRequest()
+                updateSubscription(subs.copy(apps = subs.apps.toMutableList().apply {
+                    if (oldApp != null) {
+                        set(
+                            indexOfFirst { a -> a.id == oldApp.id },
+                            oldApp.copy(groups = oldApp.groups + newApp.groups),
+                        )
+                    } else {
+                        add(newApp)
+                    }
+                }))
+            } else if (app != null) {
+                // add specified app group
                 val newGroups = try {
                     if (element["groups"] is JsonArray) {
                         val id = element["id"] ?: error("缺少id")
@@ -130,55 +159,32 @@ fun EditOrAddRuleGroupDialog(
                 }
                 onDismissRequest()
                 updateSubscription(subs.copy(apps = subs.apps.toMutableList().apply {
-                    val i = indexOfFirst { a -> a.id == app.id }
+                    val newApp = app.copy(groups = app.groups + newGroups)
+                    val i = indexOfFirst { a -> a.id == newApp.id }
                     if (i >= 0) {
                         set(
                             i,
-                            app.copy(groups = app.groups + newGroups)
+                            newApp
                         )
                     } else {
-                        add(app.copy(groups = app.groups + newGroups))
+                        add(newApp)
                     }
                 }))
             } else {
-                if (addAppRule) {
-                    val newApp = try {
-                        RawSubscription.parseApp(element).apply {
-                            if (groups.isEmpty()) {
-                                error("至少输入一个规则组")
-                            }
-                        }
-                    } catch (e: Exception) {
-                        LogUtils.d(e)
-                        error("非法规则:${e.message}")
-                    }
-                    onDismissRequest()
-                    updateSubscription(subs.copy(apps = subs.apps.toMutableList().apply {
-                        val app = find { it.id == newApp.id }
-                        if (app != null) {
-                            newApp.groups.forEach { g ->
-                                checkGroupKeyName(app.groups, g)
-                            }
-                            add(newApp.copy(groups = newApp.groups + newApp.groups))
-                        } else {
-                            add(newApp)
-                        }
-                    }))
-                } else {
-                    val newGroup = try {
-                        RawSubscription.parseGlobalGroup(element)
-                    } catch (e: Exception) {
-                        LogUtils.d(e)
-                        error("非法规则:${e.message}")
-                    }
-                    checkGroupKeyName(subs.globalGroups, newGroup)
-                    onDismissRequest()
-                    updateSubscription(
-                        subs.copy(
-                            globalGroups = subs.globalGroups + newGroup
-                        )
-                    )
+                // add global group
+                val newGroup = try {
+                    RawSubscription.parseGlobalGroup(element)
+                } catch (e: Exception) {
+                    LogUtils.d(e)
+                    error("非法规则:${e.message}")
                 }
+                checkGroupKeyName(subs.globalGroups, newGroup)
+                onDismissRequest()
+                updateSubscription(
+                    subs.copy(
+                        globalGroups = subs.globalGroups + newGroup
+                    )
+                )
             }
         }
         if (group != null) {
@@ -198,7 +204,7 @@ fun EditOrAddRuleGroupDialog(
                 modifier = Modifier.autoFocus(),
                 placeholder = {
                     Text(
-                        text = if (app != null || addAppRule) {
+                        text = if (app != null || addAnyAppRule) {
                             "请输入应用规则组\n"
                         } else {
                             "请输入全局规则组\n"
