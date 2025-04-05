@@ -259,4 +259,12 @@ public interface ITaskStackListener {
      */
     void onLockTaskModeChanged(int mode);
 
+    // https://github.com/gkd-kit/gkd/issues/941
+    //Samsung OneUi
+    void onActivityDismissingSplitTask(String str);
+
+    void onOccludeChangeNotice(ComponentName componentName, boolean z);
+
+    void onTaskWindowingModeChanged(int i);
+
 }
