@@ -36,7 +36,6 @@ import li.songe.gkd.data.GkdAction
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubsItem
-import li.songe.gkd.data.deleteSubscription
 import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt.captureSnapshot
@@ -48,6 +47,7 @@ import li.songe.gkd.util.LOCAL_HTTP_SUBS_ID
 import li.songe.gkd.util.OnCreate
 import li.songe.gkd.util.OnDestroy
 import li.songe.gkd.util.SERVER_SCRIPT_URL
+import li.songe.gkd.util.deleteSubscription
 import li.songe.gkd.util.getIpAddressInLocalNetwork
 import li.songe.gkd.util.isPortAvailable
 import li.songe.gkd.util.keepNullJson

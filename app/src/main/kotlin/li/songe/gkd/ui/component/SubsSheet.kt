@@ -50,13 +50,13 @@ import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import li.songe.gkd.META
-import li.songe.gkd.data.deleteSubscription
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.checkSubsUpdate
+import li.songe.gkd.util.deleteSubscription
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.subsIdToRawFlow

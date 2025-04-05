@@ -16,6 +16,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import li.songe.gkd.service.typeInfo
 import li.songe.gkd.util.LOCAL_SUBS_IDS
+import li.songe.gkd.util.distinctByIfAny
+import li.songe.gkd.util.filterIfNotAll
 import li.songe.gkd.util.json
 import li.songe.gkd.util.toast
 import li.songe.json5.Json5
@@ -782,7 +784,7 @@ data class RawSubscription(
                     is JsonArray -> groupsJson
                 }).map { jsonElement ->
                     jsonToGroupRaw(jsonElement)
-                }.distinctBy { it.key },
+                }.distinctByIfAny { it.key },
             )
         }
 
@@ -824,7 +826,7 @@ data class RawSubscription(
                     jsonToGlobalApp(
                         jsonElement.jsonObject, index
                     )
-                }?.distinctBy { it.id },
+                }?.distinctByIfAny { it.id },
                 action = getString(jsonObject, "action"),
                 preKeys = getIntIArray(jsonObject, "preKeys"),
                 excludeMatches = getStringIArray(jsonObject, "excludeMatches"),
@@ -865,7 +867,7 @@ data class RawSubscription(
                     jsonToGlobalApp(
                         jsonElement.jsonObject, index
                     )
-                }?.distinctBy { it.id },
+                }?.distinctByIfAny { it.id },
                 rules = (jsonObject["rules"]?.jsonArray?.map { jsonElement ->
                     jsonToGlobalRule(jsonElement.jsonObject)
                 } ?: emptyList()).distinctNotNullBy { it.key },
@@ -892,13 +894,7 @@ data class RawSubscription(
                         jsonElement.jsonObject,
                         index
                     )
-                } ?: emptyList()).distinctBy { it.id }.run {
-                    if (any { it.groups.isEmpty() }) {
-                        filterNot { it.groups.isEmpty() }
-                    } else {
-                        this
-                    }
-                },
+                } ?: emptyList()).filterIfNotAll { it.groups.isNotEmpty() }.distinctByIfAny { it.id },
                 categories = (rootJson["categories"]?.jsonArray?.mapIndexed { index, jsonElement ->
                     RawCategory(
                         key = getInt(jsonElement.jsonObject, "key")
@@ -907,10 +903,10 @@ data class RawSubscription(
                             ?: error("miss categories[$index].name"),
                         enable = getBoolean(jsonElement.jsonObject, "enable"),
                     )
-                } ?: emptyList()).distinctBy { it.key },
+                } ?: emptyList()).filterIfNotAll { it.name.isNotEmpty() }.distinctByIfAny { it.key },
                 globalGroups = (rootJson["globalGroups"]?.jsonArray?.mapIndexed { index, jsonElement ->
                     jsonToGlobalGroup(jsonElement.jsonObject, index)
-                } ?: emptyList()).distinctBy { it.key }
+                } ?: emptyList()).distinctByIfAny { it.key }
             )
         }
 
