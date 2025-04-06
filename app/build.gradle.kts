@@ -107,7 +107,6 @@ android {
 
     buildTypes {
         all {
-            signingConfig = gkdSigningConfig
             if (gitInfo?.tagName == null) {
                 versionNameSuffix = "-${gitInfo?.commitId?.substring(0, 7) ?: "unknown"}"
             }
@@ -142,13 +141,12 @@ android {
         flavorDimensions += "channel"
         create("gkd") {
             isDefault = true
+            signingConfig = gkdSigningConfig
             manifestPlaceholders["updateEnabled"] = true
             resValue("bool", "is_accessibility_tool", "true")
         }
         create("play") {
-            if (playSigningConfig != null) {
-                signingConfig = playSigningConfig
-            }
+            signingConfig = playSigningConfig ?: gkdSigningConfig
             manifestPlaceholders["updateEnabled"] = false
             resValue("bool", "is_accessibility_tool", "false")
         }
