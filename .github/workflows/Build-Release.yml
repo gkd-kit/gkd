@@ -20,31 +20,29 @@ jobs:
         with:
           cache-encryption-key: ${{ secrets.GRADLE_CACHE_ENCRYPTION_KEY }}
 
-      - name: write secrets info
+      - name: write gkd secrets info
         run: |
-          echo ${{ secrets.GKD_STORE_FILE_BASE64 }} | base64 --decode > ${{ github.workspace }}/key.jks
-          echo GKD_STORE_FILE='${{ github.workspace }}/key.jks' >> gradle.properties
+          echo ${{ secrets.GKD_STORE_FILE_BASE64 }} | base64 --decode > ${{ github.workspace }}/gkd.jks
+          echo GKD_STORE_FILE='${{ github.workspace }}/gkd.jks' >> gradle.properties
           echo GKD_STORE_PASSWORD='${{ secrets.GKD_STORE_PASSWORD }}' >> gradle.properties
           echo GKD_KEY_ALIAS='${{ secrets.GKD_KEY_ALIAS }}' >> gradle.properties
           echo GKD_KEY_PASSWORD='${{ secrets.GKD_KEY_PASSWORD }}' >> gradle.properties
 
+      - name: write play secrets info
+        run: |
+          echo ${{ secrets.PLAY_STORE_FILE_BASE64 }} | base64 --decode > ${{ github.workspace }}/play.jks
+          echo PLAY_STORE_FILE='${{ github.workspace }}/play.jks' >> gradle.properties
+          echo PLAY_STORE_PASSWORD='${{ secrets.PLAY_STORE_PASSWORD }}' >> gradle.properties
+          echo PLAY_KEY_ALIAS='${{ secrets.PLAY_KEY_ALIAS }}' >> gradle.properties
+          echo PLAY_KEY_PASSWORD='${{ secrets.PLAY_KEY_PASSWORD }}' >> gradle.properties
+
       - run: chmod 777 ./gradlew
-      - run: ./gradlew app:assembleRelease
+      - run: ./gradlew app:assembleGkdRelease app:bundlePlayRelease
 
       - uses: actions/upload-artifact@v4
         with:
           name: outputs
           path: app/build/outputs
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: gkd-release
-          path: app/build/outputs/apk/gkd/release
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: foss-release
-          path: app/build/outputs/apk/foss/release
 
       - uses: actions/upload-artifact@v4
         with:
