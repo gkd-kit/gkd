@@ -52,6 +52,20 @@ private fun createLongFlow(
     return stateFlow
 }
 
+private fun createBooleanFlow(
+    key: String,
+    default: Boolean = false,
+    transform: (Boolean) -> Boolean = { it }
+): MutableStateFlow<Boolean> {
+    val stateFlow = MutableStateFlow(transform(kv.getBoolean(key, default)))
+    appScope.launch {
+        stateFlow.drop(1).collect {
+            withContext(Dispatchers.IO) { kv.encode(key, it) }
+        }
+    }
+    return stateFlow
+}
+
 @Serializable
 data class Store(
     val enableService: Boolean = true,
@@ -120,7 +134,7 @@ data class ShizukuStore(
 
 val shizukuStoreFlow by lazy {
     createJsonFlow(
-        key = "shizuku-store",
+        key = "shizuku_store",
         default = { ShizukuStore() },
         transform = {
             if (it.versionCode != META.versionCode) {
@@ -147,6 +161,13 @@ val privacyStoreFlow by lazy {
     createJsonFlow(
         key = "privacy_store",
         default = { PrivacyStore() }
+    )
+}
+
+val termsAcceptedFlow by lazy {
+    createBooleanFlow(
+        key = "terms_accepted",
+        default = false
     )
 }
 
