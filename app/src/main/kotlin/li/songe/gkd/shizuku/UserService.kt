@@ -24,7 +24,7 @@ import li.songe.gkd.appScope
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.json
-import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.shizukuStoreFlow
 import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
 import java.io.DataOutputStream
@@ -190,8 +190,8 @@ suspend fun buildServiceWrapper(): UserServiceWrapper? {
 }
 
 private val shizukuServiceUsedFlow by lazy {
-    combine(shizukuOkState.stateFlow, storeFlow) { shizukuOk, store ->
-        shizukuOk && store.enableShizukuClick
+    combine(shizukuOkState.stateFlow, shizukuStoreFlow) { shizukuOk, store ->
+        shizukuOk && store.enableTapClick
     }.stateIn(appScope, SharingStarted.Eagerly, false)
 }
 

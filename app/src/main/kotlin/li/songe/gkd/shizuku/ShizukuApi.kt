@@ -15,13 +15,9 @@ import li.songe.gkd.data.toAppInfo
 import li.songe.gkd.util.allPackageInfoMapFlow
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.otherUserAppInfoMapFlow
-import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.shizukuStoreFlow
 import li.songe.gkd.util.userAppInfoMapFlow
 import rikka.shizuku.Shizuku
-import kotlin.collections.component1
-import kotlin.collections.component2
-import kotlin.collections.filter
-import kotlin.collections.forEach
 
 fun shizukuCheckGranted(): Boolean {
     val granted = try {
@@ -31,7 +27,7 @@ fun shizukuCheckGranted(): Boolean {
         false
     }
     if (!granted) return false
-    if (storeFlow.value.enableShizukuActivity) {
+    if (shizukuStoreFlow.value.enableActivity) {
         return safeGetTopActivity() != null || shizukuCheckActivity()
     }
     return true

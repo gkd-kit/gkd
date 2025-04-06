@@ -90,6 +90,7 @@ import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.shizukuAppId
 import li.songe.gkd.util.shizukuMiniVersionCode
+import li.songe.gkd.util.shizukuStoreFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
@@ -467,13 +468,13 @@ fun AdvancedPage() {
 
 @Composable
 private fun ShizukuFragment(enabled: Boolean = true) {
-    val store by storeFlow.collectAsState()
+    val shizukuStore by shizukuStoreFlow.collectAsState()
     TextSwitch(
         title = "界面识别",
         subtitle = "更准确识别界面ID",
         suffix = "使用说明",
         onSuffixClick = { openUri(ShortUrlSet.URL7) },
-        checked = store.enableShizukuActivity,
+        checked = shizukuStore.enableActivity,
         enabled = enabled,
         onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {
             if (it) {
@@ -484,7 +485,7 @@ private fun ShizukuFragment(enabled: Boolean = true) {
                 }
                 toast("已启用")
             }
-            storeFlow.update { s -> s.copy(enableShizukuActivity = it) }
+            shizukuStoreFlow.update { s -> s.copy(enableActivity = it) }
         })
 
     TextSwitch(
@@ -492,7 +493,7 @@ private fun ShizukuFragment(enabled: Boolean = true) {
         subtitle = "执行强制模拟点击",
         suffix = "使用说明",
         onSuffixClick = { openUri(ShortUrlSet.URL8) },
-        checked = store.enableShizukuClick,
+        checked = shizukuStore.enableTapClick,
         enabled = enabled,
         onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {
             if (it) {
@@ -503,7 +504,7 @@ private fun ShizukuFragment(enabled: Boolean = true) {
                 }
                 toast("已启用")
             }
-            storeFlow.update { s -> s.copy(enableShizukuClick = it) }
+            shizukuStoreFlow.update { s -> s.copy(enableTapClick = it) }
         })
 
 
@@ -512,7 +513,7 @@ private fun ShizukuFragment(enabled: Boolean = true) {
         subtitle = "扩展工作空间应用列表",
         suffix = "使用说明",
         onSuffixClick = { openUri(ShortUrlSet.URL9) },
-        checked = store.enableShizukuWorkProfile,
+        checked = shizukuStore.enableWorkProfile,
         enabled = enabled,
         onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {
             if (it) {
@@ -523,7 +524,7 @@ private fun ShizukuFragment(enabled: Boolean = true) {
                 }
                 toast("已启用")
             }
-            storeFlow.update { s -> s.copy(enableShizukuWorkProfile = it) }
+            shizukuStoreFlow.update { s -> s.copy(enableWorkProfile = it) }
         })
 
 }

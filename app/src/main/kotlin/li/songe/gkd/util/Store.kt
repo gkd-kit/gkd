@@ -67,9 +67,6 @@ data class Store(
     val clickToast: String = "GKD",
     val autoClearMemorySubs: Boolean = true,
     val hideSnapshotStatusBar: Boolean = false,
-    val enableShizukuActivity: Boolean = false,
-    val enableShizukuClick: Boolean = false,
-    val enableShizukuWorkProfile: Boolean = false,
     val log2FileSwitch: Boolean = true,
     val enableDarkTheme: Boolean? = null,
     val enableDynamicColor: Boolean = true,
@@ -92,11 +89,7 @@ data class Store(
     val subsExcludeShowHiddenApp: Boolean = false,
     val subsExcludeShowDisabledApp: Boolean = false,
     val subsPowerWarn: Boolean = true,
-) {
-    val enableShizukuAnyFeat by lazy {
-        enableShizukuActivity || enableShizukuClick || enableShizukuWorkProfile
-    }
-}
+)
 
 val storeFlow by lazy {
     createJsonFlow(
@@ -114,30 +107,34 @@ val storeFlow by lazy {
     )
 }
 
-//@Deprecated("use actionCountFlow instead")
 @Serializable
-private data class RecordStore(
-    val clickCount: Int = 0,
-)
+data class ShizukuStore(
+    val versionCode: Int = META.versionCode,
+    val enableActivity: Boolean = false,
+    val enableTapClick: Boolean = false,
+    val enableWorkProfile: Boolean = false,
+) {
+    val enableShizukuAnyFeat: Boolean
+        get() = enableActivity || enableTapClick || enableWorkProfile
+}
 
-//@Deprecated("use actionCountFlow instead")
-private val recordStoreFlow by lazy {
+val shizukuStoreFlow by lazy {
     createJsonFlow(
-        key = "record_store-v2",
-        default = { RecordStore() }
+        key = "shizuku-store",
+        default = { ShizukuStore() },
+        transform = {
+            if (it.versionCode != META.versionCode) {
+                ShizukuStore()
+            } else {
+                it
+            }
+        }
     )
 }
 
 val actionCountFlow by lazy {
     createLongFlow(
         key = "action_count",
-        transform = {
-            if (it == 0L) {
-                recordStoreFlow.value.clickCount.toLong()
-            } else {
-                it
-            }
-        }
     )
 }
 
@@ -155,5 +152,6 @@ val privacyStoreFlow by lazy {
 
 fun initStore() {
     storeFlow.value
+    shizukuStoreFlow.value
     actionCountFlow.value
 }

@@ -55,6 +55,7 @@ import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
+import li.songe.gkd.util.shizukuStoreFlow
 import li.songe.gkd.util.showActionToast
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
@@ -391,7 +392,7 @@ private fun A11yService.useMatchRule() {
             // 某些应用获取 safeActiveWindow 耗时长, 导致多个事件连续堆积堵塞, 无法检测到 appId 切换导致状态异常
             // https://github.com/gkd-kit/gkd/issues/622
             lastGetAppIdTime = t
-            lastAppId = if (storeFlow.value.enableShizukuActivity) {
+            lastAppId = if (shizukuStoreFlow.value.enableActivity) {
                 withTimeoutOrNull(100) { safeActiveWindowAppId } ?: safeGetTopActivity()?.appId
             } else {
                 null
@@ -434,7 +435,7 @@ private fun A11yService.useMatchRule() {
                     )
                 }
             } else {
-                if (storeFlow.value.enableShizukuActivity && a11yEvent.time - lastTriggerShizukuTime > 300) {
+                if (shizukuStoreFlow.value.enableActivity && a11yEvent.time - lastTriggerShizukuTime > 300) {
                     val shizukuTop = safeGetTopActivity()
                     if (shizukuTop?.appId == rightAppId) {
                         if (shizukuTop.activityId == evActivityId) {
@@ -542,7 +543,7 @@ private fun A11yService.useAutoCheckShizuku() {
     var lastCheckShizukuTime = 0L
     onA11yEvent {
         // 借助无障碍轮询校验 shizuku 权限, 因为 shizuku 可能无故被关闭
-        if (storeFlow.value.enableShizukuAnyFeat && it.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && it.packageName == launcherAppId) {// 筛选降低判断频率
+        if (shizukuStoreFlow.value.enableShizukuAnyFeat && it.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && it.packageName == launcherAppId) {// 筛选降低判断频率
             val t = System.currentTimeMillis()
             if (t - lastCheckShizukuTime > 10 * 60_000L) {
                 lastCheckShizukuTime = t

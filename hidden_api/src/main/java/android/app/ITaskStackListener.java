@@ -4,6 +4,9 @@ import android.content.ComponentName;
 import android.os.IBinder;
 import android.window.TaskSnapshot;
 
+/**
+ * @noinspection unused
+ */
 public interface ITaskStackListener {
 
     abstract class Stub extends android.os.Binder implements ITaskStackListener {
@@ -12,18 +15,28 @@ public interface ITaskStackListener {
         }
     }
 
-    /** Activity was resized to be displayed split-screen. */
+    /**
+     * Activity was resized to be displayed split-screen.
+     */
     int FORCED_RESIZEABLE_REASON_SPLIT_SCREEN = 1;
-    /** Activity was resized to be displayed on a secondary display. */
+    /**
+     * Activity was resized to be displayed on a secondary display.
+     */
     int FORCED_RESIZEABLE_REASON_SECONDARY_DISPLAY = 2;
 
-    /** Called whenever there are changes to the state of tasks a stack. */
+    /**
+     * Called whenever there are changes to the state of tasks a stack.
+     */
     void onTaskStackChanged();
 
-    /** Called whenever an Activity is moved to the pinned stack from another stack. */
+    /**
+     * Called whenever an Activity is moved to the pinned stack from another stack.
+     */
     void onActivityPinned(String packageName, int userId, int taskId, int stackId);
 
-    /** Called whenever an Activity is moved from the pinned stack to another stack. */
+    /**
+     * Called whenever an Activity is moved from the pinned stack to another stack.
+     */
     void onActivityUnpinned();
 
     /**
@@ -32,7 +45,7 @@ public interface ITaskStackListener {
      * brought to the front or a new Intent is delivered to it.
      *
      * @param clearedTask whether or not the launch activity also cleared the task as a part of
-     * starting
+     *                    starting
      */
     void onPinnedActivityRestartAttempt(boolean clearedTask);
 
@@ -50,9 +63,9 @@ public interface ITaskStackListener {
      * Called when we launched an activity that we forced to be resizable.
      *
      * @param packageName Package name of the top activity the task.
-     * @param taskId Id of the task.
-     * @param reason {@link #FORCED_RESIZEABLE_REASON_SPLIT_SCREEN} or
-     *              {@link #FORCED_RESIZEABLE_REASON_SECONDARY_DISPLAY}.
+     * @param taskId      Id of the task.
+     * @param reason      {@link #FORCED_RESIZEABLE_REASON_SPLIT_SCREEN} or
+     *                    {@link #FORCED_RESIZEABLE_REASON_SECONDARY_DISPLAY}.
      */
     void onActivityForcedResizable(String packageName, int taskId, int reason);
 
@@ -65,7 +78,7 @@ public interface ITaskStackListener {
      * Called when an activity was requested to be launched on a secondary display but was not
      * allowed there.
      *
-     * @param taskInfo info about the Activity's task
+     * @param taskInfo           info about the Activity's task
      * @param requestedDisplayId the id of the requested launch display
      */
     void onActivityLaunchOnSecondaryDisplayFailed(ActivityManager.RunningTaskInfo taskInfo,
@@ -75,7 +88,7 @@ public interface ITaskStackListener {
      * Called when an activity was requested to be launched on a secondary display but was rerouted
      * to default display.
      *
-     * @param taskInfo info about the Activity's task
+     * @param taskInfo           info about the Activity's task
      * @param requestedDisplayId the id of the requested launch display
      */
     void onActivityLaunchOnSecondaryDisplayRerouted(ActivityManager.RunningTaskInfo taskInfo,
@@ -84,7 +97,7 @@ public interface ITaskStackListener {
     /**
      * Called when a task is added.
      *
-     * @param taskId id of the task.
+     * @param taskId        id of the task.
      * @param componentName of the activity that the task is being started with.
      */
     void onTaskCreated(int taskId, ComponentName componentName);
@@ -115,7 +128,7 @@ public interface ITaskStackListener {
      * Called when a activity’s orientation is changed due to it calling
      * ActivityManagerService.setRequestedOrientation
      *
-     * @param taskId id of the task that the activity is in.
+     * @param taskId               id of the task that the activity is in.
      * @param requestedOrientation the new requested orientation.
      */
     void onActivityRequestedOrientationChanged(int taskId, int requestedOrientation);
@@ -145,7 +158,7 @@ public interface ITaskStackListener {
      * Called when the resumed activity is size compatibility mode and its override configuration
      * is different from the current one of system.
      *
-     * @param displayId Id of the display where the activity resides.
+     * @param displayId     Id of the display where the activity resides.
      * @param activityToken Token of the size compatibility mode activity. It will be null when
      *                      switching to a activity that is not size compatibility mode or the
      *                      configuration of the activity.
@@ -163,7 +176,7 @@ public interface ITaskStackListener {
     /**
      * Called when a task is reparented to a stack on a different display.
      *
-     * @param taskId id of the task which was moved to a different display.
+     * @param taskId       id of the task which was moved to a different display.
      * @param newDisplayId id of the new display.
      */
     void onTaskDisplayChanged(int taskId, int newDisplayId);
@@ -174,16 +187,16 @@ public interface ITaskStackListener {
      * Called whenever IActivityManager.startActivity is called on an activity that is already
      * running, but the task is either brought to the front or a new Intent is delivered to it.
      *
-     * @param task information about the task the activity was relaunched into
+     * @param task            information about the task the activity was relaunched into
      * @param homeTaskVisible whether or not the home task is visible
-     * @param clearedTask whether or not the launch activity also cleared the task as a part of
-     * starting
-     * @param wasVisible whether the activity was visible before the restart attempt
+     * @param clearedTask     whether or not the launch activity also cleared the task as a part of
+     *                        starting
+     * @param wasVisible      whether the activity was visible before the restart attempt
      */
     void onActivityRestartAttempt(ActivityManager.RunningTaskInfo task, boolean homeTaskVisible,
                                   boolean clearedTask, boolean wasVisible);
 
-    /*
+    /**
      * Called when contents are drawn for the first time on a display which can only contaone
      * task.
      *
@@ -191,7 +204,7 @@ public interface ITaskStackListener {
      */
     void onSingleTaskDisplayDrawn(int displayId);
 
-    /*
+    /**
      * Called when the last task is removed from a display which can only contaone task.
      *
      * @param displayId the id of the display from which the window is removed.
@@ -213,8 +226,8 @@ public interface ITaskStackListener {
     /**
      * Called when a task gets or loses focus.
      *
-     * @param taskId id of the task.
-     * @param {@code true} if the task got focus, {@code false} if it lost it.
+     * @param taskId  id of the task.
+     * @param focused {@code true} if the task got focus, {@code false} if it lost it.
      */
     void onTaskFocusChanged(int taskId, boolean focused);
 
@@ -223,7 +236,7 @@ public interface ITaskStackListener {
      * #onActivityRequestedOrientationChanged(int, int)} the sense that this method is called
      * when a task changes requested orientation due to activity launch, dimiss or reparenting.
      *
-     * @param taskId id of the task.
+     * @param taskId               id of the task.
      * @param requestedOrientation the new requested orientation of this task as screen orientations
      *                             {@link android.content.pm.ActivityInfo}.
      */
@@ -232,10 +245,10 @@ public interface ITaskStackListener {
     /**
      * Called when a rotation is about to start on the foreground activity.
      * This applies for:
-     *   * free sensor rotation
-     *   * forced rotation
-     *   * rotation settings set through adb command line
-     *   * rotation that occurs when rotation tile is toggled quick settings
+     * * free sensor rotation
+     * * forced rotation
+     * * rotation settings set through adb command line
+     * * rotation that occurs when rotation tile is toggled quick settings
      *
      * @param displayId id of the display where activity will rotate
      */
@@ -260,11 +273,13 @@ public interface ITaskStackListener {
     void onLockTaskModeChanged(int mode);
 
     // https://github.com/gkd-kit/gkd/issues/941
-    //Samsung OneUi
+    // Samsung OneUi
     void onActivityDismissingSplitTask(String str);
 
     void onOccludeChangeNotice(ComponentName componentName, boolean z);
 
-    void onTaskWindowingModeChanged(int i);
+    void onTaskbarIconVisibleChangeRequest(ComponentName componentName, boolean z);
+
+    void onTaskWindowingModeChanged(int taskId);
 
 }
