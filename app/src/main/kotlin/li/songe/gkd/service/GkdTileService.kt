@@ -107,6 +107,8 @@ private fun enableA11yService() {
 }
 
 private val modifyA11yMutex by lazy { Mutex() }
+private const val A11Y_AWAIT_START_TIME = 1000L
+private const val A11Y_AWAIT_FIX_TIME = 500L
 
 fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
     modifyA11yMutex.withLock {
@@ -124,11 +126,11 @@ fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
             if (names.contains(A11yService.a11yClsName)) { // 当前无障碍异常, 重启服务
                 names.remove(A11yService.a11yClsName)
                 updateServiceNames(names)
-                delay(500)
+                delay(A11Y_AWAIT_FIX_TIME)
             }
             names.add(A11yService.a11yClsName)
             updateServiceNames(names)
-            delay(500)
+            delay(A11Y_AWAIT_START_TIME)
             // https://github.com/orgs/gkd-kit/discussions/799
             if (!A11yService.isRunning.value) {
                 toast("开启无障碍失败")
@@ -155,11 +157,11 @@ fun fixRestartService() = appScope.launchTry(Dispatchers.IO) {
                 names.remove(A11yService.a11yClsName)
                 updateServiceNames(names)
                 // 必须等待一段时间, 否则概率不会触发系统重启无障碍服务
-                delay(500)
+                delay(A11Y_AWAIT_FIX_TIME)
             }
             names.add(A11yService.a11yClsName)
             updateServiceNames(names)
-            delay(500)
+            delay(A11Y_AWAIT_START_TIME)
             if (!A11yService.isRunning.value) {
                 toast("重启无障碍失败")
                 accessRestrictedSettingsShowFlow.value = true
