@@ -2,13 +2,10 @@ package li.songe.gkd.ui.component
 
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -40,22 +37,10 @@ fun TermsAcceptDialog() {
             Text(text = stepDataList[step].first)
         },
         text = {
-            val state = rememberPagerState(step) { stepDataList.size }
-            LaunchedEffect(step) {
-                if (state.currentPage != step) {
-                    state.animateScrollToPage(step)
-                }
-            }
-            HorizontalPager(
-                state = state,
-                modifier = Modifier.fillMaxWidth(),
-                userScrollEnabled = false,
-            ) {
-                Text(
-                    modifier = modifier,
-                    text = stepDataList[it].second,
-                )
-            }
+            Text(
+                modifier = modifier,
+                text = stepDataList[step].second,
+            )
         },
         confirmButton = {
             TextButton(onClick = throttle {
