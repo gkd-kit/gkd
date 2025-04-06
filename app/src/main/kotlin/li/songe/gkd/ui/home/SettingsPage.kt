@@ -98,7 +98,7 @@ fun useSettingsPage(): ScaffoldExt {
                             textAlign = TextAlign.End,
                         )
                     },
-                    modifier = Modifier.autoFocus()
+                    modifier = Modifier.fillMaxWidth().autoFocus()
                 )
             },
             onDismissRequest = { showToastInputDlg = false },
@@ -165,7 +165,7 @@ fun useSettingsPage(): ScaffoldExt {
                             textAlign = TextAlign.End,
                         )
                     },
-                    modifier = Modifier.autoFocus()
+                    modifier = Modifier.fillMaxWidth().autoFocus()
                 )
             },
             onDismissRequest = {

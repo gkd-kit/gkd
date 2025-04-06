@@ -228,7 +228,7 @@ fun EditGithubCookieDlg(showEditCookieDlgFlow: MutableStateFlow<Boolean>) {
                         value = it.filter { c -> c != '\n' && c != '\r' }
                     },
                     placeholder = { Text(text = "请输入 Github Cookie") },
-                    modifier = Modifier.autoFocus(),
+                    modifier = Modifier.fillMaxWidth().autoFocus(),
                     maxLines = 10,
                 )
             },

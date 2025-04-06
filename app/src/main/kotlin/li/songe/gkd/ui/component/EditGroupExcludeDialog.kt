@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.component
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -44,7 +45,7 @@ fun EditGroupExcludeDialog(
             OutlinedTextField(
                 value = value,
                 onValueChange = { value = it },
-                modifier = Modifier.autoFocus(),
+                modifier = Modifier.fillMaxWidth().autoFocus(),
                 placeholder = {
                     Text(
                         text = "请填入需要禁用的 activityId\n以换行或英文逗号分割",

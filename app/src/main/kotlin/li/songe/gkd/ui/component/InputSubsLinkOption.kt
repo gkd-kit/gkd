@@ -105,7 +105,7 @@ class InputSubsLinkOption {
                             valueFlow.value = it.trim()
                         },
                         maxLines = 8,
-                        modifier = Modifier.autoFocus(),
+                        modifier = Modifier.fillMaxWidth().autoFocus(),
                         placeholder = {
                             Text(text = "请输入订阅链接")
                         },
