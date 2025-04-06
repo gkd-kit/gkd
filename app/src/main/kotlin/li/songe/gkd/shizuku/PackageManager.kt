@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.appScope
 import li.songe.gkd.permission.shizukuOkState
-import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.shizukuStoreFlow
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
 import kotlin.reflect.full.declaredFunctions
@@ -58,8 +58,8 @@ fun newPackageManager(): SafePackageManager? {
 }
 
 val shizukuWorkProfileUsedFlow by lazy {
-    combine(shizukuOkState.stateFlow, storeFlow) { shizukuOk, store ->
-        shizukuOk && store.enableShizukuWorkProfile
+    combine(shizukuOkState.stateFlow, shizukuStoreFlow) { shizukuOk, store ->
+        shizukuOk && store.enableWorkProfile
     }.stateIn(appScope, SharingStarted.Eagerly, false)
 }
 

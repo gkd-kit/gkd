@@ -130,5 +130,11 @@ class TaskListener(private val onStackChanged: () -> Unit) : ITaskStackListener.
     ) {
     }
 
+    override fun onTaskbarIconVisibleChangeRequest(
+        componentName: ComponentName?,
+        z: Boolean
+    ) {
+    }
+
     override fun onTaskWindowingModeChanged(i: Int) {}
 }

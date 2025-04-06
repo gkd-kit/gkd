@@ -19,7 +19,7 @@ import li.songe.gkd.service.TopActivity
 import li.songe.gkd.service.topActivityFlow
 import li.songe.gkd.service.updateTopActivity
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.shizukuStoreFlow
 import li.songe.gkd.util.toast
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
@@ -104,8 +104,8 @@ private fun newActivityTaskManager(): SafeActivityTaskManager? {
 }
 
 private val shizukuActivityUsedFlow by lazy {
-    combine(shizukuOkState.stateFlow, storeFlow) { shizukuOk, store ->
-        shizukuOk && store.enableShizukuActivity
+    combine(shizukuOkState.stateFlow, shizukuStoreFlow) { shizukuOk, store ->
+        shizukuOk && store.enableActivity
     }.stateIn(appScope, SharingStarted.Eagerly, false)
 }
 
