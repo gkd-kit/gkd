@@ -380,7 +380,7 @@ private fun AddOrEditCategoryDialog(
             OutlinedTextField(
                 value = value,
                 onValueChange = { value = it.trim() },
-                modifier = Modifier.autoFocus(),
+                modifier = Modifier.fillMaxWidth().autoFocus(),
                 placeholder = { Text(text = "请输入类别名称") },
                 singleLine = true
             )

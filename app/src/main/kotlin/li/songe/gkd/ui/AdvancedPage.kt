@@ -125,7 +125,7 @@ fun AdvancedPage() {
                         value = it.filter { c -> c.isDigit() }.take(5)
                     },
                     singleLine = true,
-                    modifier = Modifier.autoFocus(),
+                    modifier = Modifier.fillMaxWidth().autoFocus(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     supportingText = {
                         Text(

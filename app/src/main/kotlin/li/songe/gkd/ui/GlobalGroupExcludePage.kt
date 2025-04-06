@@ -359,7 +359,7 @@ fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                 OutlinedTextField(
                     value = source,
                     onValueChange = { source = it },
-                    modifier = Modifier.autoFocus(),
+                    modifier = Modifier.fillMaxWidth().autoFocus(),
                     placeholder = {
                         Text(
                             text = tipText,

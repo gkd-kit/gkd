@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.component
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -201,7 +202,7 @@ fun EditOrAddRuleGroupDialog(
             OutlinedTextField(
                 value = value,
                 onValueChange = { value = it },
-                modifier = Modifier.autoFocus(),
+                modifier = Modifier.fillMaxWidth().autoFocus(),
                 placeholder = {
                     Text(
                         text = if (app != null || addAnyAppRule) {
