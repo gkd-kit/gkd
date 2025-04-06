@@ -19,6 +19,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.dylanc.activityresult.launcher.PickContentLauncher
@@ -47,6 +48,7 @@ import li.songe.gkd.service.updateLauncherAppId
 import li.songe.gkd.ui.component.BuildDialog
 import li.songe.gkd.ui.component.ShareDataDialog
 import li.songe.gkd.ui.component.SubsSheet
+import li.songe.gkd.ui.component.TermsAcceptDialog
 import li.songe.gkd.ui.component.UrlDetailDialog
 import li.songe.gkd.ui.theme.AppTheme
 import li.songe.gkd.util.EditGithubCookieDlg
@@ -64,6 +66,7 @@ import li.songe.gkd.util.openApp
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.shizukuAppId
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.termsAcceptedFlow
 import li.songe.gkd.util.toast
 import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
@@ -91,6 +94,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         setContent {
+            val termsAccepted by termsAcceptedFlow.collectAsStateWithLifecycle()
             val navController = rememberNavController()
             CompositionLocalProvider(
                 LocalNavController provides navController,
@@ -101,20 +105,24 @@ class MainActivity : ComponentActivity() {
                         navController = navController,
                         navGraph = NavGraphs.root
                     )
-                    AccessRestrictedSettingsDlg()
-                    ShizukuErrorDialog(mainVm.shizukuErrorFlow)
-                    AuthDialog(mainVm.authReasonFlow)
-                    BuildDialog(mainVm.dialogFlow)
-                    mainVm.uploadOptions.ShowDialog()
-                    EditGithubCookieDlg(mainVm.showEditCookieDlgFlow)
-                    if (META.updateEnabled) {
-                        UpgradeDialog(mainVm.updateStatus)
+                    if (!termsAccepted) {
+                        TermsAcceptDialog()
+                    } else {
+                        AccessRestrictedSettingsDlg()
+                        ShizukuErrorDialog(mainVm.shizukuErrorFlow)
+                        AuthDialog(mainVm.authReasonFlow)
+                        BuildDialog(mainVm.dialogFlow)
+                        mainVm.uploadOptions.ShowDialog()
+                        EditGithubCookieDlg(mainVm.showEditCookieDlgFlow)
+                        if (META.updateEnabled) {
+                            UpgradeDialog(mainVm.updateStatus)
+                        }
+                        SubsSheet(mainVm, mainVm.sheetSubsIdFlow)
+                        ShareDataDialog(mainVm, mainVm.showShareDataIdsFlow)
+                        mainVm.inputSubsLinkOption.ContentDialog()
+                        mainVm.ruleGroupState.Render()
+                        UrlDetailDialog(mainVm.urlFlow)
                     }
-                    SubsSheet(mainVm, mainVm.sheetSubsIdFlow)
-                    ShareDataDialog(mainVm, mainVm.showShareDataIdsFlow)
-                    mainVm.inputSubsLinkOption.ContentDialog()
-                    mainVm.ruleGroupState.Render()
-                    UrlDetailDialog(mainVm.urlFlow)
                 }
             }
         }
