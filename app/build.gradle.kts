@@ -83,8 +83,8 @@ android {
         aidl = true
     }
 
-    val currentSigning = if (project.hasProperty("GKD_STORE_FILE")) {
-        signingConfigs.create("release") {
+    val gkdSigningConfig = if (project.hasProperty("GKD_STORE_FILE")) {
+        signingConfigs.create("gkd") {
             storeFile = file(project.properties["GKD_STORE_FILE"] as String)
             storePassword = project.properties["GKD_STORE_PASSWORD"] as String
             keyAlias = project.properties["GKD_KEY_ALIAS"] as String
@@ -94,9 +94,20 @@ android {
         signingConfigs.getByName("debug")
     }
 
+    val playSigningConfig = if (project.hasProperty("PLAY_STORE_FILE")) {
+        signingConfigs.create("play") {
+            storeFile = file(project.properties["PLAY_STORE_FILE"] as String)
+            storePassword = project.properties["PLAY_STORE_PASSWORD"] as String
+            keyAlias = project.properties["PLAY_KEY_ALIAS"] as String
+            keyPassword = project.properties["PLAY_KEY_PASSWORD"] as String
+        }
+    } else {
+        null
+    }
+
     buildTypes {
         all {
-            signingConfig = currentSigning
+            signingConfig = gkdSigningConfig
             if (gitInfo?.tagName == null) {
                 versionNameSuffix = "-${gitInfo?.commitId?.substring(0, 7) ?: "unknown"}"
             }
@@ -132,9 +143,14 @@ android {
         create("gkd") {
             isDefault = true
             manifestPlaceholders["updateEnabled"] = true
+            resValue("bool", "is_accessibility_tool", "true")
         }
-        create("foss") {
+        create("play") {
+            if (playSigningConfig != null) {
+                signingConfig = playSigningConfig
+            }
             manifestPlaceholders["updateEnabled"] = false
+            resValue("bool", "is_accessibility_tool", "false")
         }
         all {
             dimension = flavorDimensionList.first()
