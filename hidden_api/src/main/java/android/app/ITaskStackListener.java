@@ -287,4 +287,7 @@ public interface ITaskStackListener {
 
     void onActivityDismissingDockedTask();
 
+    // https://github.com/gkd-kit/gkd/issues/948
+    void onTaskSnapshotInvalidated(int taskId);
+
 }

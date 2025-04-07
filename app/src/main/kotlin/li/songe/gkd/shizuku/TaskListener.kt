@@ -157,4 +157,5 @@ class TaskListener(private val onStackChanged: () -> Unit) : ITaskStackListener.
     override fun onTaskWindowingModeChanged(i: Int) {}
     override fun onRecentTaskRemovedForAddTask(taskId: Int) {}
     override fun onActivityDismissingDockedTask() {}
+    override fun onTaskSnapshotInvalidated(taskId: Int) {}
 }
