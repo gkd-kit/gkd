@@ -282,4 +282,9 @@ public interface ITaskStackListener {
 
     void onTaskWindowingModeChanged(int taskId);
 
+    // https://github.com/gkd-kit/gkd/issues/943
+    void onRecentTaskRemovedForAddTask(int taskId);
+
+    void onActivityDismissingDockedTask();
+
 }

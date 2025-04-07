@@ -94,7 +94,7 @@ fun MutableStateFlow<AlertDialogOptions?>.updateDialogOptions(
         confirmText = confirmText,
         confirmAction = confirmAction ?: { value = null },
         dismissText = dismissText,
-        dismissAction = dismissAction,
+        dismissAction = dismissAction ?: { value = null },
         onDismissRequest = onDismissRequest,
         error = error,
     )

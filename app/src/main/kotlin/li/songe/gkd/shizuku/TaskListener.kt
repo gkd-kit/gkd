@@ -6,8 +6,26 @@ import android.app.ITaskStackListener
 import android.content.ComponentName
 import android.os.IBinder
 import android.window.TaskSnapshot
+import java.lang.reflect.Modifier
+import kotlin.reflect.full.declaredFunctions
 
 class TaskListener(private val onStackChanged: () -> Unit) : ITaskStackListener.Stub() {
+    companion object {
+        // https://github.com/gkd-kit/gkd/issues/941
+        val unadaptedMethodList by lazy {
+            val allAdaptedMethodList = TaskListener::class.declaredFunctions
+            val currentSystemMethodList =
+                Class.forName("android.app.ITaskStackListener").methods.filter {
+                    it.returnType == Void.TYPE && !it.isDefault && Modifier.isAbstract(it.modifiers) && !Modifier.isStatic(
+                        it.modifiers
+                    )
+                }
+            currentSystemMethodList.filterNot { v1 ->
+                allAdaptedMethodList.any { v2 -> v1.name == v2.name && v1.parameters.size == v2.parameters.size - 1 }
+            }
+        }
+    }
+
     override fun onTaskStackChanged() = onStackChanged()
 
     override fun onActivityPinned(
@@ -137,4 +155,6 @@ class TaskListener(private val onStackChanged: () -> Unit) : ITaskStackListener.
     }
 
     override fun onTaskWindowingModeChanged(i: Int) {}
+    override fun onRecentTaskRemovedForAddTask(taskId: Int) {}
+    override fun onActivityDismissingDockedTask() {}
 }

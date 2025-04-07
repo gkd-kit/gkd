@@ -56,6 +56,7 @@ import com.blankj.utilcode.util.LogUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.AboutPageDestination
 import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
@@ -70,6 +71,7 @@ import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.shizuku.TaskListener
 import li.songe.gkd.shizuku.shizukuCheckActivity
 import li.songe.gkd.shizuku.shizukuCheckUserService
 import li.songe.gkd.shizuku.shizukuCheckWorkProfile
@@ -125,7 +127,9 @@ fun AdvancedPage() {
                         value = it.filter { c -> c.isDigit() }.take(5)
                     },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth().autoFocus(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .autoFocus(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     supportingText = {
                         Text(
@@ -468,6 +472,8 @@ fun AdvancedPage() {
 
 @Composable
 private fun ShizukuFragment(enabled: Boolean = true) {
+    val mainVm = LocalMainViewModel.current
+    val navController = LocalNavController.current
     val shizukuStore by shizukuStoreFlow.collectAsState()
     TextSwitch(
         title = "界面识别",
@@ -482,6 +488,25 @@ private fun ShizukuFragment(enabled: Boolean = true) {
                 if (!shizukuCheckActivity()) {
                     toast("检测失败,无法使用")
                     return@launchAsFn
+                }
+                if (TaskListener.unadaptedMethodList.isNotEmpty()) {
+                    LogUtils.d(
+                        "TaskListener.unadaptedMethodList",
+                        *TaskListener.unadaptedMethodList.map {
+                            "${it.name}(${it.parameters.joinToString { p -> "${p.name}:${p.type}" }}):${it.returnType}"
+                        }.toTypedArray()
+                    )
+                    mainVm.dialogFlow.updateDialogOptions(
+                        onDismissRequest = {},
+                        title = "适配提示",
+                        text = "检测到未适配的 API, 已自动禁用部分功能, 请带上日志反馈",
+                        dismissText = "取消",
+                        confirmText = "去反馈",
+                        confirmAction = {
+                            mainVm.dialogFlow.value = null
+                            navController.toDestinationsNavigator().navigate(AboutPageDestination)
+                        }
+                    )
                 }
                 toast("已启用")
             }
