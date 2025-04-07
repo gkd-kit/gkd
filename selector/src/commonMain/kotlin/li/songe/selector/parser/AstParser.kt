@@ -29,7 +29,7 @@ internal class AstParser(override val source: String) : SelectorParser(source) {
     private fun traverse(block: (node: AstNode<*>) -> Unit) {
         val stack = mutableListOf(tempAstContext.children.single())
         do {
-            val top = stack.removeLast()
+            val top = stack.run { removeAt(lastIndex) }
             block(top)
             stack.addAll(top.children.asReversed())
         } while (stack.isNotEmpty())
@@ -154,7 +154,7 @@ internal class AstParser(override val source: String) : SelectorParser(source) {
             tempAstContext.children.size
         ).toMutableList()
         repeat(children.size) {
-            tempAstContext.children.removeLast()
+            tempAstContext.children.run { removeAt(lastIndex) }
         }
         tempAstContext.children.add(
             AstNode(
@@ -173,7 +173,7 @@ internal class AstParser(override val source: String) : SelectorParser(source) {
             tempAstContext.children.size
         ).toMutableList()
         repeat(children.size) {
-            tempAstContext.children.removeLast()
+            tempAstContext.children.run { removeAt(lastIndex) }
         }
         tempAstContext.children.add(
             AstNode(
