@@ -123,6 +123,7 @@ android {
             )
         }
         debug {
+            signingConfig = gkdSigningConfig
             applicationIdSuffix = ".debug"
 
             // add "debug" suffix
