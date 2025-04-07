@@ -124,11 +124,13 @@ private val taskListener by lazy {
 
 val activityTaskManagerFlow by lazy<StateFlow<SafeActivityTaskManager?>> {
     val stateFlow = MutableStateFlow<SafeActivityTaskManager?>(null)
-    appScope.launchTry(Dispatchers.IO) {
-        shizukuActivityUsedFlow.collect {
-            stateFlow.value?.unregisterTaskStackListener(taskListener)
-            stateFlow.value = if (it) newActivityTaskManager() else null
-            stateFlow.value?.registerTaskStackListener(taskListener)
+    if (TaskListener.unadaptedMethodList.isEmpty()) {
+        appScope.launchTry(Dispatchers.IO) {
+            shizukuActivityUsedFlow.collect {
+                stateFlow.value?.unregisterTaskStackListener(taskListener)
+                stateFlow.value = if (it) newActivityTaskManager() else null
+                stateFlow.value?.registerTaskStackListener(taskListener)
+            }
         }
     }
     stateFlow
