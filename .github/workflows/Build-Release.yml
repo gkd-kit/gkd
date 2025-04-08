@@ -46,6 +46,11 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
+          name: playRelease
+          path: app/build/outputs/bundle/playRelease
+
+      - uses: actions/upload-artifact@v4
+        with:
           name: CHANGELOG.md
           path: CHANGELOG.md
 
