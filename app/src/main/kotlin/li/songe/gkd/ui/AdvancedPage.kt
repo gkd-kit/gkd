@@ -56,12 +56,13 @@ import com.blankj.utilcode.util.LogUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.AboutPageDestination
 import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.MainActivity
 import li.songe.gkd.appScope
 import li.songe.gkd.debug.FloatingService
@@ -71,7 +72,6 @@ import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.shizukuOkState
-import li.songe.gkd.shizuku.TaskListener
 import li.songe.gkd.shizuku.shizukuCheckActivity
 import li.songe.gkd.shizuku.shizukuCheckUserService
 import li.songe.gkd.shizuku.shizukuCheckWorkProfile
@@ -470,10 +470,10 @@ fun AdvancedPage() {
 
 }
 
+private val checkShizukuMutex by lazy { Mutex() }
+
 @Composable
 private fun ShizukuFragment(enabled: Boolean = true) {
-    val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
     val shizukuStore by shizukuStoreFlow.collectAsState()
     TextSwitch(
         title = "界面识别",
@@ -483,34 +483,17 @@ private fun ShizukuFragment(enabled: Boolean = true) {
         checked = shizukuStore.enableActivity,
         enabled = enabled,
         onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {
-            if (it) {
-                toast("检测中")
-                if (!shizukuCheckActivity()) {
-                    toast("检测失败,无法使用")
-                    return@launchAsFn
+            checkShizukuMutex.withLock {
+                if (it) {
+                    toast("检测中")
+                    if (!shizukuCheckActivity()) {
+                        toast("检测失败,无法使用")
+                        return@launchAsFn
+                    }
+                    toast("已启用")
                 }
-                if (TaskListener.unadaptedMethodList.isNotEmpty()) {
-                    LogUtils.d(
-                        "TaskListener.unadaptedMethodList",
-                        *TaskListener.unadaptedMethodList.map {
-                            "${it.name}(${it.parameters.joinToString { p -> "${p.name}:${p.type}" }}):${it.returnType}"
-                        }.toTypedArray()
-                    )
-                    mainVm.dialogFlow.updateDialogOptions(
-                        onDismissRequest = {},
-                        title = "适配提示",
-                        text = "检测到未适配的 API, 已自动禁用部分功能, 请带上日志反馈",
-                        dismissText = "取消",
-                        confirmText = "去反馈",
-                        confirmAction = {
-                            mainVm.dialogFlow.value = null
-                            navController.toDestinationsNavigator().navigate(AboutPageDestination)
-                        }
-                    )
-                }
-                toast("已启用")
+                shizukuStoreFlow.update { s -> s.copy(enableActivity = it) }
             }
-            shizukuStoreFlow.update { s -> s.copy(enableActivity = it) }
         })
 
     TextSwitch(
@@ -521,15 +504,17 @@ private fun ShizukuFragment(enabled: Boolean = true) {
         checked = shizukuStore.enableTapClick,
         enabled = enabled,
         onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {
-            if (it) {
-                toast("检测中")
-                if (!shizukuCheckUserService()) {
-                    toast("检测失败,无法使用")
-                    return@launchAsFn
+            checkShizukuMutex.withLock {
+                if (it) {
+                    toast("检测中")
+                    if (!shizukuCheckUserService()) {
+                        toast("检测失败,无法使用")
+                        return@launchAsFn
+                    }
+                    toast("已启用")
                 }
-                toast("已启用")
+                shizukuStoreFlow.update { s -> s.copy(enableTapClick = it) }
             }
-            shizukuStoreFlow.update { s -> s.copy(enableTapClick = it) }
         })
 
 
@@ -541,15 +526,17 @@ private fun ShizukuFragment(enabled: Boolean = true) {
         checked = shizukuStore.enableWorkProfile,
         enabled = enabled,
         onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {
-            if (it) {
-                toast("检测中")
-                if (!shizukuCheckWorkProfile()) {
-                    toast("检测失败,无法使用")
-                    return@launchAsFn
+            checkShizukuMutex.withLock {
+                if (it) {
+                    toast("检测中")
+                    if (!shizukuCheckWorkProfile()) {
+                        toast("检测失败,无法使用")
+                        return@launchAsFn
+                    }
+                    toast("已启用")
                 }
-                toast("已启用")
+                shizukuStoreFlow.update { s -> s.copy(enableWorkProfile = it) }
             }
-            shizukuStoreFlow.update { s -> s.copy(enableWorkProfile = it) }
         })
 
 }
