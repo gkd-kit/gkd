@@ -1,6 +1,6 @@
 # gkd
 
-## [GKD 上架 Google Play 封闭式测试邀请](https://github.com/orgs/gkd-kit/discussions/946)
+## --> [GKD 上架 Google Play 封闭式测试邀请](https://github.com/orgs/gkd-kit/discussions/946) <--
 
 基于 **无障碍** + **高级选择器** + **订阅规则** 的自定义屏幕点击 APP
 
