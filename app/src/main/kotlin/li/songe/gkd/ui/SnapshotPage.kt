@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -34,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -99,6 +101,7 @@ fun SnapshotPage() {
     }
 
     val timeTextWidth = measureNumberTextWidth(MaterialTheme.typography.bodySmall)
+    val listState = key(snapshots.isNotEmpty(), firstLoading) { rememberLazyListState() }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
@@ -138,6 +141,7 @@ fun SnapshotPage() {
     }, content = { contentPadding ->
         LazyColumn(
             modifier = Modifier.scaffoldPadding(contentPadding),
+            state = listState,
         ) {
             items(snapshots, { it.id }) { snapshot ->
                 CompositionLocalProvider(
