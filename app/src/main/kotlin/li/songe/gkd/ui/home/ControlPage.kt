@@ -50,6 +50,7 @@ import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDesti
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import li.songe.gkd.MainActivity
 import li.songe.gkd.a11yServiceEnabledFlow
+import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.writeSecureSettingsState
@@ -141,17 +142,15 @@ fun useControlPage(): ScaffoldExt {
                         checked = manageRunning && store.enableStatusService,
                         onCheckedChange = throttle(fn = vm.viewModelScope.launchAsFn<Boolean> {
                             if (it) {
+                                requiredPermission(context, foregroundServiceSpecialUseState)
                                 requiredPermission(context, notificationState)
-                                storeFlow.value = store.copy(
-                                    enableStatusService = true
-                                )
                                 ManageService.start()
                             } else {
-                                storeFlow.value = store.copy(
-                                    enableStatusService = false
-                                )
                                 ManageService.stop()
                             }
+                            storeFlow.value = store.copy(
+                                enableStatusService = it
+                            )
                         }),
                     )
                 }

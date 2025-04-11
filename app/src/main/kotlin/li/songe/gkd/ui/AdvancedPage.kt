@@ -69,6 +69,7 @@ import li.songe.gkd.debug.FloatingService
 import li.songe.gkd.debug.HttpService
 import li.songe.gkd.debug.ScreenshotService
 import li.songe.gkd.permission.canDrawOverlaysState
+import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.shizukuOkState
@@ -274,6 +275,7 @@ fun AdvancedPage() {
                     checked = httpServerRunning,
                     onCheckedChange = throttle(fn = vm.viewModelScope.launchAsFn<Boolean> {
                         if (it) {
+                            requiredPermission(context, foregroundServiceSpecialUseState)
                             requiredPermission(context, notificationState)
                             HttpService.start()
                         } else {
@@ -348,6 +350,7 @@ fun AdvancedPage() {
                 checked = floatingRunning,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
+                        requiredPermission(context, foregroundServiceSpecialUseState)
                         requiredPermission(context, notificationState)
                         requiredPermission(context, canDrawOverlaysState)
                         FloatingService.start()
@@ -441,7 +444,7 @@ fun AdvancedPage() {
             )
 
             Text(
-                text = "其它",
+                text = "其他",
                 modifier = Modifier.titleItemPadding(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,

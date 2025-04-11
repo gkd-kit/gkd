@@ -1,6 +1,5 @@
 package li.songe.gkd.debug
 
-import android.content.Intent
 import android.view.ViewConfiguration
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -13,13 +12,11 @@ import com.torrydo.floatingbubbleview.FloatingBubbleListener
 import com.torrydo.floatingbubbleview.service.expandable.BubbleBuilder
 import com.torrydo.floatingbubbleview.service.expandable.ExpandableBubbleService
 import kotlinx.coroutines.flow.MutableStateFlow
-import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.notif.floatingNotif
 import li.songe.gkd.notif.notifyService
-import li.songe.gkd.permission.canDrawOverlaysState
-import li.songe.gkd.permission.notificationState
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
 import kotlin.math.sqrt
 
@@ -89,12 +86,7 @@ class FloatingService : ExpandableBubbleService() {
 
     companion object {
         val isRunning = MutableStateFlow(false)
-
-        fun start() {
-            if (!notificationState.checkOrToast()) return
-            if (!canDrawOverlaysState.checkOrToast()) return
-            app.startForegroundService(Intent(app, FloatingService::class.java))
-        }
+        fun start() = startForegroundServiceByClass(FloatingService::class)
         fun stop() = stopServiceByClass(FloatingService::class)
     }
 }

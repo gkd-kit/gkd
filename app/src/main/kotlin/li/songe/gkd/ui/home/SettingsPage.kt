@@ -298,7 +298,7 @@ fun useSettingsPage(): ScaffoldExt {
             }
 
             Text(
-                text = "其它",
+                text = "其他",
                 modifier = Modifier.titleItemPadding(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,

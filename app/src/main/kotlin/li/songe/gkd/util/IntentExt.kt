@@ -17,6 +17,8 @@ import kotlinx.coroutines.withContext
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
 import li.songe.gkd.permission.canWriteExternalStorage
+import li.songe.gkd.permission.foregroundServiceSpecialUseState
+import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
 import java.io.File
 import kotlin.reflect.KClass
@@ -107,4 +109,16 @@ fun openApp(appId: String) {
 fun <T : Service> stopServiceByClass(clazz: KClass<T>) {
     val intent = Intent(app, clazz.java)
     app.stopService(intent)
+}
+
+fun <T : Service> startForegroundServiceByClass(clazz: KClass<T>) {
+    if (!notificationState.checkOrToast()) return
+    if (!foregroundServiceSpecialUseState.checkOrToast()) return
+    val intent = Intent(app, clazz.java)
+    try {
+        app.startForegroundService(intent)
+    } catch (e: Throwable) {
+        LogUtils.d(e)
+        toast("启动服务失败: ${e.message}")
+    }
 }

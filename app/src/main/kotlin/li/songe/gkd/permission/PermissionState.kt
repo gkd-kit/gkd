@@ -2,6 +2,7 @@ package li.songe.gkd.permission
 
 import android.Manifest
 import android.app.Activity
+import android.app.AppOpsManager
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
@@ -10,6 +11,8 @@ import com.blankj.utilcode.util.LogUtils
 import com.hjq.permissions.OnPermissionCallback
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
+import com.ramcosta.composedestinations.generated.destinations.AppOpsAllowPageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
@@ -17,9 +20,12 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
+import li.songe.gkd.MainActivity
 import li.songe.gkd.app
+import li.songe.gkd.appOpsManager
 import li.songe.gkd.appScope
 import li.songe.gkd.shizuku.shizukuCheckGranted
+import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.initOrResetAppInfoCache
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mayQueryPkgNoAccessFlow
@@ -28,7 +34,7 @@ import li.songe.gkd.util.updateAppMutex
 
 class PermissionState(
     val check: () -> Boolean,
-    val request: (suspend (context: Activity) -> PermissionResult)? = null,
+    val request: (suspend (context: MainActivity) -> PermissionResult)? = null,
     /**
      * show it when user doNotAskAgain
      */
@@ -88,7 +94,7 @@ private suspend fun asyncRequestPermission(
             override fun onGranted(permissions: MutableList<String>, allGranted: Boolean) {
                 LogUtils.d("allGranted: $allGranted", permissions)
                 permissionResultFlow.update {
-                   val granted = XXPermissionResult.Granted(permissions, allGranted)
+                    val granted = XXPermissionResult.Granted(permissions, allGranted)
                     if (it == null) {
                         granted
                     } else {
@@ -135,32 +141,55 @@ private suspend fun asyncRequestPermission(
     }
 }
 
-private val notificationPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-        arrayOf(
-            Permission.POST_NOTIFICATIONS,
-            Manifest.permission.FOREGROUND_SERVICE,
-            // https://github.com/gkd-kit/gkd/issues/887
-            Manifest.permission.FOREGROUND_SERVICE_SPECIAL_USE
-        )
-    } else {
+@Suppress("SameParameterValue")
+private fun unsafeCheckOpNoThrow(op: String): Int {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        try {
+            return appOpsManager.unsafeCheckOpNoThrow(
+                op,
+                android.os.Process.myUid(),
+                app.packageName
+            )
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+    }
+    return AppOpsManager.MODE_ALLOWED
+}
+
+// https://github.com/gkd-kit/gkd/issues/954
+// https://github.com/gkd-kit/gkd/issues/887
+val foregroundServiceSpecialUseState by lazy {
+    PermissionState(
+        check = {
+            unsafeCheckOpNoThrow("android:foreground_service_special_use") != AppOpsManager.MODE_IGNORED
+        },
+        reason = AuthReason(
+            text = "当前操作权限「特殊用途的前台服务」已被限制, 请先解除限制",
+            renderConfirm = {
+                val navController = LocalNavController.current
+                {
+                    navController.toDestinationsNavigator().navigate(AppOpsAllowPageDestination)
+                }
+            }
+        ),
+    )
+}
+
+val notificationState by lazy {
+    val list = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         arrayOf(
             Permission.POST_NOTIFICATIONS,
             Manifest.permission.FOREGROUND_SERVICE
         )
+    } else {
+        arrayOf(Permission.POST_NOTIFICATIONS)
     }
-} else {
-    arrayOf(Permission.POST_NOTIFICATIONS)
-}
-
-val notificationState by lazy {
     PermissionState(
         check = {
-            XXPermissions.isGranted(app, notificationPermissions)
+            XXPermissions.isGranted(app, list)
         },
-        request = {
-            asyncRequestPermission(it, *notificationPermissions)
-        },
+        request = { asyncRequestPermission(it, *list) },
         reason = AuthReason(
             text = "当前操作需要「通知权限」\n您需要前往应用权限设置打开此权限",
             confirm = {
@@ -192,14 +221,6 @@ val canDrawOverlaysState by lazy {
         check = {
             // 需要注意, 即使有悬浮权限, 在某些特殊的页面如 微信支付完毕 页面, 下面的方法会返回 false
             Settings.canDrawOverlays(app)
-        },
-        request = {
-            // 无法直接请求悬浮窗权限
-            if (!Settings.canDrawOverlays(app)) {
-                PermissionResult.Denied(true)
-            } else {
-                PermissionResult.Granted
-            }
         },
         reason = AuthReason(
             text = "当前操作需要「悬浮窗权限」\n您需要前往应用权限设置打开此权限",
@@ -263,6 +284,7 @@ fun updatePermissionState() {
     }
     arrayOf(
         notificationState,
+        foregroundServiceSpecialUseState,
         canDrawOverlaysState,
         canWriteExternalStorage,
         writeSecureSettingsState,
