@@ -2,13 +2,14 @@ package li.songe.gkd.ui
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import li.songe.gkd.data.RawSubscription
+import kotlinx.coroutines.launch
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.ui.component.toGroupState
@@ -71,10 +72,11 @@ class AppConfigVm(stateHandle: SavedStateHandle) : ViewModelExt() {
         .stateInit(emptyList())
 
     private val temp1ListFlow = combine(
+        appUsedSubsIdsFlow,
         usedSubsEntriesFlow,
         appShowInnerDisableFlow,
         globalSubsConfigsFlow,
-    ) { list, show, configs ->
+    ) { usedSubsIds, list, show, configs ->
         list.map { e ->
             val globalGroups = e.subscription.globalGroups
                 .filter { g -> configs.find { it.subsId == e.subsItem.id && it.groupKey == g.key }?.enable != false }
@@ -90,30 +92,17 @@ class AppConfigVm(stateHandle: SavedStateHandle) : ViewModelExt() {
                         }
                     }
                 }
-            val appGroups = e.subscription.getAppGroups(args.appId)
+            val appGroups = if (usedSubsIds.contains(e.subsItem.id)) {
+                e.subscription.getAppGroups(args.appId)
+            } else {
+                emptyList()
+            }
             e to (globalGroups + appGroups)
         }.filter { it.second.isNotEmpty() }
     }.stateInit(emptyList())
 
-    private val temp2ListFlow = combine(
-        temp1ListFlow,
-        appUsedSubsIdsFlow,
-    ) { list, ids ->
-        if (list.size == ids.size) {
-            list
-        } else {
-            list.map { e ->
-                if (ids.contains(e.first.subsItem.id)) {
-                    e
-                } else {
-                    e.first to e.second.filter { it is RawSubscription.RawGlobalGroup }
-                }
-            }
-        }
-    }
-
     val subsPairsFlow = combine(
-        temp2ListFlow,
+        temp1ListFlow,
         latestLogsFlow,
         ruleSortTypeFlow
     ) { list, logs, sortType ->
@@ -163,6 +152,14 @@ class AppConfigVm(stateHandle: SavedStateHandle) : ViewModelExt() {
 
     fun invertSelect() {
         selectedDataSetFlow.value = getAllSelectedDataSet() - selectedDataSetFlow.value
+    }
+
+    init {
+        viewModelScope.launch {
+            appUsedSubsIdsFlow.collect {
+                LogUtils.d(it)
+            }
+        }
     }
 
 }
