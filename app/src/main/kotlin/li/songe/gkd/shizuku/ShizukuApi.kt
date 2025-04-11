@@ -14,6 +14,7 @@ import li.songe.gkd.data.otherUserMapFlow
 import li.songe.gkd.data.toAppInfo
 import li.songe.gkd.util.allPackageInfoMapFlow
 import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.getAppInfo
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.otherUserAppInfoMapFlow
 import li.songe.gkd.util.shizukuAppId
@@ -22,7 +23,7 @@ import li.songe.gkd.util.userAppInfoMapFlow
 import rikka.shizuku.Shizuku
 
 fun shizukuCheckGranted(): Boolean {
-    if (!appInfoCacheFlow.value.contains(shizukuAppId)) {
+    if (!appInfoCacheFlow.value.contains(shizukuAppId) && getAppInfo(shizukuAppId) == null) {
         return false
     }
     val granted = try {
