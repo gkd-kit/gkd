@@ -19,9 +19,14 @@ import androidx.core.graphics.get
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
+import com.blankj.utilcode.util.LogUtils
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.yield
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.activityManager
+import java.io.DataOutputStream
+import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
 
@@ -104,4 +109,26 @@ fun <S : Comparable<S>> AnimatedContentTransitionScope<S>.getUpDownTransform(): 
     }.using(
         SizeTransform(clip = false)
     )
+}
+
+suspend fun runCommandByRoot(commandText: String) {
+    var p: Process? = null
+    try {
+        p = Runtime.getRuntime().exec("su")
+        val o = DataOutputStream(p.outputStream)
+        o.writeBytes("${commandText}\nexit\n")
+        o.flush()
+        o.close()
+        p.waitFor()
+        if (p.exitValue() == 0) {
+            return
+        }
+    } catch (e: Exception) {
+        toast("运行失败:${e.message}")
+        LogUtils.d(e)
+    } finally {
+        p?.destroy()
+    }
+    coroutineContext[Job]?.cancel()
+    yield()
 }

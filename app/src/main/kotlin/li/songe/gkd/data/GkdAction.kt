@@ -60,7 +60,7 @@ sealed class ActionPerformer(val action: String) {
             val y = p?.second ?: ((rect.bottom + rect.top) / 2f)
             return ActionResult(
                 action = action,
-                // TODO 在分屏/小窗模式下会点击到应用界面外部导致误触其它应用
+                // TODO 在分屏/小窗模式下会点击到应用界面外部导致误触其他应用
                 result = if (0 <= x && 0 <= y && x <= ScreenUtils.getScreenWidth() && y <= ScreenUtils.getScreenHeight()) {
                     val result = safeTap(x, y)
                     if (result != null) {

@@ -13,7 +13,8 @@ import kotlin.coroutines.coroutineContext
 
 data class AuthReason(
     val text: String,
-    val confirm: () -> Unit
+    val confirm: (() -> Unit)? = null,
+    val renderConfirm: @Composable (() -> (() -> Unit))? = null,
 )
 
 @Composable
@@ -29,9 +30,10 @@ fun AuthDialog(authReasonFlow: MutableStateFlow<AuthReason?>) {
             },
             onDismissRequest = { authReasonFlow.value = null },
             confirmButton = {
+                val composeConfirm = authAction.renderConfirm?.invoke()
                 TextButton(onClick = {
                     authReasonFlow.value = null
-                    authAction.confirm()
+                    (composeConfirm ?: authAction.confirm)?.invoke()
                 }) {
                     Text(text = "确认")
                 }
@@ -55,8 +57,11 @@ private suspend fun checkOrRequestPermission(
     permissionState: PermissionState
 ): Boolean {
     if (!permissionState.updateAndGet()) {
-        val result = permissionState.request?.let { it(context) } ?: return false
-        if (result is PermissionResult.Denied) {
+        val result = permissionState.request?.invoke(context)
+        if (result == null) {
+            context.mainVm.authReasonFlow.value = permissionState.reason
+            return false
+        } else if (result is PermissionResult.Denied) {
             if (result.doNotAskAgain) {
                 context.mainVm.authReasonFlow.value = permissionState.reason
             }

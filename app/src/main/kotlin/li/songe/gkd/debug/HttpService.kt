@@ -28,7 +28,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
-import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.DeviceInfo
@@ -41,7 +40,6 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt.captureSnapshot
 import li.songe.gkd.notif.httpNotif
 import li.songe.gkd.notif.notifyService
-import li.songe.gkd.permission.notificationState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.util.LOCAL_HTTP_SUBS_ID
 import li.songe.gkd.util.OnCreate
@@ -53,6 +51,7 @@ import li.songe.gkd.util.isPortAvailable
 import li.songe.gkd.util.keepNullJson
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
+import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsItemsFlow
@@ -126,11 +125,7 @@ class HttpService : Service(), OnCreate, OnDestroy {
         val isRunning = MutableStateFlow(false)
         val localNetworkIpsFlow = MutableStateFlow(emptyList<String>())
         fun stop() = stopServiceByClass(HttpService::class)
-
-        fun start() {
-            if (!notificationState.checkOrToast()) return
-            app.startForegroundService(Intent(app, HttpService::class.java))
-        }
+        fun start() = startForegroundServiceByClass(HttpService::class)
     }
 }
 

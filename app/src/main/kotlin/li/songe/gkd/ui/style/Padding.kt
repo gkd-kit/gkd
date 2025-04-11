@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.dp
 val itemHorizontalPadding = 16.dp
 val itemVerticalPadding = 12.dp
 val EmptyHeight = 40.dp
+val cardHorizontalPadding = 12.dp
 
 fun Modifier.itemPadding() = this.padding(itemHorizontalPadding, itemVerticalPadding)
 

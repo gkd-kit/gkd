@@ -10,15 +10,16 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import li.songe.gkd.app
 import li.songe.gkd.notif.abNotif
 import li.songe.gkd.notif.notifyService
+import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.util.OnCreate
 import li.songe.gkd.util.OnDestroy
 import li.songe.gkd.util.actionCountFlow
 import li.songe.gkd.util.getSubsStatus
 import li.songe.gkd.util.ruleSummaryFlow
+import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.useAliveFlow
@@ -45,19 +46,15 @@ class ManageService : Service(), OnCreate, OnDestroy {
 
     companion object {
         val isRunning = MutableStateFlow(false)
-
-        fun start() {
-            if (!notificationState.checkOrToast()) return
-            app.startForegroundService(Intent(app, ManageService::class.java))
-        }
-
+        fun start() = startForegroundServiceByClass(ManageService::class)
         fun stop() = stopServiceByClass(ManageService::class)
 
         fun autoStart() {
-            // 在「系统重启」「被其它高权限应用重启」自动打开通知栏状态服务
+            // 重启自动打开通知栏状态服务
             if (storeFlow.value.enableStatusService
                 && !isRunning.value
                 && notificationState.updateAndGet()
+                && foregroundServiceSpecialUseState.updateAndGet()
             ) {
                 start()
             }

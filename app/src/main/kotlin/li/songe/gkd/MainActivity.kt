@@ -22,6 +22,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
+import com.blankj.utilcode.util.LogUtils
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
@@ -30,21 +31,25 @@ import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDesti
 import com.ramcosta.composedestinations.utils.currentDestinationAsState
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.yield
 import li.songe.gkd.debug.FloatingService
 import li.songe.gkd.debug.HttpService
 import li.songe.gkd.debug.ScreenshotService
 import li.songe.gkd.permission.AuthDialog
+import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.permission.updatePermissionState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.service.updateDefaultInputAppId
 import li.songe.gkd.service.updateLauncherAppId
+import li.songe.gkd.shizuku.execCommandForResult
 import li.songe.gkd.ui.component.BuildDialog
 import li.songe.gkd.ui.component.ShareDataDialog
 import li.songe.gkd.ui.component.SubsSheet
@@ -68,6 +73,8 @@ import li.songe.gkd.util.shizukuAppId
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.termsAcceptedFlow
 import li.songe.gkd.util.toast
+import rikka.shizuku.Shizuku
+import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
 
@@ -287,10 +294,10 @@ fun AccessRestrictedSettingsDlg() {
     if (accessRestrictedSettingsShow && !isA11yPage && !a11yRunning) {
         AlertDialog(
             title = {
-                Text(text = "访问受限")
+                Text(text = "权限受限")
             },
             text = {
-                Text(text = "尽管 GKD 已持有「写入安全设置权限」, 但无法生效, 系统可能在更新 GKD 后用更高级的权限「访问受限设置」限制了 GKD, 请重新授权解除限制")
+                Text(text = "当前操作权限「访问受限设置」已被限制, 请先解除限制")
             },
             onDismissRequest = {
                 accessRestrictedSettingsShowFlow.value = false
@@ -300,7 +307,7 @@ fun AccessRestrictedSettingsDlg() {
                     accessRestrictedSettingsShowFlow.value = false
                     navController.toDestinationsNavigator().navigate(AuthA11YPageDestination)
                 }) {
-                    Text(text = "前往授权")
+                    Text(text = "解除")
                 }
             },
             dismissButton = {
@@ -312,4 +319,28 @@ fun AccessRestrictedSettingsDlg() {
             },
         )
     }
+}
+
+suspend fun MainActivity.grantPermissionByShizuku(command: String) {
+    if (!appInfoCacheFlow.value.contains(shizukuAppId)) {
+        mainVm.shizukuErrorFlow.value = true
+    }
+    if (shizukuOkState.stateFlow.value) {
+        try {
+            execCommandForResult(command)
+            return
+        } catch (e: Exception) {
+            toast("运行失败:${e.message}")
+            LogUtils.d(e)
+        }
+    } else {
+        try {
+            Shizuku.requestPermission(Activity.RESULT_OK)
+        } catch (e: Exception) {
+            LogUtils.d("Shizuku授权错误", e.message)
+            mainVm.shizukuErrorFlow.value = true
+        }
+    }
+    coroutineContext[Job]?.cancel()
+    yield()
 }
