@@ -93,7 +93,7 @@ private val packageReceiver by lazy {
     }
 }
 
-private fun getAppInfo(appId: String): AppInfo? {
+fun getAppInfo(appId: String): AppInfo? {
     return try {
         // flags=0 : only get basic info
         app.packageManager.getPackageInfo(appId, 0)

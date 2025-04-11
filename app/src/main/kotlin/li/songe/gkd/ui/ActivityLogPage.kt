@@ -1,5 +1,6 @@
 package li.songe.gkd.ui
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
@@ -28,9 +30,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -62,13 +64,14 @@ import li.songe.gkd.util.throttle
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun ActivityLogPage() {
-    val context = LocalContext.current as MainActivity
+    val context = LocalActivity.current as MainActivity
     val mainVm = context.mainVm
     val vm = viewModel<ActivityLogVm>()
     val navController = LocalNavController.current
 
     val logCount by vm.logCountFlow.collectAsState()
     val list = vm.pagingDataFlow.collectAsLazyPagingItems()
+    val listState = key(list.itemCount > 0) { rememberLazyListState() }
 
     val timeTextWidth = measureNumberTextWidth(MaterialTheme.typography.bodySmall)
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -108,6 +111,7 @@ fun ActivityLogPage() {
     }) { contentPadding ->
         LazyColumn(
             modifier = Modifier.scaffoldPadding(contentPadding),
+            state = listState,
         ) {
             items(
                 count = list.itemCount,
