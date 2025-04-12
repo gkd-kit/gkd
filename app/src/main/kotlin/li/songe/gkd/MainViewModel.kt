@@ -3,6 +3,7 @@ package li.songe.gkd
 import android.webkit.URLUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavHostController
 import com.blankj.utilcode.util.LogUtils
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
@@ -36,6 +37,9 @@ import li.songe.gkd.util.updateSubsMutex
 import li.songe.gkd.util.updateSubscription
 
 class MainViewModel : ViewModel() {
+
+    lateinit var navController: NavHostController
+
     val enableDarkThemeFlow = storeFlow.debounce(300).map { s -> s.enableDarkTheme }.stateIn(
         viewModelScope,
         SharingStarted.Eagerly,

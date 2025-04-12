@@ -32,6 +32,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.META
@@ -53,7 +55,6 @@ import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openA11ySettings
-import li.songe.gkd.util.openUri
 import li.songe.gkd.util.runCommandByRoot
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
@@ -138,7 +139,8 @@ fun AuthA11yPage() {
                         modifier = Modifier
                             .padding(cardHorizontalPadding, 0.dp)
                             .clickable {
-                                openUri(ShortUrlSet.URL2)
+                                navController.toDestinationsNavigator()
+                                    .navigate(WebViewPageDestination(initUrl = (ShortUrlSet.URL2)))
                             },
                         text = "无法开启无障碍?",
                         style = MaterialTheme.typography.bodySmall,
@@ -227,7 +229,8 @@ fun AuthA11yPage() {
                         modifier = Modifier
                             .padding(cardHorizontalPadding, 0.dp)
                             .clickable(onClick = throttle {
-                                openUri(ShortUrlSet.URL2)
+                                navController.toDestinationsNavigator()
+                                    .navigate(WebViewPageDestination(initUrl = ShortUrlSet.URL2))
                             }),
                         text = "其他方式解除限制",
                         style = MaterialTheme.typography.bodySmall,

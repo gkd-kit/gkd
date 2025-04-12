@@ -23,9 +23,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.copyText
-import li.songe.gkd.util.openUri
 import li.songe.gkd.util.throttle
 
 @Composable
@@ -35,6 +37,7 @@ fun ManualAuthDialog(
     onUpdateShow: (Boolean) -> Unit,
 ) {
     if (show) {
+        val mainVm = LocalMainViewModel.current
         val adbCommandText = remember(commandText) {
             "adb shell \"$commandText\""
         }
@@ -78,9 +81,11 @@ fun ManualAuthDialog(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         modifier = Modifier
-                            .clickable {
-                                openUri(ShortUrlSet.URL3)
-                            },
+                            .clickable(onClick = throttle {
+                                onUpdateShow(false)
+                                mainVm.navController.toDestinationsNavigator()
+                                    .navigate(WebViewPageDestination(initUrl = ShortUrlSet.URL3))
+                            }),
                         text = "运行后授权失败?",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,

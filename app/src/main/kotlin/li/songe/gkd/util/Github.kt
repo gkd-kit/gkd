@@ -20,6 +20,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.DialogProperties
+import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import io.ktor.client.call.body
 import io.ktor.client.plugins.onUpload
 import io.ktor.client.request.forms.MultiPartFormDataContent
@@ -194,6 +196,7 @@ suspend fun uploadFileToGithub(
 @Composable
 fun EditGithubCookieDlg(showEditCookieDlgFlow: MutableStateFlow<Boolean>) {
     val showEditCookieDlg by showEditCookieDlgFlow.collectAsState()
+    val mainVm = LocalMainViewModel.current
     if (showEditCookieDlg) {
         val privacyStore by privacyStoreFlow.collectAsState()
         var value by remember {
@@ -212,7 +215,9 @@ fun EditGithubCookieDlg(showEditCookieDlgFlow: MutableStateFlow<Boolean>) {
                 ) {
                     Text(text = "Github Cookie")
                     IconButton(onClick = throttle {
-                        openUri(ShortUrlSet.URL1)
+                        showEditCookieDlgFlow.value = false
+                        mainVm.navController.toDestinationsNavigator()
+                            .navigate(WebViewPageDestination(initUrl = ShortUrlSet.URL1))
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
@@ -228,7 +233,9 @@ fun EditGithubCookieDlg(showEditCookieDlgFlow: MutableStateFlow<Boolean>) {
                         value = it.filter { c -> c != '\n' && c != '\r' }
                     },
                     placeholder = { Text(text = "请输入 Github Cookie") },
-                    modifier = Modifier.fillMaxWidth().autoFocus(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .autoFocus(),
                     maxLines = 10,
                 )
             },

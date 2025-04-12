@@ -47,6 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
+import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import li.songe.gkd.MainActivity
 import li.songe.gkd.a11yServiceEnabledFlow
@@ -66,7 +67,6 @@ import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.openUri
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 
@@ -185,7 +185,8 @@ fun useControlPage(): ScaffoldExt {
                 subtitle = "查阅规则文档和常见问题",
                 imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
                 onClick = {
-                    openUri(HOME_PAGE_URL)
+                    navController.toDestinationsNavigator()
+                        .navigate(WebViewPageDestination(initUrl = HOME_PAGE_URL))
                 }
             )
             Spacer(modifier = Modifier.height(EmptyHeight))

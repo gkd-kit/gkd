@@ -61,10 +61,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.generated.destinations.SlowGroupPageDestination
+import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.Value
 import li.songe.gkd.data.importData
@@ -89,7 +89,6 @@ import li.songe.gkd.util.getUpDownTransform
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
-import li.songe.gkd.util.openUri
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
@@ -469,32 +468,34 @@ fun useSubsManagePage(): ScaffoldExt {
                             vm = vm,
                             isSelectedMode = isSelectedMode,
                             isSelected = selectedIds.contains(subItem.id),
-                            onCheckedChange = { checked ->
-                                mainVm.viewModelScope.launch {
-                                    if (checked && storeFlow.value.subsPowerWarn && !subItem.isLocal && usedSubsEntriesFlow.value.any { !it.subsItem.isLocal }) {
-                                        mainVm.dialogFlow.waitResult(
-                                            title = "耗电警告",
-                                            textContent = {
-                                                Column {
-                                                    Text(text = "启用多个远程订阅可能导致执行大量重复规则, 这可能造成规则执行卡顿以及多余耗电\n\n请认真考虑后再确认开启！！！\n")
-                                                    Text(
-                                                        text = "查看耗电说明",
-                                                        modifier = Modifier.clickable(
-                                                            onClick = throttle(
-                                                                fn = { openUri(ShortUrlSet.URL6) }
+                            onCheckedChange = mainVm.viewModelScope.launchAsFn { checked ->
+                                if (checked && storeFlow.value.subsPowerWarn && !subItem.isLocal && usedSubsEntriesFlow.value.any { !it.subsItem.isLocal }) {
+                                    mainVm.dialogFlow.waitResult(
+                                        title = "耗电警告",
+                                        textContent = {
+                                            Column {
+                                                Text(text = "启用多个远程订阅可能导致执行大量重复规则, 这可能造成规则执行卡顿以及多余耗电\n\n请认真考虑后再确认开启！！！\n")
+                                                Text(
+                                                    text = "查看耗电说明",
+                                                    modifier = Modifier.clickable(onClick = throttle {
+                                                        mainVm.dialogFlow.value = null
+                                                        mainVm.navController.toDestinationsNavigator()
+                                                            .navigate(
+                                                                WebViewPageDestination(
+                                                                    initUrl = ShortUrlSet.URL6
+                                                                )
                                                             )
-                                                        ),
-                                                        textDecoration = TextDecoration.Underline,
-                                                        color = MaterialTheme.colorScheme.primary,
-                                                    )
-                                                }
-                                            },
-                                            confirmText = "仍然启用",
-                                            error = true
-                                        )
-                                    }
-                                    DbSet.subsItemDao.updateEnable(subItem.id, checked)
+                                                    }),
+                                                    textDecoration = TextDecoration.Underline,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                )
+                                            }
+                                        },
+                                        confirmText = "仍然启用",
+                                        error = true
+                                    )
                                 }
+                                DbSet.subsItemDao.updateEnable(subItem.id, checked)
                             },
                             onSelectedChange = {
                                 val newSelectedIds = if (selectedIds.contains(subItem.id)) {
