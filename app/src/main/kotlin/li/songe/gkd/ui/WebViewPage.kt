@@ -14,16 +14,19 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +49,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import li.songe.gkd.META
 import li.songe.gkd.data.Value
+import li.songe.gkd.ui.component.updateDialogOptions
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.client
@@ -59,10 +64,14 @@ import li.songe.gkd.util.throttle
 fun WebViewPage(
     initUrl: String,
 ) {
+    val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     val webViewState = rememberWebViewState(url = initUrl)
     val webViewClient = remember { GkdWebViewClient() }
     val webView = remember { Value<WebView?>(null) }
+    LaunchedEffect(null) {
+        WebView.getCurrentWebViewPackage()?.versionName?.run { splitToSequence('.').first() }
+    }
     Scaffold(modifier = Modifier, topBar = {
         Box(
             modifier = Modifier.fillMaxWidth(),
@@ -99,6 +108,20 @@ fun WebViewPage(
                     }
                 },
                 actions = {
+                    if (chromeVersion > 0 && chromeVersion < MINI_CHROME_VERSION) {
+                        IconButton(onClick = throttle {
+                            mainVm.dialogFlow.updateDialogOptions(
+                                title = "兼容性提示",
+                                text = "检测到您的系统内置浏览器版本($chromeVersion)过低, 可能无法正常浏览网页文档\n\n建议自行升级版本后重启 GKD 再查看文档, 或点击右上角后在外部浏览器打开查阅\n\n若能正常浏览文档请忽略此项提示"
+                            )
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.WarningAmber,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
                     var expanded by remember { mutableStateOf(false) }
                     IconButton(onClick = { expanded = true }) {
                         Icon(imageVector = Icons.Default.MoreVert, contentDescription = null)
@@ -128,7 +151,7 @@ fun WebViewPage(
                                 },
                                 onClick = {
                                     expanded = false
-                                    webView.value?.url?.let { copyText(it) }
+                                    copyText(webView.value?.url ?: initUrl)
                                 }
                             )
                             DropdownMenuItem(
@@ -137,7 +160,7 @@ fun WebViewPage(
                                 },
                                 onClick = {
                                     expanded = false
-                                    webView.value?.url?.let { openUri(it) }
+                                    openUri(webView.value?.url ?: initUrl)
                                 }
                             )
                         }
@@ -162,6 +185,14 @@ fun WebViewPage(
             }
         )
     }
+}
+
+// 兼容性检测为最近 3 年, 2022-03-29
+private const val MINI_CHROME_VERSION = 100
+private val chromeVersion by lazy {
+    WebView.getCurrentWebViewPackage()?.versionName?.run {
+        splitToSequence('.').first().toIntOrNull()
+    } ?: 0
 }
 
 private const val DOC_CONFIG_URL =
