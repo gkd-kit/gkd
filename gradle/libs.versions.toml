@@ -4,7 +4,7 @@ ksp = "2.1.20-1.0.32"
 android = "8.9.1"
 compose = "1.7.8"
 rikka = "4.4.0"
-room = "2.6.1"
+room = "2.7.0"
 paging = "3.3.6"
 ktor = "3.1.2"
 destinations = "2.1.0"
@@ -30,11 +30,11 @@ compose_preview = { module = "androidx.compose.ui:ui-tooling-preview", version.r
 compose_tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
 compose_junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "compose" }
 compose_icons = { module = "androidx.compose.material:material-icons-extended", version.ref = "compose" }
-compose_material3 = "androidx.compose.material3:material3:1.3.1"
+compose_material3 = "androidx.compose.material3:material3:1.3.2"
 compose_activity = "androidx.activity:activity-compose:1.10.1"
 compose_navigation = "androidx.navigation:navigation-compose:2.8.9"
 androidx_appcompat = "androidx.appcompat:appcompat:1.7.0"
-androidx_core_ktx = "androidx.core:core-ktx:1.15.0"
+androidx_core_ktx = "androidx.core:core-ktx:1.16.0"
 androidx_lifecycle_runtime_ktx = "androidx.lifecycle:lifecycle-runtime-ktx:2.8.7"
 androidx_junit = "androidx.test.ext:junit:1.2.1"
 androidx_annotation = "androidx.annotation:annotation:1.9.1"
@@ -67,6 +67,7 @@ json5 = "li.songe:json5:0.0.1"
 utilcodex = "com.blankj:utilcodex:1.31.1"
 activityResultLauncher = "com.github.DylanCaiCoding:ActivityResultLauncher:1.1.2"
 floatingBubbleView = "io.github.torrydo:floating-bubble-view:0.6.5"
+kevinnzouWebview = "io.github.kevinnzou:compose-webview:0.33.6"
 
 [plugins]
 kotlin_serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

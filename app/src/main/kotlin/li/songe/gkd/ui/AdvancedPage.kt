@@ -58,6 +58,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
+import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
@@ -90,7 +91,6 @@ import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.openUri
 import li.songe.gkd.util.shizukuAppId
 import li.songe.gkd.util.shizukuMiniVersionCode
 import li.songe.gkd.util.shizukuStoreFlow
@@ -412,7 +412,8 @@ fun AdvancedPage() {
                 subtitle = "生成快照/日志链接",
                 suffix = "获取教程",
                 onSuffixClick = {
-                    openUri(ShortUrlSet.URL1)
+                    navController.toDestinationsNavigator()
+                        .navigate(WebViewPageDestination(initUrl = (ShortUrlSet.URL1)))
                 },
                 imageVector = Icons.Outlined.Edit,
                 onClick = {
@@ -478,11 +479,15 @@ private val checkShizukuMutex by lazy { Mutex() }
 @Composable
 private fun ShizukuFragment(enabled: Boolean = true) {
     val shizukuStore by shizukuStoreFlow.collectAsState()
+    val navController = LocalNavController.current
     TextSwitch(
         title = "界面识别",
         subtitle = "更准确识别界面ID",
         suffix = "使用说明",
-        onSuffixClick = { openUri(ShortUrlSet.URL7) },
+        onSuffixClick = {
+            navController.toDestinationsNavigator()
+                .navigate(WebViewPageDestination(initUrl = ShortUrlSet.URL7))
+        },
         checked = shizukuStore.enableActivity,
         enabled = enabled,
         onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {
@@ -503,7 +508,10 @@ private fun ShizukuFragment(enabled: Boolean = true) {
         title = "强制点击",
         subtitle = "执行强制模拟点击",
         suffix = "使用说明",
-        onSuffixClick = { openUri(ShortUrlSet.URL8) },
+        onSuffixClick = {
+            navController.toDestinationsNavigator()
+                .navigate(WebViewPageDestination(initUrl = ShortUrlSet.URL8))
+        },
         checked = shizukuStore.enableTapClick,
         enabled = enabled,
         onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {
@@ -525,7 +533,10 @@ private fun ShizukuFragment(enabled: Boolean = true) {
         title = "工作空间",
         subtitle = "扩展工作空间应用列表",
         suffix = "使用说明",
-        onSuffixClick = { openUri(ShortUrlSet.URL9) },
+        onSuffixClick = {
+            navController.toDestinationsNavigator()
+                .navigate(WebViewPageDestination(initUrl = ShortUrlSet.URL9))
+        },
         checked = shizukuStore.enableWorkProfile,
         enabled = enabled,
         onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {

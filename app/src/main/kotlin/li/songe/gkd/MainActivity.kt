@@ -103,6 +103,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val termsAccepted by termsAcceptedFlow.collectAsStateWithLifecycle()
             val navController = rememberNavController()
+            mainVm.navController = navController
             CompositionLocalProvider(
                 LocalNavController provides navController,
                 LocalMainViewModel provides mainVm

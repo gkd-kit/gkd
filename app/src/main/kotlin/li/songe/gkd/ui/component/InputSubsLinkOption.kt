@@ -18,9 +18,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.DialogProperties
+import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.MutableStateFlow
+import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.ShortUrlSet
-import li.songe.gkd.util.openUri
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
@@ -77,6 +79,7 @@ class InputSubsLinkOption {
     fun ContentDialog() {
         val show by showFlow.collectAsState()
         if (show) {
+            val mainVm = LocalMainViewModel.current
             val value by valueFlow.collectAsState()
             val initValue by initValueFlow.collectAsState()
             AlertDialog(
@@ -89,7 +92,9 @@ class InputSubsLinkOption {
                     ) {
                         Text(text = if (initValue.isNotEmpty()) "修改订阅" else "添加订阅")
                         IconButton(onClick = throttle {
-                            openUri(ShortUrlSet.URL5)
+                            cancel()
+                            mainVm.navController.toDestinationsNavigator()
+                                .navigate(WebViewPageDestination(initUrl = ShortUrlSet.URL5))
                         }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
@@ -105,7 +110,9 @@ class InputSubsLinkOption {
                             valueFlow.value = it.trim()
                         },
                         maxLines = 8,
-                        modifier = Modifier.fillMaxWidth().autoFocus(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .autoFocus(),
                         placeholder = {
                             Text(text = "请输入订阅链接")
                         },

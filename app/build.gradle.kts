@@ -283,4 +283,6 @@ dependencies {
     implementation(libs.permissions)
 
     implementation(libs.json5)
+
+    implementation(libs.kevinnzouWebview)
 }
