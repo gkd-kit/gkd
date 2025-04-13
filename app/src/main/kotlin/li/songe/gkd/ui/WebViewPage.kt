@@ -2,6 +2,8 @@ package li.songe.gkd.ui
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
+import android.os.Build
+import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -50,6 +52,7 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.META
 import li.songe.gkd.data.Value
 import li.songe.gkd.ui.component.updateDialogOptions
+import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
@@ -73,118 +76,130 @@ fun WebViewPage(
         WebView.getCurrentWebViewPackage()?.versionName?.run { splitToSequence('.').first() }
     }
     Scaffold(modifier = Modifier, topBar = {
-        Box(
+        TopAppBar(
             modifier = Modifier.fillMaxWidth(),
-        ) {
-            TopAppBar(
-                modifier = Modifier.fillMaxWidth(),
-                navigationIcon = {
-                    IconButton(onClick = throttle { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null,
-                        )
+            navigationIcon = {
+                IconButton(onClick = throttle { navController.popBackStack() }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = null,
+                    )
+                }
+            },
+            title = {
+                val loadingState = webViewState.loadingState
+                if (loadingState is LoadingState.Loading) {
+                    val fontSizeDp = LocalDensity.current.run {
+                        LocalTextStyle.current.fontSize.toDp()
                     }
-                },
-                title = {
-                    val loadingState = webViewState.loadingState
-                    if (loadingState is LoadingState.Loading) {
-                        val lineHeightDp = LocalDensity.current.run {
-                            LocalTextStyle.current.lineHeight.toDp()
-                        }
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .size(lineHeightDp),
-                        )
-                    } else {
-                        // webViewState.pageTitle 在调用 reload 后会变成 null
-                        Text(
-                            text = webViewState.pageTitle ?: webView.value?.title ?: "",
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                    val lineHeightDp = LocalDensity.current.run {
+                        LocalTextStyle.current.lineHeight.toDp()
                     }
-                },
-                actions = {
-                    if (chromeVersion > 0 && chromeVersion < MINI_CHROME_VERSION) {
-                        IconButton(onClick = throttle {
-                            mainVm.dialogFlow.updateDialogOptions(
-                                title = "兼容性提示",
-                                text = "检测到您的系统内置浏览器版本($chromeVersion)过低, 可能无法正常浏览网页文档\n\n建议自行升级版本后重启 GKD 再查看文档, 或点击右上角后在外部浏览器打开查阅\n\n若能正常浏览文档请忽略此项提示"
-                            )
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.WarningAmber,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                            )
-                        }
-                    }
-                    var expanded by remember { mutableStateOf(false) }
-                    IconButton(onClick = { expanded = true }) {
-                        Icon(imageVector = Icons.Default.MoreVert, contentDescription = null)
-                    }
-                    Box(
+                    CircularProgressIndicator(
                         modifier = Modifier
-                            .wrapContentSize(Alignment.TopStart)
-                    ) {
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            if (webViewState.loadingState !is LoadingState.Loading) {
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(text = "刷新页面")
-                                    },
-                                    onClick = {
-                                        expanded = false
-                                        webView.value?.reload()
-                                    }
-                                )
-                            }
-                            DropdownMenuItem(
-                                text = {
-                                    Text(text = "复制链接")
-                                },
-                                onClick = {
-                                    expanded = false
-                                    copyText(webView.value?.url ?: initUrl)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = {
-                                    Text(text = "外部打开")
-                                },
-                                onClick = {
-                                    expanded = false
-                                    openUri(webView.value?.url ?: initUrl)
-                                }
-                            )
-                        }
+                            .padding(lineHeightDp - fontSizeDp)
+                            .size(fontSizeDp),
+                    )
+                } else {
+                    Text(
+                        // webViewState.pageTitle 在调用 reload 后会变成 null
+                        text = webViewState.pageTitle ?: webView.value?.title ?: "",
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            },
+            actions = {
+                if (chromeVersion > 0 && chromeVersion < MINI_CHROME_VERSION) {
+                    IconButton(onClick = throttle {
+                        mainVm.dialogFlow.updateDialogOptions(
+                            title = "兼容性提示",
+                            text = "检测到您的系统内置浏览器版本($chromeVersion)过低, 可能无法正常浏览网页文档\n\n建议自行升级版本后重启 GKD 再查看文档, 或点击右上角后在外部浏览器打开查阅\n\n若能正常浏览文档请忽略此项提示"
+                        )
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.WarningAmber,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                        )
                     }
                 }
-            )
-        }
+                var expanded by remember { mutableStateOf(false) }
+                IconButton(onClick = { expanded = true }) {
+                    Icon(imageVector = Icons.Default.MoreVert, contentDescription = null)
+                }
+                Box(
+                    modifier = Modifier
+                        .wrapContentSize(Alignment.TopStart)
+                ) {
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        if (webViewState.loadingState !is LoadingState.Loading) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(text = "刷新页面")
+                                },
+                                onClick = {
+                                    expanded = false
+                                    webView.value?.reload()
+                                }
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = {
+                                Text(text = "复制链接")
+                            },
+                            onClick = {
+                                expanded = false
+                                copyText(webView.value?.url ?: initUrl)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(text = "外部打开")
+                            },
+                            onClick = {
+                                expanded = false
+                                openUri(webView.value?.url ?: initUrl)
+                            }
+                        )
+                    }
+                }
+            }
+        )
     }) { contentPadding ->
         WebView(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(contentPadding),
+                .scaffoldPadding(contentPadding),
             state = webViewState,
             client = webViewClient,
             onCreated = {
                 webView.value = it
+                it.addJavascriptInterface(GkdJavascriptInterface(), "gkd")
                 it.settings.apply {
                     @SuppressLint("SetJavaScriptEnabled")
                     javaScriptEnabled = true
                     domStorageEnabled = true
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        setAlgorithmicDarkeningAllowed(false)
+                    }
                 }
             }
         )
     }
+}
+
+@Suppress("unused")
+private class GkdJavascriptInterface() {
+    @JavascriptInterface
+    fun getVersionCode() = META.versionCode
+
+    @JavascriptInterface
+    fun getVersionName() = META.versionName
 }
 
 // 兼容性检测为最近 3 年, 2022-03-29
