@@ -241,7 +241,7 @@ private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Boolean>) {
                     text = if (installed) {
                         "Shizuku 授权失败, 请检查是否运行"
                     } else {
-                        "Shizuku 未安装, 请先下载后安装"
+                        "Shizuku 授权失败, 检测到 Shizuku 未安装, 请先下载后安装, 如果你是通过其它方式授权, 请忽略此提示自行查找原因"
                     }
                 )
             },
