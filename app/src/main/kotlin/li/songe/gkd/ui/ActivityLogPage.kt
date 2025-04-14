@@ -60,6 +60,7 @@ import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
+import li.songe.gkd.util.toast
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
@@ -100,6 +101,7 @@ fun ActivityLogPage() {
                             error = true,
                         )
                         DbSet.activityLogDao.deleteAll()
+                        toast("删除成功")
                     })) {
                         Icon(
                             imageVector = Icons.Outlined.Delete,

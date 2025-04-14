@@ -141,7 +141,7 @@ fun deleteSubscription(vararg subsIds: Long) {
                     }
                 }
                 subsIdToRawFlow.value = newMap
-                toast("删除订阅成功")
+                toast("删除成功")
                 LogUtils.d("deleteSubscription", subsIds)
             }
         }

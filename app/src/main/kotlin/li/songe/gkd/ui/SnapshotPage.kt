@@ -65,6 +65,7 @@ import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.FixedTimeText
 import li.songe.gkd.ui.component.LocalNumberCharWidth
 import li.songe.gkd.ui.component.StartEllipsisText
+import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
@@ -122,8 +123,8 @@ fun SnapshotPage() {
                 if (snapshots.isNotEmpty()) {
                     IconButton(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                         mainVm.dialogFlow.waitResult(
-                            title = "删除记录",
-                            text = "确定删除全部 ${snapshots.size} 条快照记录?",
+                            title = "删除快照",
+                            text = "确定删除所有快照记录?",
                             error = true,
                         )
                         snapshots.forEach { s ->
@@ -139,26 +140,27 @@ fun SnapshotPage() {
                 }
             })
     }, content = { contentPadding ->
-        LazyColumn(
-            modifier = Modifier.scaffoldPadding(contentPadding),
-            state = listState,
+        CompositionLocalProvider(
+            LocalNumberCharWidth provides timeTextWidth
         ) {
-            items(snapshots, { it.id }) { snapshot ->
-                CompositionLocalProvider(
-                    LocalNumberCharWidth provides timeTextWidth
-                ) {
+            LazyColumn(
+                modifier = Modifier.scaffoldPadding(contentPadding),
+                state = listState,
+            ) {
+                items(snapshots, { it.id }) { snapshot ->
                     SnapshotCard(
+                        modifier = Modifier.animateListItem(this),
                         snapshot = snapshot,
                         onClick = {
                             selectedSnapshot = snapshot
                         }
                     )
                 }
-            }
-            item(LIST_PLACEHOLDER_KEY) {
-                Spacer(modifier = Modifier.height(EmptyHeight))
-                if (snapshots.isEmpty() && !firstLoading) {
-                    EmptyText(text = "暂无记录")
+                item(LIST_PLACEHOLDER_KEY) {
+                    Spacer(modifier = Modifier.height(EmptyHeight))
+                    if (snapshots.isEmpty() && !firstLoading) {
+                        EmptyText(text = "暂无记录")
+                    }
                 }
             }
         }
@@ -298,11 +300,17 @@ fun SnapshotPage() {
                 Text(
                     text = "删除", modifier = Modifier
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
+                            selectedSnapshot = null
+                            mainVm.dialogFlow.waitResult(
+                                title = "删除快照",
+                                text = "确定删除当前快照吗?",
+                                error = true,
+                            )
                             DbSet.snapshotDao.delete(snapshotVal)
                             withContext(Dispatchers.IO) {
                                 SnapshotExt.removeAssets(snapshotVal.id)
                             }
-                            selectedSnapshot = null
+                            toast("删除成功")
                         }))
                         .then(modifier), color = colorScheme.error
                 )
@@ -313,11 +321,12 @@ fun SnapshotPage() {
 
 @Composable
 private fun SnapshotCard(
+    modifier: Modifier = Modifier,
     snapshot: Snapshot,
     onClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .clickable(onClick = onClick)
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
