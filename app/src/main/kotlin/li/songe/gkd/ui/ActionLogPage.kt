@@ -65,6 +65,7 @@ import li.songe.gkd.ui.component.GroupNameText
 import li.songe.gkd.ui.component.LocalNumberCharWidth
 import li.songe.gkd.ui.component.StartEllipsisText
 import li.songe.gkd.ui.component.TowLineText
+import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.useSubs
 import li.songe.gkd.ui.component.waitResult
@@ -149,7 +150,7 @@ fun ActionLogPage(
                         } else {
                             DbSet.actionLogDao.deleteAll()
                         }
-
+                        toast("删除成功")
                     })) {
                         Icon(
                             imageVector = Icons.Outlined.Delete,
@@ -159,20 +160,22 @@ fun ActionLogPage(
                 }
             })
     }, content = { contentPadding ->
-        LazyColumn(
-            modifier = Modifier.scaffoldPadding(contentPadding),
-            state = listState,
+        CompositionLocalProvider(
+            LocalNumberCharWidth provides timeTextWidth
         ) {
-            items(
-                count = actionDataItems.itemCount,
-                key = actionDataItems.itemKey { c -> c.first.id }
-            ) { i ->
-                val item = actionDataItems[i] ?: return@items
-                val lastItem = if (i > 0) actionDataItems[i - 1] else null
-                CompositionLocalProvider(
-                    LocalNumberCharWidth provides timeTextWidth
-                ) {
+            LazyColumn(
+                modifier = Modifier.scaffoldPadding(contentPadding),
+                state = listState,
+            ) {
+                items(
+                    count = actionDataItems.itemCount,
+                    key = actionDataItems.itemKey { c -> c.first.id }
+                ) { i ->
+                    val item = actionDataItems[i] ?: return@items
+                    val lastItem = if (i > 0) actionDataItems[i - 1] else null
+
                     ActionLogCard(
+                        modifier = Modifier.animateListItem(this),
                         i = i,
                         item = item,
                         lastItem = lastItem,
@@ -183,11 +186,11 @@ fun ActionLogPage(
                         appId = appId,
                     )
                 }
-            }
-            item(LIST_PLACEHOLDER_KEY) {
-                Spacer(modifier = Modifier.height(EmptyHeight))
-                if (actionDataItems.itemCount == 0 && actionDataItems.loadState.refresh !is LoadState.Loading) {
-                    EmptyText(text = "暂无记录")
+                item(LIST_PLACEHOLDER_KEY) {
+                    Spacer(modifier = Modifier.height(EmptyHeight))
+                    if (actionDataItems.itemCount == 0 && actionDataItems.loadState.refresh !is LoadState.Loading) {
+                        EmptyText(text = "暂无记录")
+                    }
                 }
             }
         }
@@ -207,6 +210,7 @@ fun ActionLogPage(
 
 @Composable
 private fun ActionLogCard(
+    modifier: Modifier = Modifier,
     i: Int,
     item: Triple<ActionLog, RawSubscription.RawGroupProps?, RawSubscription.RawRuleProps?>,
     lastItem: Triple<ActionLog, RawSubscription.RawGroupProps?, RawSubscription.RawRuleProps?>?,
@@ -222,7 +226,7 @@ private fun ActionLogCard(
     val subsIdToRaw by subsIdToRawFlow.collectAsState()
     val subscription = subsIdToRaw[actionLog.subsId]
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(
                 start = itemHorizontalPadding,
@@ -444,16 +448,6 @@ private fun ActionLogDialog(
                 )
                 HorizontalDivider()
             }
-
-            ItemText(
-                text = "删除记录",
-                color = MaterialTheme.colorScheme.error,
-                onClick = vm.viewModelScope.launchAsFn {
-                    onDismissRequest()
-                    DbSet.actionLogDao.delete(actionLog)
-                    toast("删除成功")
-                }
-            )
         }
     }
 }
