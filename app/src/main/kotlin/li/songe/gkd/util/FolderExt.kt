@@ -68,7 +68,6 @@ fun File.resetDirectory() {
     }
 }
 
-
 fun buildLogFile(): File {
     val files = mutableListOf(dbFolder, subsFolder)
     LogUtils.getLogFiles().firstOrNull()?.parentFile?.let { files.add(it) }
@@ -80,9 +79,14 @@ fun buildLogFile(): File {
         .resolve("store.json")
     storeFile.writeText(json.encodeToString(storeFlow.value))
     files.add(storeFile)
+    val shizukuFile = logZipDir
+        .resolve("shizuku.json")
+    shizukuFile.writeText(json.encodeToString(shizukuStoreFlow.value))
+    files.add(shizukuFile)
     val logZipFile = logZipDir.resolve("log-${System.currentTimeMillis()}.zip")
     ZipUtils.zipFiles(files, logZipFile)
     appListFile.delete()
     storeFile.delete()
+    shizukuFile.delete()
     return logZipFile
 }
