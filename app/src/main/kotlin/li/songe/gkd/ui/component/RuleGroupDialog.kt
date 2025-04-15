@@ -104,10 +104,10 @@ fun RuleGroupDialog(
                             copyText(group.cacheStr)
                         })
                         .padding(4.dp)
-                        .size(16.dp),
+                        .size(24.dp),
                     imageVector = Icons.Outlined.ContentCopy,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
+                    tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.75f),
                 )
                 Text(
                     text = group.cacheStr.length.toString(),
