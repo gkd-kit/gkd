@@ -67,12 +67,14 @@ import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.ISSUES_URL
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.util.PLAY_STORE_URL
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.REPOSITORY_URL
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.UpdateChannelOption
 import li.songe.gkd.util.buildLogFile
 import li.songe.gkd.util.checkUpdate
+import li.songe.gkd.util.copyText
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.format
 import li.songe.gkd.util.launchAsFn
@@ -80,9 +82,11 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.saveFileToDownloads
 import li.songe.gkd.util.shareFile
+import li.songe.gkd.util.sharedDir
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
+import java.io.File
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
@@ -391,9 +395,9 @@ fun AboutPage() {
                         .clickable(onClick = throttle {
                             showShareAppDlg = false
                             mainVm.viewModelScope.launchTry(Dispatchers.IO) {
-                                app.packageCodePath
-                                val logZipFile = buildLogFile()
-                                context.shareFile(logZipFile, "分享日志文件")
+                                val apkFile = sharedDir.resolve("gkd-v${META.versionName}.apk")
+                                File(app.packageCodePath).copyTo(apkFile, overwrite = true)
+                                context.shareFile(apkFile, "分享安装文件")
                             }
                         })
                         .then(modifier)
@@ -403,9 +407,18 @@ fun AboutPage() {
                         .clickable(onClick = throttle {
                             showShareAppDlg = false
                             mainVm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val logZipFile = buildLogFile()
-                                context.saveFileToDownloads(logZipFile)
+                                val apkFile = sharedDir.resolve("gkd-v${META.versionName}.apk")
+                                File(app.packageCodePath).copyTo(apkFile, overwrite = true)
+                                context.saveFileToDownloads(apkFile)
                             }
+                        })
+                        .then(modifier)
+                )
+                Text(
+                    text = "复制 Google Play 链接", modifier = Modifier
+                        .clickable(onClick = throttle {
+                            showShareAppDlg = false
+                            copyText(PLAY_STORE_URL)
                         })
                         .then(modifier)
                 )
