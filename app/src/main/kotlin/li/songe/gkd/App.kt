@@ -27,7 +27,6 @@ import li.songe.gkd.service.A11yService
 import li.songe.gkd.shizuku.initShizuku
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.initAppState
-import li.songe.gkd.util.initFolder
 import li.songe.gkd.util.initStore
 import li.songe.gkd.util.initSubsState
 import li.songe.gkd.util.launchTry
@@ -101,7 +100,6 @@ class App : Application() {
             "META",
             META,
         )
-        initFolder()
         app.contentResolver.registerContentObserver(
             Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),
             false,

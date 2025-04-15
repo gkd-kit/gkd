@@ -53,7 +53,7 @@ val imageLoader by lazy {
     ImageLoader.Builder(app)
         .diskCache {
             DiskCache.Builder()
-                .directory(imageCacheDir.toOkioPath())
+                .directory(coilCacheDir.toOkioPath())
                 .maxSizePercent(0.1)
                 .build()
         }

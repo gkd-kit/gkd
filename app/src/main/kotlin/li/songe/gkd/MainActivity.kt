@@ -64,7 +64,6 @@ import li.songe.gkd.util.UpgradeDialog
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.fixSomeProblems
-import li.songe.gkd.util.initFolder
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.openApp
@@ -211,9 +210,6 @@ fun syncFixState() {
             updateLauncherAppId()
 
             updateDefaultInputAppId()
-
-            // 在某些机型由于未知原因创建失败, 在此保证每次界面切换都能重新检测创建
-            initFolder()
 
             // 由于某些机型的进程存在 安装缓存/崩溃缓存 导致服务状态可能不正确, 在此保证每次界面切换都能重新刷新状态
             updateServiceRunning()

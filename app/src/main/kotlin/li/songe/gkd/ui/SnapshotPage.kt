@@ -81,7 +81,6 @@ import li.songe.gkd.util.copyText
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.saveFileToDownloads
 import li.songe.gkd.util.shareFile
-import li.songe.gkd.util.snapshotZipDir
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
@@ -277,11 +276,6 @@ fun SnapshotPage() {
                                 val newBitmap = ImageUtils.getBitmap(newBytes, 0)
                                 if (oldBitmap.width == newBitmap.width && oldBitmap.height == newBitmap.height) {
                                     snapshotVal.screenshotFile.writeBytes(newBytes)
-                                    snapshotZipDir
-                                        .listFiles { f -> f.isFile && f.name.endsWith("${snapshotVal.id}.zip") }
-                                        ?.forEach { f ->
-                                            f.delete()
-                                        }
                                     if (snapshotVal.githubAssetId != null) {
                                         // 当本地快照变更时, 移除快照链接
                                         DbSet.snapshotDao.deleteGithubAssetId(snapshotVal.id)
