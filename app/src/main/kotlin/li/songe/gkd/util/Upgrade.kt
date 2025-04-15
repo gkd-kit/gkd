@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewModelScope
@@ -32,7 +31,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import li.songe.gkd.META
-import li.songe.gkd.MainActivity
 import li.songe.gkd.MainViewModel
 import li.songe.gkd.app
 import java.io.File
@@ -89,9 +87,10 @@ suspend fun UpdateStatus.checkUpdate(): NewVersion? {
 private fun UpdateStatus.startDownload(viewModel: MainViewModel, newVersion: NewVersion) {
     if (downloadStatusFlow.value is LoadStatus.Loading) return
     downloadStatusFlow.value = LoadStatus.Loading(0f)
-    val newApkFile = newVersionApkDir.resolve("v${newVersion.versionCode}.apk")
-    if (newApkFile.exists()) {
-        newApkFile.delete()
+    val newApkFile = sharedDir.resolve("gkd-v${newVersion.versionCode}.apk").apply {
+        if (exists()) {
+            delete()
+        }
     }
     var job: Job? = null
     job = viewModel.viewModelScope.launch(Dispatchers.IO) {
@@ -124,21 +123,22 @@ private fun UpdateStatus.startDownload(viewModel: MainViewModel, newVersion: New
 
 @Composable
 fun UpgradeDialog(status: UpdateStatus) {
-    val context = LocalContext.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val newVersion by status.newVersionFlow.collectAsState()
     newVersion?.let { newVersionVal ->
         AlertDialog(title = {
             Text(text = "新版本")
         }, text = {
-            Text(text = "v${META.versionName} -> v${newVersionVal.versionName}\n\n${
-                if (newVersionVal.versionLogs.size > 1) {
-                    newVersionVal.versionLogs.joinToString("\n\n") { v -> "v${v.name}\n${v.desc}" }
-                } else if (newVersionVal.versionLogs.isNotEmpty()) {
-                    newVersionVal.versionLogs.first().desc
-                } else {
-                    ""
-                }
-            }".trimEnd(),
+            Text(
+                text = "v${META.versionName} -> v${newVersionVal.versionName}\n\n${
+                    if (newVersionVal.versionLogs.size > 1) {
+                        newVersionVal.versionLogs.joinToString("\n\n") { v -> "v${v.name}\n${v.desc}" }
+                    } else if (newVersionVal.versionLogs.isNotEmpty()) {
+                        newVersionVal.versionLogs.first().desc
+                    } else {
+                        ""
+                    }
+                }".trimEnd(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 400.dp)
@@ -147,7 +147,7 @@ fun UpgradeDialog(status: UpdateStatus) {
         }, onDismissRequest = { }, confirmButton = {
             TextButton(onClick = {
                 status.newVersionFlow.value = null
-                status.startDownload(context.mainVm, newVersionVal)
+                status.startDownload(mainVm, newVersionVal)
             }) {
                 Text(text = "下载更新")
             }

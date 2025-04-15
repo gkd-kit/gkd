@@ -2,6 +2,7 @@ package li.songe.gkd.debug
 
 import android.graphics.Bitmap
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
 import com.blankj.utilcode.util.BarUtils
 import com.blankj.utilcode.util.LogUtils
@@ -25,8 +26,8 @@ import li.songe.gkd.service.getAndUpdateCurrentRules
 import li.songe.gkd.service.safeActiveWindow
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.keepNullJson
+import li.songe.gkd.util.sharedDir
 import li.songe.gkd.util.snapshotFolder
-import li.songe.gkd.util.snapshotZipDir
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
 import java.io.File
@@ -61,9 +62,9 @@ object SnapshotExt {
         } else {
             "${snapshotId}.zip"
         }
-        val file = snapshotZipDir.resolve(filename)
+        val file = sharedDir.resolve(filename)
         if (file.exists()) {
-            return file
+            file.delete()
         }
         withContext(Dispatchers.IO) {
             ZipUtils.zipFiles(
@@ -119,25 +120,20 @@ object SnapshotExt {
             }
             val snapshotDef =
                 coroutineScope { async(Dispatchers.IO) { createComplexSnapshot(rootNode) } }
-            val bitmapDef = coroutineScope {// TODO 也许在分屏模式下可能需要处理
+            val bitmapDef = coroutineScope {
                 async(Dispatchers.IO) {
                     if (skipScreenshot) {
                         LogUtils.d("跳过截屏，即将使用空白图片")
-                        Bitmap.createBitmap(
-                            ScreenUtils.getScreenWidth(),
-                            ScreenUtils.getScreenHeight(),
-                            Bitmap.Config.ARGB_8888
-                        )
+                        createBitmap(ScreenUtils.getScreenWidth(), ScreenUtils.getScreenHeight())
                     } else {
                         A11yService.currentScreenshot() ?: withTimeoutOrNull(3_000) {
                             if (!ScreenshotService.isRunning.value) {
                                 return@withTimeoutOrNull null
                             }
                             ScreenshotService.screenshot()
-                        } ?: Bitmap.createBitmap(
+                        } ?: createBitmap(
                             ScreenUtils.getScreenWidth(),
-                            ScreenUtils.getScreenHeight(),
-                            Bitmap.Config.ARGB_8888
+                            ScreenUtils.getScreenHeight()
                         ).apply {
                             LogUtils.d("截屏不可用，即将使用空白图片")
                         }

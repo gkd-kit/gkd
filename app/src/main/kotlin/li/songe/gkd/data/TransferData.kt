@@ -8,14 +8,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.util.LOCAL_SUBS_IDS
 import li.songe.gkd.util.checkSubsUpdate
-import li.songe.gkd.util.exportZipDir
-import li.songe.gkd.util.importZipDir
+import li.songe.gkd.util.createTempDir
 import li.songe.gkd.util.json
-import li.songe.gkd.util.resetDirectory
+import li.songe.gkd.util.sharedDir
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
@@ -52,8 +50,8 @@ private suspend fun importTransferData(transferData: TransferData): Boolean {
 }
 
 suspend fun exportData(subsIds: Collection<Long>):File {
-    exportZipDir.resetDirectory()
-    val dataFile = exportZipDir.resolve("${TransferData.TYPE}.json")
+    val tempDir = createTempDir()
+    val dataFile = tempDir.resolve("${TransferData.TYPE}.json")
     dataFile.writeText(
         json.encodeToString(
             TransferData(
@@ -63,27 +61,27 @@ suspend fun exportData(subsIds: Collection<Long>):File {
             )
         )
     )
-    val files = exportZipDir.resolve("files").apply { mkdir() }
+    val files = tempDir.resolve("files").apply { mkdir() }
     subsIdToRawFlow.value.values.filter { it.id < 0 && subsIds.contains(it.id) }.forEach {
         val file = files.resolve("${it.id}.json")
         file.writeText(json.encodeToString(it))
     }
-    val file = exportZipDir.resolve("backup-${System.currentTimeMillis()}.zip")
+    val file = sharedDir.resolve("backup-${System.currentTimeMillis()}.zip")
     ZipUtils.zipFiles(listOf(dataFile, files), file)
-    dataFile.delete()
-    files.deleteRecursively()
+    tempDir.deleteRecursively()
     return file
 }
 
 suspend fun importData(uri: Uri) {
-    importZipDir.resetDirectory()
-    val zipFile = importZipDir.resolve("import.zip")
+    val tempDir = createTempDir()
+    val zipFile = tempDir.resolve("import.zip")
     zipFile.writeBytes(UriUtils.uri2Bytes(uri))
-    val unZipImportFile = importZipDir.resolve("unzipImport")
+    val unZipImportFile = tempDir.resolve("unzipImport")
     ZipUtils.unzipFile(zipFile, unZipImportFile)
     val transferFile = unZipImportFile.resolve("${TransferData.TYPE}.json")
     if (!transferFile.exists() || !transferFile.isFile) {
         toast("导入无数据")
+        tempDir.deleteRecursively()
         return
     }
     val data = withContext(Dispatchers.Default) {
@@ -106,7 +104,7 @@ suspend fun importData(uri: Uri) {
         }
     }
     toast("导入成功")
-    importZipDir.resetDirectory()
+    tempDir.deleteRecursively()
     if (hasNewSubsItem) {
         delay(1000)
         checkSubsUpdate(true)

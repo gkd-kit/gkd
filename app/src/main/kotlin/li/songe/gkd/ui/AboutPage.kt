@@ -55,6 +55,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
+import li.songe.gkd.app
 import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
@@ -72,7 +73,6 @@ import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.UpdateChannelOption
 import li.songe.gkd.util.buildLogFile
 import li.songe.gkd.util.checkUpdate
-import li.songe.gkd.util.copyText
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.format
 import li.songe.gkd.util.launchAsFn
@@ -138,53 +138,7 @@ fun AboutPage() {
         )
     }
     var showShareLogDlg by remember { mutableStateOf(false) }
-    if (showShareLogDlg) {
-        Dialog(onDismissRequest = { showShareLogDlg = false }) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                val modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                Text(
-                    text = "分享到其他应用", modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareLogDlg = false
-                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val logZipFile = buildLogFile()
-                                context.shareFile(logZipFile, "分享日志文件")
-                            }
-                        })
-                        .then(modifier)
-                )
-                Text(
-                    text = "保存到下载", modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareLogDlg = false
-                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val logZipFile = buildLogFile()
-                                context.saveFileToDownloads(logZipFile)
-                            }
-                        })
-                        .then(modifier)
-                )
-                Text(
-                    text = "生成链接(需科学上网)",
-                    modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareLogDlg = false
-                            mainVm.uploadOptions.startTask(
-                                getFile = { buildLogFile() }
-                            )
-                        })
-                        .then(modifier)
-                )
-            }
-        }
-    }
+    var showShareAppDlg by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -242,9 +196,9 @@ fun AboutPage() {
 
             Column(
                 modifier = Modifier
-                    .clickable {
+                    .clickable(onClick = throttle {
                         mainVm.openUrl(REPOSITORY_URL)
-                    }
+                    })
                     .fillMaxWidth()
                     .itemPadding()
             ) {
@@ -256,15 +210,13 @@ fun AboutPage() {
                     text = REPOSITORY_URL,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.clickable(onClick = throttle { copyText(REPOSITORY_URL) }),
                 )
-
             }
             Column(
                 modifier = Modifier
-                    .clickable {
+                    .clickable(onClick = throttle {
                         mainVm.openUrl(ISSUES_URL)
-                    }
+                    })
                     .fillMaxWidth()
                     .itemPadding()
             ) {
@@ -276,9 +228,15 @@ fun AboutPage() {
                     text = ISSUES_URL,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.clickable(onClick = throttle { copyText(ISSUES_URL) }),
                 )
             }
+            SettingItem(
+                title = "分享应用",
+                imageVector = Icons.Default.Share,
+                onClick = {
+                    showShareAppDlg = true
+                }
+            )
             if (META.updateEnabled) {
                 val checkUpdating by mainVm.updateStatus.checkUpdatingFlow.collectAsState()
                 Text(
@@ -366,6 +324,92 @@ fun AboutPage() {
                 )
             }
             Spacer(modifier = Modifier.height(EmptyHeight))
+        }
+    }
+
+    if (showShareLogDlg) {
+        Dialog(onDismissRequest = { showShareLogDlg = false }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                val modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                Text(
+                    text = "分享到其他应用", modifier = Modifier
+                        .clickable(onClick = throttle {
+                            showShareLogDlg = false
+                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
+                                val logZipFile = buildLogFile()
+                                context.shareFile(logZipFile, "分享日志文件")
+                            }
+                        })
+                        .then(modifier)
+                )
+                Text(
+                    text = "保存到下载", modifier = Modifier
+                        .clickable(onClick = throttle {
+                            showShareLogDlg = false
+                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
+                                val logZipFile = buildLogFile()
+                                context.saveFileToDownloads(logZipFile)
+                            }
+                        })
+                        .then(modifier)
+                )
+                Text(
+                    text = "生成链接(需科学上网)",
+                    modifier = Modifier
+                        .clickable(onClick = throttle {
+                            showShareLogDlg = false
+                            mainVm.uploadOptions.startTask(
+                                getFile = { buildLogFile() }
+                            )
+                        })
+                        .then(modifier)
+                )
+            }
+        }
+    }
+
+    if (showShareAppDlg) {
+        Dialog(onDismissRequest = { showShareAppDlg = false }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                val modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                Text(
+                    text = "分享到其他应用", modifier = Modifier
+                        .clickable(onClick = throttle {
+                            showShareAppDlg = false
+                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
+                                app.packageCodePath
+                                val logZipFile = buildLogFile()
+                                context.shareFile(logZipFile, "分享日志文件")
+                            }
+                        })
+                        .then(modifier)
+                )
+                Text(
+                    text = "保存到下载", modifier = Modifier
+                        .clickable(onClick = throttle {
+                            showShareAppDlg = false
+                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
+                                val logZipFile = buildLogFile()
+                                context.saveFileToDownloads(logZipFile)
+                            }
+                        })
+                        .then(modifier)
+                )
+            }
         }
     }
 }
