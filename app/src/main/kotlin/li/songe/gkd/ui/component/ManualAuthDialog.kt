@@ -72,10 +72,10 @@ fun ManualAuthDialog(
                                     copyText(adbCommandText)
                                 })
                                 .padding(4.dp)
-                                .size(16.dp),
+                                .size(20.dp),
                             imageVector = Icons.Outlined.ContentCopy,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.tertiary,
+                            tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.75f),
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))

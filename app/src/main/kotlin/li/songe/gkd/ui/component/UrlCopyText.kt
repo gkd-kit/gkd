@@ -51,10 +51,10 @@ fun UrlCopyText(
                     copyText(text)
                 })
                 .padding(4.dp)
-                .size(16.dp),
+                .size(24.dp),
             imageVector = Icons.Outlined.ContentCopy,
-            contentDescription = Icons.Outlined.ContentCopy.name,
-            tint = MaterialTheme.colorScheme.tertiary,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.75f),
         )
     }
 }
