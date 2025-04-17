@@ -545,7 +545,7 @@ private fun A11yService.useAutoCheckShizuku() {
         // 借助无障碍轮询校验 shizuku 权限, 因为 shizuku 可能无故被关闭
         if (shizukuStoreFlow.value.enableShizukuAnyFeat && it.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && it.packageName == launcherAppId) {// 筛选降低判断频率
             val t = System.currentTimeMillis()
-            if (t - lastCheckShizukuTime > 10 * 60_000L) {
+            if (t - lastCheckShizukuTime > 60 * 60_000L) {
                 lastCheckShizukuTime = t
                 appScope.launchTry(Dispatchers.IO) {
                     shizukuOkState.updateAndGet()
