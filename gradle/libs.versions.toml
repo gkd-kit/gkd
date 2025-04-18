@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.1.20"
-ksp = "2.1.20-1.0.32"
+ksp = "2.1.20-2.0.0"
 android = "8.9.1"
 compose = "1.7.8"
 rikka = "4.4.0"
@@ -62,7 +62,7 @@ coil_gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil" }
 reorderable = "sh.calvin.reorderable:reorderable:2.4.3"
 exp4j = "net.objecthunter:exp4j:0.4.8"
 toaster = "com.github.getActivity:Toaster:12.8"
-permissions = "com.github.getActivity:XXPermissions:21.0"
+permissions = "com.github.getActivity:XXPermissions:21.2"
 json5 = "li.songe:json5:0.0.1"
 utilcodex = "com.blankj:utilcodex:1.31.1"
 activityResultLauncher = "com.github.DylanCaiCoding:ActivityResultLauncher:1.1.2"
