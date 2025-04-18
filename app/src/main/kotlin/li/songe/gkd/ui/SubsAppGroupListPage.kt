@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -36,6 +37,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.BatchActionButtonGroup
@@ -53,12 +55,15 @@ import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
+import li.songe.gkd.util.copyText
 import li.songe.gkd.util.getUpDownTransform
+import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.switchItem
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
+import li.songe.json5.encodeToJson5String
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
@@ -127,6 +132,18 @@ fun SubsAppGroupListPage(
             ) {
                 if (it) {
                     Row {
+                        IconButton(onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
+                            val copyGroups = app.groups.filter { g ->
+                                selectedDataSet.any { it.groupKey == g.key }
+                            }
+                            val str = json.encodeToJson5String(app.copy(groups = copyGroups))
+                            copyText(str)
+                        })) {
+                            Icon(
+                                imageVector = Icons.Outlined.ContentCopy,
+                                contentDescription = null,
+                            )
+                        }
                         BatchActionButtonGroup(vm, selectedDataSet)
                         if (editable) {
                             IconButton(onClick = throttle(vm.viewModelScope.launchAsFn {

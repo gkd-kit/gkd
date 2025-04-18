@@ -2,6 +2,7 @@ package li.songe.gkd.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -19,11 +20,13 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -50,6 +53,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.data.RawSubscription
@@ -71,11 +75,15 @@ import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.RuleSortOption
+import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.copyText
 import li.songe.gkd.util.getUpDownTransform
+import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.switchItem
 import li.songe.gkd.util.throttle
+import li.songe.json5.encodeToJson5String
 import java.util.Objects
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
@@ -139,6 +147,32 @@ fun AppConfigPage(appId: String) {
                 ) {
                     Row {
                         if (it) {
+                            IconButton(
+                                enabled = selectedDataSet.any { it.appId != null },
+                                onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
+                                    val selectGroups = mutableListOf<RawSubscription.RawAppGroup>()
+                                    vm.subsPairsFlow.value.forEach { (entry, groups) ->
+                                        groups.forEach { g ->
+                                            if (g is RawSubscription.RawAppGroup && selectedDataSet.any { entry.subsItem.id == it.subsId && g.key == it.groupKey }) {
+                                                selectGroups.add(g)
+                                            }
+                                        }
+                                    }
+                                    val a = RawSubscription.RawApp(
+                                        id = appId,
+                                        name = appInfoCacheFlow.value[appId]?.name,
+                                        groups = selectGroups,
+                                    )
+                                    val str = json.encodeToJson5String(a)
+                                    copyText(str)
+                                })
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.ContentCopy,
+                                    contentDescription = null,
+                                    tint = animateColorAsState(LocalContentColor.current).value,
+                                )
+                            }
                             BatchActionButtonGroup(vm, selectedDataSet)
                             IconButton(onClick = {
                                 expanded = true
