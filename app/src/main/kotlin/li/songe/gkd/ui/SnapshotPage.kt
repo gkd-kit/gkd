@@ -253,6 +253,7 @@ fun SnapshotPage() {
                     text = "保存截图到相册",
                     modifier = Modifier
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
+                            selectedSnapshot = null
                             requiredPermission(context, canWriteExternalStorage)
                             ImageUtils.save2Album(
                                 ImageUtils.getBitmap(snapshotVal.screenshotFile),
@@ -260,7 +261,6 @@ fun SnapshotPage() {
                                 true
                             )
                             toast("保存成功")
-                            selectedSnapshot = null
                         }))
                         .then(modifier)
                 )
@@ -268,25 +268,22 @@ fun SnapshotPage() {
                 Text(
                     text = "替换截图(去除隐私)",
                     modifier = Modifier
-                        .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
+                        .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                             val uri = context.pickContentLauncher.launchForImageResult()
-                            withContext(Dispatchers.IO) {
-                                val oldBitmap = ImageUtils.getBitmap(snapshotVal.screenshotFile)
-                                val newBytes = UriUtils.uri2Bytes(uri)
-                                val newBitmap = ImageUtils.getBitmap(newBytes, 0)
-                                if (oldBitmap.width == newBitmap.width && oldBitmap.height == newBitmap.height) {
-                                    snapshotVal.screenshotFile.writeBytes(newBytes)
-                                    if (snapshotVal.githubAssetId != null) {
-                                        // 当本地快照变更时, 移除快照链接
-                                        DbSet.snapshotDao.deleteGithubAssetId(snapshotVal.id)
-                                    }
-                                } else {
-                                    toast("截图尺寸不一致,无法替换")
-                                    return@withContext
+                            val oldBitmap = ImageUtils.getBitmap(snapshotVal.screenshotFile)
+                            val newBytes = UriUtils.uri2Bytes(uri)
+                            val newBitmap = ImageUtils.getBitmap(newBytes, 0)
+                            if (oldBitmap.width == newBitmap.width && oldBitmap.height == newBitmap.height) {
+                                snapshotVal.screenshotFile.writeBytes(newBytes)
+                                if (snapshotVal.githubAssetId != null) {
+                                    // 当本地快照变更时, 移除快照链接
+                                    DbSet.snapshotDao.deleteGithubAssetId(snapshotVal.id)
                                 }
+                                toast("替换成功")
+                                selectedSnapshot = null
+                            } else {
+                                toast("截图尺寸不一致, 无法替换")
                             }
-                            toast("替换成功")
-                            selectedSnapshot = null
                         }))
                         .then(modifier)
                 )
