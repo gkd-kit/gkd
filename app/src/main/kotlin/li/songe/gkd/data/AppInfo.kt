@@ -20,22 +20,31 @@ data class AppInfo(
     val isSystem: Boolean,
     val mtime: Long,
     val hidden: Boolean,
-    val userId: Int? = null, // null=0
-//    val activities: List<String> = emptyList(),
+    val userId: Int? = null, // null -> current user
 ) {
     // 重写 equals 和 hashCode 便于 compose 重组比较
     override fun equals(other: Any?): Boolean {
         if (other === this) return true
-        return (other is AppInfo && id == other.id && mtime == other.mtime && userId == other.userId)
+        if (other !is AppInfo) return false
+        return (id == other.id && icon == other.icon && mtime == other.mtime && userId == other.userId)
     }
 
     override fun hashCode(): Int {
-        return Objects.hash(id, mtime)
+        return Objects.hash(id, icon, mtime, userId)
     }
 }
 
 val selfAppInfo by lazy {
     app.packageManager.getPackageInfo(app.packageName, 0).toAppInfo()
+}
+
+fun Drawable.safeGet(): Drawable? {
+    return if (intrinsicHeight <= 0 || intrinsicWidth <= 0) {
+        // https://github.com/gkd-kit/gkd/issues/924
+        null
+    } else {
+        this
+    }
 }
 
 /**
@@ -57,24 +66,8 @@ fun PackageInfo.toAppInfo(
         mtime = lastUpdateTime,
         isSystem = applicationInfo?.let { it.flags and ApplicationInfo.FLAG_SYSTEM != 0 } ?: false,
         name = applicationInfo?.run { loadLabel(app.packageManager).toString() } ?: packageName,
-        icon = applicationInfo?.loadIcon(app.packageManager)?.run {
-            if (intrinsicHeight <= 0 || intrinsicWidth <= 0) {
-                // https://github.com/gkd-kit/gkd/issues/924
-                null
-            } else {
-                this
-            }
-        },
+        icon = applicationInfo?.loadIcon(app.packageManager)?.safeGet(),
         userId = userId,
         hidden = hidden ?: (app.packageManager.getLaunchIntentForPackage(packageName) == null),
-//        activities = (activities ?: emptyArray()).map {
-//            if (
-//                it.name.startsWith(packageName) && it.name.getOrNull(packageName.length) == '.'
-//            ) {
-//                it.name.substring(packageName.length)
-//            } else {
-//                it.name
-//            }
-//        },
     )
 }

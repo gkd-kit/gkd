@@ -108,26 +108,28 @@ suspend fun MutableStateFlow<AlertDialogOptions?>.getResult(
     title: String,
     text: String? = null,
     textContent: (@Composable (() -> Unit))? = null,
+    dismissRequest: Boolean = false,
     confirmText: String = DEFAULT_CONFIRM_TEXT,
     dismissText: String = DEFAULT_DISMISS_TEXT,
     error: Boolean = false,
 ): Boolean {
     return suspendCoroutine { s ->
+        val dismiss = {
+            s.resume(false)
+            this.value = null
+        }
         updateDialogOptions(
             title = title,
             text = text,
             textContent = textContent,
-            onDismissRequest = {},
+            onDismissRequest = if (dismissRequest) dismiss else ({}),
             confirmText = confirmText,
             confirmAction = {
                 s.resume(true)
                 this.value = null
             },
             dismissText = dismissText,
-            dismissAction = {
-                s.resume(false)
-                this.value = null
-            },
+            dismissAction = dismiss,
             error = error,
         )
     }
@@ -137,6 +139,7 @@ suspend fun MutableStateFlow<AlertDialogOptions?>.waitResult(
     title: String,
     text: String? = null,
     textContent: (@Composable (() -> Unit))? = null,
+    dismissRequest: Boolean = false,
     confirmText: String = DEFAULT_CONFIRM_TEXT,
     dismissText: String = DEFAULT_DISMISS_TEXT,
     error: Boolean = false,
@@ -145,6 +148,7 @@ suspend fun MutableStateFlow<AlertDialogOptions?>.waitResult(
         title = title,
         text = text,
         textContent = textContent,
+        dismissRequest = dismissRequest,
         confirmText = confirmText,
         dismissText = dismissText,
         error = error,

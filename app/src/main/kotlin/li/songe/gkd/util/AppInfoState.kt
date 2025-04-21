@@ -23,6 +23,7 @@ import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.toAppInfo
 import li.songe.gkd.permission.canQueryPkgState
+import kotlin.time.Duration.Companion.days
 
 val userAppInfoMapFlow = MutableStateFlow(emptyMap<String, AppInfo>())
 val allPackageInfoMapFlow = MutableStateFlow(emptyMap<Int, List<PackageInfo>>())
@@ -93,16 +94,17 @@ private val packageReceiver by lazy {
     }
 }
 
-fun getAppInfo(appId: String): AppInfo? {
+private fun getPkgInfo(appId: String): PackageInfo? {
     return try {
         // flags=0 : only get basic info
         app.packageManager.getPackageInfo(appId, 0)
     } catch (_: PackageManager.NameNotFoundException) {
         null
-    }?.toAppInfo()
+    }
 }
 
 val updateAppMutex = MutexState()
+private var lastUpdateAppListTime = 0L
 
 private suspend fun updateAppInfo(appIds: Set<String>) {
     if (appIds.isEmpty()) return
@@ -111,9 +113,9 @@ private suspend fun updateAppInfo(appIds: Set<String>) {
         LogUtils.d("updateAppInfo", appIds)
         val newMap = userAppInfoMapFlow.value.toMutableMap()
         appIds.forEach { appId ->
-            val info = getAppInfo(appId)
+            val info = getPkgInfo(appId)
             if (info != null) {
-                newMap[appId] = info
+                newMap[appId] = info.toAppInfo()
             } else {
                 newMap.remove(appId)
             }
@@ -124,14 +126,12 @@ private suspend fun updateAppInfo(appIds: Set<String>) {
 
 suspend fun initOrResetAppInfoCache() = updateAppMutex.withLock {
     LogUtils.d("initOrResetAppInfoCache start")
-    val oldAppIds = userAppInfoMapFlow.value.keys
+    val oldMap = userAppInfoMapFlow.value
     val appMap = userAppInfoMapFlow.value.toMutableMap()
     withContext(Dispatchers.IO) {
         app.packageManager.getInstalledPackages(0)
             .forEach { packageInfo ->
-                if (!oldAppIds.contains(packageInfo.packageName)) {
-                    appMap[packageInfo.packageName] = packageInfo.toAppInfo()
-                }
+                appMap[packageInfo.packageName] = packageInfo.toAppInfo()
             }
     }
     if (!canQueryPkgState.updateAndGet() || appMap.getMayQueryPkgNoAccess()) {
@@ -141,21 +141,32 @@ suspend fun initOrResetAppInfoCache() = updateAppMutex.withLock {
                 0
             ).map { it.activityInfo.packageName }.toSet().forEach { appId ->
                 if (!appMap.contains(appId)) {
-                    getAppInfo(appId)?.let {
-                        appMap[appId] = it
+                    getPkgInfo(appId)?.let {
+                        appMap[appId] = it.toAppInfo()
                     }
                 }
             }
         }
     }
     userAppInfoMapFlow.value = appMap
-    LogUtils.d("initOrResetAppInfoCache end ${oldAppIds.size}->${appMap.size}")
+    lastUpdateAppListTime = System.currentTimeMillis()
+    LogUtils.d("initOrResetAppInfoCache end ${oldMap.size}->${appMap.size}")
+}
+
+
+fun forceUpdateAppList() {
+    if (updateAppMutex.mutex.isLocked) return
+    val interval = System.currentTimeMillis() - lastUpdateAppListTime
+    if (interval > 7.days.inWholeMilliseconds) {
+        // 每 7 天强制更新一次应用列表数据
+        appScope.launchTry(Dispatchers.IO) { initOrResetAppInfoCache() }
+    }
 }
 
 fun initAppState() {
     packageReceiver
     appScope.launchTry(Dispatchers.IO) {
-        willUpdateAppIds.debounce(1000)
+        willUpdateAppIds.debounce(3000)
             .filter { it.isNotEmpty() }
             .collect { updateAppInfo(it) }
     }

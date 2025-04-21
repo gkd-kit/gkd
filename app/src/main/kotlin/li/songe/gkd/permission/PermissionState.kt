@@ -26,6 +26,7 @@ import li.songe.gkd.appOpsManager
 import li.songe.gkd.appScope
 import li.songe.gkd.shizuku.shizukuCheckGranted
 import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.util.forceUpdateAppList
 import li.songe.gkd.util.initOrResetAppInfoCache
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mayQueryPkgNoAccessFlow
@@ -281,6 +282,8 @@ fun updatePermissionState() {
         appScope.launchTry(Dispatchers.IO) {
             initOrResetAppInfoCache()
         }
+    } else {
+        forceUpdateAppList()
     }
     arrayOf(
         notificationState,
