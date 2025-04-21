@@ -34,25 +34,36 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.generated.destinations.AboutPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
+import li.songe.gkd.appScope
+import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.updateDialogOptions
+import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.ui.theme.supportDynamicColor
 import li.songe.gkd.util.DarkThemeOption
 import li.songe.gkd.util.LocalMainViewModel
 import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.findOption
+import li.songe.gkd.util.initOrResetAppInfoCache
+import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
+import li.songe.gkd.util.toast
+import li.songe.gkd.util.updateAppMutex
 
 val settingsNav = BottomNavItem(
     label = "设置", icon = Icons.Outlined.Settings
@@ -98,7 +109,9 @@ fun useSettingsPage(): ScaffoldExt {
                             textAlign = TextAlign.End,
                         )
                     },
-                    modifier = Modifier.fillMaxWidth().autoFocus()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .autoFocus()
                 )
             },
             onDismissRequest = { showToastInputDlg = false },
@@ -165,7 +178,9 @@ fun useSettingsPage(): ScaffoldExt {
                             textAlign = TextAlign.End,
                         )
                     },
-                    modifier = Modifier.fillMaxWidth().autoFocus()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .autoFocus()
                 )
             },
             onDismissRequest = {
@@ -272,6 +287,35 @@ fun useSettingsPage(): ScaffoldExt {
                     )
                 })
 
+            Row(
+                modifier = Modifier
+                    .clickable(
+                        onClick = throttle(vm.viewModelScope.launchAsFn {
+                            if (updateAppMutex.mutex.isLocked) return@launchAsFn
+                            mainVm.dialogFlow.waitResult(
+                                title = "重载列表",
+                                text = "是否重新加载应用列表? \n\n如果应用信息不正确或切换了图标主题, 可使用此项同步最新状态",
+                                dismissRequest = true,
+                            )
+                            if (updateAppMutex.mutex.isLocked) return@launchAsFn
+                            appScope.launchTry(Dispatchers.IO) {
+                                initOrResetAppInfoCache()
+                                toast("重载成功")
+                            }
+                        })
+                    )
+                    .fillMaxWidth()
+                    .itemPadding(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "重载应用列表",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                RotatingLoadingIcon(loading = updateAppMutex.state.collectAsState().value)
+            }
+
             Text(
                 text = "主题",
                 modifier = Modifier.titleItemPadding(),
@@ -287,7 +331,8 @@ fun useSettingsPage(): ScaffoldExt {
             }
 
             if (supportDynamicColor) {
-                TextSwitch(title = "动态配色",
+                TextSwitch(
+                    title = "动态配色",
                     subtitle = "配色跟随系统主题",
                     checked = store.enableDynamicColor,
                     onCheckedChange = {
