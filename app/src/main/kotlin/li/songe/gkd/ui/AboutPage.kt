@@ -74,7 +74,6 @@ import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.UpdateChannelOption
 import li.songe.gkd.util.buildLogFile
 import li.songe.gkd.util.checkUpdate
-import li.songe.gkd.util.copyText
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.format
 import li.songe.gkd.util.launchAsFn
@@ -415,10 +414,10 @@ fun AboutPage() {
                         .then(modifier)
                 )
                 Text(
-                    text = "复制 Google Play 链接", modifier = Modifier
+                    text = "Google Play", modifier = Modifier
                         .clickable(onClick = throttle {
                             showShareAppDlg = false
-                            copyText(PLAY_STORE_URL)
+                            mainVm.openUrl(PLAY_STORE_URL)
                         })
                         .then(modifier)
                 )
