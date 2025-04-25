@@ -52,7 +52,6 @@ import li.songe.gkd.appScope
 import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.ui.component.CardFlagBar
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.autoFocus
@@ -109,7 +108,7 @@ fun SubsCategoryPage(subsItemId: Long) {
                     text = arrayOf(
                         "类别会捕获以当前类别开头的所有应用规则组, 因此可调整类别开关(分类手动配置)来批量开关规则组",
                         "规则组开关优先级为:\n规则手动配置 > 分类手动配置 > 分类默认 > 规则默认",
-                        "因此如果手动开关了规则组(规则手动配置), 则该规则组不会被批量开关, 可通过点击类别-重置开关, 来移除类别下所有规则手动配置",
+                        "因此如果手动开关了规则组(规则手动配置), 则该规则组不会被批量开关, 可通过点击类别-重置规则组开关, 来移除类别下所有规则手动配置",
                     ).joinToString("\n\n"),
                 )
             }) {
@@ -197,7 +196,7 @@ private fun CategoryItemCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, top = 8.dp, bottom = 8.dp),
+                .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -247,7 +246,6 @@ private fun CategoryItemCard(
                     toast(option.label)
                 })
             )
-            CardFlagBar(visible = enable != null, width = 8.dp)
         }
     }
 }
@@ -277,7 +275,7 @@ private fun CategoryMenu(
                             contentDescription = null
                         )
                     },
-                    text = { Text(text = "重置开关") },
+                    text = { Text(text = "重置规则组开关") },
                     onClick = throttle(vm.viewModelScope.launchAsFn {
                         onCheckedChange(false)
                         val updatedList = DbSet.subsConfigDao.batchResetAppGroupEnable(
@@ -380,7 +378,9 @@ private fun AddOrEditCategoryDialog(
             OutlinedTextField(
                 value = value,
                 onValueChange = { value = it.trim() },
-                modifier = Modifier.fillMaxWidth().autoFocus(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .autoFocus(),
                 placeholder = { Text(text = "请输入类别名称") },
                 singleLine = true
             )
