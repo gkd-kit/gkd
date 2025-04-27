@@ -48,7 +48,7 @@ androidx_paging_runtime = { module = "androidx.paging:paging-runtime", version.r
 androidx_paging_compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
 google_accompanist_drawablepainter = "com.google.accompanist:accompanist-drawablepainter:0.37.2"
 junit = "junit:junit:4.13.2"
-tencent_mmkv = "com.tencent:mmkv:2.1.0"
+tencent_mmkv = "com.tencent:mmkv:2.2.1"
 rikka_processor = { module = "dev.rikka.tools.refine:annotation-processor", version.ref = "rikka" }
 rikka_annotation = { module = "dev.rikka.tools.refine:annotation", version.ref = "rikka" }
 rikka_shizuku_api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
@@ -63,7 +63,7 @@ reorderable = "sh.calvin.reorderable:reorderable:2.4.3"
 exp4j = "net.objecthunter:exp4j:0.4.8"
 toaster = "com.github.getActivity:Toaster:12.8"
 permissions = "com.github.getActivity:XXPermissions:21.2"
-json5 = "li.songe:json5:0.0.1"
+json5 = "li.songe:json5:0.2.1"
 utilcodex = "com.blankj:utilcodex:1.31.1"
 activityResultLauncher = "com.github.DylanCaiCoding:ActivityResultLauncher:1.1.2"
 floatingBubbleView = "io.github.torrydo:floating-bubble-view:0.6.5"
