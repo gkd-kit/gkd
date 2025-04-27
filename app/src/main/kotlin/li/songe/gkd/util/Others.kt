@@ -25,6 +25,8 @@ import kotlinx.coroutines.yield
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.activityManager
+import li.songe.json5.Json5EncoderConfig
+import li.songe.json5.encodeToJson5String
 import java.io.DataOutputStream
 import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KClass
@@ -131,4 +133,9 @@ suspend fun runCommandByRoot(commandText: String) {
     }
     coroutineContext[Job]?.cancel()
     yield()
+}
+
+val defaultJson5Config = Json5EncoderConfig(indent = "\u0020\u0020")
+inline fun <reified T> toJson5String(value: T): String {
+    return json.encodeToJson5String(value, defaultJson5Config)
 }

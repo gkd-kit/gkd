@@ -78,12 +78,11 @@ import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.getUpDownTransform
-import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.switchItem
 import li.songe.gkd.util.throttle
-import li.songe.json5.encodeToJson5String
+import li.songe.gkd.util.toJson5String
 import java.util.Objects
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
@@ -163,8 +162,7 @@ fun AppConfigPage(appId: String) {
                                         name = appInfoCacheFlow.value[appId]?.name,
                                         groups = selectGroups,
                                     )
-                                    val str = json.encodeToJson5String(a)
-                                    copyText(str)
+                                    copyText(toJson5String(a))
                                 })
                             ) {
                                 Icon(
