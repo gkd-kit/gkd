@@ -2,18 +2,16 @@
 
 ## --> [GKD 上架 Google Play 封闭式测试邀请](https://github.com/orgs/gkd-kit/discussions/946) <--
 
-基于 **无障碍** + **高级选择器** + **订阅规则** 的自定义屏幕点击 APP
+基于 [高级选择器](https://gkd.li/guide/selector) + [订阅规则](https://gkd.li/guide/subscription) + [快照审查](https://github.com/gkd-kit/inspect) 的自定义屏幕点击 APP
 
 ## 安装
 
-- [gkd.li](https://gkd.li/guide/)
-- [releases](https://github.com/gkd-kit/gkd/releases)
+- [GKD.LI](https://gkd.li/guide/)
+- [Github Releases](https://github.com/gkd-kit/gkd/releases)
 
-如遇到问题可查看 [疑难解答](https://gkd.li/guide/faq)
+如遇问题请先查看 [疑难解答](https://gkd.li/guide/faq)
 
-## 功能
-
-基于 [高级选择器](https://gkd.li/guide/selector) + [订阅规则](https://gkd.li/guide/subscription) + [快照审查](https://github.com/gkd-kit/inspect) 实现根据屏幕上下文信息自定义点击目标控件
+## 截图
 
 |                                                                                             |                                                                                             |                                                                                             |                                                                                             |
 | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -22,7 +20,7 @@
 
 ## 订阅
 
-本应用 **默认不携带任何规则**，需自行添加本地规则，或者通过订阅链接的方式获取规则
+GKD **默认不提供规则**，需自行添加本地规则，或者通过订阅链接的方式获取远程规则
 
 也可通过 [subscription-template](https://github.com/gkd-kit/subscription-template) 快速构建自己的远程订阅
 
@@ -31,7 +29,7 @@
 要加入此列表, 需点击仓库主页右上角设置图标后在 Topics 中添加 `gkd-subscription`
 
 <details>
-<summary>示例图片 - 添加至 Topics</summary>
+<summary>示例图片 - 添加至 Topics (点击展开)</summary>
 
 ![image](https://github.com/gkd-kit/gkd/assets/38517192/b7a2548d-c499-4db3-a2a4-dab81f0d312e)
 
@@ -39,13 +37,24 @@
 
 ## 选择器
 
+一个类似 CSS 选择器的选择器, 能联系节点上下文信息, 更容易也更精确找到目标节点
+
 <https://gkd.li/guide/selector>
 
 [@[vid=\"menu\"] < [vid=\"menu_container\"] - [vid=\"dot_text_layout\"] > [text^=\"广告\"]](https://i.gkd.li/i/14881985?gkd=QFt2aWQ9Im1lbnUiXSA8IFt2aWQ9Im1lbnVfY29udGFpbmVyIl0gLSBbdmlkPSJkb3RfdGV4dF9sYXlvdXQiXSA-IFt0ZXh0Xj0i5bm_5ZGKIl0)
 
-![image](https://github.com/user-attachments/assets/800cc253-8c7d-44f1-99be-c8bfce3ae996)
+<details>
+<summary>示例图片 - 选择器路径视图 (点击展开)</summary>
 
-![image](https://github.com/user-attachments/assets/a2ae667b-b8c5-4556-a816-37743347b972)
+[![image](https://github.com/user-attachments/assets/a2ae667b-b8c5-4556-a816-37743347b972)](https://i.gkd.li/i/14881985?gkd=QFt2aWQ9Im1lbnUiXSA8IFt2aWQ9Im1lbnVfY29udGFpbmVyIl0gLSBbdmlkPSJkb3RfdGV4dF9sYXlvdXQiXSA-IFt0ZXh0Xj0i5bm_5ZGKIl0)
+
+</details>
+
+## 捐赠
+
+如果 GKD 对你有用, 可以通过以下链接支持该项目
+
+<https://github.com/lisonge/sponsor>
 
 ## Star History
 
