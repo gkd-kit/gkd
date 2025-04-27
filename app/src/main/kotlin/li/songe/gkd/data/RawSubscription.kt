@@ -19,9 +19,9 @@ import li.songe.gkd.util.LOCAL_SUBS_IDS
 import li.songe.gkd.util.distinctByIfAny
 import li.songe.gkd.util.filterIfNotAll
 import li.songe.gkd.util.json
+import li.songe.gkd.util.toJson5String
 import li.songe.gkd.util.toast
 import li.songe.json5.Json5
-import li.songe.json5.encodeToJson5String
 import li.songe.selector.Selector
 import net.objecthunter.exp4j.Expression
 import net.objecthunter.exp4j.ExpressionBuilder
@@ -383,7 +383,7 @@ data class RawSubscription(
                 r.exampleUrls ?: emptyList()
             }).distinct()
         }
-        override val cacheStr by lazy { json.encodeToJson5String(this) }
+        override val cacheStr by lazy { toJson5String(this) }
     }
 
 
@@ -462,7 +462,7 @@ data class RawSubscription(
                 r.exampleUrls ?: emptyList()
             }).distinct()
         }
-        override val cacheStr by lazy { json.encodeToJson5String(this) }
+        override val cacheStr by lazy { toJson5String(this) }
     }
 
     @Serializable

@@ -57,13 +57,12 @@ import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.getUpDownTransform
-import li.songe.gkd.util.json
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.switchItem
 import li.songe.gkd.util.throttle
+import li.songe.gkd.util.toJson5String
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
-import li.songe.json5.encodeToJson5String
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
@@ -136,7 +135,7 @@ fun SubsAppGroupListPage(
                             val copyGroups = app.groups.filter { g ->
                                 selectedDataSet.any { it.groupKey == g.key }
                             }
-                            val str = json.encodeToJson5String(app.copy(groups = copyGroups))
+                            val str = toJson5String(app.copy(groups = copyGroups))
                             copyText(str)
                         })) {
                             Icon(
