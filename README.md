@@ -57,6 +57,8 @@ GKD **默认不提供规则**，需自行添加本地规则，或者通过订阅
 
 <https://github.com/lisonge/sponsor>
 
+或前往 [Google Play](https://play.google.com/store/apps/details?id=li.songe.gkd) 给个好评
+
 ## Star History
 
 [![Stargazers over time](https://starchart.cc/gkd-kit/gkd.svg?variant=adaptive)](https://starchart.cc/gkd-kit/gkd)
