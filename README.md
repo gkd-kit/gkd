@@ -1,12 +1,11 @@
 # gkd
 
-## --> [GKD 上架 Google Play 封闭式测试邀请](https://github.com/orgs/gkd-kit/discussions/946) <--
-
 基于 [高级选择器](https://gkd.li/guide/selector) + [订阅规则](https://gkd.li/guide/subscription) + [快照审查](https://github.com/gkd-kit/inspect) 的自定义屏幕点击 APP
 
 ## 安装
 
 - [GKD.LI](https://gkd.li/guide/)
+- [Google Play](https://play.google.com/store/apps/details?id=li.songe.gkd) &nbsp; [区别](https://gkd.li/guide/faq#play-diff)
 - [Github Releases](https://github.com/gkd-kit/gkd/releases)
 
 如遇问题请先查看 [疑难解答](https://gkd.li/guide/faq)
