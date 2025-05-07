@@ -108,7 +108,7 @@ fun HomePage() {
                         selected = tab.label == page.navItem.label,
                         modifier = Modifier,
                         onClick = {
-                            vm.tabFlow.value = page.navItem
+                            vm.updateTab(page.navItem)
                         },
                         icon = {
                             Icon(
