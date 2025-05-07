@@ -348,7 +348,8 @@ private fun A11yService.useMatchRule() {
             val target = a11yContext.queryRule(rule, nodeVal) ?: continue
             if (activityRule !== getAndUpdateCurrentRules()) break
             if (rule.checkDelay() && rule.actionDelayJob == null) {
-                rule.actionDelayJob = scope.launch(A11yService.actionThread) {
+                LogUtils.d("startDelay", rule.statusText(), AttrInfo.info2data(target, 0, 0))
+                rule.actionDelayJob = scope.launchTry(A11yService.actionThread) {
                     delay(rule.actionDelay)
                     rule.actionDelayJob = null
                     newQueryTask(delayRule = rule)
