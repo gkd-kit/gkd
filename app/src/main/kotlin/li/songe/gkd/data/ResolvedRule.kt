@@ -143,6 +143,19 @@ sealed class ResolvedRule(
         else -> true
     }
 
+    fun resetState(t: Long? = null) {
+        actionCount.value = 0
+        actionDelayTriggerTime = 0L
+        actionTriggerTime.value = 0
+        actionDelayJob?.let {
+            it.cancel()
+            actionDelayJob = null
+        }
+        if (t != null) {
+            matchChangedTime = t
+        }
+    }
+
     private val performer = ActionPerformer.getAction(rule.action ?: rule.position?.let {
         ActionPerformer.ClickCenter.action
     })
