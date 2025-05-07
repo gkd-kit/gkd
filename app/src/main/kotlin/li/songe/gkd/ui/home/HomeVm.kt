@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import li.songe.gkd.appScope
 import li.songe.gkd.data.SubsConfig
@@ -26,12 +27,25 @@ import li.songe.gkd.util.usedSubsEntriesFlow
 
 class HomeVm : ViewModel() {
 
+    val appListKeyFlow = MutableStateFlow(0)
     val tabFlow = MutableStateFlow(controlNav)
+    var lastClickTabTime = 0L
+    fun updateTab(navItem: BottomNavItem) {
+        if (navItem == appListNav && navItem == tabFlow.value) {
+            // double click
+            if (System.currentTimeMillis() - lastClickTabTime < 500) {
+                appListKeyFlow.update { it + 1 }
+            }
+        }
+        tabFlow.value = navItem
+        lastClickTabTime = System.currentTimeMillis()
+    }
 
     private val latestRecordFlow =
         DbSet.actionLogDao.queryLatest().stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    val latestRecordIsGlobalFlow = latestRecordFlow.map(viewModelScope) { it?.groupType == SubsConfig.GlobalGroupType }
+    val latestRecordIsGlobalFlow =
+        latestRecordFlow.map(viewModelScope) { it?.groupType == SubsConfig.GlobalGroupType }
     val latestRecordDescFlow = combine(
         latestRecordFlow, subsIdToRawFlow, appInfoCacheFlow
     ) { latestRecord, subsIdToRaw, appInfoCache ->
