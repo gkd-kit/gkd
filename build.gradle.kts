@@ -19,10 +19,8 @@ plugins {
 }
 
 // https://kotlinlang.org/docs/js-project-setup.html#use-pre-installed-node-js
-rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
-    @Suppress("DEPRECATION")
-    rootProject.the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension>().download =
-        false
+rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin> {
+    project.extensions.getByType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec>().download = false
 }
 
 val normalVersionRegex by lazy { "^[0-9\\.]+".toRegex() }
