@@ -99,6 +99,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        addOnNewIntentListener(mainVm::handleIntent)
         setContent {
             val termsAccepted by termsAcceptedFlow.collectAsStateWithLifecycle()
             val navController = rememberNavController()
@@ -132,6 +133,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+            LaunchedEffect(null) { intent?.let(mainVm::handleIntent) }
         }
     }
 

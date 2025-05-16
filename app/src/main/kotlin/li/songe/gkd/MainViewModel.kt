@@ -1,32 +1,51 @@
 package li.songe.gkd
 
+import android.content.ComponentName
+import android.content.Intent
+import android.os.Build
+import android.service.quicksettings.TileService
 import android.webkit.URLUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import com.blankj.utilcode.util.LogUtils
+import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
+import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
+import com.ramcosta.composedestinations.spec.Direction
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
+import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.debug.FloatingTileService
+import li.songe.gkd.debug.HttpTileService
+import li.songe.gkd.debug.SnapshotTileService
 import li.songe.gkd.permission.AuthReason
 import li.songe.gkd.ui.component.AlertDialogOptions
 import li.songe.gkd.ui.component.InputSubsLinkOption
 import li.songe.gkd.ui.component.RuleGroupState
 import li.songe.gkd.ui.component.UploadOptions
+import li.songe.gkd.ui.home.BottomNavItem
+import li.songe.gkd.ui.home.appListNav
+import li.songe.gkd.ui.home.controlNav
+import li.songe.gkd.ui.home.subsNav
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.UpdateStatus
 import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.clearCache
 import li.songe.gkd.util.client
+import li.songe.gkd.util.componentName
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.openUri
@@ -130,6 +149,56 @@ class MainViewModel : ViewModel() {
             urlFlow.value = url
         } else {
             openUri(url)
+        }
+    }
+
+    val appListKeyFlow = MutableStateFlow(0)
+    val tabFlow = MutableStateFlow(controlNav)
+    private var lastClickTabTime = 0L
+    fun updateTab(navItem: BottomNavItem) {
+        if (navItem == appListNav && navItem == tabFlow.value) {
+            // double click
+            if (System.currentTimeMillis() - lastClickTabTime < 500) {
+                appListKeyFlow.update { it + 1 }
+            }
+        }
+        tabFlow.value = navItem
+        lastClickTabTime = System.currentTimeMillis()
+    }
+
+    fun navigatePage(direction: Direction) {
+        if (direction.route == navController.currentDestination?.route) {
+            return
+        }
+        navController.navigate(direction.route)
+    }
+
+    fun handleIntent(intent: Intent) = viewModelScope.launchTry(Dispatchers.Main) {
+        LogUtils.d(intent)
+        val uri = intent.data?.normalizeScheme()
+        if (uri != null && uri.scheme == "gkd" && uri.host == "page") {
+            delay(200)
+            when (uri.path) {
+                "/1" -> navigatePage(AdvancedPageDestination)
+                "/2" -> navigatePage(SnapshotPageDestination())
+            }
+        } else if (uri != null && intent.getStringExtra("source") == OpenFileActivity::class.qualifiedName) {
+            toast("加载导入中...")
+            tabFlow.value = subsNav
+            withContext(Dispatchers.IO) { importData(uri) }
+        } else if (intent.action == TileService.ACTION_QS_TILE_PREFERENCES) {
+            val qsTileCpt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(Intent.EXTRA_COMPONENT_NAME, ComponentName::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(Intent.EXTRA_COMPONENT_NAME) as ComponentName?
+            } ?: return@launchTry
+            delay(200)
+            if (qsTileCpt == HttpTileService::class.componentName || qsTileCpt == FloatingTileService::class.componentName) {
+                navigatePage(AdvancedPageDestination)
+            } else if (qsTileCpt == SnapshotTileService::class.componentName) {
+                navigatePage(SnapshotPageDestination)
+            }
         }
     }
 
