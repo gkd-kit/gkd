@@ -139,6 +139,8 @@ open class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA1
                 )
             } ?: throw RpcError("没有查询到节点")
 
+            LogUtils.d("查询到节点", gkdAction, AttrInfo.info2data(targetNode, 0, 0))
+
             if (gkdAction.action == null) {
                 // 仅查询
                 return ActionResult(
