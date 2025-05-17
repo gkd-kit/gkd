@@ -188,7 +188,6 @@ private fun A11yService.useMatchRule() {
     val queryEvents = mutableListOf<A11yEvent>()
     var queryTaskJob: Job?
 
-
     fun newQueryTask(
         byEvent: A11yEvent? = null,
         byForced: Boolean = false,
@@ -266,6 +265,15 @@ private fun A11yService.useMatchRule() {
             }
         }
         val activityRule = getAndUpdateCurrentRules()
+        activityRule.currentRules.forEach { rule ->
+            if (rule.status == RuleStatus.Status3 && rule.matchDelayJob == null) {
+                rule.matchDelayJob = scope.launch(A11yService.actionThread) {
+                    delay(rule.matchDelay)
+                    rule.matchDelayJob = null
+                    newQueryTask(delayRule = rule)
+                }
+            }
+        }
         if (activityRule.skipMatch) {
             // 如果当前应用没有规则/暂停匹配, 则不去调用获取事件节点避免阻塞
             return@launchQuery checkFutureJob()
@@ -293,15 +301,7 @@ private fun A11yService.useMatchRule() {
             // https://github.com/gkd-kit/gkd/issues/915
             if (activityRule !== getAndUpdateCurrentRules()) break
             if (delayRule != null && delayRule !== rule) continue
-            val statusCode = rule.status
-            if (statusCode == RuleStatus.Status3 && rule.matchDelayJob == null) {
-                rule.matchDelayJob = scope.launch(A11yService.actionThread) {
-                    delay(rule.matchDelay)
-                    rule.matchDelayJob = null
-                    newQueryTask(delayRule = rule)
-                }
-            }
-            if (statusCode != RuleStatus.StatusOk) continue
+            if (rule.status != RuleStatus.StatusOk) continue
             if (byForced && !rule.checkForced()) continue
             lastNode?.let { n ->
                 val refreshOk = (!lastNodeUsed) || (try {
