@@ -133,27 +133,27 @@ sealed class ResolvedRule(
 
     var actionCount = Value(0)
 
-    var matchChangedTime = 0L
+    private var matchChangedTime = 0L
 
     private val matchLimitTime = (matchTime ?: 0) + matchDelay
 
-    val resetMatchTypeWhenActivity = when (resetMatch) {
-        "app" -> false
-        "activity" -> true
-        else -> true
-    }
+    val resetMatchType = ResetMatchType.allSubObject.find {
+        it.value == resetMatch
+    } ?: ResetMatchType.Activity
 
-    fun resetState(t: Long? = null) {
+    fun resetState(t: Long) {
         actionCount.value = 0
         actionDelayTriggerTime = 0L
         actionTriggerTime.value = 0
-        actionDelayJob?.let {
-            it.cancel()
+        actionDelayJob?.run {
+            cancel()
             actionDelayJob = null
         }
-        if (t != null) {
-            matchChangedTime = t
+        matchDelayJob?.run {
+            cancel()
+            matchDelayJob = null
         }
+        matchChangedTime = t
     }
 
     private val performer = ActionPerformer.getAction(rule.action ?: rule.position?.let {
@@ -205,6 +205,16 @@ sealed class ResolvedRule(
 
     // 范围越精确, 优先级越高
     abstract fun matchActivity(appId: String, activityId: String? = null): Boolean
+}
+
+sealed class ResetMatchType(val value: String) {
+    data object Activity : ResetMatchType("activity")
+    data object Match : ResetMatchType("match")
+    data object App : ResetMatchType("app")
+
+    companion object {
+        val allSubObject by lazy { listOf(Activity, Match, App) }
+    }
 }
 
 sealed class RuleStatus(val name: String) {
