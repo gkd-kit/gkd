@@ -40,5 +40,11 @@ data class AppConfig(
 
         @Query("SELECT * FROM app_config WHERE subs_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)")
         fun queryUsedList(): Flow<List<AppConfig>>
+
+        @Insert(onConflict = OnConflictStrategy.IGNORE)
+        suspend fun insertOrIgnore(vararg objects: AppConfig): List<Long>
+
+        @Query("SELECT * FROM app_config WHERE subs_id IN (:subsItemIds)")
+        suspend fun querySubsItemConfig(subsItemIds: List<Long>): List<AppConfig>
     }
 }
