@@ -54,10 +54,16 @@ import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubsMutex
 import li.songe.gkd.util.updateSubscription
+import java.lang.ref.WeakReference
 
 class MainViewModel : ViewModel() {
 
-    lateinit var navController: NavHostController
+    private var navControllerRef: WeakReference<NavHostController>? = null
+    var navController: NavHostController
+        get() = navControllerRef?.get() ?: error("not found navController")
+        set(value) {
+            navControllerRef = WeakReference(value)
+        }
 
     val enableDarkThemeFlow = storeFlow.debounce(300).map { s -> s.enableDarkTheme }.stateIn(
         viewModelScope,
