@@ -27,6 +27,7 @@ private data class TransferData(
     val subsItems: List<SubsItem> = emptyList(),
     val subsConfigs: List<SubsConfig> = emptyList(),
     val categoryConfigs: List<CategoryConfig> = emptyList(),
+    val appConfigs: List<AppConfig> = emptyList()
 ) {
     companion object {
         const val TYPE = "transfer_data"
@@ -46,10 +47,11 @@ private suspend fun importTransferData(transferData: TransferData): Boolean {
     DbSet.subsItemDao.insertOrIgnore(*subsItems.toTypedArray())
     DbSet.subsConfigDao.insertOrIgnore(*transferData.subsConfigs.toTypedArray())
     DbSet.categoryConfigDao.insertOrIgnore(*transferData.categoryConfigs.toTypedArray())
+    DbSet.appConfigDao.insertOrIgnore(*transferData.appConfigs.toTypedArray())
     return hasNewSubsItem
 }
 
-suspend fun exportData(subsIds: Collection<Long>):File {
+suspend fun exportData(subsIds: Collection<Long>): File {
     val tempDir = createTempDir()
     val dataFile = tempDir.resolve("${TransferData.TYPE}.json")
     dataFile.writeText(
@@ -58,6 +60,7 @@ suspend fun exportData(subsIds: Collection<Long>):File {
                 subsItems = subsItemsFlow.value.filter { subsIds.contains(it.id) },
                 subsConfigs = DbSet.subsConfigDao.querySubsItemConfig(subsIds.toList()),
                 categoryConfigs = DbSet.categoryConfigDao.querySubsItemConfig(subsIds.toList()),
+                appConfigs = DbSet.appConfigDao.querySubsItemConfig(subsIds.toList()),
             )
         )
     )
