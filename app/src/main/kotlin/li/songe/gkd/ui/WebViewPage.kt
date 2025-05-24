@@ -28,7 +28,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,9 +71,6 @@ fun WebViewPage(
     val webViewState = rememberWebViewState(url = initUrl)
     val webViewClient = remember { GkdWebViewClient() }
     val webView = remember { Value<WebView?>(null) }
-    LaunchedEffect(null) {
-        WebView.getCurrentWebViewPackage()?.versionName?.run { splitToSequence('.').first() }
-    }
     Scaffold(modifier = Modifier, topBar = {
         TopAppBar(
             modifier = Modifier.fillMaxWidth(),
