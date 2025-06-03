@@ -3,6 +3,7 @@ package li.songe.gkd.data
 import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Job
+import li.songe.gkd.service.appChangeTime
 import li.songe.gkd.service.lastTriggerRule
 import li.songe.gkd.service.lastTriggerTime
 import li.songe.selector.MatchOption
@@ -134,6 +135,8 @@ sealed class ResolvedRule(
     var actionCount = Value(0)
 
     private var matchChangedTime = 0L
+    val isFirstMatchApp: Boolean
+        get() = matchChangedTime == appChangeTime
 
     private val matchLimitTime = (matchTime ?: 0) + matchDelay
 
