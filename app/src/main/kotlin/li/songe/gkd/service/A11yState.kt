@@ -146,10 +146,11 @@ fun getAndUpdateCurrentRules(): ActivityRule {
     val ruleChanged = oldActivityRule.ruleSummary !== allRules
     if (topChanged || ruleChanged) {
         val t = System.currentTimeMillis()
+        val allAppRules = allRules.appIdToRules[topActivity.appId] ?: emptyList()
         val newActivityRule = ActivityRule(
             ruleSummary = allRules,
             topActivity = topActivity,
-            appRules = (allRules.appIdToRules[topActivity.appId] ?: emptyList()).filter { rule ->
+            appRules = allAppRules.filter { rule ->
                 rule.matchActivity(topActivity.appId, topActivity.activityId)
             },
             globalRules = ruleSummaryFlow.value.globalRules.filter { r ->
@@ -160,11 +161,16 @@ fun getAndUpdateCurrentRules(): ActivityRule {
             appChangeTime = t
             allRules.globalRules.forEach { it.resetState(t) }
             allRules.appIdToRules[oldActivityRule.topActivity.appId]?.forEach { it.resetState(t) }
-            newActivityRule.appRules.forEach { it.resetState(t) }
+            allAppRules.forEach { it.resetState(t) }
         } else {
             newActivityRule.currentRules.forEach { r ->
                 when (r.resetMatchType) {
-                    ResetMatchType.App -> null
+                    ResetMatchType.App -> {
+                        if (r.isFirstMatchApp) {
+                            r.resetState(t)
+                        }
+                    }
+
                     ResetMatchType.Activity -> r.resetState(t)
                     ResetMatchType.Match -> {
                         // is new rule
