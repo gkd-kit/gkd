@@ -4,7 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewModelScope
-import com.ramcosta.composedestinations.generated.destinations.GlobalGroupExcludePageDestination
+import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupExcludePageDestination
+import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,8 +21,7 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.getGlobalGroupChecked
-import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.util.getGroupEnable
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.subsIdToRawFlow
@@ -198,23 +198,6 @@ suspend fun batchUpdateGroupEnable(
     return diffDataList
 }
 
-@Composable
-private fun useEditSubsApp(
-    subs: RawSubscription?,
-    appId: String?,
-): RawSubscription.RawApp? {
-    return remember(subs, appId) {
-        if (subs != null && appId != null) {
-            subs.apps.find { a -> a.id == appId } ?: RawSubscription.RawApp(
-                id = appId,
-                name = appInfoCacheFlow.value[appId]?.name
-            )
-        } else {
-            null
-        }
-    }
-}
-
 class RuleGroupState(
     private val vm: MainViewModel,
 ) {
@@ -231,9 +214,6 @@ class RuleGroupState(
             flow { emit(null) }
         }
     }.flatMapLatest { it }.stateIn(vm.viewModelScope, SharingStarted.Eagerly, null)
-
-    val editOrAddGroupFlow = MutableStateFlow<ShowGroupState?>(null)
-    val dismissEditOrAdd = { editOrAddGroupFlow.value = null }
 
     val editExcludeGroupFlow = MutableStateFlow<ShowGroupState?>(null)
     val dismissExcludeGroup = { editExcludeGroupFlow.value = null }
@@ -257,13 +237,20 @@ class RuleGroupState(
                 onDismissRequest = dismissShow,
                 onClickEdit = {
                     dismissShow()
-                    editOrAddGroupFlow.value = showGroupState
+                    vm.navigatePage(
+                        UpsertRuleGroupPageDestination(
+                            subsId = showGroupState.subsId,
+                            groupKey = showGroupState.groupKey,
+                            appId = showGroupState.appId,
+                        )
+                    )
+//                    editOrAddGroupFlow.value = showGroupState
                 },
                 onClickEditExclude = {
                     dismissShow()
                     if (showGroupState.appId == null) {
                         navController.toDestinationsNavigator().navigate(
-                            GlobalGroupExcludePageDestination(
+                            SubsGlobalGroupExcludePageDestination(
                                 showGroupState.subsId,
                                 showGroupState.groupKey
                             )
@@ -347,24 +334,6 @@ class RuleGroupState(
                     }
                     toast("删除成功")
                 }
-            )
-        }
-
-        val editOrAddGroupState = editOrAddGroupFlow.collectAsState().value
-        val editOrAddSubs = useSubs(editOrAddGroupState?.subsId)
-        val editOrAddGroup =
-            useSubsGroup(editOrAddSubs, editOrAddGroupState?.groupKey, editOrAddGroupState?.appId)
-        if (editOrAddGroupState != null && editOrAddSubs != null) {
-            EditOrAddRuleGroupDialog(
-                subs = editOrAddSubs,
-                group = editOrAddGroup,
-                app = if (editOrAddGroupState.addAppRule) {
-                    null
-                } else {
-                    useEditSubsApp(editOrAddSubs, editOrAddGroupState.appId)
-                },
-                onDismissRequest = dismissEditOrAdd,
-                addAnyAppRule = editOrAddGroupState.addAppRule
             )
         }
 

@@ -3,7 +3,7 @@ package li.songe.gkd.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ramcosta.composedestinations.generated.destinations.GlobalGroupListPageDestination
+import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -13,8 +13,8 @@ import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.util.map
 import li.songe.gkd.util.subsIdToRawFlow
 
-class GlobalGroupListVm(stateHandle: SavedStateHandle) : ViewModel(), RuleGroupExtVm {
-    private val args = GlobalGroupListPageDestination.argsFrom(stateHandle)
+class SubsGlobalGroupListVm(stateHandle: SavedStateHandle) : ViewModel(), RuleGroupExtVm {
+    private val args = SubsGlobalGroupListPageDestination.argsFrom(stateHandle)
     val subsRawFlow = subsIdToRawFlow.map(viewModelScope) { s -> s[args.subsItemId] }
 
     val subsConfigsFlow = DbSet.subsConfigDao.queryGlobalGroupTypeConfig(args.subsItemId)

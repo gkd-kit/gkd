@@ -25,7 +25,7 @@ import li.songe.gkd.app
 import li.songe.gkd.appOpsManager
 import li.songe.gkd.appScope
 import li.songe.gkd.shizuku.shizukuCheckGranted
-import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.util.forceUpdateAppList
 import li.songe.gkd.util.initOrResetAppInfoCache
 import li.songe.gkd.util.launchTry
@@ -83,14 +83,14 @@ private suspend fun asyncRequestPermission(
     context: Activity,
     vararg permissions: String,
 ): PermissionResult {
-    if (XXPermissions.isGranted(context, *permissions)) {
+    if (XXPermissions.isGrantedPermissions(context, permissions)) {
         return PermissionResult.Granted
     }
 
     val permissionResultFlow = MutableStateFlow<XXPermissionResult?>(null)
     XXPermissions.with(context)
         .unchecked()
-        .permission(*permissions)
+        .permission(permissions)
         .request(object : OnPermissionCallback {
             override fun onGranted(permissions: MutableList<String>, allGranted: Boolean) {
                 LogUtils.d("allGranted: $allGranted", permissions)
@@ -143,10 +143,10 @@ private suspend fun asyncRequestPermission(
 }
 
 @Suppress("SameParameterValue")
-private fun unsafeCheckOpNoThrow(op: String): Int {
+private fun checkOpNoThrow(op: String): Int {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         try {
-            return appOpsManager.unsafeCheckOpNoThrow(
+            return appOpsManager.checkOpNoThrow(
                 op,
                 android.os.Process.myUid(),
                 app.packageName
@@ -163,7 +163,7 @@ private fun unsafeCheckOpNoThrow(op: String): Int {
 val foregroundServiceSpecialUseState by lazy {
     PermissionState(
         check = {
-            unsafeCheckOpNoThrow("android:foreground_service_special_use") != AppOpsManager.MODE_IGNORED
+            checkOpNoThrow("android:foreground_service_special_use") != AppOpsManager.MODE_IGNORED
         },
         reason = AuthReason(
             text = "当前操作权限「特殊用途的前台服务」已被限制, 请先解除限制",
@@ -188,7 +188,7 @@ val notificationState by lazy {
     }
     PermissionState(
         check = {
-            XXPermissions.isGranted(app, list)
+            XXPermissions.isGrantedPermissions(app, list)
         },
         request = { asyncRequestPermission(it, *list) },
         reason = AuthReason(
@@ -203,7 +203,7 @@ val notificationState by lazy {
 val canQueryPkgState by lazy {
     PermissionState(
         check = {
-            XXPermissions.isGranted(app, Permission.GET_INSTALLED_APPS)
+            XXPermissions.isGrantedPermissions(app, Permission.GET_INSTALLED_APPS)
         },
         request = {
             asyncRequestPermission(it, Permission.GET_INSTALLED_APPS)

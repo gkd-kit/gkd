@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.songe.gkd.ui.style
 
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition

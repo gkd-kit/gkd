@@ -59,12 +59,12 @@ import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.service.switchA11yService
 import li.songe.gkd.ui.component.GroupNameText
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
 import li.songe.gkd.util.HOME_PAGE_URL
-import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.storeFlow

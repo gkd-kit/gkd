@@ -9,6 +9,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -16,6 +17,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import li.songe.gkd.service.typeInfo
 import li.songe.gkd.util.LOCAL_SUBS_IDS
+import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.distinctByIfAny
 import li.songe.gkd.util.filterIfNotAll
 import li.songe.gkd.util.json
@@ -79,6 +81,13 @@ data class RawSubscription(
 
     fun getAppGroups(appId: String): List<RawAppGroup> {
         return apps.find { a -> a.id == appId }?.groups ?: emptyList()
+    }
+    fun getApp(appId: String): RawApp {
+        return apps.find { a -> a.id == appId } ?: RawApp(
+            id = appId,
+            name = appInfoCacheFlow.value[appId]?.name,
+            groups = emptyList()
+        )
     }
 
     val groupToCategoryMap by lazy {
@@ -273,6 +282,7 @@ data class RawSubscription(
         val allExampleUrls: List<String>
         val cacheMap: MutableMap<String, Selector?>
         val cacheStr: String
+        val cacheJsonObject: JsonObject
 
         val groupType: Int
             get() = when (this) {
@@ -384,6 +394,7 @@ data class RawSubscription(
             }).distinct()
         }
         override val cacheStr by lazy { toJson5String(this) }
+        override val cacheJsonObject by lazy { json.encodeToJsonElement(this).jsonObject }
     }
 
 
@@ -463,6 +474,7 @@ data class RawSubscription(
             }).distinct()
         }
         override val cacheStr by lazy { toJson5String(this) }
+        override val cacheJsonObject by lazy { json.encodeToJsonElement(this).jsonObject }
     }
 
     @Serializable
@@ -894,7 +906,8 @@ data class RawSubscription(
                         jsonElement.jsonObject,
                         index
                     )
-                } ?: emptyList()).filterIfNotAll { it.groups.isNotEmpty() }.distinctByIfAny { it.id },
+                } ?: emptyList()).filterIfNotAll { it.groups.isNotEmpty() }
+                    .distinctByIfAny { it.id },
                 categories = (rootJson["categories"]?.jsonArray?.mapIndexed { index, jsonElement ->
                     RawCategory(
                         key = getInt(jsonElement.jsonObject, "key")
@@ -903,7 +916,8 @@ data class RawSubscription(
                             ?: error("miss categories[$index].name"),
                         enable = getBoolean(jsonElement.jsonObject, "enable"),
                     )
-                } ?: emptyList()).filterIfNotAll { it.name.isNotEmpty() }.distinctByIfAny { it.key },
+                } ?: emptyList()).filterIfNotAll { it.name.isNotEmpty() }
+                    .distinctByIfAny { it.key },
                 globalGroups = (rootJson["globalGroups"]?.jsonArray?.mapIndexed { index, jsonElement ->
                     jsonToGlobalGroup(jsonElement.jsonObject, index)
                 } ?: emptyList()).distinctByIfAny { it.key }

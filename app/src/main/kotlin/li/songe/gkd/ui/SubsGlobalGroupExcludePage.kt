@@ -69,13 +69,13 @@ import li.songe.gkd.ui.component.InnerDisableSwitch
 import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.autoFocus
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemFlagPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
-import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.launchAsFn
@@ -87,10 +87,10 @@ import li.songe.gkd.util.toast
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
-fun GlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
+fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
     val context = LocalActivity.current!!
     val navController = LocalNavController.current
-    val vm = viewModel<GlobalGroupExcludeVm>()
+    val vm = viewModel<SubsGlobalGroupExcludeVm>()
     val rawSubs = vm.rawSubsFlow.collectAsState().value
     val group = vm.groupFlow.collectAsState().value
     val excludeData = vm.excludeDataFlow.collectAsState().value

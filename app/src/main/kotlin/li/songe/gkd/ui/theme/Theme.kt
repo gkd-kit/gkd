@@ -12,15 +12,17 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowInsetsControllerCompat
-import li.songe.gkd.util.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalDarkTheme
+import li.songe.gkd.ui.local.LocalMainViewModel
 
-val LightColorScheme = lightColorScheme()
-val DarkColorScheme = darkColorScheme()
+private val LightColorScheme = lightColorScheme()
+private val DarkColorScheme = darkColorScheme()
 val supportDynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
 @Composable
@@ -47,10 +49,12 @@ fun AppTheme(
             isAppearanceLightStatusBars = !darkTheme
         }
     }
-    MaterialTheme(
-        colorScheme = colorScheme.animation(),
-        content = content,
-    )
+    CompositionLocalProvider(LocalDarkTheme provides darkTheme) {
+        MaterialTheme(
+            colorScheme = colorScheme.animation(),
+            content = content,
+        )
+    }
 }
 
 @Composable

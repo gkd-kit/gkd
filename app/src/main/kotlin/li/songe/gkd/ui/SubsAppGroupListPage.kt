@@ -37,24 +37,24 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
 import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.BatchActionButtonGroup
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.RuleGroupCard
-import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.toGroupState
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.icon.BackCloseIcon
+import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
-import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.getUpDownTransform
 import li.songe.gkd.util.launchAsFn
@@ -248,9 +248,12 @@ fun SubsAppGroupListPage(
             AnimationFloatingActionButton(
                 visible = !isSelectedMode,
                 onClick = throttle {
-                    mainVm.ruleGroupState.editOrAddGroupFlow.value = ShowGroupState(
-                        subsId = subsItemId,
-                        appId = appId,
+                    mainVm.navigatePage(
+                        UpsertRuleGroupPageDestination(
+                            subsId = subsItemId,
+                            groupKey = null,
+                            appId = appId
+                        )
                     )
                 },
                 content = {

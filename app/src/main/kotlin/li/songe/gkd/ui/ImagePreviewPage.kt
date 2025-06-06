@@ -42,9 +42,9 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.ProfileTransitions
+import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalNavController
+import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.util.imageLoader
 import li.songe.gkd.util.throttle
 

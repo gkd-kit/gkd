@@ -44,6 +44,7 @@ import com.blankj.utilcode.util.KeyboardUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
+import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.data.AppConfig
@@ -52,19 +53,18 @@ import li.songe.gkd.ui.component.AnimatedIcon
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.QueryPkgAuthCard
-import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.ui.component.SubsAppCard
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.useSubs
+import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.LOCAL_SUBS_IDS
-import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appInfoCacheFlow
@@ -215,9 +215,13 @@ fun SubsAppListPage(
         floatingActionButton = {
             if (LOCAL_SUBS_IDS.contains(subsItemId)) {
                 FloatingActionButton(onClick = throttle {
-                    mainVm.ruleGroupState.editOrAddGroupFlow.value = ShowGroupState(
-                        subsId = subsItemId,
-                        addAppRule = true,
+                    mainVm.navigatePage(
+                        UpsertRuleGroupPageDestination(
+                            subsId = subsItemId,
+                            groupKey = null,
+                            appId = "",
+                            forward = true,
+                        )
                     )
                 }) {
                     Icon(

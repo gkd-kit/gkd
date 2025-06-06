@@ -55,10 +55,10 @@ import li.songe.gkd.ui.component.ShareDataDialog
 import li.songe.gkd.ui.component.SubsSheet
 import li.songe.gkd.ui.component.TermsAcceptDialog
 import li.songe.gkd.ui.component.UrlDetailDialog
+import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.theme.AppTheme
 import li.songe.gkd.util.EditGithubCookieDlg
-import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.UpgradeDialog
 import li.songe.gkd.util.appInfoCacheFlow

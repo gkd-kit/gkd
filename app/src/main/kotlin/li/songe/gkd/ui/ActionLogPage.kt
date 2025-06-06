@@ -38,6 +38,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.ViewModel
@@ -48,8 +49,8 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.GlobalGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
+import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -63,19 +64,18 @@ import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.FixedTimeText
 import li.songe.gkd.ui.component.GroupNameText
 import li.songe.gkd.ui.component.LocalNumberCharWidth
-import li.songe.gkd.ui.component.StartEllipsisText
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.useSubs
 import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
-import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.map
 import li.songe.gkd.util.subsIdToRawFlow
@@ -264,9 +264,12 @@ private fun ActionLogCard(
                 CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyMedium) {
                     val showActivityId = actionLog.showActivityId
                     if (showActivityId != null) {
-                        StartEllipsisText(
+                        Text(
                             text = showActivityId,
                             modifier = Modifier.height(LocalTextStyle.current.lineHeight.value.dp),
+                            softWrap = false,
+                            maxLines = 1,
+                            overflow = TextOverflow.MiddleEllipsis,
                         )
                     } else {
                         Text(
@@ -363,7 +366,7 @@ private fun ActionLogDialog(
                         navController
                             .toDestinationsNavigator()
                             .navigate(
-                                GlobalGroupListPageDestination(
+                                SubsGlobalGroupListPageDestination(
                                     actionLog.subsId, actionLog.groupKey
                                 )
                             )
