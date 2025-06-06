@@ -49,13 +49,13 @@ import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.ui.theme.supportDynamicColor
 import li.songe.gkd.util.DarkThemeOption
-import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.initOrResetAppInfoCache
 import li.songe.gkd.util.launchAsFn

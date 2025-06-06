@@ -58,13 +58,13 @@ import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.icon.ResetSettings
+import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.EnableGroupOption
 import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
-import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.getCategoryEnable
 import li.songe.gkd.util.launchAsFn

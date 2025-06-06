@@ -44,6 +44,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
 import li.songe.gkd.data.GithubPoliciesAsset
 import li.songe.gkd.ui.component.autoFocus
+import li.songe.gkd.ui.local.LocalMainViewModel
 import li.songe.json5.Json5
 import java.io.File
 

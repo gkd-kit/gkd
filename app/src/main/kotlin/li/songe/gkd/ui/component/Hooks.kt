@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.component
 
+import androidx.compose.animation.core.AnimationConstants.DefaultDurationMillis
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -8,10 +9,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import kotlinx.coroutines.delay
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.util.map
 import li.songe.gkd.util.subsIdToRawFlow
-import kotlin.collections.get
 
 @Composable
 fun useSubs(subsId: Long?): RawSubscription? {
@@ -42,6 +43,7 @@ fun useSubsGroup(
 private fun useAutoFocus(): FocusRequester {
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(null) {
+        delay(DefaultDurationMillis.toLong())
         focusRequester.requestFocus()
     }
     return focusRequester

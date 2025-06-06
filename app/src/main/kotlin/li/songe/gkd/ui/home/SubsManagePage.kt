@@ -61,6 +61,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.generated.destinations.SlowGroupPageDestination
+import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
 import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
@@ -73,12 +74,12 @@ import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.SubsItemCard
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.LOCAL_SUBS_ID
-import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.UpdateTimeOption
@@ -309,7 +310,7 @@ fun useSubsManagePage(): ScaffoldExt {
                 }
                 IconButton(onClick = {
                     if (updateSubsMutex.mutex.isLocked) {
-                        toast("正在刷新订阅,请稍后操作")
+                        toast("正在刷新订阅，请稍后操作")
                     } else {
                         expanded = true
                     }
@@ -353,14 +354,8 @@ fun useSubsManagePage(): ScaffoldExt {
                                 )
                             } else {
                                 DropdownMenuItem(
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.Add,
-                                            contentDescription = null,
-                                        )
-                                    },
                                     text = {
-                                        Text(text = "导入数据")
+                                        Text(text = "导入本地数据")
                                     },
                                     onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                                         expanded = false
@@ -375,6 +370,34 @@ fun useSubsManagePage(): ScaffoldExt {
                                             return@launchAsFn
                                         }
                                         importData(uri)
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(text = "添加应用规则") },
+                                    onClick = throttle {
+                                        expanded = false
+                                        mainVm.navigatePage(
+                                            UpsertRuleGroupPageDestination(
+                                                subsId = LOCAL_SUBS_ID,
+                                                groupKey = null,
+                                                appId = "",
+                                                forward = true,
+                                            )
+                                        )
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(text = "添加全局规则") },
+                                    onClick = throttle {
+                                        expanded = false
+                                        mainVm.navigatePage(
+                                            UpsertRuleGroupPageDestination(
+                                                subsId = LOCAL_SUBS_ID,
+                                                groupKey = null,
+                                                appId = null,
+                                                forward = true,
+                                            )
+                                        )
                                     },
                                 )
                             }

@@ -55,12 +55,12 @@ import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.autoFocus
+import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
-import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.mapHashCode

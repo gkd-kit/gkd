@@ -45,13 +45,13 @@ import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.ui.component.AuthButtonGroup
 import li.songe.gkd.ui.component.ManualAuthDialog
 import li.songe.gkd.ui.component.updateDialogOptions
+import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.cardHorizontalPadding
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
-import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openA11ySettings
@@ -84,7 +84,7 @@ fun AuthA11yPage() {
             }
         }, title = {
             Text(text = "授权状态")
-        }, actions = {})
+        })
     }) { contentPadding ->
         Column(
             modifier = Modifier

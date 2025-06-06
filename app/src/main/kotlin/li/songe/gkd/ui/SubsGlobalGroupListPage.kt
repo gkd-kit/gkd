@@ -36,24 +36,24 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
 import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.BatchActionButtonGroup
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.RuleGroupCard
-import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.toGroupState
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.icon.BackCloseIcon
+import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
-import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.getUpDownTransform
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.switchItem
@@ -63,10 +63,10 @@ import li.songe.gkd.util.updateSubscription
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
-fun GlobalGroupListPage(subsItemId: Long, @Suppress("unused") focusGroupKey: Int? = null) {
+fun SubsGlobalGroupListPage(subsItemId: Long, @Suppress("unused") focusGroupKey: Int? = null) {
     val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
-    val vm = viewModel<GlobalGroupListVm>()
+    val vm = viewModel<SubsGlobalGroupListVm>()
     val subs = vm.subsRawFlow.collectAsState().value
     val subsConfigs by vm.subsConfigsFlow.collectAsState()
 
@@ -215,8 +215,12 @@ fun GlobalGroupListPage(subsItemId: Long, @Suppress("unused") focusGroupKey: Int
         floatingActionButton = {
             if (editable) {
                 AnimationFloatingActionButton(visible = !isSelectedMode, onClick = throttle {
-                    mainVm.ruleGroupState.editOrAddGroupFlow.value = ShowGroupState(
-                        subsId = subsItemId,
+                    mainVm.navigatePage(
+                        UpsertRuleGroupPageDestination(
+                            subsId = subsItemId,
+                            groupKey = null,
+                            appId = null,
+                        )
                     )
                 }) {
                     Icon(

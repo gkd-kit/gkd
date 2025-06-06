@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -48,15 +49,14 @@ import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.FixedTimeText
 import li.songe.gkd.ui.component.LocalNumberCharWidth
-import li.songe.gkd.ui.component.StartEllipsisText
 import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
-import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
@@ -181,13 +181,16 @@ private fun ActivityLogCard(
                 CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyMedium) {
                     val showActivityId = actionLog.showActivityId
                     if (showActivityId != null) {
-                        StartEllipsisText(
+                        Text(
                             text = showActivityId,
                             modifier = Modifier
                                 .clickable(onClick = throttle {
                                     copyText(showActivityId)
                                 })
                                 .height(LocalTextStyle.current.lineHeight.value.dp),
+                            softWrap = false,
+                            maxLines = 1,
+                            overflow = TextOverflow.MiddleEllipsis,
                         )
                     } else {
                         Text(

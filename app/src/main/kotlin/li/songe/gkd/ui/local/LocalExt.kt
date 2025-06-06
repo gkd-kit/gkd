@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.songe.gkd.ui.local
 
 import androidx.compose.runtime.compositionLocalOf
 import androidx.navigation.NavHostController
@@ -11,4 +11,8 @@ val LocalNavController = compositionLocalOf<NavHostController> {
 
 val LocalMainViewModel = compositionLocalOf<MainViewModel> {
     error("not found MainViewModel")
+}
+
+val LocalDarkTheme = compositionLocalOf<Boolean> {
+    error("not found LocalDarkTheme")
 }

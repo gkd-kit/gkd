@@ -28,18 +28,18 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.GlobalGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
+import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.updateDialogOptions
+import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
-import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.throttle
@@ -99,7 +99,7 @@ fun SlowGroupPage() {
                             navController
                                 .toDestinationsNavigator()
                                 .navigate(
-                                    GlobalGroupListPageDestination(
+                                    SubsGlobalGroupListPageDestination(
                                         rule.subsItem.id,
                                         group.key
                                     )

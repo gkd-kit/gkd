@@ -64,19 +64,18 @@ import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.FixedTimeText
 import li.songe.gkd.ui.component.LocalNumberCharWidth
-import li.songe.gkd.ui.component.StartEllipsisText
 import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.IMPORT_SHORT_URL
 import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
-import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.saveFileToDownloads
@@ -370,10 +369,13 @@ private fun SnapshotCard(
                 null
             }
             if (showActivityId != null) {
-                StartEllipsisText(
+                Text(
                     modifier = Modifier.height(MaterialTheme.typography.bodyMedium.lineHeight.value.dp),
                     text = showActivityId,
                     style = MaterialTheme.typography.bodyMedium,
+                    softWrap = false,
+                    maxLines = 1,
+                    overflow = TextOverflow.MiddleEllipsis,
                 )
             } else {
                 Text(

@@ -3,19 +3,21 @@ package li.songe.gkd.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
@@ -43,7 +45,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -52,9 +56,9 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
+import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
@@ -62,18 +66,17 @@ import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.BatchActionButtonGroup
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.RuleGroupCard
-import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.toGroupState
 import li.songe.gkd.ui.icon.BackCloseIcon
+import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.LOCAL_SUBS_ID
-import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.copyText
@@ -286,16 +289,15 @@ fun AppConfigPage(appId: String) {
         floatingActionButton = {
             AnimationFloatingActionButton(
                 visible = !isSelectedMode,
-                onClick = throttle(mainVm.viewModelScope.launchAsFn {
-                    navController.toDestinationsNavigator()
-                        .navigate(SubsAppGroupListPageDestination(LOCAL_SUBS_ID, appId))
-                    delay(AnimationConstants.DefaultDurationMillis + 150L)
-                    mainVm.ruleGroupState.editOrAddGroupFlow.value = ShowGroupState(
-                        subsId = LOCAL_SUBS_ID,
-                        appId = appId,
-                        groupKey = null
+                onClick = throttle {
+                    mainVm.navigatePage(
+                        UpsertRuleGroupPageDestination(
+                            subsId = LOCAL_SUBS_ID,
+                            groupKey = null,
+                            appId = appId
+                        )
                     )
-                }),
+                },
                 content = {
                     Icon(
                         imageVector = Icons.Outlined.Add,
@@ -316,18 +318,47 @@ fun AppConfigPage(appId: String) {
             subsPairs.forEach { (entry, groups) ->
                 val subsId = entry.subsItem.id
                 stickyHeader(entry.subsItem.id) {
-                    Text(
-                        text = entry.subscription.name,
+                    Row(
                         modifier = Modifier
-                            .fillMaxWidth()
                             .background(MaterialTheme.colorScheme.background)
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .clip(MaterialTheme.shapes.extraSmall)
+                            .clickable(onClick = throttle {
+                                mainVm.navigatePage(
+                                    SubsAppGroupListPageDestination(
+                                        subsItemId = subsId,
+                                        appId = appId,
+                                    )
+                                )
+                            })
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            modifier = Modifier.weight(1f),
+                            text = entry.subscription.name,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        val fontSizeDp = LocalDensity.current.run {
+                            MaterialTheme.typography.titleSmall.fontSize.toDp()
+                        }
+                        val lineHeightDp = LocalDensity.current.run {
+                            MaterialTheme.typography.titleSmall.lineHeight.toDp()
+                        }
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .padding(start = 4.dp)
+                                .width(fontSizeDp)
+                                .height(lineHeightDp)
+                        )
+                    }
                 }
                 items(groups, { Triple(subsId, it.groupType, it.key) }) { group ->
                     val subsConfig = when (group) {

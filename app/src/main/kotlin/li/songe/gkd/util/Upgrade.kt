@@ -33,6 +33,7 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.META
 import li.songe.gkd.MainViewModel
 import li.songe.gkd.app
+import li.songe.gkd.ui.local.LocalMainViewModel
 import java.io.File
 import java.net.URI
 

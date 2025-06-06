@@ -43,18 +43,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
-import com.ramcosta.composedestinations.generated.destinations.GlobalGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsAppListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsCategoryPageDestination
+import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import li.songe.gkd.META
+import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
-import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.deleteSubscription
 import li.songe.gkd.util.launchAsFn
@@ -198,7 +198,7 @@ fun SubsSheet(
                                     sheetSubsIdFlow.value = null
                                     navController
                                         .toDestinationsNavigator()
-                                        .navigate(GlobalGroupListPageDestination(subsItem.id))
+                                        .navigate(SubsGlobalGroupListPageDestination(subsItem.id))
                                 })
                                 .then(childModifier),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -333,11 +333,12 @@ fun SubsSheet(
                                     text = "订阅链接",
                                     style = MaterialTheme.typography.labelLarge,
                                 )
-                                StartEllipsisText(
+                                Text(
                                     text = subsItem.updateUrl,
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.secondary,
                                     softWrap = false,
+                                    overflow = TextOverflow.MiddleEllipsis,
                                     modifier = Modifier
                                         .clickable(onClick = {
                                             mainVm.urlFlow.value = subsItem.updateUrl

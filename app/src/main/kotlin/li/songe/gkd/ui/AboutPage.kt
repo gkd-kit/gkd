@@ -61,14 +61,14 @@ import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.ISSUES_URL
-import li.songe.gkd.util.LocalMainViewModel
-import li.songe.gkd.util.LocalNavController
 import li.songe.gkd.util.PLAY_STORE_URL
-import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.REPOSITORY_URL
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.UpdateChannelOption

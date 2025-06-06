@@ -34,15 +34,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.ramcosta.composedestinations.generated.destinations.GlobalGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.ImagePreviewPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
+import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
 import com.ramcosta.composedestinations.utils.currentDestinationAsState
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.delay
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.ui.icon.ResetSettings
-import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.ui.local.LocalDarkTheme
+import li.songe.gkd.ui.local.LocalNavController
+import li.songe.gkd.ui.style.getJson5AnnotatedString
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.throttle
 
@@ -87,10 +89,18 @@ fun RuleGroupDialog(
                         }
                         LaunchedEffect(group.cacheStr) {
                             delay(50)
-                            textState.value = group.cacheStr
+                            if (group.cacheStr.length != textState.value.length) {
+                                textState.value = group.cacheStr
+                            }
                         }
+                        val darkTheme = LocalDarkTheme.current
                         Text(
-                            text = textState.value,
+                            text = remember(textState.value, darkTheme) {
+                                getJson5AnnotatedString(
+                                    textState.value,
+                                    darkTheme
+                                )
+                            },
                             modifier = Modifier.padding(4.dp),
                             color = MaterialTheme.colorScheme.secondary,
                             style = MaterialTheme.typography.bodySmall,
@@ -127,10 +137,10 @@ fun RuleGroupDialog(
                 val currentDestination by navController.currentDestinationAsState()
                 val (direction, destination) = remember(subs.id, appId, group.key) {
                     if (group is RawSubscription.RawGlobalGroup) {
-                        GlobalGroupListPageDestination(
+                        SubsGlobalGroupListPageDestination(
                             subsItemId = subs.id,
                             focusGroupKey = group.key
-                        ) to GlobalGroupListPageDestination
+                        ) to SubsGlobalGroupListPageDestination
                     } else {
                         SubsAppGroupListPageDestination(
                             subsItemId = subs.id,

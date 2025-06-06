@@ -3,7 +3,7 @@ package li.songe.gkd.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ramcosta.composedestinations.generated.destinations.GlobalGroupExcludePageDestination
+import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupExcludePageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -19,8 +19,8 @@ import li.songe.gkd.util.orderedAppInfosFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 
-class GlobalGroupExcludeVm(stateHandle: SavedStateHandle) : ViewModel() {
-    private val args = GlobalGroupExcludePageDestination.argsFrom(stateHandle)
+class SubsGlobalGroupExcludeVm(stateHandle: SavedStateHandle) : ViewModel() {
+    private val args = SubsGlobalGroupExcludePageDestination.argsFrom(stateHandle)
 
     val rawSubsFlow = subsIdToRawFlow.map(viewModelScope) { it[args.subsItemId] }
 
