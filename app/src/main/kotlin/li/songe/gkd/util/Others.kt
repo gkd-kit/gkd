@@ -1,9 +1,7 @@
 package li.songe.gkd.util
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ComponentName
-import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.Build
@@ -16,15 +14,11 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.core.graphics.get
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updatePadding
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.yield
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
-import li.songe.gkd.activityManager
 import li.songe.json5.Json5EncoderConfig
 import li.songe.json5.encodeToJson5String
 import java.io.DataOutputStream
@@ -68,26 +62,7 @@ fun getShowActivityId(appId: String, activityId: String?): String? {
 }
 
 fun MainActivity.fixSomeProblems() {
-    fixStatusPaddingTopWhenSystemShare()
     fixTransparentNavigationBar()
-}
-
-// 当调用系统分享时来到 android/com.android.internal.app.MiuiChooserActivity
-// 在某些设备上此界面有时不显示状态栏, 导致应用整体上移
-private fun MainActivity.fixStatusPaddingTopWhenSystemShare() {
-    var tempTop = Resources.getSystem().run {
-        @SuppressLint("DiscouragedApi", "InternalInsetResource")
-        getDimensionPixelSize(getIdentifier("status_bar_height", "dimen", "android"))
-    }
-    ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { view, windowInsets ->
-        view.updatePadding(top = 0)
-        val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-        if (insets.top == 0 && activityManager.appTasks.firstOrNull()?.taskInfo?.topActivity?.packageName != packageName) {
-            view.setBackgroundColor(Color.TRANSPARENT)
-            view.updatePadding(top = tempTop)
-        }
-        ViewCompat.onApplyWindowInsets(view, windowInsets)
-    }
 }
 
 private fun Activity.fixTransparentNavigationBar() {
