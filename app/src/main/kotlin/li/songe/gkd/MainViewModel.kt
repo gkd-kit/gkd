@@ -50,6 +50,7 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubsMutex
@@ -212,13 +213,15 @@ class MainViewModel : ViewModel() {
         viewModelScope.launchTry(Dispatchers.IO) {
             val subsItems = DbSet.subsItemDao.queryAll()
             if (!subsItems.any { s -> s.id == LOCAL_SUBS_ID }) {
-                updateSubscription(
-                    RawSubscription(
-                        id = LOCAL_SUBS_ID,
-                        name = "本地订阅",
-                        version = 0
+                if (!subsFolder.resolve("${LOCAL_SUBS_ID}.json").exists()) {
+                    updateSubscription(
+                        RawSubscription(
+                            id = LOCAL_SUBS_ID,
+                            name = "本地订阅",
+                            version = 0
+                        )
                     )
-                )
+                }
                 DbSet.subsItemDao.insert(
                     SubsItem(
                         id = LOCAL_SUBS_ID,
