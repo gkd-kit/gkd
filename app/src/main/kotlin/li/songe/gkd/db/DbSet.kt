@@ -8,8 +8,10 @@ object DbSet {
 
     private fun buildDb(): AppDb {
         return Room.databaseBuilder(
-            app, AppDb::class.java, dbFolder.resolve("gkd.db").absolutePath
-        ).fallbackToDestructiveMigration().build()
+            app,
+            AppDb::class.java,
+            dbFolder.resolve("gkd.db").absolutePath
+        ).fallbackToDestructiveMigration(false).build()
     }
 
     private val db by lazy { buildDb() }
