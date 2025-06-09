@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.Option
+import li.songe.gkd.util.OptionIcon
 import li.songe.gkd.util.allSubObject
 
 @Composable
@@ -66,6 +67,12 @@ fun <T> TextMenu(
             ) {
                 option.allSubObject.forEach { otherOption ->
                     DropdownMenuItem(
+                        leadingIcon = if (otherOption is OptionIcon) ({
+                            Icon(
+                                imageVector = otherOption.icon,
+                                contentDescription = null
+                            )
+                        }) else null,
                         text = {
                             Text(text = otherOption.label)
                         },
