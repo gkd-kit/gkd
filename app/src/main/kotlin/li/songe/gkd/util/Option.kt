@@ -1,10 +1,19 @@
 package li.songe.gkd.util
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AutoMode
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.state.ToggleableState
 
 sealed interface Option<T> {
     val value: T
     val label: String
+}
+
+interface OptionIcon {
+    val icon: ImageVector
 }
 
 fun <V, T : Option<V>> Array<T>.findOption(value: V): T {
@@ -49,11 +58,12 @@ sealed class UpdateTimeOption(
 
 sealed class DarkThemeOption(
     override val value: Boolean?,
-    override val label: String
-) : Option<Boolean?> {
-    data object FollowSystem : DarkThemeOption(null, "跟随系统")
-    data object AlwaysEnable : DarkThemeOption(true, "总是启用")
-    data object AlwaysDisable : DarkThemeOption(false, "总是关闭")
+    override val label: String,
+    override val icon: ImageVector
+) : Option<Boolean?>, OptionIcon {
+    data object FollowSystem : DarkThemeOption(null, "自动", Icons.Outlined.AutoMode)
+    data object AlwaysEnable : DarkThemeOption(true, "启用", Icons.Outlined.DarkMode)
+    data object AlwaysDisable : DarkThemeOption(false, "关闭", Icons.Outlined.LightMode)
 
     companion object {
         val allSubObject by lazy { arrayOf(FollowSystem, AlwaysEnable, AlwaysDisable) }
