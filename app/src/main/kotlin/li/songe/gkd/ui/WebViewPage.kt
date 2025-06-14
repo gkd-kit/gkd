@@ -58,6 +58,7 @@ import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.client
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.openUri
+import li.songe.gkd.util.openWeChat
 import li.songe.gkd.util.throttle
 
 
@@ -210,16 +211,8 @@ private const val DOC_CONFIG_URL =
     "https://registry.npmmirror.com/@gkd-kit/docs/latest/files/_config.json"
 
 private const val DEBUG_JS_TEXT = """
-<script>
-(function () {
-    document.write(
-        '<scr' +
-            'ipt src="https://registry.npmmirror.com/eruda/latest/files"></scr' +
-            'ipt>',
-    );
-    document.write('<scr' + 'ipt>eruda.init();</scr' + 'ipt>');
-})();
-</script>
+<script src="https://registry.npmmirror.com/eruda/latest/files"></script>
+<script>eruda.init();</script>
 """
 
 
@@ -239,8 +232,13 @@ private class GkdWebViewClient : AccompanistWebViewClient() {
     }
 
     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-        if (request != null && request.url.host != "gkd.li") {
-            openUri(request.url.toString())
+        val url = request?.url
+        if (url != null && url.host != "gkd.li") {
+            if (url.run { scheme == "gkd" && host == "invoke" && path == "/openWeChat" }) {
+                openWeChat()
+                return true
+            }
+            openUri(url.toString())
             return true
         }
         return super.shouldOverrideUrlLoading(view, request)

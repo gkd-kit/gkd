@@ -72,9 +72,19 @@ fun Context.tryStartActivity(intent: Intent) {
     } catch (e: Exception) {
         e.printStackTrace()
         LogUtils.d("tryStartActivity", e)
-        // 在某些模拟器上/特定设备 ActivityNotFoundException
-        toast(e.message ?: e.stackTraceToString())
+        toast("跳转失败\n" + (e.message ?: e.stackTraceToString()))
     }
+}
+
+fun openWeChat() {
+    val intent = app.packageManager.getLaunchIntentForPackage("com.tencent.mm")?.apply {
+        putExtra("LauncherUI.From.Scaner.Shortcut", true)
+    }
+    if (intent == null) {
+        toast("请检查微信是否安装")
+        return
+    }
+    app.tryStartActivity(intent)
 }
 
 fun openA11ySettings() {
