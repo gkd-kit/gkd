@@ -38,7 +38,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.generated.destinations.AboutPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
-import com.ramcosta.composedestinations.utils.toDestinationsNavigator
+import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.appScope
@@ -50,12 +50,12 @@ import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.local.LocalMainViewModel
-import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.ui.theme.supportDynamicColor
 import li.songe.gkd.util.DarkThemeOption
+import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.initOrResetAppInfoCache
 import li.songe.gkd.util.launchAsFn
@@ -72,7 +72,6 @@ val settingsNav = BottomNavItem(
 @Composable
 fun useSettingsPage(): ScaffoldExt {
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
     val store by storeFlow.collectAsState()
     val vm = viewModel<HomeVm>()
 
@@ -350,11 +349,15 @@ fun useSettingsPage(): ScaffoldExt {
             )
 
             SettingItem(title = "高级设置", onClick = {
-                navController.toDestinationsNavigator().navigate(AdvancedPageDestination)
+                mainVm.navigatePage(AdvancedPageDestination)
+            })
+
+            SettingItem(title = "捐赠支持", onClick = {
+                mainVm.navigatePage(WebViewPageDestination(ShortUrlSet.URL10))
             })
 
             SettingItem(title = "关于", onClick = {
-                navController.toDestinationsNavigator().navigate(AboutPageDestination)
+                mainVm.navigatePage(AboutPageDestination)
             })
 
             Spacer(modifier = Modifier.height(EmptyHeight))
