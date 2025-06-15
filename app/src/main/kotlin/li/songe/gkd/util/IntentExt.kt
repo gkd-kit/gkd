@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -76,7 +77,7 @@ fun Context.tryStartActivity(intent: Intent) {
     }
 }
 
-fun openWeChat() {
+fun openWeChatScaner() {
     val intent = app.packageManager.getLaunchIntentForPackage("com.tencent.mm")?.apply {
         putExtra("LauncherUI.From.Scaner.Shortcut", true)
     }
@@ -101,7 +102,11 @@ fun openUri(uri: String) {
         toast("非法链接")
         return
     }
-    val intent = Intent(Intent.ACTION_VIEW, u)
+    openUri(u)
+}
+
+fun openUri(uri: Uri) {
+    val intent = Intent(Intent.ACTION_VIEW, uri)
     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     app.tryStartActivity(intent)
 }

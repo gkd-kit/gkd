@@ -49,6 +49,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import li.songe.gkd.META
+import li.songe.gkd.MainActivity
 import li.songe.gkd.data.Value
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.local.LocalMainViewModel
@@ -58,7 +59,6 @@ import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.client
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.openUri
-import li.songe.gkd.util.openWeChat
 import li.songe.gkd.util.throttle
 
 
@@ -222,7 +222,7 @@ private data class DocConfig(
     val htmlUrlMap: Map<String, String>
 )
 
-private class GkdWebViewClient : AccompanistWebViewClient() {
+private class GkdWebViewClient() : AccompanistWebViewClient() {
     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
         super.onPageStarted(view, url, favicon)
     }
@@ -232,13 +232,13 @@ private class GkdWebViewClient : AccompanistWebViewClient() {
     }
 
     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-        val url = request?.url
-        if (url != null && url.host != "gkd.li") {
-            if (url.run { scheme == "gkd" && host == "invoke" && path == "/openWeChat" }) {
-                openWeChat()
-                return true
+        val uri = request?.url
+        if (uri != null && uri.host != "gkd.li") {
+            if (uri.scheme == "gkd") {
+                (view?.context as? MainActivity)?.mainVm?.handleGkdUri(uri)
+            } else {
+                openUri(uri)
             }
-            openUri(url.toString())
             return true
         }
         return super.shouldOverrideUrlLoading(view, request)

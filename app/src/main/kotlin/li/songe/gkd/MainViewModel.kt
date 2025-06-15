@@ -2,6 +2,7 @@ package li.songe.gkd
 
 import android.content.ComponentName
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.service.quicksettings.TileService
 import android.webkit.URLUtil
@@ -49,7 +50,7 @@ import li.songe.gkd.util.componentName
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.openUri
-import li.songe.gkd.util.openWeChat
+import li.songe.gkd.util.openWeChatScaner
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsItemsFlow
@@ -181,20 +182,31 @@ class MainViewModel : ViewModel() {
         navController.navigate(direction.route)
     }
 
+    fun handleGkdUri(uri: Uri) {
+        val notFoundToast = { toast("未知URI\n${uri}") }
+        when (uri.host) {
+            "page" -> when (uri.path) {
+                "" -> {}
+                "/1" -> navigatePage(AdvancedPageDestination)
+                "/2" -> navigatePage(SnapshotPageDestination())
+                else -> notFoundToast()
+            }
+
+            "invoke" -> when (uri.path) {
+                "/1" -> openWeChatScaner()
+                else -> notFoundToast()
+            }
+
+            else -> notFoundToast()
+        }
+    }
+
     fun handleIntent(intent: Intent) = viewModelScope.launchTry(Dispatchers.Main) {
         LogUtils.d("handleIntent", intent)
         val uri = intent.data?.normalizeScheme()
-        if (uri != null && uri.scheme == "gkd" && uri.host == "page") {
+        if (uri?.scheme == "gkd" || uri?.host == "gkd.li") {
             delay(200)
-            when (uri.path) {
-                "/1" -> navigatePage(AdvancedPageDestination)
-                "/2" -> navigatePage(SnapshotPageDestination())
-            }
-        } else if (uri != null && uri.scheme == "gkd" && uri.host == "invoke") {
-            delay(200)
-            when (uri.path) {
-                "/openWeChat" -> openWeChat()
-            }
+            handleGkdUri(uri)
         } else if (uri != null && intent.getStringExtra("source") == OpenFileActivity::class.qualifiedName) {
             toast("加载导入中...")
             tabFlow.value = subsNav
