@@ -204,7 +204,7 @@ class MainViewModel : ViewModel() {
     fun handleIntent(intent: Intent) = viewModelScope.launchTry(Dispatchers.Main) {
         LogUtils.d("handleIntent", intent)
         val uri = intent.data?.normalizeScheme()
-        if (uri?.scheme == "gkd" || uri?.host == "gkd.li") {
+        if (uri?.scheme == "gkd") {
             delay(200)
             handleGkdUri(uri)
         } else if (uri != null && intent.getStringExtra("source") == OpenFileActivity::class.qualifiedName) {
