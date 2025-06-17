@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Sort
@@ -34,7 +33,6 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -60,6 +58,7 @@ import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPa
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
+import li.songe.gkd.data.ActionLog
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.AppNameText
@@ -68,6 +67,7 @@ import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.RuleGroupCard
 import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.toGroupState
+import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.icon.BackCloseIcon
 import li.songe.gkd.ui.local.LocalMainViewModel
 import li.songe.gkd.ui.local.LocalNavController
@@ -86,20 +86,40 @@ import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.switchItem
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toJson5String
-import java.util.Objects
 
+@Suppress("unused")
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
-fun AppConfigPage(appId: String) {
+fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
     val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     val vm = viewModel<AppConfigVm>()
+
     val ruleSortType by vm.ruleSortTypeFlow.collectAsState()
     val groupSize by vm.groupSizeFlow.collectAsState()
     val firstLoading by vm.linkLoad.firstLoadingFlow.collectAsState()
-    val resetKey = Objects.hash(groupSize > 0, ruleSortType.value)
-    val scrollBehavior = key(resetKey) { TopAppBarDefaults.enterAlwaysScrollBehavior() }
-    val listState = key(resetKey) { rememberLazyListState() }
+    val (scrollBehavior, listState) = useListScrollState(groupSize > 0, ruleSortType.value)
+    if (focusLog != null && groupSize > 0) {
+        LaunchedEffect(null) {
+            if (vm.focusGroupFlow?.value != null) {
+                val i = vm.subsPairsFlow.value.run {
+                    var j = 0
+                    forEach { (entry, groups) ->
+                        groups.forEach {
+                            if (entry.subsItem.id == focusLog.subsId && it.groupType == focusLog.groupType && it.key == focusLog.groupKey) {
+                                return@run j
+                            }
+                            j++
+                        }
+                    }
+                    -1
+                }
+                if (i >= 0) {
+                    listState.scrollToItem(i)
+                }
+            }
+        }
+    }
 
     val isSelectedMode = vm.isSelectedModeFlow.collectAsState().value
     val selectedDataSet = vm.selectedDataSetFlow.collectAsState().value
@@ -116,7 +136,6 @@ fun AppConfigPage(appId: String) {
     BackHandler(isSelectedMode) {
         vm.isSelectedModeFlow.value = false
     }
-
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
@@ -409,7 +428,8 @@ fun AppConfigPage(appId: String) {
                         onLongClick = onLongClick,
                         isSelectedMode = isSelectedMode,
                         isSelected = isSelected,
-                        onSelectedChange = onSelectedChange
+                        onSelectedChange = onSelectedChange,
+                        focusGroupFlow = vm.focusGroupFlow,
                     )
                 }
             }

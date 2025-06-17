@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.ui.component.toGroupState
@@ -152,6 +153,16 @@ class AppConfigVm(stateHandle: SavedStateHandle) : ViewModelExt() {
 
     fun invertSelect() {
         selectedDataSetFlow.value = getAllSelectedDataSet() - selectedDataSetFlow.value
+    }
+
+    val focusGroupFlow = args.focusLog?.let {
+        MutableStateFlow<Triple<Long, String?, Int>?>(
+            Triple(
+                it.subsId,
+                if (it.groupType == SubsConfig.AppGroupType) it.appId else null,
+                it.groupKey,
+            )
+        )
     }
 
     init {

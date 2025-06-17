@@ -1,9 +1,14 @@
 package li.songe.gkd.ui.component
 
 import androidx.compose.animation.core.AnimationConstants.DefaultDurationMillis
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -51,3 +56,11 @@ private fun useAutoFocus(): FocusRequester {
 
 @Composable
 fun Modifier.autoFocus() = focusRequester(useAutoFocus())
+
+@Composable
+fun useListScrollState(k1: Any?, k2: Any? = null): Pair<TopAppBarScrollBehavior, LazyListState> {
+    // key 函数的依赖变化时, compose 将重置 key 函数那行代码之后所有代码的状态, 因此需要需要将 key 作用域限定在 Composable fun 内
+    val scrollBehavior = key(k1, k2) { TopAppBarDefaults.enterAlwaysScrollBehavior() }
+    val listState = key(k1, k2) { rememberLazyListState() }
+    return scrollBehavior to listState
+}

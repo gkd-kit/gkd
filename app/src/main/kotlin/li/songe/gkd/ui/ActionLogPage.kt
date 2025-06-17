@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -27,12 +26,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -67,6 +64,7 @@ import li.songe.gkd.ui.component.LocalNumberCharWidth
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.measureNumberTextWidth
+import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.useSubs
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.local.LocalMainViewModel
@@ -92,12 +90,11 @@ fun ActionLogPage(
     val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     val vm = viewModel<ActionLogVm>()
-    val actionDataItems = vm.pagingDataFlow.collectAsLazyPagingItems()
-    val listState = key(actionDataItems.itemCount > 0) { rememberLazyListState() }
 
+    val actionDataItems = vm.pagingDataFlow.collectAsLazyPagingItems()
+    val (scrollBehavior, listState) = useListScrollState(actionDataItems.itemCount > 0)
     val timeTextWidth = measureNumberTextWidth(MaterialTheme.typography.bodySmall)
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         TopAppBar(
             scrollBehavior = scrollBehavior,
@@ -173,7 +170,6 @@ fun ActionLogPage(
                 ) { i ->
                     val item = actionDataItems[i] ?: return@items
                     val lastItem = if (i > 0) actionDataItems[i - 1] else null
-
                     ActionLogCard(
                         modifier = Modifier.animateListItem(this),
                         i = i,

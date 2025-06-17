@@ -8,12 +8,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.ui.component.RuleGroupExtVm
 import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.util.map
 import li.songe.gkd.util.subsIdToRawFlow
 
-class SubsGlobalGroupListVm(stateHandle: SavedStateHandle) : ViewModel(), RuleGroupExtVm {
+class SubsGlobalGroupListVm(stateHandle: SavedStateHandle) : ViewModel() {
     private val args = SubsGlobalGroupListPageDestination.argsFrom(stateHandle)
     val subsRawFlow = subsIdToRawFlow.map(viewModelScope) { s -> s[args.subsItemId] }
 
@@ -22,6 +21,13 @@ class SubsGlobalGroupListVm(stateHandle: SavedStateHandle) : ViewModel(), RuleGr
 
     val isSelectedModeFlow = MutableStateFlow(false)
     val selectedDataSetFlow = MutableStateFlow(emptySet<ShowGroupState>())
-
-    override val focusGroupKeyFlow = MutableStateFlow<Int?>(args.focusGroupKey)
+    val focusGroupFlow = args.focusGroupKey?.let {
+        MutableStateFlow<Triple<Long, String?, Int>?>(
+            Triple(
+                args.subsItemId,
+                null,
+                args.focusGroupKey
+            )
+        )
+    }
 }

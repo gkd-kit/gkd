@@ -5,12 +5,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.TextStyle
@@ -43,13 +45,13 @@ fun GroupNameText(
                 append(text)
             }
         }
-        val fontSize = style.fontSize
-        val inlineContent = remember(fontSize, clickDisabled) {
+        val textColor = color.takeOrElse { style.color.takeOrElse { LocalContentColor.current } }
+        val inlineContent = remember(style, clickDisabled, textColor) {
             mapOf(
                 "icon" to InlineTextContent(
                     placeholder = Placeholder(
-                        width = fontSize,
-                        height = fontSize,
+                        width = style.fontSize,
+                        height = style.lineHeight,
                         placeholderVerticalAlign = PlaceholderVerticalAlign.Center
                     )
                 ) {
@@ -61,6 +63,7 @@ fun GroupNameText(
                             }
                             .fillMaxSize(),
                         contentDescription = null,
+                        tint = textColor
                     )
                 }
             )

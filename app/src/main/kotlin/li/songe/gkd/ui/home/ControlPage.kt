@@ -3,6 +3,7 @@ package li.songe.gkd.ui.home
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -46,6 +47,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDestination
+import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
 import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
@@ -59,6 +61,7 @@ import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.service.switchA11yService
 import li.songe.gkd.ui.component.GroupNameText
+import li.songe.gkd.ui.local.LocalMainViewModel
 import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
@@ -263,6 +266,7 @@ private fun IconTextCard(
 
 @Composable
 private fun ServerStatusCard(vm: HomeVm) {
+    val mainVm = LocalMainViewModel.current
     Card(
         modifier = Modifier
             .padding(itemHorizontalPadding, 4.dp)
@@ -310,11 +314,23 @@ private fun ServerStatusCard(vm: HomeVm) {
             AnimatedVisibility(latestRecordDesc != null) {
                 val isGlobal by vm.latestRecordIsGlobalFlow.collectAsState()
                 GroupNameText(
+                    modifier = Modifier
+                        .clickable(onClick = throttle {
+                            vm.latestRecordFlow.value?.let {
+                                mainVm.navigatePage(
+                                    AppConfigPageDestination(
+                                        appId = it.appId,
+                                        focusLog = it
+                                    )
+                                )
+                            }
+                        })
+                        .fillMaxWidth(),
                     preText = "最近触发: ",
                     isGlobal = isGlobal,
                     text = latestRecordDesc!!,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
             Spacer(modifier = Modifier.height(itemVerticalPadding))

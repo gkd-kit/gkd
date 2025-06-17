@@ -26,8 +26,7 @@ import li.songe.gkd.util.usedSubsEntriesFlow
 
 class HomeVm : ViewModel() {
 
-    private val latestRecordFlow =
-        DbSet.actionLogDao.queryLatest().stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    val latestRecordFlow = DbSet.actionLogDao.queryLatest().stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val latestRecordIsGlobalFlow =
         latestRecordFlow.map(viewModelScope) { it?.groupType == SubsConfig.GlobalGroupType }

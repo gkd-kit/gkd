@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -30,12 +29,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -66,6 +63,7 @@ import li.songe.gkd.ui.component.FixedTimeText
 import li.songe.gkd.ui.component.LocalNumberCharWidth
 import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.measureNumberTextWidth
+import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.local.LocalMainViewModel
 import li.songe.gkd.ui.local.LocalNavController
@@ -90,19 +88,14 @@ fun SnapshotPage() {
     val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     val colorScheme = MaterialTheme.colorScheme
-
     val vm = viewModel<SnapshotVm>()
+
     val firstLoading by vm.linkLoad.firstLoadingFlow.collectAsState()
     val snapshots by vm.snapshotsState.collectAsState()
-
-    var selectedSnapshot by remember {
-        mutableStateOf<Snapshot?>(null)
-    }
-
+    var selectedSnapshot by remember { mutableStateOf<Snapshot?>(null) }
+    val (scrollBehavior, listState) = useListScrollState(snapshots.isNotEmpty(), firstLoading)
     val timeTextWidth = measureNumberTextWidth(MaterialTheme.typography.bodySmall)
-    val listState = key(snapshots.isNotEmpty(), firstLoading) { rememberLazyListState() }
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         TopAppBar(
             scrollBehavior = scrollBehavior,

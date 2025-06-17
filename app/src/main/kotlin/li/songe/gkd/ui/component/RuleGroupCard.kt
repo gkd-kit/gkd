@@ -56,10 +56,6 @@ import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
 
-interface RuleGroupExtVm {
-    val focusGroupKeyFlow: MutableStateFlow<Int?>
-}
-
 @Composable
 fun RuleGroupCard(
     modifier: Modifier = Modifier,
@@ -70,7 +66,7 @@ fun RuleGroupCard(
     category: RawSubscription.RawCategory?,
     categoryConfig: CategoryConfig?,
     showBottom: Boolean,
-    vm: RuleGroupExtVm? = null,
+    focusGroupFlow: MutableStateFlow<Triple<Long, String?, Int>?>? = null,
     isSelectedMode: Boolean = false,
     isSelected: Boolean = false,
     onLongClick: () -> Unit = {},
@@ -81,18 +77,25 @@ fun RuleGroupCard(
     val inGlobalAppPage = appId != null && group is RawSubscription.RawGlobalGroup
 
     var highlighted by remember { mutableStateOf(false) }
-    if (vm != null) {
-        val focusGroupKey = vm.focusGroupKeyFlow.collectAsState()
-        LaunchedEffect(group.key, focusGroupKey.value) {
-            if (group.key == focusGroupKey.value) {
+    if (focusGroupFlow != null) {
+        val focusGroup by focusGroupFlow.collectAsState()
+        if (subs.id == focusGroup?.first && appId == focusGroup?.second && group.key == focusGroup?.third) {
+            LaunchedEffect(isSelectedMode) {
+                if (isSelectedMode) {
+                    highlighted = false
+                    focusGroupFlow.value = null
+                    return@LaunchedEffect
+                }
+                delay(300)
                 var i = 0
+                highlighted = true
                 while (isActive && i < 4) {
-                    delay(500)
+                    delay(400)
                     highlighted = !highlighted
                     i++
                 }
                 highlighted = false
-                vm.focusGroupKeyFlow.value = null
+                focusGroupFlow.value = null
             }
         }
     }
