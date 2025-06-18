@@ -79,7 +79,7 @@ fun RuleGroupCard(
     var highlighted by remember { mutableStateOf(false) }
     if (focusGroupFlow != null) {
         val focusGroup by focusGroupFlow.collectAsState()
-        if (subs.id == focusGroup?.first && appId == focusGroup?.second && group.key == focusGroup?.third) {
+        if (subs.id == focusGroup?.first && group.key == focusGroup?.third && if (group is RawSubscription.RawAppGroup) appId == focusGroup?.second else focusGroup?.second == null) {
             LaunchedEffect(isSelectedMode) {
                 if (isSelectedMode) {
                     highlighted = false
