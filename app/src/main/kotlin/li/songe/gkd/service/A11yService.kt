@@ -361,6 +361,7 @@ private fun A11yService.useMatchRule() {
             if (rule.status != RuleStatus.StatusOk) break
             val actionResult = rule.performAction(context, target)
             if (actionResult.result) {
+                val topActivity = topActivityFlow.value
                 rule.trigger()
                 scope.launch(A11yService.actionThread) {
                     delay(300)
@@ -369,12 +370,7 @@ private fun A11yService.useMatchRule() {
                     }
                 }
                 showActionToast(context)
-                appScope.launchTry(Dispatchers.IO) {
-                    insertClickLog(rule)
-                    LogUtils.d(
-                        rule.statusText(), AttrInfo.info2data(target, 0, 0), actionResult
-                    )
-                }
+                addActionLog(rule, topActivity, target, actionResult)
             }
         }
         checkFutureJob()

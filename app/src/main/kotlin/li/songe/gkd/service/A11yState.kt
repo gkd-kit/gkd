@@ -2,18 +2,21 @@ package li.songe.gkd.service
 
 import android.content.ComponentName
 import android.provider.Settings
+import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.META
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.ActionLog
+import li.songe.gkd.data.ActionResult
 import li.songe.gkd.data.ActivityLog
 import li.songe.gkd.data.AppRule
+import li.songe.gkd.data.AttrInfo
 import li.songe.gkd.data.GlobalRule
 import li.songe.gkd.data.ResetMatchType
 import li.songe.gkd.data.ResolvedRule
@@ -211,14 +214,19 @@ fun updateDefaultInputAppId() {
     }
 }
 
-val clickLogMutex by lazy { Mutex() }
-suspend fun insertClickLog(rule: ResolvedRule) {
+private val clickLogMutex by lazy { Mutex() }
+fun addActionLog(
+    rule: ResolvedRule,
+    topActivity: TopActivity,
+    target: AccessibilityNodeInfo,
+    actionResult: ActionResult,
+) = appScope.launchTry(Dispatchers.IO) {
     val ctime = System.currentTimeMillis()
     clickLogMutex.withLock {
-        actionCountFlow.update { it + 1 }
+        val actionCount = actionCountFlow.updateAndGet { it + 1 }
         val actionLog = ActionLog(
-            appId = topActivityFlow.value.appId,
-            activityId = topActivityFlow.value.activityId,
+            appId = topActivity.appId,
+            activityId = topActivity.activityId,
             subsId = rule.subsItem.id,
             subsVersion = rule.rawSubs.version,
             groupKey = rule.g.group.key,
@@ -231,8 +239,13 @@ suspend fun insertClickLog(rule: ResolvedRule) {
             ctime = ctime,
         )
         DbSet.actionLogDao.insert(actionLog)
-        if (actionCountFlow.value % 100 == 0L) {
+        if (actionCount % 100 == 0L) {
             DbSet.actionLogDao.deleteKeepLatest()
         }
     }
-}
+    LogUtils.d(
+        rule.statusText(),
+        AttrInfo.info2data(target, 0, 0),
+        actionResult
+    )
+}.let {}
