@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Memory
@@ -61,6 +62,7 @@ import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.service.switchA11yService
 import li.songe.gkd.ui.component.GroupNameText
+import li.songe.gkd.ui.component.textSize
 import li.songe.gkd.ui.local.LocalMainViewModel
 import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
@@ -275,9 +277,28 @@ private fun ServerStatusCard(vm: HomeVm) {
         colors = surfaceCardColors,
         onClick = {}
     ) {
-        IconTextCard(
-            imageVector = Icons.Outlined.Equalizer
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = itemVerticalPadding,
+                    end = itemVerticalPadding,
+                    top = itemVerticalPadding,
+                    bottom = itemVerticalPadding / 2
+                ),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(
+                imageVector = Icons.Outlined.Equalizer,
+                contentDescription = null,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(8.dp)
+                    .size(24.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(itemHorizontalPadding))
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -299,13 +320,14 @@ private fun ServerStatusCard(vm: HomeVm) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
-                    horizontal = itemVerticalPadding + 8.dp,
+                    horizontal = itemVerticalPadding,
                 )
         ) {
             val latestRecordDesc by vm.latestRecordDescFlow.collectAsState()
             val subsStatus by vm.subsStatusFlow.collectAsState()
             AnimatedVisibility(subsStatus.isNotEmpty()) {
                 Text(
+                    modifier = Modifier.padding(horizontal = 8.dp),
                     text = subsStatus,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -313,8 +335,10 @@ private fun ServerStatusCard(vm: HomeVm) {
             }
             AnimatedVisibility(latestRecordDesc != null) {
                 val isGlobal by vm.latestRecordIsGlobalFlow.collectAsState()
-                GroupNameText(
+                Row(
                     modifier = Modifier
+                        .padding(horizontal = 4.dp)
+                        .clip(MaterialTheme.shapes.extraSmall)
                         .clickable(onClick = throttle {
                             vm.latestRecordFlow.value?.let {
                                 mainVm.navigatePage(
@@ -325,13 +349,26 @@ private fun ServerStatusCard(vm: HomeVm) {
                                 )
                             }
                         })
-                        .fillMaxWidth(),
-                    preText = "最近触发: ",
-                    isGlobal = isGlobal,
-                    text = latestRecordDesc!!,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp)
+                ) {
+                    GroupNameText(
+                        modifier = Modifier
+                            .weight(1f),
+                        preText = "最近触发: ",
+                        isGlobal = isGlobal,
+                        text = latestRecordDesc ?: "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        modifier = Modifier.textSize(style = MaterialTheme.typography.bodyMedium),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(itemVerticalPadding))
         }

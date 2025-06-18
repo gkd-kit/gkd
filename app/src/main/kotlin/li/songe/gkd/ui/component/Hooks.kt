@@ -1,8 +1,11 @@
 package li.songe.gkd.ui.component
 
 import androidx.compose.animation.core.AnimationConstants.DefaultDurationMillis
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
@@ -14,6 +17,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Density
 import kotlinx.coroutines.delay
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.util.map
@@ -63,4 +69,14 @@ fun useListScrollState(k1: Any?, k2: Any? = null): Pair<TopAppBarScrollBehavior,
     val scrollBehavior = key(k1, k2) { TopAppBarDefaults.enterAlwaysScrollBehavior() }
     val listState = key(k1, k2) { rememberLazyListState() }
     return scrollBehavior to listState
+}
+
+@Composable
+fun Modifier.textSize(
+    style: TextStyle = LocalTextStyle.current,
+    density: Density = LocalDensity.current,
+): Modifier {
+    val fontSizeDp = density.run { style.fontSize.toDp() }
+    val lineHeightDp = density.run { style.lineHeight.toDp() }
+    return height(lineHeightDp).width(fontSizeDp)
 }
