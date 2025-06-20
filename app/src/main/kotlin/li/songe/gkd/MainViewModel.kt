@@ -48,7 +48,6 @@ import li.songe.gkd.util.clearCache
 import li.songe.gkd.util.client
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.map
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.openWeChatScaner
 import li.songe.gkd.util.storeFlow
@@ -262,12 +261,6 @@ class MainViewModel : ViewModel() {
                     e.printStackTrace()
                     LogUtils.d(e)
                 }
-            }
-        }
-
-        viewModelScope.launch {
-            storeFlow.map(viewModelScope) { s -> s.log2FileSwitch }.collect {
-                LogUtils.getConfig().isLog2FileSwitch = it
             }
         }
     }

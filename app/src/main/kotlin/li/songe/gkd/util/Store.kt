@@ -81,7 +81,6 @@ data class Store(
     val clickToast: String = "GKD",
     val autoClearMemorySubs: Boolean = true,
     val hideSnapshotStatusBar: Boolean = false,
-    val log2FileSwitch: Boolean = true,
     val enableDarkTheme: Boolean? = null,
     val enableDynamicColor: Boolean = true,
     val enableAbFloatWindow: Boolean = true,

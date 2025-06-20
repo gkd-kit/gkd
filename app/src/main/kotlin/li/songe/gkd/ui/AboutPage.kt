@@ -21,7 +21,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -42,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.style.TextDecoration
@@ -50,6 +50,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
@@ -71,6 +72,7 @@ import li.songe.gkd.util.ISSUES_URL
 import li.songe.gkd.util.PLAY_STORE_URL
 import li.songe.gkd.util.REPOSITORY_URL
 import li.songe.gkd.util.SafeR
+import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.UpdateChannelOption
 import li.songe.gkd.util.buildLogFile
 import li.songe.gkd.util.checkUpdate
@@ -160,11 +162,11 @@ fun AboutPage() {
                 },
                 title = { Text(text = "关于") },
                 actions = {
-                    IconButton(onClick = throttle(fn = {
-                        showInfoDlg = true
-                    })) {
+                    IconButton(onClick = {
+                        showShareAppDlg = true
+                    }) {
                         Icon(
-                            imageVector = Icons.Outlined.Info,
+                            imageVector = Icons.Default.Share,
                             contentDescription = null,
                         )
                     }
@@ -192,8 +194,19 @@ fun AboutPage() {
                         .fillMaxWidth(0.33f)
                         .aspectRatio(1f)
                 )
-                Text(text = META.appName, style = MaterialTheme.typography.titleMedium)
-                Text(text = META.versionName, style = MaterialTheme.typography.bodyMedium)
+                Column(
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.extraSmall)
+                        .clickable(onClick = { showInfoDlg = true })
+                        .padding(horizontal = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(text = META.appName, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = META.versionName,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
                 Spacer(modifier = Modifier.height(32.dp))
             }
 
@@ -206,15 +219,29 @@ fun AboutPage() {
                     .itemPadding()
             ) {
                 Text(
-                    text = "开源地址",
+                    text = "开源代码",
                     style = MaterialTheme.typography.bodyLarge,
                 )
+            }
+            Column(
+                modifier = Modifier
+                    .clickable(onClick = throttle {
+                        mainVm.navigatePage(WebViewPageDestination(ShortUrlSet.URL11))
+                    })
+                    .fillMaxWidth()
+                    .itemPadding()
+            ) {
                 Text(
-                    text = REPOSITORY_URL,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.secondary,
+                    text = "隐私政策",
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             }
+            Text(
+                text = "反馈",
+                modifier = Modifier.titleItemPadding(),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
             Column(
                 modifier = Modifier
                     .clickable(onClick = throttle {
@@ -227,17 +254,12 @@ fun AboutPage() {
                     text = "问题反馈",
                     style = MaterialTheme.typography.bodyLarge,
                 )
-                Text(
-                    text = ISSUES_URL,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.secondary,
-                )
             }
             SettingItem(
-                title = "分享应用",
+                title = "导出日志",
                 imageVector = Icons.Default.Share,
                 onClick = {
-                    showShareAppDlg = true
+                    showShareLogDlg = true
                 }
             )
             if (META.updateEnabled) {
@@ -250,7 +272,6 @@ fun AboutPage() {
                 )
                 TextSwitch(
                     title = "自动更新",
-                    subtitle = "自动检查更新",
                     checked = store.autoCheckAppUpdate,
                     onCheckedChange = {
                         storeFlow.value = store.copy(
@@ -298,33 +319,6 @@ fun AboutPage() {
                     )
                     RotatingLoadingIcon(loading = checkUpdating)
                 }
-            }
-
-            Text(
-                text = "日志",
-                modifier = Modifier.titleItemPadding(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            TextSwitch(
-                title = "保存日志",
-                subtitle = "保存7天日志便于反馈问题",
-                checked = store.log2FileSwitch,
-                onCheckedChange = {
-                    storeFlow.value = store.copy(
-                        log2FileSwitch = it
-                    )
-                })
-
-            if (store.log2FileSwitch) {
-                SettingItem(
-                    title = "导出日志",
-                    imageVector = Icons.Default.Share,
-                    onClick = {
-                        showShareLogDlg = true
-                    }
-                )
             }
             Spacer(modifier = Modifier.height(EmptyHeight))
         }
