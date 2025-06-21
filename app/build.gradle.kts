@@ -14,26 +14,43 @@ data class GitInfo(
     val commitId: String,
     val commitTime: String,
     val tagName: String?,
-)
+) {
+    val pairList = listOf(
+        GitInfo::commitId,
+        GitInfo::commitTime,
+        GitInfo::tagName,
+    ).map {
+        val key = it.name
+        val value = it.get(this)
+        key to value
+    }
+}
 
 val gitInfo by lazy {
-    (try {
-        GitInfo(
-            commitId = "git rev-parse HEAD".runCommand(),
-            commitTime = "git log -1 --format=%ct".runCommand(),
-            tagName = try {
-                "git describe --tags --exact-match".runCommand()
-            } catch (_: Exception) {
-                println("app: current git commit is not a tag")
-                null
-            },
-        )
-    } catch (_: Exception) {
-        println("app: git is not available")
-        null
-    }).apply {
-        println("app: $this")
-    }
+    GitInfo(
+        commitId = "git rev-parse HEAD".runCommand(),
+        commitTime = "git log -1 --format=%ct".runCommand() + "000",
+        tagName = runCatching { "git describe --tags --exact-match".runCommand() }.getOrNull(),
+    )
+}
+
+val debugSuffixPairList by lazy {
+    javax.xml.parsers.DocumentBuilderFactory
+        .newInstance()
+        .newDocumentBuilder()
+        .parse(file("$projectDir/src/main/res/values/strings.xml"))
+        .documentElement.getElementsByTagName("string").run {
+            (0 until length).mapNotNull { i ->
+                val node = item(i)
+                if (node.attributes.getNamedItem("debug_suffix") != null) {
+                    val key = node.attributes.getNamedItem("name").nodeValue
+                    val value = node.textContent
+                    key to value
+                } else {
+                    null
+                }
+            }
+        }
 }
 
 plugins {
@@ -72,26 +89,24 @@ android {
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
 
-        manifestPlaceholders["commitId"] = gitInfo?.commitId ?: "unknown"
-        manifestPlaceholders["commitTime"] = gitInfo?.commitTime?.let { it + "000" } ?: "0"
+        gitInfo.pairList.onEach { (key, value) ->
+            manifestPlaceholders[key] = value ?: ""
+        }
     }
-
-    lint {}
 
     buildFeatures {
         compose = true
         aidl = true
     }
 
-    val gkdSigningConfig = if (project.hasProperty("GKD_STORE_FILE")) {
-        signingConfigs.create("gkd") {
-            storeFile = file(project.properties["GKD_STORE_FILE"] as String)
-            storePassword = project.properties["GKD_STORE_PASSWORD"] as String
-            keyAlias = project.properties["GKD_KEY_ALIAS"] as String
-            keyPassword = project.properties["GKD_KEY_PASSWORD"] as String
-        }
-    } else {
-        signingConfigs.getByName("debug")
+    if (!project.hasProperty("GKD_STORE_FILE")) {
+        error("GKD_STORE_FILE is not set. Please provide the keystore file path in the project properties.")
+    }
+    val gkdSigningConfig = signingConfigs.create("gkd") {
+        storeFile = file(project.properties["GKD_STORE_FILE"] as String)
+        storePassword = project.properties["GKD_STORE_PASSWORD"] as String
+        keyAlias = project.properties["GKD_KEY_ALIAS"] as String
+        keyPassword = project.properties["GKD_KEY_PASSWORD"] as String
     }
 
     val playSigningConfig = if (project.hasProperty("PLAY_STORE_FILE")) {
@@ -107,8 +122,8 @@ android {
 
     buildTypes {
         all {
-            if (gitInfo?.tagName == null) {
-                versionNameSuffix = "-${gitInfo?.commitId?.substring(0, 7) ?: "unknown"}"
+            if (gitInfo.tagName == null) {
+                versionNameSuffix = "-${gitInfo.commitId.substring(0, 7)}"
             }
         }
         release {
@@ -125,16 +140,8 @@ android {
         debug {
             signingConfig = gkdSigningConfig
             applicationIdSuffix = ".debug"
-
-            // add "debug" suffix
-            listOf(
-                "app_name" to "GKD",
-                "capture_snapshot" to "捕获快照",
-                "import_data" to "导入数据",
-                "http_server" to "HTTP服务",
-                "float_button" to "悬浮按钮",
-            ).forEach {
-                resValue("string", it.first, it.second + "-debug")
+            debugSuffixPairList.onEach { (key, value) ->
+                resValue("string", key, "$value-debug")
             }
         }
     }

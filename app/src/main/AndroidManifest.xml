@@ -51,6 +51,9 @@
             android:name="commitTime"
             android:value="${commitTime}" />
         <meta-data
+            android:name="tagName"
+            android:value="${tagName}" />
+        <meta-data
             android:name="updateEnabled"
             android:value="${updateEnabled}" />
 

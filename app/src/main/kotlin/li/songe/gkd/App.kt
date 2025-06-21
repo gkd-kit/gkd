@@ -54,8 +54,9 @@ val appOpsManager by lazy { app.getSystemService(AppOpsManager::class.java) as A
 data class AppMeta(
     val channel: String = applicationInfo.metaData.getString("channel")!!,
     val commitId: String = applicationInfo.metaData.getString("commitId")!!,
-    val commitUrl: String = "https://github.com/gkd-kit/gkd/commit/${commitId}",
     val commitTime: Long = applicationInfo.metaData.getString("commitTime")!!.toLong(),
+    val tagName: String? = applicationInfo.metaData.getString("tagName")!!.takeIf { it.isNotEmpty() },
+    val commitUrl: String = "https://github.com/gkd-kit/gkd/" + if (tagName != null) "tree/$tagName" else "commit/$commitId",
     val updateEnabled: Boolean = applicationInfo.metaData.getBoolean("updateEnabled"),
     val debuggable: Boolean = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0,
     val versionCode: Int = selfAppInfo.versionCode.toInt(),

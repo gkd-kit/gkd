@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">GKD</string>
+    <string name="app_name" debug_suffix="true">GKD</string>
     <string name="a11y_desc">基于高级选择器+订阅规则的屏幕自定义点击服务\n\n通过自定义选择器和订阅规则,能帮助你实现点击任意位置控件,自定义快捷操作等高级功能</string>
-    <string name="import_data">导入数据</string>
-    <string name="capture_snapshot">捕获快照</string>
-    <string name="http_server">HTTP服务</string>
-    <string name="float_button">悬浮按钮</string>
+    <string name="import_data" debug_suffix="true">导入数据</string>
+    <string name="capture_snapshot" debug_suffix="true">捕获快照</string>
+    <string name="http_server" debug_suffix="true">HTTP服务</string>
+    <string name="float_button" debug_suffix="true">悬浮按钮</string>
 </resources>

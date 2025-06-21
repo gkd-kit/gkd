@@ -122,7 +122,7 @@ fun AboutPage() {
                         Text(text = "代码记录")
                         Text(
                             modifier = Modifier.clickable { openUri(META.commitUrl) },
-                            text = META.commitId.substring(0, 16),
+                            text = META.tagName ?: META.commitId.substring(0, 16),
                             color = MaterialTheme.colorScheme.primary,
                             style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
                         )
