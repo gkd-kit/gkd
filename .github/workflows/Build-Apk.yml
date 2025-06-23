@@ -36,12 +36,7 @@ jobs:
           echo GKD_KEY_PASSWORD='${{ secrets.GKD_KEY_PASSWORD }}' >> gradle.properties
 
       - run: chmod 777 ./gradlew
-      - run: ./gradlew app:assembleGkd
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: outputs
-          path: app/build/outputs
+      - run: ./gradlew app:assembleGkdRelease
 
       - uses: actions/upload-artifact@v4
         with:
