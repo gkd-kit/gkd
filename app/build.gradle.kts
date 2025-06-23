@@ -100,7 +100,7 @@ android {
     }
 
     if (!project.hasProperty("GKD_STORE_FILE")) {
-        error("GKD_STORE_FILE is not set. Please provide the keystore file path in the project properties.")
+        error("GKD_STORE_FILE is missing")
     }
     val gkdSigningConfig = signingConfigs.create("gkd") {
         storeFile = file(project.properties["GKD_STORE_FILE"] as String)
@@ -130,11 +130,9 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             isDebuggable = false
-            setProguardFiles(
-                listOf(
-                    // /sdk/tools/proguard/proguard-android-optimize.txt
-                    getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
-                )
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
             )
         }
         debug {
