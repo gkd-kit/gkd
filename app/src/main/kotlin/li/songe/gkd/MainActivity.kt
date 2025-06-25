@@ -159,7 +159,7 @@ class MainActivity : ComponentActivity() {
 
     private var lastBackPressedTime = 0L
 
-    @Suppress("OVERRIDE_DEPRECATION")
+    @Suppress("OVERRIDE_DEPRECATION", "GestureBackNavigation")
     override fun onBackPressed() {
         // onBackPressedDispatcher.addCallback is not work, it will be covered by compose navigation
         val t = System.currentTimeMillis()
