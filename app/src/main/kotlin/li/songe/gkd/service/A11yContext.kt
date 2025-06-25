@@ -1,7 +1,6 @@
 package li.songe.gkd.service
 
 import android.graphics.Rect
-import android.os.Build
 import android.util.Log
 import android.util.LruCache
 import android.view.accessibility.AccessibilityNodeInfo
@@ -282,12 +281,7 @@ class A11yContext(
         "clickable" -> node.isClickable
         "focusable" -> node.isFocusable
         "checkable" -> node.isCheckable
-        "checked" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
-            node.checked
-        } else {
-            @Suppress("DEPRECATION")
-            node.isChecked
-        }
+        "checked" -> node.compatChecked
 
         "editable" -> node.isEditable
         "longClickable" -> node.isLongClickable
