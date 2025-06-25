@@ -61,17 +61,16 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.ksp)
-    alias(libs.plugins.rikka.refine)
 }
 
 android {
     namespace = "li.songe.gkd"
-    compileSdk = project.properties["android_compileSdk"].toString().toInt()
-    buildToolsVersion = project.properties["android_buildToolsVersion"].toString()
+    compileSdk = project.properties["android.compileSdk"].toString().toInt()
+    buildToolsVersion = project.properties["android.buildToolsVersion"].toString()
 
     defaultConfig {
-        minSdk = project.properties["android_minSdk"].toString().toInt()
-        targetSdk = project.properties["android_targetSdk"].toString().toInt()
+        minSdk = project.properties["android.minSdk"].toString().toInt()
+        targetSdk = project.properties["android.targetSdk"].toString().toInt()
 
         applicationId = "li.songe.gkd"
         versionCode = 65
@@ -161,12 +160,13 @@ android {
             manifestPlaceholders["channel"] = name
         }
     }
+    val androidJvmTarget = project.properties["android.jvmTarget"].toString()
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.toVersion(androidJvmTarget)
+        targetCompatibility = JavaVersion.toVersion(androidJvmTarget)
     }
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.majorVersion
+        jvmTarget = androidJvmTarget
         freeCompilerArgs += listOf(
             "-opt-in=kotlin.RequiresOptIn",
             "-opt-in=kotlinx.coroutines.FlowPreview",
@@ -209,7 +209,7 @@ configurations.configureEach {
 composeCompiler {
     reportsDestination = layout.buildDirectory.dir("compose_compiler")
     stabilityConfigurationFiles.addAll(
-        project.layout.projectDirectory.file("../stability_config.conf"),
+        rootProject.layout.projectDirectory.file("stability_config.conf"),
     )
 }
 

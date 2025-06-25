@@ -4,11 +4,11 @@ plugins {
 
 android {
     namespace = "li.songe.gkd"
-    compileSdk = project.properties["android_compileSdk"].toString().toInt()
-    buildToolsVersion = project.properties["android_buildToolsVersion"].toString()
+    compileSdk = project.properties["android.compileSdk"].toString().toInt()
+    buildToolsVersion = project.properties["android.buildToolsVersion"].toString()
 
     defaultConfig {
-        minSdk = project.properties["android_minSdk"].toString().toInt()
+        minSdk = project.properties["android.minSdk"].toString().toInt()
     }
 
     buildTypes {
@@ -16,9 +16,11 @@ android {
             isMinifyEnabled = false
         }
     }
+
+    val androidJvmTarget = project.properties["android.jvmTarget"].toString()
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.toVersion(androidJvmTarget)
+        targetCompatibility = JavaVersion.toVersion(androidJvmTarget)
     }
     buildFeatures {
         aidl = true
@@ -26,7 +28,7 @@ android {
 }
 
 dependencies {
-    implementation(libs.androidx.annotation)
-    annotationProcessor(libs.rikka.processor)
+    compileOnly(libs.androidx.annotation)
     compileOnly(libs.rikka.annotation)
+    annotationProcessor(libs.rikka.processor)
 }

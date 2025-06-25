@@ -150,6 +150,7 @@ suspend fun buildServiceWrapper(): UserServiceWrapper? {
         .processNameSuffix("shizuku-user-service")
         .debuggable(META.debuggable)
         .version(META.versionCode)
+        .tag("default")
     LogUtils.d("buildServiceWrapper", serviceArgs)
     var resumeCallback: ((UserServiceWrapper) -> Unit)? = null
     val connection = object : ServiceConnection {
