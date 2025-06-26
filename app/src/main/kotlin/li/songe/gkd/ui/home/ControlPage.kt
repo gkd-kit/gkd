@@ -51,7 +51,6 @@ import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDe
 import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
 import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
-import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import li.songe.gkd.MainActivity
 import li.songe.gkd.a11yServiceEnabledFlow
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
@@ -64,7 +63,6 @@ import li.songe.gkd.service.switchA11yService
 import li.songe.gkd.ui.component.GroupNameText
 import li.songe.gkd.ui.component.textSize
 import li.songe.gkd.ui.local.LocalMainViewModel
-import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
@@ -80,7 +78,7 @@ val controlNav = BottomNavItem(label = "主页", icon = Icons.Outlined.Home)
 @Composable
 fun useControlPage(): ScaffoldExt {
     val context = LocalActivity.current as MainActivity
-    val navController = LocalNavController.current
+    val mainVm = LocalMainViewModel.current
     val vm = viewModel<HomeVm>()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val scrollState = rememberScrollState()
@@ -95,7 +93,7 @@ fun useControlPage(): ScaffoldExt {
                 )
             }, actions = {
                 IconButton(onClick = throttle {
-                    navController.toDestinationsNavigator().navigate(AuthA11YPageDestination)
+                    mainVm.navigatePage(AuthA11YPageDestination)
                 }) {
                     Icon(
                         imageVector = Icons.Outlined.RocketLaunch,
@@ -126,12 +124,11 @@ fun useControlPage(): ScaffoldExt {
                 rightContent = {
                     Switch(
                         checked = a11yRunning,
-                        onCheckedChange = throttle(vm.viewModelScope.launchAsFn<Boolean> { newEnabled ->
+                        onCheckedChange = throttle(vm.viewModelScope.launchAsFn { newEnabled ->
                             if (writeSecureSettings || !newEnabled) {
                                 switchA11yService()
                             } else {
-                                navController.toDestinationsNavigator()
-                                    .navigate(AuthA11YPageDestination)
+                                mainVm.navigatePage(AuthA11YPageDestination)
                             }
                         }),
                     )
@@ -168,8 +165,7 @@ fun useControlPage(): ScaffoldExt {
                 subtitle = "规则误触可定位关闭",
                 imageVector = Icons.Default.History,
                 onClick = {
-                    navController.toDestinationsNavigator()
-                        .navigate(ActionLogPageDestination())
+                    mainVm.navigatePage(ActionLogPageDestination())
                 }
             )
 
@@ -179,8 +175,7 @@ fun useControlPage(): ScaffoldExt {
                     subtitle = "记录打开的应用及界面",
                     imageVector = Icons.Outlined.Layers,
                     onClick = {
-                        navController.toDestinationsNavigator()
-                            .navigate(ActivityLogPageDestination)
+                        mainVm.navigatePage(ActivityLogPageDestination)
                     }
                 )
             }
@@ -190,8 +185,7 @@ fun useControlPage(): ScaffoldExt {
                 subtitle = "查阅规则文档和常见问题",
                 imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
                 onClick = {
-                    navController.toDestinationsNavigator()
-                        .navigate(WebViewPageDestination(initUrl = HOME_PAGE_URL))
+                    mainVm.navigatePage(WebViewPageDestination(initUrl = HOME_PAGE_URL))
                 }
             )
             Spacer(modifier = Modifier.height(EmptyHeight))

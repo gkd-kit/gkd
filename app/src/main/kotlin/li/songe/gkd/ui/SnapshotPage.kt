@@ -49,7 +49,6 @@ import com.blankj.utilcode.util.UriUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ImagePreviewPageDestination
-import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import li.songe.gkd.MainActivity
@@ -171,9 +170,7 @@ fun SnapshotPage() {
                 Text(
                     text = "查看", modifier = Modifier
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
-                            navController
-                                .toDestinationsNavigator()
-                                .navigate(
+                            mainVm.navigatePage(
                                     ImagePreviewPageDestination(
                                         title = snapshotVal.appName,
                                         uri = snapshotVal.screenshotFile.absolutePath,

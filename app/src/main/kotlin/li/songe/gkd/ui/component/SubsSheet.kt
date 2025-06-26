@@ -46,12 +46,10 @@ import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDest
 import com.ramcosta.composedestinations.generated.destinations.SubsAppListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsCategoryPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
-import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import li.songe.gkd.META
 import li.songe.gkd.ui.local.LocalMainViewModel
-import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
@@ -81,7 +79,6 @@ fun SubsSheet(
         }
     } else {
         val mainVm = LocalMainViewModel.current
-        val navController = LocalNavController.current
         val subsIdToRaw by subsIdToRawFlow.collectAsState()
         var swipeEnabled by remember { mutableStateOf(false) }
         val sheetState = rememberModalBottomSheetState(
@@ -196,9 +193,7 @@ fun SubsSheet(
                                 .clickable(onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
-                                    navController
-                                        .toDestinationsNavigator()
-                                        .navigate(SubsGlobalGroupListPageDestination(subsItem.id))
+                                    mainVm.navigatePage(SubsGlobalGroupListPageDestination(subsItem.id))
                                 })
                                 .then(childModifier),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -235,9 +230,7 @@ fun SubsSheet(
                                 .clickable(onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
-                                    navController
-                                        .toDestinationsNavigator()
-                                        .navigate(SubsAppListPageDestination(subsItem.id))
+                                    mainVm.navigatePage(SubsAppListPageDestination(subsItem.id))
                                 })
                                 .then(childModifier),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -275,9 +268,7 @@ fun SubsSheet(
                                 .clickable(onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
-                                    navController
-                                        .toDestinationsNavigator()
-                                        .navigate(SubsCategoryPageDestination(subsItem.id))
+                                    mainVm.navigatePage(SubsCategoryPageDestination(subsItem.id))
                                 })
                                 .then(childModifier),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -393,8 +384,7 @@ fun SubsSheet(
                     IconButton(onClick = throttle {
                         setSubsId(null)
                         sheetSubsIdFlow.value = null
-                        navController.toDestinationsNavigator()
-                            .navigate(ActionLogPageDestination(subsId = subsItem.id))
+                        mainVm.navigatePage(ActionLogPageDestination(subsId = subsItem.id))
                     }) {
                         Icon(imageVector = Icons.Default.History, contentDescription = null)
                     }

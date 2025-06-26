@@ -6,7 +6,6 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupExcludePageDestination
 import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
-import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
@@ -21,7 +20,7 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.getGlobalGroupChecked
-import li.songe.gkd.ui.local.LocalNavController
+import li.songe.gkd.ui.local.LocalMainViewModel
 import li.songe.gkd.util.getGroupEnable
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.subsIdToRawFlow
@@ -220,7 +219,7 @@ class RuleGroupState(
 
     @Composable
     fun Render() {
-        val navController = LocalNavController.current
+        val mainVm = LocalMainViewModel.current
 
         val showGroupState = showGroupFlow.collectAsState().value
         val showSubs = useSubs(showGroupState?.subsId)
@@ -244,12 +243,11 @@ class RuleGroupState(
                             appId = showGroupState.appId,
                         )
                     )
-//                    editOrAddGroupFlow.value = showGroupState
                 },
                 onClickEditExclude = {
                     dismissShow()
                     if (showGroupState.appId == null) {
-                        navController.toDestinationsNavigator().navigate(
+                        mainVm.navigatePage(
                             SubsGlobalGroupExcludePageDestination(
                                 showGroupState.subsId,
                                 showGroupState.groupKey

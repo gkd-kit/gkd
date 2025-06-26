@@ -29,7 +29,6 @@ import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
 import com.ramcosta.composedestinations.utils.currentDestinationAsState
-import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -169,6 +168,14 @@ class MainActivity : ComponentActivity() {
             super.onBackPressed()
         }
     }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String?>,
+        grantResults: IntArray,
+        deviceId: Int
+    ) {
+    }
 }
 
 private val activityVisibleFlow by lazy { MutableStateFlow(0) }
@@ -281,6 +288,7 @@ fun AccessRestrictedSettingsDlg() {
         }
     }
     val accessRestrictedSettingsShow by accessRestrictedSettingsShowFlow.collectAsState()
+    val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     val currentDestination by navController.currentDestinationAsState()
     val isA11yPage = currentDestination?.route == AuthA11YPageDestination.route
@@ -304,7 +312,7 @@ fun AccessRestrictedSettingsDlg() {
             confirmButton = {
                 TextButton({
                     accessRestrictedSettingsShowFlow.value = false
-                    navController.toDestinationsNavigator().navigate(AuthA11YPageDestination)
+                    mainVm.navigatePage(AuthA11YPageDestination)
                 }) {
                     Text(text = "解除")
                 }

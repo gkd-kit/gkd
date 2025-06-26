@@ -38,11 +38,11 @@ import com.ramcosta.composedestinations.generated.destinations.ImagePreviewPageD
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
 import com.ramcosta.composedestinations.utils.currentDestinationAsState
-import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.delay
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.ui.icon.ResetSettings
 import li.songe.gkd.ui.local.LocalDarkTheme
+import li.songe.gkd.ui.local.LocalMainViewModel
 import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.getJson5AnnotatedString
 import li.songe.gkd.util.copyText
@@ -59,6 +59,7 @@ fun RuleGroupDialog(
     onClickResetSwitch: (() -> Unit)?,
     onClickDelete: () -> Unit = {}
 ) {
+    val mainVm  = LocalMainViewModel.current
     val navController = LocalNavController.current
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -163,7 +164,7 @@ fun RuleGroupDialog(
                 if (group.allExampleUrls.isNotEmpty()) {
                     IconButton(onClick = throttle {
                         onDismissRequest()
-                        navController.toDestinationsNavigator().navigate(
+                        mainVm.navigatePage(
                             ImagePreviewPageDestination(
                                 title = group.name,
                                 uris = group.allExampleUrls.toTypedArray()

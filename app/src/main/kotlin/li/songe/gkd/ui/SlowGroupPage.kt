@@ -30,7 +30,6 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
-import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.local.LocalMainViewModel
@@ -96,9 +95,7 @@ fun SlowGroupPage() {
                 SlowGroupCard(
                     modifier = Modifier
                         .clickable(onClick = throttle {
-                            navController
-                                .toDestinationsNavigator()
-                                .navigate(
+                            mainVm.navigatePage(
                                     SubsGlobalGroupListPageDestination(
                                         rule.subsItem.id,
                                         group.key
@@ -117,9 +114,7 @@ fun SlowGroupPage() {
                 SlowGroupCard(
                     modifier = Modifier
                         .clickable(onClick = throttle {
-                            navController
-                                .toDestinationsNavigator()
-                                .navigate(
+                            mainVm.navigatePage(
                                     SubsAppGroupListPageDestination(
                                         rule.subsItem.id,
                                         rule.app.id,

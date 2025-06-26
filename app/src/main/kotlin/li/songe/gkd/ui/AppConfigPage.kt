@@ -55,7 +55,6 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
-import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.data.ActionLog
@@ -169,12 +168,12 @@ fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
                     Row {
                         if (it) {
                             IconButton(
-                                enabled = selectedDataSet.any { it.appId != null },
+                                enabled = selectedDataSet.any { a -> a.appId != null },
                                 onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
                                     val selectGroups = mutableListOf<RawSubscription.RawAppGroup>()
                                     vm.subsPairsFlow.value.forEach { (entry, groups) ->
                                         groups.forEach { g ->
-                                            if (g is RawSubscription.RawAppGroup && selectedDataSet.any { entry.subsItem.id == it.subsId && g.key == it.groupKey }) {
+                                            if (g is RawSubscription.RawAppGroup && selectedDataSet.any { v -> entry.subsItem.id == v.subsId && g.key == v.groupKey }) {
                                                 selectGroups.add(g)
                                             }
                                         }
@@ -204,8 +203,7 @@ fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
                             }
                         } else {
                             IconButton(onClick = throttle {
-                                navController.toDestinationsNavigator()
-                                    .navigate(ActionLogPageDestination(appId = appId))
+                                mainVm.navigatePage(ActionLogPageDestination(appId = appId))
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.History,

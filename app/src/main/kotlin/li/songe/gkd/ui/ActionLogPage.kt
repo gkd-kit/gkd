@@ -48,7 +48,6 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
-import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.ActionLog
@@ -323,7 +322,7 @@ private fun ActionLogDialog(
     actionLog: ActionLog,
     onDismissRequest: () -> Unit,
 ) {
-    val navController = LocalNavController.current
+    val mainVm = LocalMainViewModel.current
     val scope = rememberCoroutineScope()
     val subsConfig = remember(actionLog) {
         (if (actionLog.groupType == SubsConfig.AppGroupType) {
@@ -351,17 +350,13 @@ private fun ActionLogDialog(
                 onClick = {
                     onDismissRequest()
                     if (actionLog.groupType == SubsConfig.AppGroupType) {
-                        navController
-                            .toDestinationsNavigator()
-                            .navigate(
+                        mainVm.navigatePage(
                                 SubsAppGroupListPageDestination(
                                     actionLog.subsId, actionLog.appId, actionLog.groupKey
                                 )
                             )
                     } else if (actionLog.groupType == SubsConfig.GlobalGroupType) {
-                        navController
-                            .toDestinationsNavigator()
-                            .navigate(
+                        mainVm.navigatePage(
                                 SubsGlobalGroupListPageDestination(
                                     actionLog.subsId, actionLog.groupKey
                                 )

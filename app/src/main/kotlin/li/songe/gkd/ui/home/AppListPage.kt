@@ -42,7 +42,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.KeyboardUtils
 import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
-import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.AnimatedIcon
@@ -54,7 +53,6 @@ import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.local.LocalMainViewModel
-import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
@@ -74,7 +72,6 @@ val appListNav = BottomNavItem(
 fun useAppListPage(): ScaffoldExt {
     val context = LocalActivity.current as MainActivity
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
     val softwareKeyboardController = LocalSoftwareKeyboardController.current
 
     val vm = viewModel<HomeVm>()
@@ -243,9 +240,7 @@ fun useAppListPage(): ScaffoldExt {
                             if (KeyboardUtils.isSoftInputVisible(context)) {
                                 softwareKeyboardController?.hide()
                             }
-                            navController
-                                .toDestinationsNavigator()
-                                .navigate(AppConfigPageDestination(appInfo.id))
+                            mainVm.navigatePage(AppConfigPageDestination(appInfo.id))
                         })
                         .appItemPadding(),
                     horizontalArrangement = Arrangement.SpaceBetween,

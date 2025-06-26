@@ -42,7 +42,6 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
-import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.data.AppConfig
 import li.songe.gkd.db.DbSet
@@ -244,8 +243,7 @@ fun SubsAppListPage(
                         if (KeyboardUtils.isSoftInputVisible(context)) {
                             softwareKeyboardController?.hide()
                         }
-                        navController.toDestinationsNavigator()
-                            .navigate(SubsAppGroupListPageDestination(subsItemId, appRaw.id))
+                        mainVm.navigatePage(SubsAppGroupListPageDestination(subsItemId, appRaw.id))
                     },
                     onValueChange = throttle(fn = vm.viewModelScope.launchAsFn { enable ->
                         val newItem = appConfig?.copy(
