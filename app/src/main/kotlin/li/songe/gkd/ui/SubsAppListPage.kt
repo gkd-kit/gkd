@@ -116,6 +116,7 @@ fun SubsAppListPage(
                     )
                 }
             }, title = {
+                val firstShowSearchBar = remember { showSearchBar }
                 if (showSearchBar) {
                     BackHandler {
                         if (KeyboardUtils.isSoftInputVisible(context)) {
@@ -128,7 +129,7 @@ fun SubsAppListPage(
                         value = searchStr,
                         onValueChange = { newValue -> vm.searchStrFlow.value = newValue.trim() },
                         hint = "请输入应用名称/ID",
-                        modifier = Modifier.autoFocus()
+                        modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                     )
                 } else {
                     TowLineText(
