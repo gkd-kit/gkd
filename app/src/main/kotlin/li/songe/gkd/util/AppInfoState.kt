@@ -96,8 +96,7 @@ private val packageReceiver by lazy {
 
 private fun getPkgInfo(appId: String): PackageInfo? {
     return try {
-        // flags=0 : only get basic info
-        app.packageManager.getPackageInfo(appId, 0)
+        app.packageManager.getPackageInfo(appId, PackageManager.MATCH_UNINSTALLED_PACKAGES)
     } catch (_: PackageManager.NameNotFoundException) {
         null
     }
@@ -129,7 +128,7 @@ suspend fun initOrResetAppInfoCache() = updateAppMutex.withLock {
     val oldMap = userAppInfoMapFlow.value
     val appMap = userAppInfoMapFlow.value.toMutableMap()
     withContext(Dispatchers.IO) {
-        app.packageManager.getInstalledPackages(0)
+        app.packageManager.getInstalledPackages(PackageManager.MATCH_UNINSTALLED_PACKAGES)
             .forEach { packageInfo ->
                 appMap[packageInfo.packageName] = packageInfo.toAppInfo()
             }
@@ -138,7 +137,7 @@ suspend fun initOrResetAppInfoCache() = updateAppMutex.withLock {
         withContext(Dispatchers.IO) {
             app.packageManager.queryIntentActivities(
                 Intent(Intent.ACTION_MAIN),
-                0
+                0,
             ).map { it.activityInfo.packageName }.toSet().forEach { appId ->
                 if (!appMap.contains(appId)) {
                     getPkgInfo(appId)?.let {

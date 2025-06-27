@@ -2,6 +2,7 @@ package li.songe.gkd.data
 
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Build
 import kotlinx.serialization.Serializable
@@ -35,7 +36,10 @@ data class AppInfo(
 }
 
 val selfAppInfo by lazy {
-    app.packageManager.getPackageInfo(app.packageName, 0).toAppInfo()
+    app.packageManager.getPackageInfo(
+        app.packageName,
+        PackageManager.MATCH_UNINSTALLED_PACKAGES
+    ).toAppInfo()
 }
 
 fun Drawable.safeGet(): Drawable? {
