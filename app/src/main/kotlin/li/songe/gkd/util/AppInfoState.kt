@@ -135,10 +135,12 @@ suspend fun initOrResetAppInfoCache() = updateAppMutex.withLock {
     }
     if (!canQueryPkgState.updateAndGet() || appMap.getMayQueryPkgNoAccess()) {
         withContext(Dispatchers.IO) {
-            app.packageManager.queryIntentActivities(
-                Intent(Intent.ACTION_MAIN),
-                0,
-            ).map { it.activityInfo.packageName }.toSet().forEach { appId ->
+            arrayOf(Intent.ACTION_MAIN, Intent.ACTION_VIEW).map { action ->
+                app.packageManager.queryIntentActivities(
+                    Intent(action),
+                    PackageManager.MATCH_DISABLED_COMPONENTS,
+                )
+            }.flatten().map { it.activityInfo.packageName }.toSet().forEach { appId ->
                 if (!appMap.contains(appId)) {
                     getPkgInfo(appId)?.let {
                         appMap[appId] = it.toAppInfo()

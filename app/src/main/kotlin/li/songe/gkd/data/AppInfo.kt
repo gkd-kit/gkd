@@ -1,5 +1,6 @@
 package li.songe.gkd.data
 
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
@@ -8,7 +9,6 @@ import android.os.Build
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import li.songe.gkd.app
-import java.util.Objects
 
 @Serializable
 data class AppInfo(
@@ -22,18 +22,7 @@ data class AppInfo(
     val mtime: Long,
     val hidden: Boolean,
     val userId: Int? = null, // null -> current user
-) {
-    // 重写 equals 和 hashCode 便于 compose 重组比较
-    override fun equals(other: Any?): Boolean {
-        if (other === this) return true
-        if (other !is AppInfo) return false
-        return (id == other.id && icon == other.icon && mtime == other.mtime && userId == other.userId)
-    }
-
-    override fun hashCode(): Int {
-        return Objects.hash(id, icon, mtime, userId)
-    }
-}
+)
 
 val selfAppInfo by lazy {
     app.packageManager.getPackageInfo(
@@ -72,6 +61,9 @@ fun PackageInfo.toAppInfo(
         name = applicationInfo?.run { loadLabel(app.packageManager).toString() } ?: packageName,
         icon = applicationInfo?.loadIcon(app.packageManager)?.safeGet(),
         userId = userId,
-        hidden = hidden ?: (app.packageManager.getLaunchIntentForPackage(packageName) == null),
+        hidden = hidden ?: app.packageManager.queryIntentActivities(
+            Intent(Intent.ACTION_MAIN).setPackage(packageName).addCategory(Intent.CATEGORY_LAUNCHER),
+            PackageManager.MATCH_DISABLED_COMPONENTS
+        ).isEmpty(),
     )
 }

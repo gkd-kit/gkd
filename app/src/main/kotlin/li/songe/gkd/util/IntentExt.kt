@@ -82,7 +82,7 @@ fun openWeChatScaner() {
         putExtra("LauncherUI.From.Scaner.Shortcut", true)
     }
     if (intent == null) {
-        toast("请检查微信是否安装")
+        toast("请检查微信是否安装或禁用")
         return
     }
     app.tryStartActivity(intent)
@@ -117,7 +117,7 @@ fun openApp(appId: String) {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         app.tryStartActivity(intent)
     } else {
-        toast("请检查此应用是否安装")
+        toast("请检查此应用是否安装或禁用")
     }
 }
 
