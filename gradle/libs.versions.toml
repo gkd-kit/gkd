@@ -14,7 +14,7 @@ shizuku = "13.1.5"
 [libraries]
 kotlin_stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlin_test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-kotlinx_serialization_json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1"
+kotlinx_serialization_json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0"
 ktor_server_core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor_server_cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
 ktor_server_content_negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
