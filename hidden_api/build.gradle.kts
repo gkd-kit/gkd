@@ -4,11 +4,11 @@ plugins {
 
 android {
     namespace = "li.songe.gkd"
-    compileSdk = project.properties["android.compileSdk"].toString().toInt()
-    buildToolsVersion = project.properties["android.buildToolsVersion"].toString()
+    compileSdk = rootProject.ext["android.compileSdk"] as Int
+    buildToolsVersion = rootProject.ext["android.buildToolsVersion"].toString()
 
     defaultConfig {
-        minSdk = project.properties["android.minSdk"].toString().toInt()
+        minSdk = rootProject.ext["android.minSdk"] as Int
     }
 
     buildTypes {
@@ -17,10 +17,9 @@ android {
         }
     }
 
-    val androidJvmTarget = project.properties["android.jvmTarget"].toString()
     compileOptions {
-        sourceCompatibility = JavaVersion.toVersion(androidJvmTarget)
-        targetCompatibility = JavaVersion.toVersion(androidJvmTarget)
+        sourceCompatibility = rootProject.ext["android.javaVersion"] as JavaVersion
+        targetCompatibility = rootProject.ext["android.javaVersion"] as JavaVersion
     }
     buildFeatures {
         aidl = true

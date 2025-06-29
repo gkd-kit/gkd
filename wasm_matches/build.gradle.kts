@@ -1,6 +1,5 @@
-@file:OptIn(ExperimentalKotlinGradlePluginApi::class, ExperimentalWasmDsl::class)
+@file:OptIn(ExperimentalWasmDsl::class)
 
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -11,7 +10,7 @@ plugins {
 kotlin {
     jvm {
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
+            jvmTarget.set(rootProject.ext["kotlin.jvmTarget"] as JvmTarget)
         }
     }
     wasmJs {

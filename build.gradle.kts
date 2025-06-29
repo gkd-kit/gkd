@@ -1,3 +1,16 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin
+
+ext {
+    set("android.buildToolsVersion", "36.0.0")
+    set("android.compileSdk", 36)
+    set("android.targetSdk", 36)
+    set("android.minSdk", 26)
+    set("android.javaVersion", JavaVersion.VERSION_11)
+    set("kotlin.jvmTarget", JvmTarget.JVM_11)
+}
+
 plugins {
     alias(libs.plugins.google.ksp) apply false
 
@@ -19,8 +32,8 @@ plugins {
 }
 
 // https://kotlinlang.org/docs/js-project-setup.html#use-pre-installed-node-js
-rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin> {
-    project.extensions.getByType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec>().download = false
+rootProject.plugins.withType<NodeJsPlugin> {
+    project.extensions.getByType<NodeJsEnvSpec>().download = false
 }
 
 val normalVersionRegex by lazy { "^[0-9\\.]+".toRegex() }

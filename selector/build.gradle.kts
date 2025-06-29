@@ -1,12 +1,20 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
-    jvm()
-//    https://kotlinlang.org/docs/js-to-kotlin-interop.html#kotlin-types-in-javascript
-    js(IR) {
+    jvm {
+        compilerOptions {
+            jvmTarget.set(rootProject.ext["kotlin.jvmTarget"] as JvmTarget)
+        }
+    }
+    js {
+        compilerOptions {
+            target.set("es2015")
+        }
         binaries.executable()
         useEsModules()
         generateTypeScriptDefinitions()
