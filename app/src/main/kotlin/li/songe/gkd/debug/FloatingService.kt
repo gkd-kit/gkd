@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.appScope
 import li.songe.gkd.notif.floatingNotif
 import li.songe.gkd.notif.notifyService
+import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
@@ -86,7 +87,11 @@ class FloatingService : ExpandableBubbleService() {
 
     companion object {
         val isRunning = MutableStateFlow(false)
-        fun start() = startForegroundServiceByClass(FloatingService::class)
+        fun start() {
+            if (!canDrawOverlaysState.checkOrToast()) return
+            startForegroundServiceByClass(FloatingService::class)
+        }
+
         fun stop() = stopServiceByClass(FloatingService::class)
     }
 }

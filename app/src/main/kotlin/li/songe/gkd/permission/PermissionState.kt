@@ -46,11 +46,11 @@ class PermissionState(
     }
 
     fun checkOrToast(): Boolean {
-        updateAndGet()
-        if (!stateFlow.value) {
+        val r = updateAndGet()
+        if (!r) {
             reason?.text?.let { toast(it) }
         }
-        return stateFlow.value
+        return r
     }
 }
 
