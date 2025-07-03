@@ -92,6 +92,7 @@ import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
+import li.songe.gkd.util.switchStoreEnableMatch
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubsMutex
@@ -275,14 +276,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                     )
                                 }
                             }
-                            IconButton(onClick = throttle {
-                                if (storeFlow.value.enableMatch) {
-                                    toast("暂停规则匹配")
-                                } else {
-                                    toast("开启规则匹配")
-                                }
-                                storeFlow.update { s -> s.copy(enableMatch = !s.enableMatch) }
-                            }) {
+                            IconButton(onClick = throttle { switchStoreEnableMatch() }) {
                                 val scope = rememberCoroutineScope()
                                 val enableMatch by remember {
                                     storeFlow.map(scope) { s -> s.enableMatch }
@@ -499,10 +493,10 @@ fun useSubsManagePage(): ScaffoldExt {
                                                     modifier = Modifier.clickable(onClick = throttle {
                                                         mainVm.dialogFlow.value = null
                                                         mainVm.navigatePage(
-                                                                WebViewPageDestination(
-                                                                    initUrl = ShortUrlSet.URL6
-                                                                )
+                                                            WebViewPageDestination(
+                                                                initUrl = ShortUrlSet.URL6
                                                             )
+                                                        )
                                                     }),
                                                     textDecoration = TextDecoration.Underline,
                                                     color = MaterialTheme.colorScheme.primary,

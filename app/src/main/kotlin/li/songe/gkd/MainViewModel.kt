@@ -33,6 +33,7 @@ import li.songe.gkd.debug.FloatingTileService
 import li.songe.gkd.debug.HttpTileService
 import li.songe.gkd.debug.SnapshotTileService
 import li.songe.gkd.permission.AuthReason
+import li.songe.gkd.service.MatchTileService
 import li.songe.gkd.ui.component.AlertDialogOptions
 import li.songe.gkd.ui.component.InputSubsLinkOption
 import li.songe.gkd.ui.component.RuleGroupState
@@ -218,10 +219,16 @@ class MainViewModel : ViewModel() {
                 intent.getParcelableExtra(Intent.EXTRA_COMPONENT_NAME) as ComponentName?
             } ?: return@launchTry
             delay(200)
-            if (qsTileCpt == HttpTileService::class.componentName || qsTileCpt == FloatingTileService::class.componentName) {
-                navigatePage(AdvancedPageDestination)
-            } else if (qsTileCpt == SnapshotTileService::class.componentName) {
-                navigatePage(SnapshotPageDestination)
+            when (qsTileCpt) {
+                HttpTileService::class.componentName, FloatingTileService::class.componentName -> {
+                    navigatePage(AdvancedPageDestination)
+                }
+                SnapshotTileService::class.componentName -> {
+                    navigatePage(SnapshotPageDestination)
+                }
+                MatchTileService::class.componentName -> {
+                    tabFlow.value = subsNav
+                }
             }
         }
     }

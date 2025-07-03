@@ -6,4 +6,5 @@
     <string name="capture_snapshot" debug_suffix="true">捕获快照</string>
     <string name="http_server" debug_suffix="true">HTTP服务</string>
     <string name="float_button" debug_suffix="true">悬浮按钮</string>
+    <string name="rule_match" debug_suffix="true">规则匹配</string>
 </resources>

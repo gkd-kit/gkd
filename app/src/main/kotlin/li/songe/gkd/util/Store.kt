@@ -4,6 +4,7 @@ import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -174,4 +175,13 @@ fun initStore() {
     storeFlow.value
     shizukuStoreFlow.value
     actionCountFlow.value
+}
+
+fun switchStoreEnableMatch() {
+    if (storeFlow.value.enableMatch) {
+        toast("暂停规则匹配")
+    } else {
+        toast("开启规则匹配")
+    }
+    storeFlow.update { it.copy(enableMatch = !it.enableMatch) }
 }
