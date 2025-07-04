@@ -19,6 +19,7 @@ import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.serialization.Serializable
 import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.debug.clearHttpSubs
 import li.songe.gkd.notif.initChannel
@@ -29,8 +30,10 @@ import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initStore
 import li.songe.gkd.util.initSubsState
+import li.songe.gkd.util.json
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.setReactiveToastStyle
+import li.songe.json5.encodeToJson5String
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.Shizuku
 
@@ -48,22 +51,32 @@ private val applicationInfo by lazy {
     )
 }
 
+private fun getMetaString(key: String): String {
+    return applicationInfo.metaData.getString(key) ?: error("Missing meta-data: $key")
+}
+
 val activityManager by lazy { app.getSystemService(ACTIVITY_SERVICE) as ActivityManager }
 val appOpsManager by lazy { app.getSystemService(AppOpsManager::class.java) as AppOpsManager }
 
+@Serializable
 data class AppMeta(
-    val channel: String = applicationInfo.metaData.getString("channel")!!,
-    val commitId: String = applicationInfo.metaData.getString("commitId")!!,
-    val commitTime: Long = applicationInfo.metaData.getString("commitTime")!!.toLong(),
-    val tagName: String? = applicationInfo.metaData.getString("tagName")!!.takeIf { it.isNotEmpty() },
-    val commitUrl: String = "https://github.com/gkd-kit/gkd/" + if (tagName != null) "tree/$tagName" else "commit/$commitId",
-    val updateEnabled: Boolean = applicationInfo.metaData.getBoolean("updateEnabled"),
+    val channel: String = getMetaString("channel"),
+    val commitId: String = getMetaString("commitId"),
+    val commitTime: Long = getMetaString("commitTime").toLong(),
+    val tagName: String? = getMetaString("tagName").takeIf { it.isNotEmpty() },
     val debuggable: Boolean = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0,
     val versionCode: Int = selfAppInfo.versionCode.toInt(),
     val versionName: String = selfAppInfo.versionName!!,
     val appId: String = app.packageName!!,
     val appName: String = app.getString(SafeR.app_name)
-)
+) {
+    val commitUrl = "https://github.com/gkd-kit/gkd/".run {
+        plus(if (tagName != null) "tree/$tagName" else "commit/$commitId")
+    }
+    val isGkdChannel = channel == "gkd"
+    val updateEnabled: Boolean
+        get() = isGkdChannel
+}
 
 val META by lazy { AppMeta() }
 
@@ -99,7 +112,7 @@ class App : Application() {
         }
         LogUtils.d(
             "META",
-            META,
+            json.encodeToJson5String(META),
         )
         app.contentResolver.registerContentObserver(
             Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),

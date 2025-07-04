@@ -66,7 +66,7 @@ plugins {
 }
 
 android {
-    namespace = "li.songe.gkd"
+    namespace = rootProject.ext["android.namespace"].toString()
     compileSdk = rootProject.ext["android.compileSdk"] as Int
     buildToolsVersion = rootProject.ext["android.buildToolsVersion"].toString()
 
@@ -146,12 +146,10 @@ android {
         create("gkd") {
             isDefault = true
             signingConfig = gkdSigningConfig
-            manifestPlaceholders["updateEnabled"] = true
             resValue("bool", "is_accessibility_tool", "true")
         }
         create("play") {
             signingConfig = playSigningConfig ?: gkdSigningConfig
-            manifestPlaceholders["updateEnabled"] = false
             resValue("bool", "is_accessibility_tool", "false")
         }
         all {

@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "li.songe.gkd"
+    namespace = rootProject.ext["android.namespace"].toString()
     compileSdk = rootProject.ext["android.compileSdk"] as Int
     buildToolsVersion = rootProject.ext["android.buildToolsVersion"].toString()
 

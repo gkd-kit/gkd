@@ -193,10 +193,16 @@ fun WebViewPage(
 @Suppress("unused")
 private class GkdJavascriptInterface() {
     @JavascriptInterface
+    fun getAppId() = META.appId
+
+    @JavascriptInterface
     fun getVersionCode() = META.versionCode
 
     @JavascriptInterface
     fun getVersionName() = META.versionName
+
+    @JavascriptInterface
+    fun getChannel() = META.channel
 }
 
 // 兼容性检测为最近 3 年, 2022-03-29

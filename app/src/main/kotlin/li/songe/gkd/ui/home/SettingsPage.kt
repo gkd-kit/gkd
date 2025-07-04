@@ -41,6 +41,7 @@ import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDesti
 import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
+import li.songe.gkd.META
 import li.songe.gkd.appScope
 import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
@@ -352,9 +353,11 @@ fun useSettingsPage(): ScaffoldExt {
                 mainVm.navigatePage(AdvancedPageDestination)
             })
 
-            SettingItem(title = "捐赠支持", onClick = {
-                mainVm.navigatePage(WebViewPageDestination(ShortUrlSet.URL10))
-            })
+            if (META.isGkdChannel) {
+                SettingItem(title = "捐赠支持", onClick = {
+                    mainVm.navigatePage(WebViewPageDestination(ShortUrlSet.URL10))
+                })
+            }
 
             SettingItem(title = "关于", onClick = {
                 mainVm.navigatePage(AboutPageDestination)
