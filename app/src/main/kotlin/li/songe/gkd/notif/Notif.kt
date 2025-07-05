@@ -35,18 +35,16 @@ data class Notif(
     val stopService: KClass<out Service>? = null,
 ) {
     private fun toNotification(): Notification {
-        val contextIntent = uri?.let {
-            PendingIntent.getActivity(
-                app,
-                0,
-                Intent().apply {
-                    component = MainActivity::class.componentName
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    data = it.toUri()
-                },
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
-        }
+        val contextIntent = PendingIntent.getActivity(
+            app,
+            0,
+            Intent().apply {
+                component = MainActivity::class.componentName
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                data = uri?.toUri()
+            },
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
         val deleteIntent = stopService?.let {
             PendingIntent.getBroadcast(
                 app,
