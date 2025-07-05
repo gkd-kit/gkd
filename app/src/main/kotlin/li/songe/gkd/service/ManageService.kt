@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.notif.abNotif
-import li.songe.gkd.notif.notifyService
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.util.OnCreate
@@ -22,6 +21,7 @@ import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
 import li.songe.gkd.util.storeFlow
+import li.songe.gkd.util.toast
 import li.songe.gkd.util.useAliveFlow
 
 class ManageService : Service(), OnCreate, OnDestroy {
@@ -41,6 +41,8 @@ class ManageService : Service(), OnCreate, OnDestroy {
 
     init {
         useAliveFlow(isRunning)
+        onCreated { toast("常驻通知已启动") }
+        onDestroyed { toast("常驻通知已停止") }
         useNotif()
     }
 

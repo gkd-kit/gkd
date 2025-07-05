@@ -5,13 +5,14 @@ import android.content.Intent
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.app
-import li.songe.gkd.notif.notifyService
+import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.screenshotNotif
 import li.songe.gkd.util.OnCreate
 import li.songe.gkd.util.OnDestroy
 import li.songe.gkd.util.ScreenshotUtil
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.stopServiceByClass
+import li.songe.gkd.util.toast
 import li.songe.gkd.util.useAliveFlow
 import li.songe.gkd.util.useLogLifecycle
 import java.lang.ref.WeakReference
@@ -47,10 +48,13 @@ class ScreenshotService : Service(), OnCreate, OnDestroy {
     init {
         useLogLifecycle()
         useAliveFlow(isRunning)
+        onCreated { toast("截屏服务已启动") }
+        onDestroyed { toast("截屏服务已停止") }
         onCreated { screenshotNotif.notifyService(this) }
         onCreated { instance = WeakReference(this) }
         onDestroyed { instance = WeakReference(null) }
         onDestroyed { screenshotUtil?.destroy() }
+        StopServiceReceiver.autoRegister(this)
     }
 
     companion object {

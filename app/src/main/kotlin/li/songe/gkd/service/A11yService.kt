@@ -103,6 +103,8 @@ open class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA1
         useAutoCheckShizuku()
         serviceWrapperFlow
         useMatchRule()
+        onCreated { toast("无障碍已启动") }
+        onDestroyed { toast("无障碍已停止") }
     }
 
     companion object {

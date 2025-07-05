@@ -19,7 +19,6 @@ import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.info2nodeList
 import li.songe.gkd.data.toSnapshot
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.notif.notify
 import li.songe.gkd.notif.snapshotNotif
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.getAndUpdateCurrentRules
@@ -169,7 +168,7 @@ object SnapshotExt {
                 } else {
                     snapshotNotif.text
                 }
-            ).notify()
+            ).notifySelf()
             return snapshot
         } finally {
             captureLoading.value = false

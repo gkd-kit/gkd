@@ -4,7 +4,6 @@ import android.app.Service
 import android.content.Intent
 import android.os.Binder
 import li.songe.gkd.appScope
-import li.songe.gkd.notif.notifyService
 import li.songe.gkd.notif.snapshotActionNotif
 import li.songe.gkd.util.launchTry
 

@@ -38,8 +38,8 @@ import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.debug.SnapshotExt.captureSnapshot
+import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.httpNotif
-import li.songe.gkd.notif.notifyService
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.util.LOCAL_HTTP_SUBS_ID
 import li.songe.gkd.util.OnCreate
@@ -82,6 +82,8 @@ class HttpService : Service(), OnCreate, OnDestroy {
     init {
         useLogLifecycle()
         useAliveFlow(isRunning)
+        onCreated { toast("HTTP服务已启动") }
+        onDestroyed { toast("HTTP服务已停止") }
 
         onCreated { localNetworkIpsFlow.value = getIpAddressInLocalNetwork() }
 
@@ -91,7 +93,7 @@ class HttpService : Service(), OnCreate, OnDestroy {
             }
             httpServerFlow.value = null
         }
-
+        StopServiceReceiver.autoRegister(this)
         onCreated {
             httpNotif.notifyService(this)
             scope.launchTry(Dispatchers.IO) {

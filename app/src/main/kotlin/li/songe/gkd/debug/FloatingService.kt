@@ -13,20 +13,24 @@ import com.torrydo.floatingbubbleview.service.expandable.BubbleBuilder
 import com.torrydo.floatingbubbleview.service.expandable.ExpandableBubbleService
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.appScope
+import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.floatingNotif
-import li.songe.gkd.notif.notifyService
 import li.songe.gkd.permission.canDrawOverlaysState
+import li.songe.gkd.util.OnCreate
+import li.songe.gkd.util.OnDestroy
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
+import li.songe.gkd.util.toast
+import li.songe.gkd.util.useAliveFlow
 import kotlin.math.sqrt
 
-class FloatingService : ExpandableBubbleService() {
+class FloatingService : ExpandableBubbleService(), OnCreate, OnDestroy {
     override fun configExpandedBubble() = null
 
     override fun onCreate() {
         super.onCreate()
-        isRunning.value = true
+        onCreated()
         minimize()
     }
 
@@ -82,7 +86,14 @@ class FloatingService : ExpandableBubbleService() {
 
     override fun onDestroy() {
         super.onDestroy()
-        isRunning.value = false
+        onDestroyed()
+    }
+
+    init {
+        useAliveFlow(isRunning)
+        onCreated { toast("悬浮窗服务已启动") }
+        onDestroyed { toast("悬浮窗服务已停止") }
+        StopServiceReceiver.autoRegister(this)
     }
 
     companion object {

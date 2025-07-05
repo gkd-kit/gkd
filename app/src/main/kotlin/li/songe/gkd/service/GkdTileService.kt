@@ -115,7 +115,6 @@ fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
         val newEnableService = !A11yService.isRunning.value
         if (A11yService.isRunning.value) {
             A11yService.instance?.disableSelf()
-            toast("关闭无障碍")
         } else {
             if (!writeSecureSettingsState.updateAndGet()) {
                 toast("请先授予「写入安全设置权限」")
@@ -137,7 +136,6 @@ fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
                 accessRestrictedSettingsShowFlow.value = true
                 return@launchTry
             }
-            toast("开启无障碍")
         }
         storeFlow.update { it.copy(enableService = newEnableService) }
     }
@@ -167,7 +165,6 @@ fun fixRestartService() = appScope.launchTry(Dispatchers.IO) {
                 accessRestrictedSettingsShowFlow.value = true
                 return@launchTry
             }
-            toast("重启无障碍")
         }
     }
 }
