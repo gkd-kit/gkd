@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import kotlin.reflect.full.declaredMemberProperties
 
 fun String.runCommand(): String {
     val process = ProcessBuilder(split(" "))
@@ -16,25 +17,13 @@ data class GitInfo(
     val commitId: String,
     val commitTime: String,
     val tagName: String?,
-) {
-    val pairList = listOf(
-        GitInfo::commitId,
-        GitInfo::commitTime,
-        GitInfo::tagName,
-    ).map {
-        val key = it.name
-        val value = it.get(this)
-        key to value
-    }
-}
+)
 
-val gitInfo by lazy {
-    GitInfo(
-        commitId = "git rev-parse HEAD".runCommand(),
-        commitTime = "git log -1 --format=%ct".runCommand() + "000",
-        tagName = runCatching { "git describe --tags --exact-match".runCommand() }.getOrNull(),
-    )
-}
+val gitInfo = GitInfo(
+    commitId = "git rev-parse HEAD".runCommand(),
+    commitTime = "git log -1 --format=%ct".runCommand() + "000",
+    tagName = runCatching { "git describe --tags --exact-match".runCommand() }.getOrNull(),
+)
 
 val debugSuffixPairList by lazy {
     javax.xml.parsers.DocumentBuilderFactory
@@ -90,8 +79,8 @@ android {
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
 
-        gitInfo.pairList.onEach { (key, value) ->
-            manifestPlaceholders[key] = value ?: ""
+        GitInfo::class.declaredMemberProperties.onEach {
+            manifestPlaceholders[it.name] = it.get(gitInfo) ?: ""
         }
     }
 
