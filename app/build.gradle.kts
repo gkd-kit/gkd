@@ -215,7 +215,7 @@ composeCompiler {
 dependencies {
     implementation(libs.kotlin.stdlib)
 
-    implementation(project(mapOf("path" to ":selector")))
+    implementation(project(":selector"))
 
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
@@ -238,7 +238,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso)
 
-    compileOnly(project(mapOf("path" to ":hidden_api")))
+    compileOnly(project(":hidden_api"))
     implementation(libs.rikka.shizuku.api)
     implementation(libs.rikka.shizuku.provider)
     implementation(libs.lsposed.hiddenapibypass)
