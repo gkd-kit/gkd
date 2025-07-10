@@ -51,6 +51,11 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
+          name: outputs
+          path: app/build/outputs
+
+      - uses: actions/upload-artifact@v4
+        with:
           name: CHANGELOG.md
           path: CHANGELOG.md
 
