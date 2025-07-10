@@ -6,7 +6,6 @@ import coil3.disk.DiskCache
 import coil3.gif.AnimatedImageDecoder
 import coil3.gif.GifDecoder
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
-import com.tencent.mmkv.MMKV
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -21,8 +20,6 @@ import java.util.Locale
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
-
-val kv by lazy { MMKV.mmkvWithID("kv") }
 
 val json by lazy {
     Json {
@@ -58,7 +55,8 @@ val imageLoader by lazy {
                 .build()
         }
         .components {
-            if (Build.VERSION.SDK_INT >= 28) {
+            // https://coil-kt.github.io/coil/gifs/
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 add(AnimatedImageDecoder.Factory())
             } else {
                 add(GifDecoder.Factory())
@@ -76,6 +74,4 @@ val imageLoader by lazy {
         .build()
 }
 
-
 val collator by lazy { Collator.getInstance(Locale.CHINESE)!! }
-

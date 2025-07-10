@@ -1,6 +1,5 @@
 package li.songe.gkd.util
 
-import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
@@ -11,60 +10,71 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.META
 import li.songe.gkd.appScope
 
-private inline fun <reified T> createJsonFlow(
-    key: String,
-    crossinline default: () -> T,
-    crossinline transform: (T) -> T = { it }
-): MutableStateFlow<T> {
-    val str = kv.getString(key, null)
-    val initValue = if (str != null) {
-        try {
-            json.decodeFromString<T>(str)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            LogUtils.d(e)
+private fun readStoreText(name: String, private: Boolean): String? {
+    return if (private) {
+        privateStoreFolder
+    } else {
+        storeFolder
+    }.resolve(name).run {
+        if (exists()) {
+            readText()
+        } else {
             null
         }
-    } else {
-        null
     }
-    val stateFlow = MutableStateFlow(transform(initValue ?: default()))
+}
+
+private fun writeStoreText(name: String, text: String, private: Boolean) {
+    if (private) {
+        privateStoreFolder
+    } else {
+        storeFolder
+    }.resolve(name).writeText(text)
+}
+
+private fun <T> createTextFlow(
+    key: String,
+    decode: (String?) -> T,
+    encode: (T) -> String,
+    private: Boolean = false,
+): MutableStateFlow<T> {
+    val name = if (key.contains('.')) {
+        key
+    } else {
+        "$key.txt"
+    }
+    val initText = readStoreText(name, private)
+    val initValue = decode(initText)
+    val stateFlow = MutableStateFlow(initValue)
     appScope.launch {
         stateFlow.drop(1).collect {
             withContext(Dispatchers.IO) {
-                kv.encode(key, json.encodeToString(it))
+                writeStoreText(name, encode(it), private)
             }
         }
     }
     return stateFlow
 }
 
-private fun createLongFlow(
+private inline fun <reified T : Any> createAnyFlow(
     key: String,
-    default: Long = 0,
-    transform: (Long) -> Long = { it }
-): MutableStateFlow<Long> {
-    val stateFlow = MutableStateFlow(transform(kv.getLong(key, default)))
-    appScope.launch {
-        stateFlow.drop(1).collect {
-            withContext(Dispatchers.IO) { kv.encode(key, it) }
-        }
-    }
-    return stateFlow
-}
-
-private fun createBooleanFlow(
-    key: String,
-    default: Boolean = false,
-    transform: (Boolean) -> Boolean = { it }
-): MutableStateFlow<Boolean> {
-    val stateFlow = MutableStateFlow(transform(kv.getBoolean(key, default)))
-    appScope.launch {
-        stateFlow.drop(1).collect {
-            withContext(Dispatchers.IO) { kv.encode(key, it) }
-        }
-    }
-    return stateFlow
+    crossinline default: () -> T,
+    crossinline transform: (T) -> T = { it },
+    private: Boolean = false,
+): MutableStateFlow<T> {
+    return createTextFlow(
+        key = "$key.json",
+        decode = {
+            val initValue = it?.let {
+                runCatching { json.decodeFromString<T>(it) }.getOrNull()
+            }
+            transform(initValue ?: default())
+        },
+        encode = {
+            json.encodeToString(it)
+        },
+        private = private,
+    )
 }
 
 @Serializable
@@ -106,18 +116,9 @@ data class Store(
 )
 
 val storeFlow by lazy {
-    createJsonFlow(
-        key = "store-v2",
-        default = { Store() },
-        transform = {
-            if (UpdateTimeOption.allSubObject.all { e -> e.value != it.updateSubsInterval }) {
-                it.copy(
-                    updateSubsInterval = UpdateTimeOption.Everyday.value
-                )
-            } else {
-                it
-            }
-        }
+    createAnyFlow(
+        key = "store",
+        default = { Store() }
     )
 }
 
@@ -133,8 +134,8 @@ data class ShizukuStore(
 }
 
 val shizukuStoreFlow by lazy {
-    createJsonFlow(
-        key = "shizuku_store",
+    createAnyFlow(
+        key = "shizuku",
         default = { ShizukuStore() },
         transform = {
             if (it.versionCode != META.versionCode) {
@@ -147,27 +148,39 @@ val shizukuStoreFlow by lazy {
 }
 
 val actionCountFlow by lazy {
-    createLongFlow(
-        key = "action_count",
+    createTextFlow(
+        "action_count",
+        decode = {
+            it?.toLongOrNull() ?: 0L
+        },
+        encode = {
+            it.toString()
+        },
     )
 }
 
 @Serializable
 data class PrivacyStore(
-    val githubCookie: String? = null,
+    val githubCookie: String = "",
 )
 
 val privacyStoreFlow by lazy {
-    createJsonFlow(
+    createAnyFlow(
         key = "privacy_store",
-        default = { PrivacyStore() }
+        default = { PrivacyStore() },
+        private = true,
     )
 }
 
 val termsAcceptedFlow by lazy {
-    createBooleanFlow(
-        key = "terms_accepted",
-        default = false
+    createTextFlow(
+        "terms_accepted",
+        decode = {
+            it == "true"
+        },
+        encode = {
+            it.toString()
+        },
     )
 }
 

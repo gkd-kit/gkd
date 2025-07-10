@@ -200,7 +200,7 @@ fun EditGithubCookieDlg(showEditCookieDlgFlow: MutableStateFlow<Boolean>) {
     if (showEditCookieDlg) {
         val privacyStore by privacyStoreFlow.collectAsState()
         var value by remember {
-            mutableStateOf(privacyStore.githubCookie ?: "")
+            mutableStateOf(privacyStore.githubCookie)
         }
         AlertDialog(
             properties = DialogProperties(dismissOnClickOutside = false),

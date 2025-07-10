@@ -9,8 +9,9 @@ import android.provider.Settings
 import androidx.core.content.ContextCompat
 import com.blankj.utilcode.util.LogUtils
 import com.hjq.permissions.OnPermissionCallback
-import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
+import com.hjq.permissions.permission.PermissionLists
+import com.hjq.permissions.permission.base.IPermission
 import com.ramcosta.composedestinations.generated.destinations.AppOpsAllowPageDestination
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,12 +64,12 @@ private fun checkSelfPermission(permission: String): Boolean {
 
 private sealed class XXPermissionResult {
     data class Granted(
-        val permissions: MutableList<String>,
+        val permissions: MutableList<IPermission>,
         val allGranted: Boolean,
     ) : XXPermissionResult()
 
     data class Denied(
-        val permissions: MutableList<String>,
+        val permissions: MutableList<IPermission>,
         val doNotAskAgain: Boolean,
     ) : XXPermissionResult()
 
@@ -80,18 +81,17 @@ private sealed class XXPermissionResult {
 
 private suspend fun asyncRequestPermission(
     context: Activity,
-    vararg permissions: String,
+    permission: IPermission,
 ): PermissionResult {
-    if (XXPermissions.isGrantedPermissions(context, permissions)) {
+    if (XXPermissions.isGrantedPermission(context, permission)) {
         return PermissionResult.Granted
     }
-
     val permissionResultFlow = MutableStateFlow<XXPermissionResult?>(null)
     XXPermissions.with(context)
         .unchecked()
-        .permission(permissions)
+        .permission(permission)
         .request(object : OnPermissionCallback {
-            override fun onGranted(permissions: MutableList<String>, allGranted: Boolean) {
+            override fun onGranted(permissions: MutableList<IPermission>, allGranted: Boolean) {
                 LogUtils.d("allGranted: $allGranted", permissions)
                 permissionResultFlow.update {
                     val granted = XXPermissionResult.Granted(permissions, allGranted)
@@ -106,7 +106,7 @@ private suspend fun asyncRequestPermission(
                 }
             }
 
-            override fun onDenied(permissions: MutableList<String>, doNotAskAgain: Boolean) {
+            override fun onDenied(permissions: MutableList<IPermission>, doNotAskAgain: Boolean) {
                 LogUtils.d("doNotAskAgain: $doNotAskAgain", permissions)
                 permissionResultFlow.update {
                     val denied = XXPermissionResult.Denied(permissions, doNotAskAgain)
@@ -177,40 +177,34 @@ val foregroundServiceSpecialUseState by lazy {
 }
 
 val notificationState by lazy {
-    val list = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-        arrayOf(
-            Permission.POST_NOTIFICATIONS,
-            Manifest.permission.FOREGROUND_SERVICE
-        )
-    } else {
-        arrayOf(Permission.POST_NOTIFICATIONS)
-    }
+    val permission = PermissionLists.getNotificationServicePermission()
     PermissionState(
         check = {
-            XXPermissions.isGrantedPermissions(app, list)
+            XXPermissions.isGrantedPermission(app, permission)
         },
-        request = { asyncRequestPermission(it, *list) },
+        request = { asyncRequestPermission(it, permission) },
         reason = AuthReason(
             text = "当前操作需要「通知权限」\n您需要前往应用权限设置打开此权限",
             confirm = {
-                XXPermissions.startPermissionActivity(app, Permission.POST_NOTIFICATIONS)
+                XXPermissions.startPermissionActivity(app, permission)
             }
         ),
     )
 }
 
 val canQueryPkgState by lazy {
+    val permission = PermissionLists.getGetInstalledAppsPermission()
     PermissionState(
         check = {
-            XXPermissions.isGrantedPermissions(app, Permission.GET_INSTALLED_APPS)
+            XXPermissions.isGrantedPermission(app, permission)
         },
         request = {
-            asyncRequestPermission(it, Permission.GET_INSTALLED_APPS)
+            asyncRequestPermission(it, permission)
         },
         reason = AuthReason(
             text = "当前操作需要「读取应用列表权限」\n您需要前往应用权限设置打开此权限",
             confirm = {
-                XXPermissions.startPermissionActivity(app, Permission.GET_INSTALLED_APPS)
+                XXPermissions.startPermissionActivity(app, permission)
             }
         ),
     )
@@ -225,7 +219,10 @@ val canDrawOverlaysState by lazy {
         reason = AuthReason(
             text = "当前操作需要「悬浮窗权限」\n您需要前往应用权限设置打开此权限",
             confirm = {
-                XXPermissions.startPermissionActivity(app, Manifest.permission.SYSTEM_ALERT_WINDOW)
+                XXPermissions.startPermissionActivity(
+                    app,
+                    PermissionLists.getSystemAlertWindowPermission()
+                )
             }
         ),
     )
@@ -242,7 +239,7 @@ val canWriteExternalStorage by lazy {
         },
         request = {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                asyncRequestPermission(it, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                asyncRequestPermission(it, PermissionLists.getWriteExternalStoragePermission())
             } else {
                 PermissionResult.Granted
             }
@@ -252,7 +249,7 @@ val canWriteExternalStorage by lazy {
             confirm = {
                 XXPermissions.startPermissionActivity(
                     app,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    PermissionLists.getWriteExternalStoragePermission()
                 )
             }
         ),
@@ -272,7 +269,7 @@ val shizukuOkState by lazy {
 }
 
 fun startQueryPkgSettingActivity(context: Activity) {
-    XXPermissions.startPermissionActivity(context, Permission.GET_INSTALLED_APPS)
+    XXPermissions.startPermissionActivity(context, PermissionLists.getGetInstalledAppsPermission())
 }
 
 fun updatePermissionState() {

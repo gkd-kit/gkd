@@ -58,7 +58,7 @@ class UploadOptions(
         onSuccessResult: (suspend (GithubPoliciesAsset) -> Unit)? = null
     ) {
         val cookie = privacyStoreFlow.value.githubCookie
-        if (cookie.isNullOrBlank()) {
+        if (cookie.isEmpty()) {
             toast("请先设置 cookie 后再上传")
             mainVm.showEditCookieDlgFlow.value = true
             return

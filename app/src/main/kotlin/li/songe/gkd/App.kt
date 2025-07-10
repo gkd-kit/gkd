@@ -15,7 +15,6 @@ import android.text.TextUtils
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.Utils
 import com.hjq.toast.Toaster
-import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -100,7 +99,6 @@ class App : Application() {
             LogUtils.d("UncaughtExceptionHandler", t, e)
             errorHandler?.uncaughtException(t, e)
         }
-        MMKV.initialize(this)
 
         Toaster.init(this)
         setReactiveToastStyle()
