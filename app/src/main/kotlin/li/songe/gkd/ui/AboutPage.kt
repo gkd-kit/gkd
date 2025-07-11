@@ -50,7 +50,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewModelScope
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
@@ -226,7 +225,20 @@ fun AboutPage() {
             Column(
                 modifier = Modifier
                     .clickable(onClick = throttle {
-                        mainVm.navigatePage(WebViewPageDestination(ShortUrlSet.URL11))
+                        mainVm.navigateWebPage(ShortUrlSet.URL12)
+                    })
+                    .fillMaxWidth()
+                    .itemPadding()
+            ) {
+                Text(
+                    text = "使用协议",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .clickable(onClick = throttle {
+                        mainVm.navigateWebPage(ShortUrlSet.URL11)
                     })
                     .fillMaxWidth()
                     .itemPadding()

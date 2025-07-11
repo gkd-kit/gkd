@@ -12,6 +12,7 @@ import androidx.navigation.NavHostController
 import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
+import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import com.ramcosta.composedestinations.spec.Direction
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
@@ -185,6 +186,10 @@ class MainViewModel : ViewModel() {
         navController.navigate(direction.route)
     }
 
+    fun navigateWebPage(url: String) {
+        navigatePage(WebViewPageDestination(url))
+    }
+
     fun handleGkdUri(uri: Uri) {
         val notFoundToast = { toast("未知URI\n${uri}") }
         when (uri.host) {
@@ -293,7 +298,7 @@ class MainViewModel : ViewModel() {
             clearCache()
         }
 
-        if (META.updateEnabled && storeFlow.value.autoCheckAppUpdate) {
+        if (META.updateEnabled && storeFlow.value.autoCheckAppUpdate && termsAcceptedFlow.value) {
             viewModelScope.launch(Dispatchers.IO) {
                 try {
                     updateStatus.checkUpdate()
