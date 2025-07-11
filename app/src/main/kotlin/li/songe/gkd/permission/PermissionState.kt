@@ -186,7 +186,7 @@ val notificationState by lazy {
         reason = AuthReason(
             text = "当前操作需要「通知权限」\n您需要前往应用权限设置打开此权限",
             confirm = {
-                XXPermissions.startPermissionActivity(app, permission)
+                XXPermissions.startPermissionActivity(it, permission)
             }
         ),
     )
@@ -204,7 +204,7 @@ val canQueryPkgState by lazy {
         reason = AuthReason(
             text = "当前操作需要「读取应用列表权限」\n您需要前往应用权限设置打开此权限",
             confirm = {
-                XXPermissions.startPermissionActivity(app, permission)
+                XXPermissions.startPermissionActivity(it, permission)
             }
         ),
     )
@@ -220,7 +220,7 @@ val canDrawOverlaysState by lazy {
             text = "当前操作需要「悬浮窗权限」\n您需要前往应用权限设置打开此权限",
             confirm = {
                 XXPermissions.startPermissionActivity(
-                    app,
+                    it,
                     PermissionLists.getSystemAlertWindowPermission()
                 )
             }
@@ -248,7 +248,7 @@ val canWriteExternalStorage by lazy {
             text = "当前操作需要「写入外部存储权限」\n您需要前往应用权限设置打开此权限",
             confirm = {
                 XXPermissions.startPermissionActivity(
-                    app,
+                    it,
                     PermissionLists.getWriteExternalStoragePermission()
                 )
             }
