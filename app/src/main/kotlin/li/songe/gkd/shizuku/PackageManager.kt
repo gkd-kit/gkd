@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.appScope
 import li.songe.gkd.permission.shizukuOkState
-import li.songe.gkd.util.shizukuStoreFlow
+import li.songe.gkd.store.shizukuStoreFlow
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
 import kotlin.reflect.full.declaredFunctions

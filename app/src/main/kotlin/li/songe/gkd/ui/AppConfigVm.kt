@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.ui.component.toGroupState
 import li.songe.gkd.util.LinkLoad
@@ -20,7 +21,6 @@ import li.songe.gkd.util.ViewModelExt
 import li.songe.gkd.util.collator
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.map
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.usedSubsEntriesFlow
 

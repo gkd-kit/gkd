@@ -23,11 +23,11 @@ import li.songe.gkd.notif.snapshotNotif
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.getAndUpdateCurrentRules
 import li.songe.gkd.service.safeActiveWindow
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.keepNullJson
 import li.songe.gkd.util.sharedDir
 import li.songe.gkd.util.snapshotFolder
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
 import java.io.File
 import kotlin.math.min

@@ -13,14 +13,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import li.songe.gkd.MainActivity
-import li.songe.gkd.util.termsAcceptedFlow
+import li.songe.gkd.ui.local.LocalMainViewModel
 import li.songe.gkd.util.throttle
 
 
 @Composable
 fun TermsAcceptDialog() {
-    // https://support.google.com/googleplay/android-developer/answer/10144311
-    // https://support.google.com/googleplay/android-developer/answer/10964491
+    val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
     val stepDataList = remember {
         arrayOf(
@@ -47,7 +46,7 @@ fun TermsAcceptDialog() {
                 if (step < stepDataList.size - 1) {
                     step++
                 } else {
-                    termsAcceptedFlow.value = true
+                    mainVm.termsAcceptedFlow.value = true
                 }
             }) {
                 Text(text = "同意")

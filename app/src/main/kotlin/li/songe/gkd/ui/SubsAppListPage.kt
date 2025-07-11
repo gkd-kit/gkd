@@ -45,6 +45,7 @@ import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPa
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.data.AppConfig
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AnimatedIcon
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.EmptyText
@@ -67,7 +68,6 @@ import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.mapHashCode
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 
 

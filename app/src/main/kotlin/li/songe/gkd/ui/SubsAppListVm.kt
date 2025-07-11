@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.map
 import li.songe.gkd.data.AppConfig
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.LinkLoad
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.ViewModelExt
@@ -18,7 +19,6 @@ import li.songe.gkd.util.collator
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.getGroupEnable
 import li.songe.gkd.util.map
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 
 class SubsAppListVm(stateHandle: SavedStateHandle) : ViewModelExt() {

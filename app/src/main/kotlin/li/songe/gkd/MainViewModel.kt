@@ -34,6 +34,8 @@ import li.songe.gkd.debug.HttpTileService
 import li.songe.gkd.debug.SnapshotTileService
 import li.songe.gkd.permission.AuthReason
 import li.songe.gkd.service.MatchTileService
+import li.songe.gkd.store.createTextFlow
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AlertDialogOptions
 import li.songe.gkd.ui.component.InputSubsLinkOption
 import li.songe.gkd.ui.component.RuleGroupState
@@ -51,13 +53,14 @@ import li.songe.gkd.util.componentName
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.openWeChatScaner
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubsMutex
 import li.songe.gkd.util.updateSubscription
 import java.lang.ref.WeakReference
+
+private var tempTermsAccepted = false
 
 class MainViewModel : ViewModel() {
 
@@ -223,14 +226,44 @@ class MainViewModel : ViewModel() {
                 HttpTileService::class.componentName, FloatingTileService::class.componentName -> {
                     navigatePage(AdvancedPageDestination)
                 }
+
                 SnapshotTileService::class.componentName -> {
                     navigatePage(SnapshotPageDestination)
                 }
+
                 MatchTileService::class.componentName -> {
                     tabFlow.value = subsNav
                 }
             }
         }
+    }
+
+    val termsAcceptedFlow by lazy {
+        if (tempTermsAccepted) {
+            MutableStateFlow(true)
+        } else {
+            createTextFlow(
+                key = "terms_accepted",
+                decode = { it == "true" },
+                encode = {
+                    tempTermsAccepted = it
+                    it.toString()
+                },
+                scope = viewModelScope,
+            ).apply {
+                tempTermsAccepted = value
+            }
+        }
+    }
+
+    val githubCookieFlow by lazy {
+        createTextFlow(
+            key = "github_cookie",
+            decode = { it ?: "" },
+            encode = { it },
+            private = true,
+            scope = viewModelScope,
+        )
     }
 
     init {
@@ -269,6 +302,11 @@ class MainViewModel : ViewModel() {
                     LogUtils.d(e)
                 }
             }
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            // preload
+            githubCookieFlow.value
         }
     }
 }

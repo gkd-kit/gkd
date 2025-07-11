@@ -57,6 +57,7 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.service.launcherAppId
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AnimatedIcon
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.AppIcon
@@ -79,7 +80,6 @@ import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.mapHashCode
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.systemAppsFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast

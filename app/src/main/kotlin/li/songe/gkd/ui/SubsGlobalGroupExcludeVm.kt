@@ -12,11 +12,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.map
 import li.songe.gkd.util.orderedAppInfosFlow
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.subsIdToRawFlow
 
 class SubsGlobalGroupExcludeVm(stateHandle: SavedStateHandle) : ViewModel() {

@@ -59,6 +59,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.data.ActionLog
 import li.songe.gkd.data.RawSubscription
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.BatchActionButtonGroup
@@ -81,7 +82,6 @@ import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.getUpDownTransform
 import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.switchItem
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toJson5String

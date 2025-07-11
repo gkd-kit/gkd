@@ -18,7 +18,6 @@ import li.songe.gkd.data.GithubPoliciesAsset
 import li.songe.gkd.util.GithubCookieException
 import li.songe.gkd.util.LoadStatus
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.privacyStoreFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.uploadFileToGithub
 import java.io.File
@@ -57,7 +56,7 @@ class UploadOptions(
         showHref: (GithubPoliciesAsset) -> String = { it.shortHref },
         onSuccessResult: (suspend (GithubPoliciesAsset) -> Unit)? = null
     ) {
-        val cookie = privacyStoreFlow.value.githubCookie
+        val cookie = mainVm.githubCookieFlow.value
         if (cookie.isEmpty()) {
             toast("请先设置 cookie 后再上传")
             mainVm.showEditCookieDlgFlow.value = true

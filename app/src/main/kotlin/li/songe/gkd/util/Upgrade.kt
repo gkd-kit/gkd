@@ -33,6 +33,7 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.META
 import li.songe.gkd.MainViewModel
 import li.songe.gkd.app
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.local.LocalMainViewModel
 import java.io.File
 import java.net.URI
@@ -58,6 +59,7 @@ class UpdateStatus {
     val checkUpdatingFlow = MutableStateFlow(false)
     val newVersionFlow = MutableStateFlow<NewVersion?>(null)
     val downloadStatusFlow = MutableStateFlow<LoadStatus<File>?>(null)
+    var downloadJob: Job? = null
 }
 
 private val UPDATE_URL: String
@@ -93,8 +95,7 @@ private fun UpdateStatus.startDownload(viewModel: MainViewModel, newVersion: New
             delete()
         }
     }
-    var job: Job? = null
-    job = viewModel.viewModelScope.launch(Dispatchers.IO) {
+    downloadJob = viewModel.viewModelScope.launch(Dispatchers.IO) {
         try {
             val channel = client.get(URI(UPDATE_URL).resolve(newVersion.downloadUrl).toString()) {
                 onDownload { bytesSentTotal, _ ->
@@ -106,7 +107,7 @@ private fun UpdateStatus.startDownload(viewModel: MainViewModel, newVersion: New
                         )
                     } else if (downloadStatus is LoadStatus.Failure) {
                         // 提前终止下载
-                        job?.cancel()
+                        downloadJob?.cancel()
                     }
                 }
             }.bodyAsChannel()
@@ -118,6 +119,8 @@ private fun UpdateStatus.startDownload(viewModel: MainViewModel, newVersion: New
             if (downloadStatusFlow.value is LoadStatus.Loading) {
                 downloadStatusFlow.value = LoadStatus.Failure(e)
             }
+        } finally {
+            downloadJob = null
         }
     }
 }

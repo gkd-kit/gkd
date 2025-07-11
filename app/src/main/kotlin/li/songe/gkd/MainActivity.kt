@@ -19,7 +19,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.blankj.utilcode.util.LogUtils
@@ -49,6 +48,7 @@ import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.service.updateDefaultInputAppId
 import li.songe.gkd.service.updateLauncherAppId
 import li.songe.gkd.shizuku.execCommandForResult
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.BuildDialog
 import li.songe.gkd.ui.component.ShareDataDialog
 import li.songe.gkd.ui.component.SubsSheet
@@ -68,8 +68,6 @@ import li.songe.gkd.util.map
 import li.songe.gkd.util.openApp
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.shizukuAppId
-import li.songe.gkd.util.storeFlow
-import li.songe.gkd.util.termsAcceptedFlow
 import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
 import kotlin.coroutines.coroutineContext
@@ -100,7 +98,6 @@ class MainActivity : ComponentActivity() {
         }
         addOnNewIntentListener(mainVm::handleIntent)
         setContent {
-            val termsAccepted by termsAcceptedFlow.collectAsStateWithLifecycle()
             val navController = rememberNavController()
             mainVm.navController = navController
             CompositionLocalProvider(
@@ -112,7 +109,7 @@ class MainActivity : ComponentActivity() {
                         navController = navController,
                         navGraph = NavGraphs.root
                     )
-                    if (!termsAccepted) {
+                    if (!mainVm.termsAcceptedFlow.collectAsState().value) {
                         TermsAcceptDialog()
                     } else {
                         AccessRestrictedSettingsDlg()
@@ -120,7 +117,7 @@ class MainActivity : ComponentActivity() {
                         AuthDialog(mainVm.authReasonFlow)
                         BuildDialog(mainVm.dialogFlow)
                         mainVm.uploadOptions.ShowDialog()
-                        EditGithubCookieDlg(mainVm.showEditCookieDlgFlow)
+                        EditGithubCookieDlg()
                         if (META.updateEnabled) {
                             UpgradeDialog(mainVm.updateStatus)
                         }

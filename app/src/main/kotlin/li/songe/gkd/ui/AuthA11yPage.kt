@@ -41,6 +41,7 @@ import li.songe.gkd.grantPermissionByShizuku
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.fixRestartService
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AuthButtonGroup
 import li.songe.gkd.ui.component.ManualAuthDialog
 import li.songe.gkd.ui.component.updateDialogOptions
@@ -55,7 +56,6 @@ import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openA11ySettings
 import li.songe.gkd.util.runCommandByRoot
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 

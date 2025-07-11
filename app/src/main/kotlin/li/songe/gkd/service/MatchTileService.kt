@@ -7,12 +7,12 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import li.songe.gkd.store.storeFlow
+import li.songe.gkd.store.switchStoreEnableMatch
 import li.songe.gkd.util.OnChangeListen
 import li.songe.gkd.util.OnDestroy
 import li.songe.gkd.util.OnTileClick
 import li.songe.gkd.util.map
-import li.songe.gkd.util.storeFlow
-import li.songe.gkd.util.switchStoreEnableMatch
 import li.songe.gkd.util.useLogLifecycle
 
 class MatchTileService : TileService(), OnDestroy, OnChangeListen, OnTileClick {

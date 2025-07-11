@@ -44,6 +44,7 @@ import com.blankj.utilcode.util.KeyboardUtils
 import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AnimatedIcon
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.AppIcon
@@ -61,7 +62,6 @@ import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.mapHashCode
 import li.songe.gkd.util.ruleSummaryFlow
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 
 val appListNav = BottomNavItem(

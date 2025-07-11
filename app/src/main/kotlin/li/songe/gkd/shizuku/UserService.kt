@@ -22,9 +22,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.META
 import li.songe.gkd.appScope
 import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.store.shizukuStoreFlow
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.json
-import li.songe.gkd.util.shizukuStoreFlow
 import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
 import java.io.DataOutputStream

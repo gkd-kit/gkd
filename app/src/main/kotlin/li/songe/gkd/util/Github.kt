@@ -36,8 +36,6 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMessageBuilder
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
@@ -194,18 +192,17 @@ suspend fun uploadFileToGithub(
 }
 
 @Composable
-fun EditGithubCookieDlg(showEditCookieDlgFlow: MutableStateFlow<Boolean>) {
-    val showEditCookieDlg by showEditCookieDlgFlow.collectAsState()
+fun EditGithubCookieDlg() {
     val mainVm = LocalMainViewModel.current
+    val showEditCookieDlg by mainVm.showEditCookieDlgFlow.collectAsState()
     if (showEditCookieDlg) {
-        val privacyStore by privacyStoreFlow.collectAsState()
         var value by remember {
-            mutableStateOf(privacyStore.githubCookie)
+            mutableStateOf(mainVm.githubCookieFlow.value)
         }
         AlertDialog(
             properties = DialogProperties(dismissOnClickOutside = false),
             onDismissRequest = {
-                showEditCookieDlgFlow.value = false
+                mainVm.showEditCookieDlgFlow.value = false
             },
             title = {
                 Row(
@@ -215,7 +212,7 @@ fun EditGithubCookieDlg(showEditCookieDlgFlow: MutableStateFlow<Boolean>) {
                 ) {
                     Text(text = "Github Cookie")
                     IconButton(onClick = throttle {
-                        showEditCookieDlgFlow.value = false
+                        mainVm.showEditCookieDlgFlow.value = false
                         mainVm.navigatePage(WebViewPageDestination(initUrl = ShortUrlSet.URL1))
                     }) {
                         Icon(
@@ -240,15 +237,15 @@ fun EditGithubCookieDlg(showEditCookieDlgFlow: MutableStateFlow<Boolean>) {
             },
             confirmButton = {
                 TextButton(onClick = {
-                    showEditCookieDlgFlow.value = false
-                    privacyStoreFlow.update { it.copy(githubCookie = value.trim()) }
+                    mainVm.showEditCookieDlgFlow.value = false
+                    mainVm.githubCookieFlow.value = value.trim()
                     toast("更新成功")
                 }) {
                     Text(text = "确认")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showEditCookieDlgFlow.value = false }) {
+                TextButton(onClick = { mainVm.showEditCookieDlgFlow.value = false }) {
                     Text(text = "取消")
                 }
             }

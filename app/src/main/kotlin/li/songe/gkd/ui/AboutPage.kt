@@ -57,6 +57,7 @@ import kotlinx.coroutines.flow.update
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
@@ -84,7 +85,6 @@ import li.songe.gkd.util.openUri
 import li.songe.gkd.util.saveFileToDownloads
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.sharedDir
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import java.io.File

@@ -26,6 +26,7 @@ import com.hjq.toast.style.WhiteToastStyle
 import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.app
 import li.songe.gkd.appScope
+import li.songe.gkd.store.storeFlow
 
 
 fun toast(text: CharSequence) {

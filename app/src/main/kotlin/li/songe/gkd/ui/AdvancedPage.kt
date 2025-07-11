@@ -76,6 +76,8 @@ import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.shizuku.shizukuCheckActivity
 import li.songe.gkd.shizuku.shizukuCheckUserService
 import li.songe.gkd.shizuku.shizukuCheckWorkProfile
+import li.songe.gkd.store.shizukuStoreFlow
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
@@ -92,8 +94,6 @@ import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.shizukuAppId
 import li.songe.gkd.util.shizukuMiniVersionCode
-import li.songe.gkd.util.shizukuStoreFlow
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku

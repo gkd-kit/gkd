@@ -46,6 +46,8 @@ import li.songe.gkd.debug.SnapshotExt
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.shizuku.safeGetTopActivity
 import li.songe.gkd.shizuku.serviceWrapperFlow
+import li.songe.gkd.store.shizukuStoreFlow
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.OnA11yConnected
 import li.songe.gkd.util.OnA11yEvent
 import li.songe.gkd.util.OnCreate
@@ -55,9 +57,7 @@ import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
-import li.songe.gkd.util.shizukuStoreFlow
 import li.songe.gkd.util.showActionToast
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.useLogLifecycle
 import li.songe.selector.MatchOption

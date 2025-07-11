@@ -25,9 +25,9 @@ import li.songe.gkd.notif.initChannel
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.shizuku.initShizuku
+import li.songe.gkd.store.initStore
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.initAppState
-import li.songe.gkd.util.initStore
 import li.songe.gkd.util.initSubsState
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchTry

@@ -60,6 +60,7 @@ import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ManageService
 import li.songe.gkd.service.switchA11yService
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.GroupNameText
 import li.songe.gkd.ui.component.textSize
 import li.songe.gkd.ui.local.LocalMainViewModel
@@ -70,7 +71,6 @@ import li.songe.gkd.ui.style.surfaceCardColors
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
 
 val controlNav = BottomNavItem(label = "主页", icon = Icons.Outlined.Home)
