@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.2.0"
 ksp = "2.2.0-2.0.2"
-android = "8.11.0"
+android = "8.11.1"
 compose = "1.8.3"
 rikka = "4.4.0"
 room = "2.7.2"
