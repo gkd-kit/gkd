@@ -17,7 +17,6 @@ data class SettingsStore(
     val httpServerPort: Int = 8888,
     val updateSubsInterval: Long = UpdateTimeOption.Everyday.value,
     val captureVolumeChange: Boolean = false,
-    val autoCheckAppUpdate: Boolean = META.updateEnabled,
     val toastWhenClick: Boolean = true,
     val clickToast: String = "GKD",
     val autoClearMemorySubs: Boolean = true,

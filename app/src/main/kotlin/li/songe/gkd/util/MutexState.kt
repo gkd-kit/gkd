@@ -15,4 +15,9 @@ class MutexState {
             state.value = false
         }
     }
+
+    suspend inline fun whenUnLock(block: () -> Unit) {
+        if (mutex.isLocked) return
+        withLock(block)
+    }
 }

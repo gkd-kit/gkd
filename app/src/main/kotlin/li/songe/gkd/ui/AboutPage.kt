@@ -60,7 +60,6 @@ import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
-import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.local.LocalMainViewModel
 import li.songe.gkd.ui.local.LocalNavController
@@ -77,7 +76,6 @@ import li.songe.gkd.util.UpdateChannelOption
 import li.songe.gkd.util.buildLogFile
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.format
-import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.saveFileToDownloads
@@ -265,22 +263,12 @@ fun AboutPage() {
                     showShareLogDlg = true
                 }
             )
-            if (META.updateEnabled) {
-                val checkUpdating by mainVm.updateStatus.checkUpdatingFlow.collectAsState()
+            if (mainVm.updateStatus != null) {
                 Text(
                     text = "更新",
                     modifier = Modifier.titleItemPadding(),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,
-                )
-                TextSwitch(
-                    title = "自动更新",
-                    checked = store.autoCheckAppUpdate,
-                    onCheckedChange = {
-                        storeFlow.value = store.copy(
-                            autoCheckAppUpdate = it
-                        )
-                    }
                 )
                 TextMenu(
                     title = "更新渠道",
@@ -299,17 +287,12 @@ fun AboutPage() {
                         storeFlow.update { s -> s.copy(updateChannel = it.value) }
                     }
                 }
-
                 Row(
                     modifier = Modifier
                         .clickable(
-                            onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
-                                if (mainVm.updateStatus.checkUpdatingFlow.value) return@launchAsFn
-                                val newVersion = mainVm.updateStatus.checkUpdate()
-                                if (newVersion == null) {
-                                    toast("暂无更新")
-                                }
-                            })
+                            onClick = throttle {
+                                mainVm.updateStatus.checkUpdate(true)
+                            }
                         )
                         .fillMaxWidth()
                         .itemPadding(),
@@ -320,7 +303,7 @@ fun AboutPage() {
                         text = "检查更新",
                         style = MaterialTheme.typography.bodyLarge,
                     )
-                    RotatingLoadingIcon(loading = checkUpdating)
+                    RotatingLoadingIcon(loading = mainVm.updateStatus.checkUpdatingFlow.collectAsState().value)
                 }
             }
             Spacer(modifier = Modifier.height(EmptyHeight))

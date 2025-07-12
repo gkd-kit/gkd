@@ -47,7 +47,6 @@ import li.songe.gkd.ui.home.controlNav
 import li.songe.gkd.ui.home.subsNav
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.UpdateStatus
-import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.clearCache
 import li.songe.gkd.util.client
 import li.songe.gkd.util.componentName
@@ -86,7 +85,7 @@ class MainViewModel : ViewModel() {
     val dialogFlow = MutableStateFlow<AlertDialogOptions?>(null)
     val authReasonFlow = MutableStateFlow<AuthReason?>(null)
 
-    val updateStatus = UpdateStatus()
+    val updateStatus = if (META.updateEnabled) UpdateStatus(viewModelScope) else null
 
     val shizukuErrorFlow = MutableStateFlow(false)
 
@@ -298,15 +297,8 @@ class MainViewModel : ViewModel() {
             clearCache()
         }
 
-        if (META.updateEnabled && storeFlow.value.autoCheckAppUpdate && termsAcceptedFlow.value) {
-            viewModelScope.launch(Dispatchers.IO) {
-                try {
-                    updateStatus.checkUpdate()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    LogUtils.d(e)
-                }
-            }
+        if (updateStatus != null && termsAcceptedFlow.value) {
+            updateStatus.checkUpdate()
         }
 
         viewModelScope.launch(Dispatchers.IO) {

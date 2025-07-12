@@ -59,7 +59,6 @@ import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.theme.AppTheme
 import li.songe.gkd.util.EditGithubCookieDlg
 import li.songe.gkd.util.ShortUrlSet
-import li.songe.gkd.util.UpgradeDialog
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.fixSomeProblems
@@ -118,9 +117,7 @@ class MainActivity : ComponentActivity() {
                         BuildDialog(mainVm.dialogFlow)
                         mainVm.uploadOptions.ShowDialog()
                         EditGithubCookieDlg()
-                        if (META.updateEnabled) {
-                            UpgradeDialog(mainVm.updateStatus)
-                        }
+                        mainVm.updateStatus?.UpgradeDialog()
                         SubsSheet(mainVm, mainVm.sheetSubsIdFlow)
                         ShareDataDialog(mainVm, mainVm.showShareDataIdsFlow)
                         mainVm.inputSubsLinkOption.ContentDialog()

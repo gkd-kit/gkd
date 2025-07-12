@@ -2,7 +2,6 @@ package li.songe.gkd.util
 
 import androidx.compose.runtime.Composable
 import com.blankj.utilcode.util.LogUtils
-import com.hjq.toast.Toaster
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -13,6 +12,7 @@ import kotlin.coroutines.EmptyCoroutineContext
 fun CoroutineScope.launchTry(
     context: CoroutineContext = EmptyCoroutineContext,
     start: CoroutineStart = CoroutineStart.DEFAULT,
+    silent: Boolean = false,
     block: suspend CoroutineScope.() -> Unit,
 ) = launch(context, start) {
     try {
@@ -23,7 +23,9 @@ fun CoroutineScope.launchTry(
     } catch (e: Throwable) {
         e.printStackTrace()
         LogUtils.d(e)
-        Toaster.show(e.message ?: e.stackTraceToString())
+        if (!silent) {
+            toast(e.message ?: e.stackTraceToString())
+        }
     }
 }
 
@@ -40,7 +42,7 @@ fun CoroutineScope.launchAsFn(
             e.printStackTrace()
         } catch (e: Throwable) {
             e.printStackTrace()
-            Toaster.show(e.message ?: e.stackTraceToString())
+            toast(e.message ?: e.stackTraceToString())
         }
     }
 }
@@ -58,7 +60,7 @@ fun <T> CoroutineScope.launchAsFn(
             e.printStackTrace()
         } catch (e: Throwable) {
             e.printStackTrace()
-            Toaster.show(e.message ?: e.stackTraceToString())
+            toast(e.message ?: e.stackTraceToString())
         }
     }
 }
