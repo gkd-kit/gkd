@@ -75,7 +75,6 @@ import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.UpdateChannelOption
 import li.songe.gkd.util.buildLogFile
-import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.format
 import li.songe.gkd.util.launchAsFn
@@ -209,45 +208,37 @@ fun AboutPage() {
                 Spacer(modifier = Modifier.height(32.dp))
             }
 
-            Column(
-                modifier = Modifier
-                    .clickable(onClick = throttle {
-                        mainVm.openUrl(REPOSITORY_URL)
-                    })
-                    .fillMaxWidth()
-                    .itemPadding()
-            ) {
-                Text(
-                    text = "开源代码",
-                    style = MaterialTheme.typography.bodyLarge,
+            SettingItem(
+                imageVector = null,
+                title = "开源代码",
+                onClick = {
+                    mainVm.openUrl(REPOSITORY_URL)
+                },
+            )
+            if (META.isGkdChannel) {
+                SettingItem(
+                    imageVector = null,
+                    title = "捐赠支持",
+                    onClick = {
+                        mainVm.navigateWebPage(ShortUrlSet.URL10)
+                    },
                 )
             }
-            Column(
-                modifier = Modifier
-                    .clickable(onClick = throttle {
-                        mainVm.navigateWebPage(ShortUrlSet.URL12)
-                    })
-                    .fillMaxWidth()
-                    .itemPadding()
-            ) {
-                Text(
-                    text = "使用协议",
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .clickable(onClick = throttle {
-                        mainVm.navigateWebPage(ShortUrlSet.URL11)
-                    })
-                    .fillMaxWidth()
-                    .itemPadding()
-            ) {
-                Text(
-                    text = "隐私政策",
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
+            SettingItem(
+                imageVector = null,
+                title = "使用协议",
+                onClick = {
+                    mainVm.navigateWebPage(ShortUrlSet.URL12)
+                },
+            )
+            SettingItem(
+                imageVector = null,
+                title = "隐私政策",
+                onClick = {
+                    mainVm.navigateWebPage(ShortUrlSet.URL11)
+                },
+            )
+
             Text(
                 text = "反馈",
                 modifier = Modifier.titleItemPadding(),
