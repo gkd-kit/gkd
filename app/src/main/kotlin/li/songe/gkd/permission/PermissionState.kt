@@ -42,6 +42,8 @@ class PermissionState(
     val reason: AuthReason? = null,
 ) {
     val stateFlow = MutableStateFlow(false)
+    val value: Boolean
+        get() = stateFlow.value
     fun updateAndGet(): Boolean {
         return stateFlow.updateAndGet { check() }
     }

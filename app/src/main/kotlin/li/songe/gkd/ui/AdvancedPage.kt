@@ -63,8 +63,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.MainActivity
-import li.songe.gkd.appScope
 import li.songe.gkd.debug.FloatingService
 import li.songe.gkd.debug.HttpService
 import li.songe.gkd.debug.ScreenshotService
@@ -94,6 +94,7 @@ import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.shizukuAppId
 import li.songe.gkd.util.shizukuMiniVersionCode
+import li.songe.gkd.util.stopCoroutine
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
@@ -209,13 +210,13 @@ fun AdvancedPage() {
                     onAuthClick = {
                         try {
                             Shizuku.requestPermission(Activity.RESULT_OK)
-                        } catch (e: Exception) {
+                        } catch (e: Throwable) {
                             LogUtils.d("Shizuku授权错误", e.message)
-                            mainVm.shizukuErrorFlow.value = true
+                            mainVm.shizukuErrorFlow.value = e
                         }
                     })
             }
-            ShizukuFragment(shizukuOk)
+            ShizukuFragment(vm, shizukuOk)
 
             val server by HttpService.httpServerFlow.collectAsState()
             val httpServerRunning = server != null
@@ -474,8 +475,30 @@ fun AdvancedPage() {
 
 private val checkShizukuMutex by lazy { Mutex() }
 
+private suspend fun checkShizukuFeat(block: suspend () -> Boolean) {
+    if (checkShizukuMutex.isLocked) {
+        toast("正在检测中, 请稍后再试")
+        stopCoroutine()
+    }
+    checkShizukuMutex.withLock {
+        toast("检测中")
+        val r = withTimeoutOrNull(3000) {
+            block()
+        }
+        if (r == null) {
+            toast("检测超时，请重试")
+            stopCoroutine()
+        }
+        if (!r) {
+            toast("检测失败，无法使用")
+            stopCoroutine()
+        }
+        toast("已启用")
+    }
+}
+
 @Composable
-private fun ShizukuFragment(enabled: Boolean = true) {
+private fun ShizukuFragment(vm: AdvancedVm, enabled: Boolean = true) {
     val shizukuStore by shizukuStoreFlow.collectAsState()
     val mainVm = LocalMainViewModel.current
     TextSwitch(
@@ -487,18 +510,11 @@ private fun ShizukuFragment(enabled: Boolean = true) {
         },
         checked = shizukuStore.enableActivity,
         enabled = enabled,
-        onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {
-            checkShizukuMutex.withLock {
-                if (it) {
-                    toast("检测中")
-                    if (!shizukuCheckActivity()) {
-                        toast("检测失败,无法使用")
-                        return@launchAsFn
-                    }
-                    toast("已启用")
-                }
-                shizukuStoreFlow.update { s -> s.copy(enableActivity = it) }
+        onCheckedChange = vm.viewModelScope.launchAsFn<Boolean>(Dispatchers.IO) {
+            if (it) {
+                checkShizukuFeat { shizukuCheckActivity() }
             }
+            shizukuStoreFlow.update { s -> s.copy(enableActivity = it) }
         })
 
     TextSwitch(
@@ -510,18 +526,11 @@ private fun ShizukuFragment(enabled: Boolean = true) {
         },
         checked = shizukuStore.enableTapClick,
         enabled = enabled,
-        onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {
-            checkShizukuMutex.withLock {
-                if (it) {
-                    toast("检测中")
-                    if (!shizukuCheckUserService()) {
-                        toast("检测失败,无法使用")
-                        return@launchAsFn
-                    }
-                    toast("已启用")
-                }
-                shizukuStoreFlow.update { s -> s.copy(enableTapClick = it) }
+        onCheckedChange = vm.viewModelScope.launchAsFn<Boolean>(Dispatchers.IO) {
+            if (it) {
+                checkShizukuFeat { shizukuCheckUserService() }
             }
+            shizukuStoreFlow.update { s -> s.copy(enableTapClick = it) }
         })
 
 
@@ -534,18 +543,11 @@ private fun ShizukuFragment(enabled: Boolean = true) {
         },
         checked = shizukuStore.enableWorkProfile,
         enabled = enabled,
-        onCheckedChange = appScope.launchAsFn<Boolean>(Dispatchers.IO) {
-            checkShizukuMutex.withLock {
-                if (it) {
-                    toast("检测中")
-                    if (!shizukuCheckWorkProfile()) {
-                        toast("检测失败,无法使用")
-                        return@launchAsFn
-                    }
-                    toast("已启用")
-                }
-                shizukuStoreFlow.update { s -> s.copy(enableWorkProfile = it) }
+        onCheckedChange = vm.viewModelScope.launchAsFn<Boolean>(Dispatchers.IO) {
+            if (it) {
+                checkShizukuFeat { shizukuCheckWorkProfile() }
             }
+            shizukuStoreFlow.update { s -> s.copy(enableWorkProfile = it) }
         })
 
 }

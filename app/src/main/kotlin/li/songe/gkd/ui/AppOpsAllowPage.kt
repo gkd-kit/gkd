@@ -1,6 +1,5 @@
 package li.songe.gkd.ui
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -32,12 +31,11 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.META
-import li.songe.gkd.MainActivity
-import li.songe.gkd.grantPermissionByShizuku
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.ui.component.AuthButtonGroup
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.ManualAuthDialog
+import li.songe.gkd.ui.local.LocalMainViewModel
 import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
@@ -51,7 +49,7 @@ import li.songe.gkd.util.toast
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun AppOpsAllowPage() {
-    val context = LocalActivity.current as MainActivity
+    val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     val vm = viewModel<AppOpsAllowVm>()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -99,7 +97,7 @@ fun AppOpsAllowPage() {
                     )
                     AuthButtonGroup(
                         onClickShizuku = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                            context.grantPermissionByShizuku(appOpsCommand)
+                            mainVm.grantPermissionByShizuku(appOpsCommand)
                             toast("授权成功")
                         },
                         onClickManual = {

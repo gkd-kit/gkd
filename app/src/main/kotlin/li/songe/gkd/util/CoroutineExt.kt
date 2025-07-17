@@ -5,9 +5,12 @@ import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.coroutines.coroutineContext
 
 fun CoroutineScope.launchTry(
     context: CoroutineContext = EmptyCoroutineContext,
@@ -65,3 +68,8 @@ fun <T> CoroutineScope.launchAsFn(
     }
 }
 
+suspend fun stopCoroutine(): Nothing {
+    coroutineContext[Job]?.cancel()
+    yield()
+    throw CancellationException("Coroutine stopped")
+}

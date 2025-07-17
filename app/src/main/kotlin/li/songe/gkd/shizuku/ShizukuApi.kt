@@ -22,8 +22,7 @@ import rikka.shizuku.Shizuku
 fun shizukuCheckGranted(): Boolean {
     val granted = try {
         Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
-    } catch (e: Exception) {
-        e.printStackTrace()
+    } catch (_: Exception) {
         false
     }
     if (!granted) return false

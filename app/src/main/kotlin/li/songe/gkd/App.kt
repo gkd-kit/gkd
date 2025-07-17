@@ -32,6 +32,7 @@ import li.songe.gkd.util.initSubsState
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.setReactiveToastStyle
+import li.songe.gkd.util.toast
 import li.songe.json5.encodeToJson5String
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.Shizuku
@@ -123,12 +124,16 @@ class App : Application() {
             }
         )
         Shizuku.addBinderReceivedListener {
+            LogUtils.d("Shizuku.addBinderReceivedListener")
             appScope.launchTry(Dispatchers.IO) {
                 shizukuOkState.updateAndGet()
             }
         }
         Shizuku.addBinderDeadListener {
+            LogUtils.d("Shizuku.addBinderDeadListener")
             shizukuOkState.stateFlow.value = false
+            val prefix = if (isActivityVisible()) "" else "${META.appName}: "
+            toast("${prefix}已断开 Shizuku 服务")
         }
         appScope.launchTry(Dispatchers.IO) {
             initStore()

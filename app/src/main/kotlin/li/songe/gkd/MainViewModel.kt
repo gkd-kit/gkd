@@ -1,5 +1,6 @@
 package li.songe.gkd
 
+import android.app.Activity
 import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
@@ -34,7 +35,9 @@ import li.songe.gkd.debug.FloatingTileService
 import li.songe.gkd.debug.HttpTileService
 import li.songe.gkd.debug.SnapshotTileService
 import li.songe.gkd.permission.AuthReason
+import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.service.MatchTileService
+import li.songe.gkd.shizuku.execCommandForResult
 import li.songe.gkd.store.createTextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AlertDialogOptions
@@ -53,11 +56,13 @@ import li.songe.gkd.util.componentName
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.openWeChatScaner
+import li.songe.gkd.util.stopCoroutine
 import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubsMutex
 import li.songe.gkd.util.updateSubscription
+import rikka.shizuku.Shizuku
 import java.lang.ref.WeakReference
 
 private var tempTermsAccepted = false
@@ -87,7 +92,7 @@ class MainViewModel : ViewModel() {
 
     val updateStatus = if (META.updateEnabled) UpdateStatus(viewModelScope) else null
 
-    val shizukuErrorFlow = MutableStateFlow(false)
+    val shizukuErrorFlow = MutableStateFlow<Throwable?>(null)
 
     val uploadOptions = UploadOptions(this)
 
@@ -268,6 +273,26 @@ class MainViewModel : ViewModel() {
             private = true,
             scope = viewModelScope,
         )
+    }
+
+    suspend fun grantPermissionByShizuku(command: String) {
+        if (shizukuOkState.stateFlow.value) {
+            try {
+                execCommandForResult(command)
+                return
+            } catch (e: Exception) {
+                toast("运行失败:${e.message}")
+                LogUtils.d(e)
+            }
+        } else {
+            try {
+                Shizuku.requestPermission(Activity.RESULT_OK)
+            } catch (e: Throwable) {
+                LogUtils.d("Shizuku授权错误", e.message)
+                shizukuErrorFlow.value = e
+            }
+        }
+        stopCoroutine()
     }
 
     init {

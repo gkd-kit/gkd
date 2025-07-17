@@ -116,14 +116,13 @@ private fun IUserService.execCommandForResult(command: String): Boolean? {
 
 
 private fun unbindUserService(serviceArgs: Shizuku.UserServiceArgs, connection: ServiceConnection) {
+    if (!shizukuOkState.stateFlow.value) return
     LogUtils.d("unbindUserService", serviceArgs)
     // https://github.com/RikkaApps/Shizuku-API/blob/master/server-shared/src/main/java/rikka/shizuku/server/UserServiceManager.java#L62
     try {
         Shizuku.unbindUserService(serviceArgs, connection, false)
         Shizuku.unbindUserService(serviceArgs, connection, true)
     } catch (e: Exception) {
-        // binder haven't been received
-        e.printStackTrace()
         LogUtils.d(e)
     }
 }
@@ -144,6 +143,10 @@ data class UserServiceWrapper(
 
 private val bindServiceMutex by lazy { Mutex() }
 suspend fun buildServiceWrapper(): UserServiceWrapper? {
+    if (bindServiceMutex.isLocked) {
+        toast("正在获取 Shizuku 服务，请稍后再试")
+        return null
+    }
     val serviceArgs = Shizuku
         .UserServiceArgs(UserService::class.componentName)
         .daemon(false)
@@ -183,7 +186,7 @@ suspend fun buildServiceWrapper(): UserServiceWrapper? {
             }
         }.apply {
             if (this == null) {
-                toast("Shizuku获取绑定服务超时失败")
+                toast("获取 Shizuku 服务超时失败")
                 unbindUserService(serviceArgs, connection)
             }
         }
@@ -201,9 +204,9 @@ val serviceWrapperFlow by lazy {
     appScope.launch(Dispatchers.IO) {
         shizukuServiceUsedFlow.collect {
             if (it) {
-                stateFlow.update { it ?: buildServiceWrapper() }
+                stateFlow.update { s -> s ?: buildServiceWrapper() }
             } else {
-                stateFlow.update { it?.destroy(); null }
+                stateFlow.update { s -> s?.destroy(); null }
             }
         }
     }
