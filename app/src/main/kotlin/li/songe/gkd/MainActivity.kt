@@ -323,9 +323,6 @@ fun AccessRestrictedSettingsDlg() {
 }
 
 suspend fun MainActivity.grantPermissionByShizuku(command: String) {
-    if (!appInfoCacheFlow.value.contains(shizukuAppId)) {
-        mainVm.shizukuErrorFlow.value = true
-    }
     if (shizukuOkState.stateFlow.value) {
         try {
             execCommandForResult(command)
