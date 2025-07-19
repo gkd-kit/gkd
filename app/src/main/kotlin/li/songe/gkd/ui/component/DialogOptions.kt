@@ -9,11 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.yield
+import li.songe.gkd.util.stopCoroutine
 import li.songe.gkd.util.throttle
-import kotlin.coroutines.coroutineContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -154,7 +152,6 @@ suspend fun MutableStateFlow<AlertDialogOptions?>.waitResult(
         error = error,
     )
     if (!r) {
-        coroutineContext[Job]?.cancel()
-        yield()
+        stopCoroutine()
     }
 }

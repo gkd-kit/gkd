@@ -71,5 +71,6 @@ fun <T> CoroutineScope.launchAsFn(
 suspend fun stopCoroutine(): Nothing {
     coroutineContext[Job]?.cancel()
     yield()
+    // the following code will not be run
     throw CancellationException("Coroutine stopped")
 }

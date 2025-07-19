@@ -15,14 +15,11 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.core.graphics.get
 import com.blankj.utilcode.util.LogUtils
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.yield
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.json5.Json5EncoderConfig
 import li.songe.json5.encodeToJson5String
 import java.io.DataOutputStream
-import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
 
@@ -106,8 +103,7 @@ suspend fun runCommandByRoot(commandText: String) {
     } finally {
         p?.destroy()
     }
-    coroutineContext[Job]?.cancel()
-    yield()
+    stopCoroutine()
 }
 
 val defaultJson5Config = Json5EncoderConfig(indent = "\u0020\u0020")
