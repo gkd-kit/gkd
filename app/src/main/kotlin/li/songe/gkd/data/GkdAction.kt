@@ -21,7 +21,7 @@ data class GkdAction(
 
 @Serializable
 data class ActionResult(
-    val action: String?,
+    val action: String,
     val result: Boolean,
     val shizuku: Boolean = false,
     val position: Pair<Float, Float>? = null,
@@ -183,9 +183,31 @@ sealed class ActionPerformer(val action: String) {
         }
     }
 
+    data object None : ActionPerformer("none") {
+        override fun perform(
+            context: AccessibilityService,
+            node: AccessibilityNodeInfo,
+            position: RawSubscription.Position?,
+        ): ActionResult {
+            return ActionResult(
+                action = action,
+                result = true
+            )
+        }
+    }
+
     companion object {
         private val allSubObjects by lazy {
-            arrayOf(ClickNode, ClickCenter, Click, LongClickNode, LongClickCenter, LongClick, Back)
+            arrayOf(
+                ClickNode,
+                ClickCenter,
+                Click,
+                LongClickNode,
+                LongClickCenter,
+                LongClick,
+                Back,
+                None
+            )
         }
 
         fun getAction(action: String?): ActionPerformer {

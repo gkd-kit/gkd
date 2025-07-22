@@ -140,17 +140,9 @@ open class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA1
                     matchOption
                 )
             } ?: throw RpcError("没有查询到节点")
-
             LogUtils.d("查询到节点", gkdAction, AttrInfo.info2data(targetNode, 0, 0))
-
-            if (gkdAction.action == null) {
-                // 仅查询
-                return ActionResult(
-                    action = null, result = true
-                )
-            }
-
-            return ActionPerformer.getAction(gkdAction.action)
+            return ActionPerformer
+                .getAction(gkdAction.action ?: ActionPerformer.None.action)
                 .perform(serviceVal, targetNode, gkdAction.position)
         }
 
@@ -325,9 +317,7 @@ private fun A11yService.useMatchRule() {
             }
             val nodeVal = (lastNode ?: safeActiveWindow) ?: continue
             val rightAppId = nodeVal.packageName?.toString() ?: break
-            val matchApp = rule.matchActivity(
-                rightAppId
-            )
+            val matchApp = rule.matchActivity(rightAppId)
             if (topActivityFlow.value.appId != rightAppId || (!matchApp && rule is AppRule)) {
                 scope.launch(A11yService.eventThread) {
                     if (topActivityFlow.value.appId != rightAppId) {
@@ -371,7 +361,9 @@ private fun A11yService.useMatchRule() {
                         newQueryTask()
                     }
                 }
-                showActionToast(context)
+                if (actionResult.action != ActionPerformer.None.action) {
+                    showActionToast(context)
+                }
                 addActionLog(rule, topActivity, target, actionResult)
             }
         }
