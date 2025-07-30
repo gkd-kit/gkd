@@ -24,7 +24,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -73,6 +72,7 @@ import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.IMPORT_SHORT_URL
 import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
+import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.saveFileToDownloads
@@ -118,7 +118,7 @@ fun SnapshotPage() {
                             error = true,
                         )
                         snapshots.forEach { s ->
-                            SnapshotExt.removeAssets(s.id)
+                            SnapshotExt.removeSnapshot(s.id)
                         }
                         DbSet.snapshotDao.deleteAll()
                     })) {
@@ -171,11 +171,12 @@ fun SnapshotPage() {
                     text = "查看", modifier = Modifier
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             mainVm.navigatePage(
-                                    ImagePreviewPageDestination(
-                                        title = snapshotVal.appName,
-                                        uri = snapshotVal.screenshotFile.absolutePath,
-                                    )
+                                ImagePreviewPageDestination(
+                                    title = appInfoCacheFlow.value[snapshotVal.appId]?.name
+                                        ?: snapshotVal.appId,
+                                    uri = snapshotVal.screenshotFile.absolutePath,
                                 )
+                            )
                             selectedSnapshot = null
                         }))
                         .then(modifier)
@@ -186,7 +187,7 @@ fun SnapshotPage() {
                     modifier = Modifier
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             selectedSnapshot = null
-                            val zipFile = SnapshotExt.getSnapshotZipFile(
+                            val zipFile = SnapshotExt.snapshotZipFile(
                                 snapshotVal.id,
                                 snapshotVal.appId,
                                 snapshotVal.activityId
@@ -201,7 +202,7 @@ fun SnapshotPage() {
                     modifier = Modifier
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             selectedSnapshot = null
-                            val zipFile = SnapshotExt.getSnapshotZipFile(
+                            val zipFile = SnapshotExt.snapshotZipFile(
                                 snapshotVal.id,
                                 snapshotVal.appId,
                                 snapshotVal.activityId
@@ -226,7 +227,7 @@ fun SnapshotPage() {
                             .clickable(onClick = throttle {
                                 selectedSnapshot = null
                                 mainVm.uploadOptions.startTask(
-                                    getFile = { SnapshotExt.getSnapshotZipFile(snapshotVal.id) },
+                                    getFile = { SnapshotExt.snapshotZipFile(snapshotVal.id) },
                                     showHref = { IMPORT_SHORT_URL + it.id },
                                     onSuccessResult = {
                                         DbSet.snapshotDao.update(snapshotVal.copy(githubAssetId = it.id))
@@ -288,7 +289,7 @@ fun SnapshotPage() {
                             )
                             DbSet.snapshotDao.delete(snapshotVal)
                             withContext(Dispatchers.IO) {
-                                SnapshotExt.removeAssets(snapshotVal.id)
+                                SnapshotExt.removeSnapshot(snapshotVal.id)
                             }
                             toast("删除成功")
                         }))
@@ -327,19 +328,13 @@ private fun SnapshotCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                val showAppName = snapshot.appName ?: snapshot.appId
+                val appInfo = appInfoCacheFlow.collectAsState().value[snapshot.appId]
+                val showAppName = appInfo?.name ?: snapshot.appId
                 Text(
-                    text = showAppName ?: "无障碍缺失",
+                    text = showAppName.toString(),
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 1,
                     softWrap = false,
-                    color = LocalContentColor.current.let {
-                        if (showAppName == null) {
-                            it.copy(alpha = 0.5f)
-                        } else {
-                            it
-                        }
-                    }
                 )
                 FixedTimeText(
                     text = snapshot.date,

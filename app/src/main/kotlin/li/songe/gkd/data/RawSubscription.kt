@@ -82,6 +82,7 @@ data class RawSubscription(
     fun getAppGroups(appId: String): List<RawAppGroup> {
         return apps.find { a -> a.id == appId }?.groups ?: emptyList()
     }
+
     fun getApp(appId: String): RawApp {
         return apps.find { a -> a.id == appId } ?: RawApp(
             id = appId,
@@ -114,11 +115,7 @@ data class RawSubscription(
         globalGroups.mapNotNull { g ->
             val n = g.disableIfAppGroupMatch
             if (n != null) {
-                val gName = if (n.isNotEmpty()) {
-                    n
-                } else {
-                    g.name
-                }
+                val gName = n.ifEmpty { g.name }
                 g.key to apps.filter { a ->
                     a.groups.any { ag ->
                         ag.ignoreGlobalGroupMatch != true && ag.name.startsWith(gName)
@@ -132,7 +129,7 @@ data class RawSubscription(
 
     fun getGlobalGroupInnerDisabled(globalGroup: RawGlobalGroup, appId: String): Boolean {
         globalGroup.appIdEnable[appId]?.let {
-            if (it == false) return true
+            if (!it) return true
         }
         globalGroupAppGroupNameDisableMap[globalGroup.key]?.let {
             if (it.contains(appId)) {
@@ -162,6 +159,44 @@ data class RawSubscription(
             }
         } else {
             "暂无规则"
+        }
+    }
+
+    @Serializable
+    data class StringMatcher(
+        val pattern: String?,
+        val include: List<String>?,
+        val exclude: List<String>?,
+    ) {
+        private val patternRegex by lazy {
+            pattern?.let { p ->
+                runCatching { Regex(p) }.getOrNull()
+            }
+        }
+
+        fun match(value: String?): Boolean {
+            if (value == null) return false
+            if (exclude?.contains(value) == true) return false
+            if (include?.contains(value) == false) return false
+            if (patternRegex?.matches(value) == false) return false
+            return true
+        }
+    }
+
+    @Serializable
+    data class IntegerMatcher(
+        val minimum: Int?,
+        val maximum: Int?,
+        val include: List<Int>?,
+        val exclude: List<Int>?,
+    ) {
+        fun match(value: Int?): Boolean {
+            if (value == null) return false
+            if (exclude?.contains(value) == true) return false
+            if (include?.contains(value) == false) return false
+            if (minimum != null && value < minimum) return false
+            if (maximum != null && value > maximum) return false
+            return true
         }
     }
 
@@ -295,10 +330,8 @@ data class RawSubscription(
         val activityIds: List<String>?
         val excludeActivityIds: List<String>?
 
-        val versionNames: List<String>?
-        val excludeVersionNames: List<String>?
-        val versionCodes: List<Long>?
-        val excludeVersionCodes: List<Long>?
+        val versionCode: IntegerMatcher?
+        val versionName: StringMatcher?
     }
 
     sealed interface RawGlobalRuleProps {
@@ -315,10 +348,8 @@ data class RawSubscription(
         val enable: Boolean?,
         override val activityIds: List<String>?,
         override val excludeActivityIds: List<String>?,
-        override val versionNames: List<String>?,
-        override val excludeVersionNames: List<String>?,
-        override val versionCodes: List<Long>?,
-        override val excludeVersionCodes: List<Long>?,
+        override val versionCode: IntegerMatcher?,
+        override val versionName: StringMatcher?,
     ) : RawAppRuleProps
 
 
@@ -459,10 +490,8 @@ data class RawSubscription(
         override val activityIds: List<String>?,
         override val excludeActivityIds: List<String>?,
         override val rules: List<RawAppRule>,
-        override val versionNames: List<String>?,
-        override val excludeVersionNames: List<String>?,
-        override val versionCodes: List<Long>?,
-        override val excludeVersionCodes: List<Long>?,
+        override val versionCode: IntegerMatcher?,
+        override val versionName: StringMatcher?,
         val ignoreGlobalGroupMatch: Boolean?,
     ) : RawGroupProps, RawAppRuleProps {
         override val cacheMap by lazy { HashMap<String, Selector?>() }
@@ -510,10 +539,8 @@ data class RawSubscription(
         override val activityIds: List<String>?,
         override val excludeActivityIds: List<String>?,
 
-        override val versionNames: List<String>?,
-        override val excludeVersionNames: List<String>?,
-        override val versionCodes: List<Long>?,
-        override val excludeVersionCodes: List<Long>?,
+        override val versionCode: IntegerMatcher?,
+        override val versionName: StringMatcher?,
     ) : RawRuleProps, RawAppRuleProps
 
     companion object {
@@ -584,7 +611,7 @@ data class RawSubscription(
             }
         }
 
-        private fun getPosition(jsonObject: JsonObject? = null): Position? {
+        private fun getPosition(jsonObject: JsonObject?): Position? {
             return when (val element = jsonObject?.get("position")) {
                 JsonNull, null -> null
                 is JsonObject -> {
@@ -600,9 +627,7 @@ data class RawSubscription(
             }
         }
 
-        private fun getStringIArray(
-            jsonObject: JsonObject? = null, name: String
-        ): List<String>? {
+        private fun getStringIArray(jsonObject: JsonObject?, name: String): List<String>? {
             return when (val element = jsonObject?.get(name)) {
                 JsonNull, null -> null
                 is JsonObject -> error("Element ${this::class} can not be object")
@@ -617,8 +642,37 @@ data class RawSubscription(
             }
         }
 
-        private fun getIntIArray(jsonObject: JsonObject? = null, name: String): List<Int>? {
-            return when (val element = jsonObject?.get(name)) {
+        @Suppress("SameParameterValue")
+        private fun getIntMatcher(jsonObject: JsonObject?, key: String): IntegerMatcher? {
+            return when (val element = jsonObject?.get(key)) {
+                JsonNull, null -> null
+                is JsonObject -> IntegerMatcher(
+                    minimum = getInt(element, "minimum"),
+                    maximum = getInt(element, "maximum"),
+                    include = getIntIArray(element, "include"),
+                    exclude = getIntIArray(element, "exclude"),
+                )
+
+                else -> error("Element $element is not a IntMatcher")
+            }
+        }
+
+        @Suppress("SameParameterValue")
+        private fun getStringMatcher(jsonObject: JsonObject?, key: String): StringMatcher? {
+            return when (val element = jsonObject?.get(key)) {
+                JsonNull, null -> null
+                is JsonObject -> StringMatcher(
+                    pattern = getString(element, "pattern"),
+                    include = getStringIArray(element, "include"),
+                    exclude = getStringIArray(element, "exclude"),
+                )
+
+                else -> error("Element $element is not a StringMatcher")
+            }
+        }
+
+        private fun getIntIArray(jsonObject: JsonObject?, key: String): List<Int>? {
+            return when (val element = jsonObject?.get(key)) {
                 JsonNull, null -> null
                 is JsonArray -> element.map {
                     when (it) {
@@ -632,22 +686,7 @@ data class RawSubscription(
             }
         }
 
-        private fun getLongIArray(jsonObject: JsonObject? = null, name: String): List<Long>? {
-            return when (val element = jsonObject?.get(name)) {
-                JsonNull, null -> null
-                is JsonArray -> element.map {
-                    when (it) {
-                        is JsonObject, is JsonArray, JsonNull -> error("Element $it is not a int")
-                        is JsonPrimitive -> it.long
-                    }
-                }
-
-                is JsonPrimitive -> listOf(element.long)
-                else -> error("Element $element is not a Array")
-            }
-        }
-
-        private fun getString(jsonObject: JsonObject? = null, key: String): String? =
+        private fun getString(jsonObject: JsonObject?, key: String): String? =
             when (val p = jsonObject?.get(key)) {
                 JsonNull, null -> null
                 is JsonPrimitive -> {
@@ -661,7 +700,7 @@ data class RawSubscription(
                 else -> null
             }
 
-        private fun getLong(jsonObject: JsonObject? = null, key: String): Long? =
+        private fun getLong(jsonObject: JsonObject?, key: String): Long? =
             when (val p = jsonObject?.get(key)) {
                 JsonNull, null -> null
                 is JsonPrimitive -> {
@@ -671,7 +710,7 @@ data class RawSubscription(
                 else -> null
             }
 
-        private fun getInt(jsonObject: JsonObject? = null, key: String): Int? =
+        private fun getInt(jsonObject: JsonObject?, key: String): Int? =
             when (val p = jsonObject?.get(key)) {
                 JsonNull, null -> null
                 is JsonPrimitive -> {
@@ -681,7 +720,7 @@ data class RawSubscription(
                 else -> null
             }
 
-        private fun getBoolean(jsonObject: JsonObject? = null, key: String): Boolean? =
+        private fun getBoolean(jsonObject: JsonObject?, key: String): Boolean? =
             when (val p = jsonObject?.get(key)) {
                 JsonNull, null -> null
                 is JsonPrimitive -> {
@@ -690,6 +729,37 @@ data class RawSubscription(
 
                 else -> null
             }
+
+        private fun getCompatVersionCode(jsonObject: JsonObject): IntegerMatcher? {
+            getIntMatcher(jsonObject, "versionCode")?.let { return it }
+            // compat old value
+            val a = getIntIArray(jsonObject, "versionCodes")
+            val b = getIntIArray(jsonObject, "excludeVersionCodes")
+            if (a != null || b != null) {
+                return IntegerMatcher(
+                    minimum = null,
+                    maximum = null,
+                    include = a,
+                    exclude = b
+                )
+            }
+            return null
+        }
+
+        private fun getCompatVersionName(jsonObject: JsonObject): StringMatcher? {
+            getStringMatcher(jsonObject, "versionName")?.let { return it }
+            // compat old value
+            val a = getStringIArray(jsonObject, "versionNames")
+            val b = getStringIArray(jsonObject, "excludeVersionNames")
+            if (a != null || b != null) {
+                return StringMatcher(
+                    pattern = null,
+                    include = a,
+                    exclude = b
+                )
+            }
+            return null
+        }
 
         private fun jsonToRuleRaw(rulesRawJson: JsonElement): RawAppRule {
             val jsonObject = when (rulesRawJson) {
@@ -722,10 +792,8 @@ data class RawSubscription(
                 actionMaximumKey = getInt(jsonObject, "actionMaximumKey"),
                 actionCdKey = getInt(jsonObject, "actionCdKey"),
                 order = getInt(jsonObject, "order"),
-                versionCodes = getLongIArray(jsonObject, "versionCodes"),
-                excludeVersionCodes = getLongIArray(jsonObject, "excludeVersionCodes"),
-                versionNames = getStringIArray(jsonObject, "versionNames"),
-                excludeVersionNames = getStringIArray(jsonObject, "excludeVersionNames"),
+                versionCode = getCompatVersionCode(jsonObject),
+                versionName = getCompatVersionName(jsonObject),
                 position = getPosition(jsonObject),
                 forcedTime = getLong(jsonObject, "forcedTime"),
                 priorityTime = getLong(jsonObject, "priorityTime"),
@@ -770,10 +838,8 @@ data class RawSubscription(
                 order = getInt(jsonObject, "order"),
                 forcedTime = getLong(jsonObject, "forcedTime"),
                 scopeKeys = getIntIArray(jsonObject, "scopeKeys"),
-                versionCodes = getLongIArray(jsonObject, "versionCodes"),
-                excludeVersionCodes = getLongIArray(jsonObject, "excludeVersionCodes"),
-                versionNames = getStringIArray(jsonObject, "versionNames"),
-                excludeVersionNames = getStringIArray(jsonObject, "excludeVersionNames"),
+                versionCode = getCompatVersionCode(jsonObject),
+                versionName = getCompatVersionName(jsonObject),
                 priorityTime = getLong(jsonObject, "priorityTime"),
                 priorityActionMaximum = getInt(jsonObject, "priorityActionMaximum"),
                 ignoreGlobalGroupMatch = getBoolean(jsonObject, "ignoreGlobalGroupMatch"),
@@ -807,10 +873,8 @@ data class RawSubscription(
                 enable = getBoolean(jsonObject, "enable"),
                 activityIds = getStringIArray(jsonObject, "activityIds"),
                 excludeActivityIds = getStringIArray(jsonObject, "excludeActivityIds"),
-                versionCodes = getLongIArray(jsonObject, "versionCodes"),
-                excludeVersionCodes = getLongIArray(jsonObject, "excludeVersionCodes"),
-                versionNames = getStringIArray(jsonObject, "versionNames"),
-                excludeVersionNames = getStringIArray(jsonObject, "excludeVersionNames"),
+                versionCode = getCompatVersionCode(jsonObject),
+                versionName = getCompatVersionName(jsonObject),
             )
         }
 

@@ -94,7 +94,7 @@ private val packageReceiver by lazy {
     }
 }
 
-private fun getPkgInfo(appId: String): PackageInfo? {
+fun getPkgInfo(appId: String): PackageInfo? {
     return try {
         app.packageManager.getPackageInfo(appId, PackageManager.MATCH_UNINSTALLED_PACKAGES)
     } catch (_: PackageManager.NameNotFoundException) {

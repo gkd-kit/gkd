@@ -16,7 +16,7 @@ data class AppInfo(
     val name: String,
     @Transient
     val icon: Drawable? = null,
-    val versionCode: Long,
+    val versionCode: Int,
     val versionName: String?,
     val isSystem: Boolean,
     val mtime: Long,
@@ -50,10 +50,10 @@ fun PackageInfo.toAppInfo(
     return AppInfo(
         id = packageName,
         versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            longVersionCode
+            longVersionCode.toInt()
         } else {
             @Suppress("DEPRECATION")
-            versionCode.toLong()
+            versionCode
         },
         versionName = versionName,
         mtime = lastUpdateTime,

@@ -147,7 +147,7 @@ open class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA1
         }
 
 
-        suspend fun currentScreenshot(): Bitmap? = suspendCoroutine {
+        suspend fun screenshot(): Bitmap? = suspendCoroutine {
             if (instance == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
                 it.resume(null)
             } else {

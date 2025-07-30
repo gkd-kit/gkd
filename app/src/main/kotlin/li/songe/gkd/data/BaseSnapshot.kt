@@ -5,9 +5,6 @@ interface BaseSnapshot {
 
     val appId: String?
     val activityId: String?
-    val appName: String?
-    val appVersionCode: Long?
-    val appVersionName: String?
 
     val screenHeight: Int
     val screenWidth: Int

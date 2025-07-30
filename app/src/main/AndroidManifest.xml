@@ -56,10 +56,10 @@
 
         <activity
             android:name=".MainActivity"
+            android:enableOnBackInvokedCallback="false"
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/SplashScreenTheme"
-            android:enableOnBackInvokedCallback="false"
             tools:ignore="UnusedAttribute">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

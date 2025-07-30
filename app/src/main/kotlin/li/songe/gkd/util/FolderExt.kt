@@ -6,7 +6,7 @@ import com.blankj.utilcode.util.ZipUtils
 import li.songe.gkd.app
 import java.io.File
 
-private fun File.autoMk(): File {
+fun File.autoMk(): File {
     if (!exists()) {
         mkdirs()
     }

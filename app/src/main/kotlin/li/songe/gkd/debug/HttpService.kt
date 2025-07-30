@@ -37,7 +37,6 @@ import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.debug.SnapshotExt.captureSnapshot
 import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.httpNotif
 import li.songe.gkd.service.A11yService
@@ -59,7 +58,6 @@ import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 import li.songe.gkd.util.useAliveFlow
 import li.songe.gkd.util.useLogLifecycle
-import java.io.File
 
 
 class HttpService : Service(), OnCreate, OnDestroy {
@@ -176,65 +174,29 @@ private fun CoroutineScope.createServer(port: Int) = embeddedServer(CIO, port) {
     routing {
         get("/") { call.respondText(ContentType.Text.Html) { "<script type='module' src='$SERVER_SCRIPT_URL'></script>" } }
         route("/api") {
-            // Deprecated
-            get("/device") { call.respond(DeviceInfo.instance) }
-
             post("/getServerInfo") { call.respond(ServerInfo()) }
-
-            // Deprecated
-            get("/snapshot") {
-                val id = call.request.queryParameters["id"]?.toLongOrNull()
-                    ?: throw RpcError("miss id")
-                val fp = File(SnapshotExt.getSnapshotPath(id))
-                if (!fp.exists()) {
-                    throw RpcError("对应快照不存在")
-                }
-                call.respondFile(fp)
-            }
             post("/getSnapshot") {
                 val data = call.receive<ReqId>()
-                val fp = File(SnapshotExt.getSnapshotPath(data.id))
+                val fp = SnapshotExt.snapshotFile(data.id)
                 if (!fp.exists()) {
                     throw RpcError("对应快照不存在")
                 }
                 call.respond(fp)
             }
-
-            // Deprecated
-            get("/screenshot") {
-                val id = call.request.queryParameters["id"]?.toLongOrNull()
-                    ?: throw RpcError("miss id")
-                val fp = File(SnapshotExt.getScreenshotPath(id))
-                if (!fp.exists()) {
-                    throw RpcError("对应截图不存在")
-                }
-                call.respondFile(fp)
-            }
             post("/getScreenshot") {
                 val data = call.receive<ReqId>()
-                val fp = File(SnapshotExt.getScreenshotPath(data.id))
+                val fp = SnapshotExt.screenshotFile(data.id)
                 if (!fp.exists()) {
                     throw RpcError("对应截图不存在")
                 }
                 call.respondFile(fp)
             }
-
-            // Deprecated
-            get("/captureSnapshot") {
-                call.respond(captureSnapshot())
-            }
             post("/captureSnapshot") {
-                call.respond(captureSnapshot())
-            }
-
-            // Deprecated
-            get("/snapshots") {
-                call.respond(DbSet.snapshotDao.query().first())
+                call.respond(SnapshotExt.captureSnapshot())
             }
             post("/getSnapshots") {
                 call.respond(DbSet.snapshotDao.query().first())
             }
-
             post("/updateSubscription") {
                 val subscription =
                     RawSubscription.parse(call.receiveText(), json5 = false)

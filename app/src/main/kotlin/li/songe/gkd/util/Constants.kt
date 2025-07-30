@@ -35,7 +35,7 @@ object ShortUrlSet {
 }
 
 const val shizukuAppId = "moe.shizuku.privileged.api"
-const val shizukuMiniVersionCode = 1049L
+const val shizukuMiniVersionCode = 1049
 
 const val LIST_PLACEHOLDER_KEY = PI
 

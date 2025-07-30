@@ -29,11 +29,10 @@ import li.songe.gkd.store.initStore
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initSubsState
-import li.songe.gkd.util.json
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.setReactiveToastStyle
+import li.songe.gkd.util.toJson5String
 import li.songe.gkd.util.toast
-import li.songe.json5.encodeToJson5String
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.Shizuku
 
@@ -65,7 +64,7 @@ data class AppMeta(
     val commitTime: Long = getMetaString("commitTime").toLong(),
     val tagName: String? = getMetaString("tagName").takeIf { it.isNotEmpty() },
     val debuggable: Boolean = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0,
-    val versionCode: Int = selfAppInfo.versionCode.toInt(),
+    val versionCode: Int = selfAppInfo.versionCode,
     val versionName: String = selfAppInfo.versionName!!,
     val appId: String = app.packageName!!,
     val appName: String = app.getString(SafeR.app_name)
@@ -111,7 +110,7 @@ class App : Application() {
         }
         LogUtils.d(
             "META",
-            json.encodeToJson5String(META),
+            toJson5String(META),
         )
         app.contentResolver.registerContentObserver(
             Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),

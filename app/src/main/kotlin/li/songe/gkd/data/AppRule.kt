@@ -11,23 +11,12 @@ class AppRule(
     val group = g.group
     val app = g.app
     val enable = appInfo?.let {
-        if ((rule.excludeVersionCodes
-                ?: group.excludeVersionCodes)?.contains(appInfo.versionCode) == true
-        ) {
+        if (rule.versionCode?.match(it.versionCode) == false) {
             return@let false
         }
-        if ((rule.excludeVersionNames
-                ?: group.excludeVersionNames)?.contains(appInfo.versionName) == true
-        ) {
+        if (rule.versionName?.match(it.versionName) == false) {
             return@let false
         }
-        (rule.versionCodes ?: group.versionCodes)?.apply {
-            return@let contains(appInfo.versionCode)
-        }
-        (rule.versionNames ?: group.versionNames)?.apply {
-            return@let contains(appInfo.versionName)
-        }
-
         null
     } ?: true
     val appId = app.id

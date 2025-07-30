@@ -29,17 +29,11 @@ class GlobalRule(
             appInfoCache.isEmpty() || appInfoCache.containsKey(a.id) // 过滤掉未安装应用
         }.forEach { a ->
             val enable = a.enable ?: appInfoCache[a.id]?.let { appInfo ->
-                if (a.excludeVersionCodes?.contains(appInfo.versionCode) == true) {
+                if (a.versionCode?.match(appInfo.versionCode) == false) {
                     return@let false
                 }
-                if (a.excludeVersionNames?.contains(appInfo.versionName) == true) {
+                if (a.versionName?.match(appInfo.versionName) == false) {
                     return@let false
-                }
-                a.versionCodes?.apply {
-                    return@let contains(appInfo.versionCode)
-                }
-                a.versionNames?.apply {
-                    return@let contains(appInfo.versionName)
                 }
                 null
             } ?: true

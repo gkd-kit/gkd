@@ -2,6 +2,7 @@ package li.songe.gkd.db
 
 import androidx.room.AutoMigration
 import androidx.room.Database
+import androidx.room.DeleteColumn
 import androidx.room.RenameColumn
 import androidx.room.RoomDatabase
 import androidx.room.migration.AutoMigrationSpec
@@ -14,7 +15,7 @@ import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubsItem
 
 @Database(
-    version = 10,
+    version = 11,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -34,6 +35,7 @@ import li.songe.gkd.data.SubsItem
         AutoMigration(from = 7, to = 8, spec = ActivityLog.ActivityLogV2Spec::class),
         AutoMigration(from = 8, to = 9, spec = ActionLog.ActionLogSpec::class),
         AutoMigration(from = 9, to = 10, spec = Migration9To10Spec::class),
+        AutoMigration(from = 10, to = 11, spec = Migration10To11Spec::class),
     ]
 )
 abstract class AppDb : RoomDatabase() {
@@ -57,3 +59,17 @@ abstract class AppDb : RoomDatabase() {
     toColumnName = "subs_id"
 )
 class Migration9To10Spec : AutoMigrationSpec
+
+@DeleteColumn(
+    tableName = "snapshot",
+    columnName = "app_name"
+)
+@DeleteColumn(
+    tableName = "snapshot",
+    columnName = "app_version_code"
+)
+@DeleteColumn(
+    tableName = "snapshot",
+    columnName = "app_version_name"
+)
+class Migration10To11Spec : AutoMigrationSpec
