@@ -14,6 +14,7 @@ import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Handler
 import android.os.Looper
+import androidx.core.graphics.createBitmap
 import com.blankj.utilcode.util.ScreenUtils
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -87,13 +88,10 @@ class ScreenshotUtil(
                     val buffer = planes[0].buffer
                     val pixelStride = planes[0].pixelStride
                     val rowStride = planes[0].rowStride
-                    bitmapWithStride = Bitmap.createBitmap(
-                        rowStride / pixelStride,
-                        height, Bitmap.Config.ARGB_8888
-                    )
+                    bitmapWithStride = createBitmap(rowStride / pixelStride, height)
                     bitmapWithStride.copyPixelsFromBuffer(buffer)
                     bitmap = Bitmap.createBitmap(bitmapWithStride, 0, 0, width, height)
-                    if (!bitmap.isEmptyBitmap()) {
+                    if (!bitmap.isFullTransparent()) {
                         imageReader?.setOnImageAvailableListener(null, null)
                         block.resume(bitmap)
                         resumed = true

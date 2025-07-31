@@ -35,11 +35,10 @@ private val componentNameCache by lazy { HashMap<String, ComponentName>() }
 val KClass<*>.componentName
     get() = componentNameCache.getOrPut(jvmName) { ComponentName(META.appId, jvmName) }
 
-fun Bitmap.isEmptyBitmap(): Boolean {
-    // png
+fun Bitmap.isFullTransparent(): Boolean {
     repeat(width) { x ->
         repeat(height) { y ->
-            if (this[x, y] != 0) {
+            if (this[x, y] != Color.TRANSPARENT) {
                 return false
             }
         }
