@@ -112,7 +112,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        addOnNewIntentListener(mainVm::handleIntent)
+        addOnNewIntentListener {
+            mainVm.handleIntent(it)
+            intent = null
+        }
         setContent {
             val navController = rememberNavController()
             mainVm.navController = navController
@@ -143,7 +146,12 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-            LaunchedEffect(null) { intent?.let(mainVm::handleIntent) }
+            LaunchedEffect(null) {
+                intent?.let {
+                    mainVm.handleIntent(it)
+                    intent = null
+                }
+            }
         }
     }
 
