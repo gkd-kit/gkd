@@ -24,7 +24,6 @@ import androidx.lifecycle.viewModelScope
 import li.songe.gkd.MainActivity
 import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.permission.requiredPermission
-import li.songe.gkd.permission.startQueryPkgSettingActivity
 import li.songe.gkd.ui.local.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.util.launchAsFn
@@ -69,7 +68,7 @@ fun QueryPkgAuthCard() {
                 if (!canQueryPkg) {
                     requiredPermission(context, canQueryPkgState)
                 } else {
-                    startQueryPkgSettingActivity(context)
+                    canQueryPkgState.reason?.confirm?.invoke(context)
                 }
             })) {
                 Text(text = "申请权限")

@@ -12,7 +12,7 @@ import li.songe.gkd.MainActivity
 import li.songe.gkd.util.stopCoroutine
 
 data class AuthReason(
-    val text: String,
+    val text: () -> String,
     val confirm: ((Activity) -> Unit)? = null,
     val renderConfirm: @Composable (() -> ((Activity) -> Unit))? = null,
 )
@@ -27,7 +27,7 @@ fun AuthDialog(authReasonFlow: MutableStateFlow<AuthReason?>) {
                 Text(text = "权限请求")
             },
             text = {
-                Text(text = authAction.text)
+                Text(text = authAction.text())
             },
             onDismissRequest = { authReasonFlow.value = null },
             confirmButton = {

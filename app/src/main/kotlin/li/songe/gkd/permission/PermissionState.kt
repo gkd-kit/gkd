@@ -24,6 +24,7 @@ import li.songe.gkd.MainActivity
 import li.songe.gkd.app
 import li.songe.gkd.appOpsManager
 import li.songe.gkd.appScope
+import li.songe.gkd.isActivityVisible
 import li.songe.gkd.shizuku.shizukuCheckGranted
 import li.songe.gkd.ui.local.LocalMainViewModel
 import li.songe.gkd.util.forceUpdateAppList
@@ -44,6 +45,7 @@ class PermissionState(
     val stateFlow = MutableStateFlow(false)
     val value: Boolean
         get() = stateFlow.value
+
     fun updateAndGet(): Boolean {
         return stateFlow.updateAndGet { check() }
     }
@@ -51,7 +53,7 @@ class PermissionState(
     fun checkOrToast(): Boolean {
         val r = updateAndGet()
         if (!r) {
-            reason?.text?.let { toast(it) }
+            reason?.text?.let { toast(it()) }
         }
         return r
     }
@@ -167,7 +169,7 @@ val foregroundServiceSpecialUseState by lazy {
             checkOpNoThrow("android:foreground_service_special_use") != AppOpsManager.MODE_IGNORED
         },
         reason = AuthReason(
-            text = "当前操作权限「特殊用途的前台服务」已被限制, 请先解除限制",
+            text = { "当前操作权限「特殊用途的前台服务」已被限制, 请先解除限制" },
             renderConfirm = {
                 val mainVm = LocalMainViewModel.current
                 {
@@ -186,9 +188,9 @@ val notificationState by lazy {
         },
         request = { asyncRequestPermission(it, permission) },
         reason = AuthReason(
-            text = "当前操作需要「通知权限」\n您需要前往应用权限设置打开此权限",
+            text = { "当前操作需要「通知权限」\n请先前往权限页面授权" },
             confirm = {
-                XXPermissions.startPermissionActivity(it, permission)
+                XXPermissions.startPermissionActivity(app, permission)
             }
         ),
     )
@@ -204,9 +206,9 @@ val canQueryPkgState by lazy {
             asyncRequestPermission(it, permission)
         },
         reason = AuthReason(
-            text = "当前操作需要「读取应用列表权限」\n您需要前往应用权限设置打开此权限",
+            text = { "当前操作需要「读取应用列表权限」\n请先前往权限页面授权" },
             confirm = {
-                XXPermissions.startPermissionActivity(it, permission)
+                XXPermissions.startPermissionActivity(app, permission)
             }
         ),
     )
@@ -215,14 +217,20 @@ val canQueryPkgState by lazy {
 val canDrawOverlaysState by lazy {
     PermissionState(
         check = {
-            // 需要注意, 即使有悬浮权限, 在某些特殊的页面如 微信支付完毕 页面, 下面的方法会返回 false
+            // https://developer.android.com/security/fraud-prevention/activities?hl=zh-cn#hide_overlay_windows
             Settings.canDrawOverlays(app)
         },
         reason = AuthReason(
-            text = "当前操作需要「悬浮窗权限」\n您需要前往应用权限设置打开此权限",
+            text = {
+                if (isActivityVisible()) {
+                    "当前操作需要「悬浮窗权限」\n请先前往权限页面授权"
+                } else {
+                    "缺少「悬浮窗权限」请先授权\n或当前应用拒绝显示悬浮窗"
+                }
+            },
             confirm = {
                 XXPermissions.startPermissionActivity(
-                    it,
+                    app,
                     PermissionLists.getSystemAlertWindowPermission()
                 )
             }
@@ -247,10 +255,10 @@ val canWriteExternalStorage by lazy {
             }
         },
         reason = AuthReason(
-            text = "当前操作需要「写入外部存储权限」\n您需要前往应用权限设置打开此权限",
+            text = { "当前操作需要「写入外部存储权限」\n请先前往权限页面授权" },
             confirm = {
                 XXPermissions.startPermissionActivity(
-                    it,
+                    app,
                     PermissionLists.getWriteExternalStoragePermission()
                 )
             }
@@ -268,10 +276,6 @@ val shizukuOkState by lazy {
     PermissionState(
         check = { shizukuCheckGranted() },
     )
-}
-
-fun startQueryPkgSettingActivity(context: Activity) {
-    XXPermissions.startPermissionActivity(context, PermissionLists.getGetInstalledAppsPermission())
 }
 
 fun updatePermissionState() {
