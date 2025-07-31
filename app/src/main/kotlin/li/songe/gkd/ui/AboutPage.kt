@@ -44,7 +44,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewModelScope
@@ -76,6 +80,7 @@ import li.songe.gkd.util.UpdateChannelOption
 import li.songe.gkd.util.buildLogFile
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.format
+import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.saveFileToDownloads
@@ -245,9 +250,27 @@ fun AboutPage() {
             )
             Column(
                 modifier = Modifier
-                    .clickable(onClick = throttle {
+                    .clickable(onClick = throttle(mainVm.viewModelScope.launchAsFn {
+                        mainVm.dialogFlow.waitResult(
+                            title = "反馈须知",
+                            textContent = {
+                                Text(text = buildAnnotatedString {
+                                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                        append("感谢您愿意花时间反馈，GKD 默认不携带任何规则，只接受应用本体功能相关的反馈")
+                                    }
+                                    append("\n\n")
+                                    append("请先判断是不是第三方规则订阅的问题，如果是，您应该向规则提供者反馈，而不是在此处反馈。")
+                                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                        append("如果您已经确信是 GKD 应用本体的问题")
+                                    }
+                                    append("，可点击下方继续反馈")
+                                })
+                            },
+                            confirmText = "继续反馈",
+                            dismissRequest = true,
+                        )
                         mainVm.openUrl(ISSUES_URL)
-                    })
+                    }))
                     .fillMaxWidth()
                     .itemPadding()
             ) {
