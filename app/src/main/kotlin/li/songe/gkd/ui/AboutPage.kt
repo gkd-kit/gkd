@@ -44,10 +44,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -255,12 +259,17 @@ fun AboutPage() {
                             title = "反馈须知",
                             textContent = {
                                 Text(text = buildAnnotatedString {
-                                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                        append("感谢您愿意花时间反馈，GKD 默认不携带任何规则，只接受应用本体功能相关的反馈")
+                                    val highlightStyle = SpanStyle(
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                    append("感谢您愿意花时间反馈，")
+                                    withStyle(style = highlightStyle) {
+                                        append("GKD 默认不携带任何规则，只接受应用本体功能相关的反馈")
                                     }
                                     append("\n\n")
                                     append("请先判断是不是第三方规则订阅的问题，如果是，您应该向规则提供者反馈，而不是在此处反馈。")
-                                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                    withStyle(style = highlightStyle) {
                                         append("如果您已经确信是 GKD 应用本体的问题")
                                     }
                                     append("，可点击下方继续反馈")
@@ -397,9 +406,14 @@ fun AboutPage() {
                         .clickable(onClick = throttle {
                             showShareAppDlg = false
                             mainVm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val apkFile = sharedDir.resolve("gkd-v${META.versionName}.apk")
-                                File(app.packageCodePath).copyTo(apkFile, overwrite = true)
-                                context.shareFile(apkFile, "分享安装文件")
+                                if (!META.isGkdChannel) {
+                                    mainVm.dialogFlow.waitResult(
+                                        title = "分享提示",
+                                        textContent = { Text(text = exportPlayTipTemplate()) },
+                                        confirmText = "继续",
+                                    )
+                                }
+                                context.shareFile(getShareApkFile(), "分享安装文件")
                             }
                         })
                         .then(modifier)
@@ -409,9 +423,14 @@ fun AboutPage() {
                         .clickable(onClick = throttle {
                             showShareAppDlg = false
                             mainVm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val apkFile = sharedDir.resolve("gkd-v${META.versionName}.apk")
-                                File(app.packageCodePath).copyTo(apkFile, overwrite = true)
-                                context.saveFileToDownloads(apkFile)
+                                if (!META.isGkdChannel) {
+                                    mainVm.dialogFlow.waitResult(
+                                        title = "保存提示",
+                                        textContent = { Text(text = exportPlayTipTemplate()) },
+                                        confirmText = "继续",
+                                    )
+                                }
+                                context.saveFileToDownloads(getShareApkFile())
                             }
                         })
                         .then(modifier)
@@ -426,6 +445,33 @@ fun AboutPage() {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun exportPlayTipTemplate(): AnnotatedString {
+    return buildAnnotatedString {
+        append("当前导出的 APK 文件只能在已安装 Google 框架的设备上才能使用，否则安装打开后会提示报错，")
+        withLink(
+            LinkAnnotation.Url(
+                ShortUrlSet.URL13,
+                TextLinkStyles(
+                    style = SpanStyle(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                )
+            )
+        ) {
+            append("建议点此从官网下载")
+        }
+        append("，或点击下方继续操作")
+    }
+}
+
+private fun getShareApkFile(): File {
+    return sharedDir.resolve("gkd-v${META.versionName}.apk").apply {
+        File(app.packageCodePath).copyTo(this, overwrite = true)
     }
 }
 
