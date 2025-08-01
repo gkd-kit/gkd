@@ -17,6 +17,7 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withLink
 import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.local.LocalMainViewModel
@@ -33,7 +34,10 @@ fun TermsAcceptDialog() {
         arrayOf(
             "使用声明" to @Composable {
                 val linkStyles = TextLinkStyles(
-                    style = SpanStyle(color = MaterialTheme.colorScheme.primary)
+                    style = SpanStyle(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 )
                 Text(
                     modifier = modifier,
