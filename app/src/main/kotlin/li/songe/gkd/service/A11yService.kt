@@ -43,6 +43,7 @@ import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.RuleStatus
 import li.songe.gkd.debug.SnapshotExt
+import li.songe.gkd.isActivityVisible
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.shizuku.safeGetTopActivity
 import li.songe.gkd.shizuku.serviceWrapperFlow
@@ -103,8 +104,16 @@ open class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA1
         useAutoCheckShizuku()
         serviceWrapperFlow
         useMatchRule()
-        onCreated { toast("无障碍已启动") }
-        onDestroyed { toast("无障碍已停止") }
+        onCreated {
+            if (isActivityVisible()) {
+                toast("无障碍已启动")
+            }
+        }
+        onDestroyed {
+            if (isActivityVisible()) {
+                toast("无障碍已停止")
+            }
+        }
     }
 
     companion object {

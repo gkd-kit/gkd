@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import li.songe.gkd.isActivityVisible
 import li.songe.gkd.notif.abNotif
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
@@ -41,9 +42,17 @@ class ManageService : Service(), OnCreate, OnDestroy {
 
     init {
         useAliveFlow(isRunning)
-        onCreated { toast("常驻通知已启动") }
-        onDestroyed { toast("常驻通知已停止") }
         useNotif()
+        onCreated {
+            if (isActivityVisible()) {
+                toast("常驻通知已启动")
+            }
+        }
+        onDestroyed {
+            if (isActivityVisible()) {
+                toast("常驻通知已停止")
+            }
+        }
     }
 
     companion object {
