@@ -185,14 +185,6 @@ kotlin {
 room {
     schemaDirectory("$projectDir/schemas")
 }
-ksp {
-    arg("room.generateKotlin", "true")
-}
-
-configurations.configureEach {
-    //    https://github.com/Kotlin/kotlinx.coroutines/issues/2023
-    exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-debug")
-}
 
 composeCompiler {
     reportsDestination = layout.buildDirectory.dir("compose_compiler")

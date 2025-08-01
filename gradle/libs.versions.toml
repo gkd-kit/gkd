@@ -1,12 +1,12 @@
 [versions]
 kotlin = "2.2.0"
 ksp = "2.2.0-2.0.2"
-agp = "8.11.1"
+agp = "8.12.0"
 compose = "1.8.3"
 rikka = "4.4.0"
 room = "2.7.2"
 paging = "3.3.6"
-ktor = "3.2.2"
+ktor = "3.2.3"
 destinations = "2.2.0"
 coil = "3.3.0"
 shizuku = "13.1.5"
@@ -32,13 +32,13 @@ compose_junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = 
 compose_icons = "androidx.compose.material:material-icons-extended:1.7.8"
 compose_material3 = "androidx.compose.material3:material3:1.3.2"
 compose_activity = "androidx.activity:activity-compose:1.10.1"
-compose_navigation = "androidx.navigation:navigation-compose:2.9.2"
+compose_navigation = "androidx.navigation:navigation-compose:2.9.3"
 androidx_appcompat = "androidx.appcompat:appcompat:1.7.1"
 androidx_core_ktx = "androidx.core:core-ktx:1.16.0"
 androidx_lifecycle_runtime_ktx = "androidx.lifecycle:lifecycle-runtime-ktx:2.9.2"
-androidx_junit = "androidx.test.ext:junit:1.2.1"
+androidx_junit = "androidx.test.ext:junit:1.3.0"
 androidx_annotation = "androidx.annotation:annotation:1.9.1"
-androidx_espresso = "androidx.test.espresso:espresso-core:3.6.1"
+androidx_espresso = "androidx.test.espresso:espresso-core:3.7.0"
 androidx_room_runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx_room_compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx_room_ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
