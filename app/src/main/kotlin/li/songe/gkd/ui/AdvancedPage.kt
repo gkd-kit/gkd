@@ -389,7 +389,7 @@ fun AdvancedPage() {
 
             TextSwitch(
                 title = "隐藏状态栏",
-                subtitle = "隐藏截图顶部状态栏",
+                subtitle = "隐藏快照截图状态栏",
                 checked = store.hideSnapshotStatusBar
             ) {
                 storeFlow.value = store.copy(
