@@ -89,7 +89,6 @@ object SnapshotExt {
     }
 
     private fun cropBitmapStatusBar(bitmap: Bitmap): Bitmap {
-        val barHeight = BarUtils.getStatusBarHeight()
         val tempBp = bitmap.run {
             if (!isMutable || config == Bitmap.Config.HARDWARE) {
                 return copy(Bitmap.Config.ARGB_8888, true)
@@ -97,8 +96,9 @@ object SnapshotExt {
                 this
             }
         }
+        val barHeight = min(BarUtils.getStatusBarHeight(), tempBp.height)
         for (x in 0 until tempBp.width) {
-            for (y in 0 until min(barHeight, tempBp.height)) {
+            for (y in 0 until barHeight) {
                 tempBp[x, y] = 0
             }
         }
