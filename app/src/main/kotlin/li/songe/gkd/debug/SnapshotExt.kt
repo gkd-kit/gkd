@@ -91,7 +91,7 @@ object SnapshotExt {
     private fun cropBitmapStatusBar(bitmap: Bitmap): Bitmap {
         val tempBp = bitmap.run {
             if (!isMutable || config == Bitmap.Config.HARDWARE) {
-                return copy(Bitmap.Config.ARGB_8888, true)
+                copy(Bitmap.Config.ARGB_8888, true)
             } else {
                 this
             }
