@@ -24,7 +24,7 @@ import kotlin.reflect.KClass
 
 
 data class Notif(
-    val channelId: String = defaultChannel.id,
+    val channel: NotifChannel = NotifChannel.Default,
     val id: Int,
     val smallIcon: Int = SafeR.ic_status,
     val title: String = META.appName,
@@ -57,7 +57,7 @@ data class Notif(
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
         }
-        val notification = NotificationCompat.Builder(app, channelId)
+        val notification = NotificationCompat.Builder(app, channel.id)
             .setSmallIcon(smallIcon)
             .setContentTitle(title)
             .setContentText(text)
@@ -89,63 +89,52 @@ data class Notif(
     }
 }
 
-val abNotif by lazy {
-    Notif(
-        id = 100,
-        text = "无障碍正在运行",
-        ongoing = true,
-        autoCancel = false,
-    )
-}
+val abNotif = Notif(
+    id = 100,
+    text = "无障碍正在运行",
+    ongoing = true,
+    autoCancel = false,
+)
 
-val screenshotNotif by lazy {
-    Notif(
-        id = 101,
-        text = "截屏服务正在运行",
-        ongoing = true,
-        autoCancel = false,
-        uri = "gkd://page/1",
-        stopService = ScreenshotService::class,
-    )
-}
+val screenshotNotif = Notif(
+    id = 101,
+    text = "截屏服务正在运行",
+    ongoing = true,
+    autoCancel = false,
+    uri = "gkd://page/1",
+    stopService = ScreenshotService::class,
+)
 
-val floatingNotif by lazy {
-    Notif(
-        id = 102,
-        text = "悬浮按钮正在显示",
-        ongoing = true,
-        autoCancel = false,
-        uri = "gkd://page/1",
-        stopService = FloatingService::class,
-    )
-}
+val floatingNotif = Notif(
+    id = 102,
+    text = "悬浮按钮正在显示",
+    ongoing = true,
+    autoCancel = false,
+    uri = "gkd://page/1",
+    stopService = FloatingService::class,
+)
 
-val httpNotif by lazy {
-    Notif(
-        id = 103,
-        text = "HTTP服务正在运行",
-        ongoing = true,
-        autoCancel = false,
-        uri = "gkd://page/1",
-        stopService = HttpService::class,
-    )
-}
+val httpNotif = Notif(
+    id = 103,
+    text = "HTTP服务正在运行",
+    ongoing = true,
+    autoCancel = false,
+    uri = "gkd://page/1",
+    stopService = HttpService::class,
+)
 
-val snapshotNotif by lazy {
-    Notif(
-        id = 104,
-        text = "快照已保存至记录",
-        ongoing = false,
-        autoCancel = true,
-        uri = "gkd://page/2",
-    )
-}
+val snapshotActionNotif = Notif(
+    id = 105,
+    text = "快照服务正在运行",
+    ongoing = true,
+    autoCancel = false,
+)
 
-val snapshotActionNotif by lazy {
-    Notif(
-        id = 105,
-        text = "快照服务正在运行",
-        ongoing = true,
-        autoCancel = false,
-    )
-}
+val snapshotNotif = Notif(
+    channel = NotifChannel.Snapshot,
+    id = 104,
+    text = "快照已保存至记录",
+    ongoing = false,
+    autoCancel = true,
+    uri = "gkd://page/2",
+)
