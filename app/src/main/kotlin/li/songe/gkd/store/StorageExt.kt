@@ -3,6 +3,7 @@ package li.songe.gkd.store
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -11,15 +12,13 @@ import li.songe.gkd.util.json
 import li.songe.gkd.util.privateStoreFolder
 import li.songe.gkd.util.storeFolder
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
-private fun getStoreFile(name: String, private: Boolean): File {
-    return (if (private) privateStoreFolder else storeFolder).resolve(name)
-}
 
 private fun readStoreText(
-    name: String,
-    private: Boolean,
-): String? = getStoreFile(name, private).run {
+    file: File
+): String? = file.run {
     if (exists()) {
         readText()
     } else {
@@ -27,8 +26,18 @@ private fun readStoreText(
     }
 }
 
-private fun writeStoreText(name: String, text: String, private: Boolean) {
-    getStoreFile(name, private).writeText(text)
+private fun writeStoreText(file: File, text: String) {
+    val tempFile = File("${file.absolutePath}.tmp")
+    tempFile.outputStream().use {
+        it.write(text.toByteArray(Charsets.UTF_8))
+        it.fd.sync()
+    }
+    Files.move(
+        tempFile.toPath(),
+        file.toPath(),
+        StandardCopyOption.REPLACE_EXISTING,
+        StandardCopyOption.ATOMIC_MOVE
+    )
 }
 
 fun <T> createTextFlow(
@@ -39,13 +48,14 @@ fun <T> createTextFlow(
     scope: CoroutineScope = appScope,
 ): MutableStateFlow<T> {
     val name = if (key.contains('.')) key else "$key.txt"
-    val initText = readStoreText(name, private)
+    val file = (if (private) privateStoreFolder else storeFolder).resolve(name)
+    val initText = readStoreText(file)
     val initValue = decode(initText)
     val stateFlow = MutableStateFlow(initValue)
     scope.launch {
-        stateFlow.drop(1).collect {
+        stateFlow.drop(1).conflate().collect {
             withContext(Dispatchers.IO) {
-                writeStoreText(name, encode(it), private)
+                writeStoreText(file, encode(it))
             }
         }
     }
