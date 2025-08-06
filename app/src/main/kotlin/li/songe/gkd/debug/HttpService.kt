@@ -93,7 +93,7 @@ class HttpService : Service(), OnCreate, OnDestroy {
         }
         StopServiceReceiver.autoRegister(this)
         onCreated {
-            httpNotif.notifyService(this)
+            httpNotif.copy(text = "端口-${storeFlow.value.httpServerPort}").notifyService(this)
             scope.launchTry(Dispatchers.IO) {
                 httpServerPortFlow.collect { port ->
                     httpServerFlow.value?.stop()
@@ -112,9 +112,9 @@ class HttpService : Service(), OnCreate, OnDestroy {
                     }
                     if (httpServerFlow.value == null) {
                         stopSelf()
-                        return@collect
+                    } else {
+                        httpNotif.copy(text = "端口-$port").notifyService(this@HttpService)
                     }
-                    httpNotif.copy(text = "HTTP服务-$port").notifyService(this@HttpService)
                 }
             }
         }

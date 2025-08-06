@@ -27,8 +27,8 @@ data class Notif(
     val channel: NotifChannel = NotifChannel.Default,
     val id: Int,
     val smallIcon: Int = SafeR.ic_status,
-    val title: String = META.appName,
-    val text: String,
+    val title: String,
+    val text: String? = null,
     val ongoing: Boolean,
     val autoCancel: Boolean,
     val uri: String? = null,
@@ -45,28 +45,29 @@ data class Notif(
             },
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-        val deleteIntent = stopService?.let {
-            PendingIntent.getBroadcast(
-                app,
-                0,
-                Intent().apply {
-                    action = StopServiceReceiver.STOP_ACTION
-                    putExtra(StopServiceReceiver.STOP_ACTION, it.componentName.className)
-                    setPackage(META.appId)
-                },
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
-        }
         val notification = NotificationCompat.Builder(app, channel.id)
             .setSmallIcon(smallIcon)
             .setContentTitle(title)
             .setContentText(text)
             .setContentIntent(contextIntent)
-            .setDeleteIntent(deleteIntent)
             .setOngoing(ongoing)
             .setAutoCancel(autoCancel)
-            .build()
-        return notification
+        if (stopService != null) {
+            val deleteIntent = PendingIntent.getBroadcast(
+                app,
+                0,
+                Intent().apply {
+                    action = StopServiceReceiver.STOP_ACTION
+                    putExtra(StopServiceReceiver.STOP_ACTION, stopService.componentName.className)
+                    setPackage(META.appId)
+                },
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+            notification
+                .setDeleteIntent(deleteIntent)
+                .addAction(0, "停止", deleteIntent)
+        }
+        return notification.build()
     }
 
     fun notifySelf() {
@@ -91,6 +92,7 @@ data class Notif(
 
 val abNotif = Notif(
     id = 100,
+    title = "GKD",
     text = "无障碍正在运行",
     ongoing = true,
     autoCancel = false,
@@ -98,7 +100,8 @@ val abNotif = Notif(
 
 val screenshotNotif = Notif(
     id = 101,
-    text = "截屏服务正在运行",
+    title = "截屏服务正在运行",
+    text = "保存快照时截取屏幕",
     ongoing = true,
     autoCancel = false,
     uri = "gkd://page/1",
@@ -107,7 +110,8 @@ val screenshotNotif = Notif(
 
 val floatingNotif = Notif(
     id = 102,
-    text = "悬浮按钮正在显示",
+    title = "悬浮窗服务正在运行",
+    text = "点击按钮捕获快照",
     ongoing = true,
     autoCancel = false,
     uri = "gkd://page/1",
@@ -116,7 +120,7 @@ val floatingNotif = Notif(
 
 val httpNotif = Notif(
     id = 103,
-    text = "HTTP服务正在运行",
+    title = "HTTP服务正在运行",
     ongoing = true,
     autoCancel = false,
     uri = "gkd://page/1",
@@ -125,7 +129,8 @@ val httpNotif = Notif(
 
 val snapshotActionNotif = Notif(
     id = 105,
-    text = "快照服务正在运行",
+    title = "快照服务正在运行",
+    text = "捕获快照完成后自动关闭",
     ongoing = true,
     autoCancel = false,
 )
@@ -133,7 +138,7 @@ val snapshotActionNotif = Notif(
 val snapshotNotif = Notif(
     channel = NotifChannel.Snapshot,
     id = 104,
-    text = "快照已保存至记录",
+    title = "快照已保存",
     ongoing = false,
     autoCancel = true,
     uri = "gkd://page/2",
