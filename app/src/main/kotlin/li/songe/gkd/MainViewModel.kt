@@ -5,11 +5,13 @@ import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Looper
 import android.service.quicksettings.TileService
 import android.webkit.URLUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
+import androidx.navigation.NavOptionsBuilder
 import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
@@ -63,18 +65,27 @@ import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubsMutex
 import li.songe.gkd.util.updateSubscription
 import rikka.shizuku.Shizuku
-import java.lang.ref.WeakReference
 
 private var tempTermsAccepted = false
 
 class MainViewModel : ViewModel() {
 
-    private var navControllerRef: WeakReference<NavHostController>? = null
-    var navController: NavHostController
-        get() = navControllerRef?.get() ?: error("not found navController")
-        set(value) {
-            navControllerRef = WeakReference(value)
+    private lateinit var navController: NavHostController
+    fun updateNavController(navController: NavHostController) {
+        this.navController = navController
+    }
+
+    fun popBackStack() {
+        if (Looper.getMainLooper() == Looper.myLooper()) {
+            navController.popBackStack()
+        } else {
+            viewModelScope.launch {
+                withContext(Dispatchers.Main) {
+                    navController.popBackStack()
+                }
+            }
         }
+    }
 
     val enableDarkThemeFlow = storeFlow.debounce(300).map { s -> s.enableDarkTheme }.stateIn(
         viewModelScope,
@@ -183,11 +194,15 @@ class MainViewModel : ViewModel() {
         lastClickTabTime = System.currentTimeMillis()
     }
 
-    fun navigatePage(direction: Direction) {
+    fun navigatePage(direction: Direction, builder: (NavOptionsBuilder.() -> Unit)? = null) {
         if (direction.route == navController.currentDestination?.route) {
             return
         }
-        navController.navigate(direction.route)
+        if (builder != null) {
+            navController.navigate(direction.route, builder)
+        } else {
+            navController.navigate(direction.route)
+        }
     }
 
     fun navigateWebPage(url: String) {

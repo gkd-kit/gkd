@@ -9,6 +9,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import li.songe.gkd.data.RawSubscription
+import li.songe.gkd.ui.style.clearJson5TransformationCache
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
@@ -40,13 +41,13 @@ class UpsertRuleGroupVm(stateHandle: SavedStateHandle) : ViewModel() {
     private val initText = initialGroup?.cacheStr ?: ""
     val textFlow = MutableStateFlow(initText)
 
-    val textChanged: Boolean
-        get() {
-            val text = textFlow.value
-            if (!isEdit) return !text.isBlank()
-            if (initText == text) return false
-            return initialGroup?.cacheJsonObject != runCatching { Json5.parseToJson5Element(text) }.getOrNull()
-        }
+    fun hasTextChanged(): Boolean {
+        val text = textFlow.value
+        if (!isEdit) return !text.isBlank()
+        if (initText == text) return false
+        return initialGroup?.cacheJsonObject != runCatching { Json5.parseToJson5Element(text) }.getOrNull()
+    }
+
 
     var addAppId: String? = null
 
@@ -212,6 +213,11 @@ class UpsertRuleGroupVm(stateHandle: SavedStateHandle) : ViewModel() {
         } else {
             toast("添加成功")
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        clearJson5TransformationCache()
     }
 }
 

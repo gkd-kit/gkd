@@ -22,7 +22,6 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -33,26 +32,23 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.blankj.utilcode.util.KeyboardUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.local.LocalDarkTheme
 import li.songe.gkd.ui.local.LocalMainViewModel
-import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.ProfileTransitions
-import li.songe.gkd.ui.style.clearJson5TransformationCache
 import li.songe.gkd.ui.style.getJson5Transformation
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.throttle
 
 @Suppress("unused")
@@ -66,71 +62,56 @@ fun UpsertRuleGroupPage(
 ) {
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
-    val navController = LocalNavController.current
     val vm = viewModel<UpsertRuleGroupVm>()
     val text by vm.textFlow.collectAsState()
-    fun checkIfSaveText() = mainVm.viewModelScope.launchTry(Dispatchers.Default) {
-        if (vm.textChanged) {
+
+    val checkIfSaveText = throttle(mainVm.viewModelScope.launchAsFn(Dispatchers.Default) {
+        if (vm.hasTextChanged()) {
+            vm.viewModelScope.launch {
+                context.hideSoftInput()
+            }
             mainVm.dialogFlow.waitResult(
                 title = "放弃编辑",
                 text = "当前内容未保存，是否放弃编辑？",
             )
+        } else {
+            context.hideSoftInput()
         }
-        withContext(Dispatchers.Main) { mainVm.navController.popBackStack() }
-    }.let { }
+        mainVm.popBackStack()
+    })
 
-    val onClickSave = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
-        vm.saveRule()
-        if (KeyboardUtils.isSoftInputVisible(context)) {
-            KeyboardUtils.hideSoftInput(context)
-        }
-        withContext(Dispatchers.Main) {
-            if (forward) {
-                if (appId == null) {
-                    navController.navigate(SubsGlobalGroupListPageDestination(subsItemId = subsId).route) {
-                        popUpTo(UpsertRuleGroupPageDestination.route) {
-                            inclusive = true
-                        }
-                    }
-                } else {
-                    navController.navigate(
-                        SubsAppGroupListPageDestination(
-                            subsItemId = subsId,
-                            vm.addAppId ?: appId
-                        ).route
-                    ) {
-                        popUpTo(UpsertRuleGroupPageDestination.route) {
-                            inclusive = true
-                        }
+    val onClickSave = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Main) {
+        withContext(Dispatchers.Default) { vm.saveRule() }
+        context.hideSoftInput()
+        if (forward) {
+            if (appId == null) {
+                mainVm.navigatePage(SubsGlobalGroupListPageDestination(subsItemId = subsId)) {
+                    popUpTo(UpsertRuleGroupPageDestination.route) {
+                        inclusive = true
                     }
                 }
             } else {
-                navController.popBackStack()
+                mainVm.navigatePage(
+                    SubsAppGroupListPageDestination(
+                        subsItemId = subsId,
+                        vm.addAppId ?: appId
+                    )
+                ) {
+                    popUpTo(UpsertRuleGroupPageDestination.route) {
+                        inclusive = true
+                    }
+                }
             }
+        } else {
+            mainVm.popBackStack()
         }
     })
-    BackHandler(true) {
-        if (KeyboardUtils.isSoftInputVisible(context)) {
-            KeyboardUtils.hideSoftInput(context)
-            return@BackHandler
-        }
-        checkIfSaveText()
-    }
-    DisposableEffect(null) {
-        onDispose {
-            clearJson5TransformationCache()
-        }
-    }
+    BackHandler(true, checkIfSaveText)
     Scaffold(modifier = Modifier, topBar = {
         TopAppBar(
             modifier = Modifier.fillMaxWidth(),
             navigationIcon = {
-                IconButton(onClick = throttle {
-                    if (KeyboardUtils.isSoftInputVisible(context)) {
-                        KeyboardUtils.hideSoftInput(context)
-                    }
-                    checkIfSaveText()
-                }) {
+                IconButton(onClick = checkIfSaveText) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = null,
@@ -159,14 +140,21 @@ fun UpsertRuleGroupPage(
                 .fillMaxSize(),
         ) {
             CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyLarge) {
-                // need compose 1.9.0
+                val imeShowing by context.imeShowingFlow.collectAsState()
+                val modifier = Modifier
+                    .autoFocus()
+                    .fillMaxSize()
+                    .run {
+                        if (imeShowing) {
+                            this
+                        } else {
+                            imePadding()
+                        }
+                    }
                 TextField(
                     value = text,
                     onValueChange = { vm.textFlow.value = it },
-                    modifier = Modifier
-                        .autoFocus()
-                        .fillMaxSize()
-                        .imePadding(),
+                    modifier = modifier,
                     shape = RectangleShape,
                     colors = textColors,
                     visualTransformation = getJson5Transformation(LocalDarkTheme.current),

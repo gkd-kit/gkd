@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -41,8 +42,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsAnimationCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
+import com.blankj.utilcode.util.KeyboardUtils
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
@@ -51,7 +56,10 @@ import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDesti
 import com.ramcosta.composedestinations.utils.currentDestinationAsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -96,6 +104,54 @@ class MainActivity : ComponentActivity() {
     val launcher by lazy { StartActivityLauncher(this) }
     val pickContentLauncher by lazy { PickContentLauncher(this) }
 
+    val imeFullHiddenFlow = MutableStateFlow(true)
+    val imeShowingFlow = MutableStateFlow(false)
+
+    private val imeVisible: Boolean
+        get() = ViewCompat.getRootWindowInsets(window.decorView)!!
+            .isVisible(WindowInsetsCompat.Type.ime())
+
+    private fun watchKeyboardVisible() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            ViewCompat.setWindowInsetsAnimationCallback(
+                window.decorView,
+                object : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
+                    override fun onStart(
+                        animation: WindowInsetsAnimationCompat,
+                        bounds: WindowInsetsAnimationCompat.BoundsCompat
+                    ): WindowInsetsAnimationCompat.BoundsCompat {
+                        imeShowingFlow.update { imeVisible }
+                        return super.onStart(animation, bounds)
+                    }
+
+                    override fun onProgress(
+                        insets: WindowInsetsCompat,
+                        runningAnimations: List<WindowInsetsAnimationCompat>
+                    ): WindowInsetsCompat {
+                        return insets
+                    }
+
+                    override fun onEnd(animation: WindowInsetsAnimationCompat) {
+                        imeFullHiddenFlow.update { !imeVisible }
+                        imeShowingFlow.update { false }
+                        super.onEnd(animation)
+                    }
+                })
+        } else {
+            KeyboardUtils.registerSoftInputChangedListener(window) { height ->
+                // onEnd
+                imeFullHiddenFlow.update { height == 0 }
+            }
+        }
+    }
+
+    suspend fun hideSoftInput() {
+        if (!imeFullHiddenFlow.updateAndGet { !imeVisible }) {
+            KeyboardUtils.hideSoftInput(this)
+            imeFullHiddenFlow.drop(1).first()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         enableEdgeToEdge()
@@ -116,9 +172,10 @@ class MainActivity : ComponentActivity() {
             mainVm.handleIntent(it)
             intent = null
         }
+        watchKeyboardVisible()
         setContent {
             val navController = rememberNavController()
-            mainVm.navController = navController
+            mainVm.updateNavController(navController)
             CompositionLocalProvider(
                 LocalNavController provides navController,
                 LocalMainViewModel provides mainVm
