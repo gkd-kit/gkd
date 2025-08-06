@@ -35,14 +35,16 @@ class FloatingService : ExpandableBubbleService(), OnCreate, OnDestroy {
     }
 
     override fun configBubble(): BubbleBuilder {
-        val builder = BubbleBuilder(this).bubbleCompose {
-            Icon(
-                imageVector = Icons.Default.CenterFocusWeak,
-                contentDescription = "capture",
-                modifier = Modifier.size(40.dp),
-                tint = Color.Red
-            )
-        }.enableAnimateToEdge(false)
+        val builder = BubbleBuilder(this)
+            .startLocation(80, 80)
+            .bubbleCompose {
+                Icon(
+                    imageVector = Icons.Default.CenterFocusWeak,
+                    contentDescription = "capture",
+                    modifier = Modifier.size(40.dp),
+                    tint = Color.Red
+                )
+            }.enableAnimateToEdge(false)
 
         // https://github.com/gkd-kit/gkd/issues/62
         // https://github.com/gkd-kit/gkd/issues/61
