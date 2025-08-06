@@ -11,7 +11,7 @@ import li.songe.gkd.util.UpdateTimeOption
 data class SettingsStore(
     val enableService: Boolean = true,
     val enableMatch: Boolean = true,
-    val enableStatusService: Boolean = true,
+    val enableStatusService: Boolean = false,
     val excludeFromRecents: Boolean = false,
     val captureScreenshot: Boolean = false,
     val httpServerPort: Int = 8888,
