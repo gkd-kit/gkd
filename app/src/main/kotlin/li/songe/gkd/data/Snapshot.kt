@@ -21,7 +21,7 @@ import li.songe.gkd.util.format
 data class Snapshot(
     @PrimaryKey @ColumnInfo(name = "id") override val id: Long,
 
-    @ColumnInfo(name = "app_id") override val appId: String?,
+    @ColumnInfo(name = "app_id") override val appId: String,
     @ColumnInfo(name = "activity_id") override val activityId: String?,
 
     @ColumnInfo(name = "screen_height") override val screenHeight: Int,

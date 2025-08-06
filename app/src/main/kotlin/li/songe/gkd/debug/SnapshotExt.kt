@@ -160,13 +160,7 @@ object SnapshotExt {
             }
             toast("快照成功")
             val desc = snapshot.appInfo?.name ?: snapshot.appId
-            snapshotNotif.copy(
-                text = if (desc != null) {
-                    "快照「$desc」已保存至记录"
-                } else {
-                    snapshotNotif.text
-                }
-            ).notifySelf()
+            snapshotNotif.copy(text = "快照「$desc」已保存至记录").notifySelf()
             return snapshot
         } finally {
             captureLoading.value = false
