@@ -1,4 +1,4 @@
-package li.songe.gkd.debug
+package li.songe.gkd.service
 
 import android.accessibilityservice.AccessibilityService
 import android.service.quicksettings.TileService
@@ -7,12 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import li.songe.gkd.appScope
-import li.songe.gkd.debug.SnapshotExt.captureSnapshot
-import li.songe.gkd.service.A11yService
-import li.songe.gkd.service.TopActivity
-import li.songe.gkd.service.getAndUpdateCurrentRules
-import li.songe.gkd.service.safeActiveWindowAppId
-import li.songe.gkd.service.updateTopActivity
+import li.songe.gkd.util.SnapshotExt.captureSnapshot
 import li.songe.gkd.shizuku.safeGetTopActivity
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.toast
@@ -41,7 +36,7 @@ class SnapshotTileService : TileService() {
                     // https://github.com/gkd-kit/gkd/issues/713
                     delay(250)
                     if (timeout()) {
-                        toast("当前应用没有无障碍信息,捕获失败")
+                        toast("当前应用没有无障碍信息，捕获失败")
                         break
                     }
                 } else if (latestAppId != oldAppId) {
@@ -59,12 +54,11 @@ class SnapshotTileService : TileService() {
                     service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
                     delay(500)
                     if (timeout()) {
-                        toast("未检测到界面切换,捕获失败")
+                        toast("未检测到界面切换，捕获失败")
                         break
                     }
                 }
             }
         }
     }
-
 }

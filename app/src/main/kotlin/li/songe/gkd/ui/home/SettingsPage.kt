@@ -39,6 +39,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.generated.destinations.AboutPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.appScope
 import li.songe.gkd.store.storeFlow
@@ -55,6 +56,7 @@ import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.ui.theme.supportDynamicColor
 import li.songe.gkd.util.DarkThemeOption
+import li.songe.gkd.util.Option
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.initOrResetAppInfoCache
 import li.songe.gkd.util.launchAsFn
@@ -322,21 +324,23 @@ fun useSettingsPage(): ScaffoldExt {
 
             TextMenu(
                 title = "深色模式",
-                option = DarkThemeOption.allSubObject.findOption(store.enableDarkTheme)
-            ) {
-                storeFlow.update { s -> s.copy(enableDarkTheme = it.value) }
-            }
+                option = DarkThemeOption.allSubObject.findOption(store.enableDarkTheme),
+                onOptionChange = vm.viewModelScope.launchAsFn<Option<Boolean?>> {
+                    delay(300)
+                    storeFlow.update { s -> s.copy(enableDarkTheme = it.value) }
+                }
+            )
 
             if (supportDynamicColor) {
                 TextSwitch(
                     title = "动态配色",
                     subtitle = "配色跟随系统主题",
                     checked = store.enableDynamicColor,
-                    onCheckedChange = {
-                        storeFlow.value = store.copy(
-                            enableDynamicColor = it
-                        )
-                    })
+                    onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
+                        delay(300)
+                        storeFlow.update { s -> s.copy(enableDarkTheme = it) }
+                    }
+                )
             }
 
             Text(

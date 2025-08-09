@@ -1,18 +1,27 @@
-package li.songe.gkd.debug
+package li.songe.gkd.service
 
 import android.app.Service
 import android.content.Intent
+import android.util.Log
 import com.blankj.utilcode.util.LogUtils
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.createApplicationPlugin
+import io.ktor.server.application.hooks.CallFailed
 import io.ktor.server.application.install
 import io.ktor.server.cio.CIO
 import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.origin
+import io.ktor.server.request.httpMethod
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveText
+import io.ktor.server.request.uri
+import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondFile
 import io.ktor.server.response.respondText
@@ -22,8 +31,6 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -39,12 +46,11 @@ import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.httpNotif
-import li.songe.gkd.service.A11yService
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.LOCAL_HTTP_SUBS_ID
-import li.songe.gkd.util.OnCreate
-import li.songe.gkd.util.OnDestroy
+import li.songe.gkd.util.OnCreateToDestroy
 import li.songe.gkd.util.SERVER_SCRIPT_URL
+import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.deleteSubscription
 import li.songe.gkd.util.getIpAddressInLocalNetwork
 import li.songe.gkd.util.isPortAvailable
@@ -56,11 +62,9 @@ import li.songe.gkd.util.stopServiceByClass
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
-import li.songe.gkd.util.useAliveFlow
-import li.songe.gkd.util.useLogLifecycle
 
 
-class HttpService : Service(), OnCreate, OnDestroy {
+class HttpService : Service(), OnCreateToDestroy {
     override fun onBind(intent: Intent?) = null
 
     override fun onCreate() {
@@ -73,27 +77,28 @@ class HttpService : Service(), OnCreate, OnDestroy {
         onDestroyed()
     }
 
-    val scope = MainScope().apply { onDestroyed { cancel() } }
+    val scope = useScope()
 
     private val httpServerPortFlow = storeFlow.map(scope) { s -> s.httpServerPort }
 
     init {
         useLogLifecycle()
         useAliveFlow(isRunning)
-        onCreated { toast("HTTP服务已启动") }
-        onDestroyed { toast("HTTP服务已停止") }
-
-        onCreated { localNetworkIpsFlow.value = getIpAddressInLocalNetwork() }
-
+        useAliveToast("HTTP服务")
+        StopServiceReceiver.autoRegister()
+        onCreated {
+            scope.launchTry(Dispatchers.IO) {
+                localNetworkIpsFlow.value = getIpAddressInLocalNetwork()
+            }
+        }
         onDestroyed {
             if (storeFlow.value.autoClearMemorySubs) {
                 deleteSubscription(LOCAL_HTTP_SUBS_ID)
             }
             httpServerFlow.value = null
         }
-        StopServiceReceiver.autoRegister(this)
         onCreated {
-            httpNotif.copy(text = "端口-${storeFlow.value.httpServerPort}").notifyService(this)
+            httpNotif.copy(text = "端口-${storeFlow.value.httpServerPort}").notifyService()
             scope.launchTry(Dispatchers.IO) {
                 httpServerPortFlow.collect { port ->
                     httpServerFlow.value?.stop()
@@ -113,7 +118,7 @@ class HttpService : Service(), OnCreate, OnDestroy {
                     if (httpServerFlow.value == null) {
                         stopSelf()
                     } else {
-                        httpNotif.copy(text = "端口-$port").notifyService(this@HttpService)
+                        httpNotif.copy(text = "端口-$port").notifyService()
                     }
                 }
             }
@@ -151,7 +156,7 @@ data class ServerInfo(
 fun clearHttpSubs() {
     // 如果 app 被直接在任务列表划掉, HTTP订阅会没有清除, 所以在后续的第一次启动时清除
     if (HttpService.isRunning.value) return
-    appScope.launchTry(Dispatchers.IO) {
+    appScope.launchTry {
         delay(1000)
         if (storeFlow.value.autoClearMemorySubs) {
             deleteSubscription(LOCAL_HTTP_SUBS_ID)
@@ -159,17 +164,15 @@ fun clearHttpSubs() {
     }
 }
 
-private val httpSubsItem by lazy {
-    SubsItem(
-        id = LOCAL_HTTP_SUBS_ID,
-        order = -1,
-        enableUpdate = false,
-    )
-}
+private val httpSubsItem = SubsItem(
+    id = LOCAL_HTTP_SUBS_ID,
+    order = -1,
+    enableUpdate = false,
+)
 
 private fun CoroutineScope.createServer(port: Int) = embeddedServer(CIO, port) {
-    install(KtorCorsPlugin)
-    install(KtorErrorPlugin)
+    install(getKtorCorsPlugin())
+    install(getKtorErrorPlugin())
     install(ContentNegotiation) { json(keepNullJson) }
     routing {
         get("/") { call.respondText(ContentType.Text.Html) { "<script type='module' src='$SERVER_SCRIPT_URL'></script>" } }
@@ -217,6 +220,49 @@ private fun CoroutineScope.createServer(port: Int) = embeddedServer(CIO, port) {
                 }
                 val gkdAction = call.receive<GkdAction>()
                 call.respond(A11yService.execAction(gkdAction))
+            }
+        }
+    }
+}
+
+private fun getKtorCorsPlugin() = createApplicationPlugin(name = "KtorCorsPlugin") {
+    onCallRespond { call, _ ->
+        call.response.header(HttpHeaders.AccessControlAllowOrigin, "*")
+        call.response.header(HttpHeaders.AccessControlAllowMethods, "*")
+        call.response.header(HttpHeaders.AccessControlAllowHeaders, "*")
+        call.response.header(HttpHeaders.AccessControlExposeHeaders, "*")
+        call.response.header("Access-Control-Allow-Private-Network", "true")
+    }
+    onCall { call ->
+        if (call.request.httpMethod == HttpMethod.Options) {
+            call.respond("all-cors-ok")
+        }
+    }
+}
+
+private fun getKtorErrorPlugin() = createApplicationPlugin(name = "KtorErrorPlugin") {
+    onCall { call ->
+        if (call.request.uri == "/" || call.request.uri.startsWith("/api/")) {
+            Log.d("Ktor", "onCall: ${call.request.origin.remoteAddress} -> ${call.request.uri}")
+        }
+    }
+    on(CallFailed) { call, cause ->
+        when (cause) {
+            is RpcError -> {
+                // 主动抛出的错误
+                LogUtils.d(call.request.uri, cause.message)
+                call.respond(cause)
+            }
+
+            is Exception -> {
+                // 未知错误
+                LogUtils.d(call.request.uri, cause.message)
+                cause.printStackTrace()
+                call.respond(RpcError(message = cause.message ?: "unknown error", unknown = true))
+            }
+
+            else -> {
+                cause.printStackTrace()
             }
         }
     }

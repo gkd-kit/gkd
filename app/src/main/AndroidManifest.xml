@@ -133,11 +133,11 @@
         </service>
 
         <service
-            android:name=".debug.ScreenshotService"
+            android:name=".service.ScreenshotService"
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
         <service
-            android:name=".service.ManageService"
+            android:name=".service.StatusService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
@@ -145,7 +145,7 @@
                 android:value="Display the running state of the application" />
         </service>
         <service
-            android:name=".debug.HttpService"
+            android:name=".service.HttpService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
@@ -153,12 +153,20 @@
                 android:value="Enable the HTTP server to provide external browser connections and debugging" />
         </service>
         <service
-            android:name=".debug.FloatingService"
+            android:name=".service.ButtonService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Display a screenshot button for users to actively save screen information." />
+        </service>
+        <service
+            android:name=".service.RecordService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Display a text card for users to show current activity info" />
         </service>
         <service
             android:name=".service.GkdTileService"
@@ -172,7 +180,7 @@
             </intent-filter>
         </service>
         <service
-            android:name=".debug.SnapshotTileService"
+            android:name=".service.SnapshotTileService"
             android:exported="true"
             android:icon="@drawable/ic_capture"
             android:label="@string/capture_snapshot"
@@ -182,7 +190,7 @@
             </intent-filter>
         </service>
         <service
-            android:name=".debug.HttpTileService"
+            android:name=".service.HttpTileService"
             android:exported="true"
             android:icon="@drawable/ic_http"
             android:label="@string/http_server"
@@ -192,10 +200,10 @@
             </intent-filter>
         </service>
         <service
-            android:name=".debug.FloatingTileService"
+            android:name=".service.ButtonTileService"
             android:exported="true"
             android:icon="@drawable/ic_radio_button"
-            android:label="@string/float_button"
+            android:label="@string/snapshot_button"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
@@ -211,9 +219,19 @@
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
         </service>
+        <service
+            android:name=".service.RecordTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_layers"
+            android:label="@string/record_activity"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
         <service
-            android:name=".debug.SnapshotActionService"
+            android:name=".service.SnapshotActionService"
             android:exported="true"
             android:foregroundServiceType="specialUse"
             tools:ignore="ExportedService">

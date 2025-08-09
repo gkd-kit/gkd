@@ -53,7 +53,7 @@ import kotlinx.coroutines.withContext
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.debug.SnapshotExt
+import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.permission.canWriteExternalStorage
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.ui.component.EmptyText
@@ -331,7 +331,7 @@ private fun SnapshotCard(
                 val appInfo = appInfoCacheFlow.collectAsState().value[snapshot.appId]
                 val showAppName = appInfo?.name ?: snapshot.appId
                 Text(
-                    text = showAppName.toString(),
+                    text = showAppName,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 1,
                     softWrap = false,
@@ -342,10 +342,7 @@ private fun SnapshotCard(
                 )
             }
             val showActivityId = if (snapshot.activityId != null) {
-                if (snapshot.appId != null && snapshot.activityId.startsWith(
-                        snapshot.appId
-                    )
-                ) {
+                if (snapshot.activityId.startsWith(snapshot.appId)) {
                     snapshot.activityId.substring(snapshot.appId.length)
                 } else {
                     snapshot.activityId

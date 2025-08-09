@@ -20,7 +20,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
 import li.songe.gkd.data.selfAppInfo
-import li.songe.gkd.debug.clearHttpSubs
+import li.songe.gkd.service.clearHttpSubs
 import li.songe.gkd.notif.initChannel
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.service.A11yService

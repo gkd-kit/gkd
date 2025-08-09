@@ -177,6 +177,7 @@ kotlin {
             "-opt-in=androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi",
             "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
             "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
+            "-Xcontext-parameters"
         )
     }
 }
@@ -201,6 +202,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.service)
 
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)
@@ -247,7 +249,6 @@ dependencies {
 
     implementation(libs.utilcodex)
     implementation(libs.activityResultLauncher)
-    implementation(libs.floatingBubbleView)
 
     implementation(libs.destinations.core)
     ksp(libs.destinations.ksp)

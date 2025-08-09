@@ -63,13 +63,13 @@ import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import li.songe.gkd.debug.FloatingService
-import li.songe.gkd.debug.HttpService
-import li.songe.gkd.debug.ScreenshotService
+import li.songe.gkd.service.ButtonService
+import li.songe.gkd.service.HttpService
+import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.permission.AuthDialog
 import li.songe.gkd.permission.updatePermissionState
 import li.songe.gkd.service.A11yService
-import li.songe.gkd.service.ManageService
+import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.service.updateDefaultInputAppId
 import li.songe.gkd.service.updateLauncherAppId
@@ -160,7 +160,7 @@ class MainActivity : ComponentActivity() {
         mainVm
         launcher
         pickContentLauncher
-        ManageService.autoStart()
+        StatusService.autoStart()
         lifecycleScope.launch {
             storeFlow.map(lifecycleScope) { s -> s.excludeFromRecents }.collect {
                 activityManager.appTasks.forEach { task ->
@@ -273,8 +273,8 @@ private fun updateServiceRunning() {
     fun checkRunning(cls: KClass<*>): Boolean {
         return list.any { it.service.className == cls.jvmName }
     }
-    ManageService.isRunning.value = checkRunning(ManageService::class)
-    FloatingService.isRunning.value = checkRunning(FloatingService::class)
+    StatusService.isRunning.value = checkRunning(StatusService::class)
+    ButtonService.isRunning.value = checkRunning(ButtonService::class)
     ScreenshotService.isRunning.value = checkRunning(ScreenshotService::class)
     HttpService.isRunning.value = checkRunning(HttpService::class)
 }

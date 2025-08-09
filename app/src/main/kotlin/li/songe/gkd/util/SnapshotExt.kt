@@ -1,4 +1,4 @@
-package li.songe.gkd.debug
+package li.songe.gkd.util
 
 import android.graphics.Bitmap
 import androidx.core.graphics.createBitmap
@@ -15,18 +15,12 @@ import li.songe.gkd.data.ComplexSnapshot
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.info2nodeList
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.notif.snapshotNotif
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.getAndUpdateCurrentRules
 import li.songe.gkd.service.safeActiveWindow
 import li.songe.gkd.store.storeFlow
-import li.songe.gkd.util.appInfoCacheFlow
-import li.songe.gkd.util.autoMk
-import li.songe.gkd.util.drawTextToBitmap
-import li.songe.gkd.util.keepNullJson
-import li.songe.gkd.util.sharedDir
-import li.songe.gkd.util.snapshotFolder
-import li.songe.gkd.util.toast
 import java.io.File
 import kotlin.math.min
 
@@ -85,7 +79,7 @@ object SnapshotExt {
     }
 
     private suspend fun screenshot(): Bitmap? {
-        return A11yService.screenshot() ?: ScreenshotService.screenshot()
+        return A11yService.Companion.screenshot() ?: ScreenshotService.Companion.screenshot()
     }
 
     private fun cropBitmapStatusBar(bitmap: Bitmap): Bitmap {
@@ -107,7 +101,7 @@ object SnapshotExt {
 
     private val captureLoading = MutableStateFlow(false)
     suspend fun captureSnapshot(skipScreenshot: Boolean = false): ComplexSnapshot {
-        if (!A11yService.isRunning.value) {
+        if (!A11yService.Companion.isRunning.value) {
             throw RpcError("无障碍不可用,请先授权")
         }
         if (captureLoading.value) {
@@ -116,7 +110,7 @@ object SnapshotExt {
         captureLoading.value = true
         try {
             val rootNode =
-                A11yService.instance?.safeActiveWindow
+                A11yService.Companion.instance?.safeActiveWindow
                     ?: throw RpcError("当前应用没有无障碍信息,捕获失败")
             if (storeFlow.value.showSaveSnapshotToast) {
                 toast("正在保存快照...")

@@ -6,7 +6,6 @@ import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -69,6 +68,7 @@ import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.local.LocalDarkTheme
 import li.songe.gkd.ui.local.LocalMainViewModel
 import li.songe.gkd.ui.local.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
@@ -479,9 +479,7 @@ private fun getShareApkFile(): File {
 private fun AnimatedLogoIcon(
     modifier: Modifier = Modifier
 ) {
-    val mainVm = LocalMainViewModel.current
-    val enableDarkTheme by mainVm.enableDarkThemeFlow.collectAsState()
-    val darkTheme = enableDarkTheme ?: isSystemInDarkTheme()
+    val darkTheme = LocalDarkTheme.current
     var atEnd by remember { mutableStateOf(false) }
     val animation = AnimatedImageVector.animatedVectorResource(id = SafeR.ic_anim_logo)
     val painter = rememberAnimatedVectorPainter(

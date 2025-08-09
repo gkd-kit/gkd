@@ -11,7 +11,7 @@ import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
-import li.songe.gkd.debug.SnapshotExt
+import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.format
 
 @Entity(

@@ -36,8 +36,18 @@ data class TopActivity(
     val activityId: String? = null,
     val number: Int = 0
 ) {
+    val shortActivityId: String?
+        get() {
+            val a = if (activityId != null && activityId.startsWith(appId)) {
+                activityId.substring(appId.length)
+            } else {
+                activityId
+            }
+            return a
+        }
+
     fun format(): String {
-        return "${appId}/${activityId}/${number}"
+        return "${appId}/${shortActivityId}/${number}"
     }
 
     fun sameAs(other: TopActivity): Boolean {

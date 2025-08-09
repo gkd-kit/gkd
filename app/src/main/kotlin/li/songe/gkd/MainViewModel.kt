@@ -22,10 +22,6 @@ import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -33,15 +29,15 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.debug.FloatingTileService
-import li.songe.gkd.debug.HttpTileService
-import li.songe.gkd.debug.SnapshotTileService
+import li.songe.gkd.service.ButtonTileService
+import li.songe.gkd.service.HttpTileService
+import li.songe.gkd.service.RecordTileService
+import li.songe.gkd.service.SnapshotTileService
 import li.songe.gkd.permission.AuthReason
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.service.MatchTileService
 import li.songe.gkd.shizuku.execCommandForResult
 import li.songe.gkd.store.createTextFlow
-import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AlertDialogOptions
 import li.songe.gkd.ui.component.InputSubsLinkOption
 import li.songe.gkd.ui.component.RuleGroupState
@@ -86,17 +82,6 @@ class MainViewModel : ViewModel() {
             }
         }
     }
-
-    val enableDarkThemeFlow = storeFlow.debounce(300).map { s -> s.enableDarkTheme }.stateIn(
-        viewModelScope,
-        SharingStarted.Eagerly,
-        storeFlow.value.enableDarkTheme
-    )
-    val enableDynamicColorFlow = storeFlow.debounce(300).map { s -> s.enableDynamicColor }.stateIn(
-        viewModelScope,
-        SharingStarted.Eagerly,
-        storeFlow.value.enableDynamicColor
-    )
 
     val dialogFlow = MutableStateFlow<AlertDialogOptions?>(null)
     val authReasonFlow = MutableStateFlow<AuthReason?>(null)
@@ -247,7 +232,7 @@ class MainViewModel : ViewModel() {
             } ?: return@launchTry
             delay(200)
             when (qsTileCpt) {
-                HttpTileService::class.componentName, FloatingTileService::class.componentName -> {
+                HttpTileService::class.componentName, ButtonTileService::class.componentName, RecordTileService::class.componentName -> {
                     navigatePage(AdvancedPageDestination)
                 }
 

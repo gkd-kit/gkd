@@ -58,7 +58,7 @@ import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
-import li.songe.gkd.service.ManageService
+import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.switchA11yService
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.GroupNameText
@@ -106,7 +106,7 @@ fun useControlPage(): ScaffoldExt {
         val store by storeFlow.collectAsState()
 
         val a11yRunning by A11yService.isRunning.collectAsState()
-        val manageRunning by ManageService.isRunning.collectAsState()
+        val manageRunning by StatusService.isRunning.collectAsState()
         val a11yServiceEnabled by a11yServiceEnabledFlow.collectAsState()
 
         // 无障碍故障: 设置中无障碍开启, 但是实际 service 没有运行
@@ -146,9 +146,9 @@ fun useControlPage(): ScaffoldExt {
                             if (it) {
                                 requiredPermission(context, foregroundServiceSpecialUseState)
                                 requiredPermission(context, notificationState)
-                                ManageService.start()
+                                StatusService.start()
                             } else {
-                                ManageService.stop()
+                                StatusService.stop()
                             }
                             storeFlow.value = store.copy(
                                 enableStatusService = it

@@ -7,7 +7,6 @@ import android.os.Build
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,7 +20,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -65,14 +63,15 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.MainActivity
-import li.songe.gkd.debug.FloatingService
-import li.songe.gkd.debug.HttpService
-import li.songe.gkd.debug.ScreenshotService
 import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.service.ButtonService
+import li.songe.gkd.service.HttpService
+import li.songe.gkd.service.RecordService
+import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.shizuku.shizukuCheckActivity
 import li.songe.gkd.shizuku.shizukuCheckUserService
 import li.songe.gkd.shizuku.shizukuCheckWorkProfile
@@ -90,10 +89,7 @@ import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.ShortUrlSet
-import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.shizukuAppId
-import li.songe.gkd.util.shizukuMiniVersionCode
 import li.songe.gkd.util.stopCoroutine
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
@@ -158,7 +154,7 @@ fun AdvancedPage() {
                         )
                         showEditPortDlg = false
                         if (HttpService.httpServerFlow.value != null) {
-                            toast("已更新, 重启服务")
+                            toast("已更新，重启服务")
                         } else {
                             toast("已更新")
                         }
@@ -201,7 +197,11 @@ fun AdvancedPage() {
                 .verticalScroll(rememberScrollState())
                 .padding(contentPadding),
         ) {
-            ShizukuTitleCard()
+            Text(
+                text = "Shizuku",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
             val shizukuOk by shizukuOkState.stateFlow.collectAsState()
             AnimatedVisibility(!shizukuOk) {
                 AuthCard(
@@ -296,7 +296,7 @@ fun AdvancedPage() {
 
             TextSwitch(
                 title = "清除订阅",
-                subtitle = "服务关闭时,删除内存订阅",
+                subtitle = "服务关闭时，删除内存订阅",
                 checked = store.autoClearMemorySubs
             ) {
                 storeFlow.value = store.copy(
@@ -343,19 +343,18 @@ fun AdvancedPage() {
                 )
             }
 
-            val floatingRunning by FloatingService.isRunning.collectAsState()
             TextSwitch(
-                title = "悬浮窗服务",
-                subtitle = "显示悬浮按钮点击保存快照",
-                checked = floatingRunning,
+                title = "快照按钮",
+                subtitle = "悬浮显示按钮点击保存快照",
+                checked = ButtonService.isRunning.collectAsState().value,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
                         requiredPermission(context, foregroundServiceSpecialUseState)
                         requiredPermission(context, notificationState)
                         requiredPermission(context, canDrawOverlaysState)
-                        FloatingService.start()
+                        ButtonService.start()
                     } else {
-                        FloatingService.stop()
+                        ButtonService.stop()
                     }
                 }
             )
@@ -377,7 +376,7 @@ fun AdvancedPage() {
                 onSuffixClick = {
                     mainVm.dialogFlow.updateDialogOptions(
                         title = "限制说明",
-                        text = "仅支持部分小米设备截屏触发\n\n只保存节点信息不保存图片, 用户需要在快照记录里替换截图",
+                        text = "仅支持部分小米设备截屏触发\n\n只保存节点信息不保存图片，用户需要在快照记录里替换截图",
                     )
                 },
                 checked = store.captureScreenshot
@@ -436,6 +435,21 @@ fun AdvancedPage() {
                     enableActivityLog = it
                 )
             }
+            TextSwitch(
+                title = "记录服务",
+                subtitle = "悬浮显示界面信息",
+                checked = RecordService.isRunning.collectAsState().value,
+                onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
+                    if (it) {
+                        requiredPermission(context, foregroundServiceSpecialUseState)
+                        requiredPermission(context, notificationState)
+                        requiredPermission(context, canDrawOverlaysState)
+                        RecordService.start()
+                    } else {
+                        RecordService.stop()
+                    }
+                }
+            )
             SettingItem(
                 title = "界面记录",
                 onClick = {
@@ -457,7 +471,7 @@ fun AdvancedPage() {
                 onSuffixClick = {
                     mainVm.dialogFlow.updateDialogOptions(
                         title = "悬浮窗作用",
-                        text = "1.提高 GKD 前台优先级, 降低被系统杀死概率\n2.提高点击响应速度, 关闭后可能导致点击缓慢或不点击",
+                        text = "1.提高 GKD 前台优先级，降低被系统杀死概率\n2.提高点击响应速度，关闭后可能导致点击缓慢或不点击",
                     )
                 },
                 checked = store.enableAbFloatWindow,
@@ -477,7 +491,7 @@ private val checkShizukuMutex by lazy { Mutex() }
 
 private suspend fun checkShizukuFeat(block: suspend () -> Boolean) {
     if (checkShizukuMutex.isLocked) {
-        toast("正在检测中, 请稍后再试")
+        toast("正在检测中，请稍后再试")
         stopCoroutine()
     }
     checkShizukuMutex.withLock {
@@ -550,47 +564,4 @@ private fun ShizukuFragment(vm: AdvancedVm, enabled: Boolean = true) {
             shizukuStoreFlow.update { s -> s.copy(enableWorkProfile = it) }
         })
 
-}
-
-@Composable
-private fun ShizukuTitleCard() {
-    val mainVm = LocalMainViewModel.current
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .titleItemPadding(showTop = false),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = "Shizuku",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        val appInfoCache by appInfoCacheFlow.collectAsState()
-        val shizukuVersionCode = appInfoCache[shizukuAppId]?.versionCode
-        if (shizukuVersionCode != null && shizukuVersionCode < shizukuMiniVersionCode) {
-            Row(
-                modifier = Modifier.clickable(onClick = throttle {
-                    mainVm.dialogFlow.updateDialogOptions(
-                        title = "版本过低",
-                        text = "检测到 Shizuku 版本过低, 可能影响 GKD 正常运行, 建议自行更新至最新版本后再使用",
-                    )
-                }),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.WarningAmber,
-                    contentDescription = null,
-                    modifier = Modifier.height(MaterialTheme.typography.bodySmall.fontSize.value.dp),
-                    tint = MaterialTheme.colorScheme.error,
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "版本过低",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-        }
-    }
 }

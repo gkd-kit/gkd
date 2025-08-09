@@ -42,17 +42,14 @@ import li.songe.gkd.data.GkdAction
 import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.RuleStatus
-import li.songe.gkd.debug.SnapshotExt
-import li.songe.gkd.isActivityVisible
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.shizuku.safeGetTopActivity
 import li.songe.gkd.shizuku.serviceWrapperFlow
 import li.songe.gkd.store.shizukuStoreFlow
 import li.songe.gkd.store.storeFlow
-import li.songe.gkd.util.OnA11yConnected
-import li.songe.gkd.util.OnA11yEvent
-import li.songe.gkd.util.OnCreate
-import li.songe.gkd.util.OnDestroy
+import li.songe.gkd.util.OnA11yLife
+import li.songe.gkd.util.OnCreateToDestroy
+import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.UpdateTimeOption
 import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.componentName
@@ -60,7 +57,6 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.map
 import li.songe.gkd.util.showActionToast
 import li.songe.gkd.util.toast
-import li.songe.gkd.util.useLogLifecycle
 import li.songe.selector.MatchOption
 import li.songe.selector.Selector
 import java.lang.ref.WeakReference
@@ -68,16 +64,11 @@ import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-open class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA11yEvent, OnDestroy {
-    override fun onCreate() {
-        super.onCreate()
-        onCreated()
-    }
-
-    override fun onServiceConnected() {
-        super.onServiceConnected()
-        onA11yConnected()
-    }
+open class A11yService : AccessibilityService(), OnCreateToDestroy, OnA11yLife {
+    override fun onCreate() = onCreated()
+    override fun onServiceConnected() = onA11yConnected()
+    override fun onInterrupt() {}
+    override fun onDestroy() = onDestroyed()
 
     override val a11yEventCallbacks = mutableListOf<(AccessibilityEvent) -> Unit>()
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -85,11 +76,6 @@ open class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA1
         onA11yEvent(event)
     }
 
-    override fun onInterrupt() {}
-    override fun onDestroy() {
-        super.onDestroy()
-        onDestroyed()
-    }
 
     val scope = CoroutineScope(Dispatchers.Default).apply { onDestroyed { cancel() } }
 
@@ -104,16 +90,7 @@ open class A11yService : AccessibilityService(), OnCreate, OnA11yConnected, OnA1
         useAutoCheckShizuku()
         serviceWrapperFlow
         useMatchRule()
-        onCreated {
-            if (isActivityVisible()) {
-                toast("无障碍已启动")
-            }
-        }
-        onDestroyed {
-            if (isActivityVisible()) {
-                toast("无障碍已停止")
-            }
-        }
+        useAliveToast("无障碍", onlyWhenVisible = true)
     }
 
     companion object {
@@ -530,7 +507,7 @@ private fun A11yService.useRunningState() {
             // https://github.com/gkd-kit/gkd/issues/754
             storeFlow.update { it.copy(enableService = true) }
         }
-        ManageService.autoStart()
+        StatusService.autoStart()
     }
     onDestroyed {
         if (storeFlow.value.enableService) {

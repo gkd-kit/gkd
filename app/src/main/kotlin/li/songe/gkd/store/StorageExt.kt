@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -46,6 +47,7 @@ fun <T> createTextFlow(
     encode: (T) -> String,
     private: Boolean = false,
     scope: CoroutineScope = appScope,
+    debounceMillis: Long = 0,
 ): MutableStateFlow<T> {
     val name = if (key.contains('.')) key else "$key.txt"
     val file = (if (private) privateStoreFolder else storeFolder).resolve(name)
@@ -53,7 +55,7 @@ fun <T> createTextFlow(
     val initValue = decode(initText)
     val stateFlow = MutableStateFlow(initValue)
     scope.launch {
-        stateFlow.drop(1).conflate().collect {
+        stateFlow.drop(1).conflate().debounce(debounceMillis).collect {
             withContext(Dispatchers.IO) {
                 writeStoreText(file, encode(it))
             }
@@ -68,6 +70,7 @@ inline fun <reified T> createAnyFlow(
     crossinline initialize: (T) -> T = { it },
     private: Boolean = false,
     scope: CoroutineScope = appScope,
+    debounceMillis: Long = 0,
 ): MutableStateFlow<T> {
     return createTextFlow(
         key = "$key.json",
@@ -82,5 +85,6 @@ inline fun <reified T> createAnyFlow(
         },
         private = private,
         scope = scope,
+        debounceMillis = debounceMillis,
     )
 }

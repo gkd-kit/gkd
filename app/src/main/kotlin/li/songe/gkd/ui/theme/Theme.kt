@@ -16,10 +16,14 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowInsetsControllerCompat
+import li.songe.gkd.app
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.local.LocalDarkTheme
-import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.util.map
 
 private val LightColorScheme = lightColorScheme()
 private val DarkColorScheme = darkColorScheme()
@@ -27,26 +31,32 @@ val supportDynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
 @Composable
 fun AppTheme(
+    invertedTheme: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    // https://developer.android.com/jetpack/compose/designsystems/material3?hl=zh-cn
-    val context = LocalActivity.current!!
-    val mainVm = LocalMainViewModel.current
-    val enableDarkTheme by mainVm.enableDarkThemeFlow.collectAsState()
-    val enableDynamicColor by mainVm.enableDynamicColorFlow.collectAsState()
+    val scope = rememberCoroutineScope()
+    val enableDarkThemeFlow = remember { storeFlow.map(scope) { it.enableDarkTheme } }
+    val enableDynamicColorFlow = remember { storeFlow.map(scope) { it.enableDynamicColor } }
+    val enableDarkTheme by enableDarkThemeFlow.collectAsState()
+    val enableDynamicColor by enableDynamicColorFlow.collectAsState()
     val systemInDarkTheme = isSystemInDarkTheme()
-    val darkTheme = enableDarkTheme ?: systemInDarkTheme
+    val darkTheme = (enableDarkTheme ?: systemInDarkTheme).let {
+        if (invertedTheme) !it else it
+    }
     val colorScheme = when {
-        supportDynamicColor && enableDynamicColor && darkTheme -> dynamicDarkColorScheme(context)
-        supportDynamicColor && enableDynamicColor && !darkTheme -> dynamicLightColorScheme(context)
+        supportDynamicColor && enableDynamicColor && darkTheme -> dynamicDarkColorScheme(app)
+        supportDynamicColor && enableDynamicColor && !darkTheme -> dynamicLightColorScheme(app)
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
 
-    // https://github.com/gkd-kit/gkd/pull/421
-    LaunchedEffect(darkTheme) {
-        WindowInsetsControllerCompat(context.window, context.window.decorView).apply {
-            isAppearanceLightStatusBars = !darkTheme
+    val activity = LocalActivity.current
+    if (activity != null) {
+        LaunchedEffect(darkTheme) {
+            // https://github.com/gkd-kit/gkd/pull/421
+            WindowInsetsControllerCompat(activity.window, activity.window.decorView).apply {
+                isAppearanceLightStatusBars = !darkTheme
+            }
         }
     }
     CompositionLocalProvider(LocalDarkTheme provides darkTheme) {

@@ -3,28 +3,40 @@ package li.songe.gkd.util
 
 import android.view.accessibility.AccessibilityEvent
 import com.blankj.utilcode.util.LogUtils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import li.songe.gkd.isActivityVisible
 import java.util.WeakHashMap
 
-private val callbacksMap by lazy { WeakHashMap<Any, HashMap<Int, MutableList<Any>>>() }
+private val callbacksMap = WeakHashMap<Any, HashMap<Int, MutableList<Any>>>()
 
 @Suppress("UNCHECKED_CAST")
-private fun <T> Any.getCallbacks(method: Int): MutableList<T> {
+private fun <T> CanOnCallback.getCallbacks(method: Int): MutableList<T> {
     return callbacksMap.getOrPut(this) { hashMapOf() }
         .getOrPut(method) { mutableListOf() } as MutableList<T>
 }
 
-interface CanOnCallback
+interface CanOnCallback {
+    fun useLogLifecycle() {
+        LogUtils.d("useLogLifecycle", this)
+        if (this is OnCreateToDestroy) {
+            onCreated { LogUtils.d("onCreated", this) }
+            onDestroyed { LogUtils.d("onDestroyed", this) }
+        }
+        if (this is OnA11yLife) {
+            onA11yConnected { LogUtils.d("onA11yConnected", this) }
+        }
+        if (this is OnTileLife) {
+            onStartListened { LogUtils.d("onStartListened", this) }
+            onStopListened { LogUtils.d("onStopListened", this) }
+            onTileClicked { LogUtils.d("onTileClicked", this) }
+        }
+    }
+}
 
-interface OnCreate : CanOnCallback {
-//    fun onBeforeCreate(f: () -> Unit) {
-//        getCallbacks<() -> Unit>(1).add(f)
-//    }
-//
-//    fun onBeforeCreate() {
-//        getCallbacks<() -> Unit>(1).forEach { it() }
-//    }
-
+interface OnCreateToDestroy : CanOnCallback {
     fun onCreated(f: () -> Unit) {
         getCallbacks<() -> Unit>(2).add(f)
     }
@@ -32,9 +44,7 @@ interface OnCreate : CanOnCallback {
     fun onCreated() {
         getCallbacks<() -> Unit>(2).forEach { it() }
     }
-}
 
-interface OnDestroy : CanOnCallback {
     fun onDestroyed(f: () -> Unit) {
         getCallbacks<() -> Unit>(4).add(f)
     }
@@ -42,11 +52,38 @@ interface OnDestroy : CanOnCallback {
     fun onDestroyed() {
         getCallbacks<() -> Unit>(4).forEach { it() }
     }
+
+    fun useScope(): CoroutineScope = MainScope().apply { onDestroyed { cancel() } }
+
+    fun useAliveFlow(stateFlow: MutableStateFlow<Boolean>) {
+        onCreated { stateFlow.value = true }
+        onDestroyed { stateFlow.value = false }
+    }
+
+    fun useAliveToast(name: String, onlyWhenVisible: Boolean = false) {
+        onCreated {
+            if (isActivityVisible() || !onlyWhenVisible) {
+                toast("${name}已启动")
+            }
+        }
+        onDestroyed {
+            if (isActivityVisible() || !onlyWhenVisible) {
+                toast("${name}已停止")
+            }
+        }
+    }
 }
 
-interface OnA11yEvent : CanOnCallback {
+interface OnA11yLife : CanOnCallback {
+    fun onA11yConnected(f: () -> Unit) {
+        getCallbacks<() -> Unit>(8).add(f)
+    }
+
+    fun onA11yConnected() {
+        getCallbacks<() -> Unit>(8).forEach { it() }
+    }
+
     val a11yEventCallbacks: MutableList<(AccessibilityEvent) -> Unit>
-        get() = getCallbacks(6)
 
     fun onA11yEvent(f: (AccessibilityEvent) -> Unit) {
         a11yEventCallbacks.add(f)
@@ -57,17 +94,7 @@ interface OnA11yEvent : CanOnCallback {
     }
 }
 
-interface OnA11yConnected : CanOnCallback {
-    fun onA11yConnected(f: () -> Unit) {
-        getCallbacks<() -> Unit>(8).add(f)
-    }
-
-    fun onA11yConnected() {
-        getCallbacks<() -> Unit>(8).forEach { it() }
-    }
-}
-
-interface OnChangeListen : CanOnCallback {
+interface OnTileLife : CanOnCallback {
     fun onStartListened(f: () -> Unit) {
         getCallbacks<() -> Unit>(10).add(f)
     }
@@ -83,43 +110,12 @@ interface OnChangeListen : CanOnCallback {
     fun onStopListened() {
         getCallbacks<() -> Unit>(12).forEach { it() }
     }
-}
 
-interface OnTileClick : CanOnCallback {
     fun onTileClicked(f: () -> Unit) {
         getCallbacks<() -> Unit>(14).add(f)
     }
 
     fun onTileClicked() {
         getCallbacks<() -> Unit>(14).forEach { it() }
-    }
-}
-
-fun CanOnCallback.useAliveFlow(stateFlow: MutableStateFlow<Boolean>) {
-    if (this is OnCreate) {
-        onCreated { stateFlow.value = true }
-    }
-    if (this is OnDestroy) {
-        onDestroyed { stateFlow.value = false }
-    }
-}
-
-fun CanOnCallback.useLogLifecycle() {
-    LogUtils.d("useLogLifecycle", this)
-    if (this is OnCreate) {
-        onCreated { LogUtils.d("onCreated", this) }
-    }
-    if (this is OnDestroy) {
-        onDestroyed { LogUtils.d("onDestroyed", this) }
-    }
-    if (this is OnA11yConnected) {
-        onA11yConnected { LogUtils.d("onA11yConnected", this) }
-    }
-    if (this is OnChangeListen) {
-        onStartListened { LogUtils.d("onStartListened", this) }
-        onStopListened { LogUtils.d("onStopListened", this) }
-    }
-    if (this is OnTileClick) {
-        onTileClicked { LogUtils.d("onTileClicked", this) }
     }
 }

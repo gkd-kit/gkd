@@ -11,13 +11,13 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.net.toUri
-import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
-import li.songe.gkd.debug.FloatingService
-import li.songe.gkd.debug.HttpService
-import li.songe.gkd.debug.ScreenshotService
 import li.songe.gkd.permission.notificationState
+import li.songe.gkd.service.ButtonService
+import li.songe.gkd.service.HttpService
+import li.songe.gkd.service.RecordService
+import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.componentName
 import kotlin.reflect.KClass
@@ -56,11 +56,7 @@ data class Notif(
             val deleteIntent = PendingIntent.getBroadcast(
                 app,
                 0,
-                Intent().apply {
-                    action = StopServiceReceiver.STOP_ACTION
-                    putExtra(StopServiceReceiver.STOP_ACTION, stopService.componentName.className)
-                    setPackage(META.appId)
-                },
+                StopServiceReceiver.getIntent(stopService),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
             notification
@@ -76,9 +72,10 @@ data class Notif(
         NotificationManagerCompat.from(app).notify(id, toNotification())
     }
 
-    fun notifyService(context: Service) {
+    context(service: Service)
+    fun notifyService() {
         ServiceCompat.startForeground(
-            context,
+            service,
             id,
             toNotification(),
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -108,14 +105,14 @@ val screenshotNotif = Notif(
     stopService = ScreenshotService::class,
 )
 
-val floatingNotif = Notif(
+val buttonNotif = Notif(
     id = 102,
-    title = "悬浮窗服务正在运行",
+    title = "快照按钮服务正在运行",
     text = "点击按钮捕获快照",
     ongoing = true,
     autoCancel = false,
     uri = "gkd://page/1",
-    stopService = FloatingService::class,
+    stopService = ButtonService::class,
 )
 
 val httpNotif = Notif(
@@ -128,7 +125,7 @@ val httpNotif = Notif(
 )
 
 val snapshotActionNotif = Notif(
-    id = 105,
+    id = 104,
     title = "快照服务正在运行",
     text = "捕获快照完成后自动关闭",
     ongoing = true,
@@ -137,9 +134,18 @@ val snapshotActionNotif = Notif(
 
 val snapshotNotif = Notif(
     channel = NotifChannel.Snapshot,
-    id = 104,
+    id = 105,
     title = "快照已保存",
     ongoing = false,
     autoCancel = true,
     uri = "gkd://page/2",
+)
+
+val recordNotif = Notif(
+    id = 106,
+    title = "记录服务正在运行",
+    ongoing = true,
+    autoCancel = false,
+    uri = "gkd://page/1",
+    stopService = RecordService::class,
 )
