@@ -25,17 +25,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import li.songe.gkd.a11y.useA11yServiceEnabledFlow
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.service.ButtonTileService
-import li.songe.gkd.service.HttpTileService
-import li.songe.gkd.service.RecordTileService
-import li.songe.gkd.service.SnapshotTileService
 import li.songe.gkd.permission.AuthReason
 import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.service.ButtonTileService
+import li.songe.gkd.service.HttpTileService
 import li.songe.gkd.service.MatchTileService
+import li.songe.gkd.service.RecordTileService
+import li.songe.gkd.service.SnapshotTileService
 import li.songe.gkd.shizuku.execCommandForResult
 import li.songe.gkd.store.createTextFlow
 import li.songe.gkd.ui.component.AlertDialogOptions
@@ -294,6 +295,8 @@ class MainViewModel : ViewModel() {
         }
         stopCoroutine()
     }
+
+    val a11yServiceEnabledFlow = useA11yServiceEnabledFlow()
 
     init {
         viewModelScope.launchTry(Dispatchers.IO) {

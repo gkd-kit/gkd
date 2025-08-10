@@ -52,7 +52,6 @@ import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDest
 import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
 import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import li.songe.gkd.MainActivity
-import li.songe.gkd.a11yServiceEnabledFlow
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
@@ -107,7 +106,7 @@ fun useControlPage(): ScaffoldExt {
 
         val a11yRunning by A11yService.isRunning.collectAsState()
         val manageRunning by StatusService.isRunning.collectAsState()
-        val a11yServiceEnabled by a11yServiceEnabledFlow.collectAsState()
+        val a11yServiceEnabled by mainVm.a11yServiceEnabledFlow.collectAsState()
 
         // 无障碍故障: 设置中无障碍开启, 但是实际 service 没有运行
         val a11yBroken = !a11yRunning && a11yServiceEnabled

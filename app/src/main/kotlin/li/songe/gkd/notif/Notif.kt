@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.net.toUri
+import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
 import li.songe.gkd.permission.notificationState
@@ -87,13 +88,15 @@ data class Notif(
     }
 }
 
-val abNotif = Notif(
-    id = 100,
-    title = "GKD",
-    text = "无障碍正在运行",
-    ongoing = true,
-    autoCancel = false,
-)
+val abNotif by lazy {
+    Notif(
+        id = 100,
+        title = META.appName,
+        text = "无障碍正在运行",
+        ongoing = true,
+        autoCancel = false,
+    )
+}
 
 val screenshotNotif = Notif(
     id = 101,

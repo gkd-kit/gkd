@@ -83,7 +83,7 @@ private fun View.updateToastView() {
     clipToOutline = true
 }
 
-fun setReactiveToastStyle() {
+private fun setReactiveToastStyle() {
     Toaster.setStyle(object : WhiteToastStyle() {
         override fun getGravity() = Gravity.BOTTOM
         override fun getYOffset() = toastYOffset
@@ -160,4 +160,9 @@ private fun showAccessibilityToast(context: AccessibilityService, message: CharS
         } catch (_: Exception) {
         }
     }, triggerInterval)
+}
+
+fun initToast() {
+    Toaster.init(app)
+    setReactiveToastStyle()
 }

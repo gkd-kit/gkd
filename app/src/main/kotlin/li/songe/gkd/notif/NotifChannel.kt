@@ -3,16 +3,16 @@ package li.songe.gkd.notif
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import androidx.core.app.NotificationManagerCompat
+import li.songe.gkd.META
 import li.songe.gkd.app
 
 sealed class NotifChannel(
     val id: String,
-    val name: String,
+    val name: String? = null,
     val desc: String? = null,
 ) {
     data object Default : NotifChannel(
         id = "0",
-        name = "GKD",
     )
 
     data object Snapshot : NotifChannel(
@@ -32,7 +32,7 @@ fun initChannel() {
     channels.forEach {
         val channel = NotificationChannel(
             it.id,
-            it.name,
+            it.name ?: META.appName,
             NotificationManager.IMPORTANCE_LOW
         ).apply {
             description = it.desc

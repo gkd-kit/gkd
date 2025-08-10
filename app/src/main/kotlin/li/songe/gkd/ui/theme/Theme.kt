@@ -20,10 +20,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowInsetsControllerCompat
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.app
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.local.LocalDarkTheme
-import li.songe.gkd.util.map
 
 private val LightColorScheme = lightColorScheme()
 private val DarkColorScheme = darkColorScheme()
@@ -35,8 +38,16 @@ fun AppTheme(
     content: @Composable () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val enableDarkThemeFlow = remember { storeFlow.map(scope) { it.enableDarkTheme } }
-    val enableDynamicColorFlow = remember { storeFlow.map(scope) { it.enableDynamicColor } }
+    val enableDarkThemeFlow = remember {
+        storeFlow.map { it.enableDarkTheme }.debounce(300).stateIn(
+            scope, SharingStarted.Eagerly, storeFlow.value.enableDarkTheme
+        )
+    }
+    val enableDynamicColorFlow = remember {
+        storeFlow.map { it.enableDynamicColor }.debounce(300).stateIn(
+            scope, SharingStarted.Eagerly, storeFlow.value.enableDynamicColor
+        )
+    }
     val enableDarkTheme by enableDarkThemeFlow.collectAsState()
     val enableDynamicColor by enableDynamicColorFlow.collectAsState()
     val systemInDarkTheme = isSystemInDarkTheme()

@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
-import li.songe.gkd.appOpsManager
 import li.songe.gkd.appScope
 import li.songe.gkd.isActivityVisible
 import li.songe.gkd.shizuku.shizukuCheckGranted
@@ -149,7 +148,7 @@ private suspend fun asyncRequestPermission(
 private fun checkOpNoThrow(op: String): Int {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         try {
-            return appOpsManager.checkOpNoThrow(
+            return app.appOpsManager.checkOpNoThrow(
                 op,
                 android.os.Process.myUid(),
                 app.packageName

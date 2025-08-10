@@ -63,12 +63,12 @@ import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import li.songe.gkd.service.ButtonService
-import li.songe.gkd.service.HttpService
-import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.permission.AuthDialog
 import li.songe.gkd.permission.updatePermissionState
 import li.songe.gkd.service.A11yService
+import li.songe.gkd.service.ButtonService
+import li.songe.gkd.service.HttpService
+import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.service.updateDefaultInputAppId
@@ -163,7 +163,7 @@ class MainActivity : ComponentActivity() {
         StatusService.autoStart()
         lifecycleScope.launch {
             storeFlow.map(lifecycleScope) { s -> s.excludeFromRecents }.collect {
-                activityManager.appTasks.forEach { task ->
+                app.activityManager.appTasks.forEach { task ->
                     task.setExcludeFromRecents(it)
                 }
             }

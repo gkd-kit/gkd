@@ -215,9 +215,8 @@ class UpsertRuleGroupVm(stateHandle: SavedStateHandle) : ViewModel() {
         }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        clearJson5TransformationCache()
+    init {
+        addCloseable { clearJson5TransformationCache() }
     }
 }
 

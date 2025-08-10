@@ -3,6 +3,7 @@ package li.songe.gkd.shizuku
 
 import android.content.Intent
 import android.content.pm.PackageManager
+import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -12,10 +13,13 @@ import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.otherUserMapFlow
 import li.songe.gkd.data.toAppInfo
+import li.songe.gkd.isActivityVisible
+import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.store.shizukuStoreFlow
 import li.songe.gkd.util.allPackageInfoMapFlow
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.otherUserAppInfoMapFlow
+import li.songe.gkd.util.toast
 import li.songe.gkd.util.userAppInfoMapFlow
 import rikka.shizuku.Shizuku
 
@@ -45,6 +49,18 @@ fun shizukuCheckWorkProfile(): Boolean {
 }
 
 fun initShizuku() {
+    Shizuku.addBinderReceivedListener {
+        LogUtils.d("Shizuku.addBinderReceivedListener")
+        appScope.launchTry(Dispatchers.IO) {
+            shizukuOkState.updateAndGet()
+        }
+    }
+    Shizuku.addBinderDeadListener {
+        LogUtils.d("Shizuku.addBinderDeadListener")
+        shizukuOkState.stateFlow.value = false
+        val prefix = if (isActivityVisible()) "" else "${META.appName}: "
+        toast("${prefix}已断开 Shizuku 服务")
+    }
     serviceWrapperFlow.value
     appScope.launchTry(Dispatchers.IO) {
         combine(
