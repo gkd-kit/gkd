@@ -43,8 +43,8 @@ import kotlinx.coroutines.withContext
 import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.waitResult
-import li.songe.gkd.ui.local.LocalDarkTheme
-import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.share.LocalDarkTheme
+import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.getJson5Transformation
 import li.songe.gkd.ui.style.scaffoldPadding

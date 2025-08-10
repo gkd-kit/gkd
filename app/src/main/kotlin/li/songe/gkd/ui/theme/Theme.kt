@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.app
 import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.local.LocalDarkTheme
+import li.songe.gkd.ui.share.LocalDarkTheme
 
 private val LightColorScheme = lightColorScheme()
 private val DarkColorScheme = darkColorScheme()

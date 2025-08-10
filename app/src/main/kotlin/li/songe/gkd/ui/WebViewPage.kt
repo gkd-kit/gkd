@@ -52,8 +52,8 @@ import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.Value
 import li.songe.gkd.ui.component.updateDialogOptions
-import li.songe.gkd.ui.local.LocalMainViewModel
-import li.songe.gkd.ui.local.LocalNavController
+import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.client

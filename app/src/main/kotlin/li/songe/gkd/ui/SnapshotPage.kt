@@ -53,7 +53,6 @@ import kotlinx.coroutines.withContext
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.permission.canWriteExternalStorage
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.ui.component.EmptyText
@@ -63,8 +62,8 @@ import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.waitResult
-import li.songe.gkd.ui.local.LocalMainViewModel
-import li.songe.gkd.ui.local.LocalNavController
+import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemHorizontalPadding
@@ -72,6 +71,7 @@ import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.IMPORT_SHORT_URL
 import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
+import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.launchAsFn
@@ -89,7 +89,7 @@ fun SnapshotPage() {
     val colorScheme = MaterialTheme.colorScheme
     val vm = viewModel<SnapshotVm>()
 
-    val firstLoading by vm.linkLoad.firstLoadingFlow.collectAsState()
+    val firstLoading by vm.firstLoadingFlow.collectAsState()
     val snapshots by vm.snapshotsState.collectAsState()
     var selectedSnapshot by remember { mutableStateOf<Snapshot?>(null) }
     val (scrollBehavior, listState) = useListScrollState(snapshots.isNotEmpty(), firstLoading)

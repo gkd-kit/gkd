@@ -34,15 +34,15 @@ val appInfoCacheFlow by lazy {
 }
 
 val systemAppInfoCacheFlow by lazy {
-    appInfoCacheFlow.map(appScope) { c ->
+    appInfoCacheFlow.mapState(appScope) { c ->
         c.filter { a -> a.value.isSystem }
     }
 }
 
-val systemAppsFlow by lazy { systemAppInfoCacheFlow.map(appScope) { c -> c.keys } }
+val systemAppsFlow by lazy { systemAppInfoCacheFlow.mapState(appScope) { c -> c.keys } }
 
 val orderedAppInfosFlow by lazy {
-    appInfoCacheFlow.map(appScope) { c ->
+    appInfoCacheFlow.mapState(appScope) { c ->
         c.values.sortedWith { a, b ->
             collator.compare(a.name, b.name)
         }
@@ -57,7 +57,7 @@ private fun Map<String, AppInfo>.getMayQueryPkgNoAccess(): Boolean {
 // 某些设备在应用更新后出现权限错乱/缓存错乱
 private const val MINIMUM_NORMAL_APP_SIZE = 8
 val mayQueryPkgNoAccessFlow by lazy {
-    userAppInfoMapFlow.map(appScope) { it.getMayQueryPkgNoAccess() }
+    userAppInfoMapFlow.mapState(appScope) { it.getMayQueryPkgNoAccess() }
 }
 
 private val willUpdateAppIds by lazy { MutableStateFlow(emptySet<String>()) }

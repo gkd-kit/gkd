@@ -11,41 +11,40 @@ import li.songe.gkd.data.AppConfig
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.store.storeFlow
-import li.songe.gkd.util.LinkLoad
+import li.songe.gkd.ui.share.BaseViewModel
 import li.songe.gkd.util.SortTypeOption
-import li.songe.gkd.util.ViewModelExt
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.collator
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.getGroupEnable
-import li.songe.gkd.util.map
+import li.songe.gkd.util.mapState
 import li.songe.gkd.util.subsIdToRawFlow
 
-class SubsAppListVm(stateHandle: SavedStateHandle) : ViewModelExt() {
+class SubsAppListVm(stateHandle: SavedStateHandle) : BaseViewModel() {
     private val args = SubsAppListPageDestination.argsFrom(stateHandle)
-    val linkLoad = LinkLoad(viewModelScope)
-    val subsRawFlow = subsIdToRawFlow.map(viewModelScope) { s -> s[args.subsItemId] }
+
+    val subsRawFlow = subsIdToRawFlow.mapState(viewModelScope) { s -> s[args.subsItemId] }
 
     private val appConfigsFlow = DbSet.appConfigDao.queryAppTypeConfig(args.subsItemId)
-        .let(linkLoad::invoke).stateInit(emptyList())
+        .attachLoad().stateInit(emptyList())
 
     private val groupSubsConfigsFlow = DbSet.subsConfigDao.querySubsGroupTypeConfig(args.subsItemId)
-        .let(linkLoad::invoke).stateInit(emptyList())
+        .attachLoad().stateInit(emptyList())
 
     private val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(args.subsItemId)
-        .let(linkLoad::invoke).stateInit(emptyList())
+        .attachLoad().stateInit(emptyList())
 
     private val appIdToOrderFlow =
-        DbSet.actionLogDao.queryLatestUniqueAppIds(args.subsItemId).let(linkLoad::invoke)
+        DbSet.actionLogDao.queryLatestUniqueAppIds(args.subsItemId).attachLoad()
             .map { appIds ->
                 appIds.mapIndexed { index, appId -> appId to index }.toMap()
             }
     val sortTypeFlow =
-        storeFlow.map(viewModelScope) { SortTypeOption.allSubObject.findOption(it.subsAppSortType) }
+        storeFlow.mapState(viewModelScope) { SortTypeOption.allSubObject.findOption(it.subsAppSortType) }
 
-    val showUninstallAppFlow = storeFlow.map(viewModelScope) { it.subsAppShowUninstallApp }
-    private val rawAppsFlow = subsRawFlow.map(viewModelScope) {
-        (it?.apps ?: emptyList()).run {
+    val showUninstallAppFlow = storeFlow.mapState(viewModelScope) { it.subsAppShowUninstallApp }
+    private val rawAppsFlow = subsRawFlow.mapState(viewModelScope) { subs ->
+        (subs?.apps ?: emptyList()).run {
             if (any { it.groups.isEmpty() }) {
                 filterNot { it.groups.isEmpty() }
             } else {

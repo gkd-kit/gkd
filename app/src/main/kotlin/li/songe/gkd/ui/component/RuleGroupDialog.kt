@@ -41,9 +41,9 @@ import com.ramcosta.composedestinations.utils.currentDestinationAsState
 import kotlinx.coroutines.delay
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.ui.icon.ResetSettings
-import li.songe.gkd.ui.local.LocalDarkTheme
-import li.songe.gkd.ui.local.LocalMainViewModel
-import li.songe.gkd.ui.local.LocalNavController
+import li.songe.gkd.ui.share.LocalDarkTheme
+import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.getJson5AnnotatedString
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.throttle

@@ -56,7 +56,7 @@ import li.songe.gkd.util.getIpAddressInLocalNetwork
 import li.songe.gkd.util.isPortAvailable
 import li.songe.gkd.util.keepNullJson
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.map
+import li.songe.gkd.util.mapState
 import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
 import li.songe.gkd.util.subsItemsFlow
@@ -79,7 +79,7 @@ class HttpService : Service(), OnCreateToDestroy {
 
     val scope = useScope()
 
-    private val httpServerPortFlow = storeFlow.map(scope) { s -> s.httpServerPort }
+    private val httpServerPortFlow = storeFlow.mapState(scope) { s -> s.httpServerPort }
 
     init {
         useLogLifecycle()

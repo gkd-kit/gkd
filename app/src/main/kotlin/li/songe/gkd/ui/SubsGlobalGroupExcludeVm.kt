@@ -15,17 +15,17 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.findOption
-import li.songe.gkd.util.map
+import li.songe.gkd.util.mapState
 import li.songe.gkd.util.orderedAppInfosFlow
 import li.songe.gkd.util.subsIdToRawFlow
 
 class SubsGlobalGroupExcludeVm(stateHandle: SavedStateHandle) : ViewModel() {
     private val args = SubsGlobalGroupExcludePageDestination.argsFrom(stateHandle)
 
-    val rawSubsFlow = subsIdToRawFlow.map(viewModelScope) { it[args.subsItemId] }
+    val rawSubsFlow = subsIdToRawFlow.mapState(viewModelScope) { it[args.subsItemId] }
 
     val groupFlow =
-        rawSubsFlow.map(viewModelScope) { r -> r?.globalGroups?.find { g -> g.key == args.groupKey } }
+        rawSubsFlow.mapState(viewModelScope) { r -> r?.globalGroups?.find { g -> g.key == args.groupKey } }
 
     val disabledAppSetFlow = groupFlow.map { g ->
         (g?.apps ?: emptyList()).filter { a -> a.enable == false }.map { a -> a.id }.toSet()
@@ -35,7 +35,7 @@ class SubsGlobalGroupExcludeVm(stateHandle: SavedStateHandle) : ViewModel() {
         DbSet.subsConfigDao.queryGlobalGroupTypeConfig(args.subsItemId, args.groupKey)
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    val excludeDataFlow = subsConfigFlow.map(viewModelScope) { s -> ExcludeData.parse(s?.exclude) }
+    val excludeDataFlow = subsConfigFlow.mapState(viewModelScope) { s -> ExcludeData.parse(s?.exclude) }
 
     val searchStrFlow = MutableStateFlow("")
     private val debounceSearchStrFlow = searchStrFlow.debounce(200)
@@ -45,12 +45,12 @@ class SubsGlobalGroupExcludeVm(stateHandle: SavedStateHandle) : ViewModel() {
         DbSet.actionLogDao.queryLatestUniqueAppIds(args.subsItemId, args.groupKey).map { appIds ->
             appIds.mapIndexed { index, appId -> appId to index }.toMap()
         }
-    val sortTypeFlow = storeFlow.map(viewModelScope) {
+    val sortTypeFlow = storeFlow.mapState(viewModelScope) {
         SortTypeOption.allSubObject.findOption(it.subsExcludeSortType)
     }
-    val showSystemAppFlow = storeFlow.map(viewModelScope) { it.subsExcludeShowSystemApp }
-    val showHiddenAppFlow = storeFlow.map(viewModelScope) { it.subsExcludeShowHiddenApp }
-    val showDisabledAppFlow = storeFlow.map(viewModelScope) { it.subsExcludeShowDisabledApp }
+    val showSystemAppFlow = storeFlow.mapState(viewModelScope) { it.subsExcludeShowSystemApp }
+    val showHiddenAppFlow = storeFlow.mapState(viewModelScope) { it.subsExcludeShowHiddenApp }
+    val showDisabledAppFlow = storeFlow.mapState(viewModelScope) { it.subsExcludeShowDisabledApp }
     val showAppInfosFlow =
         orderedAppInfosFlow.combine(showHiddenAppFlow) { appInfos, showHiddenApp ->
             if (showHiddenApp) {

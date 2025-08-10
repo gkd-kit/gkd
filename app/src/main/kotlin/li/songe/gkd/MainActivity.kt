@@ -79,8 +79,8 @@ import li.songe.gkd.ui.component.ShareDataDialog
 import li.songe.gkd.ui.component.SubsSheet
 import li.songe.gkd.ui.component.TermsAcceptDialog
 import li.songe.gkd.ui.component.UrlDetailDialog
-import li.songe.gkd.ui.local.LocalMainViewModel
-import li.songe.gkd.ui.local.LocalNavController
+import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.theme.AppTheme
 import li.songe.gkd.util.EditGithubCookieDlg
 import li.songe.gkd.util.ShortUrlSet
@@ -89,7 +89,7 @@ import li.songe.gkd.util.componentName
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.fixSomeProblems
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.map
+import li.songe.gkd.util.mapState
 import li.songe.gkd.util.openApp
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.shizukuAppId
@@ -162,7 +162,7 @@ class MainActivity : ComponentActivity() {
         pickContentLauncher
         StatusService.autoStart()
         lifecycleScope.launch {
-            storeFlow.map(lifecycleScope) { s -> s.excludeFromRecents }.collect {
+            storeFlow.mapState(lifecycleScope) { s -> s.excludeFromRecents }.collect {
                 app.activityManager.appTasks.forEach { task ->
                     task.setExcludeFromRecents(it)
                 }

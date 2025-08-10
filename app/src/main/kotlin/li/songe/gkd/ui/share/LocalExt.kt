@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.local
+package li.songe.gkd.ui.share
 
 import androidx.compose.runtime.compositionLocalOf
 import androidx.navigation.NavHostController

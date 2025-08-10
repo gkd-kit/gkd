@@ -20,6 +20,7 @@ import android.widget.Toast
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
+import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.hjq.toast.Toaster
 import com.hjq.toast.style.WhiteToastStyle
@@ -160,6 +161,11 @@ private fun showAccessibilityToast(context: AccessibilityService, message: CharS
         } catch (_: Exception) {
         }
     }, triggerInterval)
+}
+
+fun copyText(text: String) {
+    ClipboardUtils.copyText(text)
+    toast("复制成功")
 }
 
 fun initToast() {

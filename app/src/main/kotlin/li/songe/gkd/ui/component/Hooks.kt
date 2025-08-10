@@ -22,13 +22,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import kotlinx.coroutines.delay
 import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.util.map
+import li.songe.gkd.util.mapState
 import li.songe.gkd.util.subsIdToRawFlow
 
 @Composable
 fun useSubs(subsId: Long?): RawSubscription? {
     val scope = rememberCoroutineScope()
-    return remember(subsId) { subsIdToRawFlow.map(scope) { it[subsId] } }.collectAsState().value
+    return remember(subsId) { subsIdToRawFlow.mapState(scope) { it[subsId] } }.collectAsState().value
 }
 
 @Composable

@@ -15,35 +15,31 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.ui.component.toGroupState
-import li.songe.gkd.util.LinkLoad
+import li.songe.gkd.ui.share.BaseViewModel
 import li.songe.gkd.util.RuleSortOption
-import li.songe.gkd.util.ViewModelExt
 import li.songe.gkd.util.collator
 import li.songe.gkd.util.findOption
-import li.songe.gkd.util.map
+import li.songe.gkd.util.mapState
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.usedSubsEntriesFlow
 
 
-class AppConfigVm(stateHandle: SavedStateHandle) : ViewModelExt() {
+class AppConfigVm(stateHandle: SavedStateHandle) : BaseViewModel() {
     private val args = AppConfigPageDestination.argsFrom(stateHandle)
 
-    val linkLoad = LinkLoad(viewModelScope)
-
-    val ruleSortTypeFlow = storeFlow.map(viewModelScope) {
+    val ruleSortTypeFlow = storeFlow.mapState(viewModelScope) {
         RuleSortOption.allSubObject.findOption(it.appRuleSortType)
     }
 
-    val appShowInnerDisableFlow = storeFlow.map(viewModelScope) {
+    val appShowInnerDisableFlow = storeFlow.mapState(viewModelScope) {
         it.appShowInnerDisable
     }
 
-    private val usedSubsIdsFlow = subsItemsFlow.map(viewModelScope) { list ->
+    private val usedSubsIdsFlow = subsItemsFlow.mapState(viewModelScope) { list ->
         list.filter { it.enable }.map { it.id }.sorted()
     }
 
-    private val appConfigsFlow = DbSet.appConfigDao.queryAppUsedList(args.appId)
-        .let(linkLoad::invoke)
+    private val appConfigsFlow = DbSet.appConfigDao.queryAppUsedList(args.appId).attachLoad()
 
     private val appUsedSubsIdsFlow = combine(usedSubsIdsFlow, appConfigsFlow) { ids, configs ->
         ids.filter {
@@ -57,19 +53,19 @@ class AppConfigVm(stateHandle: SavedStateHandle) : ViewModelExt() {
         } else {
             flowOf(emptyList())
         }
-    }.flattenConcat().let(linkLoad::invoke).stateInit(emptyList())
+    }.flattenConcat().attachLoad().stateInit(emptyList())
 
-    val globalSubsConfigsFlow = DbSet.subsConfigDao.queryUsedGlobalConfig().let(linkLoad::invoke)
+    val globalSubsConfigsFlow = DbSet.subsConfigDao.queryUsedGlobalConfig().attachLoad()
         .stateInit(emptyList())
 
     val appSubsConfigsFlow = appUsedSubsIdsFlow.map {
         DbSet.subsConfigDao.queryAppConfig(it, args.appId)
-    }.flattenConcat().let(linkLoad::invoke)
+    }.flattenConcat().attachLoad()
         .stateInit(emptyList())
 
     val categoryConfigsFlow = appUsedSubsIdsFlow.map {
         DbSet.categoryConfigDao.queryBySubsIds(it)
-    }.flattenConcat().let(linkLoad::invoke)
+    }.flattenConcat().attachLoad()
         .stateInit(emptyList())
 
     private val temp1ListFlow = combine(
@@ -126,7 +122,7 @@ class AppConfigVm(stateHandle: SavedStateHandle) : ViewModelExt() {
                 }
             }
         }
-    }.combine(linkLoad.firstLoadingFlow) { list, firstLoading ->
+    }.combine(firstLoadingFlow) { list, firstLoading ->
         if (firstLoading) {
             emptyList()
         } else {
@@ -134,7 +130,7 @@ class AppConfigVm(stateHandle: SavedStateHandle) : ViewModelExt() {
         }
     }.stateInit(emptyList())
 
-    val groupSizeFlow = subsPairsFlow.map(viewModelScope) { list ->
+    val groupSizeFlow = subsPairsFlow.mapState(viewModelScope) { list ->
         list.sumOf { it.second.size }
     }
 

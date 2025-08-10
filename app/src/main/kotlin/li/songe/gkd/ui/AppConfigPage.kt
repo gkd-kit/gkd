@@ -69,8 +69,8 @@ import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.toGroupState
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.icon.BackCloseIcon
-import li.songe.gkd.ui.local.LocalMainViewModel
-import li.songe.gkd.ui.local.LocalNavController
+import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.menuPadding
@@ -96,7 +96,7 @@ fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
 
     val ruleSortType by vm.ruleSortTypeFlow.collectAsState()
     val groupSize by vm.groupSizeFlow.collectAsState()
-    val firstLoading by vm.linkLoad.firstLoadingFlow.collectAsState()
+    val firstLoading by vm.firstLoadingFlow.collectAsState()
     val (scrollBehavior, listState) = useListScrollState(groupSize > 0, ruleSortType.value)
     if (focusLog != null && groupSize > 0) {
         LaunchedEffect(null) {

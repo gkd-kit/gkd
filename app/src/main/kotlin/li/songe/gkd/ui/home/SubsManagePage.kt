@@ -75,7 +75,7 @@ import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.SubsItemCard
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.waitResult
-import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
@@ -89,7 +89,7 @@ import li.songe.gkd.util.findOption
 import li.songe.gkd.util.getUpDownTransform
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.map
+import li.songe.gkd.util.mapState
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
@@ -279,7 +279,7 @@ fun useSubsManagePage(): ScaffoldExt {
                             IconButton(onClick = throttle { switchStoreEnableMatch() }) {
                                 val scope = rememberCoroutineScope()
                                 val enableMatch by remember {
-                                    storeFlow.map(scope) { s -> s.enableMatch }
+                                    storeFlow.mapState(scope) { s -> s.enableMatch }
                                 }.collectAsState()
                                 val id = if (enableMatch) SafeR.ic_flash_on else SafeR.ic_flash_off
                                 Icon(

@@ -54,7 +54,7 @@ import li.songe.gkd.util.UpdateTimeOption
 import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.map
+import li.songe.gkd.util.mapState
 import li.songe.gkd.util.showActionToast
 import li.songe.gkd.util.toast
 import li.songe.selector.MatchOption
@@ -576,7 +576,7 @@ private fun A11yService.useAliveView() {
 
     onA11yConnected {
         scope.launchTry {
-            storeFlow.map(scope) { s -> s.enableAbFloatWindow }.collect {
+            storeFlow.mapState(scope) { s -> s.enableAbFloatWindow }.collect {
                 if (it) {
                     addA11View()
                 } else {
@@ -627,7 +627,7 @@ private fun A11yService.useCaptureVolume() {
     var captureVolumeReceiver: BroadcastReceiver? = null
     onCreated {
         scope.launch {
-            storeFlow.map(scope) { s -> s.captureVolumeChange }.collect {
+            storeFlow.mapState(scope) { s -> s.captureVolumeChange }.collect {
                 if (captureVolumeReceiver != null) {
                     unregisterReceiver(captureVolumeReceiver)
                 }

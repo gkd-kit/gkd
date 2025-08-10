@@ -66,15 +66,15 @@ import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.useSubs
 import li.songe.gkd.ui.component.waitResult
-import li.songe.gkd.ui.local.LocalMainViewModel
-import li.songe.gkd.ui.local.LocalNavController
+import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.map
+import li.songe.gkd.util.mapState
 import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.throttle
@@ -368,7 +368,7 @@ private fun ActionLogDialog(
 
             if (actionLog.groupType == SubsConfig.GlobalGroupType) {
                 val subs = remember(actionLog.subsId) {
-                    subsIdToRawFlow.map(scope) { it[actionLog.subsId] }
+                    subsIdToRawFlow.mapState(scope) { it[actionLog.subsId] }
                 }.collectAsState().value
                 val group = subs?.globalGroups?.find { g -> g.key == actionLog.groupKey }
                 val appChecked = if (group != null) {

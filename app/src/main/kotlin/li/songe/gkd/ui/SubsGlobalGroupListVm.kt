@@ -9,12 +9,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.ShowGroupState
-import li.songe.gkd.util.map
+import li.songe.gkd.util.mapState
 import li.songe.gkd.util.subsIdToRawFlow
 
 class SubsGlobalGroupListVm(stateHandle: SavedStateHandle) : ViewModel() {
     private val args = SubsGlobalGroupListPageDestination.argsFrom(stateHandle)
-    val subsRawFlow = subsIdToRawFlow.map(viewModelScope) { s -> s[args.subsItemId] }
+    val subsRawFlow = subsIdToRawFlow.mapState(viewModelScope) { s -> s[args.subsItemId] }
 
     val subsConfigsFlow = DbSet.subsConfigDao.queryGlobalGroupTypeConfig(args.subsItemId)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())

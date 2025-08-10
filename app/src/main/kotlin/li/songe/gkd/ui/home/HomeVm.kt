@@ -18,7 +18,7 @@ import li.songe.gkd.util.EMPTY_RULE_TIP
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.getSubsStatus
-import li.songe.gkd.util.map
+import li.songe.gkd.util.mapState
 import li.songe.gkd.util.orderedAppInfosFlow
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.subsIdToRawFlow
@@ -29,7 +29,7 @@ class HomeVm : ViewModel() {
     val latestRecordFlow = DbSet.actionLogDao.queryLatest().stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val latestRecordIsGlobalFlow =
-        latestRecordFlow.map(viewModelScope) { it?.groupType == SubsConfig.GlobalGroupType }
+        latestRecordFlow.mapState(viewModelScope) { it?.groupType == SubsConfig.GlobalGroupType }
     val latestRecordDescFlow = combine(
         latestRecordFlow, subsIdToRawFlow, appInfoCacheFlow
     ) { latestRecord, subsIdToRaw, appInfoCache ->
@@ -63,18 +63,18 @@ class HomeVm : ViewModel() {
         }.stateIn(appScope, SharingStarted.Eagerly, EMPTY_RULE_TIP)
     }
 
-    val usedSubsItemCountFlow = usedSubsEntriesFlow.map(viewModelScope) { it.size }
+    val usedSubsItemCountFlow = usedSubsEntriesFlow.mapState(viewModelScope) { it.size }
 
     private val appIdToOrderFlow = DbSet.actionLogDao.queryLatestUniqueAppIds().map { appIds ->
         appIds.mapIndexed { index, appId -> appId to index }.toMap()
     }
 
-    val sortTypeFlow = storeFlow.map(viewModelScope) { s ->
+    val sortTypeFlow = storeFlow.mapState(viewModelScope) { s ->
         SortTypeOption.allSubObject.find { o -> o.value == s.sortType }
             ?: SortTypeOption.SortByName
     }
-    val showSystemAppFlow = storeFlow.map(viewModelScope) { s -> s.showSystemApp }
-    val showHiddenAppFlow = storeFlow.map(viewModelScope) { s -> s.showHiddenApp }
+    val showSystemAppFlow = storeFlow.mapState(viewModelScope) { s -> s.showSystemApp }
+    val showHiddenAppFlow = storeFlow.mapState(viewModelScope) { s -> s.showHiddenApp }
     val showSearchBarFlow = MutableStateFlow(false)
     val searchStrFlow = MutableStateFlow("")
     private val debounceSearchStrFlow = searchStrFlow.debounce(200)

@@ -33,9 +33,9 @@ import li.songe.gkd.META
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.ui.home.HomeVm
-import li.songe.gkd.ui.local.LocalMainViewModel
+import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.util.formatTimeAgo
-import li.songe.gkd.util.map
+import li.songe.gkd.util.mapState
 import li.songe.gkd.util.subsLoadErrorsFlow
 import li.songe.gkd.util.subsRefreshErrorsFlow
 import li.songe.gkd.util.throttle
@@ -57,10 +57,10 @@ fun SubsItemCard(
 ) {
     val mainVm = LocalMainViewModel.current
     val subsLoadError by remember(subsItem.id) {
-        subsLoadErrorsFlow.map(vm.viewModelScope) { it[subsItem.id] }
+        subsLoadErrorsFlow.mapState(vm.viewModelScope) { it[subsItem.id] }
     }.collectAsState()
     val subsRefreshError by remember(subsItem.id) {
-        subsRefreshErrorsFlow.map(vm.viewModelScope) { it[subsItem.id] }
+        subsRefreshErrorsFlow.mapState(vm.viewModelScope) { it[subsItem.id] }
     }.collectAsState()
     val subsRefreshing by updateSubsMutex.state.collectAsState()
     val dragged by interactionSource.collectIsDraggedAsState()

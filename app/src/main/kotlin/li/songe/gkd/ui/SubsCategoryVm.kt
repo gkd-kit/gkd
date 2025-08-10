@@ -10,13 +10,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.util.map
+import li.songe.gkd.util.mapState
 import li.songe.gkd.util.subsIdToRawFlow
 
 class SubsCategoryVm(stateHandle: SavedStateHandle) : ViewModel() {
     private val args = SubsCategoryPageDestination.argsFrom(stateHandle)
 
-    val subsRawFlow = subsIdToRawFlow.map(viewModelScope) { m -> m[args.subsItemId] }
+    val subsRawFlow = subsIdToRawFlow.mapState(viewModelScope) { m -> m[args.subsItemId] }
 
     val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(args.subsItemId)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())

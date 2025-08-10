@@ -10,13 +10,13 @@ import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.ShowGroupState
-import li.songe.gkd.util.map
+import li.songe.gkd.util.mapState
 import li.songe.gkd.util.subsIdToRawFlow
 
 class SubsAppGroupListVm(stateHandle: SavedStateHandle) : ViewModel() {
     private val args = SubsAppGroupListPageDestination.argsFrom(stateHandle)
 
-    val subsRawFlow = subsIdToRawFlow.map(viewModelScope) { s -> s[args.subsItemId] }
+    val subsRawFlow = subsIdToRawFlow.mapState(viewModelScope) { s -> s[args.subsItemId] }
 
     val subsConfigsFlow = DbSet.subsConfigDao.queryAppGroupTypeConfig(args.subsItemId, args.appId)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -24,7 +24,7 @@ class SubsAppGroupListVm(stateHandle: SavedStateHandle) : ViewModel() {
     val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(args.subsItemId)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    val subsAppFlow = subsIdToRawFlow.map(viewModelScope) { subsIdToRaw ->
+    val subsAppFlow = subsIdToRawFlow.mapState(viewModelScope) { subsIdToRaw ->
         subsIdToRaw[args.subsItemId]?.apps?.find { it.id == args.appId }
             ?: RawSubscription.RawApp(id = args.appId, name = null)
     }
