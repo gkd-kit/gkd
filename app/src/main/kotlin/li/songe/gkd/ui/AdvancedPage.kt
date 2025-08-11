@@ -198,6 +198,7 @@ fun AdvancedPage() {
                 .padding(contentPadding),
         ) {
             Text(
+                modifier = Modifier.titleItemPadding(showTop = false),
                 text = "Shizuku",
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
