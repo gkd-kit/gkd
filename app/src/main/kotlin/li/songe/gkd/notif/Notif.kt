@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.net.toUri
+import kotlinx.atomicfu.atomic
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
@@ -23,6 +24,8 @@ import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.componentName
 import kotlin.reflect.KClass
 
+// 相同的 request code 会导致后续 PendingIntent 失效
+private val pendingIntentReqId = atomic(0)
 
 data class Notif(
     val channel: NotifChannel = NotifChannel.Default,
@@ -30,21 +33,21 @@ data class Notif(
     val smallIcon: Int = SafeR.ic_status,
     val title: String,
     val text: String? = null,
-    val ongoing: Boolean,
-    val autoCancel: Boolean,
+    val ongoing: Boolean = true,
+    val autoCancel: Boolean = false,
     val uri: String? = null,
     val stopService: KClass<out Service>? = null,
 ) {
     private fun toNotification(): Notification {
         val contextIntent = PendingIntent.getActivity(
             app,
-            0,
+            pendingIntentReqId.incrementAndGet(),
             Intent().apply {
                 component = MainActivity::class.componentName
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 data = uri?.toUri()
             },
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            PendingIntent.FLAG_IMMUTABLE
         )
         val notification = NotificationCompat.Builder(app, channel.id)
             .setSmallIcon(smallIcon)
@@ -56,9 +59,9 @@ data class Notif(
         if (stopService != null) {
             val deleteIntent = PendingIntent.getBroadcast(
                 app,
-                0,
+                pendingIntentReqId.incrementAndGet(),
                 StopServiceReceiver.getIntent(stopService),
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                PendingIntent.FLAG_IMMUTABLE
             )
             notification
                 .setDeleteIntent(deleteIntent)
@@ -93,8 +96,6 @@ val abNotif by lazy {
         id = 100,
         title = META.appName,
         text = "无障碍正在运行",
-        ongoing = true,
-        autoCancel = false,
     )
 }
 
@@ -102,8 +103,6 @@ val screenshotNotif = Notif(
     id = 101,
     title = "截屏服务正在运行",
     text = "保存快照时截取屏幕",
-    ongoing = true,
-    autoCancel = false,
     uri = "gkd://page/1",
     stopService = ScreenshotService::class,
 )
@@ -112,8 +111,6 @@ val buttonNotif = Notif(
     id = 102,
     title = "快照按钮服务正在运行",
     text = "点击按钮捕获快照",
-    ongoing = true,
-    autoCancel = false,
     uri = "gkd://page/1",
     stopService = ButtonService::class,
 )
@@ -121,8 +118,6 @@ val buttonNotif = Notif(
 val httpNotif = Notif(
     id = 103,
     title = "HTTP服务正在运行",
-    ongoing = true,
-    autoCancel = false,
     uri = "gkd://page/1",
     stopService = HttpService::class,
 )
@@ -131,8 +126,6 @@ val snapshotActionNotif = Notif(
     id = 104,
     title = "快照服务正在运行",
     text = "捕获快照完成后自动关闭",
-    ongoing = true,
-    autoCancel = false,
 )
 
 val snapshotNotif = Notif(
@@ -147,8 +140,6 @@ val snapshotNotif = Notif(
 val recordNotif = Notif(
     id = 106,
     title = "记录服务正在运行",
-    ongoing = true,
-    autoCancel = false,
     uri = "gkd://page/1",
     stopService = RecordService::class,
 )

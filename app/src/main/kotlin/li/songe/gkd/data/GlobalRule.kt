@@ -1,6 +1,6 @@
 package li.songe.gkd.data
 
-import li.songe.gkd.service.launcherAppId
+import li.songe.gkd.a11y.launcherAppId
 import li.songe.gkd.util.systemAppsFlow
 
 data class GlobalApp(

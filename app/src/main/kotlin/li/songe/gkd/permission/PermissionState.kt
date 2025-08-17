@@ -7,18 +7,13 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
 import androidx.core.content.ContextCompat
-import com.blankj.utilcode.util.LogUtils
-import com.hjq.permissions.OnPermissionCallback
 import com.hjq.permissions.XXPermissions
 import com.hjq.permissions.permission.PermissionLists
 import com.hjq.permissions.permission.base.IPermission
 import com.ramcosta.composedestinations.generated.destinations.AppOpsAllowPageDestination
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
@@ -65,23 +60,6 @@ private fun checkSelfPermission(permission: String): Boolean {
     ) == PackageManager.PERMISSION_GRANTED
 }
 
-private sealed class XXPermissionResult {
-    data class Granted(
-        val permissions: MutableList<IPermission>,
-        val allGranted: Boolean,
-    ) : XXPermissionResult()
-
-    data class Denied(
-        val permissions: MutableList<IPermission>,
-        val doNotAskAgain: Boolean,
-    ) : XXPermissionResult()
-
-    data class Both(
-        val granted: Granted,
-        val denied: Denied,
-    ) : XXPermissionResult()
-}
-
 private suspend fun asyncRequestPermission(
     context: Activity,
     permission: IPermission,
@@ -89,59 +67,23 @@ private suspend fun asyncRequestPermission(
     if (XXPermissions.isGrantedPermission(context, permission)) {
         return PermissionResult.Granted
     }
-    val permissionResultFlow = MutableStateFlow<XXPermissionResult?>(null)
+    val deferred = CompletableDeferred<PermissionResult>()
     XXPermissions.with(context)
         .unchecked()
         .permission(permission)
-        .request(object : OnPermissionCallback {
-            override fun onGranted(permissions: MutableList<IPermission>, allGranted: Boolean) {
-                LogUtils.d("allGranted: $allGranted", permissions)
-                permissionResultFlow.update {
-                    val granted = XXPermissionResult.Granted(permissions, allGranted)
-                    if (it == null) {
-                        granted
-                    } else {
-                        XXPermissionResult.Both(
-                            granted = granted,
-                            denied = it as XXPermissionResult.Denied
-                        )
-                    }
-                }
-            }
-
-            override fun onDenied(permissions: MutableList<IPermission>, doNotAskAgain: Boolean) {
-                LogUtils.d("doNotAskAgain: $doNotAskAgain", permissions)
-                permissionResultFlow.update {
-                    val denied = XXPermissionResult.Denied(permissions, doNotAskAgain)
-                    if (it == null) {
-                        denied
-                    } else {
-                        XXPermissionResult.Both(
-                            granted = it as XXPermissionResult.Granted,
-                            denied = denied
-                        )
-                    }
-                }
-            }
-        })
-    val result = permissionResultFlow.debounce(100L).filterNotNull().first()
-    return when (result) {
-        is XXPermissionResult.Granted -> {
-            if (result.allGranted) {
+        .request { grantedList, _ ->
+            if (grantedList.contains(permission)) {
                 PermissionResult.Granted
             } else {
-                PermissionResult.Denied(false)
-            }
+                PermissionResult.Denied(
+                    XXPermissions.isDoNotAskAgainPermissions(
+                        context,
+                        arrayOf(permission)
+                    )
+                )
+            }.let { deferred.complete(it) }
         }
-
-        is XXPermissionResult.Denied -> {
-            PermissionResult.Denied(result.doNotAskAgain)
-        }
-
-        is XXPermissionResult.Both -> {
-            PermissionResult.Denied(result.denied.doNotAskAgain)
-        }
-    }
+    return deferred.await()
 }
 
 @Suppress("SameParameterValue")

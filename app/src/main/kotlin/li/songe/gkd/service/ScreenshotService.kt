@@ -9,20 +9,16 @@ import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.app
 import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.screenshotNotif
-import li.songe.gkd.util.OnCreateToDestroy
+import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.ScreenshotUtil
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.stopServiceByClass
 import java.lang.ref.WeakReference
 
-class ScreenshotService : Service(), OnCreateToDestroy {
+class ScreenshotService : Service(), OnSimpleLife {
     override fun onBind(intent: Intent?) = null
-
-    override fun onCreate() {
-        super.onCreate()
-        onCreated()
-    }
-
+    override fun onCreate() = onCreated()
+    override fun onDestroy() = onDestroyed()
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         try {
@@ -34,11 +30,6 @@ class ScreenshotService : Service(), OnCreateToDestroy {
                 LogUtils.d("screenshot restart")
             }
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        onDestroyed()
     }
 
     private var screenshotUtil: ScreenshotUtil? = null

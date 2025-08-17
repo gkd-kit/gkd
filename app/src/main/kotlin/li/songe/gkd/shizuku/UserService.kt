@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.Serializable
 import li.songe.gkd.META
 import li.songe.gkd.appScope
 import li.songe.gkd.permission.shizukuOkState
@@ -114,7 +115,6 @@ private fun IUserService.execCommandForResult(command: String): Boolean? {
     }
 }
 
-
 private fun unbindUserService(serviceArgs: Shizuku.UserServiceArgs, connection: ServiceConnection) {
     if (!shizukuOkState.stateFlow.value) return
     LogUtils.d("unbindUserService", serviceArgs)
@@ -126,6 +126,13 @@ private fun unbindUserService(serviceArgs: Shizuku.UserServiceArgs, connection: 
         LogUtils.d(e)
     }
 }
+
+@Serializable
+data class CommandResult(
+    val code: Int,
+    val result: String,
+    val error: String?
+)
 
 data class UserServiceWrapper(
     val userService: IUserService,
@@ -182,11 +189,16 @@ suspend fun buildServiceWrapper(): UserServiceWrapper? {
         return withTimeoutOrNull(3000) {
             suspendCoroutine { continuation ->
                 resumeCallback = { continuation.resume(it) }
-                Shizuku.bindUserService(serviceArgs, connection)
+                try {
+                    Shizuku.bindUserService(serviceArgs, connection)
+                } catch (_: Throwable) {
+                    resumeCallback = null
+                    continuation.resume(null)
+                }
             }
         }.apply {
             if (this == null) {
-                toast("获取 Shizuku 服务超时失败")
+                toast("获取 Shizuku 服务失败")
                 unbindUserService(serviceArgs, connection)
             }
         }
@@ -216,8 +228,7 @@ val serviceWrapperFlow by lazy {
 suspend fun shizukuCheckUserService(): Boolean {
     return try {
         execCommandForResult("input tap 0 0")
-    } catch (e: Throwable) {
-        e.printStackTrace()
+    } catch (_: Throwable) {
         false
     }
 }
@@ -228,10 +239,6 @@ suspend fun execCommandForResult(command: String): Boolean {
     }?.execCommandForResult(command) == true
 }
 
-// 在 大麦 https://i.gkd.li/i/14605104 上测试产生如下 3 种情况
-// 1. 点击不生效: 使用传统无障碍屏幕点击, 此种点击可被 大麦 通过 View.setAccessibilityDelegate 屏蔽
-// 2. 点击概率生效: 使用 Shizuku 获取到的 InputManager.injectInputEvent 发出点击, 概率失效/生效, 原因未知
-// 3. 点击生效: 使用 Shizuku 获取到的 shell input tap x y 发出点击 by safeTap, 暂未找到屏蔽方案
 fun safeTap(x: Float, y: Float): Boolean? {
     return serviceWrapperFlow.value?.execCommandForResult("input tap $x $y")
 }

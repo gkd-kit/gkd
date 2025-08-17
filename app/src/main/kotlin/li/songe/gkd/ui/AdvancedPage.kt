@@ -485,7 +485,6 @@ fun AdvancedPage() {
             Spacer(modifier = Modifier.height(EmptyHeight))
         }
     }
-
 }
 
 private val checkShizukuMutex by lazy { Mutex() }

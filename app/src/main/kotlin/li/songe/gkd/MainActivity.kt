@@ -63,6 +63,10 @@ import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import li.songe.gkd.a11y.topActivityFlow
+import li.songe.gkd.a11y.updateImeAppId
+import li.songe.gkd.a11y.updateLauncherAppId
+import li.songe.gkd.a11y.updateTopActivity
 import li.songe.gkd.permission.AuthDialog
 import li.songe.gkd.permission.updatePermissionState
 import li.songe.gkd.service.A11yService
@@ -71,8 +75,6 @@ import li.songe.gkd.service.HttpService
 import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.fixRestartService
-import li.songe.gkd.service.updateDefaultInputAppId
-import li.songe.gkd.service.updateLauncherAppId
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.BuildDialog
 import li.songe.gkd.ui.component.ShareDataDialog
@@ -95,6 +97,7 @@ import li.songe.gkd.util.openUri
 import li.songe.gkd.util.shizukuAppId
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
+import kotlin.concurrent.Volatile
 import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
 
@@ -160,7 +163,6 @@ class MainActivity : ComponentActivity() {
         mainVm
         launcher
         pickContentLauncher
-        StatusService.autoStart()
         lifecycleScope.launch {
             storeFlow.mapState(lifecycleScope) { s -> s.excludeFromRecents }.collect {
                 app.activityManager.appTasks.forEach { task ->
@@ -214,7 +216,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        activityVisibleFlow.update { it + 1 }
+        activityVisibleState++
+        if (topActivityFlow.value.appId != META.appId) {
+            updateTopActivity(META.appId, MainActivity::class.jvmName)
+        }
     }
 
     var isFirstResume = true
@@ -229,7 +234,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
-        activityVisibleFlow.update { it - 1 }
+        activityVisibleState--
     }
 
     private var lastBackPressedTime = 0L
@@ -246,16 +251,19 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private val activityVisibleFlow by lazy { MutableStateFlow(0) }
-fun isActivityVisible() = activityVisibleFlow.value > 0
+@Volatile
+private var activityVisibleState = 0
+fun isActivityVisible() = activityVisibleState > 0
+
+val activityNavSourceName by lazy { META.appId + ".activity.nav.source" }
 
 fun Activity.navToMainActivity() {
-    val intent = this.intent?.cloneFilter()
     if (intent != null) {
-        intent.component = MainActivity::class.componentName
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        intent.putExtra("source", this::class.qualifiedName)
-        startActivity(intent)
+        val navIntent = Intent(intent)
+        navIntent.component = MainActivity::class.componentName
+        navIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        navIntent.putExtra(activityNavSourceName, this::class.jvmName)
+        startActivity(navIntent)
     }
     finish()
 }
@@ -286,7 +294,7 @@ fun syncFixState() {
             // 每次切换页面更新记录桌面 appId
             updateLauncherAppId()
 
-            updateDefaultInputAppId()
+            updateImeAppId()
 
             // 由于某些机型的进程存在 安装缓存/崩溃缓存 导致服务状态可能不正确, 在此保证每次界面切换都能重新刷新状态
             updateServiceRunning()

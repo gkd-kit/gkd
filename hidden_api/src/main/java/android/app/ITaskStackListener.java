@@ -13,5 +13,8 @@ public interface ITaskStackListener {
         }
     }
 
+    // 应用->桌面不会回调，分屏下切换窗口不会回调，但从最近任务界面移除窗口会回调
     void onTaskStackChanged();
+
+    void onTaskMovedToFront(ActivityManager.RunningTaskInfo taskInfo);
 }

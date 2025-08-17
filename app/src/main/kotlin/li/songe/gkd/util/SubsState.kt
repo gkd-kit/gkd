@@ -82,8 +82,8 @@ val subsEntriesFlow by lazy {
 }
 
 val usedSubsEntriesFlow by lazy {
-    subsEntriesFlow.map {
-        it.filter { s -> s.subsItem.enable && s.subscription != null }
+    subsEntriesFlow.map { list ->
+        list.filter { s -> s.subsItem.enable && s.subscription != null }
             .map { UsedSubsEntry(it.subsItem, it.subscription!!) }
     }.stateIn(appScope, SharingStarted.Eagerly, emptyList())
 }
@@ -413,15 +413,11 @@ private suspend fun updateSubs(subsEntry: SubsEntry): RawSubscription? {
             val subsVersion = json.decodeFromJson5String<SubsVersion>(
                 client.get(checkUpdateUrl).bodyAsText()
             )
-            LogUtils.d(
-                "快速检测更新:id=${subsRaw.id},version=${subsRaw.version}",
-                subsVersion
-            )
             if (subsVersion.id == subsRaw.id && subsVersion.version <= subsRaw.version) {
                 return null
             }
         } catch (e: Exception) {
-            LogUtils.d("快速检测更新失败", subsItem, e)
+            LogUtils.d("快速检测更新失败", subsItem, e.message)
         }
     }
     val updateUrl = subsRaw?.updateUrl ?: subsItem.updateUrl
@@ -487,7 +483,7 @@ fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers
                         set(subsEntry.subsItem.id, e)
                     }
                 }
-                LogUtils.d("检测更新失败", e)
+                LogUtils.d("检测更新失败", e.message)
             }
         }
         if (showToast) {

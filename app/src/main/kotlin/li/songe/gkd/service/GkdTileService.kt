@@ -18,31 +18,9 @@ class GkdTileService : BaseTileService() {
     override val activeFlow = A11yService.isRunning
 
     init {
-        useLogLifecycle()
         onStartListened { fixRestartService() }
         onTileClicked { switchA11yService() }
     }
-}
-
-private fun getServiceNames(): MutableList<String> {
-    val value = try {
-        Settings.Secure.getString(
-            app.contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        )
-    } catch (_: Exception) {
-        null
-    } ?: ""
-    if (value.isEmpty()) return mutableListOf()
-    return value.split(':').toMutableList()
-}
-
-private fun updateServiceNames(names: List<String>) {
-    Settings.Secure.putString(
-        app.contentResolver,
-        Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
-        names.joinToString(":")
-    )
 }
 
 private val modifyA11yMutex by lazy { Mutex() }
@@ -60,7 +38,7 @@ fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
                 toast("请先授予「写入安全设置权限」")
                 return@launchTry
             }
-            val names = getServiceNames()
+            val names = app.getSecureA11yServices()
             Settings.Secure.putInt(
                 app.contentResolver,
                 Settings.Secure.ACCESSIBILITY_ENABLED,
@@ -68,11 +46,11 @@ fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
             )
             if (names.contains(A11yService.a11yClsName)) { // 当前无障碍异常, 重启服务
                 names.remove(A11yService.a11yClsName)
-                updateServiceNames(names)
+                app.putSecureA11yServices(names)
                 delay(A11Y_AWAIT_FIX_TIME)
             }
             names.add(A11yService.a11yClsName)
-            updateServiceNames(names)
+            app.putSecureA11yServices(names)
             delay(A11Y_AWAIT_START_TIME)
             // https://github.com/orgs/gkd-kit/discussions/799
             if (!A11yService.isRunning.value) {
@@ -92,17 +70,17 @@ fun fixRestartService() = appScope.launchTry(Dispatchers.IO) {
         // 2. 用户配置开启了服务
         // 3. 有写入系统设置权限
         if (!A11yService.isRunning.value && storeFlow.value.enableService && writeSecureSettingsState.updateAndGet()) {
-            val names = getServiceNames()
+            val names = app.getSecureA11yServices()
             val a11yBroken = names.contains(A11yService.a11yClsName)
             if (a11yBroken) {
                 // 无障碍出现故障, 重启服务
                 names.remove(A11yService.a11yClsName)
-                updateServiceNames(names)
+                app.putSecureA11yServices(names)
                 // 必须等待一段时间, 否则概率不会触发系统重启无障碍服务
                 delay(A11Y_AWAIT_FIX_TIME)
             }
             names.add(A11yService.a11yClsName)
-            updateServiceNames(names)
+            app.putSecureA11yServices(names)
             delay(A11Y_AWAIT_START_TIME)
             if (!A11yService.isRunning.value) {
                 toast("重启无障碍失败")

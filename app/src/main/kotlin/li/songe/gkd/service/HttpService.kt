@@ -48,7 +48,7 @@ import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.httpNotif
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.LOCAL_HTTP_SUBS_ID
-import li.songe.gkd.util.OnCreateToDestroy
+import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.SERVER_SCRIPT_URL
 import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.deleteSubscription
@@ -64,7 +64,7 @@ import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 
 
-class HttpService : Service(), OnCreateToDestroy {
+class HttpService : Service(), OnSimpleLife {
     override fun onBind(intent: Intent?) = null
 
     override fun onCreate() {

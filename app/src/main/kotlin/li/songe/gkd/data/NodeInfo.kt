@@ -3,8 +3,8 @@ package li.songe.gkd.data
 import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.serialization.Serializable
-import li.songe.gkd.service.MAX_CHILD_SIZE
-import li.songe.gkd.service.topActivityFlow
+import li.songe.gkd.a11y.MAX_CHILD_SIZE
+import li.songe.gkd.a11y.topActivityFlow
 import li.songe.gkd.util.toast
 import kotlin.system.measureTimeMillis
 

@@ -3,72 +3,33 @@ package li.songe.gkd.shizuku
 import android.content.IntentFilter
 import android.content.pm.IPackageManager
 import android.content.pm.PackageInfo
-import com.blankj.utilcode.util.LogUtils
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
-import li.songe.gkd.appScope
-import li.songe.gkd.permission.shizukuOkState
-import li.songe.gkd.store.shizukuStoreFlow
-import rikka.shizuku.ShizukuBinderWrapper
-import rikka.shizuku.SystemServiceHelper
-import kotlin.reflect.full.declaredFunctions
+import kotlin.reflect.full.declaredMemberFunctions
 import kotlin.reflect.typeOf
 
 
-private var packageFlagsParamsLongType: Boolean? = null
+private var packageFcType: Boolean? = null
 private fun IPackageManager.compatGetInstalledPackages(
     flags: Long,
     userId: Int
 ): List<PackageInfo> {
-    if (packageFlagsParamsLongType == null) {
-        val method = this::class.declaredFunctions.find { it.name == "getInstalledPackages" }!!
-        packageFlagsParamsLongType = method.parameters[1].type == typeOf<Long>()
+    if (packageFcType == null) {
+        packageFcType = this::class.declaredMemberFunctions.find {
+            it.name == "getInstalledPackages"
+        }!!.parameters[1].type == typeOf<Long>()
     }
-    return if (packageFlagsParamsLongType == true) {
-        getInstalledPackages(flags, userId).list
+    return if (packageFcType == true) {
+        getInstalledPackages(flags, userId)
     } else {
-        getInstalledPackages(flags.toInt(), userId).list
-    }
+        getInstalledPackages(flags.toInt(), userId)
+    }.list
 }
 
-interface SafePackageManager {
-    fun compatGetInstalledPackages(flags: Long, userId: Int): List<PackageInfo>
-    fun getAllIntentFilters(packageName: String): List<IntentFilter>
-}
-
-fun newPackageManager(): SafePackageManager? {
-    val service = SystemServiceHelper.getSystemService("package")
-    if (service == null) {
-        LogUtils.d("shizuku 无法获取 package")
-        return null
+class SafePackageManager(private val value: IPackageManager) {
+    fun compatGetInstalledPackages(flags: Long, userId: Int): List<PackageInfo> {
+        return value.compatGetInstalledPackages(flags, userId)
     }
-    val manager = service.let(::ShizukuBinderWrapper).let(IPackageManager.Stub::asInterface)
-    return object : SafePackageManager {
-        override fun compatGetInstalledPackages(flags: Long, userId: Int) =
-            manager.compatGetInstalledPackages(flags, userId)
 
-        override fun getAllIntentFilters(packageName: String) =
-            manager.getAllIntentFilters(packageName).list
+    fun getAllIntentFilters(packageName: String): List<IntentFilter> {
+        return value.getAllIntentFilters(packageName).list
     }
-}
-
-val shizukuWorkProfileUsedFlow by lazy {
-    combine(shizukuOkState.stateFlow, shizukuStoreFlow) { shizukuOk, store ->
-        shizukuOk && store.enableWorkProfile
-    }.stateIn(appScope, SharingStarted.Eagerly, false)
-}
-
-val packageManagerFlow by lazy<StateFlow<SafePackageManager?>> {
-    val stateFlow = MutableStateFlow<SafePackageManager?>(null)
-    appScope.launch(Dispatchers.IO) {
-        shizukuWorkProfileUsedFlow.collect {
-            stateFlow.value = if (it) newPackageManager() else null
-        }
-    }
-    stateFlow
 }

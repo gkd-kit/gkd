@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import li.songe.gkd.a11y.topActivityFlow
 import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.recordNotif
 import li.songe.gkd.permission.canDrawOverlaysState

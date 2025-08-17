@@ -51,6 +51,7 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlinx.atomicfu)
     alias(libs.plugins.google.ksp)
 }
 
@@ -246,6 +247,8 @@ dependencies {
     implementation(libs.google.accompanist.drawablepainter)
 
     implementation(libs.kotlinx.serialization.json)
+    // https://github.com/Kotlin/kotlinx-atomicfu/issues/145
+    implementation(libs.kotlinx.atomicfu)
 
     implementation(libs.utilcodex)
     implementation(libs.activityResultLauncher)

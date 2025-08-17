@@ -5,10 +5,8 @@ import android.service.quicksettings.TileService
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import li.songe.gkd.appScope
-import li.songe.gkd.util.SnapshotExt.captureSnapshot
-import li.songe.gkd.shizuku.safeGetTopActivity
+import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.toast
 
@@ -41,14 +39,7 @@ class SnapshotTileService : TileService() {
                     }
                 } else if (latestAppId != oldAppId) {
                     LogUtils.d("SnapshotTileService::eventExecutor.execute")
-                    appScope.launch(A11yService.eventThread) {
-                        val topActivity = safeGetTopActivity() ?: TopActivity(appId = latestAppId)
-                        updateTopActivity(topActivity)
-                        getAndUpdateCurrentRules()
-                        appScope.launchTry(Dispatchers.IO) {
-                            captureSnapshot()
-                        }
-                    }
+                    appScope.launchTry { SnapshotExt.captureSnapshot() }
                     break
                 } else {
                     service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)

@@ -7,12 +7,14 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.Settings
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.Utils
 import kotlinx.coroutines.MainScope
 import kotlinx.serialization.Serializable
 import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.notif.initChannel
+import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.clearHttpSubs
 import li.songe.gkd.shizuku.initShizuku
 import li.songe.gkd.store.initStore
@@ -40,6 +42,9 @@ private val applicationInfo by lazy {
 private fun getMetaString(key: String): String {
     return applicationInfo.metaData.getString(key) ?: error("Missing meta-data: $key")
 }
+
+// https://github.com/aosp-mirror/platform_frameworks_base/blob/android16-release/packages/SettingsLib/src/com/android/settingslib/accessibility/AccessibilityUtils.java#L41
+private const val ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR = ':'
 
 @Serializable
 data class AppMeta(
@@ -75,6 +80,24 @@ class App : Application() {
         }
     }
 
+    fun getSecureString(name: String): String? = Settings.Secure.getString(contentResolver, name)
+    fun putSecureString(name: String, value: String?): Boolean {
+        return Settings.Secure.putString(contentResolver, name, value)
+    }
+
+    fun getSecureA11yServices(): MutableSet<String> {
+        return (getSecureString(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: "").split(
+            ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR
+        ).toHashSet()
+    }
+
+    fun putSecureA11yServices(services: Set<String>) {
+        putSecureString(
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+            services.joinToString(ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR.toString())
+        )
+    }
+
     val startTime = System.currentTimeMillis()
 
     val activityManager by lazy { app.getSystemService(ACTIVITY_SERVICE) as ActivityManager }
@@ -103,5 +126,6 @@ class App : Application() {
         initSubsState()
         clearHttpSubs()
         syncFixState()
+        StatusService.autoStart()
     }
 }

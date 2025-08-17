@@ -15,7 +15,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
-import li.songe.gkd.service.typeInfo
+import li.songe.gkd.a11y.typeInfo
 import li.songe.gkd.util.LOCAL_SUBS_IDS
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.distinctByIfAny

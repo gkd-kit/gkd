@@ -1,13 +1,22 @@
 package li.songe.gkd.shizuku
 
 
+import android.app.IActivityTaskManager
+import android.content.Context
 import android.content.Intent
+import android.content.pm.IPackageManager
 import android.content.pm.PackageManager
+import android.os.IUserManager
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import li.songe.gkd.META
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
@@ -22,6 +31,84 @@ import li.songe.gkd.util.otherUserAppInfoMapFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.userAppInfoMapFlow
 import rikka.shizuku.Shizuku
+import rikka.shizuku.ShizukuBinderWrapper
+import rikka.shizuku.SystemServiceHelper
+
+private fun getStubService(name: String): ShizukuBinderWrapper? {
+    val service = SystemServiceHelper.getSystemService(name)
+    if (service == null) {
+        LogUtils.d("获取 $name 失败")
+        return null
+    }
+    return ShizukuBinderWrapper(service)
+}
+
+private fun newUserManager() = getStubService(Context.USER_SERVICE)?.let {
+    SafeUserManager(IUserManager.Stub.asInterface(it))
+}
+
+private fun newActivityTaskManager() = getStubService("activity_task")?.let {
+    SafeActivityTaskManager(IActivityTaskManager.Stub.asInterface(it))
+}
+
+private fun newPackageManager() = getStubService("package")?.let {
+    SafePackageManager(IPackageManager.Stub.asInterface(it))
+}
+
+private val shizukuActivityUsedFlow by lazy {
+    combine(shizukuOkState.stateFlow, shizukuStoreFlow) { shizukuOk, store ->
+        shizukuOk && store.enableActivity
+    }.stateIn(appScope, SharingStarted.Eagerly, false)
+}
+
+val userManagerFlow by lazy<StateFlow<SafeUserManager?>> {
+    val stateFlow = MutableStateFlow<SafeUserManager?>(null)
+    appScope.launch(Dispatchers.IO) {
+        shizukuWorkProfileUsedFlow.collect {
+            stateFlow.value = if (it) newUserManager() else null
+        }
+    }
+    stateFlow
+}
+
+val activityTaskManagerFlow by lazy<StateFlow<SafeActivityTaskManager?>> {
+    val stateFlow = MutableStateFlow<SafeActivityTaskManager?>(null)
+    appScope.launchTry(Dispatchers.IO) {
+        shizukuActivityUsedFlow.collect {
+            if (shizukuOkState.value) {
+                stateFlow.value?.unregisterTaskStackListener(MyTaskListener)
+            }
+            stateFlow.value = if (it) newActivityTaskManager() else null
+            stateFlow.value?.registerTaskStackListener(MyTaskListener)
+        }
+    }
+    stateFlow
+}
+
+val shizukuWorkProfileUsedFlow by lazy {
+    combine(shizukuOkState.stateFlow, shizukuStoreFlow) { shizukuOk, store ->
+        shizukuOk && store.enableWorkProfile
+    }.stateIn(appScope, SharingStarted.Eagerly, false)
+}
+
+val packageManagerFlow by lazy<StateFlow<SafePackageManager?>> {
+    val stateFlow = MutableStateFlow<SafePackageManager?>(null)
+    appScope.launch(Dispatchers.IO) {
+        shizukuWorkProfileUsedFlow.collect {
+            stateFlow.value = if (it) newPackageManager() else null
+        }
+    }
+    stateFlow
+}
+
+fun shizukuCheckActivity(): Boolean {
+    return (try {
+        newActivityTaskManager()?.compatGetTasks()?.isNotEmpty() == true
+    } catch (e: Throwable) {
+        e.printStackTrace()
+        false
+    })
+}
 
 fun shizukuCheckGranted(): Boolean {
     val granted = try {
@@ -31,7 +118,7 @@ fun shizukuCheckGranted(): Boolean {
     }
     if (!granted) return false
     if (shizukuStoreFlow.value.enableActivity) {
-        return safeGetTopActivity() != null || shizukuCheckActivity()
+        return safeGetTopCpn() != null || shizukuCheckActivity()
     }
     return true
 }
@@ -46,6 +133,12 @@ fun shizukuCheckWorkProfile(): Boolean {
         e.printStackTrace()
         false
     })
+}
+
+fun safeGetTopCpn() = try {
+    activityTaskManagerFlow.value?.getTopCpn()
+} catch (_: Throwable) {
+    null
 }
 
 fun initShizuku() {

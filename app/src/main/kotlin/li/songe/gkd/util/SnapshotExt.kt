@@ -9,17 +9,20 @@ import com.blankj.utilcode.util.ZipUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
+import li.songe.gkd.a11y.TopActivity
+import li.songe.gkd.a11y.screenshot
+import li.songe.gkd.a11y.topActivityFlow
 import li.songe.gkd.data.ComplexSnapshot
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.info2nodeList
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.notif.snapshotNotif
 import li.songe.gkd.service.A11yService
-import li.songe.gkd.service.getAndUpdateCurrentRules
-import li.songe.gkd.service.safeActiveWindow
+import li.songe.gkd.service.ScreenshotService
+import li.songe.gkd.shizuku.safeGetTopCpn
 import li.songe.gkd.store.storeFlow
 import java.io.File
 import kotlin.math.min
@@ -79,7 +82,7 @@ object SnapshotExt {
     }
 
     private suspend fun screenshot(): Bitmap? {
-        return A11yService.Companion.screenshot() ?: ScreenshotService.Companion.screenshot()
+        return A11yService.instance?.screenshot() ?: ScreenshotService.screenshot()
     }
 
     private fun cropBitmapStatusBar(bitmap: Bitmap): Bitmap {
@@ -101,27 +104,43 @@ object SnapshotExt {
 
     private val captureLoading = MutableStateFlow(false)
     suspend fun captureSnapshot(skipScreenshot: Boolean = false): ComplexSnapshot {
-        if (!A11yService.Companion.isRunning.value) {
-            throw RpcError("无障碍不可用,请先授权")
+        if (!A11yService.isRunning.value) {
+            throw RpcError("无障碍不可用，请先授权")
         }
         if (captureLoading.value) {
-            throw RpcError("正在保存快照,不可重复操作")
+            throw RpcError("正在保存快照，不可重复操作")
         }
         captureLoading.value = true
         try {
             val rootNode =
-                A11yService.Companion.instance?.safeActiveWindow
-                    ?: throw RpcError("当前应用没有无障碍信息,捕获失败")
+                A11yService.instance?.safeActiveWindow
+                    ?: throw RpcError("当前应用没有无障碍信息，捕获失败")
             if (storeFlow.value.showSaveSnapshotToast) {
                 toast("正在保存快照...")
             }
 
             val (snapshot, bitmap) = coroutineScope {
                 val d1 = async(Dispatchers.IO) {
+                    val appId = rootNode.packageName.toString()
+                    var activityId = safeGetTopCpn()?.className
+                    if (activityId == null) {
+                        var topActivity = topActivityFlow.value
+                        var i = 0L
+                        while (topActivity.appId != appId) {
+                            delay(100)
+                            topActivity = topActivityFlow.value
+                            i += 100
+                            if (i >= 2000) {
+                                topActivity = TopActivity(appId = appId)
+                                break
+                            }
+                        }
+                        activityId = topActivity.activityId
+                    }
                     ComplexSnapshot(
                         id = System.currentTimeMillis(),
-                        appId = rootNode.packageName.toString(),
-                        activityId = getAndUpdateCurrentRules().topActivity.activityId,
+                        appId = appId,
+                        activityId = activityId,
                         screenHeight = ScreenUtils.getScreenHeight(),
                         screenWidth = ScreenUtils.getScreenWidth(),
                         isLandscape = ScreenUtils.isLandscape(),

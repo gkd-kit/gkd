@@ -3,7 +3,7 @@ package li.songe.gkd.data
 import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.serialization.Serializable
-import li.songe.gkd.service.compatChecked
+import li.songe.gkd.a11y.compatChecked
 
 @Serializable
 data class AttrInfo(

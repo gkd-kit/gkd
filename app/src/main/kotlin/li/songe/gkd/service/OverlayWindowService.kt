@@ -3,6 +3,7 @@ package li.songe.gkd.service
 
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
+import android.content.res.Configuration
 import android.graphics.PixelFormat
 import android.view.Gravity
 import android.view.MotionEvent
@@ -20,19 +21,34 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.blankj.utilcode.util.BarUtils
 import com.blankj.utilcode.util.ScreenUtils
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import li.songe.gkd.a11y.topActivityFlow
+import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.store.createTextFlow
-import li.songe.gkd.util.OnCreateToDestroy
+import li.songe.gkd.util.OnSimpleLife
+import li.songe.gkd.util.mapState
 import li.songe.gkd.util.px
+import li.songe.gkd.util.toast
 
+private var instanceFlags = mutableListOf<Long>()
 
 abstract class OverlayWindowService : LifecycleService(), SavedStateRegistryOwner,
-    OnCreateToDestroy {
+    OnSimpleLife {
     override fun onCreate() {
         super.onCreate()
         onCreated()
+    }
+
+    private val resizeFlow = MutableSharedFlow<Unit>()
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        lifecycleScope.launch { resizeFlow.emit(Unit) }
     }
 
     override fun onDestroy() {
@@ -85,6 +101,30 @@ abstract class OverlayWindowService : LifecycleService(), SavedStateRegistryOwne
     }
 
     init {
+        val flag = System.currentTimeMillis()
+        onCreated { instanceFlags.add(flag) }
+        onDestroyed { instanceFlags.remove(flag) }
+        onCreated {
+            lifecycleScope.launch {
+                var canDrawOverlays = canDrawOverlaysState.updateAndGet()
+                topActivityFlow.mapState(lifecycleScope) { it.appId to it.activityId }
+                    .filter { flag == instanceFlags.last() }
+                    .collectLatest {
+                        var i = 0
+                        while (i < 6 && isActive) {
+                            val oldV = canDrawOverlays
+                            val newV = canDrawOverlaysState.updateAndGet()
+                            canDrawOverlays = newV
+                            if (!newV && oldV) {
+                                toast("当前界面拒绝显示悬浮窗")
+                                break
+                            }
+                            delay(500)
+                            i++
+                        }
+                    }
+            }
+        }
         onCreated {
             val marginX = 20.dp.px.toInt()
             val marginY = BarUtils.getStatusBarHeight() + 5.dp.px.toInt()
@@ -107,6 +147,8 @@ abstract class OverlayWindowService : LifecycleService(), SavedStateRegistryOwne
             var paramsXy = layoutParams.x to layoutParams.y
             var fixMoveFlag = 0
             val fixLimitXy = {
+                screenWidth = ScreenUtils.getScreenWidth()
+                screenHeight = ScreenUtils.getScreenHeight()
                 val x = layoutParams.x.coerceIn(marginX, screenWidth - view.width - marginX)
                 val y = layoutParams.y.coerceIn(
                     marginY,
@@ -141,11 +183,8 @@ abstract class OverlayWindowService : LifecycleService(), SavedStateRegistryOwne
                 }
             }
             lifecycleScope.launch {
-                val sharedFlow = MutableSharedFlow<Unit>()
-                view.viewTreeObserver.addOnGlobalLayoutListener {
-                    launch { sharedFlow.emit(Unit) }
-                }
-                sharedFlow.debounce(100).collect { fixLimitXy() }
+                view.viewTreeObserver.addOnGlobalLayoutListener { launch { resizeFlow.emit(Unit) } }
+                resizeFlow.debounce(100).collect { fixLimitXy() }
             }
             var downXy: Pair<Float, Float>? = null
             @SuppressLint("ClickableViewAccessibility")

@@ -1,12 +1,10 @@
 package li.songe.gkd
 
 import android.app.Activity
-import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
+import android.os.Handler
 import android.os.Looper
-import android.service.quicksettings.TileService
 import android.webkit.URLUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -52,6 +50,7 @@ import li.songe.gkd.util.UpdateStatus
 import li.songe.gkd.util.clearCache
 import li.songe.gkd.util.client
 import li.songe.gkd.util.componentName
+import li.songe.gkd.util.extraCptName
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.openWeChatScaner
@@ -62,6 +61,7 @@ import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubsMutex
 import li.songe.gkd.util.updateSubscription
 import rikka.shizuku.Shizuku
+import kotlin.reflect.jvm.jvmName
 
 private var tempTermsAccepted = false
 
@@ -184,6 +184,12 @@ class MainViewModel : ViewModel() {
         if (direction.route == navController.currentDestination?.route) {
             return
         }
+        if (Looper.getMainLooper() != Looper.myLooper()) {
+            Handler(Looper.getMainLooper()).postDelayed({
+                navigatePage(direction, builder)
+            }, 0)
+            return
+        }
         if (builder != null) {
             navController.navigate(direction.route, builder)
         } else {
@@ -214,35 +220,42 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    fun handleIntent(intent: Intent) = viewModelScope.launchTry(Dispatchers.Main) {
+    fun handleIntent(intent: Intent) = viewModelScope.launchTry {
         LogUtils.d("handleIntent", intent)
+        val sourceName = intent.getStringExtra(activityNavSourceName)
         val uri = intent.data?.normalizeScheme()
-        if (uri?.scheme == "gkd") {
-            delay(200)
-            handleGkdUri(uri)
-        } else if (uri != null && intent.getStringExtra("source") == OpenFileActivity::class.qualifiedName) {
-            toast("加载导入中...")
-            tabFlow.value = subsNav
-            withContext(Dispatchers.IO) { importData(uri) }
-        } else if (intent.action == TileService.ACTION_QS_TILE_PREFERENCES) {
-            val qsTileCpt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                intent.getParcelableExtra(Intent.EXTRA_COMPONENT_NAME, ComponentName::class.java)
-            } else {
-                @Suppress("DEPRECATION")
-                intent.getParcelableExtra(Intent.EXTRA_COMPONENT_NAME) as ComponentName?
-            } ?: return@launchTry
-            delay(200)
-            when (qsTileCpt) {
-                HttpTileService::class.componentName, ButtonTileService::class.componentName, RecordTileService::class.componentName -> {
-                    navigatePage(AdvancedPageDestination)
+        when (sourceName) {
+            OpenSchemeActivity::class.jvmName -> {
+                if (uri?.scheme == "gkd") {
+                    delay(200)
+                    handleGkdUri(uri)
                 }
+            }
 
-                SnapshotTileService::class.componentName -> {
-                    navigatePage(SnapshotPageDestination)
-                }
-
-                MatchTileService::class.componentName -> {
+            OpenFileActivity::class.jvmName -> {
+                if (uri != null) {
+                    toast("加载导入中...")
                     tabFlow.value = subsNav
+                    withContext(Dispatchers.IO) { importData(uri) }
+                }
+            }
+
+            OpenTileActivity::class.jvmName -> {
+                val qsTileCpt = intent.extraCptName
+                when (qsTileCpt) {
+                    HttpTileService::class.componentName, ButtonTileService::class.componentName, RecordTileService::class.componentName -> {
+                        delay(200)
+                        navigatePage(AdvancedPageDestination)
+                    }
+
+                    SnapshotTileService::class.componentName -> {
+                        delay(200)
+                        navigatePage(SnapshotPageDestination)
+                    }
+
+                    MatchTileService::class.componentName -> {
+                        tabFlow.value = subsNav
+                    }
                 }
             }
         }

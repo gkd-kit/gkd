@@ -1,6 +1,7 @@
 package li.songe.gkd.util
 
 import android.app.Service
+import android.content.ComponentName
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -137,3 +138,11 @@ fun <T : Service> startForegroundServiceByClass(clazz: KClass<T>) {
         toast("启动服务失败: ${e.message}")
     }
 }
+
+val Intent.extraCptName: ComponentName?
+    get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        getParcelableExtra(Intent.EXTRA_COMPONENT_NAME, ComponentName::class.java)
+    } else {
+        @Suppress("DEPRECATION")
+        getParcelableExtra(Intent.EXTRA_COMPONENT_NAME) as? ComponentName?
+    }

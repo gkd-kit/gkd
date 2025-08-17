@@ -1,4 +1,4 @@
-package li.songe.gkd.service
+package li.songe.gkd.a11y
 
 import android.graphics.Rect
 import android.util.Log
@@ -6,6 +6,7 @@ import android.util.LruCache
 import android.view.accessibility.AccessibilityNodeInfo
 import li.songe.gkd.META
 import li.songe.gkd.data.ResolvedRule
+import li.songe.gkd.service.A11yService
 import li.songe.gkd.util.InterruptRuleMatchException
 import li.songe.selector.FastQuery
 import li.songe.selector.MatchOption
@@ -133,12 +134,12 @@ class A11yContext(
 
     private fun getA11Child(node: AccessibilityNodeInfo, index: Int): AccessibilityNodeInfo? {
         guardInterrupt()
-        return node.getChild(index)?.apply { setGeneratedTime() }
+        return node.getChild(index)?.setGeneratedTime()
     }
 
     private fun getA11Parent(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
         guardInterrupt()
-        return node.parent?.apply { setGeneratedTime() }
+        return node.parent?.setGeneratedTime()
     }
 
     private fun getA11ByText(

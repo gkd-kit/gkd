@@ -1,6 +1,5 @@
 package li.songe.gkd.util
 
-import android.accessibilityservice.AccessibilityService
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
@@ -27,6 +26,7 @@ import com.hjq.toast.style.WhiteToastStyle
 import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.app
 import li.songe.gkd.appScope
+import li.songe.gkd.service.A11yService
 import li.songe.gkd.store.storeFlow
 
 
@@ -99,7 +99,7 @@ private fun setReactiveToastStyle() {
 
 private var triggerTime = 0L
 private const val triggerInterval = 2000L
-fun showActionToast(context: AccessibilityService) {
+fun showActionToast() {
     if (!storeFlow.value.toastWhenClick) return
     appScope.launchTry(Dispatchers.Main) {
         val t = System.currentTimeMillis()
@@ -108,8 +108,7 @@ fun showActionToast(context: AccessibilityService) {
             if (storeFlow.value.useSystemToast) {
                 showSystemToast(storeFlow.value.clickToast)
             } else {
-                showAccessibilityToast(
-                    context,
+                showA11yToast(
                     storeFlow.value.clickToast
                 )
             }
@@ -129,9 +128,10 @@ private fun showSystemToast(message: CharSequence) {
 // 2.使用协程 delay + cacheView 也可能导致无法取消
 // https://github.com/gkd-kit/gkd/issues/697
 // https://github.com/gkd-kit/gkd/issues/698
-private fun showAccessibilityToast(context: AccessibilityService, message: CharSequence) {
-    val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    val textView = TextView(context).apply {
+private fun showA11yToast(message: CharSequence) {
+    val service = A11yService.instance ?: return
+    val wm = service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+    val textView = TextView(service).apply {
         text = message
         id = android.R.id.message
         gravity = Gravity.CENTER
@@ -147,7 +147,7 @@ private fun showAccessibilityToast(context: AccessibilityService, message: CharS
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
         ).reduce { acc, i -> acc or i }
-        packageName = context.packageName
+        packageName = service.packageName
         width = WindowManager.LayoutParams.WRAP_CONTENT
         height = WindowManager.LayoutParams.WRAP_CONTENT
         gravity = Gravity.BOTTOM

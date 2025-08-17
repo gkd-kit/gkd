@@ -6,10 +6,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import li.songe.gkd.util.OnCreateToDestroy
 import li.songe.gkd.util.OnTileLife
 
-abstract class BaseTileService : TileService(), OnCreateToDestroy, OnTileLife {
+abstract class BaseTileService : TileService(), OnTileLife {
     override fun onCreate() = onCreated()
     override fun onStartListening() = onStartListened()
     override fun onClick() = onTileClicked()
@@ -25,7 +24,6 @@ abstract class BaseTileService : TileService(), OnCreateToDestroy, OnTileLife {
     }
 
     init {
-        useLogLifecycle()
         scope.launch {
             combine(
                 activeFlow,

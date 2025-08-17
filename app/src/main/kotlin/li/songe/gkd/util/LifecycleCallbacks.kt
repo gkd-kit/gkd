@@ -9,48 +9,34 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.isActivityVisible
 import java.util.WeakHashMap
+import kotlin.reflect.jvm.jvmName
 
-private val callbacksMap = WeakHashMap<Any, HashMap<Int, MutableList<Any>>>()
+private val cbMap = WeakHashMap<Any, HashMap<Int, MutableList<Any>>>()
+
+typealias CbFn = () -> Unit
 
 @Suppress("UNCHECKED_CAST")
-private fun <T> CanOnCallback.getCallbacks(method: Int): MutableList<T> {
-    return callbacksMap.getOrPut(this) { hashMapOf() }
+private fun <T> OnSimpleLife.cbs(method: Int): MutableList<T> = synchronized(cbMap) {
+    return cbMap.getOrPut(this) { hashMapOf() }
         .getOrPut(method) { mutableListOf() } as MutableList<T>
 }
 
-interface CanOnCallback {
+interface OnSimpleLife {
+    fun onCreated(f: CbFn) = cbs<CbFn>(1).add(f)
+    fun onCreated() = cbs<CbFn>(1).forEach { it() }
+
+    fun onDestroyed(f: CbFn) = cbs<CbFn>(2).add(f)
+    fun onDestroyed() = cbs<CbFn>(2).forEach { it() }
+
     fun useLogLifecycle() {
-        LogUtils.d("useLogLifecycle", this)
-        if (this is OnCreateToDestroy) {
-            onCreated { LogUtils.d("onCreated", this) }
-            onDestroyed { LogUtils.d("onDestroyed", this) }
-        }
+        onCreated { LogUtils.d("onCreated:" + this::class.jvmName) }
+        onDestroyed { LogUtils.d("onDestroyed:" + this::class.jvmName) }
         if (this is OnA11yLife) {
-            onA11yConnected { LogUtils.d("onA11yConnected", this) }
+            onA11yConnected { LogUtils.d("onA11yConnected:" + this::class.jvmName) }
         }
         if (this is OnTileLife) {
-            onStartListened { LogUtils.d("onStartListened", this) }
-            onStopListened { LogUtils.d("onStopListened", this) }
-            onTileClicked { LogUtils.d("onTileClicked", this) }
+            onTileClicked { LogUtils.d("onTileClicked:" + this::class.jvmName) }
         }
-    }
-}
-
-interface OnCreateToDestroy : CanOnCallback {
-    fun onCreated(f: () -> Unit) {
-        getCallbacks<() -> Unit>(2).add(f)
-    }
-
-    fun onCreated() {
-        getCallbacks<() -> Unit>(2).forEach { it() }
-    }
-
-    fun onDestroyed(f: () -> Unit) {
-        getCallbacks<() -> Unit>(4).add(f)
-    }
-
-    fun onDestroyed() {
-        getCallbacks<() -> Unit>(4).forEach { it() }
     }
 
     fun useScope(): CoroutineScope = MainScope().apply { onDestroyed { cancel() } }
@@ -74,48 +60,22 @@ interface OnCreateToDestroy : CanOnCallback {
     }
 }
 
-interface OnA11yLife : CanOnCallback {
-    fun onA11yConnected(f: () -> Unit) {
-        getCallbacks<() -> Unit>(8).add(f)
-    }
+interface OnA11yLife : OnSimpleLife {
+    fun onA11yConnected(f: CbFn) = cbs<CbFn>(3).add(f)
+    fun onA11yConnected() = cbs<CbFn>(3).forEach { it() }
 
-    fun onA11yConnected() {
-        getCallbacks<() -> Unit>(8).forEach { it() }
-    }
-
-    val a11yEventCallbacks: MutableList<(AccessibilityEvent) -> Unit>
-
-    fun onA11yEvent(f: (AccessibilityEvent) -> Unit) {
-        a11yEventCallbacks.add(f)
-    }
-
-    fun onA11yEvent(event: AccessibilityEvent) {
-        a11yEventCallbacks.forEach { it(event) }
-    }
+    val a11yEventCbs: MutableList<(AccessibilityEvent) -> Unit>
+    fun onA11yEvent(f: (AccessibilityEvent) -> Unit) = a11yEventCbs.add(f)
+    fun onA11yEvent(event: AccessibilityEvent) = a11yEventCbs.forEach { it(event) }
 }
 
-interface OnTileLife : CanOnCallback {
-    fun onStartListened(f: () -> Unit) {
-        getCallbacks<() -> Unit>(10).add(f)
-    }
+interface OnTileLife : OnSimpleLife {
+    fun onStartListened(f: CbFn) = cbs<CbFn>(4).add(f)
+    fun onStartListened() = cbs<CbFn>(4).forEach { it() }
 
-    fun onStartListened() {
-        getCallbacks<() -> Unit>(10).forEach { it() }
-    }
+    fun onStopListened(f: CbFn) = cbs<CbFn>(5).add(f)
+    fun onStopListened() = cbs<CbFn>(5).forEach { it() }
 
-    fun onStopListened(f: () -> Unit) {
-        getCallbacks<() -> Unit>(12).add(f)
-    }
-
-    fun onStopListened() {
-        getCallbacks<() -> Unit>(12).forEach { it() }
-    }
-
-    fun onTileClicked(f: () -> Unit) {
-        getCallbacks<() -> Unit>(14).add(f)
-    }
-
-    fun onTileClicked() {
-        getCallbacks<() -> Unit>(14).forEach { it() }
-    }
+    fun onTileClicked(f: CbFn) = cbs<CbFn>(6).add(f)
+    fun onTileClicked() = cbs<CbFn>(6).forEach { it() }
 }

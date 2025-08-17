@@ -7,15 +7,15 @@ import android.content.Intent
 import android.content.IntentFilter
 import androidx.core.content.ContextCompat
 import li.songe.gkd.META
-import li.songe.gkd.util.OnCreateToDestroy
-import li.songe.gkd.util.componentName
+import li.songe.gkd.util.OnSimpleLife
 import kotlin.reflect.KClass
+import kotlin.reflect.jvm.jvmName
 
 class StopServiceReceiver(private val service: Service) : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
         context ?: return
         intent ?: return
-        if (intent.action == STOP_ACTION && intent.getStringExtra(STOP_ACTION) == service::class.componentName.className) {
+        if (intent.action == STOP_ACTION && intent.getStringExtra(STOP_ACTION) == service::class.jvmName) {
             service.stopSelf()
         }
     }
@@ -23,16 +23,14 @@ class StopServiceReceiver(private val service: Service) : BroadcastReceiver() {
     companion object {
         private val STOP_ACTION by lazy { META.appId + ".STOP_SERVICE" }
 
-        fun getIntent(clazz: KClass<out Service>): Intent {
-            return Intent().apply {
-                action = STOP_ACTION
-                putExtra(STOP_ACTION, clazz.componentName.className)
-                setPackage(META.appId)
-            }
+        fun getIntent(clazz: KClass<out Service>) = Intent().apply {
+            action = STOP_ACTION
+            putExtra(STOP_ACTION, clazz.jvmName)
+            setPackage(META.appId)
         }
 
         context(service: T)
-        fun <T> autoRegister() where T : Service, T : OnCreateToDestroy {
+        fun <T> autoRegister() where T : Service, T : OnSimpleLife {
             val receiver = StopServiceReceiver(service)
             service.onCreated {
                 ContextCompat.registerReceiver(

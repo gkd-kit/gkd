@@ -8,6 +8,7 @@ import android.view.ViewConfiguration
 import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.ScreenUtils
 import kotlinx.serialization.Serializable
+import li.songe.gkd.service.A11yService
 import li.songe.gkd.shizuku.safeLongTap
 import li.songe.gkd.shizuku.safeTap
 
@@ -28,15 +29,16 @@ data class ActionResult(
 )
 
 sealed class ActionPerformer(val action: String) {
+    val service: AccessibilityService
+        get() = A11yService.instance!!
+
     abstract fun perform(
-        context: AccessibilityService,
         node: AccessibilityNodeInfo,
         position: RawSubscription.Position?,
     ): ActionResult
 
     data object ClickNode : ActionPerformer("clickNode") {
         override fun perform(
-            context: AccessibilityService,
             node: AccessibilityNodeInfo,
             position: RawSubscription.Position?,
         ): ActionResult {
@@ -49,7 +51,6 @@ sealed class ActionPerformer(val action: String) {
 
     data object ClickCenter : ActionPerformer("clickCenter") {
         override fun perform(
-            context: AccessibilityService,
             node: AccessibilityNodeInfo,
             position: RawSubscription.Position?,
         ): ActionResult {
@@ -60,7 +61,6 @@ sealed class ActionPerformer(val action: String) {
             val y = p?.second ?: ((rect.bottom + rect.top) / 2f)
             return ActionResult(
                 action = action,
-                // TODO 在分屏/小窗模式下会点击到应用界面外部导致误触其他应用
                 result = if (0 <= x && 0 <= y && x <= ScreenUtils.getScreenWidth() && y <= ScreenUtils.getScreenHeight()) {
                     val result = safeTap(x, y)
                     if (result != null) {
@@ -74,7 +74,7 @@ sealed class ActionPerformer(val action: String) {
                             path, 0, ViewConfiguration.getTapTimeout().toLong()
                         )
                     )
-                    context.dispatchGesture(gestureDescription.build(), null, null)
+                    service.dispatchGesture(gestureDescription.build(), null, null)
                     true
                 } else {
                     false
@@ -86,23 +86,21 @@ sealed class ActionPerformer(val action: String) {
 
     data object Click : ActionPerformer("click") {
         override fun perform(
-            context: AccessibilityService,
             node: AccessibilityNodeInfo,
             position: RawSubscription.Position?,
         ): ActionResult {
             if (node.isClickable) {
-                val result = ClickNode.perform(context, node, position)
+                val result = ClickNode.perform(node, position)
                 if (result.result) {
                     return result
                 }
             }
-            return ClickCenter.perform(context, node, position)
+            return ClickCenter.perform(node, position)
         }
     }
 
     data object LongClickNode : ActionPerformer("longClickNode") {
         override fun perform(
-            context: AccessibilityService,
             node: AccessibilityNodeInfo,
             position: RawSubscription.Position?,
         ): ActionResult {
@@ -115,7 +113,6 @@ sealed class ActionPerformer(val action: String) {
 
     data object LongClickCenter : ActionPerformer("longClickCenter") {
         override fun perform(
-            context: AccessibilityService,
             node: AccessibilityNodeInfo,
             position: RawSubscription.Position?,
         ): ActionResult {
@@ -143,8 +140,7 @@ sealed class ActionPerformer(val action: String) {
                             path, 0, longClickDuration
                         )
                     )
-                    // TODO 传入处理 callback
-                    context.dispatchGesture(gestureDescription.build(), null, null)
+                    service.dispatchGesture(gestureDescription.build(), null, null)
                     true
                 } else {
                     false
@@ -156,36 +152,33 @@ sealed class ActionPerformer(val action: String) {
 
     data object LongClick : ActionPerformer("longClick") {
         override fun perform(
-            context: AccessibilityService,
             node: AccessibilityNodeInfo,
             position: RawSubscription.Position?,
         ): ActionResult {
             if (node.isLongClickable) {
-                val result = LongClickNode.perform(context, node, position)
+                val result = LongClickNode.perform(node, position)
                 if (result.result) {
                     return result
                 }
             }
-            return LongClickCenter.perform(context, node, position)
+            return LongClickCenter.perform(node, position)
         }
     }
 
     data object Back : ActionPerformer("back") {
         override fun perform(
-            context: AccessibilityService,
             node: AccessibilityNodeInfo,
             position: RawSubscription.Position?,
         ): ActionResult {
             return ActionResult(
                 action = action,
-                result = context.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
+                result = service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
             )
         }
     }
 
     data object None : ActionPerformer("none") {
         override fun perform(
-            context: AccessibilityService,
             node: AccessibilityNodeInfo,
             position: RawSubscription.Position?,
         ): ActionResult {

@@ -1,11 +1,12 @@
 package li.songe.gkd.data
 
-import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityNodeInfo
+import kotlinx.atomicfu.atomic
+import kotlinx.atomicfu.update
 import kotlinx.coroutines.Job
-import li.songe.gkd.service.appChangeTime
-import li.songe.gkd.service.lastTriggerRule
-import li.songe.gkd.service.lastTriggerTime
+import li.songe.gkd.a11y.appChangeTime
+import li.songe.gkd.a11y.lastTriggerRule
+import li.songe.gkd.a11y.lastTriggerTime
 import li.songe.selector.MatchOption
 import li.songe.selector.Selector
 
@@ -67,7 +68,7 @@ sealed class ResolvedRule(
         if (priorityActionMaximum <= actionCount.value) return false
         if (!status.ok) return false
         val t = System.currentTimeMillis()
-        return t - matchChangedTime < priorityTime + matchDelay
+        return t - matchChangedTime.value < priorityTime + matchDelay
     }
 
     val isSlow by lazy { preKeys.isEmpty() && (matchTime == null || matchTime > 10_000L) && hasSlowSelector }
@@ -107,11 +108,11 @@ sealed class ResolvedRule(
     private var preRules = emptySet<ResolvedRule>()
     val hasNext = group.rules.any { r -> r.preKeys?.any { k -> k == rule.key } == true }
 
-    var actionDelayTriggerTime = 0L
-    var actionDelayJob: Job? = null
+    private var actionDelayTriggerTime = atomic(0L)
+    val actionDelayJob = atomic<Job?>(null)
     fun checkDelay(): Boolean {
-        if (actionDelay > 0 && actionDelayTriggerTime == 0L) {
-            actionDelayTriggerTime = System.currentTimeMillis()
+        if (actionDelay > 0 && actionDelayTriggerTime.value == 0L) {
+            actionDelayTriggerTime.value = System.currentTimeMillis()
             return true
         }
         return false
@@ -119,24 +120,23 @@ sealed class ResolvedRule(
 
     fun checkForced(): Boolean {
         if (forcedTime <= 0) return false
-        return System.currentTimeMillis() < matchChangedTime + matchDelay + forcedTime
+        return System.currentTimeMillis() < matchChangedTime.value + matchDelay + forcedTime
     }
 
-    private var actionTriggerTime = Value(0L)
+    private var actionTriggerTime = atomic(0L)
     fun trigger() {
         actionTriggerTime.value = System.currentTimeMillis()
+        actionDelayTriggerTime.value = 0L
+        actionCount.incrementAndGet()
         lastTriggerTime = actionTriggerTime.value
-        // 重置延迟点
-        actionDelayTriggerTime = 0L
-        actionCount.value++
         lastTriggerRule = this
     }
 
-    var actionCount = Value(0)
+    private var actionCount = atomic(0)
 
-    private var matchChangedTime = 0L
+    private val matchChangedTime = atomic(0L)
     val isFirstMatchApp: Boolean
-        get() = matchChangedTime == appChangeTime
+        get() = matchChangedTime.value == appChangeTime
 
     private val matchLimitTime = (matchTime ?: 0) + matchDelay
 
@@ -146,31 +146,22 @@ sealed class ResolvedRule(
 
     fun resetState(t: Long) {
         actionCount.value = 0
-        actionDelayTriggerTime = 0L
+        actionDelayTriggerTime.value = 0L
         actionTriggerTime.value = 0
-        actionDelayJob?.run {
-            cancel()
-            actionDelayJob = null
-        }
-        matchDelayJob?.run {
-            cancel()
-            matchDelayJob = null
-        }
-        matchChangedTime = t
+        actionDelayJob.update { it?.cancel(); null }
+        matchDelayJob.update { it?.cancel(); null }
+        matchChangedTime.value = t
     }
 
     private val performer = ActionPerformer.getAction(rule.action ?: rule.position?.let {
         ActionPerformer.ClickCenter.action
     })
 
-    fun performAction(
-        context: AccessibilityService,
-        node: AccessibilityNodeInfo
-    ): ActionResult {
-        return performer.perform(context, node, rule.position)
+    fun performAction(node: AccessibilityNodeInfo): ActionResult {
+        return performer.perform(node, rule.position)
     }
 
-    var matchDelayJob: Job? = null
+    val matchDelayJob = atomic<Job?>(null)
 
     val status: RuleStatus
         get() {
@@ -183,17 +174,19 @@ sealed class ResolvedRule(
                 return RuleStatus.Status2 // 需要提前触发某个规则
             }
             val t = System.currentTimeMillis()
-            if (matchDelay > 0 && t - matchChangedTime < matchDelay) {
+            val c = matchChangedTime.value
+            if (matchDelay > 0 && t - c < matchDelay) {
                 return RuleStatus.Status3 // 处于匹配延迟中
             }
-            if (matchTime != null && t - matchChangedTime > matchLimitTime) {
+            if (matchTime != null && t - c > matchLimitTime) {
                 return RuleStatus.Status4 // 超出匹配时间
             }
             if (actionTriggerTime.value + actionCd > t) {
                 return RuleStatus.Status5 // 处于冷却时间
             }
-            if (actionDelayTriggerTime > 0) {
-                if (actionDelayTriggerTime + actionDelay > t) {
+            val d = actionDelayTriggerTime.value
+            if (d > 0) {
+                if (d + actionDelay > t) {
                     return RuleStatus.Status6 // 处于触发延迟中
                 }
             }

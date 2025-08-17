@@ -1,77 +1,54 @@
 package li.songe.gkd.shizuku
 
-import android.annotation.SuppressLint
-import android.content.Context
-import android.os.Build
 import android.os.IUserManager
-import com.blankj.utilcode.util.LogUtils
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import li.songe.gkd.appScope
-import rikka.shizuku.ShizukuBinderWrapper
-import rikka.shizuku.SystemServiceHelper
+import li.songe.gkd.data.UserInfo
+import li.songe.gkd.util.toast
+import kotlin.reflect.full.declaredMemberFunctions
+import kotlin.reflect.full.valueParameters
+import kotlin.reflect.typeOf
 
-
+private var getUsersFcType: Int? = null
 private fun IUserManager.compatGetUsers(
-    excludePartial: Boolean = true,
-    excludeDying: Boolean = true,
-    excludePreCreated: Boolean = true
-): List<li.songe.gkd.data.UserInfo> {
-    return (if (Build.VERSION.SDK_INT >= 30) {
-        getUsers(excludePartial, excludeDying, excludePreCreated)
-    } else {
-        try {
-            getUsers(excludeDying)
-        } catch (e: NoSuchFieldError) {
-            LogUtils.d(e)
-            @SuppressLint("NewApi")
-            getUsers(excludePartial, excludeDying, excludePreCreated)
+    excludePartial: Boolean,
+    excludeDying: Boolean,
+    excludePreCreated: Boolean,
+): List<UserInfo> {
+    if (getUsersFcType == null) {
+        for (f in this::class.declaredMemberFunctions.filter { it.name == "getUsers" }) {
+            getUsersFcType = when (f.valueParameters.map { it.type }) {
+                listOf(typeOf<Boolean>()) -> 1
+                listOf(typeOf<Boolean>(), typeOf<Boolean>(), typeOf<Boolean>()) -> 3
+                else -> null
+            }
+            if (getUsersFcType != null) {
+                break
+            }
         }
-    }).map {
-        li.songe.gkd.data.UserInfo(
+        if (getUsersFcType == null) {
+            getUsersFcType = -1
+            toast("获取 IUserManager:getTasks 签名错误")
+        }
+    }
+    return try {
+        when (getUsersFcType) {
+            1 -> this.getUsers(excludeDying)
+            3 -> this.getUsers(excludePartial, excludeDying, excludePreCreated)
+            else -> emptyList()
+        }
+    } catch (_: Throwable) {
+        emptyList()
+    }.map {
+        UserInfo(
             id = it.id,
-            name = it.name.trim(),
+            name = it.name,
         )
     }
 }
 
-interface SafeUserManager {
+class SafeUserManager(private val value: IUserManager) {
     fun compatGetUsers(
-        excludePartial: Boolean,
-        excludeDying: Boolean,
-        excludePreCreated: Boolean
-    ): List<li.songe.gkd.data.UserInfo>
-
-    fun compatGetUsers(): List<li.songe.gkd.data.UserInfo>
-}
-
-fun newUserManager(): SafeUserManager? {
-    val service = SystemServiceHelper.getSystemService(Context.USER_SERVICE)
-    if (service == null) {
-        LogUtils.d("shizuku 无法获取 user")
-        return null
-    }
-    val manager = service.let(::ShizukuBinderWrapper).let(IUserManager.Stub::asInterface)
-    return object : SafeUserManager {
-        override fun compatGetUsers(
-            excludePartial: Boolean,
-            excludeDying: Boolean,
-            excludePreCreated: Boolean
-        ) = manager.compatGetUsers(excludePartial, excludeDying, excludePreCreated)
-
-        override fun compatGetUsers() = manager.compatGetUsers()
-    }
-}
-
-
-val userManagerFlow by lazy<StateFlow<SafeUserManager?>> {
-    val stateFlow = MutableStateFlow<SafeUserManager?>(null)
-    appScope.launch(Dispatchers.IO) {
-        shizukuWorkProfileUsedFlow.collect {
-            stateFlow.value = if (it) newUserManager() else null
-        }
-    }
-    stateFlow
+        excludePartial: Boolean = true,
+        excludeDying: Boolean = true,
+        excludePreCreated: Boolean = true
+    ): List<UserInfo> = value.compatGetUsers(excludePartial, excludeDying, excludePreCreated)
 }

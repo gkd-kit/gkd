@@ -65,11 +65,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <intent-filter>
-                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
-            </intent-filter>
         </activity>
-
         <activity
             android:name=".OpenSchemeActivity"
             android:exported="true"
@@ -83,7 +79,6 @@
                 <data android:scheme="gkd" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".OpenFileActivity"
             android:exported="true"
@@ -99,6 +94,14 @@
                 <data android:mimeType="application/x-zip-compressed" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".OpenTileActivity"
+            android:exported="true"
+            android:theme="@style/TransparentTheme">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+            </intent-filter>
+        </activity>
 
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
@@ -107,7 +110,6 @@
             android:exported="true"
             android:multiprocess="false"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
-
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
@@ -169,12 +171,24 @@
                 android:value="Display a text card for users to show current activity info" />
         </service>
         <service
+            android:name=".service.SnapshotActionService"
+            android:exported="true"
+            android:foregroundServiceType="specialUse"
+            tools:ignore="ExportedService">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Provide an interface for third-party applications to actively invoke snapshot capturing." />
+        </service>
+
+        <service
             android:name=".service.GkdTileService"
             android:exported="true"
             android:icon="@drawable/ic_status"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
-
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
@@ -195,6 +209,9 @@
             android:icon="@drawable/ic_http"
             android:label="@string/http_server"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
@@ -205,6 +222,9 @@
             android:icon="@drawable/ic_radio_button"
             android:label="@string/snapshot_button"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
@@ -215,6 +235,9 @@
             android:icon="@drawable/ic_flash_on"
             android:label="@string/rule_match"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
@@ -225,19 +248,12 @@
             android:icon="@drawable/ic_layers"
             android:label="@string/record_activity"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
-        </service>
-
-        <service
-            android:name=".service.SnapshotActionService"
-            android:exported="true"
-            android:foregroundServiceType="specialUse"
-            tools:ignore="ExportedService">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Provide an interface for third-party applications to actively invoke snapshot capturing." />
         </service>
 
         <!--  remove useless -->

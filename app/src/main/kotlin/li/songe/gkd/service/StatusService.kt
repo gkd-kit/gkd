@@ -13,13 +13,13 @@ import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.storeFlow
-import li.songe.gkd.util.OnCreateToDestroy
+import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.getSubsStatus
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
 
-class StatusService : Service(), OnCreateToDestroy {
+class StatusService : Service(), OnSimpleLife {
     override fun onBind(intent: Intent?) = null
     override fun onCreate() = onCreated()
     override fun onDestroy() = onDestroyed()

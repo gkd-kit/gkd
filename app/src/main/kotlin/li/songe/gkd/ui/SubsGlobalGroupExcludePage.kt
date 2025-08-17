@@ -52,11 +52,11 @@ import com.blankj.utilcode.util.KeyboardUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.flow.update
+import li.songe.gkd.a11y.launcherAppId
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.service.launcherAppId
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AnimatedIcon
 import li.songe.gkd.ui.component.AppBarTextField
@@ -358,7 +358,9 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                 OutlinedTextField(
                     value = source,
                     onValueChange = { source = it },
-                    modifier = Modifier.fillMaxWidth().autoFocus(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .autoFocus(),
                     placeholder = {
                         Text(
                             text = tipText,
