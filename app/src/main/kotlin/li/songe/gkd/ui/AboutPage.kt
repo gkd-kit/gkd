@@ -60,6 +60,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
@@ -487,7 +488,7 @@ private fun AnimatedLogoIcon(
         atEnd
     )
     LaunchedEffect(Unit) {
-        while (true) {
+        while (isActive) {
             atEnd = !atEnd
             delay(animation.totalDuration.toLong())
         }

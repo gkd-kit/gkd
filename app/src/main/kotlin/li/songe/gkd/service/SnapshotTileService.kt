@@ -5,6 +5,7 @@ import android.service.quicksettings.TileService
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import li.songe.gkd.appScope
 import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.launchTry
@@ -28,7 +29,7 @@ class SnapshotTileService : TileService() {
                 return System.currentTimeMillis() - startTime > 3000L
             }
 
-            while (true) {
+            while (isActive) {
                 val latestAppId = service.safeActiveWindowAppId
                 if (latestAppId == null) {
                     // https://github.com/gkd-kit/gkd/issues/713

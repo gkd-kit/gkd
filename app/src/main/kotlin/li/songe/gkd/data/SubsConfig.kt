@@ -20,14 +20,13 @@ private var lastId = 0L
 
 @Synchronized
 private fun buildUniqueTimeMillisId(): Long {
-    while (true) {
-        val id = System.currentTimeMillis()
-        if (id != lastId) {
-            lastId = id
-            return id
-        }
-        Thread.sleep(1)
+    val id = System.currentTimeMillis()
+    if (id > lastId) {
+        lastId = id
+    } else {
+        lastId += 1
     }
+    return lastId
 }
 
 @Serializable
