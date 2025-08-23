@@ -13,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -62,10 +61,6 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateAppMutex
-
-val settingsNav = BottomNavItem(
-    label = "设置", icon = Icons.Outlined.Settings
-)
 
 @Composable
 fun useSettingsPage(): ScaffoldExt {
@@ -205,12 +200,12 @@ fun useSettingsPage(): ScaffoldExt {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val scrollState = rememberScrollState()
     return ScaffoldExt(
-        navItem = settingsNav,
+        navItem = BottomNavItem.Settings,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(scrollBehavior = scrollBehavior, title = {
                 Text(
-                    text = settingsNav.label,
+                    text = BottomNavItem.Settings.label,
                 )
             })
         },

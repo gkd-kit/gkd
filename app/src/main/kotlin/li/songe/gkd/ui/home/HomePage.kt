@@ -1,5 +1,10 @@
 package li.songe.gkd.ui.home
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -16,36 +21,58 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.ProfileTransitions
 
-data class BottomNavItem(
+sealed class BottomNavItem(
+    val key: Int,
     val label: String,
     val icon: ImageVector,
-)
+) {
+    object Control : BottomNavItem(
+        key = 0,
+        label = "主页",
+        icon = Icons.Outlined.Home,
+    )
+
+    object SubsManage : BottomNavItem(
+        key = 1,
+        label = "订阅",
+        icon = Icons.AutoMirrored.Filled.FormatListBulleted,
+    )
+
+    object AppList : BottomNavItem(
+        key = 2,
+        label = "应用",
+        icon = Icons.Default.Apps,
+    )
+
+    object Settings : BottomNavItem(
+        key = 3,
+        label = "设置",
+        icon = Icons.Outlined.Settings,
+    )
+
+    companion object {
+        val allSubObjects by lazy { arrayOf(Control, SubsManage, AppList, Settings) }
+    }
+}
 
 @Destination<RootGraph>(style = ProfileTransitions::class, start = true)
 @Composable
 fun HomePage() {
     val mainVm = LocalMainViewModel.current
-    viewModel<HomeVm>()
+    viewModel<HomeVm>() // init state
     val tab by mainVm.tabFlow.collectAsState()
-
-    val controlPage = useControlPage()
-    val subsPage = useSubsManagePage()
-    val appListPage = useAppListPage()
-    val settingsPage = useSettingsPage()
-
-    val pages = arrayOf(controlPage, subsPage, appListPage, settingsPage)
-
-    val currentPage = pages.find { p -> p.navItem.label == tab.label } ?: controlPage
+    val pages = arrayOf(useControlPage(), useSubsManagePage(), useAppListPage(), useSettingsPage())
+    val page = pages.find { p -> p.navItem.key == tab } ?: pages.first()
 
     Scaffold(
-        modifier = currentPage.modifier,
-        topBar = currentPage.topBar,
-        floatingActionButton = currentPage.floatingActionButton,
+        modifier = page.modifier,
+        topBar = page.topBar,
+        floatingActionButton = page.floatingActionButton,
         bottomBar = {
             NavigationBar {
                 pages.forEach { page ->
                     NavigationBarItem(
-                        selected = tab.label == page.navItem.label,
+                        selected = page.navItem.key == tab,
                         modifier = Modifier,
                         onClick = {
                             mainVm.updateTab(page.navItem)
@@ -62,6 +89,6 @@ fun HomePage() {
                 }
             }
         },
-        content = currentPage.content
+        content = page.content
     )
 }

@@ -22,7 +22,6 @@ import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.outlined.Equalizer
-import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.RocketLaunch
@@ -72,8 +71,6 @@ import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
 
-val controlNav = BottomNavItem(label = "主页", icon = Icons.Outlined.Home)
-
 @Composable
 fun useControlPage(): ScaffoldExt {
     val context = LocalActivity.current as MainActivity
@@ -83,7 +80,7 @@ fun useControlPage(): ScaffoldExt {
     val scrollState = rememberScrollState()
     val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
     return ScaffoldExt(
-        navItem = controlNav,
+        navItem = BottomNavItem.Control,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(scrollBehavior = scrollBehavior, title = {

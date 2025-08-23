@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
@@ -99,10 +98,6 @@ import li.songe.gkd.util.updateSubsMutex
 import li.songe.gkd.util.usedSubsEntriesFlow
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
-
-val subsNav = BottomNavItem(
-    label = "订阅", icon = Icons.AutoMirrored.Filled.FormatListBulleted
-)
 
 @Composable
 fun useSubsManagePage(): ScaffoldExt {
@@ -194,7 +189,7 @@ fun useSubsManagePage(): ScaffoldExt {
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     return ScaffoldExt(
-        navItem = subsNav,
+        navItem = BottomNavItem.SubsManage,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
@@ -213,7 +208,7 @@ fun useSubsManagePage(): ScaffoldExt {
                     )
                 } else {
                     Text(
-                        text = subsNav.label,
+                        text = BottomNavItem.SubsManage.label,
                     )
                 }
             }, actions = {

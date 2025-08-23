@@ -189,6 +189,10 @@
             <meta-data
                 android:name="android.service.quicksettings.TOGGLEABLE_TILE"
                 android:value="true" />
+            <meta-data
+                android:name="QS_TILE_URI"
+                android:value="gkd://page" />
+
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
@@ -199,6 +203,9 @@
             android:icon="@drawable/ic_capture"
             android:label="@string/capture_snapshot"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <meta-data
+                android:name="QS_TILE_URI"
+                android:value="gkd://page/2" />
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
@@ -212,6 +219,10 @@
             <meta-data
                 android:name="android.service.quicksettings.TOGGLEABLE_TILE"
                 android:value="true" />
+            <meta-data
+                android:name="QS_TILE_URI"
+                android:value="gkd://page/1" />
+
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
@@ -225,6 +236,10 @@
             <meta-data
                 android:name="android.service.quicksettings.TOGGLEABLE_TILE"
                 android:value="true" />
+            <meta-data
+                android:name="QS_TILE_URI"
+                android:value="gkd://page/1" />
+
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
@@ -238,6 +253,10 @@
             <meta-data
                 android:name="android.service.quicksettings.TOGGLEABLE_TILE"
                 android:value="true" />
+            <meta-data
+                android:name="QS_TILE_URI"
+                android:value="gkd://page?tab=1" />
+
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
@@ -251,6 +270,10 @@
             <meta-data
                 android:name="android.service.quicksettings.TOGGLEABLE_TILE"
                 android:value="true" />
+            <meta-data
+                android:name="QS_TILE_URI"
+                android:value="gkd://page/1" />
+
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
