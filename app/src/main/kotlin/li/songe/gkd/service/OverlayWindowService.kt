@@ -83,13 +83,12 @@ abstract class OverlayWindowService : LifecycleService(), SavedStateRegistryOwne
         createTextFlow(
             key = positionStoreKey,
             decode = {
-                val list = (it ?: "").split(',', limit = 2).takeIf { l -> l.size == 2 }
-                if (list != null) {
-                    val a = list.getOrNull(0)?.toIntOrNull() ?: 0
-                    val b = list.getOrNull(1)?.toIntOrNull() ?: 0
-                    a to b
-                } else {
-                    0 to 0
+                (it ?: "").split(',', limit = 2).mapNotNull { v -> v.toIntOrNull() }.run {
+                    if (size == 2) {
+                        get(0) to get(1)
+                    } else {
+                        0 to 0
+                    }
                 }
             },
             encode = {
