@@ -79,6 +79,9 @@ abstract class OverlayWindowService : LifecycleService(), SavedStateRegistryOwne
 
     abstract val positionStoreKey: String
 
+    private val minMargin: Int
+        get() = 10.dp.px.toInt()
+
     val positionFlow by lazy {
         createTextFlow(
             key = positionStoreKey,
@@ -87,7 +90,7 @@ abstract class OverlayWindowService : LifecycleService(), SavedStateRegistryOwne
                     if (size == 2) {
                         get(0) to get(1)
                     } else {
-                        0 to 0
+                        minMargin to BarUtils.getStatusBarHeight()
                     }
                 }
             },
@@ -125,8 +128,8 @@ abstract class OverlayWindowService : LifecycleService(), SavedStateRegistryOwne
             }
         }
         onCreated {
-            val marginX = 20.dp.px.toInt()
-            val marginY = BarUtils.getStatusBarHeight() + 5.dp.px.toInt()
+            val marginX = minMargin
+            val marginY = minMargin
             val layoutParams = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
