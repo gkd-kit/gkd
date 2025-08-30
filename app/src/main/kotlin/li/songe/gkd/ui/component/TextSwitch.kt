@@ -22,6 +22,7 @@ fun TextSwitch(
     title: String,
     subtitle: String? = null,
     suffix: String? = null,
+    suffixUnderline: Boolean = false,
     onSuffixClick: (() -> Unit)? = null,
     checked: Boolean = true,
     enabled: Boolean = true,
@@ -46,8 +47,13 @@ fun TextSwitch(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = suffix,
-                            style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline),
+                            text = suffix, style = MaterialTheme.typography.bodyMedium.run {
+                                if (suffixUnderline) {
+                                    copy(textDecoration = TextDecoration.Underline)
+                                } else {
+                                    this
+                                }
+                            },
                             color = MaterialTheme.colorScheme.primary,
                             modifier = if (onSuffixClick != null) Modifier.clickable(
                                 onClick = throttle(fn = onSuffixClick),

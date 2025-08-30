@@ -10,22 +10,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
-import li.songe.gkd.data.AppInfo
-import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.appIconMapFlow
 
 @Composable
 fun AppIcon(
     modifier: Modifier = Modifier,
-    appId: String? = null,
-    appInfo: AppInfo? = null,
+    appId: String,
 ) {
-    val icon = if (appInfo != null) {
-        appInfo.icon
-    } else if (appId != null) {
-        appInfoCacheFlow.collectAsState().value[appId]?.icon
-    } else {
-        null
-    }
+    val icon = appIconMapFlow.collectAsState().value[appId]
     val iconModifier = modifier.size(32.dp)
     if (icon != null) {
         Image(

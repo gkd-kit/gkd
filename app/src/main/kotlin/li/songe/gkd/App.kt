@@ -14,7 +14,6 @@ import kotlinx.coroutines.MainScope
 import kotlinx.serialization.Serializable
 import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.notif.initChannel
-import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.clearHttpSubs
 import li.songe.gkd.shizuku.initShizuku
 import li.songe.gkd.store.initStore
@@ -126,6 +125,5 @@ class App : Application() {
         initSubsState()
         clearHttpSubs()
         syncFixState()
-        StatusService.autoStart()
     }
 }

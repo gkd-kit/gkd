@@ -4,53 +4,63 @@ import android.app.ActivityManager
 import android.app.IActivityTaskManager
 import android.content.ComponentName
 import android.view.Display
-import li.songe.gkd.util.toast
-import kotlin.reflect.full.declaredMemberFunctions
-import kotlin.reflect.full.valueParameters
+import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.util.checkExistClass
 import kotlin.reflect.typeOf
 
 private var tasksFcType: Int? = null
 private fun IActivityTaskManager.compatGetTasks(maxNum: Int): List<ActivityManager.RunningTaskInfo> {
-    if (tasksFcType == null) {
-        for (f in this::class.declaredMemberFunctions.filter { it.name == "getTasks" }) {
-            tasksFcType = when (f.valueParameters.map { it.type }) {
-                listOf(typeOf<Int>()) -> 1
-                listOf(typeOf<Int>(), typeOf<Boolean>(), typeOf<Boolean>()) -> 3
-                listOf(typeOf<Int>(), typeOf<Boolean>(), typeOf<Boolean>(), typeOf<Int>()) -> 4
-                else -> null
-            }
-            if (tasksFcType != null) {
-                break
-            }
-        }
-        if (tasksFcType == null) {
-            tasksFcType = -1
-            toast("获取 IActivityTaskManager:getTasks 签名错误")
-        }
-    }
-    return try {
-        when (tasksFcType) {
-            1 -> this.getTasks(maxNum)
-            3 -> this.getTasks(maxNum, false, true)
-            4 -> this.getTasks(maxNum, false, true, Display.DEFAULT_DISPLAY)
-            else -> emptyList()
-        }
-    } catch (_: Throwable) {
-        emptyList()
+    tasksFcType = tasksFcType ?: findCompatMethod(
+        "getTasks",
+        listOf(
+            1 to listOf(typeOf<Int>()),
+            3 to listOf(typeOf<Int>(), typeOf<Boolean>(), typeOf<Boolean>()),
+            4 to listOf(typeOf<Int>(), typeOf<Boolean>(), typeOf<Boolean>(), typeOf<Int>()),
+        )
+    )
+    return when (tasksFcType) {
+        1 -> getTasks(maxNum)
+        3 -> getTasks(maxNum, false, false)
+        4 -> getTasks(maxNum, false, false, Display.INVALID_DISPLAY)
+        else -> emptyList()
     }
 }
 
-// https://github.com/gkd-kit/gkd/issues/44
-// java.lang.ClassNotFoundException:Didn't find class "android.app.IActivityTaskManager" on path: DexPathList
-class SafeActivityTaskManager(private val value: IActivityTaskManager) {
-    fun compatGetTasks(maxNum: Int = 1) = value.compatGetTasks(maxNum)
-    fun getTopCpn(): ComponentName? = compatGetTasks().firstOrNull()?.topActivity
+object SafeTaskListener {
+    val isAvailable: Boolean
+        get() = checkExistClass("android.app.ITaskStackListener")
+    val instance by lazy { FixedTaskStackListener() }
+}
 
-    fun registerTaskStackListener(listener: FixedTaskStackListener) {
-        value.registerTaskStackListener(listener)
+class SafeActivityTaskManager(private val value: IActivityTaskManager) {
+    companion object {
+        val isAvailable: Boolean
+            get() = checkExistClass("android.app.IActivityTaskManager")
+
+        fun newBinder() = getStubService(
+            "activity_task",
+            isAvailable,
+        )?.let {
+            SafeActivityTaskManager(IActivityTaskManager.Stub.asInterface(it))
+        }
     }
 
-    fun unregisterTaskStackListener(listener: FixedTaskStackListener) {
-        value.unregisterTaskStackListener(listener)
+    fun getTopCpn(): ComponentName? = safeInvokeMethod {
+        value.compatGetTasks(1).firstOrNull()?.topActivity
+    }
+
+    fun registerDefault() {
+        if (!SafeTaskListener.isAvailable) return
+        safeInvokeMethod {
+            value.registerTaskStackListener(SafeTaskListener.instance)
+        }
+    }
+
+    fun unregisterDefault() {
+        if (!shizukuOkState.stateFlow.value) return
+        if (!SafeTaskListener.isAvailable) return
+        safeInvokeMethod {
+            value.unregisterTaskStackListener(SafeTaskListener.instance)
+        }
     }
 }

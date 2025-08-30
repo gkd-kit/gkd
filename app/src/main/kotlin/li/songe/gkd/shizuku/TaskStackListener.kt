@@ -2,6 +2,7 @@ package li.songe.gkd.shizuku
 
 import android.app.ActivityManager
 import android.app.ITaskStackListener
+import android.content.ComponentName
 import android.os.Parcel
 import li.songe.gkd.a11y.updateTopActivity
 
@@ -28,17 +29,21 @@ class FixedTaskStackListener : ITaskStackListener.Stub() {
     }
 
     private var lastFront = 0L
-    override fun onTaskMovedToFront(taskInfo: ActivityManager.RunningTaskInfo) {
+    fun onTaskMovedToFrontCompat(cpn: ComponentName? = null) {
         lastFront = System.currentTimeMillis()
-        val cpn = taskInfo.topActivity ?: safeGetTopCpn() ?: return
+        val cpn = cpn ?: safeGetTopCpn() ?: return
         updateTopActivity(
             appId = cpn.packageName,
             activityId = cpn.className,
             type = 2,
         )
     }
-}
 
-val MyTaskListener by lazy {
-    FixedTaskStackListener()
+    override fun onTaskMovedToFront(taskId: Int) {
+        onTaskMovedToFrontCompat()
+    }
+
+    override fun onTaskMovedToFront(taskInfo: ActivityManager.RunningTaskInfo) {
+        onTaskMovedToFrontCompat(taskInfo.topActivity)
+    }
 }

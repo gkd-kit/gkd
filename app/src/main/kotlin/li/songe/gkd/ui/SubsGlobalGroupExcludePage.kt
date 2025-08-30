@@ -277,7 +277,7 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    AppIcon(appInfo = appInfo)
+                    AppIcon(appId = appInfo.id)
                     Spacer(modifier = Modifier.width(12.dp))
 
                     Column(
@@ -310,7 +310,7 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                             key(appInfo.id) {
                                 Switch(
                                     checked = checked,
-                                    onCheckedChange = throttle(vm.viewModelScope.launchAsFn<Boolean> { newChecked ->
+                                    onCheckedChange = throttle(vm.viewModelScope.launchAsFn { newChecked ->
                                         val subsConfig = (vm.subsConfigFlow.value ?: SubsConfig(
                                             type = SubsConfig.GlobalGroupType,
                                             subsId = subsItemId,

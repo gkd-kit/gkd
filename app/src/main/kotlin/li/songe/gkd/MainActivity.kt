@@ -175,6 +175,7 @@ class MainActivity : ComponentActivity() {
             intent = null
         }
         watchKeyboardVisible()
+        StatusService.autoStart()
         setContent {
             val navController = rememberNavController()
             mainVm.updateNavController(navController)
@@ -227,9 +228,9 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         if (isFirstResume && startTime - app.startTime < 2000) {
             isFirstResume = false
-            return
+        } else {
+            syncFixState()
         }
-        syncFixState()
     }
 
     override fun onStop() {
@@ -291,18 +292,10 @@ private val syncStateMutex = Mutex()
 fun syncFixState() {
     appScope.launchTry(Dispatchers.IO) {
         syncStateMutex.withLock {
-            // 每次切换页面更新记录桌面 appId
             updateLauncherAppId()
-
             updateImeAppId()
-
-            // 由于某些机型的进程存在 安装缓存/崩溃缓存 导致服务状态可能不正确, 在此保证每次界面切换都能重新刷新状态
             updateServiceRunning()
-
-            // 用户在系统权限设置中切换权限后再切换回应用时能及时更新状态
             updatePermissionState()
-
-            // 自动重启无障碍服务
             fixRestartService()
         }
     }

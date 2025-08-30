@@ -6,8 +6,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
 import androidx.core.content.ContextCompat
-import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,20 +16,25 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.withContext
 import li.songe.gkd.META
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.toAppInfo
 import li.songe.gkd.permission.canQueryPkgState
-import kotlin.time.Duration.Companion.days
 
 val userAppInfoMapFlow = MutableStateFlow(emptyMap<String, AppInfo>())
-val allPackageInfoMapFlow = MutableStateFlow(emptyMap<Int, List<PackageInfo>>())
+val userAppIconMapFlow = MutableStateFlow(emptyMap<String, Drawable>())
 val otherUserAppInfoMapFlow = MutableStateFlow(emptyMap<String, AppInfo>())
+val otherUserAppIconMapFlow = MutableStateFlow(emptyMap<String, Drawable>())
+
 val appInfoCacheFlow by lazy {
     combine(otherUserAppInfoMapFlow, userAppInfoMapFlow) { a, b -> a + b }
+        .stateIn(appScope, SharingStarted.Eagerly, emptyMap())
+}
+
+val appIconMapFlow by lazy {
+    combine(userAppIconMapFlow, otherUserAppIconMapFlow) { a, b -> a + b }
         .stateIn(appScope, SharingStarted.Eagerly, emptyMap())
 }
 
@@ -71,14 +76,9 @@ private val packageReceiver by lazy {
         )
 
         override fun onReceive(context: Context?, intent: Intent?) {
+            // PACKAGE_REMOVED->PACKAGE_ADDED->PACKAGE_REPLACED
             val appId = intent?.data?.schemeSpecificPart ?: return
-            if (actions.contains(intent.action)) {
-                /**
-                 * 例: 小米应用商店更新应用产生连续 3个事件: PACKAGE_REMOVED->PACKAGE_ADDED->PACKAGE_REPLACED
-                 * 使用 Flow + debounce 优化合并
-                 */
-                willUpdateAppIds.update { it + appId }
-            }
+            willUpdateAppIds.update { it + appId }
         }
     }.apply {
         val intentFilter = IntentFilter().apply {
@@ -94,78 +94,76 @@ private val packageReceiver by lazy {
     }
 }
 
-fun getPkgInfo(appId: String): PackageInfo? {
-    return try {
-        app.packageManager.getPackageInfo(appId, PackageManager.MATCH_UNINSTALLED_PACKAGES)
-    } catch (_: PackageManager.NameNotFoundException) {
-        null
-    }
+const val PKG_FLAGS = PackageManager.MATCH_UNINSTALLED_PACKAGES
+
+private fun getPkgInfo(appId: String): PackageInfo? = try {
+    app.packageManager.getPackageInfo(appId, PKG_FLAGS)
+} catch (_: PackageManager.NameNotFoundException) {
+    null
 }
 
 val updateAppMutex = MutexState()
-private var lastUpdateAppListTime = 0L
 
-private suspend fun updateAppInfo(appIds: Set<String>) {
-    if (appIds.isEmpty()) return
+private suspend fun updateAppInfo(appIds: Set<String>) = updateAppMutex.withStateLock {
     willUpdateAppIds.update { it - appIds }
-    updateAppMutex.withLock {
-        LogUtils.d("updateAppInfo", appIds)
-        val newMap = userAppInfoMapFlow.value.toMutableMap()
-        appIds.forEach { appId ->
-            val info = getPkgInfo(appId)
-            if (info != null) {
-                newMap[appId] = info.toAppInfo()
-            } else {
-                newMap.remove(appId)
-            }
+    val newAppMap = HashMap(userAppInfoMapFlow.value)
+    val newIconMap = HashMap(userAppIconMapFlow.value)
+    appIds.forEach { appId ->
+        val info = getPkgInfo(appId)
+        if (info != null) {
+            newAppMap[appId] = info.toAppInfo()
+        } else {
+            newAppMap.remove(appId)
         }
-        userAppInfoMapFlow.value = newMap
+        val icon = info?.pkgIcon
+        if (icon != null) {
+            newIconMap[appId] = icon
+        } else {
+            newIconMap.remove(appId)
+        }
     }
+    userAppInfoMapFlow.value = newAppMap
+    userAppIconMapFlow.value = newIconMap
 }
 
-suspend fun initOrResetAppInfoCache() = updateAppMutex.withLock {
-    LogUtils.d("initOrResetAppInfoCache start")
-    val oldMap = userAppInfoMapFlow.value
-    val appMap = userAppInfoMapFlow.value.toMutableMap()
-    withContext(Dispatchers.IO) {
-        app.packageManager.getInstalledPackages(PackageManager.MATCH_UNINSTALLED_PACKAGES)
-            .forEach { packageInfo ->
-                appMap[packageInfo.packageName] = packageInfo.toAppInfo()
+fun updateAllAppInfo(showToast: Boolean = false) = appScope.launchTry(Dispatchers.IO) {
+    updateAppMutex.withStateLock {
+        val newAppMap = HashMap<String, AppInfo>()
+        val newIconMap = HashMap<String, Drawable>()
+        val pkgList = app.packageManager.getInstalledPackages(PKG_FLAGS)
+        pkgList.forEach { packageInfo ->
+            newAppMap[packageInfo.packageName] = packageInfo.toAppInfo()
+            packageInfo.pkgIcon?.let { icon ->
+                newIconMap[packageInfo.packageName] = icon
             }
-    }
-    if (!canQueryPkgState.updateAndGet() || appMap.getMayQueryPkgNoAccess()) {
-        withContext(Dispatchers.IO) {
-            arrayOf(Intent.ACTION_MAIN, Intent.ACTION_VIEW).map { action ->
+        }
+        if (!canQueryPkgState.updateAndGet() || newAppMap.getMayQueryPkgNoAccess()) {
+            val visiblePkgList = arrayOf(Intent.ACTION_MAIN, Intent.ACTION_VIEW).map { action ->
                 app.packageManager.queryIntentActivities(
                     Intent(action),
-                    PackageManager.MATCH_DISABLED_COMPONENTS,
+                    PackageManager.MATCH_DISABLED_COMPONENTS
                 )
-            }.flatten().map { it.activityInfo.packageName }.toSet().forEach { appId ->
-                if (!appMap.contains(appId)) {
-                    getPkgInfo(appId)?.let {
-                        appMap[appId] = it.toAppInfo()
-                    }
+            }.flatten()
+                .map { it.activityInfo.packageName }.toSet()
+                .filter { !newAppMap.contains(it) }.mapNotNull { getPkgInfo(it) }
+            visiblePkgList.forEach { packageInfo ->
+                newAppMap[packageInfo.packageName] = packageInfo.toAppInfo()
+                packageInfo.pkgIcon?.let { icon ->
+                    newIconMap[packageInfo.packageName] = icon
                 }
             }
         }
+        userAppInfoMapFlow.value = newAppMap
+        userAppIconMapFlow.value = newIconMap
+        if (showToast) {
+            toast("应用列表更新成功")
+        }
     }
-    userAppInfoMapFlow.value = appMap
-    lastUpdateAppListTime = System.currentTimeMillis()
-    LogUtils.d("initOrResetAppInfoCache end ${oldMap.size}->${appMap.size}")
-}
-
-
-fun forceUpdateAppList() {
-    if (updateAppMutex.mutex.isLocked) return
-    val interval = System.currentTimeMillis() - lastUpdateAppListTime
-    if (interval > 7.days.inWholeMilliseconds) {
-        // 每 7 天强制更新一次应用列表数据
-        appScope.launchTry(Dispatchers.IO) { initOrResetAppInfoCache() }
-    }
-}
+}.let { }
 
 fun initAppState() {
     packageReceiver
+    updateAllAppInfo()
     appScope.launchTry(Dispatchers.IO) {
         willUpdateAppIds.debounce(3000)
             .filter { it.isNotEmpty() }

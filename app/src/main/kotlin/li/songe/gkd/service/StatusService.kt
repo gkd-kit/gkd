@@ -60,14 +60,18 @@ class StatusService : Service(), OnSimpleLife {
         fun start() = startForegroundServiceByClass(StatusService::class)
         fun stop() = stopServiceByClass(StatusService::class)
 
+        private var lastAutoStart = 0L
         fun autoStart() {
+            if (System.currentTimeMillis() - lastAutoStart < 1000) return
             // 重启自动打开通知栏状态服务
+            // 需要已有服务或前台才能自主启动，否则报错 startForegroundService() not allowed due to mAllowStartForeground false
             if (storeFlow.value.enableStatusService
                 && !isRunning.value
                 && notificationState.updateAndGet()
                 && foregroundServiceSpecialUseState.updateAndGet()
             ) {
                 start()
+                lastAutoStart = System.currentTimeMillis()
             }
         }
     }

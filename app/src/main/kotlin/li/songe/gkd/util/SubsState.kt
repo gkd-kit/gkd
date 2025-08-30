@@ -90,7 +90,7 @@ val usedSubsEntriesFlow by lazy {
 
 fun updateSubscription(subscription: RawSubscription) {
     appScope.launchTry {
-        updateSubsMutex.withLock {
+        updateSubsMutex.withStateLock {
             val subsId = subscription.id
             val subsName = subscription.name
             val newMap = subsIdToRawFlow.value.toMutableMap()
@@ -394,7 +394,7 @@ private fun refreshRawSubsList(items: List<SubsItem>): Boolean {
 fun initSubsState() {
     subsItemsFlow.value
     appScope.launchTry(Dispatchers.IO) {
-        updateSubsMutex.withLock {
+        updateSubsMutex.withStateLock {
             val items = DbSet.subsItemDao.queryAll()
             refreshRawSubsList(items)
         }
@@ -448,12 +448,12 @@ fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers
     if (updateSubsMutex.mutex.isLocked) {
         return@launchTry
     }
-    updateSubsMutex.withLock {
+    updateSubsMutex.withStateLock {
         if (subsEntriesFlow.value.any { !it.subsItem.isLocal } && !NetworkUtils.isAvailable()) {
             if (showToast) {
                 toast("网络不可用")
             }
-            return@withLock
+            return@withStateLock
         }
         LogUtils.d("开始检测更新")
         // 文件不存在, 重新加载

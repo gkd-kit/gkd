@@ -18,6 +18,7 @@ import com.ramcosta.composedestinations.spec.Direction
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -29,8 +30,10 @@ import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.permission.AuthReason
 import li.songe.gkd.permission.shizukuOkState
-import li.songe.gkd.shizuku.execCommandForResult
+import li.songe.gkd.shizuku.shizukuContextFlow
+import li.songe.gkd.shizuku.updateBinderMutex
 import li.songe.gkd.store.createTextFlow
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AlertDialogOptions
 import li.songe.gkd.ui.component.InputSubsLinkOption
 import li.songe.gkd.ui.component.RuleGroupState
@@ -95,7 +98,7 @@ class MainViewModel : ViewModel() {
         oldItem: SubsItem? = null,
     ) = viewModelScope.launchTry(Dispatchers.IO) {
         if (updateSubsMutex.mutex.isLocked) return@launchTry
-        updateSubsMutex.withLock {
+        updateSubsMutex.withStateLock {
             val subItems = subsItemsFlow.value
             val text = try {
                 client.get(url).bodyAsText()
@@ -256,24 +259,33 @@ class MainViewModel : ViewModel() {
         )
     }
 
+
+    fun requestShizuku() = try {
+        Shizuku.requestPermission(Activity.RESULT_OK)
+    } catch (e: Throwable) {
+        shizukuErrorFlow.value = e
+    }
+
     suspend fun grantPermissionByShizuku(command: String) {
-        if (shizukuOkState.stateFlow.value) {
-            try {
-                execCommandForResult(command)
-                return
-            } catch (e: Exception) {
-                toast("运行失败:${e.message}")
-                LogUtils.d(e)
-            }
-        } else {
-            try {
-                Shizuku.requestPermission(Activity.RESULT_OK)
-            } catch (e: Throwable) {
-                LogUtils.d("Shizuku授权错误", e.message)
-                shizukuErrorFlow.value = e
+        if (updateBinderMutex.mutex.isLocked) {
+            toast("正在连接 Shizuku 服务，请稍后")
+            stopCoroutine()
+        }
+        if (!shizukuOkState.stateFlow.value) {
+            requestShizuku()
+            stopCoroutine()
+        }
+        if (!storeFlow.value.enableShizuku) {
+            storeFlow.update { it.copy(enableShizuku = true) }
+            delay(500)
+            while (updateBinderMutex.mutex.isLocked) {
+                delay(100)
             }
         }
-        stopCoroutine()
+        val service = shizukuContextFlow.value.serviceWrapper ?: stopCoroutine()
+        if (!service.execCommandForResult(command).ok) {
+            stopCoroutine()
+        }
     }
 
     val a11yServiceEnabledFlow = useA11yServiceEnabledFlow()

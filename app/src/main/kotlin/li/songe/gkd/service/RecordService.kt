@@ -52,22 +52,29 @@ class RecordService : OverlayWindowService() {
                 .padding(horizontal = 4.dp, vertical = 2.dp)
         ) {
             CompositionLocalProvider(LocalContentColor provides contentColorFor(bgColor)) {
-                val topActivity = topActivityFlow.collectAsState().value
-                Text(
-                    text = topActivity.number.toString(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .zIndex(1f)
-                        .clip(MaterialTheme.shapes.extraSmall)
-                        .padding(horizontal = 2.dp),
-                )
-                Column {
-                    topAppInfoFlow.collectAsState().value?.let {
-                        AppNameText(appInfo = it)
+                if (A11yService.isRunning.collectAsState().value) {
+                    val topActivity = topActivityFlow.collectAsState().value
+                    Text(
+                        text = topActivity.number.toString(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .zIndex(1f)
+                            .clip(MaterialTheme.shapes.extraSmall)
+                            .padding(horizontal = 2.dp),
+                    )
+                    Column {
+                        topAppInfoFlow.collectAsState().value?.let {
+                            AppNameText(appInfo = it)
+                        }
+                        Text(text = "${topActivity.appId}\n${topActivity.shortActivityId}")
                     }
-                    Text(text = "${topActivity.appId}\n${topActivity.shortActivityId}")
+                } else {
+                    Column {
+                        Text(text = "记录服务")
+                        Text(text = "无障碍服务未运行")
+                    }
                 }
             }
         }

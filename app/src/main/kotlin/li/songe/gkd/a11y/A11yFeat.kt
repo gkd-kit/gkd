@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.appScope
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.service.A11yService
-import li.songe.gkd.store.shizukuStoreFlow
+import li.songe.gkd.service.StatusService
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.UpdateTimeOption
@@ -35,6 +35,7 @@ fun onA11yFeatInit() = service.run {
     useCaptureVolume()
     useRuleChangedLog()
     onA11yEvent { onA11yFeatEvent(it) }
+    onCreated { StatusService.autoStart() }
 }
 
 private fun A11yService.useAttachState() {
@@ -58,7 +59,7 @@ private var lastCheckShizukuTime = 0L
 context(event: AccessibilityEvent)
 private fun watchCheckShizukuState() {
     // 借助无障碍轮询校验 shizuku 权限, 因为 shizuku 可能无故被关闭
-    if (shizukuStoreFlow.value.enableShizukuAnyFeat) {
+    if (storeFlow.value.enableShizuku) {
         val t = System.currentTimeMillis()
         if (t - lastCheckShizukuTime > 60 * 60_000L) {
             lastCheckShizukuTime = t
@@ -121,21 +122,8 @@ private fun A11yService.useAliveOverlayView() {
         }
         wm.addView(tempView, lp)
     }
-
-    onA11yConnected {
-        scope.launchTry(Dispatchers.Main) {
-            storeFlow.mapState(scope) { s -> s.enableAbFloatWindow }.collect {
-                if (it) {
-                    addA11View()
-                } else {
-                    removeA11View()
-                }
-            }
-        }
-    }
-    onDestroyed {
-        removeA11View()
-    }
+    onA11yConnected { addA11View() }
+    onDestroyed { removeA11View() }
 }
 
 private const val volumeChangedAction = "android.media.VOLUME_CHANGED_ACTION"

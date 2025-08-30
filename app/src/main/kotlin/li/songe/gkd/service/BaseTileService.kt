@@ -24,6 +24,7 @@ abstract class BaseTileService : TileService(), OnTileLife {
     }
 
     init {
+        onTileClicked { StatusService.autoStart() }
         scope.launch {
             combine(
                 activeFlow,

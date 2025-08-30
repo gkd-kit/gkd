@@ -40,7 +40,7 @@ fun SubsAppCard(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AppIcon(appInfo = appInfo)
+        AppIcon(appId = rawApp.id)
         Spacer(modifier = Modifier.width(12.dp))
         Column(
             modifier = Modifier

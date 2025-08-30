@@ -23,7 +23,6 @@ data class SettingsStore(
     val hideSnapshotStatusBar: Boolean = false,
     val enableDarkTheme: Boolean? = null,
     val enableDynamicColor: Boolean = true,
-    val enableAbFloatWindow: Boolean = true,
     val showSaveSnapshotToast: Boolean = true,
     val useSystemToast: Boolean = false,
     val useCustomNotifText: Boolean = false,
@@ -42,4 +41,5 @@ data class SettingsStore(
     val subsExcludeShowHiddenApp: Boolean = false,
     val subsExcludeShowDisabledApp: Boolean = false,
     val subsPowerWarn: Boolean = true,
+    val enableShizuku: Boolean = false,
 )

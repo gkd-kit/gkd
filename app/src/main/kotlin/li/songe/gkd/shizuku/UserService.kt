@@ -4,29 +4,15 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.ServiceConnection
 import android.os.IBinder
-import android.os.RemoteException
 import android.util.Log
 import androidx.annotation.Keep
 import com.blankj.utilcode.util.LogUtils
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.updateAndGet
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
 import li.songe.gkd.META
-import li.songe.gkd.appScope
 import li.songe.gkd.permission.shizukuOkState
-import li.songe.gkd.store.shizukuStoreFlow
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.json
-import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
 import java.io.DataOutputStream
 import kotlin.coroutines.resume
@@ -57,7 +43,6 @@ class UserService : IUserService.Stub {
         destroy()
     }
 
-    @Throws(RemoteException::class)
     override fun execCommand(command: String): String {
         val process = Runtime.getRuntime().exec("sh")
         val outputStream = DataOutputStream(process.outputStream)
@@ -101,20 +86,6 @@ class UserService : IUserService.Stub {
     }
 }
 
-private fun IUserService.execCommandForResult(command: String): Boolean? {
-    return try {
-        val result = execCommand(command)
-        if (result != null) {
-            json.decodeFromString<CommandResult>(result).code == 0
-        } else {
-            null
-        }
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
-}
-
 private fun unbindUserService(serviceArgs: Shizuku.UserServiceArgs, connection: ServiceConnection) {
     if (!shizukuOkState.stateFlow.value) return
     LogUtils.d("unbindUserService", serviceArgs)
@@ -123,37 +94,47 @@ private fun unbindUserService(serviceArgs: Shizuku.UserServiceArgs, connection: 
         Shizuku.unbindUserService(serviceArgs, connection, false)
         Shizuku.unbindUserService(serviceArgs, connection, true)
     } catch (e: Exception) {
-        LogUtils.d(e)
+        e.printStackTrace()
     }
 }
 
 @Serializable
 data class CommandResult(
-    val code: Int,
+    val code: Int?,
     val result: String,
     val error: String?
-)
+) {
+    val ok: Boolean
+        get() = code == 0
+}
 
 data class UserServiceWrapper(
     val userService: IUserService,
     val connection: ServiceConnection,
     val serviceArgs: Shizuku.UserServiceArgs
 ) {
-    fun destroy() {
-        unbindUserService(serviceArgs, connection)
+    fun destroy() = unbindUserService(serviceArgs, connection)
+
+    fun execCommandForResult(command: String): CommandResult = try {
+        val resultStr = userService.execCommand(command)
+        val result = json.decodeFromString<CommandResult>(resultStr)
+        result
+    } catch (e: Throwable) {
+        e.printStackTrace()
+        CommandResult(code = null, result = "", error = e.message)
     }
 
-    fun execCommandForResult(command: String): Boolean? {
-        return userService.execCommandForResult(command)
+    fun safeTap(x: Float, y: Float, duration: Long? = null): Boolean? {
+        val command = if (duration != null) {
+            "input swipe $x $y $x $y $duration"
+        } else {
+            "input tap $x $y"
+        }
+        return execCommandForResult(command).ok
     }
 }
 
-private val bindServiceMutex by lazy { Mutex() }
 suspend fun buildServiceWrapper(): UserServiceWrapper? {
-    if (bindServiceMutex.isLocked) {
-        toast("正在获取 Shizuku 服务，请稍后再试")
-        return null
-    }
     val serviceArgs = Shizuku
         .UserServiceArgs(UserService::class.componentName)
         .daemon(false)
@@ -185,64 +166,19 @@ suspend fun buildServiceWrapper(): UserServiceWrapper? {
             LogUtils.d("onServiceDisconnected", componentName)
         }
     }
-    bindServiceMutex.withLock {
-        return withTimeoutOrNull(3000) {
-            suspendCoroutine { continuation ->
-                resumeCallback = { continuation.resume(it) }
-                try {
-                    Shizuku.bindUserService(serviceArgs, connection)
-                } catch (_: Throwable) {
-                    resumeCallback = null
-                    continuation.resume(null)
-                }
-            }
-        }.apply {
-            if (this == null) {
-                toast("获取 Shizuku 服务失败")
-                unbindUserService(serviceArgs, connection)
+    return withTimeoutOrNull(3000) {
+        suspendCoroutine { continuation ->
+            resumeCallback = { continuation.resume(it) }
+            try {
+                Shizuku.bindUserService(serviceArgs, connection)
+            } catch (_: Throwable) {
+                resumeCallback = null
+                continuation.resume(null)
             }
         }
-    }
-}
-
-private val shizukuServiceUsedFlow by lazy {
-    combine(shizukuOkState.stateFlow, shizukuStoreFlow) { shizukuOk, store ->
-        shizukuOk && store.enableTapClick
-    }.stateIn(appScope, SharingStarted.Eagerly, false)
-}
-
-val serviceWrapperFlow by lazy {
-    val stateFlow = MutableStateFlow<UserServiceWrapper?>(null)
-    appScope.launch(Dispatchers.IO) {
-        shizukuServiceUsedFlow.collect {
-            if (it) {
-                stateFlow.update { s -> s ?: buildServiceWrapper() }
-            } else {
-                stateFlow.update { s -> s?.destroy(); null }
-            }
+    }.apply {
+        if (this == null) {
+            unbindUserService(serviceArgs, connection)
         }
     }
-    stateFlow
-}
-
-suspend fun shizukuCheckUserService(): Boolean {
-    return try {
-        execCommandForResult("input tap 0 0")
-    } catch (_: Throwable) {
-        false
-    }
-}
-
-suspend fun execCommandForResult(command: String): Boolean {
-    return serviceWrapperFlow.updateAndGet {
-        it ?: buildServiceWrapper()
-    }?.execCommandForResult(command) == true
-}
-
-fun safeTap(x: Float, y: Float): Boolean? {
-    return serviceWrapperFlow.value?.execCommandForResult("input tap $x $y")
-}
-
-fun safeLongTap(x: Float, y: Float, duration: Long): Boolean? {
-    return serviceWrapperFlow.value?.execCommandForResult("input swipe $x $y $x $y $duration")
 }

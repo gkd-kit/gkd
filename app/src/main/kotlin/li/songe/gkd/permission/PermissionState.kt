@@ -12,20 +12,16 @@ import com.hjq.permissions.permission.PermissionLists
 import com.hjq.permissions.permission.base.IPermission
 import com.ramcosta.composedestinations.generated.destinations.AppOpsAllowPageDestination
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.updateAndGet
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
-import li.songe.gkd.appScope
 import li.songe.gkd.isActivityVisible
 import li.songe.gkd.shizuku.shizukuCheckGranted
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.util.forceUpdateAppList
-import li.songe.gkd.util.initOrResetAppInfoCache
-import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mayQueryPkgNoAccessFlow
 import li.songe.gkd.util.toast
+import li.songe.gkd.util.updateAllAppInfo
 import li.songe.gkd.util.updateAppMutex
 
 class PermissionState(
@@ -222,11 +218,7 @@ val shizukuOkState by lazy {
 fun updatePermissionState() {
     val stateChanged = canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet()
     if (!updateAppMutex.mutex.isLocked && (stateChanged || mayQueryPkgNoAccessFlow.value)) {
-        appScope.launchTry(Dispatchers.IO) {
-            initOrResetAppInfoCache()
-        }
-    } else {
-        forceUpdateAppList()
+        updateAllAppInfo()
     }
     arrayOf(
         notificationState,

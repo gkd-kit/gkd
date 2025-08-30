@@ -7,6 +7,7 @@ import android.os.Build
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,12 +15,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Api
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -42,7 +45,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -50,18 +55,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.blankj.utilcode.util.LogUtils
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
-import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.MainActivity
 import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
@@ -72,10 +70,7 @@ import li.songe.gkd.service.ButtonService
 import li.songe.gkd.service.HttpService
 import li.songe.gkd.service.RecordService
 import li.songe.gkd.service.ScreenshotService
-import li.songe.gkd.shizuku.shizukuCheckActivity
-import li.songe.gkd.shizuku.shizukuCheckUserService
-import li.songe.gkd.shizuku.shizukuCheckWorkProfile
-import li.songe.gkd.store.shizukuStoreFlow
+import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
@@ -90,10 +85,8 @@ import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.stopCoroutine
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
-import rikka.shizuku.Shizuku
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
@@ -197,27 +190,68 @@ fun AdvancedPage() {
                 .verticalScroll(rememberScrollState())
                 .padding(contentPadding),
         ) {
-            Text(
-                modifier = Modifier.titleItemPadding(showTop = false),
-                text = "Shizuku",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            val shizukuOk by shizukuOkState.stateFlow.collectAsState()
-            AnimatedVisibility(!shizukuOk) {
-                AuthCard(
-                    title = "授权使用",
-                    subtitle = "授权后可使用下列功能",
-                    onAuthClick = {
-                        try {
-                            Shizuku.requestPermission(Activity.RESULT_OK)
-                        } catch (e: Throwable) {
-                            LogUtils.d("Shizuku授权错误", e.message)
-                            mainVm.shizukuErrorFlow.value = e
-                        }
-                    })
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .titleItemPadding(showTop = false),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    modifier = Modifier,
+                    text = "Shizuku",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                val lineHeightDp = LocalDensity.current.run {
+                    MaterialTheme.typography.titleSmall.lineHeight.toDp()
+                }
+                Icon(
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.extraSmall)
+                        .clickable(onClick = throttle {
+                            val c = shizukuContextFlow.value
+                            mainVm.dialogFlow.updateDialogOptions(
+                                title = "授权状态",
+                                text = arrayOf(
+                                    "绑定服务" to c.serviceWrapper,
+                                    "IUserManager" to c.userManager,
+                                    "IPackageManager" to c.packageManager,
+                                    "IActivityManager" to c.activityManager,
+                                    "IActivityTaskManager" to c.activityTaskManager,
+                                ).joinToString("\n") { (name, state) ->
+                                    name + " " + if (state != null) "✅" else "❎"
+                                }
+                            )
+                        })
+                        .size(lineHeightDp),
+                    imageVector = Icons.Outlined.Api,
+                    tint = MaterialTheme.colorScheme.primary,
+                    contentDescription = Icons.Outlined.Api.name,
+                )
             }
-            ShizukuFragment(vm, shizukuOk)
+            val shizukuOk by shizukuOkState.stateFlow.collectAsState()
+            if (!shizukuOk) {
+                AuthCard(
+                    title = "未授权",
+                    subtitle = "点击授权以优化体验",
+                    onAuthClick = {
+                        mainVm.requestShizuku()
+                    }
+                )
+            }
+            TextSwitch(
+                title = "启用优化",
+                subtitle = "提升权限优化体验",
+                suffix = "了解更多",
+                suffixUnderline = true,
+                onSuffixClick = { mainVm.navigateWebPage(ShortUrlSet.URL14) },
+                checked = store.enableShizuku,
+            ) {
+                if (it && !shizukuOk) {
+                    toast("未授权")
+                }
+                storeFlow.value = store.copy(enableShizuku = it)
+            }
 
             val server by HttpService.httpServerFlow.collectAsState()
             val httpServerRunning = server != null
@@ -320,7 +354,6 @@ fun AdvancedPage() {
                 }
             )
 
-
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
                 val screenshotRunning by ScreenshotService.isRunning.collectAsState()
                 TextSwitch(
@@ -411,8 +444,9 @@ fun AdvancedPage() {
                 title = "Github Cookie",
                 subtitle = "生成快照/日志链接",
                 suffix = "获取教程",
+                suffixUnderline = true,
                 onSuffixClick = {
-                    mainVm.navigatePage(WebViewPageDestination(initUrl = (ShortUrlSet.URL1)))
+                    mainVm.navigateWebPage(ShortUrlSet.URL1)
                 },
                 imageVector = Icons.Outlined.Edit,
                 onClick = {
@@ -457,111 +491,7 @@ fun AdvancedPage() {
                     mainVm.navigatePage(ActivityLogPageDestination)
                 }
             )
-
-            Text(
-                text = "其他",
-                modifier = Modifier.titleItemPadding(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            TextSwitch(
-                title = "前台悬浮窗",
-                subtitle = "添加透明悬浮窗",
-                suffix = "查看作用",
-                onSuffixClick = {
-                    mainVm.dialogFlow.updateDialogOptions(
-                        title = "悬浮窗作用",
-                        text = "1.提高 GKD 前台优先级，降低被系统杀死概率\n2.提高点击响应速度，关闭后可能导致点击缓慢或不点击",
-                    )
-                },
-                checked = store.enableAbFloatWindow,
-                onCheckedChange = {
-                    storeFlow.value = store.copy(
-                        enableAbFloatWindow = it
-                    )
-                })
-
             Spacer(modifier = Modifier.height(EmptyHeight))
         }
     }
-}
-
-private val checkShizukuMutex by lazy { Mutex() }
-
-private suspend fun checkShizukuFeat(block: suspend () -> Boolean) {
-    if (checkShizukuMutex.isLocked) {
-        toast("正在检测中，请稍后再试")
-        stopCoroutine()
-    }
-    checkShizukuMutex.withLock {
-        toast("检测中")
-        val r = withTimeoutOrNull(3000) {
-            block()
-        }
-        if (r == null) {
-            toast("检测超时，请重试")
-            stopCoroutine()
-        }
-        if (!r) {
-            toast("检测失败，无法使用")
-            stopCoroutine()
-        }
-        toast("已启用")
-    }
-}
-
-@Composable
-private fun ShizukuFragment(vm: AdvancedVm, enabled: Boolean = true) {
-    val shizukuStore by shizukuStoreFlow.collectAsState()
-    val mainVm = LocalMainViewModel.current
-    TextSwitch(
-        title = "界面识别",
-        subtitle = "更准确识别界面ID",
-        suffix = "使用说明",
-        onSuffixClick = {
-            mainVm.navigatePage(WebViewPageDestination(initUrl = ShortUrlSet.URL7))
-        },
-        checked = shizukuStore.enableActivity,
-        enabled = enabled,
-        onCheckedChange = vm.viewModelScope.launchAsFn<Boolean>(Dispatchers.IO) {
-            if (it) {
-                checkShizukuFeat { shizukuCheckActivity() }
-            }
-            shizukuStoreFlow.update { s -> s.copy(enableActivity = it) }
-        })
-
-    TextSwitch(
-        title = "强制点击",
-        subtitle = "执行强制模拟点击",
-        suffix = "使用说明",
-        onSuffixClick = {
-            mainVm.navigatePage(WebViewPageDestination(initUrl = ShortUrlSet.URL8))
-        },
-        checked = shizukuStore.enableTapClick,
-        enabled = enabled,
-        onCheckedChange = vm.viewModelScope.launchAsFn<Boolean>(Dispatchers.IO) {
-            if (it) {
-                checkShizukuFeat { shizukuCheckUserService() }
-            }
-            shizukuStoreFlow.update { s -> s.copy(enableTapClick = it) }
-        })
-
-
-    TextSwitch(
-        title = "工作空间",
-        subtitle = "扩展工作空间应用列表",
-        suffix = "使用说明",
-        onSuffixClick = {
-            mainVm.navigatePage(WebViewPageDestination(initUrl = ShortUrlSet.URL9))
-        },
-        checked = shizukuStore.enableWorkProfile,
-        enabled = enabled,
-        onCheckedChange = vm.viewModelScope.launchAsFn<Boolean>(Dispatchers.IO) {
-            if (it) {
-                checkShizukuFeat { shizukuCheckWorkProfile() }
-            }
-            shizukuStoreFlow.update { s -> s.copy(enableWorkProfile = it) }
-        })
-
 }

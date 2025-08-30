@@ -26,6 +26,7 @@ import li.songe.gkd.data.RuleStatus
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.storeFlow
+import li.songe.gkd.util.PKG_FLAGS
 import li.songe.gkd.util.RuleSummary
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.ruleSummaryFlow
@@ -71,7 +72,7 @@ private object ActivityCache : LruCache<Pair<String, String>, Boolean>(256) {
     override fun create(key: Pair<String, String>): Boolean = try {
         app.packageManager.getActivityInfo(
             ComponentName(key.first, key.second),
-            PackageManager.MATCH_UNINSTALLED_PACKAGES
+            PKG_FLAGS
         )
         true
     } catch (_: Exception) {

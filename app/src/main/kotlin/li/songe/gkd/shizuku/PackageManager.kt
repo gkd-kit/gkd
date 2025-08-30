@@ -1,35 +1,58 @@
 package li.songe.gkd.shizuku
 
+import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.IPackageManager
 import android.content.pm.PackageInfo
-import kotlin.reflect.full.declaredMemberFunctions
+import li.songe.gkd.util.checkExistClass
 import kotlin.reflect.typeOf
 
 
-private var packageFcType: Boolean? = null
+private var pkgFcType: Int? = null
 private fun IPackageManager.compatGetInstalledPackages(
-    flags: Long,
+    flags: Int,
     userId: Int
 ): List<PackageInfo> {
-    if (packageFcType == null) {
-        packageFcType = this::class.declaredMemberFunctions.find {
-            it.name == "getInstalledPackages"
-        }!!.parameters[1].type == typeOf<Long>()
+    pkgFcType = pkgFcType ?: findCompatMethod(
+        "getInstalledPackages",
+        listOf(
+            1 to listOf(typeOf<Int>(), typeOf<Int>()),
+            2 to listOf(typeOf<Long>(), typeOf<Int>()),
+        )
+    )
+    return when (pkgFcType) {
+        1 -> getInstalledPackages(flags, userId).list
+        2 -> getInstalledPackages(flags.toLong(), userId).list
+        else -> emptyList()
     }
-    return if (packageFcType == true) {
-        getInstalledPackages(flags, userId)
-    } else {
-        getInstalledPackages(flags.toInt(), userId)
-    }.list
 }
 
 class SafePackageManager(private val value: IPackageManager) {
-    fun compatGetInstalledPackages(flags: Long, userId: Int): List<PackageInfo> {
-        return value.compatGetInstalledPackages(flags, userId)
+    companion object {
+        val isAvailable: Boolean
+            get() = checkExistClass("android.content.pm.IPackageManager")
+
+        fun newBinder() = getStubService(
+            "package",
+            isAvailable
+        )?.let {
+            SafePackageManager(IPackageManager.Stub.asInterface(it))
+        }
+    }
+
+    fun getInstalledPackages(flags: Int, userId: Int): List<PackageInfo> {
+        return safeInvokeMethod { value.compatGetInstalledPackages(flags, userId) } ?: emptyList()
     }
 
     fun getAllIntentFilters(packageName: String): List<IntentFilter> {
-        return value.getAllIntentFilters(packageName).list
+        return safeInvokeMethod { value.getAllIntentFilters(packageName).list } ?: emptyList()
+    }
+
+    fun checkAppHidden(appId: String): Boolean {
+        return !getAllIntentFilters(appId).any { f ->
+            f.hasAction(Intent.ACTION_MAIN) && f.hasCategory(
+                Intent.CATEGORY_LAUNCHER
+            )
+        }
     }
 }
