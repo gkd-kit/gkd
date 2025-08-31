@@ -98,6 +98,13 @@ class App : Application() {
     }
 
     val startTime = System.currentTimeMillis()
+    var justStarted: Boolean = true
+        get() {
+            if (field) {
+                field = System.currentTimeMillis() - startTime < 3_000
+            }
+            return field
+        }
 
     val activityManager by lazy { app.getSystemService(ACTIVITY_SERVICE) as ActivityManager }
     val appOpsManager by lazy { app.getSystemService(APP_OPS_SERVICE) as AppOpsManager }

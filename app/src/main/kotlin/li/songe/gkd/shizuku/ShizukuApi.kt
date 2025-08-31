@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.META
+import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.otherUserMapFlow
@@ -119,7 +120,7 @@ val updateBinderMutex = MutexState()
 private fun updateShizukuBinder() = appScope.launchTry(Dispatchers.IO) {
     updateBinderMutex.withStateLock {
         if (shizukuUsedFlow.value) {
-            if (isActivityVisible()) {
+            if (!app.justStarted && isActivityVisible()) {
                 toast("正在连接 Shizuku 服务...")
             }
             shizukuContextFlow.value = ShizukuContext(
@@ -132,10 +133,11 @@ private fun updateShizukuBinder() = appScope.launchTry(Dispatchers.IO) {
                 },
             )
             if (isActivityVisible()) {
+                val delayMillis = if (app.justStarted) 1200L else 0L
                 if (shizukuContextFlow.value.serviceWrapper == null) {
-                    toast("Shizuku 服务连接失败")
+                    toast("Shizuku 服务连接失败", delayMillis)
                 } else {
-                    toast("Shizuku 服务连接成功")
+                    toast("Shizuku 服务连接成功", delayMillis)
                 }
             }
         } else if (shizukuContextFlow.value != defaultShizukuContext) {

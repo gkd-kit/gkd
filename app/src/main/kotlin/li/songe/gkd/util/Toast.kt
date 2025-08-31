@@ -29,9 +29,12 @@ import li.songe.gkd.appScope
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.store.storeFlow
 
-
-fun toast(text: CharSequence) {
-    Toaster.show(text)
+fun toast(text: CharSequence, delayMillis: Long = 0L) {
+    if (delayMillis > 0) {
+        Toaster.delayedShow(text, delayMillis)
+    } else {
+        Toaster.show(text)
+    }
 }
 
 private val darkTheme: Boolean

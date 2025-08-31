@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.META
+import li.songe.gkd.app
 import li.songe.gkd.notif.abNotif
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
@@ -29,7 +30,11 @@ class StatusService : Service(), OnSimpleLife {
 
     init {
         useAliveFlow(isRunning)
-        useAliveToast("常驻通知", onlyWhenVisible = true)
+        useAliveToast(
+            name = "常驻通知",
+            onlyWhenVisible = true,
+            delayMillis = if (app.justStarted) 1000 else 0
+        )
         onCreated {
             abNotif.notifyService()
             scope.launch {

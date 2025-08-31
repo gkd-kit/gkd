@@ -24,7 +24,7 @@ class GkdTileService : BaseTileService() {
 }
 
 private val modifyA11yMutex by lazy { Mutex() }
-private const val A11Y_AWAIT_START_TIME = 1000L
+private const val A11Y_AWAIT_START_TIME = 2000L
 private const val A11Y_AWAIT_FIX_TIME = 500L
 
 fun switchA11yService() = appScope.launchTry(Dispatchers.IO) {
