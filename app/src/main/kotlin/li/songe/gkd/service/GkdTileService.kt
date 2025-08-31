@@ -18,7 +18,6 @@ class GkdTileService : BaseTileService() {
     override val activeFlow = A11yService.isRunning
 
     init {
-        onStartListened { fixRestartService() }
         onTileClicked { switchA11yService() }
     }
 }

@@ -24,6 +24,13 @@ abstract class BaseTileService : TileService(), OnTileLife {
     }
 
     init {
+        onStartListened {
+            val t = System.currentTimeMillis()
+            if (t - lastA11yFixTime > 3_000L) {
+                lastA11yFixTime = t
+                fixRestartService()
+            }
+        }
         onTileClicked { StatusService.autoStart() }
         scope.launch {
             combine(
@@ -38,3 +45,5 @@ abstract class BaseTileService : TileService(), OnTileLife {
         }
     }
 }
+
+private var lastA11yFixTime = 0L
