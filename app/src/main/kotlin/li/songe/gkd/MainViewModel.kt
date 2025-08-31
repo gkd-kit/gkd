@@ -41,6 +41,7 @@ import li.songe.gkd.ui.component.UploadOptions
 import li.songe.gkd.ui.home.BottomNavItem
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.UpdateStatus
+import li.songe.gkd.util.appIconMapFlow
 import li.songe.gkd.util.clearCache
 import li.songe.gkd.util.client
 import li.songe.gkd.util.launchTry
@@ -291,6 +292,8 @@ class MainViewModel : ViewModel() {
     val a11yServiceEnabledFlow = useA11yServiceEnabledFlow()
 
     init {
+        // preload
+        appIconMapFlow.value
         viewModelScope.launchTry(Dispatchers.IO) {
             val subsItems = DbSet.subsItemDao.queryAll()
             if (!subsItems.any { s -> s.id == LOCAL_SUBS_ID }) {
