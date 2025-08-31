@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import li.songe.gkd.META
 import li.songe.gkd.notif.abNotif
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
@@ -38,19 +39,30 @@ class StatusService : Service(), OnSimpleLife {
                     ruleSummaryFlow,
                     actionCountFlow,
                 ) { abRunning, store, ruleSummary, count ->
-                    if (!abRunning) return@combine "无障碍未授权"
-                    if (!store.enableMatch) return@combine "暂停规则匹配"
-                    if (store.useCustomNotifText) {
-                        return@combine store.customNotifText
-                            .replace("\${i}", ruleSummary.globalGroups.size.toString())
-                            .replace("\${k}", ruleSummary.appSize.toString())
-                            .replace("\${u}", ruleSummary.appGroupSize.toString())
-                            .replace("\${n}", count.toString())
+                    if (!abRunning) {
+                        META.appName to "无障碍未授权"
+                    } else if (!store.enableMatch) {
+                        META.appName to "暂停规则匹配"
+                    } else if (store.useCustomNotifText) {
+                        listOf(store.customNotifTitle, store.customNotifText).map {
+                            it.replace("\${i}", ruleSummary.globalGroups.size.toString())
+                                .replace("\${k}", ruleSummary.appSize.toString())
+                                .replace("\${u}", ruleSummary.appGroupSize.toString())
+                                .replace("\${n}", count.toString())
+                        }.run {
+                            first() to last()
+                        }
+                    } else {
+                        META.appName to getSubsStatus(ruleSummary, count)
                     }
-                    return@combine getSubsStatus(ruleSummary, count)
-                }.debounce(500L).stateIn(scope, SharingStarted.Eagerly, "").collect { text ->
-                    abNotif.copy(text = text).notifyService()
-                }
+                }.debounce(1000L)
+                    .stateIn(scope, SharingStarted.Eagerly, "" to "")
+                    .collect { (title, text) ->
+                        abNotif.copy(
+                            title = title,
+                            text = text
+                        ).notifyService()
+                    }
             }
         }
     }

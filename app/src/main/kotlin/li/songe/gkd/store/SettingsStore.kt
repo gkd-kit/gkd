@@ -26,6 +26,7 @@ data class SettingsStore(
     val showSaveSnapshotToast: Boolean = true,
     val useSystemToast: Boolean = false,
     val useCustomNotifText: Boolean = false,
+    val customNotifTitle: String = META.appName,
     val customNotifText: String = "\${i}全局/\${k}应用/\${u}规则组/\${n}触发",
     val enableActivityLog: Boolean = false,
     val updateChannel: Int = if (META.versionName.contains("beta")) UpdateChannelOption.Beta.value else UpdateChannelOption.Stable.value,
