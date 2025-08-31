@@ -22,6 +22,7 @@ import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.toAppInfo
 import li.songe.gkd.permission.canQueryPkgState
+import li.songe.gkd.shizuku.updateOtherUserAppInfo
 
 val userAppInfoMapFlow = MutableStateFlow(emptyMap<String, AppInfo>())
 val userAppIconMapFlow = MutableStateFlow(emptyMap<String, Drawable>())
@@ -153,7 +154,12 @@ fun updateAllAppInfo(showToast: Boolean = false) = appScope.launchTry(Dispatcher
                 }
             }
         }
-        userAppInfoMapFlow.value = newAppMap
+        val oldAppMap = userAppInfoMapFlow.value
+        if (oldAppMap == newAppMap) {
+            updateOtherUserAppInfo(newAppMap)
+        } else {
+            userAppInfoMapFlow.value = newAppMap
+        }
         userAppIconMapFlow.value = newIconMap
         if (showToast) {
             toast("应用列表更新成功")

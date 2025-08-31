@@ -149,7 +149,9 @@ private fun updateShizukuBinder() = appScope.launchTry(Dispatchers.IO) {
     }
 }
 
-fun updateOtherUserAppInfo() {
+fun updateOtherUserAppInfo(
+    userAppInfoMap: Map<String, AppInfo> = userAppInfoMapFlow.value,
+) {
     val pkgManager = shizukuContextFlow.value.packageManager
     val userManager = shizukuContextFlow.value.userManager
     if (pkgManager == null || userManager == null) {
@@ -159,7 +161,6 @@ fun updateOtherUserAppInfo() {
         return
     }
     val otherUsers = userManager.getUsers().filter { it.id != currentUserId }.sortedBy { it.id }
-    otherUserMapFlow.value = otherUsers.associateBy { it.id }
     val userPackageInfoMap = otherUsers.associate { user ->
         user.id to pkgManager.getInstalledPackages(
             PKG_FLAGS,
@@ -167,7 +168,6 @@ fun updateOtherUserAppInfo() {
         )
     }
     val newIconMap = HashMap<String, Drawable>()
-    val userAppInfoMap = userAppInfoMapFlow.value
     val newAppMap = HashMap<String, AppInfo>()
     userPackageInfoMap.forEach { (userId, pkgInfoList) ->
         val diffPkgList = pkgInfoList.filter {
@@ -183,6 +183,7 @@ fun updateOtherUserAppInfo() {
             pkgInfo.pkgIcon?.let { newIconMap[pkgInfo.packageName] = it }
         }
     }
+    otherUserMapFlow.value = otherUsers.associateBy { it.id }
     otherUserAppInfoMapFlow.value = newAppMap
     otherUserAppIconMapFlow.value = newIconMap
 }
