@@ -438,7 +438,7 @@ fun useSubsManagePage(): ScaffoldExt {
                 itemsIndexed(orderSubItems, { _, subItem -> subItem.id }) { index, subItem ->
                     val canDrag = !refreshing && orderSubItems.size > 1
                     ReorderableItem(
-                        reorderableLazyColumnState,
+                        state = reorderableLazyColumnState,
                         key = subItem.id,
                         enabled = canDrag,
                     ) {
