@@ -20,7 +20,6 @@ import li.songe.gkd.util.OnA11yLife
 import li.songe.gkd.util.componentName
 import li.songe.selector.MatchOption
 import li.songe.selector.Selector
-import java.lang.ref.WeakReference
 
 abstract class A11yService : AccessibilityService(), OnA11yLife {
     override fun onCreate() = onCreated()
@@ -52,8 +51,8 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
     init {
         useLogLifecycle()
         useAliveFlow(isRunning)
-        onCreated { a11yWeakRef = WeakReference(this) }
-        onDestroyed { a11yWeakRef = null }
+        onCreated { a11yRef = this }
+        onDestroyed { a11yRef = null }
         A11yRuleEngine(this)
         onA11yFeatInit()
     }
@@ -63,9 +62,9 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
         val a11yClsName by lazy { a11yComponentName.flattenToShortString() }
 
         val isRunning = MutableStateFlow(false)
-        private var a11yWeakRef: WeakReference<A11yService>? = null
+        private var a11yRef: A11yService? = null
         val instance: A11yService?
-            get() = a11yWeakRef?.get()
+            get() = a11yRef
 
         fun execAction(gkdAction: GkdAction): ActionResult {
             val service = instance ?: throw RpcError("无障碍没有运行")

@@ -26,6 +26,8 @@ import li.songe.gkd.a11y.topActivityFlow
 import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.recordNotif
 import li.songe.gkd.permission.canDrawOverlaysState
+import li.songe.gkd.shizuku.SafeTaskListener
+import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.theme.AppTheme
 import li.songe.gkd.util.appInfoCacheFlow
@@ -34,13 +36,19 @@ import li.songe.gkd.util.stopServiceByClass
 
 
 class RecordService : OverlayWindowService() {
+    override val positionStoreKey = "overlay_xy_record"
+
     val topAppInfoFlow by lazy {
         appInfoCacheFlow.combine(topActivityFlow) { map, topActivity ->
             map[topActivity.appId]
         }.stateIn(lifecycleScope, SharingStarted.Eagerly, null)
     }
 
-    override val positionStoreKey = "overlay_xy_record"
+    val activityOkFlow by lazy {
+        combine(A11yService.isRunning, shizukuContextFlow) { a, b ->
+            a || (b.activityTaskManager != null && SafeTaskListener.isAvailable)
+        }.stateIn(scope = lifecycleScope, started = SharingStarted.Eagerly, initialValue = false)
+    }
 
     @Composable
     override fun ComposeContent() = AppTheme(invertedTheme = true) {
@@ -52,7 +60,7 @@ class RecordService : OverlayWindowService() {
                 .padding(horizontal = 4.dp, vertical = 2.dp)
         ) {
             CompositionLocalProvider(LocalContentColor provides contentColorFor(bgColor)) {
-                if (A11yService.isRunning.collectAsState().value) {
+                if (activityOkFlow.collectAsState().value) {
                     val topActivity = topActivityFlow.collectAsState().value
                     Text(
                         text = topActivity.number.toString(),
@@ -73,7 +81,7 @@ class RecordService : OverlayWindowService() {
                 } else {
                     Column {
                         Text(text = "记录服务")
-                        Text(text = "无障碍服务未运行")
+                        Text(text = "无权限检测界面切换")
                     }
                 }
             }

@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import li.songe.gkd.META
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
@@ -145,8 +144,10 @@ private fun updateShizukuBinder() = appScope.launchTry(Dispatchers.IO) {
                 serviceWrapper?.destroy()
                 activityTaskManager?.unregisterDefault()
             }
-            val prefix = if (isActivityVisible()) "" else "${META.appName}: "
-            toast("${prefix}Shizuku 服务已断开")
+            shizukuContextFlow.value = defaultShizukuContext
+            if (isActivityVisible()) {
+                toast("Shizuku 服务已断开")
+            }
         }
     }
 }
