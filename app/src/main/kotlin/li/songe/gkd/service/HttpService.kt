@@ -184,7 +184,7 @@ private fun CoroutineScope.createServer(port: Int) = embeddedServer(CIO, port) {
                 if (!fp.exists()) {
                     throw RpcError("对应快照不存在")
                 }
-                call.respond(fp)
+                call.respondFile(fp)
             }
             post("/getScreenshot") {
                 val data = call.receive<ReqId>()
@@ -226,14 +226,18 @@ private fun CoroutineScope.createServer(port: Int) = embeddedServer(CIO, port) {
 }
 
 private fun getKtorCorsPlugin() = createApplicationPlugin(name = "KtorCorsPlugin") {
-    onCallRespond { call, _ ->
-        call.response.header(HttpHeaders.AccessControlAllowOrigin, "*")
-        call.response.header(HttpHeaders.AccessControlAllowMethods, "*")
-        call.response.header(HttpHeaders.AccessControlAllowHeaders, "*")
-        call.response.header(HttpHeaders.AccessControlExposeHeaders, "*")
-        call.response.header("Access-Control-Allow-Private-Network", "true")
-    }
     onCall { call ->
+        mapOf(
+            HttpHeaders.AccessControlAllowOrigin to "*",
+            HttpHeaders.AccessControlAllowMethods to "*",
+            HttpHeaders.AccessControlAllowHeaders to "*",
+            HttpHeaders.AccessControlExposeHeaders to "*",
+            "Access-Control-Allow-Private-Network" to "true",
+        ).forEach { (k, v) ->
+            if (!call.response.headers.contains(k)) {
+                call.response.header(k, v)
+            }
+        }
         if (call.request.httpMethod == HttpMethod.Options) {
             call.respond("all-cors-ok")
         }
