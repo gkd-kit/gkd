@@ -21,7 +21,7 @@ public interface IActivityTaskManager extends IInterface {
     // android12
     List<ActivityManager.RunningTaskInfo> getTasks(int maxNum, boolean filterOnlyVisibleRecents, boolean keepIntentExtra);
 
-    // android13
+    // android13+
     List<ActivityManager.RunningTaskInfo> getTasks(int maxNum, boolean filterOnlyVisibleRecents, boolean keepIntentExtra, int displayId);
 
     void registerTaskStackListener(ITaskStackListener listener);
