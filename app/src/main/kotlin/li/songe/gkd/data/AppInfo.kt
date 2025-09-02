@@ -17,6 +17,7 @@ data class AppInfo(
     val isSystem: Boolean,
     val mtime: Long,
     val hidden: Boolean,
+    val enabled: Boolean,
     val userId: Int? = null,
 ) {
     override fun equals(other: Any?): Boolean {
@@ -60,5 +61,6 @@ fun PackageInfo.toAppInfo(
                 .addCategory(Intent.CATEGORY_LAUNCHER),
             PackageManager.MATCH_DISABLED_COMPONENTS
         ).isEmpty(),
+        enabled = applicationInfo?.enabled ?: true,
     )
 }

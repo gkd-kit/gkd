@@ -22,6 +22,7 @@ import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import li.songe.gkd.data.AppInfo
@@ -43,12 +44,14 @@ fun AppNameText(
         val userInfo = otherUserMapFlow.collectAsState().value[info.userId]
         "「${userInfo?.name ?: info.userId}」"
     }
+    val textDecoration = if (info?.enabled == false) TextDecoration.LineThrough else null
     if (!showSystemIcon && userName == null) {
         Text(
             text = appName,
             maxLines = 1,
             softWrap = false,
             overflow = TextOverflow.Ellipsis,
+            textDecoration = textDecoration,
         )
     } else {
         val userNameColor = MaterialTheme.colorScheme.tertiary
@@ -104,6 +107,7 @@ fun AppNameText(
             maxLines = 1,
             softWrap = false,
             overflow = TextOverflow.Ellipsis,
+            textDecoration = textDecoration,
         )
     }
 }
