@@ -1,8 +1,15 @@
 package li.songe.gkd.service
 
 import android.accessibilityservice.AccessibilityService
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.PowerManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.core.content.ContextCompat
+import com.blankj.utilcode.util.LogUtils
 import com.google.android.accessibility.selecttospeak.SelectToSpeakService
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.a11y.A11yContext
@@ -47,12 +54,41 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
         get() = safeActiveWindow?.packageName?.toString()
 
     val scope = useScope()
+    val powerManager by lazy { getSystemService(POWER_SERVICE) as PowerManager }
+    var isInteractive = true
+    private val screenStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(
+            context: Context?,
+            intent: Intent?
+        ) {
+            val action = intent?.action ?: return
+            LogUtils.d("screenStateReceiver->${action}")
+            isInteractive = when (action) {
+                Intent.ACTION_SCREEN_ON -> true
+                Intent.ACTION_SCREEN_OFF -> false
+                else -> isInteractive
+            }
+        }
+    }
 
     init {
         useLogLifecycle()
         useAliveFlow(isRunning)
         onCreated { a11yRef = this }
         onDestroyed { a11yRef = null }
+        onCreated {
+            isInteractive = powerManager.isInteractive
+            ContextCompat.registerReceiver(
+                this,
+                screenStateReceiver,
+                IntentFilter().apply {
+                    addAction(Intent.ACTION_SCREEN_ON)
+                    addAction(Intent.ACTION_SCREEN_OFF)
+                },
+                ContextCompat.RECEIVER_EXPORTED
+            )
+        }
+        onDestroyed { unregisterReceiver(screenStateReceiver) }
         A11yRuleEngine(this)
         onA11yFeatInit()
     }

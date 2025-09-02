@@ -38,6 +38,7 @@ class A11yRuleEngine(val service: A11yService) {
     val eventDeque = ArrayDeque<A11yEvent>()
     fun onNewA11yEvent(event: AccessibilityEvent) {
         if (event.eventType == CONTENT_CHANGED && event.packageName == "com.android.systemui") {
+            if (!service.isInteractive) return // 屏幕关闭后仍然有无障碍事件
             if (event.packageName != topActivityFlow.value.appId) return
         }
         // 过滤部分输入法事件
