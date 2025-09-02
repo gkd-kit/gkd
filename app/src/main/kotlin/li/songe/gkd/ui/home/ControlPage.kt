@@ -78,7 +78,6 @@ fun useControlPage(): ScaffoldExt {
     val vm = viewModel<HomeVm>()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val scrollState = rememberScrollState()
-    val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
     return ScaffoldExt(
         navItem = BottomNavItem.Control,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -103,10 +102,7 @@ fun useControlPage(): ScaffoldExt {
 
         val a11yRunning by A11yService.isRunning.collectAsState()
         val manageRunning by StatusService.isRunning.collectAsState()
-        val a11yServiceEnabled by mainVm.a11yServiceEnabledFlow.collectAsState()
-
-        // 无障碍故障: 设置中无障碍开启, 但是实际 service 没有运行
-        val a11yBroken = !a11yRunning && a11yServiceEnabled
+        val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
 
         Column(
             modifier = Modifier
@@ -116,7 +112,15 @@ fun useControlPage(): ScaffoldExt {
             PageItemCard(
                 imageVector = Icons.Default.Memory,
                 title = "服务状态",
-                subtitle = if (a11yRunning) "无障碍服务正在运行" else if (a11yBroken) "无障碍服务发生故障" else if (writeSecureSettings) "无障碍服务已关闭" else "无障碍服务未授权",
+                subtitle = if (a11yRunning) {
+                    "无障碍服务正在运行"
+                } else if (mainVm.a11yServiceEnabledFlow.collectAsState().value) {
+                    "无障碍服务发生故障"
+                } else if (writeSecureSettings) {
+                    "无障碍服务已关闭"
+                } else {
+                    "无障碍服务未授权"
+                },
                 rightContent = {
                     Switch(
                         checked = a11yRunning,

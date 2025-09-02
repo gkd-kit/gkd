@@ -6,16 +6,21 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.META
+import li.songe.gkd.a11y.useA11yServiceEnabledFlow
 import li.songe.gkd.app
 import li.songe.gkd.notif.abNotif
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
+import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.OnSimpleLife
+import li.songe.gkd.util.RuleSummary
 import li.songe.gkd.util.getSubsStatus
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.startForegroundServiceByClass
@@ -27,6 +32,50 @@ class StatusService : Service(), OnSimpleLife {
     override fun onDestroy() = onDestroyed()
 
     val scope = useScope()
+
+    val shizukuWarnFlow = combine(
+        shizukuOkState.stateFlow,
+        storeFlow.map { it.enableShizuku },
+    ) { a, b ->
+        !a && b
+    }.stateIn(scope, SharingStarted.Eagerly, false)
+
+    val a11yServiceEnabledFlow = useA11yServiceEnabledFlow()
+
+    fun statusTriple(): Triple<String, String, String?> {
+        val abRunning = A11yService.isRunning.value
+        val store = storeFlow.value
+        val ruleSummary = ruleSummaryFlow.value
+        val count = actionCountFlow.value
+        val shizukuWarn = shizukuWarnFlow.value
+        val title = if (store.useCustomNotifText) {
+            store.customNotifTitle.replaceTemplate(ruleSummary, count)
+        } else {
+            META.appName
+        }
+        return if (!abRunning) {
+            val text = if (a11yServiceEnabledFlow.value) {
+                "无障碍服务发生故障"
+            } else if (writeSecureSettingsState.updateAndGet()) {
+                "无障碍服务已关闭"
+            } else {
+                "无障碍服务未授权"
+            }
+            Triple(title, text, abNotif.uri)
+        } else if (!store.enableMatch) {
+            Triple(title, "暂停规则匹配", "gkd://page?tab=1")
+        } else if (shizukuWarn) {
+            Triple(title, "Shizuku 未连接，请授权或关闭优化", "gkd://page/1")
+        } else if (store.useCustomNotifText) {
+            Triple(
+                title,
+                store.customNotifText.replaceTemplate(ruleSummary, count),
+                abNotif.uri
+            )
+        } else {
+            Triple(title, getSubsStatus(ruleSummary, count), abNotif.uri)
+        }
+    }
 
     init {
         useAliveFlow(isRunning)
@@ -42,30 +91,23 @@ class StatusService : Service(), OnSimpleLife {
                     A11yService.isRunning,
                     storeFlow,
                     ruleSummaryFlow,
-                    actionCountFlow,
-                ) { abRunning, store, ruleSummary, count ->
-                    if (!abRunning) {
-                        META.appName to "无障碍未授权"
-                    } else if (!store.enableMatch) {
-                        META.appName to "暂停规则匹配"
-                    } else if (store.useCustomNotifText) {
-                        listOf(store.customNotifTitle, store.customNotifText).map {
-                            it.replace("\${i}", ruleSummary.globalGroups.size.toString())
-                                .replace("\${k}", ruleSummary.appSize.toString())
-                                .replace("\${u}", ruleSummary.appGroupSize.toString())
-                                .replace("\${n}", count.toString())
-                        }.run {
-                            first() to last()
-                        }
-                    } else {
-                        META.appName to getSubsStatus(ruleSummary, count)
-                    }
-                }.debounce(1000L)
-                    .stateIn(scope, SharingStarted.Eagerly, "" to "")
-                    .collect { (title, text) ->
+                    shizukuWarnFlow,
+                    a11yServiceEnabledFlow,
+                    writeSecureSettingsState.stateFlow,
+                    actionCountFlow.debounce(1000L),
+                ) {
+                    statusTriple()
+                }
+                    .stateIn(
+                        scope,
+                        SharingStarted.Eagerly,
+                        Triple(abNotif.title, abNotif.text, abNotif.uri)
+                    )
+                    .collect {
                         abNotif.copy(
-                            title = title,
-                            text = text
+                            title = it.first,
+                            text = it.second,
+                            uri = it.third,
                         ).notifyService()
                     }
             }
@@ -92,4 +134,11 @@ class StatusService : Service(), OnSimpleLife {
             }
         }
     }
+}
+
+private fun String.replaceTemplate(ruleSummary: RuleSummary, count: Long): String {
+    return replace("\${i}", ruleSummary.globalGroups.size.toString())
+        .replace("\${k}", ruleSummary.appSize.toString())
+        .replace("\${u}", ruleSummary.appGroupSize.toString())
+        .replace("\${n}", count.toString())
 }

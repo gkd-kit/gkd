@@ -40,6 +40,7 @@ import li.songe.gkd.ui.component.RuleGroupState
 import li.songe.gkd.ui.component.UploadOptions
 import li.songe.gkd.ui.home.BottomNavItem
 import li.songe.gkd.util.LOCAL_SUBS_ID
+import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.UpdateStatus
 import li.songe.gkd.util.appIconMapFlow
 import li.songe.gkd.util.clearCache
@@ -58,7 +59,7 @@ import kotlin.reflect.jvm.jvmName
 
 private var tempTermsAccepted = false
 
-class MainViewModel : ViewModel() {
+class MainViewModel : ViewModel(), OnSimpleLife {
 
     private lateinit var navController: NavHostController
     fun updateNavController(navController: NavHostController) {
@@ -328,5 +329,9 @@ class MainViewModel : ViewModel() {
             // preload
             githubCookieFlow.value
         }
+
+        // for OnSimpleLife
+        onCreated()
+        addCloseable { onDestroyed() }
     }
 }

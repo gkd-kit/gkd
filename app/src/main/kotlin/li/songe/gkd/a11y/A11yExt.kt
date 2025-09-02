@@ -11,16 +11,16 @@ import android.provider.Settings
 import android.view.Display
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import li.songe.gkd.app
 import li.songe.gkd.service.A11yService
+import li.songe.gkd.util.OnSimpleLife
 import li.songe.selector.initDefaultTypeInfo
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-context(vm: ViewModel)
+context(context: OnSimpleLife)
 fun useA11yServiceEnabledFlow(): StateFlow<Boolean> {
     val stateFlow = MutableStateFlow(getA11yServiceEnabled())
     val contextObserver = object : ContentObserver(null) {
@@ -33,7 +33,7 @@ fun useA11yServiceEnabledFlow(): StateFlow<Boolean> {
         false,
         contextObserver
     )
-    vm.addCloseable {
+    context.onDestroyed {
         app.contentResolver.unregisterContentObserver(contextObserver)
     }
     return stateFlow

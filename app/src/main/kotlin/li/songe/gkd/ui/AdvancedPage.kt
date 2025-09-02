@@ -71,6 +71,7 @@ import li.songe.gkd.service.HttpService
 import li.songe.gkd.service.RecordService
 import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.shizuku.shizukuContextFlow
+import li.songe.gkd.shizuku.updateBinderMutex
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.SettingItem
@@ -247,6 +248,10 @@ fun AdvancedPage() {
                 onSuffixClick = { mainVm.navigateWebPage(ShortUrlSet.URL14) },
                 checked = store.enableShizuku,
             ) {
+                if (updateBinderMutex.mutex.isLocked) {
+                    toast("正在连接中，请稍后")
+                    return@TextSwitch
+                }
                 if (it && !shizukuOk) {
                     toast("未授权")
                 }
