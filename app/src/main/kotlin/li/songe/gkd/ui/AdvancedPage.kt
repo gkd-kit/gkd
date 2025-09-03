@@ -102,6 +102,8 @@ fun AdvancedPage() {
         mutableStateOf(false)
     }
     if (showEditPortDlg) {
+        val portRange = remember { 1000 to 65535 }
+        val placeholderText = remember { "请输入 ${portRange.first}-${portRange.second} 的整数" }
         var value by remember {
             mutableStateOf(store.httpServerPort.toString())
         }
@@ -112,7 +114,7 @@ fun AdvancedPage() {
                 OutlinedTextField(
                     value = value,
                     placeholder = {
-                        Text(text = "请输入 5000-65535 的整数")
+                        Text(text = placeholderText)
                     },
                     onValueChange = {
                         value = it.filter { c -> c.isDigit() }.take(5)
@@ -139,18 +141,16 @@ fun AdvancedPage() {
                     enabled = value.isNotEmpty(),
                     onClick = {
                         val newPort = value.toIntOrNull()
-                        if (newPort == null || !(5000 <= newPort && newPort <= 65535)) {
-                            toast("请输入 5000-65535 的整数")
+                        if (newPort == null || !(portRange.first <= newPort && newPort <= portRange.second)) {
+                            toast(placeholderText)
                             return@TextButton
                         }
-                        storeFlow.value = store.copy(
-                            httpServerPort = newPort
-                        )
                         showEditPortDlg = false
-                        if (HttpService.httpServerFlow.value != null) {
-                            toast("已更新，重启服务")
-                        } else {
-                            toast("已更新")
+                        if (newPort != store.httpServerPort) {
+                            storeFlow.value = store.copy(
+                                httpServerPort = newPort
+                            )
+                            toast("更新成功")
                         }
                     }
                 ) {

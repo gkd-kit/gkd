@@ -79,7 +79,7 @@ class HttpService : Service(), OnSimpleLife {
 
     val scope = useScope()
 
-    private val httpServerPortFlow = storeFlow.mapState(scope) { s -> s.httpServerPort }
+    val httpServerPortFlow = storeFlow.mapState(scope) { s -> s.httpServerPort }
 
     init {
         useLogLifecycle()
@@ -88,7 +88,9 @@ class HttpService : Service(), OnSimpleLife {
         StopServiceReceiver.autoRegister()
         onCreated {
             scope.launchTry(Dispatchers.IO) {
-                localNetworkIpsFlow.value = getIpAddressInLocalNetwork()
+                httpServerPortFlow.collect {
+                    localNetworkIpsFlow.value = getIpAddressInLocalNetwork()
+                }
             }
         }
         onDestroyed {
@@ -98,13 +100,16 @@ class HttpService : Service(), OnSimpleLife {
             httpServerFlow.value = null
         }
         onCreated {
-            httpNotif.copy(text = "端口-${storeFlow.value.httpServerPort}").notifyService()
+            httpNotif.notifyService()
             scope.launchTry(Dispatchers.IO) {
                 httpServerPortFlow.collect { port ->
-                    httpServerFlow.value?.stop()
-                    httpServerFlow.value = null
+                    val isReboot = httpServerFlow.value != null
+                    httpServerFlow.apply {
+                        value?.stop()
+                        value = null
+                    }
                     if (!isPortAvailable(port)) {
-                        toast("端口 $port 被占用, 请更换后重试")
+                        toast("端口 $port 被占用，请更换后重试")
                         stopSelf()
                         return@collect
                     }
@@ -117,8 +122,8 @@ class HttpService : Service(), OnSimpleLife {
                     }
                     if (httpServerFlow.value == null) {
                         stopSelf()
-                    } else {
-                        httpNotif.copy(text = "端口-$port").notifyService()
+                    } else if (isReboot) {
+                        toast("HTTP服务重启成功")
                     }
                 }
             }

@@ -109,10 +109,10 @@ fun showActionToast() {
         if (t - triggerTime > triggerInterval + 100) { // 100ms 保证二次显示的时候上一次已经完全消失
             triggerTime = t
             if (storeFlow.value.useSystemToast) {
-                showSystemToast(storeFlow.value.clickToast)
+                showSystemToast(storeFlow.value.actionToast)
             } else {
                 showA11yToast(
-                    storeFlow.value.clickToast
+                    storeFlow.value.actionToast
                 )
             }
         }

@@ -18,7 +18,7 @@ data class SettingsStore(
     val updateSubsInterval: Long = UpdateTimeOption.Everyday.value,
     val captureVolumeChange: Boolean = false,
     val toastWhenClick: Boolean = true,
-    val clickToast: String = META.appName,
+    val actionToast: String = META.appName,
     val autoClearMemorySubs: Boolean = true,
     val hideSnapshotStatusBar: Boolean = false,
     val enableDarkTheme: Boolean? = null,

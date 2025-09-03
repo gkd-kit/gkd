@@ -73,7 +73,7 @@ fun useSettingsPage(): ScaffoldExt {
 
     if (showToastInputDlg) {
         var value by remember {
-            mutableStateOf(store.clickToast)
+            mutableStateOf(store.actionToast)
         }
         val maxCharLen = 32
         AlertDialog(
@@ -104,7 +104,10 @@ fun useSettingsPage(): ScaffoldExt {
             onDismissRequest = { showToastInputDlg = false },
             confirmButton = {
                 TextButton(enabled = value.isNotEmpty(), onClick = {
-                    storeFlow.update { it.copy(clickToast = value) }
+                    if (value != storeFlow.value.actionToast) {
+                        storeFlow.update { it.copy(actionToast = value) }
+                        toast("更新成功")
+                    }
                     showToastInputDlg = false
                 }) {
                     Text(
@@ -208,14 +211,16 @@ fun useSettingsPage(): ScaffoldExt {
             confirmButton = {
                 TextButton(onClick = {
                     KeyboardUtils.hideSoftInput(activity)
-                    storeFlow.update {
-                        it.copy(
-                            customNotifTitle = titleValue,
-                            customNotifText = textValue
-                        )
+                    if (store.customNotifTitle != textValue || store.customNotifText != textValue) {
+                        storeFlow.update {
+                            it.copy(
+                                customNotifTitle = titleValue,
+                                customNotifText = textValue
+                            )
+                        }
+                        toast("更新成功")
                     }
                     showNotifTextInputDlg = false
-                    toast("更新成功")
                 }) {
                     Text(
                         text = "确认",
@@ -259,7 +264,7 @@ fun useSettingsPage(): ScaffoldExt {
 
             TextSwitch(
                 title = "触发提示",
-                subtitle = store.clickToast,
+                subtitle = store.actionToast,
                 checked = store.toastWhenClick,
                 modifier = Modifier.clickable {
                     showToastInputDlg = true
