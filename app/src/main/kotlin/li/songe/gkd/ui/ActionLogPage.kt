@@ -66,12 +66,12 @@ import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.useSubs
 import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
-import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.mapState
 import li.songe.gkd.util.subsIdToRawFlow
@@ -179,7 +179,7 @@ fun ActionLogPage(
                         appId = appId,
                     )
                 }
-                item(LIST_PLACEHOLDER_KEY) {
+                item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (actionDataItems.itemCount == 0 && actionDataItems.loadState.refresh !is LoadState.Loading) {
                         EmptyText(text = "暂无记录")

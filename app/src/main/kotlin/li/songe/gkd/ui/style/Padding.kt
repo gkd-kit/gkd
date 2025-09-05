@@ -35,6 +35,6 @@ fun Modifier.menuPadding() = this
 fun Modifier.scaffoldPadding(values: PaddingValues): Modifier {
     return this.padding(
         top = values.calculateTopPadding(),
-        // 被 LazyColumn( 使用时, 移除 bottom padding, 否则 底部导航栏 无法实现透明背景
+        // 被 LazyXXX 使用时, 移除 bottom padding, 否则 底部导航栏 无法实现透明背景
     )
 }

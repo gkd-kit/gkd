@@ -32,12 +32,12 @@ import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListP
 import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.updateDialogOptions
+import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.scaffoldPadding
-import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.appInfoCacheFlow
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.throttle
@@ -125,7 +125,7 @@ fun SlowGroupPage() {
                     desc = "${rule.rawSubs.name}/应用规则/${appInfoCache[rule.app.id]?.name ?: rule.app.name ?: rule.app.id}"
                 )
             }
-            item(LIST_PLACEHOLDER_KEY) {
+            item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (ruleSummary.slowGroupCount == 0) {
                     EmptyText(text = "暂无规则")

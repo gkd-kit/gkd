@@ -55,12 +55,12 @@ import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.useSubs
+import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
-import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.LOCAL_SUBS_IDS
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.SortTypeOption
@@ -256,13 +256,13 @@ fun SubsAppListPage(
                     }),
                 )
             }
-            item(LIST_PLACEHOLDER_KEY) {
+            item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 val firstLoading by vm.firstLoadingFlow.collectAsState()
                 if (appAndConfigs.isEmpty() && !firstLoading) {
                     EmptyText(
                         text = if (searchStr.isNotEmpty()) {
-                            if (showUninstallApp) "暂无搜索结果" else "暂无搜索结果,请尝试修改筛选条件"
+                            if (showUninstallApp) "暂无搜索结果" else "暂无搜索结果，请尝试修改筛选条件"
                         } else {
                             "暂无规则"
                         }

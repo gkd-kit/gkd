@@ -70,13 +70,13 @@ import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.useListScrollState
+import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemFlagPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
-import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.launchAsFn
@@ -339,7 +339,7 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                     CardFlagBar(visible = excludeData.appIds.containsKey(appInfo.id))
                 }
             }
-            item(LIST_PLACEHOLDER_KEY) {
+            item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (showAppInfos.isEmpty() && searchStr.isNotEmpty()) {
                     val hasShowAll = showSystemApp && showHiddenApp

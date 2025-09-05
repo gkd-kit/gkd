@@ -74,10 +74,10 @@ import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.SubsItemCard
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemVerticalPadding
-import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.ShortUrlSet
@@ -520,7 +520,7 @@ fun useSubsManagePage(): ScaffoldExt {
                         )
                     }
                 }
-                item(LIST_PLACEHOLDER_KEY) {
+                item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }

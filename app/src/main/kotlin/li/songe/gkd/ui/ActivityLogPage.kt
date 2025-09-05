@@ -49,11 +49,11 @@ import li.songe.gkd.ui.component.LocalNumberCharWidth
 import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
-import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
@@ -122,7 +122,7 @@ fun ActivityLogPage() {
                     ActivityLogCard(i = i, actionLog = actionLog, lastActionLog = lastActionLog)
                 }
             }
-            item(LIST_PLACEHOLDER_KEY) {
+            item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (logCount == 0 && list.loadState.refresh !is LoadState.Loading) {
                     EmptyText(text = "暂无记录")

@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.KeyboardUtils
 import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
+import com.ramcosta.composedestinations.generated.destinations.WhiteAppListPageDestination
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.store.storeFlow
@@ -56,17 +57,16 @@ import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.useListScrollState
+import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
-import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.mapHashCode
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateAllAppInfo
 import li.songe.gkd.util.updateAppMutex
 
@@ -135,7 +135,7 @@ fun useAppListPage(): ScaffoldExt {
                 }
             }, actions = {
                 IconButton(onClick = throttle {
-                    toast("应用白名单")
+                    mainVm.navigatePage(WhiteAppListPageDestination)
                 }) {
                     Icon(
                         imageVector = Icons.Outlined.Block,
@@ -313,11 +313,11 @@ fun useAppListPage(): ScaffoldExt {
                         }
                     }
                 }
-                item(LIST_PLACEHOLDER_KEY) {
+                item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (orderedAppInfos.isEmpty() && searchStr.isNotEmpty()) {
                         val hasShowAll = showSystemApp && showHiddenApp
-                        EmptyText(text = if (hasShowAll) "暂无搜索结果" else "暂无搜索结果,请尝试修改筛选条件")
+                        EmptyText(text = if (hasShowAll) "暂无搜索结果" else "暂无搜索结果，请尝试修改筛选条件")
                     }
                     QueryPkgAuthCard()
                 }

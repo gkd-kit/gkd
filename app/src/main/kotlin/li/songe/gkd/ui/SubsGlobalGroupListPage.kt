@@ -47,11 +47,11 @@ import li.songe.gkd.ui.component.toGroupState
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.icon.BackCloseIcon
+import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
-import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.getUpDownTransform
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.switchItem
@@ -271,7 +271,7 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
                     }
                 )
             }
-            item(LIST_PLACEHOLDER_KEY) {
+            item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (globalGroups.isEmpty()) {
                     EmptyText(text = "暂无规则")

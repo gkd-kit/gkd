@@ -58,12 +58,12 @@ import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.icon.ResetSettings
+import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.EnableGroupOption
-import li.songe.gkd.util.LIST_PLACEHOLDER_KEY
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.getCategoryEnable
 import li.songe.gkd.util.launchAsFn
@@ -135,7 +135,7 @@ fun SubsCategoryPage(subsItemId: Long) {
                     showBottom = categories.last() != category
                 )
             }
-            item(LIST_PLACEHOLDER_KEY) {
+            item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (categories.isEmpty()) {
                     EmptyText(text = "暂无类别")
