@@ -79,7 +79,6 @@ import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemPadding
@@ -95,7 +94,6 @@ fun AdvancedPage() {
     val context = LocalActivity.current as MainActivity
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<AdvancedVm>()
-    val navController = LocalNavController.current
     val store by storeFlow.collectAsState()
 
     var showEditPortDlg by remember {
@@ -175,7 +173,7 @@ fun AdvancedPage() {
         topBar = {
             TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
                 IconButton(onClick = {
-                    navController.popBackStack()
+                    mainVm.popBackStack()
                 }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,

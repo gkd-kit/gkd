@@ -70,7 +70,6 @@ import li.songe.gkd.ui.component.toGroupState
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.icon.BackCloseIcon
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.menuPadding
@@ -91,7 +90,6 @@ import li.songe.gkd.util.toJson5String
 @Composable
 fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
     val vm = viewModel<AppConfigVm>()
 
     val ruleSortType by vm.ruleSortTypeFlow.collectAsState()
@@ -143,7 +141,7 @@ fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
                     if (isSelectedMode) {
                         vm.isSelectedModeFlow.value = false
                     } else {
-                        navController.popBackStack()
+                        mainVm.popBackStack()
                     }
                 }) {
                     BackCloseIcon(backOrClose = !isSelectedMode)

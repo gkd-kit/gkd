@@ -43,7 +43,6 @@ import li.songe.gkd.ui.component.AuthButtonGroup
 import li.songe.gkd.ui.component.ManualAuthDialog
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.cardHorizontalPadding
@@ -60,7 +59,6 @@ import li.songe.gkd.util.toast
 @Composable
 fun AuthA11yPage() {
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
 
     val vm = viewModel<AuthA11yVm>()
     val showCopyDlg by vm.showCopyDlgFlow.collectAsState()
@@ -71,7 +69,7 @@ fun AuthA11yPage() {
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
             IconButton(onClick = {
-                navController.popBackStack()
+                mainVm.popBackStack()
             }) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,

@@ -36,7 +36,6 @@ import li.songe.gkd.ui.component.AuthButtonGroup
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.ManualAuthDialog
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.cardHorizontalPadding
@@ -50,7 +49,6 @@ import li.songe.gkd.util.toast
 @Composable
 fun AppOpsAllowPage() {
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
     val vm = viewModel<AppOpsAllowVm>()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val foregroundServiceSpecialUse by foregroundServiceSpecialUseState.stateFlow.collectAsStateWithLifecycle()
@@ -58,7 +56,7 @@ fun AppOpsAllowPage() {
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
             IconButton(onClick = {
-                navController.popBackStack()
+                mainVm.popBackStack()
             }) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,

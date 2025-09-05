@@ -5,7 +5,6 @@ import androidx.compose.runtime.remember
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
-import kotlin.collections.hashMapOf
 
 fun formatTimeAgo(timestamp: Long): String {
     val currentTime = System.currentTimeMillis()
@@ -39,7 +38,7 @@ fun Long.format(formatStr: String): String {
     return df.format(this)
 }
 
-private data class ThrottleTimer(
+data class ThrottleTimer(
     private val interval: Long = 500L,
     private var value: Long = 0L
 ) {

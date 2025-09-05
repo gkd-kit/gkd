@@ -43,7 +43,6 @@ import coil3.request.crossfade
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.util.imageLoader
 import li.songe.gkd.util.throttle
@@ -56,7 +55,6 @@ fun ImagePreviewPage(
     uris: Array<String> = emptyArray(),
 ) {
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
     Box(
         modifier = Modifier
             .background(MaterialTheme.colorScheme.background)
@@ -70,7 +68,7 @@ fun ImagePreviewPage(
                 .fillMaxWidth(),
             navigationIcon = {
                 IconButton(onClick = {
-                    navController.popBackStack()
+                    mainVm.popBackStack()
                 }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,

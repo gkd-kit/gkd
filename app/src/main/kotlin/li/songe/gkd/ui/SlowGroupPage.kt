@@ -33,7 +33,6 @@ import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupLi
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemPadding
@@ -47,7 +46,6 @@ import li.songe.gkd.util.throttle
 @Composable
 fun SlowGroupPage() {
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
     val ruleSummary by ruleSummaryFlow.collectAsState()
     val appInfoCache by appInfoCacheFlow.collectAsState()
 
@@ -59,7 +57,7 @@ fun SlowGroupPage() {
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = {
-                        navController.popBackStack()
+                        mainVm.popBackStack()
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -96,11 +94,11 @@ fun SlowGroupPage() {
                     modifier = Modifier
                         .clickable(onClick = throttle {
                             mainVm.navigatePage(
-                                    SubsGlobalGroupListPageDestination(
-                                        rule.subsItem.id,
-                                        group.key
-                                    )
+                                SubsGlobalGroupListPageDestination(
+                                    rule.subsItem.id,
+                                    group.key
                                 )
+                            )
                         })
                         .itemPadding(),
                     title = group.name,
@@ -115,12 +113,12 @@ fun SlowGroupPage() {
                     modifier = Modifier
                         .clickable(onClick = throttle {
                             mainVm.navigatePage(
-                                    SubsAppGroupListPageDestination(
-                                        rule.subsItem.id,
-                                        rule.app.id,
-                                        group.key
-                                    )
+                                SubsAppGroupListPageDestination(
+                                    rule.subsItem.id,
+                                    rule.app.id,
+                                    group.key
                                 )
+                            )
                         })
                         .itemPadding(),
                     title = group.name,

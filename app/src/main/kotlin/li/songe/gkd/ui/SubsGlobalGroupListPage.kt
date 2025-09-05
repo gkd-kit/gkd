@@ -48,7 +48,6 @@ import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.icon.BackCloseIcon
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
@@ -65,7 +64,6 @@ import li.songe.gkd.util.updateSubscription
 @Composable
 fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
     val vm = viewModel<SubsGlobalGroupListVm>()
     val subs = vm.subsRawFlow.collectAsState().value
     val subsConfigs by vm.subsConfigsFlow.collectAsState()
@@ -108,7 +106,7 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
                     if (isSelectedMode) {
                         vm.isSelectedModeFlow.value = false
                     } else {
-                        navController.popBackStack()
+                        mainVm.popBackStack()
                     }
                 }) {
                     BackCloseIcon(backOrClose = !isSelectedMode)
@@ -140,20 +138,19 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
                                         vm.viewModelScope.launchAsFn(
                                             Dispatchers.Default
                                         ) {
-                                            subs
                                             mainVm.dialogFlow.waitResult(
                                                 title = "删除规则组",
                                                 text = "删除当前所选规则组?",
                                                 error = true,
                                             )
-                                            val keys = selectedDataSet.mapNotNull { it.groupKey }
+                                            val keys = selectedDataSet.mapNotNull { g ->
+                                                g.groupKey
+                                            }
                                             vm.isSelectedModeFlow.value = false
                                             updateSubscription(
                                                 subs.copy(
-                                                    globalGroups = globalGroups.filterNot {
-                                                        keys.contains(
-                                                            it.key
-                                                        )
+                                                    globalGroups = globalGroups.filterNot { g ->
+                                                        keys.contains(g.key)
                                                     }
                                                 )
                                             )

@@ -1,5 +1,6 @@
 package li.songe.gkd
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -41,6 +42,7 @@ import li.songe.gkd.ui.component.UploadOptions
 import li.songe.gkd.ui.home.BottomNavItem
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.OnSimpleLife
+import li.songe.gkd.util.ThrottleTimer
 import li.songe.gkd.util.UpdateStatus
 import li.songe.gkd.util.appIconMapFlow
 import li.songe.gkd.util.clearCache
@@ -66,16 +68,39 @@ class MainViewModel : ViewModel(), OnSimpleLife {
         this.navController = navController
     }
 
+    private val backThrottleTimer = ThrottleTimer()
     fun popBackStack() {
+        if (!backThrottleTimer.expired()) return
+        @SuppressLint("RestrictedApi")
+        if (navController.currentBackStack.value.size == 1) return
         if (Looper.getMainLooper() == Looper.myLooper()) {
             navController.popBackStack()
         } else {
-            viewModelScope.launch {
-                withContext(Dispatchers.Main) {
-                    navController.popBackStack()
-                }
+            Handler(Looper.getMainLooper()).post {
+                navController.popBackStack()
             }
         }
+    }
+
+    fun navigatePage(direction: Direction, builder: (NavOptionsBuilder.() -> Unit)? = null) {
+        if (direction.route == navController.currentDestination?.route) {
+            return
+        }
+        if (Looper.getMainLooper() != Looper.myLooper()) {
+            Handler(Looper.getMainLooper()).post {
+                navigatePage(direction, builder)
+            }
+            return
+        }
+        if (builder != null) {
+            navController.navigate(direction.route, builder)
+        } else {
+            navController.navigate(direction.route)
+        }
+    }
+
+    fun navigateWebPage(url: String) {
+        navigatePage(WebViewPageDestination(url))
     }
 
     val dialogFlow = MutableStateFlow<AlertDialogOptions?>(null)
@@ -172,27 +197,6 @@ class MainViewModel : ViewModel(), OnSimpleLife {
         }
         tabFlow.value = navItem.key
         lastClickTabTime = System.currentTimeMillis()
-    }
-
-    fun navigatePage(direction: Direction, builder: (NavOptionsBuilder.() -> Unit)? = null) {
-        if (direction.route == navController.currentDestination?.route) {
-            return
-        }
-        if (Looper.getMainLooper() != Looper.myLooper()) {
-            Handler(Looper.getMainLooper()).postDelayed({
-                navigatePage(direction, builder)
-            }, 0)
-            return
-        }
-        if (builder != null) {
-            navController.navigate(direction.route, builder)
-        } else {
-            navController.navigate(direction.route)
-        }
-    }
-
-    fun navigateWebPage(url: String) {
-        navigatePage(WebViewPageDestination(url))
     }
 
     fun handleGkdUri(uri: Uri) {

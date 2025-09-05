@@ -49,7 +49,6 @@ import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.icon.BackCloseIcon
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
@@ -71,7 +70,6 @@ fun SubsAppGroupListPage(
     @Suppress("unused") focusGroupKey: Int? = null, // 背景/边框高亮一下
 ) {
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
     val vm = viewModel<SubsAppGroupListVm>()
     val subs = vm.subsRawFlow.collectAsState().value
     val subsConfigs by vm.subsConfigsFlow.collectAsState()
@@ -113,7 +111,7 @@ fun SubsAppGroupListPage(
                 if (isSelectedMode) {
                     vm.isSelectedModeFlow.value = false
                 } else {
-                    navController.popBackStack()
+                    mainVm.popBackStack()
                 }
             }) {
                 BackCloseIcon(backOrClose = !isSelectedMode)
@@ -141,7 +139,7 @@ fun SubsAppGroupListPage(
                     Row {
                         IconButton(onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
                             val copyGroups = app.groups.filter { g ->
-                                selectedDataSet.any { it.groupKey == g.key }
+                                selectedDataSet.any { s -> s.groupKey == g.key }
                             }
                             val str = toJson5String(app.copy(groups = copyGroups))
                             copyText(str)
@@ -160,7 +158,7 @@ fun SubsAppGroupListPage(
                                     text = "删除当前所选规则组?",
                                     error = true,
                                 )
-                                val keys = selectedDataSet.mapNotNull { it.groupKey }
+                                val keys = selectedDataSet.mapNotNull { g -> g.groupKey }
                                 vm.isSelectedModeFlow.value = false
                                 if (keys.size == app.groups.size) {
                                     updateSubscription(
@@ -174,7 +172,7 @@ fun SubsAppGroupListPage(
                                         subs.copy(
                                             apps = subs.apps.toMutableList().apply {
                                                 set(
-                                                    indexOfFirst { it.id == appId },
+                                                    indexOfFirst { a -> a.id == appId },
                                                     app.copy(groups = app.groups.filterNot { g ->
                                                         keys.contains(
                                                             g.key

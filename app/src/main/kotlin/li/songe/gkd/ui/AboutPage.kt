@@ -71,7 +71,6 @@ import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.share.LocalDarkTheme
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemPadding
@@ -98,7 +97,6 @@ import java.io.File
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun AboutPage() {
-    val navController = LocalNavController.current
     val context = LocalActivity.current as MainActivity
     val mainVm = LocalMainViewModel.current
     val store by storeFlow.collectAsState()
@@ -158,7 +156,7 @@ fun AboutPage() {
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = {
-                        navController.popBackStack()
+                        mainVm.popBackStack()
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,

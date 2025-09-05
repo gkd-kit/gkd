@@ -59,7 +59,6 @@ import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.icon.ResetSettings
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
@@ -77,7 +76,6 @@ import li.songe.gkd.util.updateSubscription
 @Composable
 fun SubsCategoryPage(subsItemId: Long) {
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
 
     val vm = viewModel<SubsCategoryVm>()
     val subs = vm.subsRawFlow.collectAsState().value
@@ -89,7 +87,7 @@ fun SubsCategoryPage(subsItemId: Long) {
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
             IconButton(onClick = {
-                navController.popBackStack()
+                mainVm.popBackStack()
             }) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,

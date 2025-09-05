@@ -53,7 +53,6 @@ import li.songe.gkd.MainActivity
 import li.songe.gkd.data.Value
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.client
@@ -68,7 +67,6 @@ fun WebViewPage(
     initUrl: String,
 ) {
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
     val webViewState = rememberWebViewState(url = initUrl)
     val webViewClient = remember { GkdWebViewClient() }
     val webView = remember { Value<WebView?>(null) }
@@ -76,7 +74,7 @@ fun WebViewPage(
         TopAppBar(
             modifier = Modifier.fillMaxWidth(),
             navigationIcon = {
-                IconButton(onClick = throttle { navController.popBackStack() }) {
+                IconButton(onClick = { mainVm.popBackStack() }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = null,

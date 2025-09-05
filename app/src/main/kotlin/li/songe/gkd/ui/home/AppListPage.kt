@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -65,6 +66,7 @@ import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.mapHashCode
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.throttle
+import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateAllAppInfo
 import li.songe.gkd.util.updateAppMutex
 
@@ -132,6 +134,14 @@ fun useAppListPage(): ScaffoldExt {
                     )
                 }
             }, actions = {
+                IconButton(onClick = throttle {
+                    toast("应用白名单")
+                }) {
+                    Icon(
+                        imageVector = Icons.Outlined.Block,
+                        contentDescription = Icons.Outlined.Block.name,
+                    )
+                }
                 IconButton(onClick = throttle {
                     if (showSearchBar) {
                         if (vm.searchStrFlow.value.isEmpty()) {

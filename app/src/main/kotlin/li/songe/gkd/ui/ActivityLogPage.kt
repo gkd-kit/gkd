@@ -49,7 +49,6 @@ import li.songe.gkd.ui.component.LocalNumberCharWidth
 import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.waitResult
-import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemHorizontalPadding
@@ -66,7 +65,6 @@ fun ActivityLogPage() {
     val context = LocalActivity.current as MainActivity
     val mainVm = context.mainVm
     val vm = viewModel<ActivityLogVm>()
-    val navController = LocalNavController.current
 
     val logCount by vm.logCountFlow.collectAsState()
     val list = vm.pagingDataFlow.collectAsLazyPagingItems()
@@ -77,8 +75,8 @@ fun ActivityLogPage() {
         TopAppBar(
             scrollBehavior = scrollBehavior,
             navigationIcon = {
-                IconButton(onClick = throttle {
-                    navController.popBackStack()
+                IconButton(onClick = {
+                    mainVm.popBackStack()
                 }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,

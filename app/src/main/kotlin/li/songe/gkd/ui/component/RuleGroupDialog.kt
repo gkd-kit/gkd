@@ -153,7 +153,7 @@ fun RuleGroupDialog(
                 if (currentDestination?.baseRoute != destination.baseRoute) {
                     IconButton(onClick = throttle {
                         onDismissRequest()
-                        navController.navigate(direction.route)
+                        mainVm.navigatePage(direction)
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowForward,

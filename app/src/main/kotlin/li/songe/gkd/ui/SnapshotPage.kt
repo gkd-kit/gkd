@@ -63,7 +63,6 @@ import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemHorizontalPadding
@@ -85,7 +84,6 @@ import li.songe.gkd.util.toast
 fun SnapshotPage() {
     val context = LocalActivity.current as MainActivity
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
     val colorScheme = MaterialTheme.colorScheme
     val vm = viewModel<SnapshotVm>()
 
@@ -100,7 +98,7 @@ fun SnapshotPage() {
             scrollBehavior = scrollBehavior,
             navigationIcon = {
                 IconButton(onClick = {
-                    navController.popBackStack()
+                    mainVm.popBackStack()
                 }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,

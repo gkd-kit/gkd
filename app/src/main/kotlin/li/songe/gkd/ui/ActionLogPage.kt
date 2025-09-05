@@ -67,7 +67,6 @@ import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.useSubs
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemHorizontalPadding
@@ -87,7 +86,6 @@ fun ActionLogPage(
     appId: String? = null,
 ) {
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
     val vm = viewModel<ActionLogVm>()
 
     val actionDataItems = vm.pagingDataFlow.collectAsLazyPagingItems()
@@ -99,7 +97,7 @@ fun ActionLogPage(
             scrollBehavior = scrollBehavior,
             navigationIcon = {
                 IconButton(onClick = throttle {
-                    navController.popBackStack()
+                    mainVm.popBackStack()
                 }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
