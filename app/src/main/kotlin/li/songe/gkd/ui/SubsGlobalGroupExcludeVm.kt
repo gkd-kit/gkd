@@ -27,15 +27,12 @@ class SubsGlobalGroupExcludeVm(stateHandle: SavedStateHandle) : ViewModel() {
     val groupFlow =
         rawSubsFlow.mapState(viewModelScope) { r -> r?.globalGroups?.find { g -> g.key == args.groupKey } }
 
-    val disabledAppSetFlow = groupFlow.map { g ->
-        (g?.apps ?: emptyList()).filter { a -> a.enable == false }.map { a -> a.id }.toSet()
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
-
     val subsConfigFlow =
         DbSet.subsConfigDao.queryGlobalGroupTypeConfig(args.subsItemId, args.groupKey)
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    val excludeDataFlow = subsConfigFlow.mapState(viewModelScope) { s -> ExcludeData.parse(s?.exclude) }
+    val excludeDataFlow =
+        subsConfigFlow.mapState(viewModelScope) { s -> ExcludeData.parse(s?.exclude) }
 
     val searchStrFlow = MutableStateFlow("")
     private val debounceSearchStrFlow = searchStrFlow.debounce(200)
@@ -95,12 +92,13 @@ class SubsGlobalGroupExcludeVm(stateHandle: SavedStateHandle) : ViewModel() {
             combine(
                 it,
                 showDisabledAppFlow,
-                disabledAppSetFlow
-            ) { apps, showDisabledApp, disabledAppSet ->
-                if (showDisabledApp || disabledAppSet.isEmpty()) {
+                rawSubsFlow,
+                groupFlow,
+            ) { apps, showDisabledApp, rawSubs, group ->
+                if (showDisabledApp || rawSubs == null || group == null) {
                     apps
                 } else {
-                    apps.filter { a -> !disabledAppSet.contains(a.id) }
+                    apps.filter { a -> !rawSubs.getGlobalGroupInnerDisabled(group, a.id) }
                 }
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())

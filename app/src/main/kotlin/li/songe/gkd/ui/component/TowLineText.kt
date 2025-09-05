@@ -28,7 +28,7 @@ fun TowLineText(
                 Text(
                     text = subtitle,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    overflow = TextOverflow.MiddleEllipsis,
                 )
             }
         }

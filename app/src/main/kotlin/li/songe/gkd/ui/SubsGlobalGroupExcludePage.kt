@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -99,7 +100,6 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
     val showHiddenApp by vm.showHiddenAppFlow.collectAsState()
     val showDisabledApp by vm.showDisabledAppFlow.collectAsState()
     val sortType by vm.sortTypeFlow.collectAsState()
-    val disabledAppSet by vm.disabledAppSetFlow.collectAsState()
 
     var showEditDlg by remember {
         mutableStateOf(false)
@@ -152,6 +152,14 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                 )
             }
         }, actions = {
+            IconButton(onClick = {
+                showEditDlg = true
+            }) {
+                Icon(
+                    imageVector = Icons.Outlined.Edit,
+                    contentDescription = null
+                )
+            }
             IconButton(onClick = {
                 if (showSearchBar) {
                     if (vm.searchStrFlow.value.isEmpty()) {
@@ -244,23 +252,21 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                             storeFlow.update { it.copy(subsExcludeShowHiddenApp = !it.subsExcludeShowHiddenApp) }
                         },
                     )
-                    if (disabledAppSet.isNotEmpty()) {
-                        DropdownMenuItem(
-                            text = {
-                                Text("显示禁用应用")
-                            },
-                            trailingIcon = {
-                                Checkbox(
-                                    checked = showDisabledApp,
-                                    onCheckedChange = {
-                                        storeFlow.update { it.copy(subsExcludeShowDisabledApp = !it.subsExcludeShowDisabledApp) }
-                                    })
-                            },
-                            onClick = {
-                                storeFlow.update { it.copy(subsExcludeShowDisabledApp = !it.subsExcludeShowDisabledApp) }
-                            },
-                        )
-                    }
+                    DropdownMenuItem(
+                        text = {
+                            Text("显示禁用应用")
+                        },
+                        trailingIcon = {
+                            Checkbox(
+                                checked = showDisabledApp,
+                                onCheckedChange = {
+                                    storeFlow.update { it.copy(subsExcludeShowDisabledApp = !it.subsExcludeShowDisabledApp) }
+                                })
+                        },
+                        onClick = {
+                            storeFlow.update { it.copy(subsExcludeShowDisabledApp = !it.subsExcludeShowDisabledApp) }
+                        },
+                    )
                 }
             }
 
@@ -337,7 +343,7 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (showAppInfos.isEmpty() && searchStr.isNotEmpty()) {
                     val hasShowAll = showSystemApp && showHiddenApp
-                    EmptyText(text = if (hasShowAll) "暂无搜索结果" else "暂无搜索结果,请尝试修改筛选条件")
+                    EmptyText(text = if (hasShowAll) "暂无搜索结果" else "暂无搜索结果，请尝试修改筛选条件")
                 }
                 QueryPkgAuthCard()
             }
@@ -383,7 +389,6 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
             confirmButton = {
                 TextButton(onClick = throttle(vm.viewModelScope.launchAsFn {
                     if (oldSource == source) {
-                        toast("禁用项无变动")
                         showEditDlg = false
                         return@launchAsFn
                     }
