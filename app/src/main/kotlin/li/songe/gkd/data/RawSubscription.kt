@@ -17,7 +17,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import li.songe.gkd.a11y.typeInfo
 import li.songe.gkd.util.LOCAL_SUBS_IDS
-import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.appInfoMapFlow
 import li.songe.gkd.util.distinctByIfAny
 import li.songe.gkd.util.filterIfNotAll
 import li.songe.gkd.util.json
@@ -52,8 +52,23 @@ data class RawSubscription(
         return Objects.hash(id, name, version)
     }
 
+    val isEmpty: Boolean
+        get() = globalGroups.isEmpty() && apps.all { it.groups.isEmpty() } && categories.isEmpty()
+
     val isLocal: Boolean
         get() = LOCAL_SUBS_IDS.contains(id)
+
+    val hasRule get() = globalGroups.isNotEmpty() || apps.any { it.groups.isNotEmpty() }
+
+    val usedApps by lazy {
+        apps.run {
+            if (any { it.groups.isEmpty() }) {
+                filterNot { it.groups.isEmpty() }
+            } else {
+                this
+            }
+        }
+    }
 
     val categoryToGroupsMap by lazy {
         val allAppGroups = apps.flatMap { a -> a.groups.map { g -> g to a } }
@@ -86,7 +101,7 @@ data class RawSubscription(
     fun getApp(appId: String): RawApp {
         return apps.find { a -> a.id == appId } ?: RawApp(
             id = appId,
-            name = appInfoCacheFlow.value[appId]?.name,
+            name = appInfoMapFlow.value[appId]?.name,
             groups = emptyList()
         )
     }

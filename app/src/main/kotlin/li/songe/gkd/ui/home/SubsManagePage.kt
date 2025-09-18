@@ -21,23 +21,16 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Eco
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -53,7 +46,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -71,6 +63,9 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.store.switchStoreEnableMatch
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
+import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.ui.component.PerfIconButton
+import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.SubsItemCard
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.waitResult
@@ -90,8 +85,8 @@ import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mapState
 import li.songe.gkd.util.ruleSummaryFlow
-import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
+import li.songe.gkd.util.subsMapFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubsMutex
@@ -106,7 +101,7 @@ fun useSubsManagePage(): ScaffoldExt {
 
     val vm = viewModel<HomeVm>()
     val subItems by subsItemsFlow.collectAsState()
-    val subsIdToRaw by subsIdToRawFlow.collectAsState()
+    val subsIdToRaw by subsMapFlow.collectAsState()
 
     var orderSubItems by remember {
         mutableStateOf(subItems)
@@ -145,18 +140,16 @@ fun useSubsManagePage(): ScaffoldExt {
                     TextMenu(
                         modifier = Modifier.padding(0.dp, itemVerticalPadding),
                         title = "更新订阅",
-                        option = UpdateTimeOption.allSubObject.findOption(store.updateSubsInterval)
+                        option = UpdateTimeOption.objects.findOption(store.updateSubsInterval)
                     ) {
                         storeFlow.update { s -> s.copy(updateSubsInterval = it.value) }
                     }
-
                     val updateValue = throttle {
                         storeFlow.update { it.copy(subsPowerWarn = !it.subsPowerWarn) }
                     }
                     Row(
                         modifier = Modifier
-                            .padding(0.dp, itemVerticalPadding)
-                            .clickable(onClick = updateValue),
+                            .padding(0.dp, itemVerticalPadding),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -192,14 +185,12 @@ fun useSubsManagePage(): ScaffoldExt {
         navItem = BottomNavItem.SubsManage,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
+            PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
                 if (isSelectedMode) {
-                    IconButton(onClick = { isSelectedMode = false }) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = null,
-                        )
-                    }
+                    PerfIconButton(
+                        imageVector = PerfIcon.Close,
+                        onClick = { isSelectedMode = false },
+                    )
                 }
             }, title = {
                 if (isSelectedMode) {
@@ -220,14 +211,9 @@ fun useSubsManagePage(): ScaffoldExt {
                 ) {
                     Row {
                         if (it) {
-                            IconButton(onClick = {
+                            PerfIconButton(imageVector = PerfIcon.Share, onClick = {
                                 mainVm.showShareDataIdsFlow.value = selectedIds
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.Share,
-                                    contentDescription = null,
-                                )
-                            }
+                            })
                             val canDeleteIds = if (selectedIds.contains(LOCAL_SUBS_ID)) {
                                 selectedIds - LOCAL_SUBS_ID
                             } else {
@@ -237,23 +223,21 @@ fun useSubsManagePage(): ScaffoldExt {
                                 val text = "确定删除所选 ${canDeleteIds.size} 个订阅?".let { s ->
                                     if (selectedIds.contains(LOCAL_SUBS_ID)) "$s\n\n注: 不包含本地订阅" else s
                                 }
-                                IconButton(onClick = vm.viewModelScope.launchAsFn {
-                                    mainVm.dialogFlow.waitResult(
-                                        title = "删除订阅",
-                                        text = text,
-                                        error = true,
-                                    )
-                                    deleteSubscription(*canDeleteIds.toLongArray())
-                                    selectedIds = selectedIds - canDeleteIds
-                                    if (selectedIds.size == canDeleteIds.size) {
-                                        isSelectedMode = false
-                                    }
-                                }) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Delete,
-                                        contentDescription = null,
-                                    )
-                                }
+                                PerfIconButton(
+                                    imageVector = PerfIcon.Delete,
+                                    onClick = vm.viewModelScope.launchAsFn {
+                                        mainVm.dialogFlow.waitResult(
+                                            title = "删除订阅",
+                                            text = text,
+                                            error = true,
+                                        )
+                                        deleteSubscription(*canDeleteIds.toLongArray())
+                                        selectedIds = selectedIds - canDeleteIds
+                                        if (selectedIds.size == canDeleteIds.size) {
+                                            isSelectedMode = false
+                                        }
+                                    },
+                                )
                             }
                         } else {
                             val ruleSummary by ruleSummaryFlow.collectAsState()
@@ -262,49 +246,38 @@ fun useSubsManagePage(): ScaffoldExt {
                                 enter = scaleIn(),
                                 exit = scaleOut(),
                             ) {
-                                IconButton(onClick = throttle {
+                                PerfIconButton(imageVector = PerfIcon.Eco, onClick = throttle {
                                     mainVm.navigatePage(SlowGroupPageDestination)
-                                }) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Eco,
-                                        contentDescription = null,
-                                    )
-                                }
+                                })
                             }
-                            IconButton(onClick = throttle { switchStoreEnableMatch() }) {
-                                val scope = rememberCoroutineScope()
-                                val enableMatch by remember {
-                                    storeFlow.mapState(scope) { s -> s.enableMatch }
-                                }.collectAsState()
-                                val id = if (enableMatch) SafeR.ic_flash_on else SafeR.ic_flash_off
-                                Icon(
-                                    painter = painterResource(id = id),
-                                    contentDescription = null,
-                                )
-                            }
-                            IconButton(onClick = {
+                            val scope = rememberCoroutineScope()
+                            val enableMatch by remember {
+                                storeFlow.mapState(scope) { s -> s.enableMatch }
+                            }.collectAsState()
+                            PerfIconButton(
+                                id = if (enableMatch) SafeR.ic_flash_on else SafeR.ic_flash_off,
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    contentColor = if (!enableMatch) {
+                                        CheckboxDefaults.colors().checkedBoxColor
+                                    } else {
+                                        LocalContentColor.current
+                                    }
+                                ),
+                                onClick = throttle { switchStoreEnableMatch() },
+                            )
+                            PerfIconButton(id = SafeR.ic_page_info, onClick = {
                                 showSettingsDlg = true
-                            }) {
-                                Icon(
-                                    painter = painterResource(id = SafeR.ic_page_info),
-                                    contentDescription = null,
-                                )
-                            }
+                            })
                         }
                     }
                 }
-                IconButton(onClick = {
+                PerfIconButton(imageVector = PerfIcon.MoreVert, onClick = {
                     if (updateSubsMutex.mutex.isLocked) {
                         toast("正在刷新订阅，请稍后操作")
                     } else {
                         expanded = true
                     }
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = null,
-                    )
-                }
+                })
                 Box(
                     modifier = Modifier.wrapContentSize(Alignment.TopStart)
                 ) {
@@ -405,9 +378,8 @@ fun useSubsManagePage(): ScaffoldExt {
                     }
                 }
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = null,
+                PerfIcon(
+                    imageVector = PerfIcon.Add,
                 )
             }
         },
@@ -473,7 +445,6 @@ fun useSubsManagePage(): ScaffoldExt {
                             subsItem = subItem,
                             subscription = subsIdToRaw[subItem.id],
                             index = index + 1,
-                            vm = vm,
                             isSelectedMode = isSelectedMode,
                             isSelected = selectedIds.contains(subItem.id),
                             onCheckedChange = mainVm.viewModelScope.launchAsFn { checked ->

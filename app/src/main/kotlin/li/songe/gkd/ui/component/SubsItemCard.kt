@@ -14,13 +14,11 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +27,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import li.songe.gkd.META
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
@@ -49,13 +48,13 @@ fun SubsItemCard(
     subsItem: SubsItem,
     subscription: RawSubscription?,
     index: Int,
-    vm: HomeVm,
     isSelectedMode: Boolean,
     isSelected: Boolean,
     onCheckedChange: ((Boolean) -> Unit),
     onSelectedChange: (() -> Unit)? = null,
 ) {
     val mainVm = LocalMainViewModel.current
+    val vm = viewModel<HomeVm>()
     val subsLoadError by remember(subsItem.id) {
         subsLoadErrorsFlow.mapState(vm.viewModelScope) { it[subsItem.id] }
     }.collectAsState()
@@ -170,23 +169,22 @@ fun SubsItemCard(
                 }
             }
             Spacer(modifier = Modifier.width(4.dp))
-            key(subsItem.id) {
-                val percent = usePercentAnimatable(!isSelectedMode)
-                val switchModifier = Modifier.graphicsLayer(
-                    alpha = 0.5f + (1 - 0.5f) * percent.value,
-                ).run {
-                    if (isSelectedMode) {
-                        minimumInteractiveComponentSize()
-                    } else {
-                        this
-                    }
+            val percent = usePercentAnimatable(!isSelectedMode)
+            val switchModifier = Modifier.graphicsLayer(
+                alpha = 0.5f + (1 - 0.5f) * percent.value,
+            ).run {
+                if (isSelectedMode) {
+                    minimumInteractiveComponentSize()
+                } else {
+                    this
                 }
-                Switch(
-                    modifier = switchModifier,
-                    checked = subsItem.enable,
-                    onCheckedChange = if (isSelectedMode) null else throttle(fn = onCheckedChange),
-                )
             }
+            PerfSwitch(
+                key = subsItem.id,
+                modifier = switchModifier,
+                checked = subsItem.enable,
+                onCheckedChange = if (isSelectedMode) null else throttle(fn = onCheckedChange),
+            )
         }
     }
 }

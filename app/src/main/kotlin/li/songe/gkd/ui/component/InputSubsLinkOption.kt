@@ -4,11 +4,7 @@ import android.webkit.URLUtil
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -90,15 +86,12 @@ class InputSubsLinkOption {
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(text = if (initValue.isNotEmpty()) "修改订阅" else "添加订阅")
-                        IconButton(onClick = throttle {
-                            cancel()
-                            mainVm.navigatePage(WebViewPageDestination(initUrl = ShortUrlSet.URL5))
-                        }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
-                                contentDescription = null,
-                            )
-                        }
+                        PerfIconButton(
+                            imageVector = PerfIcon.HelpOutline,
+                            onClick = throttle {
+                                cancel()
+                                mainVm.navigatePage(WebViewPageDestination(initUrl = ShortUrlSet.URL5))
+                            })
                     }
                 },
                 text = {

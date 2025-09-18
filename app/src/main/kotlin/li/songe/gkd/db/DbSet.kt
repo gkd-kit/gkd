@@ -29,4 +29,6 @@ object DbSet {
         get() = db.activityLogDao()
     val appConfigDao
         get() = db.appConfigDao()
+    val appVisitLogDao
+        get() = db.appVisitLogDao()
 }

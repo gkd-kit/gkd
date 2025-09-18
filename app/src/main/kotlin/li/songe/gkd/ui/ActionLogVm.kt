@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.combine
 import li.songe.gkd.data.ActionLog
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.util.subsIdToRawFlow
+import li.songe.gkd.util.subsMapFlow
 
 class ActionLogVm(stateHandle: SavedStateHandle) : ViewModel() {
     private val args = ActionLogPageDestination.argsFrom(stateHandle)
@@ -28,13 +28,14 @@ class ActionLogVm(stateHandle: SavedStateHandle) : ViewModel() {
         }
     }
         .flow
-        .combine(subsIdToRawFlow) { pagingData, subsIdToRaw ->
+        .cachedIn(viewModelScope)
+        .combine(subsMapFlow) { pagingData, subsMap ->
             pagingData.map { c ->
                 val group = if (c.groupType == SubsConfig.AppGroupType) {
-                    val app = subsIdToRaw[c.subsId]?.apps?.find { a -> a.id == c.appId }
+                    val app = subsMap[c.subsId]?.apps?.find { a -> a.id == c.appId }
                     app?.groups?.find { g -> g.key == c.groupKey }
                 } else {
-                    subsIdToRaw[c.subsId]?.globalGroups?.find { g -> g.key == c.groupKey }
+                    subsMap[c.subsId]?.globalGroups?.find { g -> g.key == c.groupKey }
                 }
                 val rule = group?.rules?.run {
                     if (c.ruleKey != null) {
@@ -46,7 +47,6 @@ class ActionLogVm(stateHandle: SavedStateHandle) : ViewModel() {
                 Triple(c, group, rule)
             }
         }
-        .cachedIn(viewModelScope)
 
     val showActionLogFlow = MutableStateFlow<ActionLog?>(null)
 

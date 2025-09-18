@@ -1,6 +1,7 @@
 package li.songe.gkd.service
 
 import android.accessibilityservice.AccessibilityService
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -28,6 +29,7 @@ import li.songe.gkd.util.componentName
 import li.songe.selector.MatchOption
 import li.songe.selector.Selector
 
+@SuppressLint("AccessibilityPolicy")
 abstract class A11yService : AccessibilityService(), OnA11yLife {
     override fun onCreate() = onCreated()
     override fun onServiceConnected() = onA11yConnected()
@@ -70,6 +72,9 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
             }
         }
     }
+
+    @Volatile
+    var willDestroyByBlock = false
 
     init {
         useLogLifecycle()

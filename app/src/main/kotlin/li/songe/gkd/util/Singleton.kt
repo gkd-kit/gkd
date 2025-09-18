@@ -1,6 +1,5 @@
 package li.songe.gkd.util
 
-import android.os.Build
 import coil3.ImageLoader
 import coil3.disk.DiskCache
 import coil3.gif.AnimatedImageDecoder
@@ -56,7 +55,7 @@ val imageLoader by lazy {
         }
         .components {
             // https://coil-kt.github.io/coil/gifs/
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            if (AndroidTarget.P) {
                 add(AnimatedImageDecoder.Factory())
             } else {
                 add(GifDecoder.Factory())

@@ -55,11 +55,15 @@ class StatusService : Service(), OnSimpleLife {
         }
         return if (!abRunning) {
             val text = if (a11yServiceEnabledFlow.value) {
-                "无障碍服务发生故障"
+                "无障碍发生故障"
             } else if (writeSecureSettingsState.updateAndGet()) {
-                "无障碍服务已关闭"
+                if (store.enableService && a11yPartDisabledFlow.value) {
+                    "无障碍已局部关闭"
+                } else {
+                    "无障碍已关闭"
+                }
             } else {
-                "无障碍服务未授权"
+                "无障碍未授权"
             }
             Triple(title, text, abNotif.uri)
         } else if (!store.enableMatch) {
@@ -94,6 +98,7 @@ class StatusService : Service(), OnSimpleLife {
                     shizukuWarnFlow,
                     a11yServiceEnabledFlow,
                     writeSecureSettingsState.stateFlow,
+                    a11yPartDisabledFlow,
                     actionCountFlow.debounce(1000L),
                 ) {
                     statusTriple()

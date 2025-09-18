@@ -1,37 +1,31 @@
 package li.songe.gkd.ui.home
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
-import li.songe.gkd.appScope
+import li.songe.gkd.MainViewModel
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.store.actionCountFlow
+import li.songe.gkd.store.blockMatchAppListFlow
 import li.songe.gkd.store.storeFlow
+import li.songe.gkd.ui.share.BaseViewModel
+import li.songe.gkd.ui.share.useAppFilter
+import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.EMPTY_RULE_TIP
-import li.songe.gkd.util.SortTypeOption
-import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.appInfoMapFlow
+import li.songe.gkd.util.findOption
 import li.songe.gkd.util.getSubsStatus
-import li.songe.gkd.util.mapState
-import li.songe.gkd.util.orderedAppInfosFlow
 import li.songe.gkd.util.ruleSummaryFlow
-import li.songe.gkd.util.subsIdToRawFlow
+import li.songe.gkd.util.subsMapFlow
 import li.songe.gkd.util.usedSubsEntriesFlow
 
-class HomeVm : ViewModel() {
-
-    val latestRecordFlow = DbSet.actionLogDao.queryLatest().stateIn(viewModelScope, SharingStarted.Eagerly, null)
+class HomeVm : BaseViewModel() {
+    val latestRecordFlow = DbSet.actionLogDao.queryLatest().stateInit(null)
 
     val latestRecordIsGlobalFlow =
-        latestRecordFlow.mapState(viewModelScope) { it?.groupType == SubsConfig.GlobalGroupType }
+        latestRecordFlow.mapNew { it?.groupType == SubsConfig.GlobalGroupType }
     val latestRecordDescFlow = combine(
-        latestRecordFlow, subsIdToRawFlow, appInfoCacheFlow
+        latestRecordFlow, subsMapFlow, appInfoMapFlow
     ) { latestRecord, subsIdToRaw, appInfoCache ->
         if (latestRecord == null) return@combine null
         val isAppRule = latestRecord.groupType == SubsConfig.AppGroupType
@@ -55,78 +49,50 @@ class HomeVm : ViewModel() {
         } else {
             appShowName
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    }.stateInit(null)
 
     val subsStatusFlow by lazy {
         combine(ruleSummaryFlow, actionCountFlow) { ruleSummary, count ->
             getSubsStatus(ruleSummary, count)
-        }.stateIn(appScope, SharingStarted.Eagerly, EMPTY_RULE_TIP)
+        }.stateInit(EMPTY_RULE_TIP)
     }
 
-    val usedSubsItemCountFlow = usedSubsEntriesFlow.mapState(viewModelScope) { it.size }
+    val usedSubsItemCountFlow = usedSubsEntriesFlow.mapNew { it.size }
 
-    private val appIdToOrderFlow = DbSet.actionLogDao.queryLatestUniqueAppIds().map { appIds ->
-        appIds.mapIndexed { index, appId -> appId to index }.toMap()
+    val sortTypeFlow = storeFlow.mapNew {
+        AppSortOption.objects.findOption(it.appSort)
     }
+    val showSystemAppFlow = storeFlow.mapNew { s -> s.showSystemApp }
+    val showBlockAppFlow = storeFlow.mapNew { s -> s.showBlockApp }
 
-    val sortTypeFlow = storeFlow.mapState(viewModelScope) { s ->
-        SortTypeOption.allSubObject.find { o -> o.value == s.sortType }
-            ?: SortTypeOption.SortByName
-    }
-    val showSystemAppFlow = storeFlow.mapState(viewModelScope) { s -> s.showSystemApp }
-    val showHiddenAppFlow = storeFlow.mapState(viewModelScope) { s -> s.showHiddenApp }
-    val showSearchBarFlow = MutableStateFlow(false)
-    val searchStrFlow = MutableStateFlow("")
-    private val debounceSearchStrFlow = searchStrFlow.debounce(200)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, searchStrFlow.value)
-    val appInfosFlow =
-        combine(orderedAppInfosFlow.combine(showHiddenAppFlow) { appInfos, showHiddenApp ->
-            if (showHiddenApp) {
-                appInfos
-            } else {
-                appInfos.filter { a -> !a.hidden }
-            }
-        }.combine(showSystemAppFlow) { appInfos, showSystemApp ->
-            if (showSystemApp) {
-                appInfos
-            } else {
-                appInfos.filter { a -> !a.isSystem }
-            }
-        }, sortTypeFlow, appIdToOrderFlow) { appInfos, sortType, appIdToOrder ->
-            when (sortType) {
-                SortTypeOption.SortByAppMtime -> {
-                    appInfos.sortedBy { a -> -a.mtime }
-                }
-
-                SortTypeOption.SortByTriggerTime -> {
-                    appInfos.sortedBy { a -> appIdToOrder[a.id] ?: Int.MAX_VALUE }
-                }
-
-                SortTypeOption.SortByName -> {
-                    appInfos
-                }
-            }
-        }.combine(debounceSearchStrFlow) { appInfos, str ->
-            if (str.isBlank()) {
-                appInfos
-            } else {
-                (appInfos.filter { a -> a.name.contains(str, true) } + appInfos.filter { a ->
-                    a.id.contains(
-                        str,
-                        true
-                    )
-                }).distinct()
-            }
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
-    init {
-        viewModelScope.launch {
-            showSearchBarFlow.collect {
-                if (!it) {
-                    searchStrFlow.value = ""
-                }
+    val editWhiteListModeFlow = MutableStateFlow(false)
+    val blockAppListFlow = MutableStateFlow(blockMatchAppListFlow.value).also { stateFlow ->
+        combine(blockMatchAppListFlow, editWhiteListModeFlow) { it }.launchCollect {
+            if (!editWhiteListModeFlow.value) {
+                stateFlow.value = blockMatchAppListFlow.value
             }
         }
     }
 
+    val appFilter = useAppFilter(
+        sortTypeFlow = sortTypeFlow,
+        showSystemAppFlow = showSystemAppFlow,
+        showBlockAppFlow = showBlockAppFlow,
+        blockAppListFlow = blockAppListFlow,
+    )
+    val searchStrFlow = appFilter.searchStrFlow
+
+    val showSearchBarFlow = MutableStateFlow(false)
+    val appInfosFlow = appFilter.appListFlow
+
+    init {
+        showSearchBarFlow.launchCollect {
+            if (!it) {
+                searchStrFlow.value = ""
+            }
+        }
+        appInfosFlow.launchOnChange {
+            MainViewModel.instance.appListKeyFlow.value++
+        }
+    }
 }

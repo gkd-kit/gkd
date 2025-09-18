@@ -1,7 +1,5 @@
 package li.songe.gkd.shizuku
 
-import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.IPackageManager
 import android.content.pm.PackageInfo
 import li.songe.gkd.util.checkExistClass
@@ -42,17 +40,5 @@ class SafePackageManager(private val value: IPackageManager) {
 
     fun getInstalledPackages(flags: Int, userId: Int): List<PackageInfo> {
         return safeInvokeMethod { value.compatGetInstalledPackages(flags, userId) } ?: emptyList()
-    }
-
-    fun getAllIntentFilters(packageName: String): List<IntentFilter> {
-        return safeInvokeMethod { value.getAllIntentFilters(packageName).list } ?: emptyList()
-    }
-
-    fun checkAppHidden(appId: String): Boolean {
-        return !getAllIntentFilters(appId).any { f ->
-            f.hasAction(Intent.ACTION_MAIN) && f.hasCategory(
-                Intent.CATEGORY_LAUNCHER
-            )
-        }
     }
 }

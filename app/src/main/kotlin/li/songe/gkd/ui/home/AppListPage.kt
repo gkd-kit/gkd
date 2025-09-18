@@ -2,6 +2,7 @@ package li.songe.gkd.ui.home
 
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,22 +12,20 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -39,48 +38,54 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.blankj.utilcode.util.KeyboardUtils
 import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
-import com.ramcosta.composedestinations.generated.destinations.WhiteAppListPageDestination
+import com.ramcosta.composedestinations.generated.destinations.EditBlockAppListPageDestination
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
+import li.songe.gkd.data.AppInfo
+import li.songe.gkd.store.blockMatchAppListFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AnimatedIcon
+import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.AppIcon
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
+import li.songe.gkd.ui.component.PerfCheckbox
+import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.ui.component.PerfIconButton
+import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
+import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.SafeR
-import li.songe.gkd.util.SortTypeOption
-import li.songe.gkd.util.mapHashCode
+import li.songe.gkd.util.getUpDownTransform
 import li.songe.gkd.util.ruleSummaryFlow
+import li.songe.gkd.util.switchItem
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.updateAllAppInfo
 import li.songe.gkd.util.updateAppMutex
 
 @Composable
 fun useAppListPage(): ScaffoldExt {
-    val context = LocalActivity.current as MainActivity
     val mainVm = LocalMainViewModel.current
-    val softwareKeyboardController = LocalSoftwareKeyboardController.current
+    val context = LocalActivity.current as MainActivity
 
     val vm = viewModel<HomeVm>()
     val showSystemApp by vm.showSystemAppFlow.collectAsState()
-    val showHiddenApp by vm.showHiddenAppFlow.collectAsState()
+    val showBlockApp by vm.showBlockAppFlow.collectAsState()
     val sortType by vm.sortTypeFlow.collectAsState()
-    val orderedAppInfos by vm.appInfosFlow.collectAsState()
+    val appInfos by vm.appInfosFlow.collectAsState()
     val searchStr by vm.searchStrFlow.collectAsState()
     val ruleSummary by ruleSummaryFlow.collectAsState()
 
@@ -91,10 +96,10 @@ fun useAppListPage(): ScaffoldExt {
     }
     val appListKey by mainVm.appListKeyFlow.collectAsState()
     val showSearchBar by vm.showSearchBarFlow.collectAsState()
-    val resetKey = orderedAppInfos.mapHashCode { it.id }
-    val (scrollBehavior, listState) = useListScrollState(resetKey, appListKey)
+    val (scrollBehavior, listState) = useListScrollState(appListKey)
     val refreshing by updateAppMutex.state.collectAsState()
     val pullToRefreshState = rememberPullToRefreshState()
+    val editWhiteListMode by vm.editWhiteListModeFlow.collectAsState()
     return ScaffoldExt(
         navItem = BottomNavItem.AppList,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -104,15 +109,14 @@ fun useAppListPage(): ScaffoldExt {
                     if (vm.searchStrFlow.value.isEmpty()) {
                         vm.showSearchBarFlow.value = false
                     }
+                    vm.editWhiteListModeFlow.value = false
                 }
             }
-            TopAppBar(scrollBehavior = scrollBehavior, title = {
+            PerfTopAppBar(scrollBehavior = scrollBehavior, title = {
                 val firstShowSearchBar = remember { showSearchBar }
                 if (showSearchBar) {
                     BackHandler {
-                        if (KeyboardUtils.isSoftInputVisible(context)) {
-                            softwareKeyboardController?.hide()
-                        } else {
+                        if (!context.justHideSoftInput()) {
                             vm.showSearchBarFlow.value = false
                         }
                     }
@@ -123,25 +127,48 @@ fun useAppListPage(): ScaffoldExt {
                         modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                     )
                 } else {
-                    Text(
-                        modifier = Modifier.clickable(
-                            enabled = orderedAppInfos.isNotEmpty(),
+                    val titleModifier = Modifier
+                        .noRippleClickable(
                             onClick = throttle {
                                 mainVm.appListKeyFlow.update { it + 1 }
                             }
-                        ),
-                        text = BottomNavItem.AppList.label,
-                    )
+                        )
+                    if (editWhiteListMode) {
+                        BackHandler {
+                            vm.editWhiteListModeFlow.value = false
+                        }
+                    }
+                    AnimatedContent(
+                        targetState = editWhiteListMode,
+                        transitionSpec = { getUpDownTransform() },
+                    ) { localEditWhiteListMode ->
+                        if (localEditWhiteListMode) {
+                            Text(
+                                modifier = titleModifier,
+                                text = "应用白名单",
+                            )
+                        } else {
+                            Text(
+                                modifier = titleModifier,
+                                text = BottomNavItem.AppList.label,
+                            )
+                        }
+                    }
                 }
             }, actions = {
-                IconButton(onClick = throttle {
-                    mainVm.navigatePage(WhiteAppListPageDestination)
-                }) {
-                    Icon(
-                        imageVector = Icons.Outlined.Block,
-                        contentDescription = Icons.Outlined.Block.name,
-                    )
-                }
+                PerfIconButton(
+                    imageVector = PerfIcon.Block,
+                    colors = IconButtonDefaults.iconButtonColors(
+                        contentColor = if (editWhiteListMode) {
+                            CheckboxDefaults.colors().checkedBoxColor
+                        } else {
+                            LocalContentColor.current
+                        }
+                    ),
+                    onClick = throttle {
+                        vm.editWhiteListModeFlow.update { !it }
+                    },
+                )
                 IconButton(onClick = throttle {
                     if (showSearchBar) {
                         if (vm.searchStrFlow.value.isEmpty()) {
@@ -159,14 +186,9 @@ fun useAppListPage(): ScaffoldExt {
                     )
                 }
                 var expanded by remember { mutableStateOf(false) }
-                IconButton(onClick = {
+                PerfIconButton(imageVector = PerfIcon.Sort, onClick = {
                     expanded = true
-                }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Sort,
-                        contentDescription = null
-                    )
-                }
+                })
                 Box(
                     modifier = Modifier
                         .wrapContentSize(Alignment.TopStart)
@@ -181,7 +203,10 @@ fun useAppListPage(): ScaffoldExt {
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary,
                         )
-                        SortTypeOption.allSubObject.forEach { sortOption ->
+                        val handleItem: (AppSortOption) -> Unit = throttle { v ->
+                            storeFlow.update { s -> s.copy(appSort = v.value) }
+                        }
+                        AppSortOption.objects.forEach { sortOption ->
                             DropdownMenuItem(
                                 text = {
                                     Text(sortOption.label)
@@ -190,12 +215,12 @@ fun useAppListPage(): ScaffoldExt {
                                     RadioButton(
                                         selected = sortType == sortOption,
                                         onClick = {
-                                            storeFlow.update { s -> s.copy(sortType = sortOption.value) }
+                                            handleItem(sortOption)
                                         }
                                     )
                                 },
                                 onClick = {
-                                    storeFlow.update { s -> s.copy(sortType = sortOption.value) }
+                                    handleItem(sortOption)
                                 },
                             )
                         }
@@ -205,6 +230,9 @@ fun useAppListPage(): ScaffoldExt {
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary,
                         )
+                        val handle1 = {
+                            storeFlow.update { s -> s.copy(showSystemApp = !showSystemApp) }
+                        }
                         DropdownMenuItem(
                             text = {
                                 Text("显示系统应用")
@@ -212,34 +240,40 @@ fun useAppListPage(): ScaffoldExt {
                             trailingIcon = {
                                 Checkbox(
                                     checked = showSystemApp,
-                                    onCheckedChange = {
-                                        storeFlow.update { s -> s.copy(showSystemApp = !showSystemApp) }
-                                    }
+                                    onCheckedChange = { handle1() }
                                 )
                             },
-                            onClick = {
-                                storeFlow.update { s -> s.copy(showSystemApp = !showSystemApp) }
-                            },
+                            onClick = handle1,
                         )
+                        val handle3 = {
+                            storeFlow.update { s -> s.copy(showBlockApp = !s.showBlockApp) }
+                        }
                         DropdownMenuItem(
                             text = {
-                                Text("显示隐藏应用")
+                                Text("显示白名单")
                             },
                             trailingIcon = {
                                 Checkbox(
-                                    checked = showHiddenApp,
-                                    onCheckedChange = {
-                                        storeFlow.update { s -> s.copy(showHiddenApp = !s.showHiddenApp) }
-                                    })
+                                    checked = showBlockApp,
+                                    onCheckedChange = { handle3() }
+                                )
                             },
-                            onClick = {
-                                storeFlow.update { s -> s.copy(showHiddenApp = !showHiddenApp) }
-                            },
+                            onClick = handle3,
                         )
                     }
                 }
-
             })
+        },
+        floatingActionButton = {
+            AnimationFloatingActionButton(
+                visible = editWhiteListMode,
+                onClick = {
+                    mainVm.navigatePage(EditBlockAppListPageDestination)
+                },
+                content = {
+                    PerfIcon(imageVector = PerfIcon.Edit)
+                }
+            )
         }
     ) { contentPadding ->
         PullToRefreshBox(
@@ -252,76 +286,103 @@ fun useAppListPage(): ScaffoldExt {
                 modifier = Modifier.fillMaxSize(),
                 state = listState
             ) {
-                items(orderedAppInfos, { it.id }) { appInfo ->
-                    Row(
-                        modifier = Modifier
-                            .clickable(onClick = throttle {
-                                if (KeyboardUtils.isSoftInputVisible(context)) {
-                                    softwareKeyboardController?.hide()
+                items(appInfos, { it.id }) { appInfo ->
+                    val desc = run {
+                        if (editWhiteListMode) return@run null
+                        val appGroups = ruleSummary.appIdToAllGroups[appInfo.id] ?: emptyList()
+                        val appDesc = if (appGroups.isNotEmpty()) {
+                            when (val disabledCount = appGroups.count { g -> !g.enable }) {
+                                0 -> "${appGroups.size}组规则"
+                                appGroups.size -> "${appGroups.size}组规则/${disabledCount}关闭"
+                                else -> {
+                                    "${appGroups.size}组规则/${appGroups.size - disabledCount}启用/${disabledCount}关闭"
                                 }
-                                mainVm.navigatePage(AppConfigPageDestination(appInfo.id))
-                            })
-                            .appItemPadding(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        AppIcon(appId = appInfo.id)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(
-                            modifier = Modifier
-                                .weight(1f),
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            AppNameText(appInfo = appInfo)
-                            val appGroups = ruleSummary.appIdToAllGroups[appInfo.id] ?: emptyList()
-                            val appDesc = if (appGroups.isNotEmpty()) {
-                                when (val disabledCount = appGroups.count { g -> !g.enable }) {
-                                    0 -> {
-                                        "${appGroups.size}组规则"
-                                    }
-
-                                    appGroups.size -> {
-                                        "${appGroups.size}组规则/${disabledCount}关闭"
-                                    }
-
-                                    else -> {
-                                        "${appGroups.size}组规则/${appGroups.size - disabledCount}启用/${disabledCount}关闭"
-                                    }
-                                }
+                            }
+                        } else {
+                            null
+                        }
+                        if (globalDesc != null) {
+                            if (appDesc != null) {
+                                "$globalDesc/$appDesc"
                             } else {
-                                null
+                                globalDesc
                             }
-                            val desc = if (globalDesc != null) {
-                                if (appDesc != null) {
-                                    "$globalDesc/$appDesc"
-                                } else {
-                                    globalDesc
-                                }
-                            } else {
-                                appDesc
-                            }
-                            if (desc != null) {
-                                Text(
-                                    text = desc,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    softWrap = false
-                                )
-                            }
+                        } else {
+                            appDesc
                         }
                     }
+                    AppItemCard(
+                        appInfo = appInfo,
+                        desc = desc,
+                    )
                 }
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
-                    if (orderedAppInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        val hasShowAll = showSystemApp && showHiddenApp
+                    if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
+                        val hasShowAll = showSystemApp && showBlockApp
                         EmptyText(text = if (hasShowAll) "暂无搜索结果" else "暂无搜索结果，请尝试修改筛选条件")
+                        Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
-                    QueryPkgAuthCard()
+                    QueryPkgAuthCard(hideLoading = true)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AppItemCard(
+    appInfo: AppInfo,
+    desc: String?,
+) {
+    val mainVm = LocalMainViewModel.current
+    val context = LocalActivity.current as MainActivity
+    val vm = viewModel<HomeVm>()
+    Row(
+        modifier = Modifier
+            .clickable(onClick = throttle {
+                if (vm.editWhiteListModeFlow.value) {
+                    blockMatchAppListFlow.update { it.switchItem(appInfo.id) }
+                } else {
+                    context.justHideSoftInput()
+                    mainVm.navigatePage(AppConfigPageDestination(appInfo.id))
+                }
+            })
+            .appItemPadding(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AppIcon(appId = appInfo.id)
+        Column(
+            modifier = Modifier
+                .weight(1f),
+            verticalArrangement = Arrangement.Center
+        ) {
+            AppNameText(appInfo = appInfo)
+            Text(
+                text = desc ?: appInfo.id,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                softWrap = false
+            )
+        }
+        val editWhiteListMode = vm.editWhiteListModeFlow.collectAsState().value
+        val inWhiteList = blockMatchAppListFlow.collectAsState().value.contains(appInfo.id)
+        if (editWhiteListMode) {
+            PerfCheckbox(
+                key = appInfo.id,
+                checked = inWhiteList,
+            )
+        } else if (inWhiteList) {
+            PerfIcon(
+                modifier = Modifier
+                    .padding(2.dp)
+                    .size(20.dp),
+                imageVector = PerfIcon.Block,
+                tint = MaterialTheme.colorScheme.secondary,
+            )
         }
     }
 }

@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import li.songe.gkd.util.throttle
 
 private const val elevationDurationMillis = 50
 
@@ -63,7 +64,7 @@ fun AnimationFloatingActionButton(
                 translationX = (1f - percent.value) * maxTranslationX
             ),
             elevation = FloatingActionButtonDefaults.elevation(defaultElevation = (defaultElevation.value * 6f).dp),
-            onClick = onClick,
+            onClick = throttle(onClick),
             content = content,
         )
     }

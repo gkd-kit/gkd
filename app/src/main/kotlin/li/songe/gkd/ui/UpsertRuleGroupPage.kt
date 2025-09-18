@@ -8,18 +8,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -38,9 +32,11 @@ import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListP
 import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.MainActivity
+import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.ui.component.PerfIconButton
+import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.share.LocalDarkTheme
@@ -67,11 +63,9 @@ fun UpsertRuleGroupPage(
 
     val checkIfSaveText = throttle(mainVm.viewModelScope.launchAsFn(Dispatchers.Default) {
         if (vm.hasTextChanged()) {
-            vm.viewModelScope.launch {
-                context.hideSoftInput()
-            }
+            context.justHideSoftInput()
             mainVm.dialogFlow.waitResult(
-                title = "放弃编辑",
+                title = "提示",
                 text = "当前内容未保存，是否放弃编辑？",
             )
         } else {
@@ -108,23 +102,20 @@ fun UpsertRuleGroupPage(
     })
     BackHandler(true, checkIfSaveText)
     Scaffold(modifier = Modifier, topBar = {
-        TopAppBar(
+        PerfTopAppBar(
             modifier = Modifier.fillMaxWidth(),
             navigationIcon = {
-                IconButton(onClick = checkIfSaveText) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null,
-                    )
-                }
+                PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = checkIfSaveText)
             },
             title = {
                 Text(text = if (vm.isEdit) "编辑规则组" else "添加规则组")
             },
             actions = {
-                IconButton(onClick = onClickSave, enabled = text.isNotBlank()) {
-                    Icon(imageVector = Icons.Default.Check, contentDescription = null)
-                }
+                PerfIconButton(
+                    imageVector = PerfIcon.Save,
+                    onClick = onClickSave,
+                    enabled = text.isNotBlank()
+                )
             }
         )
     }) { paddingValues ->
@@ -140,7 +131,7 @@ fun UpsertRuleGroupPage(
                 .fillMaxSize(),
         ) {
             CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyLarge) {
-                val imeShowing by context.imeShowingFlow.collectAsState()
+                val imeShowing by context.imePlayingFlow.collectAsState()
                 val modifier = Modifier
                     .autoFocus()
                     .fillMaxSize()

@@ -1,19 +1,21 @@
 package li.songe.gkd.store
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.appScope
+import li.songe.gkd.util.AppListString
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.toast
 
-val storeFlow by lazy {
+val storeFlow: MutableStateFlow<SettingsStore> by lazy {
     createAnyFlow(
         key = "store",
         default = { SettingsStore() }
     )
 }
 
-val actionCountFlow by lazy {
+val actionCountFlow: MutableStateFlow<Long> by lazy {
     createTextFlow(
         key = "action_count",
         decode = { it?.toLongOrNull() ?: 0L },
@@ -21,10 +23,28 @@ val actionCountFlow by lazy {
     )
 }
 
+val blockMatchAppListFlow: MutableStateFlow<Set<String>> by lazy {
+    createTextFlow(
+        key = "block_match_app_list",
+        decode = { it?.let(AppListString::decode) ?: AppListString.getDefaultBlockList() },
+        encode = AppListString::encode,
+    )
+}
+
+val blockA11yAppListFlow: MutableStateFlow<Set<String>> by lazy {
+    createTextFlow(
+        key = "block_a11y_app_list",
+        decode = { it?.let(AppListString::decode) ?: emptySet() },
+        encode = AppListString::encode,
+    )
+}
+
 fun initStore() = appScope.launchTry(Dispatchers.IO) {
     // preload
     storeFlow.value
     actionCountFlow.value
+    blockMatchAppListFlow.value
+    blockA11yAppListFlow.value
 }
 
 fun switchStoreEnableMatch() {

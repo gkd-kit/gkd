@@ -4,9 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.VerifiedUser
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -27,26 +24,33 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.otherUserMapFlow
-import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.shizuku.currentUserId
+import li.songe.gkd.util.appInfoMapFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
 @Composable
 fun AppNameText(
+    modifier: Modifier = Modifier,
     appId: String? = null,
     appInfo: AppInfo? = null,
     fallbackName: String? = null,
 ) {
-    val info = appInfo ?: appInfoCacheFlow.collectAsState().value[appId]
+    val info = appInfo ?: appInfoMapFlow.collectAsState().value[appId]
     val showSystemIcon = info?.isSystem == true
     val appName = (info?.name ?: fallbackName ?: appId ?: error("appId is required"))
-    val userName = info?.userId?.let {
-        val userInfo = otherUserMapFlow.collectAsState().value[info.userId]
-        "「${userInfo?.name ?: info.userId}」"
+    val userName = info?.userId?.let { userId ->
+        if (userId == currentUserId) {
+            null
+        } else {
+            val userInfo = otherUserMapFlow.collectAsState().value[userId]
+            "「${userInfo?.name ?: userId}」"
+        }
     }
     val textDecoration = if (info?.enabled == false) TextDecoration.LineThrough else null
     if (!showSystemIcon && userName == null) {
         Text(
+            modifier = modifier,
             text = appName,
             maxLines = 1,
             softWrap = false,
@@ -86,13 +90,12 @@ fun AppNameText(
                             placeholderVerticalAlign = PlaceholderVerticalAlign.Center
                         )
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.VerifiedUser,
+                        PerfIcon(
+                            imageVector = PerfIcon.VerifiedUser,
                             modifier = Modifier
                                 .clip(MaterialTheme.shapes.extraSmall)
                                 .clickable(onClick = throttle { toast("当前是系统应用") })
                                 .fillMaxSize(),
-                            contentDescription = null,
                             tint = contentColor
                         )
                     }
@@ -102,6 +105,7 @@ fun AppNameText(
             emptyMap()
         }
         Text(
+            modifier = modifier,
             text = annotatedString,
             inlineContent = inlineContent,
             maxLines = 1,

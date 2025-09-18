@@ -93,3 +93,13 @@ jobs:
           asset_path: release/app-gkd-release.apk
           asset_name: gkd-${{ github.ref_name }}.apk
           asset_content_type: application/vnd.android.package-archive
+
+      - run: zip -r outputs.zip outputs
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: outputs.zip
+          asset_name: outputs-${{ github.ref_name }}.zip
+          asset_content_type: application/zip

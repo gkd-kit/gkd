@@ -1,7 +1,6 @@
 package li.songe.gkd.util
 
 import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.NetworkUtils
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
@@ -65,12 +64,12 @@ data class UsedSubsEntry(
 
 val subsLoadErrorsFlow = MutableStateFlow<Map<Long, Exception>>(emptyMap())
 val subsRefreshErrorsFlow = MutableStateFlow<Map<Long, Exception>>(emptyMap())
-val subsIdToRawFlow = MutableStateFlow<Map<Long, RawSubscription>>(emptyMap())
+val subsMapFlow = MutableStateFlow<Map<Long, RawSubscription>>(emptyMap())
 
 val subsEntriesFlow by lazy {
     combine(
         subsItemsFlow,
-        subsIdToRawFlow,
+        subsMapFlow,
     ) { subsItems, subsIdToRaw ->
         subsItems.map { s ->
             SubsEntry(
@@ -83,7 +82,7 @@ val subsEntriesFlow by lazy {
 
 val usedSubsEntriesFlow by lazy {
     subsEntriesFlow.map { list ->
-        list.filter { s -> s.subsItem.enable && s.subscription != null }
+        list.filter { s -> s.subsItem.enable && s.subscription?.hasRule == true }
             .map { UsedSubsEntry(it.subsItem, it.subscription!!) }
     }.stateIn(appScope, SharingStarted.Eagerly, emptyList())
 }
@@ -93,7 +92,7 @@ fun updateSubscription(subscription: RawSubscription) {
         updateSubsMutex.withStateLock {
             val subsId = subscription.id
             val subsName = subscription.name
-            val newMap = subsIdToRawFlow.value.toMutableMap()
+            val newMap = subsMapFlow.value.toMutableMap()
             if (subsId < 0 && newMap[subsId]?.version == subscription.version) {
                 newMap[subsId] = subscription.run {
                     copy(
@@ -105,7 +104,7 @@ fun updateSubscription(subscription: RawSubscription) {
             } else {
                 newMap[subsId] = subscription
             }
-            subsIdToRawFlow.value = newMap
+            subsMapFlow.value = newMap
             if (subsLoadErrorsFlow.value.contains(subsId)) {
                 subsLoadErrorsFlow.update {
                     it.toMutableMap().apply {
@@ -131,7 +130,7 @@ fun deleteSubscription(vararg subsIds: Long) {
                 DbSet.subsConfigDao.deleteBySubsId(*subsIds)
                 DbSet.actionLogDao.deleteBySubsId(*subsIds)
                 DbSet.categoryConfigDao.deleteBySubsId(*subsIds)
-                val newMap = subsIdToRawFlow.value.toMutableMap()
+                val newMap = subsMapFlow.value.toMutableMap()
                 subsIds.forEach { id ->
                     newMap.remove(id)
                     subsFolder.resolve("$id.json").apply {
@@ -140,7 +139,7 @@ fun deleteSubscription(vararg subsIds: Long) {
                         }
                     }
                 }
-                subsIdToRawFlow.value = newMap
+                subsMapFlow.value = newMap
                 toast("删除成功")
                 LogUtils.d("deleteSubscription", subsIds)
             }
@@ -215,7 +214,7 @@ data class RuleSummary(
 val ruleSummaryFlow by lazy {
     combine(
         usedSubsEntriesFlow,
-        appInfoCacheFlow,
+        appInfoMapFlow,
         DbSet.appConfigDao.queryUsedList(),
         DbSet.subsConfigDao.queryUsedList(),
         DbSet.categoryConfigDao.queryUsedList(),
@@ -374,7 +373,7 @@ private fun loadSubs(id: Long): RawSubscription {
 
 private fun refreshRawSubsList(items: List<SubsItem>): Boolean {
     if (items.isEmpty()) return false
-    val subscriptions = subsIdToRawFlow.value.toMutableMap()
+    val subscriptions = subsMapFlow.value.toMutableMap()
     val errors = subsLoadErrorsFlow.value.toMutableMap()
     var changed = false
     items.forEach { s ->
@@ -386,7 +385,7 @@ private fun refreshRawSubsList(items: List<SubsItem>): Boolean {
             errors[s.id] = e
         }
     }
-    subsIdToRawFlow.value = subscriptions
+    subsMapFlow.value = subscriptions
     subsLoadErrorsFlow.value = errors
     return changed
 }

@@ -111,7 +111,7 @@ class UploadOptions(
                 val href = showHref(status.result)
                 AlertDialog(
                     title = { Text(text = "上传完成") },
-                    text = { UrlCopyText(text = href) },
+                    text = { CopyTextCard(text = href) },
                     onDismissRequest = {},
                     confirmButton = {
                         TextButton(onClick = {

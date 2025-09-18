@@ -11,22 +11,25 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import androidx.core.content.ContextCompat
 import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.ScreenUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import li.songe.gkd.META
 import li.songe.gkd.appScope
+import li.songe.gkd.isActivityVisible
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.StatusService
 import li.songe.gkd.shizuku.safeGetTopCpn
 import li.songe.gkd.store.storeFlow
+import li.songe.gkd.util.ScreenUtils
 import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.UpdateTimeOption
 import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mapState
+import li.songe.gkd.util.toast
 
 
 context(service: A11yService)
@@ -48,9 +51,26 @@ fun onA11yFeatInit() = service.run {
 }
 
 private fun A11yService.useAttachState() {
-    useAliveToast("无障碍", onlyWhenVisible = true)
+    onCreated {
+        if (isActivityVisible() || META.debuggable) {
+            toast("无障碍已启动")
+        }
+    }
+    onDestroyed {
+        if (isActivityVisible() || META.debuggable) {
+            if (willDestroyByBlock) {
+                toast("无障碍已局部关闭")
+            } else {
+                toast("无障碍已停止")
+            }
+        }
+    }
     onCreated { storeFlow.update { it.copy(enableService = true) } }
-    onDestroyed { storeFlow.update { it.copy(enableService = false) } }
+    onDestroyed {
+        if (!willDestroyByBlock) {
+            storeFlow.update { it.copy(enableService = false) }
+        }
+    }
 }
 
 private fun onA11yFeatEvent(event: AccessibilityEvent) = event.run {

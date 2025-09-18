@@ -21,14 +21,15 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.util.mapState
-import li.songe.gkd.util.subsIdToRawFlow
+import li.songe.gkd.util.subsMapFlow
 
 @Composable
 fun useSubs(subsId: Long?): RawSubscription? {
     val scope = rememberCoroutineScope()
-    return remember(subsId) { subsIdToRawFlow.mapState(scope) { it[subsId] } }.collectAsState().value
+    return remember(subsId) { subsMapFlow.mapState(scope) { it[subsId] } }.collectAsState().value
 }
 
 @Composable
@@ -51,24 +52,38 @@ fun useSubsGroup(
 }
 
 @Composable
-private fun useAutoFocus(): FocusRequester {
+fun Modifier.autoFocus(immediateFocus: Boolean = false): Modifier {
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(null) {
-        delay(DefaultDurationMillis.toLong())
+        if (!immediateFocus) {
+            delay(DefaultDurationMillis.toLong())
+        }
         focusRequester.requestFocus()
     }
-    return focusRequester
+    return focusRequester(focusRequester)
 }
 
 @Composable
-fun Modifier.autoFocus() = focusRequester(useAutoFocus())
+private fun getCompatStateValue(v: Any?): Any? = when (v) {
+    is StateFlow<*> -> v.collectAsState().value
+    is androidx.compose.runtime.State<*> -> v.value
+    else -> v
+}
 
+// key 函数的依赖变化时, compose 将重置 key 函数那行代码之后所有代码的状态, 因此需要需要将 key 作用域限定在 Composable fun 内
 @Composable
-fun useListScrollState(k1: Any?, k2: Any? = null): Pair<TopAppBarScrollBehavior, LazyListState> {
-    // key 函数的依赖变化时, compose 将重置 key 函数那行代码之后所有代码的状态, 因此需要需要将 key 作用域限定在 Composable fun 内
-    val scrollBehavior = key(k1, k2) { TopAppBarDefaults.enterAlwaysScrollBehavior() }
-    val listState = key(k1, k2) { rememberLazyListState() }
-    return scrollBehavior to listState
+fun useListScrollState(
+    v1: Any?,
+    v2: Any? = null,
+    v3: Any? = null,
+): Pair<TopAppBarScrollBehavior, LazyListState> {
+    return key(
+        getCompatStateValue(v1),
+        getCompatStateValue(v2),
+        getCompatStateValue(v3)
+    ) {
+        TopAppBarDefaults.enterAlwaysScrollBehavior() to rememberLazyListState()
+    }
 }
 
 @Composable

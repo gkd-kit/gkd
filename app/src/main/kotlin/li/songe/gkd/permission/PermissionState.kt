@@ -4,7 +4,6 @@ import android.Manifest
 import android.app.Activity
 import android.app.AppOpsManager
 import android.content.pm.PackageManager
-import android.os.Build
 import android.provider.Settings
 import androidx.core.content.ContextCompat
 import com.hjq.permissions.XXPermissions
@@ -19,6 +18,7 @@ import li.songe.gkd.app
 import li.songe.gkd.isActivityVisible
 import li.songe.gkd.shizuku.shizukuCheckGranted
 import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.mayQueryPkgNoAccessFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateAllAppInfo
@@ -84,7 +84,7 @@ private suspend fun asyncRequestPermission(
 
 @Suppress("SameParameterValue")
 private fun checkOpNoThrow(op: String): Int {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+    if (AndroidTarget.Q) {
         try {
             return app.appOpsManager.checkOpNoThrow(
                 op,
@@ -178,17 +178,17 @@ val canDrawOverlaysState by lazy {
 val canWriteExternalStorage by lazy {
     PermissionState(
         check = {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            } else {
+            if (AndroidTarget.Q) {
                 true
+            } else {
+                checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             }
         },
         request = {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                asyncRequestPermission(it, PermissionLists.getWriteExternalStoragePermission())
-            } else {
+            if (AndroidTarget.Q) {
                 PermissionResult.Granted
+            } else {
+                asyncRequestPermission(it, PermissionLists.getWriteExternalStoragePermission())
             }
         },
         reason = AuthReason(

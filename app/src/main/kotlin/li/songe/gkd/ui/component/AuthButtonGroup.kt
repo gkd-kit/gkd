@@ -1,6 +1,6 @@
 package li.songe.gkd.ui.component
 
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -13,12 +13,11 @@ import li.songe.gkd.util.throttle
 
 @Composable
 fun AuthButtonGroup(
-    onClickShizuku: ()-> Unit,
-    onClickManual: ()-> Unit,
-    onClickRoot: ()-> Unit,
-
-){
-    Row(
+    onClickShizuku: () -> Unit,
+    onClickManual: () -> Unit,
+    onClickRoot: () -> Unit,
+) {
+    FlowRow(
         modifier = Modifier
             .padding(4.dp, 0.dp)
             .fillMaxWidth(),

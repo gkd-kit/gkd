@@ -3,32 +3,22 @@ package li.songe.gkd.shizuku
 
 import android.content.ComponentName
 import android.content.pm.PackageManager
-import android.graphics.drawable.Drawable
 import android.os.IInterface
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.app
 import li.songe.gkd.appScope
-import li.songe.gkd.data.AppInfo
-import li.songe.gkd.data.otherUserMapFlow
-import li.songe.gkd.data.toAppInfo
 import li.songe.gkd.isActivityVisible
 import li.songe.gkd.permission.shizukuOkState
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.MutexState
-import li.songe.gkd.util.PKG_FLAGS
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.otherUserAppIconMapFlow
-import li.songe.gkd.util.otherUserAppInfoMapFlow
-import li.songe.gkd.util.pkgIcon
 import li.songe.gkd.util.toast
-import li.songe.gkd.util.userAppInfoMapFlow
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
@@ -92,7 +82,13 @@ class ShizukuContext(
     val userManager: SafeUserManager? = null,
     val activityManager: SafeActivityManager? = null,
     val activityTaskManager: SafeActivityTaskManager? = null,
-)
+) {
+    val ok get() = this !== defaultShizukuContext
+    fun destroy() {
+        serviceWrapper?.destroy()
+        activityTaskManager?.unregisterDefault()
+    }
+}
 
 private val defaultShizukuContext = ShizukuContext()
 
@@ -139,11 +135,8 @@ private fun updateShizukuBinder() = appScope.launchTry(Dispatchers.IO) {
                     toast("Shizuku 服务连接成功", delayMillis)
                 }
             }
-        } else if (shizukuContextFlow.value != defaultShizukuContext) {
-            shizukuContextFlow.value.run {
-                serviceWrapper?.destroy()
-                activityTaskManager?.unregisterDefault()
-            }
+        } else if (shizukuContextFlow.value.ok) {
+            shizukuContextFlow.value.destroy()
             shizukuContextFlow.value = defaultShizukuContext
             if (isActivityVisible()) {
                 toast("Shizuku 服务已断开")
@@ -152,44 +145,6 @@ private fun updateShizukuBinder() = appScope.launchTry(Dispatchers.IO) {
     }
 }
 
-fun updateOtherUserAppInfo(
-    userAppInfoMap: Map<String, AppInfo> = userAppInfoMapFlow.value,
-) {
-    val pkgManager = shizukuContextFlow.value.packageManager
-    val userManager = shizukuContextFlow.value.userManager
-    if (pkgManager == null || userManager == null) {
-        otherUserMapFlow.value = emptyMap()
-        otherUserAppIconMapFlow.value = emptyMap()
-        otherUserAppInfoMapFlow.value = emptyMap()
-        return
-    }
-    val otherUsers = userManager.getUsers().filter { it.id != currentUserId }.sortedBy { it.id }
-    val userPackageInfoMap = otherUsers.associate { user ->
-        user.id to pkgManager.getInstalledPackages(
-            PKG_FLAGS,
-            user.id
-        )
-    }
-    val newIconMap = HashMap<String, Drawable>()
-    val newAppMap = HashMap<String, AppInfo>()
-    userPackageInfoMap.forEach { (userId, pkgInfoList) ->
-        val diffPkgList = pkgInfoList.filter {
-            !userAppInfoMap.contains(it.packageName) && !newAppMap.contains(
-                it.packageName
-            )
-        }
-        diffPkgList.forEach { pkgInfo ->
-            newAppMap[pkgInfo.packageName] = pkgInfo.toAppInfo(
-                userId = userId,
-                hidden = pkgManager.checkAppHidden(pkgInfo.packageName),
-            )
-            pkgInfo.pkgIcon?.let { newIconMap[pkgInfo.packageName] = it }
-        }
-    }
-    otherUserMapFlow.value = otherUsers.associateBy { it.id }
-    otherUserAppInfoMapFlow.value = newAppMap
-    otherUserAppIconMapFlow.value = newIconMap
-}
 
 fun initShizuku() {
     Shizuku.addBinderReceivedListener {
@@ -204,13 +159,5 @@ fun initShizuku() {
     }
     appScope.launchTry {
         shizukuUsedFlow.collect { updateShizukuBinder() }
-    }
-    appScope.launchTry(Dispatchers.IO) {
-        combine(
-            shizukuContextFlow,
-            userAppInfoMapFlow,
-        ) { a, b -> a to b }
-            .debounce(3000)
-            .collect { updateOtherUserAppInfo() }
     }
 }

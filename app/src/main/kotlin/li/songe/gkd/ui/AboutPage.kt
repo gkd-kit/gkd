@@ -17,19 +17,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -65,6 +60,9 @@ import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
 import li.songe.gkd.store.storeFlow
+import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.ui.component.PerfIconButton
+import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
@@ -152,28 +150,24 @@ fun AboutPage() {
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
+            PerfTopAppBar(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    IconButton(onClick = {
-                        mainVm.popBackStack()
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null,
-                        )
-                    }
+                    PerfIconButton(
+                        imageVector = PerfIcon.ArrowBack,
+                        onClick = {
+                            mainVm.popBackStack()
+                        },
+                    )
                 },
                 title = { Text(text = "关于") },
                 actions = {
-                    IconButton(onClick = {
-                        showShareAppDlg = true
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = null,
-                        )
-                    }
+                    PerfIconButton(
+                        imageVector = PerfIcon.Share,
+                        onClick = {
+                            showShareAppDlg = true
+                        },
+                    )
                 }
             )
         }
@@ -274,7 +268,7 @@ fun AboutPage() {
                                     append("，可点击下方继续反馈")
                                 })
                             },
-                            confirmText = "继续反馈",
+                            confirmText = "继续",
                             dismissRequest = true,
                         )
                         mainVm.openUrl(ISSUES_URL)
@@ -289,7 +283,7 @@ fun AboutPage() {
             }
             SettingItem(
                 title = "导出日志",
-                imageVector = Icons.Default.Share,
+                imageVector = PerfIcon.Share,
                 onClick = {
                     showShareLogDlg = true
                 }
@@ -303,7 +297,7 @@ fun AboutPage() {
                 )
                 TextMenu(
                     title = "更新渠道",
-                    option = UpdateChannelOption.allSubObject.findOption(store.updateChannel)
+                    option = UpdateChannelOption.objects.findOption(store.updateChannel)
                 ) {
                     if (mainVm.updateStatus.checkUpdatingFlow.value) return@TextMenu
                     if (it.value == UpdateChannelOption.Beta.value) {
@@ -479,6 +473,7 @@ private fun AnimatedLogoIcon(
     modifier: Modifier = Modifier
 ) {
     val darkTheme = LocalDarkTheme.current
+    val colorRid = if (darkTheme) SafeR.better_white else SafeR.better_black
     var atEnd by remember { mutableStateOf(false) }
     val animation = AnimatedImageVector.animatedVectorResource(id = SafeR.ic_anim_logo)
     val painter = rememberAnimatedVectorPainter(
@@ -491,7 +486,6 @@ private fun AnimatedLogoIcon(
             delay(animation.totalDuration.toLong())
         }
     }
-    val colorRid = if (darkTheme) SafeR.better_white else SafeR.better_black
     Icon(
         modifier = modifier,
         painter = painter,

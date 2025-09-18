@@ -19,7 +19,6 @@ import li.songe.gkd.ui.share.BaseViewModel
 import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.collator
 import li.songe.gkd.util.findOption
-import li.songe.gkd.util.mapState
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.usedSubsEntriesFlow
 
@@ -27,15 +26,11 @@ import li.songe.gkd.util.usedSubsEntriesFlow
 class AppConfigVm(stateHandle: SavedStateHandle) : BaseViewModel() {
     private val args = AppConfigPageDestination.argsFrom(stateHandle)
 
-    val ruleSortTypeFlow = storeFlow.mapState(viewModelScope) {
-        RuleSortOption.allSubObject.findOption(it.appRuleSortType)
+    val ruleSortTypeFlow = storeFlow.mapNew {
+        RuleSortOption.objects.findOption(it.appRuleSort)
     }
 
-    val appShowInnerDisableFlow = storeFlow.mapState(viewModelScope) {
-        it.appShowInnerDisable
-    }
-
-    private val usedSubsIdsFlow = subsItemsFlow.mapState(viewModelScope) { list ->
+    private val usedSubsIdsFlow = subsItemsFlow.mapNew { list ->
         list.filter { it.enable }.map { it.id }.sorted()
     }
 
@@ -48,7 +43,7 @@ class AppConfigVm(stateHandle: SavedStateHandle) : BaseViewModel() {
     }.stateInit(usedSubsIdsFlow.value)
 
     private val latestLogsFlow = ruleSortTypeFlow.map {
-        if (it == RuleSortOption.ByTime) {
+        if (it == RuleSortOption.ByActionTime) {
             DbSet.actionLogDao.queryLatestByAppId(args.appId)
         } else {
             flowOf(emptyList())
@@ -71,24 +66,11 @@ class AppConfigVm(stateHandle: SavedStateHandle) : BaseViewModel() {
     private val temp1ListFlow = combine(
         appUsedSubsIdsFlow,
         usedSubsEntriesFlow,
-        appShowInnerDisableFlow,
         globalSubsConfigsFlow,
-    ) { usedSubsIds, list, show, configs ->
+    ) { usedSubsIds, list, configs ->
         list.map { e ->
             val globalGroups = e.subscription.globalGroups
                 .filter { g -> configs.find { it.subsId == e.subsItem.id && it.groupKey == g.key }?.enable != false }
-                .let {
-                    if (show) {
-                        it
-                    } else {
-                        it.filter { g ->
-                            !e.subscription.getGlobalGroupInnerDisabled(
-                                g,
-                                args.appId
-                            )
-                        }
-                    }
-                }
             val appGroups = if (usedSubsIds.contains(e.subsItem.id)) {
                 e.subscription.getAppGroups(args.appId)
             } else {
@@ -104,8 +86,8 @@ class AppConfigVm(stateHandle: SavedStateHandle) : BaseViewModel() {
         ruleSortTypeFlow
     ) { list, logs, sortType ->
         when (sortType) {
-            RuleSortOption.Default -> list
-            RuleSortOption.ByName -> list.map { e ->
+            RuleSortOption.ByDefault -> list
+            RuleSortOption.ByRuleName -> list.map { e ->
                 e.first to e.second.sortedWith { a, b ->
                     collator.compare(
                         a.name,
@@ -114,7 +96,7 @@ class AppConfigVm(stateHandle: SavedStateHandle) : BaseViewModel() {
                 }
             }
 
-            RuleSortOption.ByTime -> list.map { e ->
+            RuleSortOption.ByActionTime -> list.map { e ->
                 e.first to e.second.sortedBy { a ->
                     -(logs.find { c ->
                         c.subsId == e.first.subsItem.id && c.groupType == a.groupType && c.groupKey == a.key
@@ -130,7 +112,7 @@ class AppConfigVm(stateHandle: SavedStateHandle) : BaseViewModel() {
         }
     }.stateInit(emptyList())
 
-    val groupSizeFlow = subsPairsFlow.mapState(viewModelScope) { list ->
+    val groupSizeFlow = subsPairsFlow.mapNew { list ->
         list.sumOf { it.second.size }
     }
 

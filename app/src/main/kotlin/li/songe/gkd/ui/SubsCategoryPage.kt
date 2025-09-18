@@ -11,26 +11,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
@@ -53,6 +44,9 @@ import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.EmptyText
+import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.ui.component.PerfIconButton
+import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.updateDialogOptions
@@ -74,33 +68,31 @@ import li.songe.gkd.util.updateSubscription
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
-fun SubsCategoryPage(subsItemId: Long) {
+fun SubsCategoryPage(@Suppress("unused") subsItemId: Long) {
     val mainVm = LocalMainViewModel.current
 
     val vm = viewModel<SubsCategoryVm>()
     val subs = vm.subsRawFlow.collectAsState().value
     val categoryConfigMap = vm.categoryConfigMapFlow.collectAsState().value
 
-    val categories = subs?.categories ?: emptyList()
+    val categories = subs.categories
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
-            IconButton(onClick = {
-                mainVm.popBackStack()
-            }) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = null,
-                )
-            }
+        PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
+            PerfIconButton(
+                imageVector = PerfIcon.ArrowBack,
+                onClick = {
+                    mainVm.popBackStack()
+                },
+            )
         }, title = {
             TowLineText(
-                title = subs?.name ?: subsItemId.toString(),
+                title = subs.name,
                 subtitle = "规则类别"
             )
         }, actions = {
-            IconButton(onClick = throttle {
+            PerfIconButton(imageVector = PerfIcon.Info, onClick = throttle {
                 mainVm.dialogFlow.updateDialogOptions(
                     title = "类别说明",
                     text = arrayOf(
@@ -109,16 +101,13 @@ fun SubsCategoryPage(subsItemId: Long) {
                         "因此如果手动开关了规则组(规则手动配置), 则该规则组不会被批量开关, 可通过点击类别-重置规则组开关, 来移除类别下所有规则手动配置",
                     ).joinToString("\n\n"),
                 )
-            }) {
-                Icon(Icons.Outlined.Info, contentDescription = null)
-            }
+            })
         })
     }, floatingActionButton = {
-        if (subs != null && subs.isLocal) {
+        if (subs.isLocal) {
             FloatingActionButton(onClick = { vm.showAddCategoryFlow.value = true }) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "add",
+                PerfIcon(
+                    imageVector = PerfIcon.Add,
                 )
             }
         }
@@ -129,25 +118,22 @@ fun SubsCategoryPage(subsItemId: Long) {
             items(categories, { it.key }) { category ->
                 CategoryItemCard(
                     vm = vm,
-                    subs = subs!!,
+                    subs = subs,
                     category = category,
                     categoryConfig = categoryConfigMap[category.key],
-                    showBottom = categories.last() != category
                 )
             }
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (categories.isEmpty()) {
                     EmptyText(text = "暂无类别")
-                } else if (subs != null && subs.isLocal) {
-                    Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }
         }
     }
 
     val editCategory by vm.editCategoryFlow.collectAsState()
-    if (subs != null && editCategory != null) {
+    if (editCategory != null) {
         AddOrEditCategoryDialog(
             subs = subs,
             category = editCategory,
@@ -156,7 +142,7 @@ fun SubsCategoryPage(subsItemId: Long) {
         }
     }
     val showAddCategory by vm.showAddCategoryFlow.collectAsState()
-    if (subs != null && showAddCategory) {
+    if (showAddCategory) {
         AddOrEditCategoryDialog(
             subs = subs,
             category = null,
@@ -172,7 +158,6 @@ private fun CategoryItemCard(
     subs: RawSubscription,
     category: RawSubscription.RawCategory,
     categoryConfig: CategoryConfig?,
-    showBottom: Boolean,
 ) {
     val groups = subs.categoryToGroupsMap[category] ?: emptyList()
     var expanded by remember { mutableStateOf(false) }
@@ -185,9 +170,8 @@ private fun CategoryItemCard(
         onClick = onClick,
         shape = MaterialTheme.shapes.extraSmall,
         modifier = Modifier.padding(
-            start = 8.dp,
-            end = 8.dp,
-            bottom = if (showBottom) 4.dp else 0.dp
+            horizontal = 8.dp,
+            vertical = 2.dp,
         ),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
     ) {
@@ -227,7 +211,7 @@ private fun CategoryItemCard(
             Spacer(modifier = Modifier.width(8.dp))
             val enable = getCategoryEnable(category, categoryConfig)
             TriStateCheckbox(
-                state = EnableGroupOption.allSubObject.findOption(enable).toToggleableState(),
+                state = EnableGroupOption.objects.findOption(enable).toToggleableState(),
                 onClick = throttle(appScope.launchAsFn {
                     val option = when (enable) {
                         false -> EnableGroupOption.FollowSubs
@@ -268,9 +252,8 @@ private fun CategoryMenu(
             if (groups.isNotEmpty()) {
                 DropdownMenuItem(
                     leadingIcon = {
-                        Icon(
+                        PerfIcon(
                             imageVector = ResetSettings,
-                            contentDescription = null
                         )
                     },
                     text = { Text(text = "重置规则组开关") },
@@ -291,9 +274,8 @@ private fun CategoryMenu(
             if (subs.isLocal) {
                 DropdownMenuItem(
                     leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Outlined.Edit,
-                            contentDescription = null
+                        PerfIcon(
+                            imageVector = PerfIcon.Edit,
                         )
                     },
                     text = { Text(text = "编辑") },
@@ -305,9 +287,8 @@ private fun CategoryMenu(
                 DropdownMenuItem(
                     text = { Text(text = "删除", color = MaterialTheme.colorScheme.error) },
                     leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Outlined.Delete,
-                            contentDescription = null,
+                        PerfIcon(
+                            imageVector = PerfIcon.Delete,
                         )
                     },
                     onClick = throttle(vm.viewModelScope.launchAsFn {

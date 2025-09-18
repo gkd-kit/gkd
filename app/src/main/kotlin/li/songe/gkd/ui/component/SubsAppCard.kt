@@ -4,54 +4,46 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.key
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import li.songe.gkd.data.AppConfig
-import li.songe.gkd.data.AppInfo
-import li.songe.gkd.data.RawSubscription
+import li.songe.gkd.store.blockMatchAppListFlow
+import li.songe.gkd.ui.SubsAppInfoItem
 import li.songe.gkd.ui.style.appItemPadding
 
 
 @Composable
 fun SubsAppCard(
-    rawApp: RawSubscription.RawApp,
-    appInfo: AppInfo? = null,
-    appConfig: AppConfig? = null,
-    enableSize: Int = rawApp.groups.count { g -> g.enable ?: true },
+    data: SubsAppInfoItem,
+    enableSize: Int = data.rawApp.groups.count { g -> g.enable ?: true },
     onClick: (() -> Unit)? = null,
     onValueChange: ((Boolean) -> Unit)? = null,
 ) {
+    val rawApp = data.rawApp
     Row(
         modifier = Modifier
             .clickable {
                 onClick?.invoke()
             }
             .appItemPadding(),
-        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        AppIcon(appId = rawApp.id)
-        Spacer(modifier = Modifier.width(12.dp))
+        AppIcon(appId = data.id)
         Column(
             modifier = Modifier
                 .weight(1f),
             verticalArrangement = Arrangement.Center
         ) {
-            AppNameText(
-                appId = rawApp.id,
-                appInfo = appInfo,
-                fallbackName = rawApp.name,
-            )
+            AppNameText(appInfo = data.appInfo, fallbackName = data.rawApp.name)
             if (rawApp.groups.isNotEmpty()) {
                 val enableDesc = when (enableSize) {
                     0 -> "${rawApp.groups.size}组规则/${rawApp.groups.size}关闭"
@@ -69,13 +61,20 @@ fun SubsAppCard(
                 )
             }
         }
-        Spacer(modifier = Modifier.width(8.dp))
-        key(rawApp.id) {
-            Switch(
-                checked = appConfig?.enable ?: (appInfo != null),
-                onCheckedChange = onValueChange,
+        if (blockMatchAppListFlow.collectAsState().value.contains(data.id)) {
+            PerfIcon(
+                modifier = Modifier
+                    .padding(2.dp)
+                    .size(20.dp),
+                imageVector = PerfIcon.Block,
+                tint = MaterialTheme.colorScheme.secondary,
             )
         }
+        PerfSwitch(
+            key = data.id,
+            checked = data.appConfig?.enable ?: (data.appInfo != null),
+            onCheckedChange = onValueChange,
+        )
     }
 }
 

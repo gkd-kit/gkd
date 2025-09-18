@@ -5,19 +5,24 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import li.songe.gkd.app
 
+/**
+ * px -> dp
+ */
 val Dp.px: Float
-    get() {
-        return TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            value, app.resources.displayMetrics
-        )
-    }
+    get() = value * app.resources.displayMetrics.density
 
+/**
+ * sp -> px
+ */
 val TextUnit.px: Float
-    get() {
-        return TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_SP,
-            value, app.resources.displayMetrics
-        )
-    }
+    get() = TypedValue.applyDimension(
+        TypedValue.COMPLEX_UNIT_SP,
+        value, app.resources.displayMetrics
+    )
+
+///**
+// * px -> dp
+// */
+//val Int.calcDp: Float
+//    get() = this / app.resources.displayMetrics.density
 

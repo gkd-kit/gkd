@@ -13,25 +13,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -60,6 +56,9 @@ import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.FixedTimeText
 import li.songe.gkd.ui.component.GroupNameText
 import li.songe.gkd.ui.component.LocalNumberCharWidth
+import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.ui.component.PerfIconButton
+import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.measureNumberTextWidth
@@ -68,14 +67,15 @@ import li.songe.gkd.ui.component.useSubs
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.mapState
-import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
+import li.songe.gkd.util.subsMapFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
@@ -88,69 +88,75 @@ fun ActionLogPage(
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<ActionLogVm>()
 
-    val actionDataItems = vm.pagingDataFlow.collectAsLazyPagingItems()
-    val (scrollBehavior, listState) = useListScrollState(actionDataItems.itemCount > 0)
+
+    val resetKey = rememberSaveable { mutableIntStateOf(0) }
+    val list = vm.pagingDataFlow.collectAsLazyPagingItems()
+    val (scrollBehavior, listState) = useListScrollState(resetKey, list.itemCount > 0)
     val timeTextWidth = measureNumberTextWidth(MaterialTheme.typography.bodySmall)
 
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        TopAppBar(
+        PerfTopAppBar(
             scrollBehavior = scrollBehavior,
             navigationIcon = {
-                IconButton(onClick = throttle {
-                    mainVm.popBackStack()
-                }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null,
-                    )
-                }
+                PerfIconButton(
+                    imageVector = PerfIcon.ArrowBack,
+                    onClick = {
+                        mainVm.popBackStack()
+                    },
+                )
             },
             title = {
                 val title = "触发记录"
+                val titleModifier = Modifier.noRippleClickable {
+                    resetKey.intValue++
+                }
                 if (subsId != null) {
                     TowLineText(
                         title = title,
-                        subtitle = useSubs(subsId)?.name ?: subsId.toString()
+                        subtitle = useSubs(subsId)?.name ?: subsId.toString(),
+                        modifier = titleModifier,
                     )
                 } else if (appId != null) {
                     TowLineText(
                         title = title,
                         subtitle = appId,
                         showApp = true,
+                        modifier = titleModifier,
                     )
                 } else {
-                    Text(text = title)
+                    Text(
+                        text = title,
+                        modifier = titleModifier,
+                    )
                 }
             },
             actions = {
-                if (actionDataItems.itemCount > 0) {
-                    IconButton(onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
-                        val text = if (subsId != null) {
-                            "确定删除当前订阅所有触发记录?"
-                        } else if (appId != null) {
-                            "确定删除当前应用所有触发记录?"
-                        } else {
-                            "确定删除所有触发记录?"
-                        }
-                        mainVm.dialogFlow.waitResult(
-                            title = "删除记录",
-                            text = text,
-                            error = true,
-                        )
-                        if (subsId != null) {
-                            DbSet.actionLogDao.deleteSubsAll(subsId)
-                        } else if (appId != null) {
-                            DbSet.actionLogDao.deleteAppAll(appId)
-                        } else {
-                            DbSet.actionLogDao.deleteAll()
-                        }
-                        toast("删除成功")
-                    })) {
-                        Icon(
-                            imageVector = Icons.Outlined.Delete,
-                            contentDescription = null,
-                        )
-                    }
+                if (list.itemCount > 0) {
+                    PerfIconButton(
+                        imageVector = PerfIcon.Delete,
+                        onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
+                            val text = if (subsId != null) {
+                                "确定删除当前订阅所有触发记录?"
+                            } else if (appId != null) {
+                                "确定删除当前应用所有触发记录?"
+                            } else {
+                                "确定删除所有触发记录?"
+                            }
+                            mainVm.dialogFlow.waitResult(
+                                title = "删除记录",
+                                text = text,
+                                error = true,
+                            )
+                            if (subsId != null) {
+                                DbSet.actionLogDao.deleteSubsAll(subsId)
+                            } else if (appId != null) {
+                                DbSet.actionLogDao.deleteAppAll(appId)
+                            } else {
+                                DbSet.actionLogDao.deleteAll()
+                            }
+                            toast("删除成功")
+                        })
+                    )
                 }
             })
     }, content = { contentPadding ->
@@ -162,11 +168,11 @@ fun ActionLogPage(
                 state = listState,
             ) {
                 items(
-                    count = actionDataItems.itemCount,
-                    key = actionDataItems.itemKey { c -> c.first.id }
+                    count = list.itemCount,
+                    key = list.itemKey { c -> c.first.id }
                 ) { i ->
-                    val item = actionDataItems[i] ?: return@items
-                    val lastItem = if (i > 0) actionDataItems[i - 1] else null
+                    val item = list[i] ?: return@items
+                    val lastItem = if (i > 0) list[i - 1] else null
                     ActionLogCard(
                         modifier = Modifier.animateListItem(this),
                         i = i,
@@ -181,7 +187,7 @@ fun ActionLogPage(
                 }
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
-                    if (actionDataItems.itemCount == 0 && actionDataItems.loadState.refresh !is LoadState.Loading) {
+                    if (list.itemCount == 0 && list.loadState.refresh !is LoadState.Loading) {
                         EmptyText(text = "暂无记录")
                     }
                 }
@@ -216,7 +222,7 @@ private fun ActionLogCard(
     val lastActionLog = lastItem?.first
     val isDiffApp = actionLog.appId != lastActionLog?.appId
     val verticalPadding = if (i == 0) 0.dp else if (isDiffApp) 12.dp else 8.dp
-    val subsIdToRaw by subsIdToRawFlow.collectAsState()
+    val subsIdToRaw by subsMapFlow.collectAsState()
     val subscription = subsIdToRaw[actionLog.subsId]
     Column(
         modifier = modifier
@@ -349,16 +355,16 @@ private fun ActionLogDialog(
                     onDismissRequest()
                     if (actionLog.groupType == SubsConfig.AppGroupType) {
                         mainVm.navigatePage(
-                                SubsAppGroupListPageDestination(
-                                    actionLog.subsId, actionLog.appId, actionLog.groupKey
-                                )
+                            SubsAppGroupListPageDestination(
+                                actionLog.subsId, actionLog.appId, actionLog.groupKey
                             )
+                        )
                     } else if (actionLog.groupType == SubsConfig.GlobalGroupType) {
                         mainVm.navigatePage(
-                                SubsGlobalGroupListPageDestination(
-                                    actionLog.subsId, actionLog.groupKey
-                                )
+                            SubsGlobalGroupListPageDestination(
+                                actionLog.subsId, actionLog.groupKey
                             )
+                        )
                     }
                 }
             )
@@ -366,7 +372,7 @@ private fun ActionLogDialog(
 
             if (actionLog.groupType == SubsConfig.GlobalGroupType) {
                 val subs = remember(actionLog.subsId) {
-                    subsIdToRawFlow.mapState(scope) { it[actionLog.subsId] }
+                    subsMapFlow.mapState(scope) { it[actionLog.subsId] }
                 }.collectAsState().value
                 val group = subs?.globalGroups?.find { g -> g.key == actionLog.groupKey }
                 val appChecked = if (group != null) {
@@ -399,7 +405,7 @@ private fun ActionLogDialog(
                                     .stringify()
                             )
                             DbSet.subsConfigDao.insert(newSubsConfig)
-                            toast("更新禁用")
+                            toast("更新成功")
                         }
                     )
                     HorizontalDivider()
@@ -435,7 +441,7 @@ private fun ActionLogDialog(
                                 .stringify()
                         )
                         DbSet.subsConfigDao.insert(newSubsConfig)
-                        toast("更新禁用")
+                        toast("更新成功")
                     }
                 )
                 HorizontalDivider()

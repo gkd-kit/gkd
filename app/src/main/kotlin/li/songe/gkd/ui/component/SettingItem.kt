@@ -6,9 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,7 +24,7 @@ fun SettingItem(
     suffix: String? = null,
     suffixUnderline: Boolean = false,
     onSuffixClick: (() -> Unit)? = null,
-    imageVector: ImageVector? = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+    imageVector: ImageVector? = PerfIcon.KeyboardArrowRight,
     onClick: (() -> Unit)? = null,
 ) {
     Row(
@@ -82,7 +79,7 @@ fun SettingItem(
             }
         }
         if (imageVector != null) {
-            Icon(imageVector = imageVector, contentDescription = title)
+            PerfIcon(imageVector = imageVector)
         }
     }
 }

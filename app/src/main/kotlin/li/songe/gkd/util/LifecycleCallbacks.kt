@@ -9,7 +9,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.isActivityVisible
 import java.util.WeakHashMap
-import kotlin.reflect.jvm.jvmName
 
 private val cbMap = WeakHashMap<Any, HashMap<Int, MutableList<Any>>>()
 
@@ -29,13 +28,13 @@ interface OnSimpleLife {
     fun onDestroyed() = cbs<CbFn>(2).forEach { it() }
 
     fun useLogLifecycle() {
-        onCreated { LogUtils.d("onCreated:" + this::class.jvmName) }
-        onDestroyed { LogUtils.d("onDestroyed:" + this::class.jvmName) }
+        onCreated { LogUtils.d("onCreated -> " + this::class.simpleName) }
+        onDestroyed { LogUtils.d("onDestroyed -> " + this::class.simpleName) }
         if (this is OnA11yLife) {
-            onA11yConnected { LogUtils.d("onA11yConnected:" + this::class.jvmName) }
+            onA11yConnected { LogUtils.d("onA11yConnected -> " + this::class.simpleName) }
         }
         if (this is OnTileLife) {
-            onTileClicked { LogUtils.d("onTileClicked:" + this::class.jvmName) }
+            onTileClicked { LogUtils.d("onTileClicked -> " + this::class.simpleName) }
         }
     }
 

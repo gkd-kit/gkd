@@ -2,7 +2,6 @@ package li.songe.gkd.ui
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
-import android.os.Build
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -13,20 +12,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,10 +42,14 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.Value
+import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.ui.component.PerfIconButton
+import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
+import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.client
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.openUri
@@ -71,15 +66,13 @@ fun WebViewPage(
     val webViewClient = remember { GkdWebViewClient() }
     val webView = remember { Value<WebView?>(null) }
     Scaffold(modifier = Modifier, topBar = {
-        TopAppBar(
+        PerfTopAppBar(
             modifier = Modifier.fillMaxWidth(),
             navigationIcon = {
-                IconButton(onClick = { mainVm.popBackStack() }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null,
-                    )
-                }
+                PerfIconButton(
+                    imageVector = PerfIcon.ArrowBack,
+                    onClick = { mainVm.popBackStack() },
+                )
             },
             title = {
                 val loadingState = webViewState.loadingState
@@ -107,23 +100,15 @@ fun WebViewPage(
             },
             actions = {
                 if (chromeVersion > 0 && chromeVersion < MINI_CHROME_VERSION) {
-                    IconButton(onClick = throttle {
+                    PerfIconButton(imageVector = PerfIcon.WarningAmber, onClick = throttle {
                         mainVm.dialogFlow.updateDialogOptions(
                             title = "兼容性提示",
                             text = "检测到您的系统内置浏览器版本($chromeVersion)过低, 可能无法正常浏览网页文档\n\n建议自行升级版本后重启 GKD 再查看文档, 或点击右上角后在外部浏览器打开查阅\n\n若能正常浏览文档请忽略此项提示"
                         )
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.WarningAmber,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                        )
-                    }
+                    })
                 }
                 var expanded by remember { mutableStateOf(false) }
-                IconButton(onClick = { expanded = true }) {
-                    Icon(imageVector = Icons.Default.MoreVert, contentDescription = null)
-                }
+                PerfIconButton(imageVector = PerfIcon.MoreVert, onClick = { expanded = true })
                 Box(
                     modifier = Modifier
                         .wrapContentSize(Alignment.TopStart)
@@ -179,7 +164,7 @@ fun WebViewPage(
                     @SuppressLint("SetJavaScriptEnabled")
                     javaScriptEnabled = true
                     domStorageEnabled = true
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    if (AndroidTarget.TIRAMISU) {
                         setAlgorithmicDarkeningAllowed(false)
                     }
                 }

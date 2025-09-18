@@ -9,13 +9,14 @@ import androidx.room.migration.AutoMigrationSpec
 import li.songe.gkd.data.ActionLog
 import li.songe.gkd.data.ActivityLog
 import li.songe.gkd.data.AppConfig
+import li.songe.gkd.data.AppVisitLog
 import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubsItem
 
 @Database(
-    version = 12,
+    version = 13,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -24,6 +25,7 @@ import li.songe.gkd.data.SubsItem
         ActionLog::class,
         ActivityLog::class,
         AppConfig::class,
+        AppVisitLog::class,
     ],
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -37,6 +39,7 @@ import li.songe.gkd.data.SubsItem
         AutoMigration(from = 9, to = 10, spec = Migration9To10Spec::class),
         AutoMigration(from = 10, to = 11, spec = Migration10To11Spec::class),
         AutoMigration(from = 11, to = 12),
+        AutoMigration(from = 12, to = 13),
     ]
 )
 abstract class AppDb : RoomDatabase() {
@@ -47,6 +50,7 @@ abstract class AppDb : RoomDatabase() {
     abstract fun categoryConfigDao(): CategoryConfig.CategoryConfigDao
     abstract fun actionLogDao(): ActionLog.ActionLogDao
     abstract fun activityLogDao(): ActivityLog.ActivityLogDao
+    abstract fun appVisitLogDao(): AppVisitLog.AppLogDao
 }
 
 @RenameColumn(

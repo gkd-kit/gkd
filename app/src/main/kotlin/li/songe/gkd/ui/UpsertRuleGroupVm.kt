@@ -10,7 +10,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.ui.style.clearJson5TransformationCache
-import li.songe.gkd.util.subsIdToRawFlow
+import li.songe.gkd.util.subsMapFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 import li.songe.json5.Json5
@@ -25,7 +25,7 @@ class UpsertRuleGroupVm(stateHandle: SavedStateHandle) : ViewModel() {
     val isAddAnyApp = appId == ""
 
     private val initialGroup: RawSubscription.RawGroupProps? = run {
-        val subs = subsIdToRawFlow.value[args.subsId]
+        val subs = subsMapFlow.value[args.subsId]
         subs ?: return@run null
         if (groupKey != null) {
             if (appId != null) {
@@ -52,7 +52,7 @@ class UpsertRuleGroupVm(stateHandle: SavedStateHandle) : ViewModel() {
     var addAppId: String? = null
 
     fun saveRule() {
-        val subs = subsIdToRawFlow.value[args.subsId] ?: error("订阅不存在")
+        val subs = subsMapFlow.value[args.subsId] ?: error("订阅不存在")
         val text = textFlow.value
         if (text.isBlank()) {
             error("规则不能为空")

@@ -1,7 +1,7 @@
 package li.songe.gkd.data
 
 import kotlinx.serialization.Serializable
-import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.appInfoMapFlow
 
 @Serializable
 data class ComplexSnapshot(
@@ -11,9 +11,9 @@ data class ComplexSnapshot(
     override val screenHeight: Int,
     override val screenWidth: Int,
     override val isLandscape: Boolean,
-    val appInfo: AppInfo? = appInfoCacheFlow.value[appId],
+    val appInfo: AppInfo? = appInfoMapFlow.value[appId],
     val gkdAppInfo: AppInfo? = selfAppInfo,
-    val device: DeviceInfo = DeviceInfo.instance,
+    val device: DeviceInfo = DeviceInfo(),
     val nodes: List<NodeInfo>,
 ) : BaseSnapshot {
     fun toSnapshot(): Snapshot {

@@ -1,6 +1,5 @@
 package li.songe.gkd.data
 
-import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Entity
@@ -10,20 +9,18 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
-import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
 @Serializable
 @Entity(
     tableName = "app_config",
 )
-@Parcelize
 data class AppConfig(
     @PrimaryKey @ColumnInfo(name = "id") val id: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "enable") val enable: Boolean,
     @ColumnInfo(name = "subs_id") val subsId: Long,
     @ColumnInfo(name = "app_id") val appId: String,
-) : Parcelable {
+) {
     @Dao
     interface AppConfigDao {
         @Update

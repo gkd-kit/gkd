@@ -1,14 +1,12 @@
 package li.songe.gkd.ui.component
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,7 +19,7 @@ import androidx.compose.ui.Modifier
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.util.Option
 import li.songe.gkd.util.OptionIcon
-import li.songe.gkd.util.allSubObject
+import li.songe.gkd.util.OptionMenuLabel
 
 @Composable
 fun <T> TextMenu(
@@ -57,24 +55,29 @@ fun <T> TextMenu(
                 text = option.label,
                 style = MaterialTheme.typography.bodyMedium,
             )
-            Icon(
-                imageVector = Icons.Default.UnfoldMore,
-                contentDescription = null
+            PerfIcon(
+                imageVector = PerfIcon.UnfoldMore,
             )
             DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
-                option.allSubObject.forEach { otherOption ->
+                option.options.forEach { otherOption ->
+                    val selected = remember { otherOption.value == option.value }
                     DropdownMenuItem(
+                        modifier = if (selected) Modifier.background(MaterialTheme.colorScheme.onSecondary) else Modifier,
                         leadingIcon = if (otherOption is OptionIcon) ({
-                            Icon(
+                            PerfIcon(
                                 imageVector = otherOption.icon,
-                                contentDescription = null
                             )
                         }) else null,
                         text = {
-                            Text(text = otherOption.label)
+                            val text = if (otherOption is OptionMenuLabel) {
+                                otherOption.menuLabel
+                            } else {
+                                otherOption.label
+                            }
+                            Text(text = text)
                         },
                         onClick = {
                             expanded = false

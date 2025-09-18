@@ -3,9 +3,6 @@ package li.songe.gkd.util
 import android.graphics.Bitmap
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
-import com.blankj.utilcode.util.BarUtils
-import com.blankj.utilcode.util.ScreenUtils
-import com.blankj.utilcode.util.ZipUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -40,7 +37,7 @@ object SnapshotExt {
     ): File {
         val filename = if (appId != null) {
             val name =
-                appInfoCacheFlow.value[appId]?.name?.filterNot { c -> c in "\\/:*?\"<>|" || c <= ' ' }
+                appInfoMapFlow.value[appId]?.name?.filterNot { c -> c in "\\/:*?\"<>|" || c <= ' ' }
             if (activityId != null) {
                 "${(name ?: appId).take(20)}_${
                     activityId.split('.').last().take(40)

@@ -9,23 +9,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +36,9 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.BatchActionButtonGroup
 import li.songe.gkd.ui.component.EmptyText
+import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.ui.component.PerfIconButton
+import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.RuleGroupCard
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.animateListItem
@@ -49,6 +48,7 @@ import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.icon.BackCloseIcon
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
@@ -68,8 +68,8 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
     val subs = vm.subsRawFlow.collectAsState().value
     val subsConfigs by vm.subsConfigsFlow.collectAsState()
 
-    val editable = subsItemId < 0 && subs != null
-    val globalGroups = subs?.globalGroups ?: emptyList()
+    val editable = subsItemId < 0
+    val globalGroups = subs.globalGroups
 
     val isSelectedMode = vm.isSelectedModeFlow.collectAsState().value
     val selectedDataSet = vm.selectedDataSetFlow.collectAsState().value
@@ -87,7 +87,8 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
         vm.isSelectedModeFlow.value = false
     }
 
-    val (scrollBehavior, listState) = useListScrollState(globalGroups.isEmpty())
+    val resetKey = rememberSaveable { mutableIntStateOf(0) }
+    val (scrollBehavior, listState) = useListScrollState(resetKey, globalGroups.isEmpty())
     if (focusGroupKey != null) {
         LaunchedEffect(null) {
             if (vm.focusGroupFlow?.value != null) {
@@ -101,7 +102,7 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
+            PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
                 IconButton(onClick = throttle {
                     if (isSelectedMode) {
                         vm.isSelectedModeFlow.value = false
@@ -112,13 +113,16 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
                     BackCloseIcon(backOrClose = !isSelectedMode)
                 }
             }, title = {
+                val titleModifier = Modifier.noRippleClickable { resetKey.intValue++ }
                 if (isSelectedMode) {
                     Text(
+                        modifier = titleModifier,
                         text = selectedDataSet.size.toString(),
                     )
                 } else {
                     TowLineText(
-                        title = subs?.name ?: subsItemId.toString(),
+                        modifier = titleModifier,
+                        title = subs.name,
                         subtitle = "全局规则"
                     )
                 }
@@ -133,7 +137,8 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
                         Row {
                             BatchActionButtonGroup(vm, selectedDataSet)
                             if (editable) {
-                                IconButton(
+                                PerfIconButton(
+                                    imageVector = PerfIcon.Delete,
                                     onClick = throttle(
                                         vm.viewModelScope.launchAsFn(
                                             Dispatchers.Default
@@ -160,21 +165,13 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
                                             )
                                             toast("删除成功")
                                         })
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Delete,
-                                        contentDescription = null,
-                                    )
-                                }
-                            }
-                            IconButton(onClick = {
-                                expanded = true
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = null,
                                 )
                             }
+                            PerfIconButton(
+                                imageVector = PerfIcon.MoreVert,
+                                onClick = {
+                                    expanded = true
+                                })
                         }
                     }
                 }
@@ -221,7 +218,7 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
         },
         floatingActionButton = {
             if (editable) {
-                AnimationFloatingActionButton(visible = !isSelectedMode, onClick = throttle {
+                AnimationFloatingActionButton(visible = !isSelectedMode, onClick = {
                     mainVm.navigatePage(
                         UpsertRuleGroupPageDestination(
                             subsId = subsItemId,
@@ -230,9 +227,8 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
                         )
                     )
                 }) {
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = "add",
+                    PerfIcon(
+                        imageVector = PerfIcon.Add,
                     )
                 }
             }
@@ -246,14 +242,13 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
                 val subsConfig = subsConfigs.find { it.groupKey == group.key }
                 RuleGroupCard(
                     modifier = Modifier.animateListItem(this),
-                    subs = subs!!,
+                    subs = subs,
                     appId = null,
                     group = group,
                     focusGroupFlow = vm.focusGroupFlow,
                     subsConfig = subsConfig,
                     category = null,
                     categoryConfig = null,
-                    showBottom = group !== globalGroups.last(),
                     isSelectedMode = isSelectedMode,
                     isSelected = selectedDataSet.any { it.groupKey == group.key },
                     onLongClick = {
@@ -275,8 +270,6 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (globalGroups.isEmpty()) {
                     EmptyText(text = "暂无规则")
-                } else if (editable) {
-                    Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }
         }

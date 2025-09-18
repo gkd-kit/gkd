@@ -6,7 +6,6 @@ import android.accessibilityservice.AccessibilityService.TakeScreenshotCallback
 import android.content.ComponentName
 import android.database.ContentObserver
 import android.graphics.Bitmap
-import android.os.Build
 import android.provider.Settings
 import android.view.Display
 import android.view.accessibility.AccessibilityEvent
@@ -15,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import li.songe.gkd.app
 import li.songe.gkd.service.A11yService
+import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.OnSimpleLife
 import li.songe.selector.initDefaultTypeInfo
 import kotlin.coroutines.resume
@@ -95,7 +95,7 @@ fun AccessibilityNodeInfo.isExpired(expiryMillis: Long): Boolean {
 val typeInfo by lazy { initDefaultTypeInfo().globalType }
 
 val AccessibilityNodeInfo.compatChecked: Boolean?
-    get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+    get() = if (AndroidTarget.BAKLAVA) {
         when (checked) {
             AccessibilityNodeInfo.CHECKED_STATE_TRUE -> true
             AccessibilityNodeInfo.CHECKED_STATE_FALSE -> false
@@ -114,9 +114,7 @@ val AccessibilityEvent.isUseful: Boolean
 
 
 suspend fun AccessibilityService.screenshot(): Bitmap? = suspendCoroutine {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-        it.resume(null)
-    } else {
+    if (AndroidTarget.R) {
         val callback = object : TakeScreenshotCallback {
             override fun onSuccess(screenshot: ScreenshotResult) {
                 try {
@@ -137,6 +135,8 @@ suspend fun AccessibilityService.screenshot(): Bitmap? = suspendCoroutine {
             application.mainExecutor,
             callback
         )
+    } else {
+        it.resume(null)
     }
 }
 

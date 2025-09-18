@@ -6,27 +6,18 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ToggleOff
-import androidx.compose.material.icons.outlined.ToggleOn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -54,6 +45,7 @@ import li.songe.gkd.util.getGroupEnable
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
+import java.util.Objects
 
 
 @Composable
@@ -65,7 +57,6 @@ fun RuleGroupCard(
     subsConfig: SubsConfig?,
     category: RawSubscription.RawCategory?,
     categoryConfig: CategoryConfig?,
-    showBottom: Boolean,
     focusGroupFlow: MutableStateFlow<Triple<Long, String?, Int>?>? = null,
     isSelectedMode: Boolean = false,
     isSelected: Boolean = false,
@@ -162,8 +153,6 @@ fun RuleGroupCard(
             pageAppId = appId,
         )
     })
-    val horizontal = 8.dp
-    val vertical = 8.dp
     val containerColor = animateColorAsState(
         if (isSelected || highlighted) {
             MaterialTheme.colorScheme.primaryContainer
@@ -175,9 +164,8 @@ fun RuleGroupCard(
     Card(
         modifier = modifier
             .padding(
-                start = 8.dp,
-                end = 8.dp,
-                bottom = if (showBottom) 4.dp else 0.dp
+                vertical = 2.dp,
+                horizontal = 8.dp
             )
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         shape = MaterialTheme.shapes.extraSmall,
@@ -185,52 +173,59 @@ fun RuleGroupCard(
             containerColor = containerColor.value
         ),
     ) {
-        Row(
+        val visible = if (inGlobalAppPage) {
+            excludeData != null && excludeData.appIds.contains(appId)
+        } else {
+            subsConfig?.enable != null
+        }
+        FlagCard(
+            visible = visible,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = horizontal, top = vertical, bottom = vertical),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(8.dp),
         ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                verticalArrangement = Arrangement.SpaceBetween
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                GroupNameText(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = group.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    isGlobal = group is RawSubscription.RawGlobalGroup,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis,
-                    clickDisabled = isSelectedMode,
-                )
-                if (group.valid) {
-                    if (!group.desc.isNullOrBlank()) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    GroupNameText(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = group.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        isGlobal = group is RawSubscription.RawGlobalGroup,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        clickDisabled = isSelectedMode,
+                    )
+                    if (group.valid) {
+                        if (!group.desc.isNullOrBlank()) {
+                            Text(
+                                text = group.desc!!,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.fillMaxWidth(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    } else {
                         Text(
-                            text = group.desc!!,
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis,
+                            text = group.errorDesc ?: "未知错误",
                             modifier = Modifier.fillMaxWidth(),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
-                } else {
-                    Text(
-                        text = group.errorDesc ?: "未知错误",
-                        modifier = Modifier.fillMaxWidth(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error
-                    )
                 }
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            key(subs.id, appId, group.key) {
                 val percent = usePercentAnimatable(!isSelectedMode)
                 val switchModifier = Modifier.graphicsLayer(
                     alpha = 0.5f + (1 - 0.5f) * percent.value,
@@ -242,7 +237,8 @@ fun RuleGroupCard(
                         isSelectedMode = isSelectedMode,
                     )
                 } else if (checked != null) {
-                    Switch(
+                    PerfSwitch(
+                        key = Objects.hash(subs.id, appId, group.key),
                         modifier = switchModifier.minimumInteractiveComponentSize(),
                         checked = checked,
                         onCheckedChange = if (isSelectedMode) null else throttle(onCheckedChange)
@@ -253,12 +249,6 @@ fun RuleGroupCard(
                         isSelectedMode = isSelectedMode,
                     )
                 }
-                val visible = if (inGlobalAppPage) {
-                    excludeData != null && excludeData.appIds.contains(appId)
-                } else {
-                    subsConfig?.enable != null
-                }
-                CardFlagBar(visible = visible, width = horizontal)
             }
         }
     }
@@ -268,55 +258,49 @@ fun RuleGroupCard(
 @Composable
 fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) {
     val mainVm = LocalMainViewModel.current
-    IconButton(onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
-        mainVm.dialogFlow.waitResult(
-            title = "操作提示",
-            text = "是否将所选规则全部关闭?\n\n注: 也可在「订阅-规则类别」操作"
-        )
-        val list = batchUpdateGroupEnable(selectedDataSet, false)
-        if (list.isNotEmpty()) {
-            toast("已关闭 ${list.size} 条规则")
-        } else {
-            toast("无规则被改变")
-        }
-    })) {
-        Icon(
-            imageVector = Icons.Outlined.ToggleOff,
-            contentDescription = null,
-        )
-    }
-    IconButton(onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
-        mainVm.dialogFlow.waitResult(
-            title = "操作提示",
-            text = "是否将所选规则全部启用?\n\n注: 也可在「订阅-规则类别」操作"
-        )
-        val list = batchUpdateGroupEnable(selectedDataSet, true)
-        if (list.isNotEmpty()) {
-            toast("已启用 ${list.size} 条规则")
-        } else {
-            toast("无规则被改变")
-        }
-    })) {
-        Icon(
-            imageVector = Icons.Outlined.ToggleOn,
-            contentDescription = null,
-        )
-    }
-    IconButton(onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
-        mainVm.dialogFlow.waitResult(
-            title = "操作提示",
-            text = "是否将所选规则重置开关至初始状态?\n\n注: 也可在「订阅-规则类别」操作"
-        )
-        val list = batchUpdateGroupEnable(selectedDataSet, null)
-        if (list.isNotEmpty()) {
-            toast("已重置 ${list.size} 条规则开关至初始状态")
-        } else {
-            toast("无规则被改变")
-        }
-    })) {
-        Icon(
-            imageVector = ResetSettings,
-            contentDescription = null,
-        )
-    }
+    PerfIconButton(
+        imageVector = PerfIcon.ToggleOff,
+        onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
+            mainVm.dialogFlow.waitResult(
+                title = "操作提示",
+                text = "是否将所选规则全部关闭?\n\n注: 也可在「订阅-规则类别」操作"
+            )
+            val list = batchUpdateGroupEnable(selectedDataSet, false)
+            if (list.isNotEmpty()) {
+                toast("已关闭 ${list.size} 条规则")
+            } else {
+                toast("无规则被改变")
+            }
+        })
+    )
+    PerfIconButton(
+        imageVector = PerfIcon.ToggleOn,
+        onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
+            mainVm.dialogFlow.waitResult(
+                title = "操作提示",
+                text = "是否将所选规则全部启用?\n\n注: 也可在「订阅-规则类别」操作"
+            )
+            val list = batchUpdateGroupEnable(selectedDataSet, true)
+            if (list.isNotEmpty()) {
+                toast("已启用 ${list.size} 条规则")
+            } else {
+                toast("无规则被改变")
+            }
+        })
+    )
+    PerfIconButton(
+        imageVector = ResetSettings,
+        onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
+            mainVm.dialogFlow.waitResult(
+                title = "操作提示",
+                text = "是否将所选规则重置开关至初始状态?\n\n注: 也可在「订阅-规则类别」操作"
+            )
+            val list = batchUpdateGroupEnable(selectedDataSet, null)
+            if (list.isNotEmpty()) {
+                toast("已重置 ${list.size} 条规则开关至初始状态")
+            } else {
+                toast("无规则被改变")
+            }
+        })
+    )
 }

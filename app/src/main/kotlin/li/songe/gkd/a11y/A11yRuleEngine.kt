@@ -15,10 +15,12 @@ import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.RuleStatus
 import li.songe.gkd.isActivityVisible
 import li.songe.gkd.service.A11yService
+import li.songe.gkd.service.a11yPartDisabledFlow
 import li.songe.gkd.shizuku.safeGetTopCpn
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.showActionToast
+import li.songe.gkd.util.systemUiAppId
 import java.util.concurrent.Executors
 
 
@@ -28,6 +30,11 @@ private val actionDispatcher = Executors.newSingleThreadExecutor().asCoroutineDi
 
 class A11yRuleEngine(val service: A11yService) {
     init {
+        service.onA11yConnected {
+            if (storeFlow.value.enableBlockA11yAppList && !a11yPartDisabledFlow.value) {
+                startQueryJob(byForced = true)
+            }
+        }
         service.onA11yEvent { onNewA11yEvent(it) }
     }
 
@@ -37,7 +44,7 @@ class A11yRuleEngine(val service: A11yService) {
     var lastEventTime = 0L
     val eventDeque = ArrayDeque<A11yEvent>()
     fun onNewA11yEvent(event: AccessibilityEvent) {
-        if (event.eventType == CONTENT_CHANGED && event.packageName == "com.android.systemui") {
+        if (event.eventType == CONTENT_CHANGED && event.packageName == systemUiAppId) {
             if (!service.isInteractive) return // 屏幕关闭后仍然有无障碍事件
             if (event.packageName != topActivityFlow.value.appId) return
         }
@@ -137,6 +144,7 @@ class A11yRuleEngine(val service: A11yService) {
         byDelayRule: ResolvedRule? = null,
     ) {
         if (!storeFlow.value.enableMatch) return
+        if (activityRuleFlow.value.currentRules.isEmpty()) return
         if (queryJob?.isActive == true) return
         queryJob = scope.launchTry(queryDispatcher) {
             queryAction(byEvent, byForced, byDelayRule)

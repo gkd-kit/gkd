@@ -154,7 +154,7 @@ data class ReqId(
 
 @Serializable
 data class ServerInfo(
-    val device: DeviceInfo = DeviceInfo.instance,
+    val device: DeviceInfo = DeviceInfo(),
     val gkdAppInfo: AppInfo = selfAppInfo
 )
 

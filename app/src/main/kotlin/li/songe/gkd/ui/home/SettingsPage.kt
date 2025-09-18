@@ -11,18 +11,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -36,31 +32,44 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.blankj.utilcode.util.KeyboardUtils
 import com.ramcosta.composedestinations.generated.destinations.AboutPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
+import com.ramcosta.composedestinations.generated.destinations.BlockA11YAppListPageDestination
 import kotlinx.coroutines.flow.update
+import li.songe.gkd.META
+import li.songe.gkd.MainActivity
+import li.songe.gkd.permission.writeSecureSettingsState
+import li.songe.gkd.service.fixRestartService
+import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
+import li.songe.gkd.ui.component.CustomIconButton
 import li.songe.gkd.ui.component.CustomOutlinedTextField
+import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.ui.component.PerfIconButton
+import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.updateDialogOptions
+import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.titleItemPadding
-import li.songe.gkd.ui.theme.supportDynamicColor
+import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.DarkThemeOption
+import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.findOption
+import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
 @Composable
 fun useSettingsPage(): ScaffoldExt {
     val mainVm = LocalMainViewModel.current
-    val activity = LocalActivity.current
+    val context = LocalActivity.current as MainActivity
     val store by storeFlow.collectAsState()
     val vm = viewModel<HomeVm>()
 
@@ -136,25 +145,22 @@ fun useSettingsPage(): ScaffoldExt {
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(text = "通知文案")
-                    IconButton(onClick = throttle {
-                        KeyboardUtils.hideSoftInput(activity)
-                        showNotifTextInputDlg = false
-                        val confirmAction = {
-                            mainVm.dialogFlow.value = null
-                            showNotifTextInputDlg = true
-                        }
-                        mainVm.dialogFlow.updateDialogOptions(
-                            title = "文案规则",
-                            text = "通知文案支持变量替换，规则如下\n\${i} 全局规则数\n\${k} 应用数\n\${u} 应用规则组数\n\${n} 触发次数\n\n示例模板\n\${i}全局/\${k}应用/\${u}规则组/\${n}触发\n\n替换结果\n0全局/1应用/2规则组/3触发",
-                            confirmAction = confirmAction,
-                            onDismissRequest = confirmAction,
-                        )
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
-                            contentDescription = null,
-                        )
-                    }
+                    PerfIconButton(
+                        imageVector = PerfIcon.HelpOutline,
+                        onClick = throttle {
+                            showNotifTextInputDlg = false
+                            val confirmAction = {
+                                mainVm.dialogFlow.value = null
+                                showNotifTextInputDlg = true
+                            }
+                            mainVm.dialogFlow.updateDialogOptions(
+                                title = "文案规则",
+                                text = "通知文案支持变量替换，规则如下\n\${i} 全局规则数\n\${k} 应用数\n\${u} 应用规则组数\n\${n} 触发次数\n\n示例模板\n\${i}全局/\${k}应用/\${u}规则组/\${n}触发\n\n替换结果\n0全局/1应用/2规则组/3触发",
+                                confirmAction = confirmAction,
+                                onDismissRequest = confirmAction,
+                            )
+                        },
+                    )
                 }
             },
             text = {
@@ -210,7 +216,7 @@ fun useSettingsPage(): ScaffoldExt {
             },
             confirmButton = {
                 TextButton(onClick = {
-                    KeyboardUtils.hideSoftInput(activity)
+                    context.justHideSoftInput()
                     if (store.customNotifTitle != textValue || store.customNotifText != textValue) {
                         storeFlow.update {
                             it.copy(
@@ -236,17 +242,59 @@ fun useSettingsPage(): ScaffoldExt {
             })
     }
 
+    var showToastSettingsDlg by remember { mutableStateOf(false) }
+    if (showToastSettingsDlg) {
+        AlertDialog(
+            onDismissRequest = { showToastSettingsDlg = false },
+            title = { Text("提示设置") },
+            text = {
+                TextSwitch(
+                    paddingDisabled = true,
+                    title = "系统提示",
+                    subtitle = "系统样式触发提示",
+                    suffix = "查看限制",
+                    onSuffixClick = {
+                        showToastSettingsDlg = false
+                        val confirmAction = {
+                            mainVm.dialogFlow.value = null
+                            showToastSettingsDlg = true
+                        }
+                        mainVm.dialogFlow.updateDialogOptions(
+                            title = "限制说明",
+                            text = "系统 Toast 存在频率限制, 触发过于频繁会被系统强制不显示\n\n如果只使用开屏一类低频率规则可使用系统提示, 否则建议关闭此项使用自定义样式提示",
+                            confirmAction = confirmAction,
+                            onDismissRequest = confirmAction,
+                        )
+                    },
+                    checked = store.useSystemToast,
+                    onCheckedChange = {
+                        storeFlow.value = store.copy(
+                            useSystemToast = it
+                        )
+                    })
+            },
+            confirmButton = {
+                TextButton(onClick = { showToastSettingsDlg = false }) {
+                    Text("关闭")
+                }
+            }
+        )
+    }
+
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val scrollState = rememberScrollState()
     return ScaffoldExt(
         navItem = BottomNavItem.Settings,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(scrollBehavior = scrollBehavior, title = {
-                Text(
-                    text = BottomNavItem.Settings.label,
-                )
-            })
+            PerfTopAppBar(
+                scrollBehavior = scrollBehavior,
+                title = {
+                    Text(
+                        text = BottomNavItem.Settings.label,
+                    )
+                },
+            )
         },
     ) { contentPadding ->
         Column(
@@ -269,30 +317,22 @@ fun useSettingsPage(): ScaffoldExt {
                 modifier = Modifier.clickable {
                     showToastInputDlg = true
                 },
+                suffixIcon = {
+                    CustomIconButton(
+                        size = 32.dp,
+                        onClick = throttle { showToastSettingsDlg = true },
+                    ) {
+                        PerfIcon(
+                            modifier = Modifier.size(20.dp),
+                            id = SafeR.ic_page_info,
+                        )
+                    }
+                },
                 onCheckedChange = {
                     storeFlow.value = store.copy(
                         toastWhenClick = it
                     )
                 })
-
-            AnimatedVisibility(visible = store.toastWhenClick) {
-                TextSwitch(
-                    title = "系统提示",
-                    subtitle = "系统样式触发提示",
-                    suffix = "查看限制",
-                    onSuffixClick = {
-                        mainVm.dialogFlow.updateDialogOptions(
-                            title = "限制说明",
-                            text = "系统 Toast 存在频率限制, 触发过于频繁会被系统强制不显示\n\n如果只使用开屏一类低频率规则可使用系统提示, 否则建议关闭此项使用自定义样式提示",
-                        )
-                    },
-                    checked = store.useSystemToast,
-                    onCheckedChange = {
-                        storeFlow.value = store.copy(
-                            useSystemToast = it
-                        )
-                    })
-            }
 
             val subsStatus by vm.subsStatusFlow.collectAsState()
             TextSwitch(
@@ -322,6 +362,50 @@ fun useSettingsPage(): ScaffoldExt {
                     )
                 })
 
+            if (store.enableShizuku && writeSecureSettingsState.stateFlow.collectAsState().value || META.debuggable) {
+                AnimatedVisibility(visible = store.enableBlockA11yAppList) {
+                    Text(
+                        text = "无障碍",
+                        modifier = Modifier.titleItemPadding(),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                TextSwitch(
+                    title = "局部关闭",
+                    subtitle = "白名单应用内关闭无障碍",
+                    checked = store.enableBlockA11yAppList,
+                    onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
+                        if (it) {
+                            mainVm.dialogFlow.waitResult(
+                                title = "使用说明",
+                                text = "开启或关闭无障碍时会造成短暂触摸卡顿，请自行考虑后再编辑无障碍白名单\n\n如果你还使用其它无障碍软件，此功能无效\n\n此外需确保无障碍关闭后后台运行\n1. 开启「常驻通知」\n2. 在「最近任务界面」锁定\n3. 允许自启动\n4. 设置省电策略为无限制\n不设置会被系统暂停或结束运行，导致无法恢复无障碍",
+                                confirmText = "继续",
+                                dismissRequest = true,
+                            )
+                        }
+                        storeFlow.value = store.copy(
+                            enableBlockA11yAppList = it
+                        )
+                        if (!it) {
+                            fixRestartService()
+                        }
+                        if (it) {
+                            if (!shizukuContextFlow.value.ok) {
+                                toast("请先连接 Shizuku")
+                            } else {
+                                !writeSecureSettingsState.updateAndGet()
+                            }
+                        }
+                    },
+                )
+                AnimatedVisibility(visible = store.enableBlockA11yAppList) {
+                    SettingItem(title = "白名单", onClick = {
+                        mainVm.navigatePage(BlockA11YAppListPageDestination)
+                    })
+                }
+            }
+
             Text(
                 text = "主题",
                 modifier = Modifier.titleItemPadding(),
@@ -331,16 +415,15 @@ fun useSettingsPage(): ScaffoldExt {
 
             TextMenu(
                 title = "深色模式",
-                option = DarkThemeOption.allSubObject.findOption(store.enableDarkTheme),
+                option = DarkThemeOption.objects.findOption(store.enableDarkTheme),
                 onOptionChange = {
                     storeFlow.update { s -> s.copy(enableDarkTheme = it.value) }
                 }
             )
 
-            if (supportDynamicColor) {
+            if (AndroidTarget.S) {
                 TextSwitch(
                     title = "动态配色",
-                    subtitle = "配色跟随系统主题",
                     checked = store.enableDynamicColor,
                     onCheckedChange = {
                         storeFlow.update { s -> s.copy(enableDynamicColor = it) }

@@ -29,17 +29,18 @@ import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.shizuku.SafeTaskListener
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.ui.component.AppNameText
-import li.songe.gkd.ui.theme.AppTheme
-import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.ui.style.AppTheme
+import li.songe.gkd.util.appInfoMapFlow
 import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
 
 
-class RecordService : OverlayWindowService() {
-    override val positionStoreKey = "overlay_xy_record"
+class RecordService : OverlayWindowService(
+    positionKey = "record"
+) {
 
     val topAppInfoFlow by lazy {
-        appInfoCacheFlow.combine(topActivityFlow) { map, topActivity ->
+        appInfoMapFlow.combine(topActivityFlow) { map, topActivity ->
             map[topActivity.appId]
         }.stateIn(lifecycleScope, SharingStarted.Eagerly, null)
     }

@@ -3,7 +3,6 @@ package li.songe.gkd.ui
 import android.app.Activity
 import android.content.Context
 import android.media.projection.MediaProjectionManager
-import android.os.Build
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
@@ -20,13 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Api
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -34,7 +27,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -74,15 +66,20 @@ import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.shizuku.updateBinderMutex
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AuthCard
+import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.ui.component.PerfIconButton
+import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
+import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
@@ -96,9 +93,7 @@ fun AdvancedPage() {
     val vm = viewModel<AdvancedVm>()
     val store by storeFlow.collectAsState()
 
-    var showEditPortDlg by remember {
-        mutableStateOf(false)
-    }
+    var showEditPortDlg by vm.showEditPortDlgFlow.asMutableState()
     if (showEditPortDlg) {
         val portRange = remember { 1000 to 65535 }
         val placeholderText = remember { "请输入 ${portRange.first}-${portRange.second} 的整数" }
@@ -171,16 +166,15 @@ fun AdvancedPage() {
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
-                IconButton(onClick = {
-                    mainVm.popBackStack()
-                }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null,
-                    )
-                }
-            }, title = { Text(text = "高级设置") })
+            PerfTopAppBar(
+                scrollBehavior = scrollBehavior,
+                navigationIcon = {
+                    PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
+                        mainVm.popBackStack()
+                    })
+                },
+                title = { Text(text = "高级设置") },
+            )
         }
     ) { contentPadding ->
         Column(
@@ -204,7 +198,7 @@ fun AdvancedPage() {
                 val lineHeightDp = LocalDensity.current.run {
                     MaterialTheme.typography.titleSmall.lineHeight.toDp()
                 }
-                Icon(
+                PerfIcon(
                     modifier = Modifier
                         .clip(MaterialTheme.shapes.extraSmall)
                         .clickable(onClick = throttle {
@@ -212,7 +206,7 @@ fun AdvancedPage() {
                             mainVm.dialogFlow.updateDialogOptions(
                                 title = "授权状态",
                                 text = arrayOf(
-                                    "绑定服务" to c.serviceWrapper,
+                                    "IUserService" to c.serviceWrapper,
                                     "IUserManager" to c.userManager,
                                     "IPackageManager" to c.packageManager,
                                     "IActivityManager" to c.activityManager,
@@ -223,9 +217,8 @@ fun AdvancedPage() {
                             )
                         })
                         .size(lineHeightDp),
-                    imageVector = Icons.Outlined.Api,
+                    imageVector = PerfIcon.Api,
                     tint = MaterialTheme.colorScheme.primary,
-                    contentDescription = Icons.Outlined.Api.name,
                 )
             }
             val shizukuOk by shizukuOkState.stateFlow.collectAsState()
@@ -261,7 +254,7 @@ fun AdvancedPage() {
             val localNetworkIps by HttpService.localNetworkIpsFlow.collectAsState()
 
             Text(
-                text = "HTTP服务",
+                text = "HTTP",
                 modifier = Modifier.titleItemPadding(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
@@ -326,7 +319,7 @@ fun AdvancedPage() {
             SettingItem(
                 title = "服务端口",
                 subtitle = store.httpServerPort.toString(),
-                imageVector = Icons.Outlined.Edit,
+                imageVector = PerfIcon.Edit,
                 onClick = {
                     showEditPortDlg = true
                 }
@@ -357,7 +350,7 @@ fun AdvancedPage() {
                 }
             )
 
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            if (!AndroidTarget.R) {
                 val screenshotRunning by ScreenshotService.isRunning.collectAsState()
                 TextSwitch(
                     title = "截屏服务",
@@ -408,7 +401,7 @@ fun AdvancedPage() {
 
             TextSwitch(
                 title = "截屏快照",
-                subtitle = "触发截屏时保存快照",
+                subtitle = "截屏时保存快照",
                 suffix = "查看限制",
                 onSuffixClick = {
                     mainVm.dialogFlow.updateDialogOptions(
@@ -435,7 +428,7 @@ fun AdvancedPage() {
 
             TextSwitch(
                 title = "保存提示",
-                subtitle = "保存时提示\"正在保存快照\"",
+                subtitle = "提示「正在保存快照」",
                 checked = store.showSaveSnapshotToast
             ) {
                 storeFlow.value = store.copy(
@@ -451,19 +444,24 @@ fun AdvancedPage() {
                 onSuffixClick = {
                     mainVm.navigateWebPage(ShortUrlSet.URL1)
                 },
-                imageVector = Icons.Outlined.Edit,
+                imageVector = PerfIcon.Edit,
                 onClick = {
                     mainVm.showEditCookieDlgFlow.value = true
                 }
             )
 
             Text(
-                text = "界面记录",
+                text = "界面",
                 modifier = Modifier.titleItemPadding(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
-
+            SettingItem(
+                title = "界面记录",
+                onClick = {
+                    mainVm.navigatePage(ActivityLogPageDestination)
+                }
+            )
             TextSwitch(
                 title = "记录界面",
                 subtitle = "记录打开的应用及界面",
@@ -486,12 +484,6 @@ fun AdvancedPage() {
                     } else {
                         RecordService.stop()
                     }
-                }
-            )
-            SettingItem(
-                title = "界面记录",
-                onClick = {
-                    mainVm.navigatePage(ActivityLogPageDestination)
                 }
             )
             Spacer(modifier = Modifier.height(EmptyHeight))

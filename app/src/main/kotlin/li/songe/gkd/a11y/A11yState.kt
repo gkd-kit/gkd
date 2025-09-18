@@ -2,7 +2,6 @@ package li.songe.gkd.a11y
 
 import android.content.ComponentName
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.provider.Settings
 import android.util.LruCache
 import android.view.accessibility.AccessibilityNodeInfo
@@ -17,14 +16,14 @@ import li.songe.gkd.appScope
 import li.songe.gkd.data.ActionLog
 import li.songe.gkd.data.ActionResult
 import li.songe.gkd.data.ActivityLog
-import li.songe.gkd.data.AppRule
 import li.songe.gkd.data.AttrInfo
-import li.songe.gkd.data.GlobalRule
 import li.songe.gkd.data.ResetMatchType
 import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.RuleStatus
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.store.actionCountFlow
+import li.songe.gkd.store.blockA11yAppListFlow
+import li.songe.gkd.store.blockMatchAppListFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.PKG_FLAGS
 import li.songe.gkd.util.RuleSummary
@@ -88,12 +87,22 @@ fun isActivity(
 }
 
 class ActivityRule(
-    val appRules: List<AppRule> = emptyList(),
-    val globalRules: List<GlobalRule> = emptyList(),
     val topActivity: TopActivity = TopActivity(),
     val ruleSummary: RuleSummary = RuleSummary(),
 ) {
-    val currentRules = (appRules + globalRules).sortedBy { it.order }
+    val blockMatch = (blockMatchAppListFlow.value.contains(topActivity.appId)
+            || storeFlow.value.enableBlockA11yAppList && blockA11yAppListFlow.value.contains(
+        topActivity.appId
+    ))
+    val appRules = ruleSummary.appIdToRules[topActivity.appId] ?: emptyList()
+    val activityRules = if (blockMatch) emptyList() else appRules.filter { rule ->
+        rule.matchActivity(topActivity.appId, topActivity.activityId)
+    }
+    val globalRules = if (blockMatch) emptyList() else ruleSummary.globalRules.filter { r ->
+        r.matchActivity(topActivity.appId, topActivity.activityId)
+    }
+
+    val currentRules = (activityRules + globalRules).sortedBy { it.order }
     val hasPriorityRule = currentRules.size > 1 && currentRules.any { it.priorityEnabled }
     val activePriority: Boolean
         get() = hasPriorityRule && currentRules.any { it.isPriority() }
@@ -117,11 +126,21 @@ class ActivityRule(
 
 val activityRuleFlow = MutableStateFlow(ActivityRule())
 
+val topAppIdFlow by lazy {
+    MutableStateFlow(launcherAppId)
+}
+
+private var appLogCount = 0
+private var lastAppId = ""
+
 @Synchronized
 fun updateTopActivity(appId: String, activityId: String?, type: Int = 0) {
+    val t = System.currentTimeMillis()
+    if (type > 0 && storeFlow.value.enableBlockA11yAppList) {
+        topAppIdFlow.value = appId
+    }
     val oldActivity = topActivityFlow.value
     val forced = type > 0
-    val t = System.currentTimeMillis()
     val isSame = oldActivity.sameAs(appId, activityId)
     if (forced) {
         lastActivityForceUpdateTime = t
@@ -164,27 +183,28 @@ fun updateTopActivity(appId: String, activityId: String?, type: Int = 0) {
     }
     val topActivity = topActivityFlow.value
     val oldActivityRule = activityRuleFlow.value
-    val allRules = ruleSummaryFlow.value
+    val ruleSummary = ruleSummaryFlow.value
     val idChanged = topActivity.appId != oldActivityRule.topActivity.appId
     val topChanged = idChanged || oldActivityRule.topActivity != topActivity
-    val ruleChanged = oldActivityRule.ruleSummary !== allRules
+    val ruleChanged = oldActivityRule.ruleSummary !== ruleSummary
     if (topChanged || ruleChanged) {
-        val allAppRules = allRules.appIdToRules[topActivity.appId] ?: emptyList()
         val newActivityRule = ActivityRule(
-            ruleSummary = allRules,
+            ruleSummary = ruleSummary,
             topActivity = topActivity,
-            appRules = allAppRules.filter { rule ->
-                rule.matchActivity(topActivity.appId, topActivity.activityId)
-            },
-            globalRules = ruleSummaryFlow.value.globalRules.filter { r ->
-                r.matchActivity(topActivity.appId, topActivity.activityId)
-            },
         )
         if (idChanged) {
+            lastAppId = appId
             appChangeTime = t
-            allRules.globalRules.forEach { it.resetState(t) }
-            allRules.appIdToRules[oldActivityRule.topActivity.appId]?.forEach { it.resetState(t) }
-            allAppRules.forEach { it.resetState(t) }
+            appScope.launchTry {
+                DbSet.appVisitLogDao.insert(lastAppId, appId, t)
+                appLogCount++
+                if (appLogCount % 100 == 0) {
+                    DbSet.appVisitLogDao.deleteKeepLatest()
+                }
+            }
+            ruleSummary.globalRules.forEach { it.resetState(t) }
+            ruleSummary.appIdToRules[oldActivityRule.topActivity.appId]?.forEach { it.resetState(t) }
+            newActivityRule.appRules.forEach { it.resetState(t) }
         } else {
             newActivityRule.currentRules.forEach { r ->
                 when (r.resetMatchType) {
@@ -220,17 +240,11 @@ var lastTriggerTime = 0L
 @Volatile
 var appChangeTime = 0L
 
+var imeAppId = ""
 var launcherAppId = ""
 
-fun updateLauncherAppId() {
-    launcherAppId = app.packageManager.resolveActivity(
-        Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),
-        PackageManager.MATCH_DEFAULT_ONLY
-    )?.activityInfo?.packageName ?: ""
-}
-
-var imeAppId = ""
-fun updateImeAppId() {
+fun updateSystemDefaultAppId() {
+    launcherAppId = app.resolveAppId(Intent.ACTION_MAIN, Intent.CATEGORY_HOME) ?: ""
     imeAppId = app.getSecureString(Settings.Secure.DEFAULT_INPUT_METHOD)
         ?.let(ComponentName::unflattenFromString)?.packageName ?: ""
 }

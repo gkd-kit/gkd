@@ -4,7 +4,6 @@ import android.app.Activity
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -24,13 +24,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -47,7 +45,6 @@ import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
-import com.blankj.utilcode.util.KeyboardUtils
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
@@ -64,8 +61,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.a11y.topActivityFlow
-import li.songe.gkd.a11y.updateImeAppId
-import li.songe.gkd.a11y.updateLauncherAppId
+import li.songe.gkd.a11y.topAppIdFlow
+import li.songe.gkd.a11y.updateSystemDefaultAppId
 import li.songe.gkd.a11y.updateTopActivity
 import li.songe.gkd.permission.AuthDialog
 import li.songe.gkd.permission.updatePermissionState
@@ -77,16 +74,20 @@ import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.BuildDialog
+import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.ShareDataDialog
 import li.songe.gkd.ui.component.SubsSheet
 import li.songe.gkd.ui.component.TermsAcceptDialog
-import li.songe.gkd.ui.component.UrlDetailDialog
+import li.songe.gkd.ui.component.TextDialog
+import li.songe.gkd.ui.share.FixedWindowInsets
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.LocalNavController
-import li.songe.gkd.ui.theme.AppTheme
+import li.songe.gkd.ui.style.AppTheme
+import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.EditGithubCookieDlg
+import li.songe.gkd.util.KeyboardUtils
 import li.songe.gkd.util.ShortUrlSet
-import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.appInfoMapFlow
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.fixSomeProblems
@@ -108,14 +109,17 @@ class MainActivity : ComponentActivity() {
     val pickContentLauncher by lazy { PickContentLauncher(this) }
 
     val imeFullHiddenFlow = MutableStateFlow(true)
-    val imeShowingFlow = MutableStateFlow(false)
+    val imePlayingFlow = MutableStateFlow(false)
 
     private val imeVisible: Boolean
         get() = ViewCompat.getRootWindowInsets(window.decorView)!!
             .isVisible(WindowInsetsCompat.Type.ime())
 
+    private var _topBarWindowInsets: WindowInsets? = null
+    val topBarWindowInsets get() = _topBarWindowInsets!!
+
     private fun watchKeyboardVisible() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        if (AndroidTarget.R) {
             ViewCompat.setWindowInsetsAnimationCallback(
                 window.decorView,
                 object : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
@@ -123,7 +127,7 @@ class MainActivity : ComponentActivity() {
                         animation: WindowInsetsAnimationCompat,
                         bounds: WindowInsetsAnimationCompat.BoundsCompat
                     ): WindowInsetsAnimationCompat.BoundsCompat {
-                        imeShowingFlow.update { imeVisible }
+                        imePlayingFlow.update { imeVisible }
                         return super.onStart(animation, bounds)
                     }
 
@@ -136,7 +140,7 @@ class MainActivity : ComponentActivity() {
 
                     override fun onEnd(animation: WindowInsetsAnimationCompat) {
                         imeFullHiddenFlow.update { !imeVisible }
-                        imeShowingFlow.update { false }
+                        imePlayingFlow.update { false }
                         super.onEnd(animation)
                     }
                 })
@@ -148,11 +152,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    suspend fun hideSoftInput() {
+    suspend fun hideSoftInput(): Boolean {
         if (!imeFullHiddenFlow.updateAndGet { !imeVisible }) {
-            KeyboardUtils.hideSoftInput(this)
+            KeyboardUtils.hideSoftInput(this@MainActivity)
             imeFullHiddenFlow.drop(1).first()
+            return true
         }
+        return false
+    }
+
+    fun justHideSoftInput(): Boolean {
+        if (!imeFullHiddenFlow.updateAndGet { !imeVisible }) {
+            KeyboardUtils.hideSoftInput(this@MainActivity)
+            return true
+        }
+        return false
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -176,7 +190,11 @@ class MainActivity : ComponentActivity() {
         }
         watchKeyboardVisible()
         StatusService.autoStart()
+        topAppIdFlow.value = META.appId
         setContent {
+            if (_topBarWindowInsets == null) {
+                _topBarWindowInsets = FixedWindowInsets(TopAppBarDefaults.windowInsets)
+            }
             val navController = rememberNavController()
             mainVm.updateNavController(navController)
             CompositionLocalProvider(
@@ -202,7 +220,7 @@ class MainActivity : ComponentActivity() {
                         ShareDataDialog(mainVm, mainVm.showShareDataIdsFlow)
                         mainVm.inputSubsLinkOption.ContentDialog()
                         mainVm.ruleGroupState.Render()
-                        UrlDetailDialog(mainVm.urlFlow)
+                        TextDialog(mainVm.textFlow)
                     }
                 }
             }
@@ -292,8 +310,7 @@ private val syncStateMutex = Mutex()
 fun syncFixState() {
     appScope.launchTry(Dispatchers.IO) {
         syncStateMutex.withLock {
-            updateLauncherAppId()
-            updateImeAppId()
+            updateSystemDefaultAppId()
             updateServiceRunning()
             updatePermissionState()
             fixRestartService()
@@ -306,7 +323,7 @@ private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Throwable?>) {
     val state = stateFlow.collectAsState().value
     if (state != null) {
         val errorText = remember { state.stackTraceToString() }
-        val appInfoCache = appInfoCacheFlow.collectAsState().value
+        val appInfoCache = appInfoMapFlow.collectAsState().value
         val installed = appInfoCache.contains(shizukuAppId)
         AlertDialog(
             onDismissRequest = { stateFlow.value = null },
@@ -340,7 +357,7 @@ private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Throwable?>) {
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
-                        Icon(
+                        PerfIcon(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
                                 .clickable(onClick = throttle {
@@ -348,8 +365,7 @@ private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Throwable?>) {
                                 })
                                 .padding(4.dp)
                                 .size(20.dp),
-                            imageVector = Icons.Outlined.ContentCopy,
-                            contentDescription = null,
+                            imageVector = PerfIcon.ContentCopy,
                             tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.75f),
                         )
                     }

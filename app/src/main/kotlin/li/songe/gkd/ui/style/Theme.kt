@@ -1,6 +1,5 @@
-package li.songe.gkd.ui.theme
+package li.songe.gkd.ui.style
 
-import android.os.Build
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -27,10 +26,10 @@ import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.app
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.share.LocalDarkTheme
+import li.songe.gkd.util.AndroidTarget
 
 private val LightColorScheme = lightColorScheme()
 private val DarkColorScheme = darkColorScheme()
-val supportDynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
 @Composable
 fun AppTheme(
@@ -55,8 +54,8 @@ fun AppTheme(
         if (invertedTheme) !it else it
     }
     val colorScheme = when {
-        supportDynamicColor && enableDynamicColor && darkTheme -> dynamicDarkColorScheme(app)
-        supportDynamicColor && enableDynamicColor && !darkTheme -> dynamicLightColorScheme(app)
+        AndroidTarget.S && enableDynamicColor && darkTheme -> dynamicDarkColorScheme(app)
+        AndroidTarget.S && enableDynamicColor && !darkTheme -> dynamicLightColorScheme(app)
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }

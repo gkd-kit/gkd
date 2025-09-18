@@ -2,8 +2,8 @@ package li.songe.gkd.store
 
 import kotlinx.serialization.Serializable
 import li.songe.gkd.META
+import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.RuleSortOption
-import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.UpdateChannelOption
 import li.songe.gkd.util.UpdateTimeOption
 
@@ -29,18 +29,20 @@ data class SettingsStore(
     val customNotifTitle: String = META.appName,
     val customNotifText: String = "\${i}全局/\${k}应用/\${u}规则组/\${n}触发",
     val enableActivityLog: Boolean = false,
-    val updateChannel: Int = if (META.versionName.contains("beta")) UpdateChannelOption.Beta.value else UpdateChannelOption.Stable.value,
-    val sortType: Int = SortTypeOption.SortByName.value,
+    val updateChannel: Int = if (META.isBeta) UpdateChannelOption.Beta.value else UpdateChannelOption.Stable.value,
+    val appSort: Int = AppSortOption.ByUsedTime.value,
     val showSystemApp: Boolean = true,
-    val showHiddenApp: Boolean = false,
-    val appRuleSortType: Int = RuleSortOption.Default.value,
-    val appShowInnerDisable: Boolean = false,
-    val subsAppSortType: Int = SortTypeOption.SortByName.value,
+    val showBlockApp: Boolean = false,
+    val appRuleSort: Int = RuleSortOption.ByDefault.value,
+    val subsAppSort: Int = AppSortOption.ByUsedTime.value,
     val subsAppShowUninstallApp: Boolean = false,
-    val subsExcludeSortType: Int = SortTypeOption.SortByName.value,
+    val subsExcludeSort: Int = AppSortOption.ByUsedTime.value,
     val subsExcludeShowSystemApp: Boolean = true,
-    val subsExcludeShowHiddenApp: Boolean = false,
-    val subsExcludeShowDisabledApp: Boolean = false,
+    val subsExcludeShowInnerDisabledApp: Boolean = false,
+    val subsExcludeShowBlockApp: Boolean = false,
     val subsPowerWarn: Boolean = true,
     val enableShizuku: Boolean = false,
+    val enableBlockA11yAppList: Boolean = false,
+    val a11yAppSort: Int = AppSortOption.ByUsedTime.value,
+    val a11yShowSystemApp: Boolean = true,
 )

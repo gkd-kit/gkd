@@ -3,13 +3,11 @@ package li.songe.gkd.data
 import androidx.paging.PagingSource
 import androidx.room.ColumnInfo
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.DeleteTable
 import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
-import androidx.room.Update
 import androidx.room.migration.AutoMigrationSpec
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
@@ -46,14 +44,9 @@ data class ActionLog(
     @Dao
     interface ActionLogDao {
 
-        @Update
-        suspend fun update(vararg objects: ActionLog): Int
 
         @Insert
         suspend fun insert(vararg objects: ActionLog): List<Long>
-
-        @Delete
-        suspend fun delete(vararg objects: ActionLog): Int
 
 
         @Query("DELETE FROM action_log WHERE subs_id IN (:subsIds)")

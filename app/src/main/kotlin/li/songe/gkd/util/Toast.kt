@@ -1,11 +1,13 @@
 package li.songe.gkd.util
 
+import android.content.ClipData
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Outline
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
+import android.graphics.text.LineBreaker
 import android.os.Handler
 import android.os.Looper
 import android.util.TypedValue
@@ -19,8 +21,6 @@ import android.widget.Toast
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
-import com.blankj.utilcode.util.ClipboardUtils
-import com.blankj.utilcode.util.ScreenUtils
 import com.hjq.toast.Toaster
 import com.hjq.toast.style.WhiteToastStyle
 import kotlinx.coroutines.Dispatchers
@@ -76,6 +76,9 @@ private fun View.updateToastView() {
     if (this is TextView) {
         setTextSize(TypedValue.COMPLEX_UNIT_PX, 14.sp.px)
         setTextColor(if (darkTheme) Color.WHITE else Color.BLACK)
+        if (AndroidTarget.Q) {
+            breakStrategy = LineBreaker.BREAK_STRATEGY_SIMPLE
+        }
     }
     background = GradientDrawable().apply {
         setColor((if (darkTheme) "#303030" else "#fafafa").toColorInt())
@@ -167,7 +170,7 @@ private fun showA11yToast(message: CharSequence) {
 }
 
 fun copyText(text: String) {
-    ClipboardUtils.copyText(text)
+    app.clipboardManager.setPrimaryClip(ClipData.newPlainText(app.packageName, text))
     toast("复制成功")
 }
 

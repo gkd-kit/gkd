@@ -1,6 +1,7 @@
 package li.songe.gkd.ui
 
 import android.webkit.URLUtil
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.AnimationConstants.DefaultDurationMillis
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,17 +17,12 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -34,14 +30,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import li.songe.gkd.MainActivity
+import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.ui.component.PerfIconButton
+import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.util.imageLoader
@@ -55,6 +58,14 @@ fun ImagePreviewPage(
     uris: Array<String> = emptyArray(),
 ) {
     val mainVm = LocalMainViewModel.current
+    val context = LocalActivity.current as MainActivity
+    DisposableEffect(null) {
+        val controller = WindowCompat.getInsetsController(context.window, context.window.decorView)
+        controller.hide(WindowInsetsCompat.Type.statusBars())
+        onDispose {
+            controller.show(WindowInsetsCompat.Type.statusBars())
+        }
+    }
     Box(
         modifier = Modifier
             .background(MaterialTheme.colorScheme.background)
@@ -62,40 +73,35 @@ fun ImagePreviewPage(
     ) {
         val showUri = uri ?: if (uris.size == 1) uris.first() else null
         val state = rememberPagerState { uris.size }
-        TopAppBar(
+        PerfTopAppBar(
             modifier = Modifier
                 .zIndex(1f)
                 .fillMaxWidth(),
             navigationIcon = {
-                IconButton(onClick = {
+                PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
                     mainVm.popBackStack()
-                }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null,
-                    )
-                }
+                })
             },
             title = {
                 if (title != null) {
-                    Text(text = title)
+                    Text(
+                        text = title,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.MiddleEllipsis,
+                    )
                 }
             },
             actions = {
                 val currentUri = showUri ?: uris.getOrNull(state.currentPage)
                 if (currentUri != null && URLUtil.isNetworkUrl(currentUri)) {
-                    IconButton(onClick = throttle(fn = {
+                    PerfIconButton(imageVector = PerfIcon.OpenInNew, onClick = throttle(fn = {
                         mainVm.openUrl(currentUri)
-                    })) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
-                            contentDescription = null,
-                        )
-                    }
+                    }))
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.3f)
+                containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.1f)
             )
         )
         if (showUri != null) {

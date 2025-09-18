@@ -1,5 +1,6 @@
 package li.songe.gkd.util
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalForInheritanceCoroutinesApi
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -7,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.coroutines.CoroutineContext
 
 class MutexState() {
     val mutex: Mutex = Mutex()
@@ -45,4 +47,12 @@ class MutexState() {
         if (mutex.isLocked) return
         withStateLock(block)
     }
+
+    fun launchTry(
+        scope: CoroutineScope,
+        context: CoroutineContext,
+        block: () -> Unit,
+    ) = scope.launchTry(context = context) {
+        withStateLock(block)
+    }.let { }
 }

@@ -1,11 +1,5 @@
 package li.songe.gkd.ui.home
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
-import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -18,6 +12,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.ProfileTransitions
 
@@ -28,26 +23,26 @@ sealed class BottomNavItem(
 ) {
     object Control : BottomNavItem(
         key = 0,
-        label = "主页",
-        icon = Icons.Outlined.Home,
+        label = "首页",
+        icon = PerfIcon.Home,
     )
 
     object SubsManage : BottomNavItem(
         key = 1,
         label = "订阅",
-        icon = Icons.AutoMirrored.Filled.FormatListBulleted,
+        icon = PerfIcon.FormatListBulleted,
     )
 
     object AppList : BottomNavItem(
         key = 2,
         label = "应用",
-        icon = Icons.Default.Apps,
+        icon = PerfIcon.Apps,
     )
 
     object Settings : BottomNavItem(
         key = 3,
         label = "设置",
-        icon = Icons.Outlined.Settings,
+        icon = PerfIcon.Settings,
     )
 
     companion object {
@@ -78,9 +73,8 @@ fun HomePage() {
                             mainVm.updateTab(page.navItem)
                         },
                         icon = {
-                            Icon(
+                            PerfIcon(
                                 imageVector = page.navItem.icon,
-                                contentDescription = page.navItem.label
                             )
                         },
                         label = {

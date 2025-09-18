@@ -6,7 +6,6 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.provider.Settings
@@ -46,14 +45,7 @@ fun MainActivity.shareFile(file: File, title: String) {
 }
 
 suspend fun MainActivity.saveFileToDownloads(file: File) {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-        requiredPermission(this, canWriteExternalStorage)
-        val targetFile = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-            file.name
-        )
-        targetFile.writeBytes(file.readBytes())
-    } else {
+    if (AndroidTarget.Q) {
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, file.name)
             put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
@@ -66,6 +58,13 @@ suspend fun MainActivity.saveFileToDownloads(file: File) {
                 outputStream.flush()
             }
         }
+    } else {
+        requiredPermission(this, canWriteExternalStorage)
+        val targetFile = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+            file.name
+        )
+        targetFile.writeBytes(file.readBytes())
     }
     toast("已保存 ${file.name} 到下载")
 }
@@ -143,7 +142,7 @@ fun <T : Service> startForegroundServiceByClass(clazz: KClass<T>) {
 }
 
 val Intent.extraCptName: ComponentName?
-    get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    get() = if (AndroidTarget.TIRAMISU) {
         getParcelableExtra(Intent.EXTRA_COMPONENT_NAME, ComponentName::class.java)
     } else {
         @Suppress("DEPRECATION")

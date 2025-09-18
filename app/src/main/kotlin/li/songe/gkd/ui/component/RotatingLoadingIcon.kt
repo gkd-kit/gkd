@@ -5,9 +5,6 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Autorenew
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -20,7 +17,7 @@ import kotlin.math.sin
 fun RotatingLoadingIcon(
     modifier: Modifier = Modifier,
     loading: Boolean,
-    imageVector: ImageVector = Icons.Default.Autorenew,
+    imageVector: ImageVector = PerfIcon.Autorenew,
 ) {
     val rotation = remember { Animatable(0f) }
     LaunchedEffect(loading) {
@@ -49,9 +46,8 @@ fun RotatingLoadingIcon(
             )
         }
     }
-    Icon(
+    PerfIcon(
         imageVector = imageVector,
-        contentDescription = null,
         modifier = modifier.graphicsLayer(rotationZ = rotation.value)
     )
 }

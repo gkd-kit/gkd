@@ -1,6 +1,5 @@
 package li.songe.gkd.data
 
-import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Delete
@@ -12,8 +11,8 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
-import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
+import li.songe.gkd.util.isValidAppId
 
 
 private var lastId = 0L
@@ -33,7 +32,6 @@ private fun buildUniqueTimeMillisId(): Long {
 @Entity(
     tableName = "subs_config",
 )
-@Parcelize
 data class SubsConfig(
     @PrimaryKey @ColumnInfo(name = "id") val id: Long = buildUniqueTimeMillisId(),
     @ColumnInfo(name = "type") val type: Int,
@@ -42,7 +40,7 @@ data class SubsConfig(
     @ColumnInfo(name = "app_id") val appId: String = "",
     @ColumnInfo(name = "group_key") val groupKey: Int = -1,
     @ColumnInfo(name = "exclude", defaultValue = "") val exclude: String = "",
-) : Parcelable {
+) {
 
     @Suppress("ConstPropertyName")
     companion object {
@@ -155,7 +153,7 @@ data class ExcludeData(
     fun stringify(appId: String? = null): String {
         return if (appId != null) {
             activityIds.filter { e -> e.first == appId }.map { e -> e.second }.sorted()
-                .joinToString("\n")
+                .joinToString("\n\n")
         } else {
             (appIds.entries.map { e ->
                 if (e.value) {
@@ -163,7 +161,7 @@ data class ExcludeData(
                 } else {
                     "!${e.key}"
                 }
-            } + activityIds.map { e -> "${e.first}/${e.second}" }).sorted().joinToString("\n")
+            } + activityIds.map { e -> "${e.first}/${e.second}" }).sorted().joinToString("\n\n")
         }
     }
 
@@ -200,24 +198,31 @@ data class ExcludeData(
 
     companion object {
         private val empty = ExcludeData(emptyMap(), emptySet())
+
         fun parse(exclude: String?): ExcludeData {
-            if (exclude == null || exclude.isBlank()) {
+            if (exclude.isNullOrBlank()) {
                 return empty
             }
-            val appIds = mutableMapOf<String, Boolean>()
-            val activityIds = mutableSetOf<Pair<String, String>>()
-            exclude.split('\n', ',').filter { s -> s.isNotBlank() }.map { s -> s.trim() }
+            val appIds = HashMap<String, Boolean>()
+            val activityIds = HashSet<Pair<String, String>>()
+            exclude.split('\n')
+                .filter { it.isNotBlank() }
                 .forEach { s ->
                     if (s[0] == '!') {
-                        appIds[s.substring(1)] = false
+                        val appId = s.substring(1)
+                        if (appId.isValidAppId()) {
+                            appIds[appId] = false
+                        }
                     } else {
-                        val a = s.split('/')
+                        val a = s.split('/', limit = 2)
                         val appId = a[0]
-                        val activityId = a.getOrNull(1)
-                        if (activityId != null) {
-                            activityIds.add(appId to activityId)
-                        } else {
-                            appIds[appId] = true
+                        if (appId.isValidAppId()) {
+                            val activityId = a.getOrNull(1)
+                            if (activityId != null) {
+                                activityIds.add(appId to activityId)
+                            } else {
+                                appIds[appId] = true
+                            }
                         }
                     }
                 }
@@ -227,8 +232,9 @@ data class ExcludeData(
             )
         }
 
-        fun parse(appId: String, exclude: String?): ExcludeData {
-            return parse((exclude ?: "").split('\n', ',').joinToString("\n") { "$appId/$it" })
+        fun parse(exclude: String?, appId: String): ExcludeData {
+            if (exclude.isNullOrBlank()) return empty
+            return parse(exclude.split('\n').joinToString("\n") { "$appId/$it" })
         }
     }
 }

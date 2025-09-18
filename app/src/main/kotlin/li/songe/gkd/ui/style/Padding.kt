@@ -8,16 +8,10 @@ import androidx.compose.ui.unit.dp
 
 val itemHorizontalPadding = 16.dp
 val itemVerticalPadding = 12.dp
-val EmptyHeight = 40.dp
+val EmptyHeight = 80.dp
 val cardHorizontalPadding = 12.dp
 
 fun Modifier.itemPadding() = this.padding(itemHorizontalPadding, itemVerticalPadding)
-
-fun Modifier.itemFlagPadding() = this.padding(
-    start = itemHorizontalPadding,
-    top = itemVerticalPadding,
-    bottom = itemVerticalPadding
-)
 
 fun Modifier.titleItemPadding(showTop: Boolean = true) = this.padding(
     itemHorizontalPadding,
@@ -33,7 +27,7 @@ fun Modifier.menuPadding() = this
     .padding(vertical = 8.dp)
 
 fun Modifier.scaffoldPadding(values: PaddingValues): Modifier {
-    return this.padding(
+    return padding(
         top = values.calculateTopPadding(),
         // 被 LazyXXX 使用时, 移除 bottom padding, 否则 底部导航栏 无法实现透明背景
     )

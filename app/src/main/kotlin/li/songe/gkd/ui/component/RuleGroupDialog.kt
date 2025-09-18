@@ -13,16 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.outlined.AppRegistration
-import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,7 +50,7 @@ fun RuleGroupDialog(
     onClickResetSwitch: (() -> Unit)?,
     onClickDelete: () -> Unit = {}
 ) {
-    val mainVm  = LocalMainViewModel.current
+    val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -108,7 +99,7 @@ fun RuleGroupDialog(
                         )
                     }
                 }
-                Icon(
+                PerfIcon(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .clickable(onClick = throttle {
@@ -116,8 +107,7 @@ fun RuleGroupDialog(
                         })
                         .padding(4.dp)
                         .size(24.dp),
-                    imageVector = Icons.Outlined.ContentCopy,
-                    contentDescription = null,
+                    imageVector = PerfIcon.ContentCopy,
                     tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.75f),
                 )
                 Text(
@@ -151,18 +141,13 @@ fun RuleGroupDialog(
                     }
                 }
                 if (currentDestination?.baseRoute != destination.baseRoute) {
-                    IconButton(onClick = throttle {
+                    PerfIconButton(imageVector = PerfIcon.ArrowForward, onClick = throttle {
                         onDismissRequest()
                         mainVm.navigatePage(direction)
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                            contentDescription = null
-                        )
-                    }
+                    })
                 }
                 if (group.allExampleUrls.isNotEmpty()) {
-                    IconButton(onClick = throttle {
+                    PerfIconButton(imageVector = PerfIcon.Image, onClick = throttle {
                         onDismissRequest()
                         mainVm.navigatePage(
                             ImagePreviewPageDestination(
@@ -170,38 +155,28 @@ fun RuleGroupDialog(
                                 uris = group.allExampleUrls.toTypedArray()
                             )
                         )
-                    }) {
-                        Icon(imageVector = Icons.Outlined.Image, contentDescription = null)
-                    }
+                    })
                 }
                 if (subs.isLocal) {
-                    IconButton(onClick = throttle(onClickEdit)) {
-                        Icon(imageVector = Icons.Outlined.Edit, contentDescription = null)
-                    }
+                    PerfIconButton(imageVector = PerfIcon.Edit, onClick = throttle(onClickEdit))
                 }
-                IconButton(onClick = throttle(onClickEditExclude)) {
-                    Icon(
-                        imageVector = Icons.Outlined.AppRegistration,
-                        contentDescription = null
-                    )
-                }
+                PerfIconButton(
+                    imageVector = PerfIcon.AppRegistration,
+                    onClick = throttle(onClickEditExclude),
+                )
                 AnimatedVisibility(
                     visible = onClickResetSwitch != null,
                 ) {
-                    IconButton(onClick = throttle(onClickResetSwitch ?: {})) {
-                        Icon(
-                            imageVector = ResetSettings,
-                            contentDescription = null
-                        )
-                    }
+                    PerfIconButton(
+                        imageVector = ResetSettings,
+                        onClick = throttle(onClickResetSwitch ?: {}),
+                    )
                 }
                 if (subs.isLocal) {
-                    IconButton(onClick = throttle(onClickDelete)) {
-                        Icon(
-                            imageVector = Icons.Outlined.Delete,
-                            contentDescription = null,
-                        )
-                    }
+                    PerfIconButton(
+                        imageVector = PerfIcon.Delete,
+                        onClick = throttle(onClickDelete),
+                    )
                 }
             }
         },

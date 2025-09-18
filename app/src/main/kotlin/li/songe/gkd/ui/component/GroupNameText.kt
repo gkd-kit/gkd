@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
@@ -55,14 +54,13 @@ fun GroupNameText(
                         placeholderVerticalAlign = PlaceholderVerticalAlign.Center
                     )
                 ) {
-                    Icon(
+                    PerfIcon(
                         imageVector = SportsBasketball,
                         modifier = Modifier
                             .runIf(!clickDisabled) {
                                 clickable(onClick = throttle { toast("当前是全局规则组") })
                             }
                             .fillMaxSize(),
-                        contentDescription = null,
                         tint = textColor
                     )
                 }

@@ -15,7 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
-import com.blankj.utilcode.util.NetworkUtils
 import io.ktor.client.call.body
 import io.ktor.client.plugins.onDownload
 import io.ktor.client.request.get
@@ -38,7 +37,7 @@ import java.net.URI
 
 
 private val UPDATE_URL: String
-    get() = UpdateChannelOption.allSubObject.findOption(storeFlow.value.updateChannel).url
+    get() = UpdateChannelOption.objects.findOption(storeFlow.value.updateChannel).url
 
 @Serializable
 data class NewVersion(

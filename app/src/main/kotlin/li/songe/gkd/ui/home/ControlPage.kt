@@ -16,22 +16,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Memory
-import androidx.compose.material.icons.outlined.Equalizer
-import androidx.compose.material.icons.outlined.Layers
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -57,9 +45,13 @@ import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.StatusService
+import li.songe.gkd.service.a11yPartDisabledFlow
 import li.songe.gkd.service.switchA11yService
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.GroupNameText
+import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.ui.component.PerfIconButton
+import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.textSize
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
@@ -82,19 +74,17 @@ fun useControlPage(): ScaffoldExt {
         navItem = BottomNavItem.Control,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(scrollBehavior = scrollBehavior, title = {
+            PerfTopAppBar(scrollBehavior = scrollBehavior, title = {
                 Text(
                     text = stringResource(SafeR.app_name),
                 )
             }, actions = {
-                IconButton(onClick = throttle {
-                    mainVm.navigatePage(AuthA11YPageDestination)
-                }) {
-                    Icon(
-                        imageVector = Icons.Outlined.RocketLaunch,
-                        contentDescription = null,
-                    )
-                }
+                PerfIconButton(
+                    imageVector = PerfIcon.RocketLaunch,
+                    onClick = throttle {
+                        mainVm.navigatePage(AuthA11YPageDestination)
+                    },
+                )
             })
         }
     ) { contentPadding ->
@@ -110,16 +100,20 @@ fun useControlPage(): ScaffoldExt {
                 .padding(contentPadding)
         ) {
             PageItemCard(
-                imageVector = Icons.Default.Memory,
+                imageVector = PerfIcon.Memory,
                 title = "服务状态",
                 subtitle = if (a11yRunning) {
-                    "无障碍服务正在运行"
+                    "无障碍正在运行"
                 } else if (mainVm.a11yServiceEnabledFlow.collectAsState().value) {
-                    "无障碍服务发生故障"
+                    "无障碍发生故障"
                 } else if (writeSecureSettings) {
-                    "无障碍服务已关闭"
+                    if (store.enableService && a11yPartDisabledFlow.collectAsState().value) {
+                        "无障碍已局部关闭"
+                    } else {
+                        "无障碍已关闭"
+                    }
                 } else {
-                    "无障碍服务未授权"
+                    "无障碍未授权"
                 },
                 rightContent = {
                     Switch(
@@ -136,7 +130,7 @@ fun useControlPage(): ScaffoldExt {
             )
 
             PageItemCard(
-                imageVector = Icons.Outlined.Notifications,
+                imageVector = PerfIcon.Notifications,
                 title = "常驻通知",
                 subtitle = "显示运行状态及统计数据",
                 rightContent = {
@@ -163,7 +157,7 @@ fun useControlPage(): ScaffoldExt {
             PageItemCard(
                 title = "触发记录",
                 subtitle = "规则误触可定位关闭",
-                imageVector = Icons.Default.History,
+                imageVector = PerfIcon.History,
                 onClick = {
                     mainVm.navigatePage(ActionLogPageDestination())
                 }
@@ -173,7 +167,7 @@ fun useControlPage(): ScaffoldExt {
                 PageItemCard(
                     title = "界面记录",
                     subtitle = "记录打开的应用及界面",
-                    imageVector = Icons.Outlined.Layers,
+                    imageVector = PerfIcon.Layers,
                     onClick = {
                         mainVm.navigatePage(ActivityLogPageDestination)
                     }
@@ -183,7 +177,7 @@ fun useControlPage(): ScaffoldExt {
             PageItemCard(
                 title = "了解 GKD",
                 subtitle = "查阅规则文档和常见问题",
-                imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                imageVector = PerfIcon.HelpOutline,
                 onClick = {
                     mainVm.navigatePage(WebViewPageDestination(initUrl = HOME_PAGE_URL))
                 }
@@ -245,9 +239,8 @@ private fun IconTextCard(
             .padding(itemVerticalPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
+        PerfIcon(
             imageVector = imageVector,
-            contentDescription = null,
             modifier = Modifier
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primaryContainer)
@@ -282,9 +275,8 @@ private fun ServerStatusCard(vm: HomeVm) {
                 ),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Outlined.Equalizer,
-                contentDescription = null,
+            PerfIcon(
+                imageVector = PerfIcon.Equalizer,
                 modifier = Modifier
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer)
@@ -356,9 +348,8 @@ private fun ServerStatusCard(vm: HomeVm) {
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
+                    PerfIcon(
+                        imageVector = PerfIcon.KeyboardArrowRight,
                         modifier = Modifier.textSize(style = MaterialTheme.typography.bodyMedium),
                         tint = MaterialTheme.colorScheme.primary,
                     )

@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.webkit.URLUtil
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptionsBuilder
@@ -21,6 +20,8 @@ import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -40,6 +41,7 @@ import li.songe.gkd.ui.component.InputSubsLinkOption
 import li.songe.gkd.ui.component.RuleGroupState
 import li.songe.gkd.ui.component.UploadOptions
 import li.songe.gkd.ui.home.BottomNavItem
+import li.songe.gkd.ui.share.BaseViewModel
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.ThrottleTimer
@@ -61,7 +63,16 @@ import kotlin.reflect.jvm.jvmName
 
 private var tempTermsAccepted = false
 
-class MainViewModel : ViewModel(), OnSimpleLife {
+class MainViewModel : BaseViewModel(), OnSimpleLife {
+    companion object {
+        private var _instance: MainViewModel? = null
+        val instance get() = _instance!!
+    }
+
+    init {
+        _instance = this
+        addCloseable { _instance = null }
+    }
 
     private lateinit var navController: NavHostController
     fun updateNavController(navController: NavHostController) {
@@ -120,6 +131,11 @@ class MainViewModel : ViewModel(), OnSimpleLife {
 
     val showShareDataIdsFlow = MutableStateFlow<Set<Long>?>(null)
 
+    val appOrderListFlow = DbSet.actionLogDao.queryLatestUniqueAppIds().stateInit(emptyList())
+    val appVisitOrderMapFlow = DbSet.appVisitLogDao.query().map {
+        it.mapIndexed { i, appId -> appId to i }.toMap()
+    }.debounce(500).stateInit(emptyMap())
+
     fun addOrModifySubs(
         url: String,
         oldItem: SubsItem? = null,
@@ -176,10 +192,10 @@ class MainViewModel : ViewModel(), OnSimpleLife {
 
     val ruleGroupState = RuleGroupState(this)
 
-    val urlFlow = MutableStateFlow<String?>(null)
+    val textFlow = MutableStateFlow<String?>(null)
     fun openUrl(url: String) {
         if (URLUtil.isNetworkUrl(url)) {
-            urlFlow.value = url
+            textFlow.value = url
         } else {
             openUri(url)
         }

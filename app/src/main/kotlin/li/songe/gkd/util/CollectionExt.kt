@@ -9,7 +9,7 @@ fun <T> Set<T>.switchItem(t: T): Set<T> {
 }
 
 inline fun <T> Iterable<T>.filterIfNotAll(predicate: (T) -> Boolean): List<T> {
-    return if (count() > 1 && !all(predicate)) {
+    return if (count() > 0 && !all(predicate)) {
         filter(predicate)
     } else {
         this as? List ?: toList()

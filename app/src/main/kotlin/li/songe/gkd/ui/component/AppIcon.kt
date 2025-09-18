@@ -2,9 +2,6 @@ package li.songe.gkd.ui.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Android
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
@@ -26,9 +23,8 @@ fun AppIcon(
             modifier = iconModifier
         )
     } else {
-        Icon(
-            imageVector = Icons.Default.Android,
-            contentDescription = null,
+        PerfIcon(
+            imageVector = PerfIcon.Android,
             modifier = iconModifier
         )
     }

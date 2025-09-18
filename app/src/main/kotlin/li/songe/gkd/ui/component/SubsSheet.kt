@@ -12,16 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
@@ -57,8 +48,8 @@ import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.deleteSubscription
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.subsIdToRawFlow
 import li.songe.gkd.util.subsItemsFlow
+import li.songe.gkd.util.subsMapFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubsMutex
@@ -79,7 +70,7 @@ fun SubsSheet(
         }
     } else {
         val mainVm = LocalMainViewModel.current
-        val subsIdToRaw by subsIdToRawFlow.collectAsState()
+        val subsIdToRaw by subsMapFlow.collectAsState()
         var swipeEnabled by remember { mutableStateOf(false) }
         val sheetState = rememberModalBottomSheetState(
             skipPartiallyExpanded = true,
@@ -218,9 +209,8 @@ fun SubsSheet(
                                     },
                                 )
                             }
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = null
+                            PerfIcon(
+                                imageVector = PerfIcon.KeyboardArrowRight,
                             )
                         }
                     }
@@ -255,9 +245,8 @@ fun SubsSheet(
                                     },
                                 )
                             }
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = null
+                            PerfIcon(
+                                imageVector = PerfIcon.KeyboardArrowRight,
                             )
                         }
 
@@ -293,9 +282,8 @@ fun SubsSheet(
                                     },
                                 )
                             }
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = null
+                            PerfIcon(
+                                imageVector = PerfIcon.KeyboardArrowRight,
                             )
                         }
                     }
@@ -332,14 +320,13 @@ fun SubsSheet(
                                     overflow = TextOverflow.MiddleEllipsis,
                                     modifier = Modifier
                                         .clickable(onClick = {
-                                            mainVm.urlFlow.value = subsItem.updateUrl
+                                            mainVm.textFlow.value = subsItem.updateUrl
                                         })
                                 )
                             }
                             Spacer(modifier = Modifier.width(8.dp))
-                            Icon(
-                                imageVector = Icons.Outlined.Edit,
-                                contentDescription = null,
+                            PerfIcon(
+                                imageVector = PerfIcon.Edit,
                             )
                         }
                     }
@@ -372,45 +359,39 @@ fun SubsSheet(
                     horizontalArrangement = Arrangement.End
                 ) {
                     if (!subsItem.isLocal && subscription?.supportUri != null) {
-                        IconButton(onClick = throttle {
-                            mainVm.urlFlow.value = subscription.supportUri
-                        }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
-                                contentDescription = null
-                            )
-                        }
+                        PerfIconButton(
+                            imageVector = PerfIcon.HelpOutline,
+                            onClick = throttle {
+                                mainVm.textFlow.value = subscription.supportUri
+                            },
+                        )
                     }
-                    IconButton(onClick = throttle {
+                    PerfIconButton(imageVector = PerfIcon.History, onClick = throttle {
                         setSubsId(null)
                         sheetSubsIdFlow.value = null
                         mainVm.navigatePage(ActionLogPageDestination(subsId = subsItem.id))
-                    }) {
-                        Icon(imageVector = Icons.Default.History, contentDescription = null)
-                    }
+                    })
                     if (subscription != null || !subsItem.isLocal) {
-                        IconButton(onClick = throttle {
+                        PerfIconButton(imageVector = PerfIcon.Share, onClick = throttle {
                             mainVm.showShareDataIdsFlow.value = setOf(subsItem.id)
-                        }) {
-                            Icon(imageVector = Icons.Default.Share, contentDescription = null)
-                        }
+                        })
                     }
                     if (subsItem.id != LOCAL_SUBS_ID) {
-                        IconButton(onClick = throttle(vm.viewModelScope.launchAsFn {
-                            mainVm.dialogFlow.waitResult(
-                                title = "删除订阅",
-                                text = "确定删除 ${subscription?.name ?: subsItem.id} ?",
-                                error = true,
-                            )
-                            sheetSubsIdFlow.value = null
-                            setSubsId(null)
-                            deleteSubscription(subsItem.id)
-                        })) {
-                            Icon(
-                                imageVector = Icons.Outlined.Delete,
-                                contentDescription = null,
-                            )
-                        }
+                        PerfIconButton(
+                            imageVector = PerfIcon.Delete,
+                            onClick = throttle(
+                                vm.viewModelScope.launchAsFn {
+                                    mainVm.dialogFlow.waitResult(
+                                        title = "删除订阅",
+                                        text = "确定删除 ${subscription?.name ?: subsItem.id} ?",
+                                        error = true,
+                                    )
+                                    sheetSubsIdFlow.value = null
+                                    setSubsId(null)
+                                    deleteSubscription(subsItem.id)
+                                }
+                            ),
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(EmptyHeight / 2))

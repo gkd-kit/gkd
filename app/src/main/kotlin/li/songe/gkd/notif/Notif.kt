@@ -6,7 +6,6 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
@@ -20,6 +19,7 @@ import li.songe.gkd.service.ButtonService
 import li.songe.gkd.service.HttpService
 import li.songe.gkd.service.RecordService
 import li.songe.gkd.service.ScreenshotService
+import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.componentName
 import kotlin.reflect.KClass
@@ -82,11 +82,7 @@ data class Notif(
             service,
             id,
             toNotification(),
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST
-            } else {
-                -1
-            }
+            if (AndroidTarget.Q) ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST else -1
         )
     }
 }

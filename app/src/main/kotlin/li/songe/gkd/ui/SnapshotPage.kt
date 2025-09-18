@@ -1,6 +1,6 @@
 package li.songe.gkd.ui
 
-import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,23 +17,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,8 +39,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.blankj.utilcode.util.ImageUtils
-import com.blankj.utilcode.util.UriUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ImagePreviewPageDestination
@@ -58,20 +52,26 @@ import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.FixedTimeText
 import li.songe.gkd.ui.component.LocalNumberCharWidth
+import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.ui.component.PerfIconButton
+import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.IMPORT_SHORT_URL
+import li.songe.gkd.util.ImageUtils
 import li.songe.gkd.util.SnapshotExt
-import li.songe.gkd.util.appInfoCacheFlow
+import li.songe.gkd.util.UriUtils
+import li.songe.gkd.util.appInfoMapFlow
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.saveFileToDownloads
@@ -90,41 +90,44 @@ fun SnapshotPage() {
     val firstLoading by vm.firstLoadingFlow.collectAsState()
     val snapshots by vm.snapshotsState.collectAsState()
     var selectedSnapshot by remember { mutableStateOf<Snapshot?>(null) }
-    val (scrollBehavior, listState) = useListScrollState(snapshots.isNotEmpty(), firstLoading)
+    val resetKey = rememberSaveable { mutableIntStateOf(0) }
+    val (scrollBehavior, listState) = useListScrollState(
+        resetKey,
+        snapshots.isEmpty(),
+        firstLoading,
+    )
     val timeTextWidth = measureNumberTextWidth(MaterialTheme.typography.bodySmall)
 
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        TopAppBar(
+        PerfTopAppBar(
             scrollBehavior = scrollBehavior,
             navigationIcon = {
-                IconButton(onClick = {
+                PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
                     mainVm.popBackStack()
-                }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null,
-                    )
-                }
+                })
             },
-            title = { Text(text = "快照记录") },
+            title = {
+                Text(
+                    text = "快照记录",
+                    modifier = Modifier.noRippleClickable { resetKey.intValue++ },
+                )
+            },
             actions = {
                 if (snapshots.isNotEmpty()) {
-                    IconButton(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                        mainVm.dialogFlow.waitResult(
-                            title = "删除快照",
-                            text = "确定删除所有快照记录?",
-                            error = true,
-                        )
-                        snapshots.forEach { s ->
-                            SnapshotExt.removeSnapshot(s.id)
-                        }
-                        DbSet.snapshotDao.deleteAll()
-                    })) {
-                        Icon(
-                            imageVector = Icons.Outlined.Delete,
-                            contentDescription = null,
-                        )
-                    }
+                    PerfIconButton(
+                        imageVector = PerfIcon.Delete,
+                        onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                            mainVm.dialogFlow.waitResult(
+                                title = "删除快照",
+                                text = "确定删除所有快照记录?",
+                                error = true,
+                            )
+                            snapshots.forEach { s ->
+                                SnapshotExt.removeSnapshot(s.id)
+                            }
+                            DbSet.snapshotDao.deleteAll()
+                        })
+                    )
                 }
             })
     }, content = { contentPadding ->
@@ -168,14 +171,14 @@ fun SnapshotPage() {
                 Text(
                     text = "查看", modifier = Modifier
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
+                            selectedSnapshot = null
                             mainVm.navigatePage(
                                 ImagePreviewPageDestination(
-                                    title = appInfoCacheFlow.value[snapshotVal.appId]?.name
+                                    title = appInfoMapFlow.value[snapshotVal.appId]?.name
                                         ?: snapshotVal.appId,
                                     uri = snapshotVal.screenshotFile.absolutePath,
                                 )
                             )
-                            selectedSnapshot = null
                         }))
                         .then(modifier)
                 )
@@ -198,8 +201,9 @@ fun SnapshotPage() {
                 Text(
                     text = "保存到下载",
                     modifier = Modifier
-                        .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
+                        .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                             selectedSnapshot = null
+                            toast("正在保存...")
                             val zipFile = SnapshotExt.snapshotZipFile(
                                 snapshotVal.id,
                                 snapshotVal.appId,
@@ -240,14 +244,11 @@ fun SnapshotPage() {
                 Text(
                     text = "保存截图到相册",
                     modifier = Modifier
-                        .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
+                        .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                            toast("正在保存...")
                             selectedSnapshot = null
                             requiredPermission(context, canWriteExternalStorage)
-                            ImageUtils.save2Album(
-                                ImageUtils.getBitmap(snapshotVal.screenshotFile),
-                                Bitmap.CompressFormat.PNG,
-                                true
-                            )
+                            ImageUtils.save2Album(BitmapFactory.decodeFile(snapshotVal.screenshotFile.absolutePath))
                             toast("保存成功")
                         }))
                         .then(modifier)
@@ -258,9 +259,11 @@ fun SnapshotPage() {
                     modifier = Modifier
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                             val uri = context.pickContentLauncher.launchForImageResult()
-                            val oldBitmap = ImageUtils.getBitmap(snapshotVal.screenshotFile)
+                            val oldBitmap =
+                                BitmapFactory.decodeFile(snapshotVal.screenshotFile.absolutePath)
                             val newBytes = UriUtils.uri2Bytes(uri)
-                            val newBitmap = ImageUtils.getBitmap(newBytes, 0)
+                            val newBitmap =
+                                BitmapFactory.decodeByteArray(newBytes, 0, newBytes.size)
                             if (oldBitmap.width == newBitmap.width && oldBitmap.height == newBitmap.height) {
                                 snapshotVal.screenshotFile.writeBytes(newBytes)
                                 if (snapshotVal.githubAssetId != null) {
@@ -326,7 +329,7 @@ private fun SnapshotCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                val appInfo = appInfoCacheFlow.collectAsState().value[snapshot.appId]
+                val appInfo = appInfoMapFlow.collectAsState().value[snapshot.appId]
                 val showAppName = appInfo?.name ?: snapshot.appId
                 Text(
                     text = showAppName,

@@ -19,27 +19,76 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import com.blankj.utilcode.util.BarUtils
-import com.blankj.utilcode.util.ScreenUtils
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import li.songe.gkd.a11y.topActivityFlow
 import li.songe.gkd.permission.canDrawOverlaysState
-import li.songe.gkd.store.createTextFlow
+import li.songe.gkd.store.createAnyFlow
+import li.songe.gkd.util.BarUtils
 import li.songe.gkd.util.OnSimpleLife
+import li.songe.gkd.util.ScreenUtils
 import li.songe.gkd.util.mapState
 import li.songe.gkd.util.px
 import li.songe.gkd.util.toast
 
-private var instanceFlags = mutableListOf<Long>()
+private var tempShareContext: ShareContext? = null
+private fun OverlayWindowService.useShareContext(): ShareContext {
+    val shareContext = tempShareContext ?: ShareContext().apply { tempShareContext = this }
+    shareContext.count++
+    onDestroyed {
+        shareContext.count--
+        if (shareContext.count == 0) {
+            shareContext.scope.cancel()
+            tempShareContext = null
+        }
+    }
+    return shareContext
+}
 
-abstract class OverlayWindowService : LifecycleService(), SavedStateRegistryOwner,
-    OnSimpleLife {
+private class ShareContext {
+    var count = 0
+    val scope = MainScope()
+    val positionMapFlow = createAnyFlow<Map<String, List<Int>>>(
+        key = "overlay_position",
+        default = { emptyMap() },
+        scope = scope,
+    )
+
+    init {
+        scope.launch {
+            var canDrawOverlays = canDrawOverlaysState.updateAndGet()
+            topActivityFlow
+                .mapState(scope) { it.appId to it.activityId }
+                .collectLatest {
+                    var i = 0
+                    while (i < 6 && isActive) {
+                        val oldV = canDrawOverlays
+                        val newV = canDrawOverlaysState.updateAndGet()
+                        canDrawOverlays = newV
+                        if (!newV && oldV) {
+                            toast("当前界面拒绝显示悬浮窗")
+                            break
+                        }
+                        delay(500)
+                        i++
+                    }
+                }
+        }
+    }
+}
+
+abstract class OverlayWindowService(
+    val positionKey: String,
+) : LifecycleService(), SavedStateRegistryOwner, OnSimpleLife {
     override fun onCreate() {
         super.onCreate()
         onCreated()
@@ -62,7 +111,7 @@ abstract class OverlayWindowService : LifecycleService(), SavedStateRegistryOwne
     }
     override val savedStateRegistry = registryController.savedStateRegistry
 
-    val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
+    private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
 
     @Composable
     abstract fun ComposeContent()
@@ -77,56 +126,34 @@ abstract class OverlayWindowService : LifecycleService(), SavedStateRegistryOwne
         }
     }
 
-    abstract val positionStoreKey: String
+    private val minMargin get() = 10.dp.px.toInt()
+    private val defaultPosition get() = listOf(minMargin, BarUtils.getStatusBarHeight())
 
-    private val minMargin: Int
-        get() = 10.dp.px.toInt()
+    private val shareContext = useShareContext()
 
-    val positionFlow by lazy {
-        createTextFlow(
-            key = positionStoreKey,
-            decode = {
-                (it ?: "").split(',', limit = 2).mapNotNull { v -> v.toIntOrNull() }.run {
-                    if (size == 2) {
-                        get(0) to get(1)
-                    } else {
-                        minMargin to BarUtils.getStatusBarHeight()
+    private val positionFlow = MutableStateFlow(
+        shareContext.positionMapFlow.value[positionKey].let {
+            if (it != null && it.size >= 2) {
+                it
+            } else {
+                defaultPosition
+            }
+        }
+    )
+
+    init {
+        lifecycleScope.launch {
+            positionFlow.drop(1).debounce(300).collect { pos ->
+                shareContext.positionMapFlow.update {
+                    it.toMutableMap().apply {
+                        set(positionKey, pos)
                     }
                 }
-            },
-            encode = {
-                "${it.first},${it.second}"
-            },
-            scope = lifecycleScope,
-            debounceMillis = 300,
-        )
+            }
+        }
     }
 
     init {
-        val flag = System.currentTimeMillis()
-        onCreated { instanceFlags.add(flag) }
-        onDestroyed { instanceFlags.remove(flag) }
-        onCreated {
-            lifecycleScope.launch {
-                var canDrawOverlays = canDrawOverlaysState.updateAndGet()
-                topActivityFlow.mapState(lifecycleScope) { it.appId to it.activityId }
-                    .filter { flag == instanceFlags.last() }
-                    .collectLatest {
-                        var i = 0
-                        while (i < 6 && isActive) {
-                            val oldV = canDrawOverlays
-                            val newV = canDrawOverlaysState.updateAndGet()
-                            canDrawOverlays = newV
-                            if (!newV && oldV) {
-                                toast("当前界面拒绝显示悬浮窗")
-                                break
-                            }
-                            delay(500)
-                            i++
-                        }
-                    }
-            }
-        }
         onCreated {
             val marginX = minMargin
             val marginY = minMargin
@@ -141,8 +168,8 @@ abstract class OverlayWindowService : LifecycleService(), SavedStateRegistryOwne
             ).apply {
                 windowAnimations = android.R.style.Animation_Dialog
                 gravity = Gravity.START or Gravity.TOP
-                x = positionFlow.value.first
-                y = positionFlow.value.second
+                x = positionFlow.value.first()
+                y = positionFlow.value.last()
             }
             var screenWidth = ScreenUtils.getScreenWidth()
             var screenHeight = ScreenUtils.getScreenHeight()
@@ -157,7 +184,7 @@ abstract class OverlayWindowService : LifecycleService(), SavedStateRegistryOwne
                     screenHeight - view.height - marginY
                 )
                 if (x != layoutParams.x || y != layoutParams.y) {
-                    positionFlow.value = x to y
+                    positionFlow.value = listOf(x, y)
                     val startX = layoutParams.x
                     val startY = layoutParams.y
                     val newX = x
@@ -210,7 +237,7 @@ abstract class OverlayWindowService : LifecycleService(), SavedStateRegistryOwne
                                 marginY,
                                 screenHeight - view.height - marginY
                             )
-                            positionFlow.value = layoutParams.x to layoutParams.y
+                            positionFlow.value = listOf(layoutParams.x, layoutParams.y)
                             windowManager.updateViewLayout(view, layoutParams)
                         }
                         true

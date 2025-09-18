@@ -15,7 +15,6 @@ import android.media.projection.MediaProjectionManager
 import android.os.Handler
 import android.os.Looper
 import androidx.core.graphics.createBitmap
-import com.blankj.utilcode.util.ScreenUtils
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine

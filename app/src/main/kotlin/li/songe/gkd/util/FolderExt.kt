@@ -2,7 +2,6 @@ package li.songe.gkd.util
 
 import android.text.format.DateUtils
 import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.ZipUtils
 import li.songe.gkd.app
 import java.io.File
 
@@ -65,7 +64,7 @@ fun buildLogFile(): File {
     val files = mutableListOf(dbFolder, storeFolder, subsFolder)
     LogUtils.getLogFiles().firstOrNull()?.parentFile?.let { files.add(it) }
     tempDir.resolve("appList.json").also {
-        it.writeText(json.encodeToString(appInfoCacheFlow.value.values.toList()))
+        it.writeText(json.encodeToString(appInfoMapFlow.value.values.toList()))
         files.add(it)
     }
     val logZipFile = sharedDir.resolve("log-${System.currentTimeMillis()}.zip")

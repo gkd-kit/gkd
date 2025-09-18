@@ -10,10 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -64,7 +61,7 @@ fun ManualAuthDialog(
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
-                        Icon(
+                        PerfIcon(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
                                 .clickable(onClick = throttle {
@@ -72,8 +69,7 @@ fun ManualAuthDialog(
                                 })
                                 .padding(4.dp)
                                 .size(20.dp),
-                            imageVector = Icons.Outlined.ContentCopy,
-                            contentDescription = null,
+                            imageVector = PerfIcon.ContentCopy,
                             tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.75f),
                         )
                     }

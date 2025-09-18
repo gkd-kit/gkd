@@ -2,13 +2,16 @@ package li.songe.gkd.util
 
 import android.app.Activity
 import android.content.ComponentName
+import android.content.Intent
 import android.content.pm.PackageInfo
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.drawable.Drawable
-import android.os.Build
+import android.provider.AlarmClock
+import android.provider.MediaStore
+import android.provider.Settings
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.SizeTransform
@@ -28,10 +31,6 @@ import li.songe.json5.encodeToJson5String
 import java.io.DataOutputStream
 import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
-
-inline fun <T, R> Iterable<T>.mapHashCode(transform: (T) -> R): Int {
-    return fold(0) { acc, t -> 31 * acc + transform(t).hashCode() }
-}
 
 private val componentNameCache by lazy { HashMap<String, ComponentName>() }
 
@@ -69,7 +68,7 @@ fun MainActivity.fixSomeProblems() {
 
 private fun Activity.fixTransparentNavigationBar() {
     // 修复在浅色主题下导航栏背景不透明的问题
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+    if (AndroidTarget.Q) {
         window.isNavigationBarContrastEnforced = false
     } else {
         @Suppress("DEPRECATION")
@@ -156,3 +155,71 @@ private val Drawable.safeDrawable: Drawable?
 
 val PackageInfo.pkgIcon: Drawable?
     get() = applicationInfo?.loadIcon(app.packageManager)?.safeDrawable
+
+private fun Char.isAsciiLetter(): Boolean {
+    return this in 'a'..'z' || this in 'A'..'Z'
+}
+
+private fun Char.isAsciiVar(): Boolean {
+    return this.isAsciiLetter() || this in '0'..'9' || this == '_'
+}
+
+// https://developer.android.com/build/configure-app-module?hl=zh-cn
+fun String.isValidAppId(): Boolean {
+    if (!contains('.')) return false
+    if (!first().isAsciiLetter()) return false
+    var i = 0
+    while (i < length) {
+        val c = get(i)
+        if (c == '.') {
+            i++
+            if (getOrNull(i)?.isAsciiLetter() != true) {
+                return false
+            }
+        } else if (!c.isAsciiVar()) {
+            return false
+        }
+        i++
+    }
+    return true
+}
+
+object AppListString {
+    fun decode(text: String): Set<String> {
+        return text.split('\n').filter { a -> a.isValidAppId() }.toHashSet()
+    }
+
+    fun encode(set: Set<String>, append: Boolean = false): String {
+        val list = set.sorted()
+        if (append) {
+            return list.joinToString(separator = "\n\n", postfix = "\n\n") {
+                val name = appInfoMapFlow.value[it]?.name
+                if (name != null) {
+                    "$it\n# $name"
+                } else {
+                    it
+                }
+            }
+        }
+        return list.joinToString("\n")
+    }
+
+    fun getDefaultBlockList(): Set<String> {
+        val set = hashSetOf(META.appId, systemUiAppId)
+        listOf(
+            Intent.ACTION_MAIN to Intent.CATEGORY_HOME,
+            Intent.ACTION_MAIN to Intent.CATEGORY_APP_GALLERY,
+            Intent.ACTION_MAIN to Intent.CATEGORY_APP_CONTACTS,
+            Intent.ACTION_MAIN to Intent.CATEGORY_APP_CALENDAR,
+            Intent.ACTION_MAIN to Intent.CATEGORY_APP_MESSAGING,
+            Intent.ACTION_MAIN to Intent.CATEGORY_APP_CALCULATOR,
+            Intent.ACTION_OPEN_DOCUMENT to Intent.CATEGORY_OPENABLE,
+            AlarmClock.ACTION_SHOW_ALARMS to null,
+            MediaStore.ACTION_IMAGE_CAPTURE to null,
+            Settings.ACTION_SETTINGS to null,
+        ).forEach {
+            app.resolveAppId(it.first, it.second)?.let(set::add)
+        }
+        return set
+    }
+}

@@ -48,11 +48,11 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.androidx.room)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlinx.atomicfu)
     alias(libs.plugins.google.ksp)
+    alias(libs.plugins.rikka.refine)
 }
 
 android {
@@ -225,6 +225,7 @@ dependencies {
     compileOnly(project(":hidden_api"))
     implementation(libs.rikka.shizuku.api)
     implementation(libs.rikka.shizuku.provider)
+    implementation(libs.rikka.refine.runtime)
     implementation(libs.lsposed.hiddenapibypass)
 
     implementation(libs.androidx.room.runtime)

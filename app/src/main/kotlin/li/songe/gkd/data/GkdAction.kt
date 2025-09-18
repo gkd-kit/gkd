@@ -6,10 +6,10 @@ import android.graphics.Path
 import android.graphics.Rect
 import android.view.ViewConfiguration
 import android.view.accessibility.AccessibilityNodeInfo
-import com.blankj.utilcode.util.ScreenUtils
 import kotlinx.serialization.Serializable
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.shizuku.shizukuContextFlow
+import li.songe.gkd.util.ScreenUtils
 
 @Serializable
 data class GkdAction(

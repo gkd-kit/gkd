@@ -1,9 +1,12 @@
 package li.songe.gkd.ui.component
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -20,17 +23,20 @@ import li.songe.gkd.util.throttle
 fun TextSwitch(
     modifier: Modifier = Modifier,
     title: String,
+    paddingDisabled: Boolean = false,
     subtitle: String? = null,
     suffix: String? = null,
     suffixUnderline: Boolean = false,
     onSuffixClick: (() -> Unit)? = null,
+    suffixIcon: (@Composable () -> Unit)? = null,
     checked: Boolean = true,
     enabled: Boolean = true,
     onCheckedChange: ((Boolean) -> Unit)? = null,
 ) {
     Row(
-        modifier = modifier.itemPadding(),
-        verticalAlignment = Alignment.CenterVertically
+        modifier = if (paddingDisabled) modifier else modifier.itemPadding(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -39,7 +45,9 @@ fun TextSwitch(
             )
             if (subtitle != null) {
                 if (suffix != null) {
-                    Row {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
                         Text(
                             text = subtitle,
                             style = MaterialTheme.typography.bodyMedium,
@@ -69,7 +77,7 @@ fun TextSwitch(
                 }
             }
         }
-        Spacer(modifier = Modifier.width(8.dp))
+        suffixIcon?.invoke()
         Switch(
             checked = checked,
             enabled = enabled,

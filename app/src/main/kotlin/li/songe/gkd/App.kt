@@ -3,11 +3,15 @@ package li.songe.gkd
 import android.app.ActivityManager
 import android.app.AppOpsManager
 import android.app.Application
+import android.app.KeyguardManager
+import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.os.Build
 import android.provider.Settings
+import android.view.WindowManager
+import android.view.inputmethod.InputMethodManager
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.Utils
 import kotlinx.coroutines.MainScope
@@ -15,8 +19,10 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.notif.initChannel
 import li.songe.gkd.service.clearHttpSubs
+import li.songe.gkd.service.initA11yWhiteAppList
 import li.songe.gkd.shizuku.initShizuku
 import li.songe.gkd.store.initStore
+import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initSubsState
@@ -42,7 +48,7 @@ private fun getMetaString(key: String): String {
     return applicationInfo.metaData.getString(key) ?: error("Missing meta-data: $key")
 }
 
-// https://github.com/aosp-mirror/platform_frameworks_base/blob/android16-release/packages/SettingsLib/src/com/android/settingslib/accessibility/AccessibilityUtils.java#L41
+// https://github.com/android-cs/16/blob/main/packages/SettingsLib/src/com/android/settingslib/accessibility/AccessibilityUtils.java#L41
 private const val ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR = ':'
 
 @Serializable
@@ -60,9 +66,9 @@ data class AppMeta(
     val commitUrl = "https://github.com/gkd-kit/gkd/".run {
         plus(if (tagName != null) "tree/$tagName" else "commit/$commitId")
     }
-    val isGkdChannel = channel == "gkd"
-    val updateEnabled: Boolean
-        get() = isGkdChannel
+    val isGkdChannel get() = channel == "gkd"
+    val updateEnabled get() = isGkdChannel
+    val isBeta get() = versionName.contains("beta")
 }
 
 val META by lazy { AppMeta() }
@@ -74,7 +80,7 @@ class App : Application() {
 
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        if (AndroidTarget.P) {
             HiddenApiBypass.addHiddenApiExemptions("L")
         }
     }
@@ -82,6 +88,10 @@ class App : Application() {
     fun getSecureString(name: String): String? = Settings.Secure.getString(contentResolver, name)
     fun putSecureString(name: String, value: String?): Boolean {
         return Settings.Secure.putString(contentResolver, name, value)
+    }
+
+    fun putSecureInt(name: String, value: Int): Boolean {
+        return Settings.Secure.putInt(contentResolver, name, value)
     }
 
     fun getSecureA11yServices(): MutableSet<String> {
@@ -97,6 +107,18 @@ class App : Application() {
         )
     }
 
+    fun resolveAppId(intent: Intent): String? {
+        return intent.resolveActivity(packageManager)?.packageName
+    }
+
+    fun resolveAppId(action: String, category: String? = null): String? {
+        val intent = Intent(action)
+        if (category != null) {
+            intent.addCategory(category)
+        }
+        return resolveAppId(intent)
+    }
+
     val startTime = System.currentTimeMillis()
     var justStarted: Boolean = true
         get() {
@@ -108,6 +130,10 @@ class App : Application() {
 
     val activityManager by lazy { app.getSystemService(ACTIVITY_SERVICE) as ActivityManager }
     val appOpsManager by lazy { app.getSystemService(APP_OPS_SERVICE) as AppOpsManager }
+    val inputMethodManager by lazy { app.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager }
+    val windowManager by lazy { app.getSystemService(WINDOW_SERVICE) as WindowManager }
+    val keyguardManager by lazy { app.getSystemService(KEYGUARD_SERVICE) as KeyguardManager }
+    val clipboardManager by lazy { app.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager }
 
     override fun onCreate() {
         super.onCreate()
@@ -130,6 +156,7 @@ class App : Application() {
         initAppState()
         initShizuku()
         initSubsState()
+        initA11yWhiteAppList()
         clearHttpSubs()
         syncFixState()
     }

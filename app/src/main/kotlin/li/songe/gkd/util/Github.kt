@@ -3,11 +3,7 @@ package li.songe.gkd.util
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,6 +36,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
 import li.songe.gkd.data.GithubPoliciesAsset
+import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.json5.Json5
@@ -211,15 +209,12 @@ fun EditGithubCookieDlg() {
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(text = "Github Cookie")
-                    IconButton(onClick = throttle {
-                        mainVm.showEditCookieDlgFlow.value = false
-                        mainVm.navigatePage(WebViewPageDestination(initUrl = ShortUrlSet.URL1))
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
-                            contentDescription = null,
-                        )
-                    }
+                    PerfIconButton(
+                        imageVector = PerfIcon.HelpOutline,
+                        onClick = throttle {
+                            mainVm.showEditCookieDlgFlow.value = false
+                            mainVm.navigatePage(WebViewPageDestination(initUrl = ShortUrlSet.URL1))
+                        })
                 }
             },
             text = {

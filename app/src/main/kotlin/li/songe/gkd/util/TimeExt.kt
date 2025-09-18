@@ -40,27 +40,26 @@ fun Long.format(formatStr: String): String {
 
 data class ThrottleTimer(
     private val interval: Long = 500L,
-    private var value: Long = 0L
 ) {
+    private var lastAccessTime: Long = 0L
     fun expired(): Boolean {
         val t = System.currentTimeMillis()
-        if (t - value > interval) {
-            value = t
+        if (t - lastAccessTime > interval) {
+            lastAccessTime = t
             return true
         }
         return false
     }
 }
 
-private val defaultThrottleTimer by lazy { ThrottleTimer() }
-
 @Composable
 fun throttle(
     fn: (() -> Unit),
 ): (() -> Unit) {
+    val timer = remember { ThrottleTimer() }
     return remember(fn) {
         {
-            if (defaultThrottleTimer.expired()) {
+            if (timer.expired()) {
                 fn.invoke()
             }
         }
@@ -71,9 +70,10 @@ fun throttle(
 fun <T> throttle(
     fn: ((T) -> Unit),
 ): ((T) -> Unit) {
+    val timer = remember { ThrottleTimer() }
     return remember(fn) {
         {
-            if (defaultThrottleTimer.expired()) {
+            if (timer.expired()) {
                 fn.invoke(it)
             }
         }

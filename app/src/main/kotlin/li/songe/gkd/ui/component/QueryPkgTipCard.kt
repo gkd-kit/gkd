@@ -6,10 +6,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,17 +29,19 @@ import li.songe.gkd.util.throttle
 import li.songe.gkd.util.updateAppMutex
 
 @Composable
-fun QueryPkgAuthCard() {
+fun QueryPkgAuthCard(hideLoading: Boolean = false) {
     val canQueryPkg by canQueryPkgState.stateFlow.collectAsState()
     val mayQueryPkgNoAccess by mayQueryPkgNoAccessFlow.collectAsState()
     val appRefreshing by updateAppMutex.state.collectAsState()
     if (appRefreshing) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Spacer(modifier = Modifier.height(EmptyHeight / 2))
-            CircularProgressIndicator()
+        if (!hideLoading) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                CircularProgressIndicator()
+                Spacer(modifier = Modifier.height(EmptyHeight))
+            }
         }
     } else if (!canQueryPkg || mayQueryPkgNoAccess) {
         val mainVm = LocalMainViewModel.current
@@ -51,9 +50,8 @@ fun QueryPkgAuthCard() {
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Icon(
-                imageVector = Icons.Default.WarningAmber,
-                contentDescription = null,
+            PerfIcon(
+                imageVector = PerfIcon.WarningAmber,
                 modifier = Modifier.size(40.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -73,8 +71,7 @@ fun QueryPkgAuthCard() {
             })) {
                 Text(text = "申请权限")
             }
-            Spacer(modifier = Modifier.height(EmptyHeight / 2))
-
+            Spacer(modifier = Modifier.height(EmptyHeight))
         }
     }
 }

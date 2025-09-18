@@ -1,6 +1,5 @@
 package li.songe.gkd.ui
 
-import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,16 +9,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -41,6 +35,9 @@ import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AuthButtonGroup
 import li.songe.gkd.ui.component.ManualAuthDialog
+import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.ui.component.PerfIconButton
+import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
@@ -48,6 +45,7 @@ import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.cardHorizontalPadding
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
+import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openA11ySettings
@@ -67,15 +65,10 @@ fun AuthA11yPage() {
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        TopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
-            IconButton(onClick = {
+        PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
+            PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
                 mainVm.popBackStack()
-            }) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = null,
-                )
-            }
+            })
         }, title = {
             Text(text = "授权状态")
         })
@@ -106,7 +99,7 @@ fun AuthA11yPage() {
                 Text(
                     modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
                     style = MaterialTheme.typography.bodyMedium,
-                    text = "1. 授予「无障碍权限」\n2. 无障碍服务关闭后需重新授权"
+                    text = "1. 授予「无障碍权限」\n2. 无障碍关闭后需重新授权"
                 )
                 if (writeSecureSettings || a11yRunning) {
                     Spacer(modifier = Modifier.height(12.dp))
@@ -158,7 +151,7 @@ fun AuthA11yPage() {
                 Text(
                     modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
                     style = MaterialTheme.typography.bodyMedium,
-                    text = "1. 授予「写入安全设置权限」\n2. 授权永久有效, 包含「无障碍权限」\n3. 应用可自行控制开关无障碍服务\n4. 在通知栏快捷开关可快捷重启, 无感保活"
+                    text = "1. 授予「写入安全设置权限」\n2. 授权永久有效, 包含「无障碍权限」\n3. 应用可自行控制开关无障碍\n4. 在通知栏快捷开关可快捷重启, 无感保活"
                 )
                 if (!writeSecureSettings) {
                     A11yAuthButtonGroup()
@@ -245,14 +238,14 @@ fun AuthA11yPage() {
 }
 
 private val a11yCommandText by lazy {
-    arrayOf(
+    listOfNotNull(
         "pm grant ${META.appId} android.permission.WRITE_SECURE_SETTINGS",
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (AndroidTarget.TIRAMISU) {
             "appops set ${META.appId} ACCESS_RESTRICTED_SETTINGS allow"
         } else {
             null
         },
-    ).filterNotNull().joinToString("; ").trimEnd()
+    ).joinToString("; ")
 }
 
 private fun successAuthExec() {
