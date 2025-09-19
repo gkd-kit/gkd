@@ -30,6 +30,7 @@ private val actionDispatcher = Executors.newSingleThreadExecutor().asCoroutineDi
 
 class A11yRuleEngine(val service: A11yService) {
     init {
+        service.outStartQueryJob = { startQueryJob(byForced = true) }
         service.onA11yConnected {
             if (storeFlow.value.enableBlockA11yAppList && !a11yPartDisabledFlow.value) {
                 startQueryJob(byForced = true)
@@ -153,7 +154,7 @@ class A11yRuleEngine(val service: A11yService) {
 
     fun checkFutureStartJob() {
         val t = System.currentTimeMillis()
-        if (t - lastTriggerTime < 3000L || t - appChangeTime < 5000L) {
+        if (t - lastTriggerTime < 3000L || t - appChangeTime < 5000L || t - service.lastScreenOnTime < 3000L) {
             scope.launch(actionDispatcher) {
                 delay(300)
                 startQueryJob()

@@ -58,6 +58,10 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
     val scope = useScope()
     val powerManager by lazy { getSystemService(POWER_SERVICE) as PowerManager }
     var isInteractive = true
+        private set
+    var outStartQueryJob = {}
+    var lastScreenOnTime = 0L
+        private set
     private val screenStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(
             context: Context?,
@@ -69,6 +73,10 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
                 Intent.ACTION_SCREEN_ON -> true
                 Intent.ACTION_SCREEN_OFF -> false
                 else -> isInteractive
+            }
+            if (isInteractive) {
+                lastScreenOnTime = System.currentTimeMillis()
+                outStartQueryJob()
             }
         }
     }
