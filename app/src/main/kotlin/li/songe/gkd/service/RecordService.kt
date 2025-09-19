@@ -1,9 +1,13 @@
 package li.songe.gkd.service
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,8 +33,11 @@ import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.shizuku.SafeTaskListener
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.ui.component.AppNameText
+import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.style.AppTheme
+import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.util.appInfoMapFlow
+import li.songe.gkd.util.copyText
 import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
 
@@ -40,7 +47,7 @@ class RecordService : OverlayWindowService(
 ) {
 
     val topAppInfoFlow by lazy {
-        appInfoMapFlow.combine(topActivityFlow) { map, topActivity ->
+        combine(appInfoMapFlow, topActivityFlow) { map, topActivity ->
             map[topActivity.appId]
         }.stateIn(lifecycleScope, SharingStarted.Eagerly, null)
     }
@@ -58,7 +65,7 @@ class RecordService : OverlayWindowService(
             modifier = Modifier
                 .clip(MaterialTheme.shapes.small)
                 .background(bgColor.copy(alpha = 0.9f))
-                .padding(horizontal = 4.dp, vertical = 2.dp)
+                .padding(4.dp)
         ) {
             CompositionLocalProvider(LocalContentColor provides contentColorFor(bgColor)) {
                 if (activityOkFlow.collectAsState().value) {
@@ -77,7 +84,10 @@ class RecordService : OverlayWindowService(
                         topAppInfoFlow.collectAsState().value?.let {
                             AppNameText(appInfo = it)
                         }
-                        Text(text = "${topActivity.appId}\n${topActivity.shortActivityId}")
+                        RowText(text = topActivity.appId)
+                        topActivity.shortActivityId?.let {
+                            RowText(text = it)
+                        }
                     }
                 } else {
                     Column {
@@ -112,5 +122,22 @@ class RecordService : OverlayWindowService(
         }
 
         fun stop() = stopServiceByClass(RecordService::class)
+    }
+}
+
+@Composable
+private fun RowText(text: String) {
+    Row {
+        Text(text = text, modifier = Modifier.weight(1f, false))
+        Spacer(modifier = Modifier.width(4.dp))
+        PerfIcon(
+            imageVector = PerfIcon.ContentCopy,
+            modifier = Modifier
+                .clip(MaterialTheme.shapes.extraSmall)
+                .clickable(onClick = {
+                    copyText(text)
+                })
+                .iconTextSize(),
+        )
     }
 }

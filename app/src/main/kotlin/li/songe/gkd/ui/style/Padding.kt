@@ -2,8 +2,12 @@ package li.songe.gkd.ui.style
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MenuDefaults
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 
 val itemHorizontalPadding = 16.dp
@@ -31,4 +35,13 @@ fun Modifier.scaffoldPadding(values: PaddingValues): Modifier {
         top = values.calculateTopPadding(),
         // 被 LazyXXX 使用时, 移除 bottom padding, 否则 底部导航栏 无法实现透明背景
     )
+}
+
+@Composable
+fun Modifier.iconTextSize(): Modifier {
+    val density = LocalDensity.current
+    val textStyle = LocalTextStyle.current
+    val lineHeightDp = density.run { textStyle.lineHeight.toDp() }
+    val fontSizeDp = density.run { textStyle.fontSize.toDp() }
+    return padding((lineHeightDp - fontSizeDp) / 2).size(fontSizeDp)
 }
