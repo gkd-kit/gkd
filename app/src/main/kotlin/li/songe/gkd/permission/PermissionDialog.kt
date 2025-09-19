@@ -53,31 +53,21 @@ sealed class PermissionResult {
     data class Denied(val doNotAskAgain: Boolean) : PermissionResult()
 }
 
-private suspend fun checkOrRequestPermission(
-    context: MainActivity,
-    permissionState: PermissionState
-): Boolean {
-    if (!permissionState.updateAndGet()) {
-        val result = permissionState.request?.invoke(context)
-        if (result == null) {
-            context.mainVm.authReasonFlow.value = permissionState.reason
-            return false
-        } else if (result is PermissionResult.Denied) {
-            if (result.doNotAskAgain) {
-                context.mainVm.authReasonFlow.value = permissionState.reason
-            }
-            return false
-        }
-    }
-    return true
-}
-
 suspend fun requiredPermission(
     context: MainActivity,
     permissionState: PermissionState
 ) {
-    val r = checkOrRequestPermission(context, permissionState)
-    if (!r) {
+    if (permissionState.updateAndGet()) return
+    permissionState.grantSelf?.invoke()
+    if (permissionState.updateAndGet()) return
+    val result = permissionState.request?.invoke(context)
+    if (result == null) {
+        context.mainVm.authReasonFlow.value = permissionState.reason
+        stopCoroutine()
+    } else if (result is PermissionResult.Denied) {
+        if (result.doNotAskAgain) {
+            context.mainVm.authReasonFlow.value = permissionState.reason
+        }
         stopCoroutine()
     }
 }

@@ -7,6 +7,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.annotation.Keep
 import com.blankj.utilcode.util.LogUtils
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
 import li.songe.gkd.META
@@ -16,7 +17,6 @@ import li.songe.gkd.util.json
 import rikka.shizuku.Shizuku
 import java.io.DataOutputStream
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 import kotlin.system.exitProcess
 
 
@@ -86,9 +86,13 @@ class UserService : IUserService.Stub {
     }
 }
 
-private fun unbindUserService(serviceArgs: Shizuku.UserServiceArgs, connection: ServiceConnection) {
+private fun unbindUserService(
+    serviceArgs: Shizuku.UserServiceArgs,
+    connection: ServiceConnection,
+    reason: String? = null,
+) {
     if (!shizukuOkState.stateFlow.value) return
-    LogUtils.d("unbindUserService", serviceArgs)
+    LogUtils.d("unbindUserService", serviceArgs, reason)
     // https://github.com/RikkaApps/Shizuku-API/blob/master/server-shared/src/main/java/rikka/shizuku/server/UserServiceManager.java#L62
     try {
         Shizuku.unbindUserService(serviceArgs, connection, false)
@@ -167,7 +171,7 @@ suspend fun buildServiceWrapper(): UserServiceWrapper? {
         }
     }
     return withTimeoutOrNull(3000) {
-        suspendCoroutine { continuation ->
+        suspendCancellableCoroutine { continuation ->
             resumeCallback = { continuation.resume(it) }
             try {
                 Shizuku.bindUserService(serviceArgs, connection)
@@ -178,7 +182,7 @@ suspend fun buildServiceWrapper(): UserServiceWrapper? {
         }
     }.apply {
         if (this == null) {
-            unbindUserService(serviceArgs, connection)
+            unbindUserService(serviceArgs, connection, "connect timeout")
         }
     }
 }

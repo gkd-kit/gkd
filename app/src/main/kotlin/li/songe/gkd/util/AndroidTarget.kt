@@ -24,6 +24,10 @@ object AndroidTarget {
     @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.TIRAMISU)
     val TIRAMISU = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
+    /** Android 14+ */
+    @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    val UPSIDE_DOWN_CAKE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+
     /** Android 16+ */
     @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.BAKLAVA)
     val BAKLAVA = Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA

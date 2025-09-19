@@ -288,7 +288,8 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
         shizukuErrorFlow.value = e
     }
 
-    suspend fun grantPermissionByShizuku(command: String) {
+    suspend fun guardShizukuContext() {
+        if (shizukuContextFlow.value.ok) return
         if (updateBinderMutex.mutex.isLocked) {
             toast("正在连接 Shizuku 服务，请稍后")
             stopCoroutine()
@@ -304,10 +305,8 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
                 delay(100)
             }
         }
-        val service = shizukuContextFlow.value.serviceWrapper ?: stopCoroutine()
-        if (!service.execCommandForResult(command).ok) {
-            stopCoroutine()
-        }
+        if (shizukuContextFlow.value.ok) return
+        stopCoroutine()
     }
 
     val a11yServiceEnabledFlow = useA11yServiceEnabledFlow()

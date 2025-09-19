@@ -53,11 +53,13 @@ class StatusService : Service(), OnSimpleLife {
         } else {
             META.appName
         }
-        return if (!abRunning) {
+        return if (shizukuWarn) {
+            Triple(title, "Shizuku 未连接，请授权或关闭优化", "gkd://page/1")
+        } else if (!abRunning) {
             val text = if (a11yServiceEnabledFlow.value) {
                 "无障碍发生故障"
             } else if (writeSecureSettingsState.updateAndGet()) {
-                if (store.enableService && a11yPartDisabledFlow.value) {
+                if (store.enableService && store.enableBlockA11yAppList && a11yPartDisabledFlow.value) {
                     "无障碍已局部关闭"
                 } else {
                     "无障碍已关闭"
@@ -68,8 +70,6 @@ class StatusService : Service(), OnSimpleLife {
             Triple(title, text, abNotif.uri)
         } else if (!store.enableMatch) {
             Triple(title, "暂停规则匹配", "gkd://page?tab=1")
-        } else if (shizukuWarn) {
-            Triple(title, "Shizuku 未连接，请授权或关闭优化", "gkd://page/1")
         } else if (store.useCustomNotifText) {
             Triple(
                 title,

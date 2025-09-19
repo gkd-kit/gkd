@@ -25,8 +25,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.Dispatchers
-import li.songe.gkd.META
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
+import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.ui.component.AuthButtonGroup
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.ManualAuthDialog
@@ -88,7 +88,8 @@ fun AppOpsAllowPage() {
                     )
                     AuthButtonGroup(
                         onClickShizuku = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                            mainVm.grantPermissionByShizuku(appOpsCommand)
+                            mainVm.guardShizukuContext()
+                            shizukuContextFlow.value.appOpsManager?.allowAllSelfMode()
                             toast("授权成功")
                         },
                         onClickManual = {
@@ -120,8 +121,3 @@ fun AppOpsAllowPage() {
         }
     )
 }
-
-private val appOpsCommand by lazy {
-    "appops set ${META.appId} FOREGROUND_SERVICE_SPECIAL_USE allow"
-}
-

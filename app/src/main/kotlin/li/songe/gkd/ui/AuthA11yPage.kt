@@ -1,5 +1,6 @@
 package li.songe.gkd.ui
 
+import android.Manifest
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,6 +33,7 @@ import li.songe.gkd.META
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.fixRestartService
+import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AuthButtonGroup
 import li.songe.gkd.ui.component.ManualAuthDialog
@@ -237,14 +239,15 @@ fun AuthA11yPage() {
     )
 }
 
+private val String.appopsAllowCommand: String
+    get() = "appops set ${META.appId} $this allow"
+
+val appOpsCommand by lazy { "FOREGROUND_SERVICE_SPECIAL_USE".appopsAllowCommand }
+
 private val a11yCommandText by lazy {
     listOfNotNull(
-        "pm grant ${META.appId} android.permission.WRITE_SECURE_SETTINGS",
-        if (AndroidTarget.TIRAMISU) {
-            "appops set ${META.appId} ACCESS_RESTRICTED_SETTINGS allow"
-        } else {
-            null
-        },
+        "pm grant ${META.appId} ${Manifest.permission.WRITE_SECURE_SETTINGS}",
+        if (AndroidTarget.TIRAMISU) "ACCESS_RESTRICTED_SETTINGS".appopsAllowCommand else null,
     ).joinToString("; ")
 }
 
@@ -262,7 +265,9 @@ private fun A11yAuthButtonGroup() {
     val vm = viewModel<AuthA11yVm>()
     AuthButtonGroup(
         onClickShizuku = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-            mainVm.grantPermissionByShizuku(a11yCommandText)
+            mainVm.guardShizukuContext()
+            writeSecureSettingsState.grantSelf?.invoke()
+            shizukuContextFlow.value.appOpsManager?.allowAllSelfMode()
             successAuthExec()
         },
         onClickManual = {

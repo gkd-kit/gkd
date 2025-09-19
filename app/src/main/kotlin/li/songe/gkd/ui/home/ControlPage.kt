@@ -75,9 +75,7 @@ fun useControlPage(): ScaffoldExt {
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             PerfTopAppBar(scrollBehavior = scrollBehavior, title = {
-                Text(
-                    text = stringResource(SafeR.app_name),
-                )
+                Text(text = stringResource(SafeR.app_name))
             }, actions = {
                 PerfIconButton(
                     imageVector = PerfIcon.RocketLaunch,
@@ -119,10 +117,13 @@ fun useControlPage(): ScaffoldExt {
                     Switch(
                         checked = a11yRunning,
                         onCheckedChange = throttle(vm.viewModelScope.launchAsFn { newEnabled ->
-                            if (writeSecureSettings || !newEnabled) {
-                                switchA11yService()
-                            } else {
+                            if (newEnabled && !writeSecureSettingsState.updateAndGet()) {
+                                writeSecureSettingsState.grantSelf?.invoke()
+                            }
+                            if (newEnabled && !writeSecureSettingsState.updateAndGet()) {
                                 mainVm.navigatePage(AuthA11YPageDestination)
+                            } else {
+                                switchA11yService()
                             }
                         }),
                     )

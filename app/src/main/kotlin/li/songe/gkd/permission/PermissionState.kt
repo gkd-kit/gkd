@@ -15,8 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.updateAndGet
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
-import li.songe.gkd.isActivityVisible
 import li.songe.gkd.shizuku.shizukuCheckGranted
+import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.mayQueryPkgNoAccessFlow
@@ -26,6 +26,7 @@ import li.songe.gkd.util.updateAppMutex
 
 class PermissionState(
     val check: () -> Boolean,
+    val grantSelf: (() -> Unit)? = null,
     val request: (suspend (context: MainActivity) -> PermissionResult)? = null,
     /**
      * show it when user doNotAskAgain
@@ -33,19 +34,21 @@ class PermissionState(
     val reason: AuthReason? = null,
 ) {
     val stateFlow = MutableStateFlow(false)
-    val value: Boolean
-        get() = stateFlow.value
+    val value get() = stateFlow.value
 
     fun updateAndGet(): Boolean {
         return stateFlow.updateAndGet { check() }
     }
 
-    fun checkOrToast(): Boolean {
+    fun checkOrToast(): Boolean = if (!updateAndGet()) {
+        grantSelf?.invoke()
         val r = updateAndGet()
         if (!r) {
             reason?.text?.let { toast(it()) }
         }
-        return r
+        r
+    } else {
+        true
     }
 }
 
@@ -83,19 +86,12 @@ private suspend fun asyncRequestPermission(
 }
 
 @Suppress("SameParameterValue")
-private fun checkOpNoThrow(op: String): Int {
-    if (AndroidTarget.Q) {
-        try {
-            return app.appOpsManager.checkOpNoThrow(
-                op,
-                android.os.Process.myUid(),
-                app.packageName
-            )
-        } catch (e: Throwable) {
-            e.printStackTrace()
-        }
-    }
-    return AppOpsManager.MODE_ALLOWED
+private fun checkAllowedOp(op: String): Boolean = app.appOpsManager.checkOpNoThrow(
+    op,
+    android.os.Process.myUid(),
+    app.packageName
+).let {
+    it != AppOpsManager.MODE_IGNORED && it != AppOpsManager.MODE_ERRORED
 }
 
 // https://github.com/gkd-kit/gkd/issues/954
@@ -103,7 +99,14 @@ private fun checkOpNoThrow(op: String): Int {
 val foregroundServiceSpecialUseState by lazy {
     PermissionState(
         check = {
-            checkOpNoThrow("android:foreground_service_special_use") != AppOpsManager.MODE_IGNORED
+            if (AndroidTarget.UPSIDE_DOWN_CAKE) {
+                checkAllowedOp("android:foreground_service_special_use")
+            } else {
+                true
+            }
+        },
+        grantSelf = {
+            shizukuContextFlow.value.appOpsManager?.allowAllSelfMode()
         },
         reason = AuthReason(
             text = { "当前操作权限「特殊用途的前台服务」已被限制, 请先解除限制" },
@@ -122,6 +125,9 @@ val notificationState by lazy {
     PermissionState(
         check = {
             XXPermissions.isGrantedPermission(app, permission)
+        },
+        grantSelf = {
+            shizukuContextFlow.value.appOpsManager?.allowAllSelfMode()
         },
         request = { asyncRequestPermission(it, permission) },
         reason = AuthReason(
@@ -157,13 +163,12 @@ val canDrawOverlaysState by lazy {
             // https://developer.android.com/security/fraud-prevention/activities?hl=zh-cn#hide_overlay_windows
             Settings.canDrawOverlays(app)
         },
+        grantSelf = {
+            shizukuContextFlow.value.appOpsManager?.allowAllSelfMode()
+        },
         reason = AuthReason(
             text = {
-                if (isActivityVisible()) {
-                    "当前操作需要「悬浮窗权限」\n请先前往权限页面授权"
-                } else {
-                    "缺少「悬浮窗权限」请先授权\n或当前应用拒绝显示悬浮窗"
-                }
+                "当前操作需要「悬浮窗权限」\n请先前往权限页面授权"
             },
             confirm = {
                 XXPermissions.startPermissionActivity(
@@ -206,6 +211,9 @@ val canWriteExternalStorage by lazy {
 val writeSecureSettingsState by lazy {
     PermissionState(
         check = { checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS) },
+        grantSelf = {
+            shizukuContextFlow.value.packageManager?.grantSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS)
+        },
     )
 }
 

@@ -12,7 +12,7 @@ public interface IPackageManager extends IInterface {
             throw new IllegalArgumentException("Stub!");
         }
     }
-    // android8 - android12 -> int flags
+    // android8 - android12.1 -> int flags
     // android13+ -> long flags
 
     // android8 - android12
@@ -22,5 +22,7 @@ public interface IPackageManager extends IInterface {
     ParceledListSlice<PackageInfo> getInstalledPackages(long flags, int userId);
 
     ParceledListSlice<IntentFilter> getAllIntentFilters(String packageName);
+
+    void grantRuntimePermission(String packageName, String permissionName, int userId);
 
 }

@@ -15,7 +15,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import li.songe.gkd.META
 import li.songe.gkd.appScope
 import li.songe.gkd.isActivityVisible
 import li.songe.gkd.permission.shizukuOkState
@@ -52,12 +51,12 @@ fun onA11yFeatInit() = service.run {
 
 private fun A11yService.useAttachState() {
     onCreated {
-        if (isActivityVisible() || META.debuggable) {
+        if (isActivityVisible()) {
             toast("无障碍已启动")
         }
     }
     onDestroyed {
-        if (isActivityVisible() || META.debuggable) {
+        if (isActivityVisible()) {
             if (willDestroyByBlock) {
                 toast("无障碍已局部关闭")
             } else {

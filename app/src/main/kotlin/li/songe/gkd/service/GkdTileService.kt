@@ -49,8 +49,11 @@ fun switchA11yService() = modifyA11yRun {
         A11yService.instance?.disableSelf()
     } else {
         if (!writeSecureSettingsState.updateAndGet()) {
-            toast("请先授予「写入安全设置权限」")
-            return@modifyA11yRun
+            writeSecureSettingsState.grantSelf?.invoke()
+            if (!writeSecureSettingsState.updateAndGet()) {
+                toast("请先授予「写入安全设置权限」")
+                return@modifyA11yRun
+            }
         }
         val names = app.getSecureA11yServices()
         app.putSecureInt(Settings.Secure.ACCESSIBILITY_ENABLED, 1)

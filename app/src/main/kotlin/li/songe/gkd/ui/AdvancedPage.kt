@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -205,14 +206,8 @@ fun AdvancedPage() {
                             val c = shizukuContextFlow.value
                             mainVm.dialogFlow.updateDialogOptions(
                                 title = "授权状态",
-                                text = arrayOf(
-                                    "IUserService" to c.serviceWrapper,
-                                    "IUserManager" to c.userManager,
-                                    "IPackageManager" to c.packageManager,
-                                    "IActivityManager" to c.activityManager,
-                                    "IActivityTaskManager" to c.activityTaskManager,
-                                ).joinToString("\n") { (name, state) ->
-                                    name + " " + if (state != null) "✅" else "❎"
+                                text = c.states.joinToString("\n") { (name, state) ->
+                                    if (state != null) "$name ✅" else "$name ❎"
                                 }
                             )
                         })
@@ -238,6 +233,14 @@ fun AdvancedPage() {
                 suffixUnderline = true,
                 onSuffixClick = { mainVm.navigateWebPage(ShortUrlSet.URL14) },
                 checked = store.enableShizuku,
+                suffixIcon = {
+                    if (updateBinderMutex.state.collectAsState().value) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(20.dp),
+                        )
+                    }
+                },
             ) {
                 if (updateBinderMutex.mutex.isLocked) {
                     toast("正在连接中，请稍后")

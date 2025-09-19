@@ -57,7 +57,8 @@ inline fun <T> safeInvokeMethod(
     block: () -> T
 ): T? = try {
     block()
-} catch (_: Throwable) {
+} catch (e: Throwable) {
+    e.message
     null
 }
 
@@ -77,20 +78,41 @@ private val shizukuUsedFlow by lazy {
 }
 
 class ShizukuContext(
-    val serviceWrapper: UserServiceWrapper? = null,
-    val packageManager: SafePackageManager? = null,
-    val userManager: SafeUserManager? = null,
-    val activityManager: SafeActivityManager? = null,
-    val activityTaskManager: SafeActivityTaskManager? = null,
+    val serviceWrapper: UserServiceWrapper?,
+    val packageManager: SafePackageManager?,
+    val userManager: SafeUserManager?,
+    val activityManager: SafeActivityManager?,
+    val activityTaskManager: SafeActivityTaskManager?,
+    val appOpsManager: SafeAppOpsManager?,
 ) {
+    init {
+        activityTaskManager?.registerDefault()
+    }
+
     val ok get() = this !== defaultShizukuContext
     fun destroy() {
         serviceWrapper?.destroy()
         activityTaskManager?.unregisterDefault()
     }
+
+    val states = listOf(
+        "IUserService" to serviceWrapper,
+        "IUserManager" to userManager,
+        "IPackageManager" to packageManager,
+        "IActivityManager" to activityManager,
+        "IActivityTaskManager" to activityTaskManager,
+        "IAppOpsService" to appOpsManager,
+    )
 }
 
-private val defaultShizukuContext = ShizukuContext()
+private val defaultShizukuContext = ShizukuContext(
+    serviceWrapper = null,
+    packageManager = null,
+    userManager = null,
+    activityManager = null,
+    activityTaskManager = null,
+    appOpsManager = null,
+)
 
 val currentUserId by lazy { android.os.Process.myUserHandle().hashCode() }
 
@@ -112,39 +134,40 @@ fun shizukuCheckGranted(): Boolean {
 }
 
 val updateBinderMutex = MutexState()
-private fun updateShizukuBinder() = appScope.launchTry(Dispatchers.IO) {
-    updateBinderMutex.withStateLock {
-        if (shizukuUsedFlow.value) {
-            if (!app.justStarted && isActivityVisible()) {
-                toast("正在连接 Shizuku 服务...")
-            }
-            shizukuContextFlow.value = ShizukuContext(
-                serviceWrapper = buildServiceWrapper(),
-                packageManager = SafePackageManager.newBinder(),
-                userManager = SafeUserManager.newBinder(),
-                activityManager = SafeActivityManager.newBinder(),
-                activityTaskManager = SafeActivityTaskManager.newBinder()?.apply {
-                    registerDefault()
-                },
-            )
-            if (isActivityVisible()) {
-                val delayMillis = if (app.justStarted) 1200L else 0L
-                if (shizukuContextFlow.value.serviceWrapper == null) {
-                    toast("Shizuku 服务连接失败", delayMillis)
+private fun updateShizukuBinder() = updateBinderMutex.launchTry(appScope, Dispatchers.IO) {
+    if (shizukuUsedFlow.value) {
+        if (!app.justStarted && isActivityVisible()) {
+            toast("正在连接 Shizuku 服务...")
+        }
+        shizukuContextFlow.value = ShizukuContext(
+            serviceWrapper = buildServiceWrapper(),
+            packageManager = SafePackageManager.newBinder(),
+            userManager = SafeUserManager.newBinder(),
+            activityManager = SafeActivityManager.newBinder(),
+            activityTaskManager = SafeActivityTaskManager.newBinder(),
+            appOpsManager = SafeAppOpsManager.newBinder(),
+        )
+        if (isActivityVisible()) {
+            val delayMillis = if (app.justStarted) 1200L else 0L
+            val newValue = shizukuContextFlow.value
+            if (newValue.serviceWrapper == null) {
+                if (newValue.packageManager != null) {
+                    toast("Shizuku 服务连接部分失败", delayMillis)
                 } else {
-                    toast("Shizuku 服务连接成功", delayMillis)
+                    toast("Shizuku 服务连接失败", delayMillis)
                 }
+            } else {
+                toast("Shizuku 服务连接成功", delayMillis)
             }
-        } else if (shizukuContextFlow.value.ok) {
-            shizukuContextFlow.value.destroy()
-            shizukuContextFlow.value = defaultShizukuContext
-            if (isActivityVisible()) {
-                toast("Shizuku 服务已断开")
-            }
+        }
+    } else if (shizukuContextFlow.value.ok) {
+        shizukuContextFlow.value.destroy()
+        shizukuContextFlow.value = defaultShizukuContext
+        if (isActivityVisible()) {
+            toast("Shizuku 服务已断开")
         }
     }
 }
-
 
 fun initShizuku() {
     Shizuku.addBinderReceivedListener {
