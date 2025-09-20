@@ -41,6 +41,9 @@ class SafeAppOpsManager(
     fun allowAllSelfMode() {
         setAllowSelfMode(AppOpsManagerHidden.OP_POST_NOTIFICATION)
         setAllowSelfMode(AppOpsManagerHidden.OP_SYSTEM_ALERT_WINDOW)
+        if (AndroidTarget.Q) {
+            setAllowSelfMode(AppOpsManagerHidden.OP_ACCESS_ACCESSIBILITY)
+        }
         if (AndroidTarget.TIRAMISU) {
             setAllowSelfMode(AppOpsManagerHidden.OP_ACCESS_RESTRICTED_SETTINGS)
         }

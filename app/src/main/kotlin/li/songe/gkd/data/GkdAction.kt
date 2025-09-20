@@ -61,9 +61,13 @@ sealed class ActionPerformer(val action: String) {
             return ActionResult(
                 action = action,
                 result = if (0 <= x && 0 <= y && x <= ScreenUtils.getScreenWidth() && y <= ScreenUtils.getScreenHeight()) {
-                    val result = shizukuContextFlow.value.serviceWrapper?.safeTap(x, y)
-                    if (result != null) {
-                        return ActionResult(action, result, true, position = x to y)
+                    if (shizukuContextFlow.value.inputManager?.tap(x, y) != null) {
+                        return ActionResult(
+                            action = action,
+                            result = true,
+                            shizuku = true,
+                            position = x to y
+                        )
                     }
                     val gestureDescription = GestureDescription.Builder()
                     val path = Path()
@@ -125,10 +129,18 @@ sealed class ActionPerformer(val action: String) {
             return ActionResult(
                 action = action,
                 result = if (0 <= x && 0 <= y && x <= ScreenUtils.getScreenWidth() && y <= ScreenUtils.getScreenHeight()) {
-                    val result =
-                        shizukuContextFlow.value.serviceWrapper?.safeTap(x, y, longClickDuration)
-                    if (result != null) {
-                        return ActionResult(action, result, true, position = x to y)
+                    if (shizukuContextFlow.value.inputManager?.tap(
+                            x,
+                            y,
+                            longClickDuration
+                        ) != null
+                    ) {
+                        return ActionResult(
+                            action = action,
+                            result = true,
+                            shizuku = true,
+                            position = x to y
+                        )
                     }
                     val gestureDescription = GestureDescription.Builder()
                     val path = Path()

@@ -1,7 +1,9 @@
 package li.songe.gkd.shizuku
 
+import android.app.ActivityManager
 import android.app.IActivityManager
-import android.content.ComponentName
+import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.checkExistClass
 
 class SafeActivityManager(private val value: IActivityManager) {
@@ -17,7 +19,26 @@ class SafeActivityManager(private val value: IActivityManager) {
         }
     }
 
-    fun getTopCpn(): ComponentName? = safeInvokeMethod {
-        value.getTasks(1).firstOrNull()?.topActivity
+    fun getTasks(maxNum: Int): List<ActivityManager.RunningTaskInfo> = safeInvokeMethod {
+        if (AndroidTarget.P) {
+            value.getTasks(maxNum)
+        } else {
+            value.getTasks(maxNum, 0)
+        }
+    } ?: emptyList()
+
+    fun registerDefault() {
+        if (!SafeTaskListener.isAvailable) return
+        safeInvokeMethod {
+            value.registerTaskStackListener(SafeTaskListener.instance)
+        }
+    }
+
+    fun unregisterDefault() {
+        if (!shizukuOkState.stateFlow.value) return
+        if (!SafeTaskListener.isAvailable) return
+        safeInvokeMethod {
+            value.unregisterTaskStackListener(SafeTaskListener.instance)
+        }
     }
 }

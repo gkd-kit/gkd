@@ -12,7 +12,9 @@ import android.view.accessibility.AccessibilityNodeInfo
 import androidx.core.content.ContextCompat
 import com.blankj.utilcode.util.LogUtils
 import com.google.android.accessibility.selecttospeak.SelectToSpeakService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.withContext
 import li.songe.gkd.a11y.A11yContext
 import li.songe.gkd.a11y.A11yRuleEngine
 import li.songe.gkd.a11y.a11yContext
@@ -115,7 +117,7 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
         val instance: A11yService?
             get() = a11yRef
 
-        fun execAction(gkdAction: GkdAction): ActionResult {
+        suspend fun execAction(gkdAction: GkdAction): ActionResult {
             val service = instance ?: throw RpcError("无障碍没有运行")
             val selector = Selector.parseOrNull(gkdAction.selector) ?: throw RpcError("非法选择器")
             runCatching { selector.checkType(typeInfo) }.exceptionOrNull()?.let {
@@ -129,9 +131,11 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
                     matchOption
                 )
             } ?: throw RpcError("没有查询到节点")
-            return ActionPerformer
-                .getAction(gkdAction.action ?: ActionPerformer.None.action)
-                .perform(targetNode, gkdAction.position)
+            return withContext(Dispatchers.IO) {
+                ActionPerformer
+                    .getAction(gkdAction.action ?: ActionPerformer.None.action)
+                    .perform(targetNode, gkdAction.position)
+            }
         }
     }
 }

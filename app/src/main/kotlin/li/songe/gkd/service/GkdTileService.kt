@@ -22,6 +22,7 @@ import li.songe.gkd.store.blockA11yAppListFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mapState
+import li.songe.gkd.util.systemUiAppId
 import li.songe.gkd.util.toast
 
 class GkdTileService : BaseTileService() {
@@ -147,8 +148,8 @@ fun initA11yWhiteAppList() {
         actualFlow.collect { disabled ->
             if (!disabled) {
                 val appId = topAppIdFlow.value
-                if (appId == launcherAppId) {
-                    // 开启或关闭无障碍会造成卡顿
+                if (appId == launcherAppId || appId == systemUiAppId) {
+                    // 检测最近任务界面，开启或关闭无障碍会造成卡顿
                     appScope.launch {
                         delay(A11Y_WHITE_APP_AWAIT_TIME)
                         if (appId == topAppIdFlow.value) {

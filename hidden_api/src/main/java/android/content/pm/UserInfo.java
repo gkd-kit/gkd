@@ -1,6 +1,8 @@
 package android.content.pm;
 
-@SuppressWarnings("unused")
+/**
+ * @noinspection unused
+ */
 public class UserInfo {
     public int id;
     public String name;

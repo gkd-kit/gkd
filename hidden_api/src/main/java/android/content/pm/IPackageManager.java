@@ -2,23 +2,29 @@ package android.content.pm;
 
 import android.content.IntentFilter;
 import android.os.Binder;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.IInterface;
 
-@SuppressWarnings("unused")
+import androidx.annotation.DeprecatedSinceApi;
+import androidx.annotation.RequiresApi;
+
+/**
+ * @noinspection unused
+ */
 public interface IPackageManager extends IInterface {
     abstract class Stub extends Binder implements IPackageManager {
         public static IPackageManager asInterface(IBinder binder) {
             throw new IllegalArgumentException("Stub!");
         }
     }
-    // android8 - android12.1 -> int flags
-    // android13+ -> long flags
 
-    // android8 - android12
+    boolean isSafeMode();
+
+    @DeprecatedSinceApi(api = Build.VERSION_CODES.TIRAMISU, message = "NoSuchMethodError")
     ParceledListSlice<PackageInfo> getInstalledPackages(int flags, int userId);
 
-    // android13+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     ParceledListSlice<PackageInfo> getInstalledPackages(long flags, int userId);
 
     ParceledListSlice<IntentFilter> getAllIntentFilters(String packageName);

@@ -112,6 +112,7 @@ data class CommandResult(
         get() = code == 0
 }
 
+@Suppress("unused")
 data class UserServiceWrapper(
     val userService: IUserService,
     val connection: ServiceConnection,
@@ -128,8 +129,8 @@ data class UserServiceWrapper(
         CommandResult(code = null, result = "", error = e.message)
     }
 
-    fun safeTap(x: Float, y: Float, duration: Long? = null): Boolean? {
-        val command = if (duration != null) {
+    fun tap(x: Float, y: Float, duration: Long = 0): Boolean {
+        val command = if (duration > 0) {
             "input swipe $x $y $x $y $duration"
         } else {
             "input tap $x $y"

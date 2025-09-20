@@ -54,7 +54,7 @@ class RecordService : OverlayWindowService(
 
     val activityOkFlow by lazy {
         combine(A11yService.isRunning, shizukuContextFlow) { a, b ->
-            a || (b.activityTaskManager != null && SafeTaskListener.isAvailable)
+            a || SafeTaskListener.isAvailable
         }.stateIn(scope = lifecycleScope, started = SharingStarted.Eagerly, initialValue = false)
     }
 

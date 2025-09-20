@@ -2,7 +2,9 @@ package android.app;
 
 import android.os.IBinder;
 
-@SuppressWarnings("unused")
+/**
+ * @noinspection unused
+ */
 public interface ITaskStackListener {
     abstract class Stub extends android.os.Binder implements ITaskStackListener {
         public static ITaskStackListener asInterface(IBinder obj) {

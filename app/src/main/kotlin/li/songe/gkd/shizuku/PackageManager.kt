@@ -3,28 +3,8 @@ package li.songe.gkd.shizuku
 import android.content.pm.IPackageManager
 import android.content.pm.PackageInfo
 import li.songe.gkd.META
+import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.checkExistClass
-import kotlin.reflect.typeOf
-
-
-private var pkgFcType: Int? = null
-private fun IPackageManager.compatGetInstalledPackages(
-    flags: Int,
-    userId: Int
-): List<PackageInfo> {
-    pkgFcType = pkgFcType ?: findCompatMethod(
-        "getInstalledPackages",
-        listOf(
-            1 to listOf(typeOf<Int>(), typeOf<Int>()),
-            2 to listOf(typeOf<Long>(), typeOf<Int>()),
-        )
-    )
-    return when (pkgFcType) {
-        1 -> getInstalledPackages(flags, userId).list
-        2 -> getInstalledPackages(flags.toLong(), userId).list
-        else -> emptyList()
-    }
-}
 
 class SafePackageManager(private val value: IPackageManager) {
     companion object {
@@ -39,9 +19,15 @@ class SafePackageManager(private val value: IPackageManager) {
         }
     }
 
-    fun getInstalledPackages(flags: Int, userId: Int): List<PackageInfo> {
-        return safeInvokeMethod { value.compatGetInstalledPackages(flags, userId) } ?: emptyList()
-    }
+    val isSafeMode get() = safeInvokeMethod { value.isSafeMode }
+
+    fun getInstalledPackages(flags: Int, userId: Int): List<PackageInfo> = safeInvokeMethod {
+        if (AndroidTarget.TIRAMISU) {
+            value.getInstalledPackages(flags.toLong(), userId).list
+        } else {
+            value.getInstalledPackages(flags, userId).list
+        }
+    } ?: emptyList()
 
     fun grantRuntimePermission(
         packageName: String,

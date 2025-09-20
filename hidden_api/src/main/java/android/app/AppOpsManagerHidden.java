@@ -15,6 +15,9 @@ public class AppOpsManagerHidden {
     public static int OP_POST_NOTIFICATION;
     public static int OP_SYSTEM_ALERT_WINDOW;
 
+    @RequiresApi(Build.VERSION_CODES.Q)
+    public static int OP_ACCESS_ACCESSIBILITY;
+
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     public static int OP_ACCESS_RESTRICTED_SETTINGS;
 

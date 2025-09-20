@@ -3,7 +3,6 @@ package li.songe.gkd.shizuku
 
 import android.content.ComponentName
 import android.content.pm.PackageManager
-import android.os.IInterface
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,35 +21,6 @@ import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
-import kotlin.reflect.KType
-import kotlin.reflect.full.declaredMemberFunctions
-import kotlin.reflect.full.valueParameters
-import kotlin.reflect.jvm.jvmName
-
-private val hiddenFunctionMap = HashMap<String, Int>()
-fun IInterface.findCompatMethod(
-    name: String,
-    typePairs: List<Pair<Int, List<KType>>>
-): Int {
-    val key = "${this::class.jvmName}::$name"
-    hiddenFunctionMap[key]?.let { return it }
-    val functions = this::class.declaredMemberFunctions.filter { it.name == name }
-    for (f in functions) {
-        val types = f.valueParameters.map { it.type }
-        typePairs.find { it.second == types }?.first?.let {
-            hiddenFunctionMap[key] = it
-            return it
-        }
-    }
-    LogUtils.d(
-        "获取签名 ${this::class.jvmName}::$name 失败",
-        functions.joinToString("\n") {
-            it.valueParameters.map { p -> p.type.toString() }.toString()
-        }
-    )
-    hiddenFunctionMap[key] = -1
-    return -1
-}
 
 // shizuku 会概率断开
 inline fun <T> safeInvokeMethod(
@@ -58,7 +28,7 @@ inline fun <T> safeInvokeMethod(
 ): T? = try {
     block()
 } catch (e: Throwable) {
-    e.message
+    e.printStackTrace()
     null
 }
 
@@ -84,15 +54,24 @@ class ShizukuContext(
     val activityManager: SafeActivityManager?,
     val activityTaskManager: SafeActivityTaskManager?,
     val appOpsManager: SafeAppOpsManager?,
+    val inputManager: SafeInputManager?,
 ) {
     init {
-        activityTaskManager?.registerDefault()
+        if (activityTaskManager != null) {
+            activityTaskManager.registerDefault()
+        } else {
+            activityManager?.registerDefault()
+        }
     }
 
     val ok get() = this !== defaultShizukuContext
     fun destroy() {
         serviceWrapper?.destroy()
-        activityTaskManager?.unregisterDefault()
+        if (activityTaskManager != null) {
+            activityTaskManager.unregisterDefault()
+        } else {
+            activityManager?.unregisterDefault()
+        }
     }
 
     val states = listOf(
@@ -102,6 +81,7 @@ class ShizukuContext(
         "IActivityManager" to activityManager,
         "IActivityTaskManager" to activityTaskManager,
         "IAppOpsService" to appOpsManager,
+        "IInputManager" to inputManager,
     )
 }
 
@@ -112,6 +92,7 @@ private val defaultShizukuContext = ShizukuContext(
     activityManager = null,
     activityTaskManager = null,
     appOpsManager = null,
+    inputManager = null,
 )
 
 val currentUserId by lazy { android.os.Process.myUserHandle().hashCode() }
@@ -119,7 +100,7 @@ val currentUserId by lazy { android.os.Process.myUserHandle().hashCode() }
 val shizukuContextFlow = MutableStateFlow(defaultShizukuContext)
 
 fun safeGetTopCpn(): ComponentName? = shizukuContextFlow.value.run {
-    activityTaskManager?.getTopCpn() ?: activityManager?.getTopCpn()
+    (activityTaskManager?.getTasks(1) ?: activityManager?.getTasks(1))?.firstOrNull()?.topActivity
 }
 
 fun shizukuCheckGranted(): Boolean {
@@ -129,8 +110,8 @@ fun shizukuCheckGranted(): Boolean {
         false
     }
     if (!granted) return false
-    val u = shizukuContextFlow.value.activityManager ?: SafeActivityManager.newBinder()
-    return u?.getTopCpn() != null
+    val u = shizukuContextFlow.value.packageManager ?: SafePackageManager.newBinder()
+    return u?.isSafeMode != null
 }
 
 val updateBinderMutex = MutexState()
@@ -146,6 +127,7 @@ private fun updateShizukuBinder() = updateBinderMutex.launchTry(appScope, Dispat
             activityManager = SafeActivityManager.newBinder(),
             activityTaskManager = SafeActivityTaskManager.newBinder(),
             appOpsManager = SafeAppOpsManager.newBinder(),
+            inputManager = SafeInputManager.newBinder(),
         )
         if (isActivityVisible()) {
             val delayMillis = if (app.justStarted) 1200L else 0L

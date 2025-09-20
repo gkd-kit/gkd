@@ -2,29 +2,10 @@ package li.songe.gkd.shizuku
 
 import android.app.ActivityManager
 import android.app.IActivityTaskManager
-import android.content.ComponentName
 import android.view.Display
 import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.checkExistClass
-import kotlin.reflect.typeOf
-
-private var tasksFcType: Int? = null
-private fun IActivityTaskManager.compatGetTasks(maxNum: Int): List<ActivityManager.RunningTaskInfo> {
-    tasksFcType = tasksFcType ?: findCompatMethod(
-        "getTasks",
-        listOf(
-            1 to listOf(typeOf<Int>()),
-            3 to listOf(typeOf<Int>(), typeOf<Boolean>(), typeOf<Boolean>()),
-            4 to listOf(typeOf<Int>(), typeOf<Boolean>(), typeOf<Boolean>(), typeOf<Int>()),
-        )
-    )
-    return when (tasksFcType) {
-        1 -> getTasks(maxNum)
-        3 -> getTasks(maxNum, false, false)
-        4 -> getTasks(maxNum, false, false, Display.INVALID_DISPLAY)
-        else -> emptyList()
-    }
-}
 
 object SafeTaskListener {
     val isAvailable: Boolean
@@ -45,8 +26,14 @@ class SafeActivityTaskManager(private val value: IActivityTaskManager) {
         }
     }
 
-    fun getTopCpn(): ComponentName? = safeInvokeMethod {
-        value.compatGetTasks(1).firstOrNull()?.topActivity
+    fun getTasks(maxNum: Int): List<ActivityManager.RunningTaskInfo>? = safeInvokeMethod {
+        if (AndroidTarget.TIRAMISU) {
+            value.getTasks(maxNum, false, false, Display.INVALID_DISPLAY)
+        } else if (AndroidTarget.S) {
+            value.getTasks(maxNum, false, false)
+        } else {
+            value.getTasks(maxNum)
+        }
     }
 
     fun registerDefault() {
