@@ -34,10 +34,13 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
@@ -115,8 +118,7 @@ class MainActivity : ComponentActivity() {
         get() = ViewCompat.getRootWindowInsets(window.decorView)!!
             .isVisible(WindowInsetsCompat.Type.ime())
 
-    private var _topBarWindowInsets: WindowInsets? = null
-    val topBarWindowInsets get() = _topBarWindowInsets!!
+    var topBarWindowInsets by mutableStateOf(WindowInsets())
 
     private fun watchKeyboardVisible() {
         if (AndroidTarget.R) {
@@ -192,8 +194,10 @@ class MainActivity : ComponentActivity() {
         StatusService.autoStart()
         topAppIdFlow.value = META.appId
         setContent {
-            if (_topBarWindowInsets == null) {
-                _topBarWindowInsets = FixedWindowInsets(TopAppBarDefaults.windowInsets)
+            val latestInsets = TopAppBarDefaults.windowInsets
+            val density = LocalDensity.current
+            if (latestInsets.getTop(density) > topBarWindowInsets.getTop(density)) {
+                topBarWindowInsets = FixedWindowInsets(latestInsets)
             }
             val navController = rememberNavController()
             mainVm.updateNavController(navController)
