@@ -201,10 +201,11 @@ fun updateTopActivity(appId: String, activityId: String?, type: Int = 0) {
             topActivity = topActivity,
         )
         if (idChanged) {
+            val oldAppId = lastAppId
             lastAppId = appId
             appChangeTime = t
             appScope.launchTry {
-                DbSet.appVisitLogDao.insert(lastAppId, appId, t)
+                DbSet.appVisitLogDao.insert(oldAppId, appId, t)
                 appLogCount++
                 if (appLogCount % 100 == 0) {
                     DbSet.appVisitLogDao.deleteKeepLatest()
