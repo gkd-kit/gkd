@@ -267,7 +267,7 @@ private fun A11yAuthButtonGroup() {
         onClickShizuku = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
             mainVm.guardShizukuContext()
             writeSecureSettingsState.grantSelf?.invoke()
-            shizukuContextFlow.value.appOpsManager?.allowAllSelfMode()
+            shizukuContextFlow.value.appOpsService?.allowAllSelfMode()
             successAuthExec()
         },
         onClickManual = {

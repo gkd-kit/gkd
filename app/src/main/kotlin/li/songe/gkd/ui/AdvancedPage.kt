@@ -163,6 +163,31 @@ fun AdvancedPage() {
         )
     }
 
+    var showShizukuState by vm.showShizukuStateFlow.asMutableState()
+    if (showShizukuState) {
+        val onDismissRequest = { showShizukuState = false }
+        AlertDialog(
+            title = { Text(text = "授权状态") },
+            text = {
+                val states = shizukuContextFlow.collectAsState().value.states
+                Column {
+                    states.forEach { (name, value) ->
+                        Text(
+                            text = name,
+                            textDecoration = if (value != null) null else TextDecoration.LineThrough,
+                        )
+                    }
+                }
+            },
+            onDismissRequest = onDismissRequest,
+            confirmButton = {
+                TextButton(onClick = onDismissRequest) {
+                    Text(text = "我知道了")
+                }
+            },
+        )
+    }
+
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -203,13 +228,7 @@ fun AdvancedPage() {
                     modifier = Modifier
                         .clip(MaterialTheme.shapes.extraSmall)
                         .clickable(onClick = throttle {
-                            val c = shizukuContextFlow.value
-                            mainVm.dialogFlow.updateDialogOptions(
-                                title = "授权状态",
-                                text = c.states.joinToString("\n") { (name, state) ->
-                                    if (state != null) "$name ✅" else "$name ❎"
-                                }
-                            )
+                            showShizukuState = true
                         })
                         .size(lineHeightDp),
                     imageVector = PerfIcon.Api,

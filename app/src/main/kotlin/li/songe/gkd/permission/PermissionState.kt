@@ -106,7 +106,7 @@ val foregroundServiceSpecialUseState by lazy {
             }
         },
         grantSelf = {
-            shizukuContextFlow.value.appOpsManager?.allowAllSelfMode()
+            shizukuContextFlow.value.appOpsService?.allowAllSelfMode()
         },
         reason = AuthReason(
             text = { "当前操作权限「特殊用途的前台服务」已被限制, 请先解除限制" },
@@ -127,7 +127,7 @@ val notificationState by lazy {
             XXPermissions.isGrantedPermission(app, permission)
         },
         grantSelf = {
-            shizukuContextFlow.value.appOpsManager?.allowAllSelfMode()
+            shizukuContextFlow.value.appOpsService?.allowAllSelfMode()
         },
         request = { asyncRequestPermission(it, permission) },
         reason = AuthReason(
@@ -164,7 +164,7 @@ val canDrawOverlaysState by lazy {
             Settings.canDrawOverlays(app)
         },
         grantSelf = {
-            shizukuContextFlow.value.appOpsManager?.allowAllSelfMode()
+            shizukuContextFlow.value.appOpsService?.allowAllSelfMode()
         },
         reason = AuthReason(
             text = {

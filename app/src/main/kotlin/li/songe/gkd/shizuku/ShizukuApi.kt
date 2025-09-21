@@ -53,7 +53,7 @@ class ShizukuContext(
     val userManager: SafeUserManager?,
     val activityManager: SafeActivityManager?,
     val activityTaskManager: SafeActivityTaskManager?,
-    val appOpsManager: SafeAppOpsManager?,
+    val appOpsService: SafeAppOpsService?,
     val inputManager: SafeInputManager?,
 ) {
     init {
@@ -76,12 +76,12 @@ class ShizukuContext(
 
     val states = listOf(
         "IUserService" to serviceWrapper,
-        "IUserManager" to userManager,
-        "IPackageManager" to packageManager,
         "IActivityManager" to activityManager,
         "IActivityTaskManager" to activityTaskManager,
-        "IAppOpsService" to appOpsManager,
+        "IAppOpsService" to appOpsService,
         "IInputManager" to inputManager,
+        "IPackageManager" to packageManager,
+        "IUserManager" to userManager,
     )
 }
 
@@ -91,7 +91,7 @@ private val defaultShizukuContext = ShizukuContext(
     userManager = null,
     activityManager = null,
     activityTaskManager = null,
-    appOpsManager = null,
+    appOpsService = null,
     inputManager = null,
 )
 
@@ -126,7 +126,7 @@ private fun updateShizukuBinder() = updateBinderMutex.launchTry(appScope, Dispat
             userManager = SafeUserManager.newBinder(),
             activityManager = SafeActivityManager.newBinder(),
             activityTaskManager = SafeActivityTaskManager.newBinder(),
-            appOpsManager = SafeAppOpsManager.newBinder(),
+            appOpsService = SafeAppOpsService.newBinder(),
             inputManager = SafeInputManager.newBinder(),
         )
         if (isActivityVisible()) {

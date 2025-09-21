@@ -89,7 +89,7 @@ fun AppOpsAllowPage() {
                     AuthButtonGroup(
                         onClickShizuku = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                             mainVm.guardShizukuContext()
-                            shizukuContextFlow.value.appOpsManager?.allowAllSelfMode()
+                            shizukuContextFlow.value.appOpsService?.allowAllSelfMode()
                             toast("授权成功")
                         },
                         onClickManual = {

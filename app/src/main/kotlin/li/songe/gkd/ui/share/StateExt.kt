@@ -16,14 +16,13 @@ fun <T> MutableStateFlow<T>.asMutableState(): MutableState<T> {
     return remember(this) {
         val stateFlow = this
         object : MutableState<T> {
+            val setter: (T) -> Unit = { stateFlow.value = it }
             override var value: T
                 get() = state.value
-                set(newValue) {
-                    stateFlow.value = newValue
-                }
+                set(newValue) = setter(newValue)
 
             override fun component1() = value
-            override fun component2(): (T) -> Unit = { value = it }
+            override fun component2() = setter
         }
     }
 }

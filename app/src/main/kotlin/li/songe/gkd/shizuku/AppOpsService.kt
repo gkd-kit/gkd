@@ -8,7 +8,7 @@ import li.songe.gkd.META
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.checkExistClass
 
-class SafeAppOpsManager(
+class SafeAppOpsService(
     private val value: IAppOpsService
 ) {
     companion object {
@@ -19,7 +19,7 @@ class SafeAppOpsManager(
             Context.APP_OPS_SERVICE,
             isAvailable,
         )?.let {
-            SafeAppOpsManager(IAppOpsService.Stub.asInterface(it))
+            SafeAppOpsService(IAppOpsService.Stub.asInterface(it))
         }
     }
 
