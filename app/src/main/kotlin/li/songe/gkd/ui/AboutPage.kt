@@ -50,6 +50,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.Dispatchers
@@ -69,6 +70,7 @@ import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.share.LocalDarkTheme
 import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemPadding
@@ -97,9 +99,10 @@ import java.io.File
 fun AboutPage() {
     val context = LocalActivity.current as MainActivity
     val mainVm = LocalMainViewModel.current
+    val vm = viewModel<AboutVm>()
     val store by storeFlow.collectAsState()
 
-    var showInfoDlg by remember { mutableStateOf(false) }
+    var showInfoDlg by vm.showInfoDlgFlow.asMutableState()
     if (showInfoDlg) {
         AlertDialog(
             onDismissRequest = { showInfoDlg = false },
@@ -144,8 +147,8 @@ fun AboutPage() {
             },
         )
     }
-    var showShareLogDlg by remember { mutableStateOf(false) }
-    var showShareAppDlg by remember { mutableStateOf(false) }
+    var showShareLogDlg by vm.showShareLogDlgFlow.asMutableState()
+    var showShareAppDlg by vm.showShareAppDlgFlow.asMutableState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
