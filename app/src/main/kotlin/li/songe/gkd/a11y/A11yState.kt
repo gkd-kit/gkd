@@ -20,15 +20,19 @@ import li.songe.gkd.data.AttrInfo
 import li.songe.gkd.data.ResetMatchType
 import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.RuleStatus
+import li.songe.gkd.data.isSystem
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.shizuku.safeInvokeMethod
 import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.blockA11yAppListFlow
 import li.songe.gkd.store.blockMatchAppListFlow
 import li.songe.gkd.store.storeFlow
+import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.PKG_FLAGS
 import li.songe.gkd.util.RuleSummary
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.ruleSummaryFlow
+import li.songe.gkd.util.systemUiAppId
 
 data class TopActivity(
     val appId: String = "",
@@ -51,6 +55,10 @@ data class TopActivity(
 
     fun sameAs(a: String, b: String?): Boolean {
         return appId == a && activityId == b
+    }
+
+    fun sameAs(cn: ComponentName): Boolean {
+        return appId == cn.packageName && activityId == cn.className
     }
 }
 
@@ -242,11 +250,32 @@ var appChangeTime = 0L
 
 var imeAppId = ""
 var launcherAppId = ""
+var systemRecentCn = ComponentName("", "")
 
 fun updateSystemDefaultAppId() {
-    launcherAppId = app.resolveAppId(Intent.ACTION_MAIN, Intent.CATEGORY_HOME) ?: ""
     imeAppId = app.getSecureString(Settings.Secure.DEFAULT_INPUT_METHOD)
         ?.let(ComponentName::unflattenFromString)?.packageName ?: ""
+    val launcherCn = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        .resolveActivity(app.packageManager)
+    launcherAppId = launcherCn.packageName
+    if (app.getPkgInfo(launcherAppId)?.applicationInfo?.isSystem == true) {
+        systemRecentCn = launcherCn
+    } else {
+        safeInvokeMethod {
+            if (AndroidTarget.P) {
+                systemRecentCn = ComponentName.unflattenFromString(
+                    app.getString(com.android.internal.R.string.config_recentsComponentName)
+                ) ?: systemRecentCn
+            }
+        }
+        if (systemRecentCn.packageName.isEmpty()) {
+            // https://github.com/android-cs/8/blob/main/packages/SystemUI/src/com/android/systemui/recents/RecentsActivity.java
+            systemRecentCn = ComponentName(
+                systemUiAppId,
+                "$systemUiAppId.recents.RecentsActivity",
+            )
+        }
+    }
 }
 
 private val actionLogMutex = Mutex()

@@ -55,6 +55,9 @@ private val PackageInfo.isOverlay: Boolean
         false
     }
 
+val ApplicationInfo.isSystem: Boolean
+    get() = flags and ApplicationInfo.FLAG_SYSTEM != 0
+
 fun PackageInfo.toAppInfo(
     userId: Int = currentUserId,
 ) = AppInfo(
@@ -63,7 +66,7 @@ fun PackageInfo.toAppInfo(
     versionCode = compatVersionCode,
     versionName = versionName,
     mtime = lastUpdateTime,
-    isSystem = applicationInfo?.let { it.flags and ApplicationInfo.FLAG_SYSTEM != 0 } ?: false,
+    isSystem = applicationInfo?.isSystem ?: false,
     name = applicationInfo?.run { loadLabel(app.packageManager).toString() } ?: packageName,
     hidden = activities?.isEmpty() != false || isOverlay,
     enabled = applicationInfo?.enabled ?: true,

@@ -22,7 +22,6 @@ import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
 
-// shizuku 会概率断开
 inline fun <T> safeInvokeMethod(
     block: () -> T
 ): T? = try {

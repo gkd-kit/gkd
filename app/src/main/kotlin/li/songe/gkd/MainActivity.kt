@@ -192,7 +192,9 @@ class MainActivity : ComponentActivity() {
         }
         watchKeyboardVisible()
         StatusService.autoStart()
-        topAppIdFlow.value = META.appId
+        if (storeFlow.value.enableBlockA11yAppList) {
+            topAppIdFlow.value = META.appId
+        }
         setContent {
             val latestInsets = TopAppBarDefaults.windowInsets
             val density = LocalDensity.current

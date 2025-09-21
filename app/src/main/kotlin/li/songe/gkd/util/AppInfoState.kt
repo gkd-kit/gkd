@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import androidx.core.content.ContextCompat
@@ -99,12 +98,6 @@ private val packageReceiver by lazy {
 
 const val PKG_FLAGS = PackageManager.MATCH_UNINSTALLED_PACKAGES or PackageManager.GET_ACTIVITIES
 
-private fun getPkgInfo(appId: String): PackageInfo? = try {
-    app.packageManager.getPackageInfo(appId, PKG_FLAGS)
-} catch (_: PackageManager.NameNotFoundException) {
-    null
-}
-
 val updateAppMutex = MutexState()
 
 private fun updateOtherUserAppInfo(userAppInfoMap: Map<String, AppInfo>? = null) {
@@ -146,7 +139,7 @@ private fun updatePartAppInfo(
     val newAppMap = HashMap(userAppInfoMapFlow.value)
     val newIconMap = HashMap(userAppIconMapFlow.value)
     appIds.forEach { appId ->
-        val info = getPkgInfo(appId)
+        val info = app.getPkgInfo(appId)
         if (info != null) {
             newAppMap[appId] = info.toAppInfo()
         } else {
@@ -184,7 +177,7 @@ fun updateAllAppInfo(
             )
         }.flatten()
             .map { it.activityInfo.packageName }.toSet()
-            .filter { !newAppMap.contains(it) }.mapNotNull { getPkgInfo(it) }
+            .filter { !newAppMap.contains(it) }.mapNotNull { app.getPkgInfo(it) }
         visiblePkgList.forEach { packageInfo ->
             newAppMap[packageInfo.packageName] = packageInfo.toAppInfo()
             packageInfo.pkgIcon?.let { icon ->

@@ -8,6 +8,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.provider.Settings
 import android.view.WindowManager
@@ -23,6 +24,7 @@ import li.songe.gkd.service.initA11yWhiteAppList
 import li.songe.gkd.shizuku.initShizuku
 import li.songe.gkd.store.initStore
 import li.songe.gkd.util.AndroidTarget
+import li.songe.gkd.util.PKG_FLAGS
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initSubsState
@@ -109,6 +111,12 @@ class App : Application() {
 
     fun resolveAppId(intent: Intent): String? {
         return intent.resolveActivity(packageManager)?.packageName
+    }
+
+    fun getPkgInfo(appId: String): PackageInfo? = try {
+        packageManager.getPackageInfo(appId, PKG_FLAGS)
+    } catch (_: PackageManager.NameNotFoundException) {
+        null
     }
 
     fun resolveAppId(action: String, category: String? = null): String? {

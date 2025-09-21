@@ -10,7 +10,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.META
-import li.songe.gkd.a11y.launcherAppId
+import li.songe.gkd.a11y.systemRecentCn
+import li.songe.gkd.a11y.topActivityFlow
 import li.songe.gkd.a11y.topAppIdFlow
 import li.songe.gkd.accessRestrictedSettingsShowFlow
 import li.songe.gkd.app
@@ -22,7 +23,6 @@ import li.songe.gkd.store.blockA11yAppListFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mapState
-import li.songe.gkd.util.systemUiAppId
 import li.songe.gkd.util.toast
 
 class GkdTileService : BaseTileService() {
@@ -141,15 +141,13 @@ val a11yPartDisabledFlow by lazy {
     }
 }
 
-
 fun initA11yWhiteAppList() {
-    val actualFlow = a11yPartDisabledFlow.drop(1)
+    val actualFlow = topAppIdFlow.drop(1)
     appScope.launch(Dispatchers.Main) {
-        actualFlow.collect { disabled ->
-            if (!disabled) {
-                val appId = topAppIdFlow.value
-                if (appId == launcherAppId || appId == systemUiAppId) {
-                    // 检测最近任务界面，开启或关闭无障碍会造成卡顿
+        actualFlow.collect { appId ->
+            if (!blockA11yAppListFlow.value.contains(appId)) {
+                if (topActivityFlow.value.sameAs(systemRecentCn)) {
+                    // 切换无障碍会造成卡顿，在最近任务界面时，延迟这个卡顿
                     appScope.launch {
                         delay(A11Y_WHITE_APP_AWAIT_TIME)
                         if (appId == topAppIdFlow.value) {
@@ -163,8 +161,8 @@ fun initA11yWhiteAppList() {
         }
     }
     appScope.launch(Dispatchers.Main) {
-        actualFlow.debounce(A11Y_WHITE_APP_AWAIT_TIME).collect { disabled ->
-            if (disabled) {
+        actualFlow.debounce(A11Y_WHITE_APP_AWAIT_TIME).collect { appId ->
+            if (blockA11yAppListFlow.value.contains(appId)) {
                 forcedUpdateA11yService(true)
             }
         }
