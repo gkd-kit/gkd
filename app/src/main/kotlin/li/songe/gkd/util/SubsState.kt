@@ -66,6 +66,40 @@ val subsLoadErrorsFlow = MutableStateFlow<Map<Long, Exception>>(emptyMap())
 val subsRefreshErrorsFlow = MutableStateFlow<Map<Long, Exception>>(emptyMap())
 val subsMapFlow = MutableStateFlow<Map<Long, RawSubscription>>(emptyMap())
 
+val latestRecordFlow by lazy {
+    DbSet.actionLogDao.queryLatest().stateIn(appScope, SharingStarted.Eagerly, null)
+}
+val latestRecordDescFlow by lazy {
+    combine(
+        latestRecordFlow,
+        subsMapFlow,
+        appInfoMapFlow,
+    ) { record, subsMap, appMap ->
+        if (record == null) return@combine null
+        val isAppRule = record.groupType == SubsConfig.AppGroupType
+        val groupName = if (isAppRule) {
+            subsMap[record.subsId]?.apps?.find { a -> a.id == record.appId }?.groups?.find { g -> g.key == record.groupKey }?.name
+        } else {
+            subsMap[record.subsId]?.globalGroups?.find { g -> g.key == record.groupKey }?.name
+        }
+        val appName = appMap[record.appId]?.name
+        val appShowName = appName ?: record.appId
+        if (groupName != null) {
+            if (groupName.startsWith(appShowName)) {
+                groupName
+            } else {
+                if (isAppRule) {
+                    "$appShowName/$groupName"
+                } else {
+                    "$groupName/$appShowName"
+                }
+            }
+        } else {
+            appShowName
+        }
+    }.stateIn(appScope, SharingStarted.Eagerly, null)
+}
+
 val subsEntriesFlow by lazy {
     combine(
         subsItemsFlow,

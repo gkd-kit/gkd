@@ -39,6 +39,7 @@ import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDest
 import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
 import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import li.songe.gkd.MainActivity
+import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
@@ -60,6 +61,8 @@ import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.SafeR
+import li.songe.gkd.util.latestRecordDescFlow
+import li.songe.gkd.util.latestRecordFlow
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
 
@@ -310,7 +313,6 @@ private fun ServerStatusCard(vm: HomeVm) {
                     horizontal = itemVerticalPadding,
                 )
         ) {
-            val latestRecordDesc by vm.latestRecordDescFlow.collectAsState()
             val subsStatus by vm.subsStatusFlow.collectAsState()
             AnimatedVisibility(subsStatus.isNotEmpty()) {
                 Text(
@@ -320,14 +322,15 @@ private fun ServerStatusCard(vm: HomeVm) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            AnimatedVisibility(latestRecordDesc != null) {
-                val isGlobal by vm.latestRecordIsGlobalFlow.collectAsState()
+
+            val latestRecordDesc by latestRecordDescFlow.collectAsState()
+            if (latestRecordDesc != null) {
                 Row(
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
                         .clip(MaterialTheme.shapes.extraSmall)
                         .clickable(onClick = throttle {
-                            vm.latestRecordFlow.value?.let {
+                            latestRecordFlow.value?.let {
                                 mainVm.navigatePage(
                                     AppConfigPageDestination(
                                         appId = it.appId,
@@ -340,10 +343,9 @@ private fun ServerStatusCard(vm: HomeVm) {
                         .padding(horizontal = 4.dp)
                 ) {
                     GroupNameText(
-                        modifier = Modifier
-                            .weight(1f),
+                        modifier = Modifier.weight(1f),
                         preText = "最近触发: ",
-                        isGlobal = isGlobal,
+                        isGlobal = latestRecordFlow.collectAsState().value?.groupType == SubsConfig.GlobalGroupType,
                         text = latestRecordDesc ?: "",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary,
