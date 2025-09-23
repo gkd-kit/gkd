@@ -51,7 +51,6 @@ import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.DropdownMenuCheckboxItem
 import li.songe.gkd.ui.component.DropdownMenuRadioButtonItem
 import li.songe.gkd.ui.component.EmptyText
-import li.songe.gkd.ui.component.FlagCard
 import li.songe.gkd.ui.component.InnerDisableSwitch
 import li.songe.gkd.ui.component.MultiTextField
 import li.songe.gkd.ui.component.PerfIcon
@@ -64,6 +63,7 @@ import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.icon.BackCloseIcon
+import li.songe.gkd.ui.icon.ResetSettings
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.asMutableState
@@ -291,72 +291,74 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                 state = listState,
             ) {
                 items(showAppInfos, { it.id }) { appInfo ->
-                    FlagCard(
-                        visible = excludeData.appIds.contains(appInfo.id),
+
+                    Row(
                         modifier = Modifier
-                            .itemPadding()
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .itemPadding(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        AppIcon(appId = appInfo.id)
+                        Column(
+                            modifier = Modifier.weight(1f),
                         ) {
-                            AppIcon(appId = appInfo.id)
-                            Column(
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                AppNameText(appInfo = appInfo)
-                                Text(
-                                    text = appInfo.id,
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            val blockMatch =
-                                blockMatchAppListFlow.collectAsState().value.contains(appInfo.id)
-                            if (blockMatch) {
-                                PerfIcon(
-                                    modifier = Modifier
-                                        .padding(2.dp)
-                                        .size(20.dp),
-                                    imageVector = PerfIcon.Block,
-                                    tint = MaterialTheme.colorScheme.secondary,
-                                )
-                            }
-                            val checked = getGlobalGroupChecked(
-                                subs,
-                                excludeData,
-                                group,
-                                appInfo.id
+                            AppNameText(appInfo = appInfo)
+                            Text(
+                                text = appInfo.id,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.fillMaxWidth(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            if (checked != null) {
-                                PerfSwitch(
-                                    key = appInfo.id,
-                                    checked = checked,
-                                    onCheckedChange = throttle(vm.viewModelScope.launchAsFn { newChecked ->
-                                        val subsConfig = (vm.subsConfigFlow.value ?: SubsConfig(
-                                            type = SubsConfig.GlobalGroupType,
-                                            subsId = subsItemId,
-                                            groupKey = groupKey,
-                                        )).copy(
-                                            exclude = excludeData.copy(
-                                                appIds = excludeData.appIds.toMutableMap()
-                                                    .apply {
-                                                        set(appInfo.id, !newChecked)
-                                                    })
-                                                .stringify()
-                                        )
-                                        DbSet.subsConfigDao.insert(subsConfig)
-                                    }),
-                                )
-                            } else {
-                                InnerDisableSwitch()
-                            }
+                        }
+                        val blockMatch =
+                            blockMatchAppListFlow.collectAsState().value.contains(appInfo.id)
+                        if (blockMatch) {
+                            PerfIcon(
+                                modifier = Modifier
+                                    .padding(2.dp)
+                                    .size(20.dp),
+                                imageVector = PerfIcon.Block,
+                                tint = MaterialTheme.colorScheme.secondary,
+                            )
+                        }
+                        val checked = getGlobalGroupChecked(
+                            subs,
+                            excludeData,
+                            group,
+                            appInfo.id
+                        )
+                        if (checked != null) {
+                            PerfSwitch(
+                                key = appInfo.id,
+                                checked = checked,
+                                onCheckedChange = vm.viewModelScope.launchAsFn { newChecked ->
+                                    val subsConfig = (vm.subsConfigFlow.value ?: SubsConfig(
+                                        type = SubsConfig.GlobalGroupType,
+                                        subsId = subsItemId,
+                                        groupKey = groupKey,
+                                    )).copy(
+                                        exclude = excludeData.copy(
+                                            appIds = excludeData.appIds.toMutableMap()
+                                                .apply {
+                                                    set(appInfo.id, !newChecked)
+                                                })
+                                            .stringify()
+                                    )
+                                    DbSet.subsConfigDao.insert(subsConfig)
+                                },
+                                thumbContent = if (excludeData.appIds.contains(appInfo.id)) ({
+                                    PerfIcon(
+                                        imageVector = ResetSettings,
+                                        modifier = Modifier.size(8.dp)
+                                    )
+                                }) else null,
+                            )
+                        } else {
+                            InnerDisableSwitch()
                         }
                     }
                 }

@@ -161,7 +161,7 @@ fun RuleGroupDialog(
                     PerfIconButton(imageVector = PerfIcon.Edit, onClick = throttle(onClickEdit))
                 }
                 PerfIconButton(
-                    imageVector = PerfIcon.AppRegistration,
+                    imageVector = PerfIcon.Block,
                     onClick = throttle(onClickEditExclude),
                 )
                 AnimatedVisibility(

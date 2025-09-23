@@ -24,15 +24,13 @@ import li.songe.gkd.ui.style.appItemPadding
 fun SubsAppCard(
     data: SubsAppInfoItem,
     enableSize: Int = data.rawApp.groups.count { g -> g.enable ?: true },
-    onClick: (() -> Unit)? = null,
-    onValueChange: ((Boolean) -> Unit)? = null,
+    onClick: (() -> Unit),
+    onValueChange: ((Boolean) -> Unit),
 ) {
     val rawApp = data.rawApp
     Row(
         modifier = Modifier
-            .clickable {
-                onClick?.invoke()
-            }
+            .clickable(onClick = onClick)
             .appItemPadding(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),

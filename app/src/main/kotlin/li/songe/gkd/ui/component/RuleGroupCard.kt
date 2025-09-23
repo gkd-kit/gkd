@@ -4,13 +4,16 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -90,19 +93,23 @@ fun RuleGroupCard(
             }
         }
     }
-
-    val (checked, excludeData) = if (inGlobalAppPage) {
-        val excludeData = remember(subsConfig?.exclude) {
-            ExcludeData.parse(subsConfig?.exclude)
-        }
-        getGlobalGroupChecked(subs, excludeData, group, appId) to excludeData
+    val excludeData = remember(subsConfig?.exclude) {
+        ExcludeData.parse(subsConfig?.exclude)
+    }
+    val checked = if (inGlobalAppPage) {
+        getGlobalGroupChecked(
+            subs,
+            excludeData,
+            group,
+            appId,
+        )
     } else {
         getGroupEnable(
             group,
             subsConfig,
             category,
-            categoryConfig
-        ) to null
+            categoryConfig,
+        )
     }
     val onCheckedChange = appScope.launchAsFn<Boolean> { newChecked ->
         val newConfig = if (appId != null) {
@@ -173,19 +180,21 @@ fun RuleGroupCard(
             containerColor = containerColor.value
         ),
     ) {
-        val visible = if (inGlobalAppPage) {
-            excludeData != null && excludeData.appIds.contains(appId)
+        val canRest = if (inGlobalAppPage) {
+            excludeData.appIds.contains(appId)
         } else {
             subsConfig?.enable != null
         }
-        FlagCard(
-            visible = visible,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-        ) {
+        val hasExcludeActivity = if (inGlobalAppPage) {
+            checked != null && excludeData.activityIds.any { it.first == appId }
+        } else {
+            excludeData.activityIds.isNotEmpty()
+        }
+        Box {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -241,7 +250,13 @@ fun RuleGroupCard(
                         key = Objects.hash(subs.id, appId, group.key),
                         modifier = switchModifier.minimumInteractiveComponentSize(),
                         checked = checked,
-                        onCheckedChange = if (isSelectedMode) null else throttle(onCheckedChange)
+                        onCheckedChange = if (isSelectedMode) null else onCheckedChange,
+                        thumbContent = if (canRest) ({
+                            PerfIcon(
+                                imageVector = ResetSettings,
+                                modifier = Modifier.size(8.dp)
+                            )
+                        }) else null,
                     )
                 } else {
                     InnerDisableSwitch(
@@ -249,6 +264,20 @@ fun RuleGroupCard(
                         isSelectedMode = isSelectedMode,
                     )
                 }
+            }
+            if (hasExcludeActivity) {
+                PerfIcon(
+                    imageVector = PerfIcon.Block,
+                    tint = if (isSelectedMode) {
+                        LocalContentColor.current.copy(alpha = 0.5f)
+                    } else {
+                        LocalContentColor.current
+                    },
+                    modifier = Modifier
+                        .padding(top = 4.dp, end = 4.dp)
+                        .align(Alignment.TopEnd)
+                        .size(8.dp)
+                )
             }
         }
     }

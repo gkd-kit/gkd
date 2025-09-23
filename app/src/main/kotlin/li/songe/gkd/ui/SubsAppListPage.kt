@@ -232,7 +232,7 @@ fun SubsAppListPage(
                         context.justHideSoftInput()
                         mainVm.navigatePage(SubsAppGroupListPageDestination(subsItemId, a.id))
                     },
-                    onValueChange = throttle(fn = vm.viewModelScope.launchAsFn { enable ->
+                    onValueChange = vm.viewModelScope.launchAsFn { enable ->
                         val newItem = a.appConfig?.copy(
                             enable = enable
                         ) ?: AppConfig(
@@ -241,7 +241,7 @@ fun SubsAppListPage(
                             appId = a.id,
                         )
                         DbSet.appConfigDao.insert(newItem)
-                    }),
+                    },
                 )
             }
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {

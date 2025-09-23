@@ -2,7 +2,6 @@ package li.songe.gkd.ui.component
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
@@ -373,7 +372,9 @@ class RuleGroupState(
 
         val excludeGroupState = editExcludeGroupFlow.collectAsState().value
         val excludeSubs = useSubs(excludeGroupState?.subsId)
-        if (excludeGroupState?.groupKey != null && excludeGroupState.appId != null && excludeSubs != null) {
+        val excludeGroup =
+            useSubsGroup(excludeSubs, excludeGroupState?.groupKey, excludeGroupState?.appId)
+        if (excludeGroupState?.groupKey != null && excludeGroupState.appId != null && excludeSubs != null && excludeGroup is RawSubscription.RawAppGroup) {
             FullscreenDialog(onDismissRequest = dismissExcludeGroupShow) {
                 val keyboardController = LocalSoftwareKeyboardController.current
                 val onBack = mainVm.viewModelScope.launchAsFn {
@@ -398,7 +399,10 @@ class RuleGroupState(
                                 )
                             },
                             title = {
-                                Text(text = "编辑禁用")
+                                TowLineText(
+                                    title = excludeGroup.name,
+                                    subtitle = "编辑禁用",
+                                )
                             },
                             actions = {
                                 PerfIconButton(imageVector = PerfIcon.Save, onClick = throttle {

@@ -12,6 +12,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
+import li.songe.gkd.util.isValidActivityId
 import li.songe.gkd.util.isValidAppId
 
 
@@ -219,7 +220,9 @@ data class ExcludeData(
                         if (appId.isValidAppId()) {
                             val activityId = a.getOrNull(1)
                             if (activityId != null) {
-                                activityIds.add(appId to activityId)
+                                if (activityId.isValidActivityId()) {
+                                    activityIds.add(appId to activityId)
+                                }
                             } else {
                                 appIds[appId] = true
                             }
