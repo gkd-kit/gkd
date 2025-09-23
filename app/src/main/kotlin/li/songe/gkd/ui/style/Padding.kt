@@ -8,6 +8,7 @@ import androidx.compose.material3.MenuDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 
 val itemHorizontalPadding = 16.dp
@@ -38,9 +39,8 @@ fun Modifier.scaffoldPadding(values: PaddingValues): Modifier {
 }
 
 @Composable
-fun Modifier.iconTextSize(): Modifier {
+fun Modifier.iconTextSize(textStyle: TextStyle = LocalTextStyle.current): Modifier {
     val density = LocalDensity.current
-    val textStyle = LocalTextStyle.current
     val lineHeightDp = density.run { textStyle.lineHeight.toDp() }
     val fontSizeDp = density.run { textStyle.fontSize.toDp() }
     return padding((lineHeightDp - fontSizeDp) / 2).size(fontSizeDp)

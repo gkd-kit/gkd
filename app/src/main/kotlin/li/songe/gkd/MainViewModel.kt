@@ -17,6 +17,7 @@ import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestin
 import com.ramcosta.composedestinations.spec.Direction
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,12 +27,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.a11y.useA11yServiceEnabledFlow
+import li.songe.gkd.a11y.useEnabledA11yServicesFlow
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.permission.AuthReason
 import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.service.A11yService
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.shizuku.updateBinderMutex
 import li.songe.gkd.store.createTextFlow
@@ -73,6 +76,9 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
         _instance = this
         addCloseable { _instance = null }
     }
+
+    override val scope: CoroutineScope
+        get() = viewModelScope
 
     private lateinit var navController: NavHostController
     fun updateNavController(navController: NavHostController) {
@@ -309,7 +315,10 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
         stopCoroutine()
     }
 
-    val a11yServiceEnabledFlow = useA11yServiceEnabledFlow()
+    private val a11yServicesFlow = useEnabledA11yServicesFlow()
+    val a11yServiceEnabledFlow = useA11yServiceEnabledFlow(a11yServicesFlow)
+    val hasOtherA11yFlow =
+        a11yServicesFlow.mapNew { it.isNotEmpty() && !it.contains(A11yService.a11yCn) }
 
     init {
         // preload

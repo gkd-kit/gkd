@@ -57,7 +57,7 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
     val safeActiveWindowAppId: String?
         get() = safeActiveWindow?.packageName?.toString()
 
-    val scope = useScope()
+    override val scope = useScope()
     val powerManager by lazy { getSystemService(POWER_SERVICE) as PowerManager }
     var isInteractive = true
         private set
@@ -109,8 +109,7 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
     }
 
     companion object {
-        val a11yComponentName by lazy { SelectToSpeakService::class.componentName }
-        val a11yClsName by lazy { a11yComponentName.flattenToShortString() }
+        val a11yCn by lazy { SelectToSpeakService::class.componentName }
 
         val isRunning = MutableStateFlow(false)
         private var a11yRef: A11yService? = null

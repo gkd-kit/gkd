@@ -20,7 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -60,6 +59,7 @@ import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.icon.BackCloseIcon
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
@@ -86,8 +86,8 @@ fun BlockA11yAppListPage() {
     val appInfos by vm.appInfosFlow.collectAsState()
     val searchStr by vm.searchStrFlow.collectAsState()
     val showSearchBar by vm.showSearchBarFlow.collectAsState()
-    val (scrollBehavior, listState) = useListScrollState(vm.resetKey)
-    val editable by vm.editableFlow.collectAsState()
+    var editable by vm.editableFlow.asMutableState()
+    val (scrollBehavior, listState) = useListScrollState(vm.resetKey, canScroll = { !editable })
     BackHandler(editable, vm.viewModelScope.launchAsFn {
         context.justHideSoftInput()
         if (vm.textChanged) {
@@ -96,26 +96,18 @@ fun BlockA11yAppListPage() {
                 text = "当前内容未保存，是否放弃编辑？",
             )
         }
-        vm.editableFlow.value = false
+        editable = false
     })
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             PerfTopAppBar(
-                scrollBehavior = if (editable) {
-                    remember(scrollBehavior) {
-                        object : TopAppBarScrollBehavior by scrollBehavior {
-                            override val isPinned: Boolean
-                                get() = true
-                        }
-                    }
-                } else {
-                    scrollBehavior
-                },
+                scrollBehavior = scrollBehavior,
+                canScroll = !editable,
                 navigationIcon = {
                     IconButton(
                         onClick = throttle(vm.viewModelScope.launchAsFn {
-                            if (vm.editableFlow.value) {
+                            if (editable) {
                                 if (vm.textChanged) {
                                     context.justHideSoftInput()
                                     mainVm.dialogFlow.waitResult(
@@ -123,7 +115,7 @@ fun BlockA11yAppListPage() {
                                         text = "当前内容未保存，是否放弃编辑？",
                                     )
                                 }
-                                vm.editableFlow.update { !it }
+                                editable = !editable
                             } else {
                                 context.hideSoftInput()
                                 mainVm.popBackStack()
@@ -178,7 +170,7 @@ fun BlockA11yAppListPage() {
                                         toast("未修改")
                                     }
                                     context.justHideSoftInput()
-                                    vm.editableFlow.value = false
+                                    editable = false
                                 },
                             )
                         },
@@ -187,14 +179,14 @@ fun BlockA11yAppListPage() {
                                 PerfIconButton(
                                     imageVector = PerfIcon.Edit,
                                     onClick = vm.viewModelScope.launchAsFn {
-                                        if (vm.editableFlow.value && vm.textChanged) {
+                                        if (editable && vm.textChanged) {
                                             context.justHideSoftInput()
                                             mainVm.dialogFlow.waitResult(
                                                 title = "提示",
                                                 text = "当前内容未保存，是否放弃编辑？",
                                             )
                                         }
-                                        vm.editableFlow.update { !it }
+                                        editable = !editable
                                     })
                                 IconButton(onClick = throttle {
                                     if (showSearchBar) {

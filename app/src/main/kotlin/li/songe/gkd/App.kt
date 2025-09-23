@@ -5,6 +5,7 @@ import android.app.AppOpsManager
 import android.app.Application
 import android.app.KeyguardManager
 import android.content.ClipboardManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
@@ -96,16 +97,18 @@ class App : Application() {
         return Settings.Secure.putInt(contentResolver, name, value)
     }
 
-    fun getSecureA11yServices(): MutableSet<String> {
-        return (getSecureString(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: "").split(
+    fun getSecureA11yServices(): MutableSet<ComponentName> {
+        val value = getSecureString(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+        if (value.isNullOrEmpty()) return mutableSetOf()
+        return value.split(
             ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR
-        ).toHashSet()
+        ).mapNotNull { ComponentName.unflattenFromString(it) }.toHashSet()
     }
 
-    fun putSecureA11yServices(services: Set<String>) {
+    fun putSecureA11yServices(services: Set<ComponentName>) {
         putSecureString(
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
-            services.joinToString(ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR.toString())
+            services.joinToString(ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR.toString()) { it.flattenToShortString() }
         )
     }
 

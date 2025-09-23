@@ -39,6 +39,7 @@ import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.SentimentDissatisfied
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.ToggleOff
 import androidx.compose.material.icons.outlined.ToggleOn
@@ -156,5 +157,6 @@ object PerfIcon {
     val Notifications get() = Icons.Outlined.Notifications
     val Layers get() = Icons.Outlined.Layers
     val Equalizer get() = Icons.Outlined.Equalizer
+    val SentimentDissatisfied get() = Icons.Outlined.SentimentDissatisfied
 
 }

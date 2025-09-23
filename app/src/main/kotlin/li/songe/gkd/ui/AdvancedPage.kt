@@ -40,7 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -78,6 +77,7 @@ import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
+import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.AndroidTarget
@@ -221,16 +221,13 @@ fun AdvancedPage() {
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
-                val lineHeightDp = LocalDensity.current.run {
-                    MaterialTheme.typography.titleSmall.lineHeight.toDp()
-                }
                 PerfIcon(
                     modifier = Modifier
                         .clip(MaterialTheme.shapes.extraSmall)
                         .clickable(onClick = throttle {
                             showShizukuState = true
                         })
-                        .size(lineHeightDp),
+                        .iconTextSize(textStyle = MaterialTheme.typography.titleSmall),
                     imageVector = PerfIcon.Api,
                     tint = MaterialTheme.colorScheme.primary,
                 )
@@ -349,7 +346,7 @@ fun AdvancedPage() {
 
             TextSwitch(
                 title = "清除订阅",
-                subtitle = "服务关闭时，删除内存订阅",
+                subtitle = "关闭服务时删除内存订阅",
                 checked = store.autoClearMemorySubs
             ) {
                 storeFlow.value = store.copy(

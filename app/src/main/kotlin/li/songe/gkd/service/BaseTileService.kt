@@ -17,7 +17,7 @@ abstract class BaseTileService : TileService(), OnTileLife {
 
     abstract val activeFlow: StateFlow<Boolean>
 
-    val scope = useScope()
+    override val scope = useScope()
     val listeningFlow = MutableStateFlow(false).apply {
         onStartListened { value = true }
         onStopListened { value = false }

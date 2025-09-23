@@ -76,13 +76,14 @@ fun useListScrollState(
     v1: Any?,
     v2: Any? = null,
     v3: Any? = null,
+    canScroll: () -> Boolean = { true },
 ): Pair<TopAppBarScrollBehavior, LazyListState> {
     return key(
         getCompatStateValue(v1),
         getCompatStateValue(v2),
         getCompatStateValue(v3)
     ) {
-        TopAppBarDefaults.enterAlwaysScrollBehavior() to rememberLazyListState()
+        TopAppBarDefaults.enterAlwaysScrollBehavior(canScroll = canScroll) to rememberLazyListState()
     }
 }
 

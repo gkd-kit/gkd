@@ -94,6 +94,8 @@ abstract class OverlayWindowService(
         onCreated()
     }
 
+    override val scope get() = lifecycleScope
+
     private val resizeFlow = MutableSharedFlow<Unit>()
 
     override fun onConfigurationChanged(newConfig: Configuration) {

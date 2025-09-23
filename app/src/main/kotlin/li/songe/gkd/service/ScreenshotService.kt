@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.Intent
 import coil3.Bitmap
 import com.blankj.utilcode.util.LogUtils
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.app
@@ -16,6 +17,9 @@ import li.songe.gkd.util.stopServiceByClass
 import java.lang.ref.WeakReference
 
 class ScreenshotService : Service(), OnSimpleLife {
+    override val scope: CoroutineScope
+        get() = throw NotImplementedError()
+
     override fun onBind(intent: Intent?) = null
     override fun onCreate() = onCreated()
     override fun onDestroy() = onDestroyed()

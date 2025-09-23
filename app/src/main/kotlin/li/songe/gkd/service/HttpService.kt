@@ -77,7 +77,7 @@ class HttpService : Service(), OnSimpleLife {
         onDestroyed()
     }
 
-    val scope = useScope()
+    override val scope = useScope()
 
     val httpServerPortFlow = storeFlow.mapState(scope) { s -> s.httpServerPort }
 

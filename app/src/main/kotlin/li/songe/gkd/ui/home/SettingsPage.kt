@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -57,6 +58,7 @@ import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
+import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.DarkThemeOption
@@ -364,12 +366,33 @@ fun useSettingsPage(): ScaffoldExt {
 
             if (store.enableShizuku && writeSecureSettingsState.stateFlow.collectAsState().value || META.debuggable) {
                 AnimatedVisibility(visible = store.enableBlockA11yAppList) {
-                    Text(
-                        text = "无障碍",
-                        modifier = Modifier.titleItemPadding(),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .titleItemPadding(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = "无障碍",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        if (mainVm.hasOtherA11yFlow.collectAsState().value) {
+                            PerfIcon(
+                                modifier = Modifier
+                                    .clip(MaterialTheme.shapes.extraSmall)
+                                    .clickable(onClick = throttle {
+                                        mainVm.dialogFlow.updateDialogOptions(
+                                            title = "无效优化",
+                                            text = "检测到已启用其它应用的无障碍服务，在此情况下，局部关闭是无效优化，因为无障碍不会被完全关闭，建议关闭「局部关闭」功能或其它应用的无障碍服务",
+                                        )
+                                    })
+                                    .iconTextSize(textStyle = MaterialTheme.typography.titleSmall),
+                                imageVector = PerfIcon.SentimentDissatisfied,
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
                 }
                 TextSwitch(
                     title = "局部关闭",
@@ -379,7 +402,7 @@ fun useSettingsPage(): ScaffoldExt {
                         if (it) {
                             mainVm.dialogFlow.waitResult(
                                 title = "使用说明",
-                                text = "「局部关闭」可解决某些应用无障碍检测或界面异常的问题\n\n切换无障碍会造成触摸卡顿，请自行考虑后再编辑无障碍白名单\n\n如果还使用其它无障碍软件会导致优化无效，因为无障碍没有被完全关闭\n\n此外需额外设置确保无障碍关闭后的持续后台运行\n1. 开启「常驻通知」\n2. 在「最近任务界面」锁定\n3. 允许自启动\n4. 省电策略设置为无限制\n不设置会被系统暂停或结束运行，导致无法恢复无障碍",
+                                text = "「局部关闭」可解决某些应用无障碍检测或界面异常的问题\n\n切换无障碍会造成触摸卡顿，请自行考虑后再编辑无障碍白名单\n\n如果还使用其它无障碍应用会导致优化无效，因为无障碍不会被完全关闭\n\n此外需额外设置确保无障碍关闭后的持续后台运行\n1. 开启「常驻通知」\n2. 在「最近任务界面」锁定\n3. 允许自启动\n4. 省电策略设置为无限制\n不设置会被系统暂停或结束运行，导致无法恢复无障碍",
                                 confirmText = "继续",
                                 dismissRequest = true,
                             )

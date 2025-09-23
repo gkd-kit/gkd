@@ -31,7 +31,7 @@ class StatusService : Service(), OnSimpleLife {
     override fun onCreate() = onCreated()
     override fun onDestroy() = onDestroyed()
 
-    val scope = useScope()
+    override val scope = useScope()
 
     val shizukuWarnFlow = combine(
         shizukuOkState.stateFlow,

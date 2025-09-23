@@ -38,6 +38,7 @@ interface OnSimpleLife {
         }
     }
 
+    val scope: CoroutineScope
     fun useScope(): CoroutineScope = MainScope().apply { onDestroyed { cancel() } }
 
     fun useAliveFlow(stateFlow: MutableStateFlow<Boolean>) {

@@ -108,6 +108,7 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
     })
     val (scrollBehavior, listState) = useListScrollState(
         vm.resetKey,
+        canScroll = { !editable }
     )
 
     BackHandler(editable, onBack = throttle(vm.viewModelScope.launchAsFn {
@@ -122,155 +123,160 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
     }))
 
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
-            IconButton(onClick = throttle(vm.viewModelScope.launchAsFn {
-                if (vm.editableFlow.value) {
-                    editable = false
-                    context.justHideSoftInput()
-                } else {
-                    context.hideSoftInput()
-                    mainVm.popBackStack()
-                }
-            })) {
-                BackCloseIcon(backOrClose = !editable)
-            }
-        }, title = {
-            if (showSearchBar) {
-                BackHandler {
-                    if (!context.justHideSoftInput()) {
-                        showSearchBar = false
+        PerfTopAppBar(
+            scrollBehavior = scrollBehavior,
+            canScroll = !editable,
+            navigationIcon = {
+                IconButton(onClick = throttle(vm.viewModelScope.launchAsFn {
+                    if (vm.editableFlow.value) {
+                        editable = false
+                        context.justHideSoftInput()
+                    } else {
+                        context.hideSoftInput()
+                        mainVm.popBackStack()
                     }
+                })) {
+                    BackCloseIcon(backOrClose = !editable)
                 }
-                AppBarTextField(
-                    value = searchStr,
-                    onValueChange = { newValue ->
-                        searchStr = newValue.trim()
-                    },
-                    hint = "请输入应用名称/ID",
-                    modifier = Modifier.autoFocus(),
-                )
-            } else {
-                TowLineText(
-                    title = group.name,
-                    subtitle = "编辑禁用",
-                    modifier = Modifier.noRippleClickable { vm.resetKey.intValue++ }
-                )
-            }
-        }, actions = {
-            AnimatedBooleanContent(
-                targetState = editable,
-                contentAlignment = Alignment.TopEnd,
-                contentTrue = {
-                    PerfIconButton(
-                        imageVector = PerfIcon.Save,
-                        onClick = throttle(vm.viewModelScope.launchAsFn {
-                            val newExclude = vm.changedValue
-                            if (newExclude != null) {
-                                val subsConfig = (vm.subsConfigFlow.value ?: SubsConfig(
-                                    type = SubsConfig.GlobalGroupType,
-                                    subsId = subsItemId,
-                                    groupKey = groupKey,
-                                )).copy(
-                                    exclude = newExclude.stringify()
-                                )
-                                DbSet.subsConfigDao.insert(subsConfig)
-                                toast("更新成功")
-                            } else {
-                                toast("未修改")
-                            }
-                            context.justHideSoftInput()
-                            editable = false
-                        }),
-                    )
-                },
-                contentFalse = {
-                    Row {
-                        PerfIconButton(
-                            imageVector = PerfIcon.Edit,
-                            onClick = {
-                                editable = true
-                                showSearchBar = false
-                            },
-                        )
-                        IconButton(onClick = {
-                            if (showSearchBar) {
-                                if (searchStr.isEmpty()) {
-                                    showSearchBar = false
-                                } else {
-                                    searchStr = ""
-                                }
-                            } else {
-                                showSearchBar = true
-                            }
-                        }) {
-                            AnimatedIcon(
-                                id = SafeR.ic_anim_search_close,
-                                atEnd = showSearchBar,
-                            )
+            },
+            title = {
+                if (showSearchBar) {
+                    BackHandler {
+                        if (!context.justHideSoftInput()) {
+                            showSearchBar = false
                         }
-                        var expanded by remember { mutableStateOf(false) }
+                    }
+                    AppBarTextField(
+                        value = searchStr,
+                        onValueChange = { newValue ->
+                            searchStr = newValue.trim()
+                        },
+                        hint = "请输入应用名称/ID",
+                        modifier = Modifier.autoFocus(),
+                    )
+                } else {
+                    TowLineText(
+                        title = group.name,
+                        subtitle = "编辑禁用",
+                        modifier = Modifier.noRippleClickable { vm.resetKey.intValue++ }
+                    )
+                }
+            },
+            actions = {
+                AnimatedBooleanContent(
+                    targetState = editable,
+                    contentAlignment = Alignment.TopEnd,
+                    contentTrue = {
                         PerfIconButton(
-                            imageVector = PerfIcon.Sort,
-                            onClick = {
-                                expanded = true
-                            },
+                            imageVector = PerfIcon.Save,
+                            onClick = throttle(vm.viewModelScope.launchAsFn {
+                                val newExclude = vm.changedValue
+                                if (newExclude != null) {
+                                    val subsConfig = (vm.subsConfigFlow.value ?: SubsConfig(
+                                        type = SubsConfig.GlobalGroupType,
+                                        subsId = subsItemId,
+                                        groupKey = groupKey,
+                                    )).copy(
+                                        exclude = newExclude.stringify()
+                                    )
+                                    DbSet.subsConfigDao.insert(subsConfig)
+                                    toast("更新成功")
+                                } else {
+                                    toast("未修改")
+                                }
+                                context.justHideSoftInput()
+                                editable = false
+                            }),
                         )
-                        Box(
-                            modifier = Modifier
-                                .wrapContentSize(Alignment.TopStart)
-                        ) {
-                            DropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false }
-                            ) {
-                                Text(
-                                    text = "排序",
-                                    modifier = Modifier.menuPadding(),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
+                    },
+                    contentFalse = {
+                        Row {
+                            PerfIconButton(
+                                imageVector = PerfIcon.Edit,
+                                onClick = {
+                                    editable = true
+                                    showSearchBar = false
+                                },
+                            )
+                            IconButton(onClick = {
+                                if (showSearchBar) {
+                                    if (searchStr.isEmpty()) {
+                                        showSearchBar = false
+                                    } else {
+                                        searchStr = ""
+                                    }
+                                } else {
+                                    showSearchBar = true
+                                }
+                            }) {
+                                AnimatedIcon(
+                                    id = SafeR.ic_anim_search_close,
+                                    atEnd = showSearchBar,
                                 )
-                                AppSortOption.objects.forEach { sortOption ->
-                                    DropdownMenuRadioButtonItem(
-                                        text = sortOption.label,
-                                        selected = sortType == sortOption,
-                                        onClick = {
-                                            vm.sortTypeFlow.value = sortOption
+                            }
+                            var expanded by remember { mutableStateOf(false) }
+                            PerfIconButton(
+                                imageVector = PerfIcon.Sort,
+                                onClick = {
+                                    expanded = true
+                                },
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .wrapContentSize(Alignment.TopStart)
+                            ) {
+                                DropdownMenu(
+                                    expanded = expanded,
+                                    onDismissRequest = { expanded = false }
+                                ) {
+                                    Text(
+                                        text = "排序",
+                                        modifier = Modifier.menuPadding(),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                    AppSortOption.objects.forEach { sortOption ->
+                                        DropdownMenuRadioButtonItem(
+                                            text = sortOption.label,
+                                            selected = sortType == sortOption,
+                                            onClick = {
+                                                vm.sortTypeFlow.value = sortOption
+                                            }
+                                        )
+                                    }
+                                    Text(
+                                        text = "筛选",
+                                        modifier = Modifier.menuPadding(),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                    DropdownMenuCheckboxItem(
+                                        text = "显示系统应用",
+                                        checked = showSystemApp,
+                                        onCheckedChange = {
+                                            vm.showSystemAppFlow.value = it
+                                        }
+                                    )
+                                    DropdownMenuCheckboxItem(
+                                        text = "显示内置禁用",
+                                        checked = showInnerDisabledApp,
+                                        onCheckedChange = {
+                                            vm.showInnerDisabledAppFlow.value = it
+                                        }
+                                    )
+                                    DropdownMenuCheckboxItem(
+                                        text = "显示白名单",
+                                        checked = showBlockApp,
+                                        onCheckedChange = {
+                                            vm.showBlockAppFlow.value = it
                                         }
                                     )
                                 }
-                                Text(
-                                    text = "筛选",
-                                    modifier = Modifier.menuPadding(),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
-                                DropdownMenuCheckboxItem(
-                                    text = "显示系统应用",
-                                    checked = showSystemApp,
-                                    onCheckedChange = {
-                                        vm.showSystemAppFlow.value = it
-                                    }
-                                )
-                                DropdownMenuCheckboxItem(
-                                    text = "显示内置禁用",
-                                    checked = showInnerDisabledApp,
-                                    onCheckedChange = {
-                                        vm.showInnerDisabledAppFlow.value = it
-                                    }
-                                )
-                                DropdownMenuCheckboxItem(
-                                    text = "显示白名单",
-                                    checked = showBlockApp,
-                                    onCheckedChange = {
-                                        vm.showBlockAppFlow.value = it
-                                    }
-                                )
                             }
                         }
-                    }
-                },
-            )
-        })
+                    },
+                )
+            })
     }) { contentPadding ->
         if (editable) {
             MultiTextField(
