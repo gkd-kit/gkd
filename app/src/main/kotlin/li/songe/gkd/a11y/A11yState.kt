@@ -22,6 +22,7 @@ import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.RuleStatus
 import li.songe.gkd.data.isSystem
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.service.RecordService
 import li.songe.gkd.shizuku.safeInvokeMethod
 import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.blockA11yAppListFlow
@@ -172,7 +173,7 @@ fun updateTopActivity(appId: String, activityId: String?, type: Int = 0) {
     )
     lastValidActivity = oldActivity
     lastActivityUpdateTime = t
-    if (storeFlow.value.enableActivityLog) {
+    if (storeFlow.value.enableActivityLog || RecordService.isRunning.value) {
         appScope.launchTry(Dispatchers.IO) {
             activityLogMutex.withLock {
                 DbSet.activityLogDao.insert(
