@@ -170,10 +170,7 @@ fun RuleGroupCard(
     )
     Card(
         modifier = modifier
-            .padding(
-                vertical = 2.dp,
-                horizontal = 8.dp
-            )
+            .padding(horizontal = 8.dp)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         shape = MaterialTheme.shapes.extraSmall,
         colors = CardDefaults.cardColors(

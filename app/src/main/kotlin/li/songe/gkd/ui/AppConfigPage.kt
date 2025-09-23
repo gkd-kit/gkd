@@ -3,13 +3,13 @@ package li.songe.gkd.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -34,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -67,6 +66,7 @@ import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
+import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
@@ -289,6 +289,7 @@ fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
         LazyColumn(
             modifier = Modifier.scaffoldPadding(contentPadding),
             state = listState,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             subsPairs.forEach { (entry, groups) ->
                 val subsId = entry.subsItem.id
@@ -296,7 +297,7 @@ fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
                     Row(
                         modifier = Modifier
                             .background(MaterialTheme.colorScheme.background)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .padding(horizontal = 8.dp)
                             .clip(MaterialTheme.shapes.extraSmall)
                             .clickable(onClick = throttle {
                                 mainVm.navigatePage(
@@ -307,7 +308,9 @@ fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
                                 )
                             })
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             modifier = Modifier.weight(1f),
@@ -318,19 +321,10 @@ fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
                             softWrap = false,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        val fontSizeDp = LocalDensity.current.run {
-                            MaterialTheme.typography.titleSmall.fontSize.toDp()
-                        }
-                        val lineHeightDp = LocalDensity.current.run {
-                            MaterialTheme.typography.titleSmall.lineHeight.toDp()
-                        }
                         PerfIcon(
                             imageVector = PerfIcon.KeyboardArrowRight,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .padding(start = 4.dp)
-                                .width(fontSizeDp)
-                                .height(lineHeightDp)
+                            modifier = Modifier.iconTextSize()
                         )
                     }
                 }

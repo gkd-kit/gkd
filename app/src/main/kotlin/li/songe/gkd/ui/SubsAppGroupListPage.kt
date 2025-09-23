@@ -2,6 +2,7 @@ package li.songe.gkd.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
@@ -266,6 +268,7 @@ fun SubsAppGroupListPage(
         LazyColumn(
             modifier = Modifier.scaffoldPadding(contentPadding),
             state = listState,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             items(app.groups, { it.key }) { group ->
                 val category = groupToCategoryMap[group]
