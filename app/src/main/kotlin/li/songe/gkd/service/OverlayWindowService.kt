@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.a11y.topActivityFlow
 import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.store.createAnyFlow
+import li.songe.gkd.ui.style.AppTheme
 import li.songe.gkd.util.BarUtils
 import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.ScreenUtils
@@ -124,7 +125,11 @@ abstract class OverlayWindowService(
         ComposeView(this).apply {
             setViewTreeSavedStateRegistryOwner(this@OverlayWindowService)
             setViewTreeLifecycleOwner(this@OverlayWindowService)
-            setContent { ComposeContent() }
+            setContent {
+                AppTheme(invertedTheme = true) {
+                    ComposeContent()
+                }
+            }
         }
     }
 

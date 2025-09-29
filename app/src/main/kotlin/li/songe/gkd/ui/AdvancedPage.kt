@@ -50,29 +50,33 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dylanc.activityresult.launcher.launchForResult
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.A11YEventLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
+import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.service.ActivityService
 import li.songe.gkd.service.ButtonService
+import li.songe.gkd.service.EventService
 import li.songe.gkd.service.HttpService
-import li.songe.gkd.service.RecordService
 import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.shizuku.updateBinderMutex
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AuthCard
+import li.songe.gkd.ui.component.CustomIconButton
+import li.songe.gkd.ui.component.CustomOutlinedTextField
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.autoFocus
-import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.style.EmptyHeight
@@ -81,10 +85,13 @@ import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.AndroidTarget
+import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.ShortUrlSet
+import li.songe.gkd.util.appInfoMapFlow
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
+import li.songe.selector.Selector
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
@@ -186,6 +193,100 @@ fun AdvancedPage() {
                 }
             },
         )
+    }
+
+    var showCaptureScreenshotDlg by vm.showCaptureScreenshotDlgFlow.asMutableState()
+    if (showCaptureScreenshotDlg) {
+        var appIdValue by remember { mutableStateOf(store.screenshotTargetAppId) }
+        var eventSelectorValue by remember { mutableStateOf(store.screenshotEventSelector) }
+        AlertDialog(
+            properties = DialogProperties(dismissOnClickOutside = false),
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(text = "截屏快照")
+                    PerfIconButton(
+                        imageVector = PerfIcon.HelpOutline,
+                        onClick = throttle {
+                            showCaptureScreenshotDlg = false
+                            mainVm.navigateWebPage(ShortUrlSet.URL15)
+                        },
+                    )
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    CustomOutlinedTextField(
+                        label = { Text("应用ID") },
+                        value = appIdValue,
+                        placeholder = { Text(text = "请输入目标应用ID") },
+                        onValueChange = {
+                            appIdValue = it
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    CustomOutlinedTextField(
+                        label = { Text("特征事件选择器") },
+                        value = eventSelectorValue,
+                        placeholder = { Text(text = "请输入特征事件选择器") },
+                        onValueChange = {
+                            eventSelectorValue = it
+                        },
+                        maxLines = 4,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .autoFocus(),
+                    )
+                }
+            },
+            onDismissRequest = {
+                showCaptureScreenshotDlg = false
+            },
+            confirmButton = {
+                TextButton(onClick = throttle {
+                    if (appIdValue == store.screenshotTargetAppId && eventSelectorValue == store.screenshotEventSelector) {
+                        showCaptureScreenshotDlg = false
+                        return@throttle
+                    }
+                    if (appIdValue.isNotEmpty() && !appInfoMapFlow.value.contains(appIdValue)) {
+                        toast("无效应用ID")
+                        return@throttle
+                    }
+                    if (eventSelectorValue.isNotEmpty()) {
+                        val s = Selector.parseOrNull(eventSelectorValue)
+                        if (s == null) {
+                            toast("无效事件选择器")
+                            return@throttle
+                        }
+                    }
+                    storeFlow.update {
+                        it.copy(
+                            screenshotTargetAppId = appIdValue,
+                            screenshotEventSelector = eventSelectorValue,
+                        )
+                    }
+                    toast("更新成功")
+                    showCaptureScreenshotDlg = false
+                }) {
+                    Text(
+                        text = "确认",
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCaptureScreenshotDlg = false }) {
+                    Text(
+                        text = "取消",
+                    )
+                }
+            })
     }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -394,7 +495,7 @@ fun AdvancedPage() {
 
             TextSwitch(
                 title = "快照按钮",
-                subtitle = "悬浮显示按钮点击保存快照",
+                subtitle = "显示按钮点击保存快照",
                 checked = ButtonService.isRunning.collectAsState().value,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
@@ -421,18 +522,27 @@ fun AdvancedPage() {
             TextSwitch(
                 title = "截屏快照",
                 subtitle = "截屏时保存快照",
-                suffix = "查看限制",
-                onSuffixClick = {
-                    mainVm.dialogFlow.updateDialogOptions(
-                        title = "限制说明",
-                        text = "仅支持部分小米设备截屏触发\n\n只保存节点信息不保存图片，用户需要在快照记录里替换截图",
-                    )
+                checked = store.captureScreenshot,
+                suffixIcon = {
+                    CustomIconButton(
+                        size = 32.dp,
+                        onClick = throttle {
+                            showCaptureScreenshotDlg = true
+                        },
+                    ) {
+                        PerfIcon(
+                            modifier = Modifier.size(20.dp),
+                            id = SafeR.ic_page_info,
+                        )
+                    }
                 },
-                checked = store.captureScreenshot
             ) {
                 storeFlow.value = store.copy(
                     captureScreenshot = it
                 )
+                if (it && store.screenshotTargetAppId.isEmpty() || store.screenshotEventSelector.isEmpty()) {
+                    toast("请配置目标应用和特征事件选择器")
+                }
             }
 
             TextSwitch(
@@ -470,41 +580,56 @@ fun AdvancedPage() {
             )
 
             Text(
-                text = "界面",
+                text = "日志",
                 modifier = Modifier.titleItemPadding(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
             SettingItem(
-                title = "界面记录",
+                title = "界面日志",
+                subtitle = "界面切换日志",
                 onClick = {
                     mainVm.navigatePage(ActivityLogPageDestination)
                 }
             )
             TextSwitch(
-                title = "记录界面",
-                subtitle = "记录打开的应用及界面",
-                checked = store.enableActivityLog
-            ) {
-                storeFlow.value = store.copy(
-                    enableActivityLog = it
-                )
-            }
-            TextSwitch(
-                title = "记录服务",
-                subtitle = "悬浮显示界面信息",
-                checked = RecordService.isRunning.collectAsState().value,
+                title = "界面服务",
+                subtitle = "显示当前界面信息",
+                checked = ActivityService.isRunning.collectAsState().value,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
                         requiredPermission(context, foregroundServiceSpecialUseState)
                         requiredPermission(context, notificationState)
                         requiredPermission(context, canDrawOverlaysState)
-                        RecordService.start()
+                        ActivityService.start()
                     } else {
-                        RecordService.stop()
+                        ActivityService.stop()
                     }
                 }
             )
+            SettingItem(
+                title = "事件日志",
+                subtitle = "无障碍事件日志",
+                onClick = {
+                    mainVm.navigatePage(A11YEventLogPageDestination)
+                }
+            )
+            TextSwitch(
+                title = "事件服务",
+                subtitle = "显示无障碍事件",
+                checked = EventService.isRunning.collectAsState().value,
+                onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
+                    if (it) {
+                        requiredPermission(context, foregroundServiceSpecialUseState)
+                        requiredPermission(context, notificationState)
+                        requiredPermission(context, canDrawOverlaysState)
+                        EventService.start()
+                    } else {
+                        EventService.stop()
+                    }
+                }
+            )
+
             Spacer(modifier = Modifier.height(EmptyHeight))
         }
     }

@@ -15,6 +15,7 @@ import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.RuleStatus
 import li.songe.gkd.isActivityVisible
 import li.songe.gkd.service.A11yService
+import li.songe.gkd.service.EventService
 import li.songe.gkd.service.a11yPartDisabledFlow
 import li.songe.gkd.shizuku.safeGetTopCpn
 import li.songe.gkd.store.storeFlow
@@ -64,6 +65,7 @@ class A11yRuleEngine(val service: A11yService) {
             }
             lastContentEventTime = a11yEvent.time
         }
+        EventService.logEvent(event)
         if (META.debuggable) {
             Log.d(
                 "onNewA11yEvent",
@@ -90,7 +92,7 @@ class A11yRuleEngine(val service: A11yService) {
         }
         val latestEvent = consumedEvents.last()
         val evAppId = latestEvent.appId
-        val evActivityId = latestEvent.className
+        val evActivityId = latestEvent.name
         val oldAppId = topActivityFlow.value.appId
         val rightAppId = if (oldAppId == evAppId) {
             evAppId

@@ -39,9 +39,16 @@ fun Modifier.scaffoldPadding(values: PaddingValues): Modifier {
 }
 
 @Composable
-fun Modifier.iconTextSize(textStyle: TextStyle = LocalTextStyle.current): Modifier {
+fun Modifier.iconTextSize(
+    textStyle: TextStyle = LocalTextStyle.current,
+    square: Boolean = true,
+): Modifier {
     val density = LocalDensity.current
     val lineHeightDp = density.run { textStyle.lineHeight.toDp() }
     val fontSizeDp = density.run { textStyle.fontSize.toDp() }
-    return padding((lineHeightDp - fontSizeDp) / 2).size(fontSizeDp)
+    return if (square) {
+        padding((lineHeightDp - fontSizeDp) / 2).size(fontSizeDp)
+    } else {
+        size(height = lineHeightDp, width = fontSizeDp)
+    }
 }

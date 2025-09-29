@@ -28,8 +28,8 @@ fun usePercentAnimatable(
     return percent
 }
 
+context(scope: LazyItemScope, )
 fun Modifier.animateListItem(
-    scope: LazyItemScope,
     enabled: Boolean = true,
 ): Modifier {
     if (!enabled) {

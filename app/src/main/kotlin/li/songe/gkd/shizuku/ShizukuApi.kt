@@ -82,6 +82,11 @@ class ShizukuContext(
         "IPackageManager" to packageManager,
         "IUserManager" to userManager,
     )
+
+    fun grantSelf() {
+        appOpsService?.allowAllSelfMode()
+        packageManager?.allowAllSelfPermission()
+    }
 }
 
 private val defaultShizukuContext = ShizukuContext(

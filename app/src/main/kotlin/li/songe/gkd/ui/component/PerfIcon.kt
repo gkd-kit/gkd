@@ -23,7 +23,7 @@ import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Api
-import androidx.compose.material.icons.outlined.AppRegistration
+import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.AutoMode
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DarkMode
@@ -36,11 +36,14 @@ import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.SentimentDissatisfied
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.TextFields
+import androidx.compose.material.icons.outlined.Title
 import androidx.compose.material.icons.outlined.ToggleOff
 import androidx.compose.material.icons.outlined.ToggleOn
 import androidx.compose.material.icons.outlined.VerifiedUser
@@ -143,7 +146,6 @@ object PerfIcon {
     val ArrowForward get() = Icons.AutoMirrored.Filled.ArrowForward
     val Image get() = Icons.Outlined.Image
     val WarningAmber get() = Icons.Default.WarningAmber
-    val AppRegistration get() = Icons.Outlined.AppRegistration
     val RocketLaunch get() = Icons.Outlined.RocketLaunch
     val CenterFocusWeak get() = Icons.Default.CenterFocusWeak
     val AutoMode get() = Icons.Outlined.AutoMode
@@ -158,5 +160,8 @@ object PerfIcon {
     val Layers get() = Icons.Outlined.Layers
     val Equalizer get() = Icons.Outlined.Equalizer
     val SentimentDissatisfied get() = Icons.Outlined.SentimentDissatisfied
-
+    val Lock get() = Icons.Outlined.Lock
+    val Title get() = Icons.Outlined.Title
+    val TextFields get() = Icons.Outlined.TextFields
+    val ArrowDownward get() = Icons.Outlined.ArrowDownward
 }

@@ -14,7 +14,6 @@ import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.ScreenshotUtil
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.stopServiceByClass
-import java.lang.ref.WeakReference
 
 class ScreenshotService : Service(), OnSimpleLife {
     override val scope: CoroutineScope
@@ -44,18 +43,20 @@ class ScreenshotService : Service(), OnSimpleLife {
         useAliveToast("截屏服务")
         StopServiceReceiver.autoRegister()
         onCreated { screenshotNotif.notifyService() }
-        onCreated { instance = WeakReference(this) }
-        onDestroyed { instance = WeakReference(null) }
-        onDestroyed { screenshotUtil?.destroy() }
+        onCreated { instance = this }
+        onDestroyed {
+            screenshotUtil?.destroy()
+            instance = null
+        }
     }
 
     companion object {
-        private var instance = WeakReference<ScreenshotService>(null)
+        private var instance: ScreenshotService? = null
         val isRunning = MutableStateFlow(false)
         suspend fun screenshot(): Bitmap? {
             if (!isRunning.value) return null
             return withTimeoutOrNull(3_000) {
-                instance.get()?.screenshotUtil?.execute()
+                instance?.screenshotUtil?.execute()
             }
         }
 

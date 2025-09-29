@@ -4,8 +4,13 @@ import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.DeleteColumn
 import androidx.room.RenameColumn
+import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverter
+import androidx.room.TypeConverters
 import androidx.room.migration.AutoMigrationSpec
+import li.songe.gkd.app
+import li.songe.gkd.data.A11yEventLog
 import li.songe.gkd.data.ActionLog
 import li.songe.gkd.data.ActivityLog
 import li.songe.gkd.data.AppConfig
@@ -14,9 +19,11 @@ import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubsItem
+import li.songe.gkd.util.dbFolder
+import li.songe.gkd.util.json
 
 @Database(
-    version = 13,
+    version = 14,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -26,6 +33,7 @@ import li.songe.gkd.data.SubsItem
         ActivityLog::class,
         AppConfig::class,
         AppVisitLog::class,
+        A11yEventLog::class,
     ],
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -40,8 +48,10 @@ import li.songe.gkd.data.SubsItem
         AutoMigration(from = 10, to = 11, spec = Migration10To11Spec::class),
         AutoMigration(from = 11, to = 12),
         AutoMigration(from = 12, to = 13),
+        AutoMigration(from = 13, to = 14),
     ]
 )
+@TypeConverters(DbConverters::class)
 abstract class AppDb : RoomDatabase() {
     abstract fun subsItemDao(): SubsItem.SubsItemDao
     abstract fun snapshotDao(): Snapshot.SnapshotDao
@@ -51,6 +61,7 @@ abstract class AppDb : RoomDatabase() {
     abstract fun actionLogDao(): ActionLog.ActionLogDao
     abstract fun activityLogDao(): ActivityLog.ActivityLogDao
     abstract fun appVisitLogDao(): AppVisitLog.AppLogDao
+    abstract fun a11yEventLogDao(): A11yEventLog.A11yEventLogDao
 }
 
 @RenameColumn(
@@ -78,3 +89,40 @@ class Migration9To10Spec : AutoMigrationSpec
     columnName = "app_version_name"
 )
 class Migration10To11Spec : AutoMigrationSpec
+
+@Suppress("unused")
+class DbConverters {
+    @TypeConverter
+    fun fromListStringToString(list: List<String>): String {
+        return json.encodeToString(list)
+    }
+
+    @TypeConverter
+    fun fromStringToList(value: String): List<String> {
+        if (value.isEmpty()) return emptyList()
+        return try {
+            json.decodeFromString(value)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+}
+
+object DbSet {
+    private val db by lazy {
+        Room.databaseBuilder(
+            app,
+            AppDb::class.java,
+            dbFolder.resolve("gkd.db").absolutePath
+        ).fallbackToDestructiveMigration(false).build()
+    }
+    val subsItemDao get() = db.subsItemDao()
+    val subsConfigDao get() = db.subsConfigDao()
+    val snapshotDao get() = db.snapshotDao()
+    val actionLogDao get() = db.actionLogDao()
+    val categoryConfigDao get() = db.categoryConfigDao()
+    val activityLogDao get() = db.activityLogDao()
+    val appConfigDao get() = db.appConfigDao()
+    val appVisitLogDao get() = db.appVisitLogDao()
+    val a11yEventLogDao get() = db.a11yEventLogDao()
+}

@@ -25,7 +25,7 @@ data class ActivityLog(
     @ColumnInfo(name = "activity_id") val activityId: String? = null,
 ) {
     val showActivityId by lazy { getShowActivityId(appId, activityId) }
-    val date by lazy { ctime.format("MM-dd HH:mm:ss SSS") }
+    val date by lazy { ctime.format("HH:mm:ss SSS") }
 
     @Dao
     interface ActivityLogDao {
@@ -47,12 +47,12 @@ data class ActivityLog(
             WHERE (
                     SELECT COUNT(*)
                     FROM activity_log_v2
-                ) > 1000
+                ) > 500
                 AND ctime <= (
                     SELECT ctime
                     FROM activity_log_v2
                     ORDER BY ctime DESC
-                    LIMIT 1 OFFSET 1000
+                    LIMIT 1 OFFSET 500
                 )
         """
         )

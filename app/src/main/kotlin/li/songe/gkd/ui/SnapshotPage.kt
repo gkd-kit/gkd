@@ -140,7 +140,7 @@ fun SnapshotPage() {
             ) {
                 items(snapshots, { it.id }) { snapshot ->
                     SnapshotCard(
-                        modifier = Modifier.animateListItem(this),
+                        modifier = Modifier.animateListItem(),
                         snapshot = snapshot,
                         onClick = {
                             selectedSnapshot = snapshot
@@ -150,7 +150,7 @@ fun SnapshotPage() {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (snapshots.isEmpty() && !firstLoading) {
-                        EmptyText(text = "暂无记录")
+                        EmptyText(text = "暂无数据")
                     }
                 }
             }

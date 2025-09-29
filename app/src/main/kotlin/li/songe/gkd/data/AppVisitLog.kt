@@ -40,12 +40,12 @@ data class AppVisitLog(
             WHERE (
                     SELECT COUNT(*)
                     FROM app_visit_log
-                ) > 1000
+                ) > 500
                 AND mtime <= (
                     SELECT mtime
                     FROM app_visit_log
                     ORDER BY mtime DESC
-                    LIMIT 1 OFFSET 1000
+                    LIMIT 1 OFFSET 500
                 )
         """
         )

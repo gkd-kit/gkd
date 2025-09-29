@@ -23,9 +23,11 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.get
 import com.blankj.utilcode.util.LogUtils
+import kotlinx.serialization.json.JsonElement
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
+import li.songe.json5.Json5
 import li.songe.json5.Json5EncoderConfig
 import li.songe.json5.encodeToJson5String
 import java.io.DataOutputStream
@@ -112,6 +114,9 @@ suspend fun runCommandByRoot(commandText: String) {
 
 val defaultJson5Config = Json5EncoderConfig(indent = "\u0020\u0020", trailingComma = true)
 inline fun <reified T> toJson5String(value: T): String {
+    if (value is JsonElement) {
+        return Json5.encodeToString(value, defaultJson5Config)
+    }
     return json.encodeToJson5String(value, defaultJson5Config)
 }
 

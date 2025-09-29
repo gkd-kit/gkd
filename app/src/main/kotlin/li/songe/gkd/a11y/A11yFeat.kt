@@ -6,6 +6,7 @@ import android.content.Context.WINDOW_SERVICE
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.PixelFormat
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
@@ -29,6 +30,14 @@ import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mapState
 import li.songe.gkd.util.toast
+import li.songe.selector.MatchOption
+import li.songe.selector.QueryContext
+import li.songe.selector.Selector
+import li.songe.selector.Transform
+import li.songe.selector.getBooleanInvoke
+import li.songe.selector.getCharSequenceAttr
+import li.songe.selector.getCharSequenceInvoke
+import li.songe.selector.getIntInvoke
 
 
 context(service: A11yService)
@@ -98,17 +107,73 @@ private fun watchCheckShizukuState() {
     }
 }
 
+private var tempEventSelector = "" to (null as Selector?)
+private fun AccessibilityEvent.getEventAttr(name: String): Any? = when (name) {
+    "name" -> className
+    "desc" -> contentDescription
+    "text" -> text
+    else -> null
+}
+
+private val a11yEventTransform by lazy {
+    Transform<AccessibilityEvent>(
+        getAttr = { target, name ->
+            when (target) {
+                is QueryContext<*> -> when (name) {
+                    "prev" -> target.prev
+                    "current" -> target.current
+                    else -> (target.current as AccessibilityEvent).getEventAttr(name)
+                }
+
+                is CharSequence -> getCharSequenceAttr(target, name)
+                is AccessibilityEvent -> target.getEventAttr(name)
+                is List<*> -> when (name) {
+                    "size" -> target.size
+                    else -> null
+                }
+
+                else -> null
+            }
+        },
+        getInvoke = { target, name, args ->
+            Log.d("A11yEventTransform", "getInvoke: $name(${args.joinToString()}) on $target")
+            when (target) {
+                is Int -> getIntInvoke(target, name, args)
+                is Boolean -> getBooleanInvoke(target, name, args)
+                is CharSequence -> getCharSequenceInvoke(target, name, args)
+                is List<*> -> when (name) {
+                    "get" -> {
+                        (args.singleOrNull() as? Int)?.let { index ->
+                            target.getOrNull(index)
+                        }
+                    }
+
+                    else -> null
+                }
+
+                else -> null
+            }
+        },
+        getName = { it.className },
+        getChildren = { emptySequence() },
+        getParent = { null }
+    )
+}
+
 context(event: AccessibilityEvent)
 private fun watchCaptureScreenshot() {
     if (!storeFlow.value.captureScreenshot) return
-    val appId = event.packageName.toString()
-    val appCls = event.className.toString()
-    if (!event.isFullScreen && appId == "com.miui.screenshot" && appCls == "android.widget.RelativeLayout" && event.text.firstOrNull()
-            ?.contentEquals("截屏缩略图") == true
-    ) {
-        appScope.launchTry {
-            SnapshotExt.captureSnapshot(skipScreenshot = true)
-        }
+    if (event.packageName != storeFlow.value.screenshotTargetAppId) return
+    if (tempEventSelector.first != storeFlow.value.screenshotEventSelector) {
+        tempEventSelector =
+            storeFlow.value.screenshotEventSelector to Selector.parseOrNull(storeFlow.value.screenshotEventSelector)
+    }
+    val selector = tempEventSelector.second ?: return
+    selector.match(event, a11yEventTransform, MatchOption(fastQuery = false)).let {
+        if (it == null) return
+    }
+    appScope.launchTry {
+        SnapshotExt.captureSnapshot(skipScreenshot = true)
     }
 }
 

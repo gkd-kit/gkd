@@ -39,7 +39,6 @@ import com.ramcosta.composedestinations.generated.destinations.AboutPageDestinat
 import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
 import com.ramcosta.composedestinations.generated.destinations.BlockA11YAppListPageDestination
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.fixRestartService
@@ -57,6 +56,7 @@ import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.titleItemPadding
@@ -75,12 +75,7 @@ fun useSettingsPage(): ScaffoldExt {
     val store by storeFlow.collectAsState()
     val vm = viewModel<HomeVm>()
 
-    var showToastInputDlg by remember {
-        mutableStateOf(false)
-    }
-    var showNotifTextInputDlg by remember {
-        mutableStateOf(false)
-    }
+    var showToastInputDlg by vm.showToastInputDlgFlow.asMutableState()
 
     if (showToastInputDlg) {
         var value by remember {
@@ -135,6 +130,8 @@ fun useSettingsPage(): ScaffoldExt {
             }
         )
     }
+
+    var showNotifTextInputDlg by vm.showNotifTextInputDlgFlow.asMutableState()
     if (showNotifTextInputDlg) {
         var titleValue by remember { mutableStateOf(store.customNotifTitle) }
         var textValue by remember { mutableStateOf(store.customNotifText) }
@@ -244,7 +241,7 @@ fun useSettingsPage(): ScaffoldExt {
             })
     }
 
-    var showToastSettingsDlg by remember { mutableStateOf(false) }
+    var showToastSettingsDlg by vm.showToastSettingsDlgFlow.asMutableState()
     if (showToastSettingsDlg) {
         AlertDialog(
             onDismissRequest = { showToastSettingsDlg = false },
@@ -364,7 +361,7 @@ fun useSettingsPage(): ScaffoldExt {
                     )
                 })
 
-            if (store.enableShizuku && writeSecureSettingsState.stateFlow.collectAsState().value || META.debuggable) {
+            if (store.enableShizuku && writeSecureSettingsState.stateFlow.collectAsState().value) {
                 AnimatedVisibility(visible = store.enableBlockA11yAppList) {
                     Row(
                         modifier = Modifier

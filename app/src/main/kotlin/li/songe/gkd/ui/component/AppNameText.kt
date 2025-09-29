@@ -1,6 +1,5 @@
 package li.songe.gkd.ui.component
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
@@ -17,6 +16,7 @@ import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -26,8 +26,6 @@ import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.otherUserMapFlow
 import li.songe.gkd.shizuku.currentUserId
 import li.songe.gkd.util.appInfoMapFlow
-import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
 
 @Composable
 fun AppNameText(
@@ -35,6 +33,7 @@ fun AppNameText(
     appId: String? = null,
     appInfo: AppInfo? = null,
     fallbackName: String? = null,
+    style: TextStyle = LocalTextStyle.current,
 ) {
     val info = appInfo ?: appInfoMapFlow.collectAsState().value[appId]
     val showSystemIcon = info?.isSystem == true
@@ -56,6 +55,7 @@ fun AppNameText(
             softWrap = false,
             overflow = TextOverflow.Ellipsis,
             textDecoration = textDecoration,
+            style = style,
         )
     } else {
         val userNameColor = MaterialTheme.colorScheme.tertiary
@@ -79,14 +79,13 @@ fun AppNameText(
             }
         }
         val inlineContent = if (showSystemIcon) {
-            val textStyle = LocalTextStyle.current
-            val contentColor = textStyle.color.takeOrElse { LocalContentColor.current }
-            remember(textStyle, contentColor) {
+            val contentColor = style.color.takeOrElse { LocalContentColor.current }
+            remember(style, contentColor) {
                 mapOf(
                     "icon" to InlineTextContent(
                         placeholder = Placeholder(
-                            width = textStyle.fontSize,
-                            height = textStyle.lineHeight,
+                            width = style.fontSize,
+                            height = style.lineHeight,
                             placeholderVerticalAlign = PlaceholderVerticalAlign.Center
                         )
                     ) {
@@ -94,7 +93,6 @@ fun AppNameText(
                             imageVector = PerfIcon.VerifiedUser,
                             modifier = Modifier
                                 .clip(MaterialTheme.shapes.extraSmall)
-                                .clickable(onClick = throttle { toast("当前是系统应用") })
                                 .fillMaxSize(),
                             tint = contentColor
                         )
@@ -112,6 +110,7 @@ fun AppNameText(
             softWrap = false,
             overflow = TextOverflow.Ellipsis,
             textDecoration = textDecoration,
+            style = style,
         )
     }
 }

@@ -29,6 +29,7 @@ object ShortUrlSet {
     const val URL12 = "https://gkd.li?r=12"
     const val URL13 = "https://gkd.li?r=13"
     const val URL14 = "https://gkd.li?r=14"
+    const val URL15 = "https://gkd.li?r=15"
 }
 
 const val shizukuAppId = "moe.shizuku.privileged.api"

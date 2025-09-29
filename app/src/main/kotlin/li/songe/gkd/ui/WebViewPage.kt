@@ -9,13 +9,10 @@ import android.webkit.WebView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,7 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import com.blankj.utilcode.util.LogUtils
 import com.kevinnzou.web.AccompanistWebViewClient
@@ -48,6 +44,7 @@ import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.ProfileTransitions
+import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.client
@@ -77,16 +74,8 @@ fun WebViewPage(
             title = {
                 val loadingState = webViewState.loadingState
                 if (loadingState is LoadingState.Loading) {
-                    val fontSizeDp = LocalDensity.current.run {
-                        LocalTextStyle.current.fontSize.toDp()
-                    }
-                    val lineHeightDp = LocalDensity.current.run {
-                        LocalTextStyle.current.lineHeight.toDp()
-                    }
                     CircularProgressIndicator(
-                        modifier = Modifier
-                            .padding(lineHeightDp - fontSizeDp)
-                            .size(fontSizeDp),
+                        modifier = Modifier.iconTextSize(),
                     )
                 } else {
                     Text(

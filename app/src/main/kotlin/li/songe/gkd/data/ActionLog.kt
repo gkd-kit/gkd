@@ -33,7 +33,7 @@ data class ActionLog(
 
     val showActivityId by lazy { getShowActivityId(appId, activityId) }
 
-    val date by lazy { ctime.format("MM-dd HH:mm:ss SSS") }
+    val date by lazy { ctime.format("HH:mm:ss SSS") }
 
     @DeleteTable.Entries(
         DeleteTable(tableName = "click_log")
@@ -102,12 +102,12 @@ data class ActionLog(
             WHERE (
                     SELECT COUNT(*)
                     FROM action_log
-                ) > 1000
+                ) > 500
                 AND id <= (
                     SELECT id
                     FROM action_log
                     ORDER BY id DESC
-                    LIMIT 1 OFFSET 1000
+                    LIMIT 1 OFFSET 500
                 )
         """
         )

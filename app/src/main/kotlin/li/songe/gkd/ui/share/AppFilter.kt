@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.share
 
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -13,7 +14,6 @@ import li.songe.gkd.util.visibleAppInfosFlow
 
 fun BaseViewModel.useAppFilter(
     sortTypeFlow: StateFlow<AppSortOption>,
-    showSystemAppFlow: StateFlow<Boolean>,
     appOrderListFlow: StateFlow<List<String>> = MainViewModel.instance.appOrderListFlow,
     showBlockAppFlow: StateFlow<Boolean>? = null,
     blockAppListFlow: StateFlow<Set<String>> = blockMatchAppListFlow,
@@ -26,13 +26,7 @@ fun BaseViewModel.useAppFilter(
         it.mapIndexed { i, appId -> appId to i }.toMap()
     }
 
-    var tempListFlow = visibleAppInfosFlow.combine(showSystemAppFlow) { appInfos, showSystemApp ->
-        if (showSystemApp) {
-            appInfos
-        } else {
-            appInfos.filterNot { it.isSystem }
-        }
-    }
+    var tempListFlow: Flow<List<AppInfo>> = visibleAppInfosFlow
 
     if (showBlockAppFlow != null) {
         tempListFlow = combine(

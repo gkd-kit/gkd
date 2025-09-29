@@ -347,7 +347,6 @@ class A11yContext(
 
                 else -> null
             }
-
         },
         getName = { node -> node.className },
         getChildren = ::getCacheChildren,

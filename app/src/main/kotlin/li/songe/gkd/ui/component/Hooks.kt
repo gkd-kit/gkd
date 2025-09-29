@@ -10,7 +10,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -88,6 +90,28 @@ fun useListScrollState(
 }
 
 @Composable
+fun LazyListState.isAtBottom(): androidx.compose.runtime.State<Boolean> = remember(this) {
+    derivedStateOf {
+        val visibleItemsInfo = layoutInfo.visibleItemsInfo
+        if (layoutInfo.totalItemsCount == 0) {
+            false
+        } else {
+            val lastVisibleItem = visibleItemsInfo.last()
+            val viewportHeight = layoutInfo.viewportEndOffset + layoutInfo.viewportStartOffset
+            (lastVisibleItem.index + 1 == layoutInfo.totalItemsCount &&
+                    lastVisibleItem.offset + lastVisibleItem.size <= viewportHeight)
+        }
+    }
+}
+
+
+val TopAppBarScrollBehavior.isFullVisible: Boolean
+    @Composable
+    @ReadOnlyComposable
+    get() = state.collapsedFraction == 0f
+
+@Composable
+@ReadOnlyComposable
 fun Modifier.textSize(
     style: TextStyle = LocalTextStyle.current,
     density: Density = LocalDensity.current,

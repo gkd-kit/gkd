@@ -156,12 +156,20 @@
                 android:value="Display a screenshot button for users to actively save screen information." />
         </service>
         <service
-            android:name=".service.RecordService"
+            android:name=".service.ActivityService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Display a text card for users to show current activity info" />
+        </service>
+        <service
+            android:name=".service.EventService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Display a text card for users to show a11y event log" />
         </service>
         <service
             android:name=".service.SnapshotActionService"
@@ -255,10 +263,27 @@
             </intent-filter>
         </service>
         <service
-            android:name=".service.RecordTileService"
+            android:name=".service.ActivityTileService"
             android:exported="true"
             android:icon="@drawable/ic_layers"
             android:label="@string/record_activity"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+            <meta-data
+                android:name="QS_TILE_URI"
+                android:value="gkd://page/1" />
+
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".service.EventTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_event_list"
+            android:label="@string/record_a11y_event"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <meta-data
                 android:name="android.service.quicksettings.TOGGLEABLE_TILE"

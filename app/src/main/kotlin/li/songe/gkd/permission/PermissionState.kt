@@ -26,7 +26,6 @@ import li.songe.gkd.util.updateAppMutex
 
 class PermissionState(
     val check: () -> Boolean,
-    val grantSelf: (() -> Unit)? = null,
     val request: (suspend (context: MainActivity) -> PermissionResult)? = null,
     /**
      * show it when user doNotAskAgain
@@ -41,7 +40,7 @@ class PermissionState(
     }
 
     fun checkOrToast(): Boolean = if (!updateAndGet()) {
-        grantSelf?.invoke()
+        shizukuContextFlow.value.grantSelf()
         val r = updateAndGet()
         if (!r) {
             reason?.text?.let { toast(it()) }
@@ -105,9 +104,6 @@ val foregroundServiceSpecialUseState by lazy {
                 true
             }
         },
-        grantSelf = {
-            shizukuContextFlow.value.appOpsService?.allowAllSelfMode()
-        },
         reason = AuthReason(
             text = { "当前操作权限「特殊用途的前台服务」已被限制, 请先解除限制" },
             renderConfirm = {
@@ -125,9 +121,6 @@ val notificationState by lazy {
     PermissionState(
         check = {
             XXPermissions.isGrantedPermission(app, permission)
-        },
-        grantSelf = {
-            shizukuContextFlow.value.appOpsService?.allowAllSelfMode()
         },
         request = { asyncRequestPermission(it, permission) },
         reason = AuthReason(
@@ -162,9 +155,6 @@ val canDrawOverlaysState by lazy {
         check = {
             // https://developer.android.com/security/fraud-prevention/activities?hl=zh-cn#hide_overlay_windows
             Settings.canDrawOverlays(app)
-        },
-        grantSelf = {
-            shizukuContextFlow.value.appOpsService?.allowAllSelfMode()
         },
         reason = AuthReason(
             text = {
@@ -211,9 +201,6 @@ val canWriteExternalStorage by lazy {
 val writeSecureSettingsState by lazy {
     PermissionState(
         check = { checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS) },
-        grantSelf = {
-            shizukuContextFlow.value.packageManager?.grantSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS)
-        },
     )
 }
 

@@ -9,7 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.MainActivity
+import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.util.stopCoroutine
+import li.songe.gkd.util.toast
 
 data class AuthReason(
     val text: () -> String,
@@ -58,8 +60,11 @@ suspend fun requiredPermission(
     permissionState: PermissionState
 ) {
     if (permissionState.updateAndGet()) return
-    permissionState.grantSelf?.invoke()
-    if (permissionState.updateAndGet()) return
+    shizukuContextFlow.value.grantSelf()
+    if (permissionState.updateAndGet()) {
+        toast("已借助 Shizuku 自动授权")
+        return
+    }
     val result = permissionState.request?.invoke(context)
     if (result == null) {
         context.mainVm.authReasonFlow.value = permissionState.reason

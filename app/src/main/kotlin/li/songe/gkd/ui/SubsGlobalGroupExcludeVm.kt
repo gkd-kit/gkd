@@ -30,12 +30,6 @@ class SubsGlobalGroupExcludeVm(stateHandle: SavedStateHandle) : BaseViewModel() 
             storeFlow.value.copy(subsExcludeSort = it.value)
         }
     )
-    val showSystemAppFlow = storeFlow.asMutableStateFlow(
-        getter = { it.subsExcludeShowSystemApp },
-        setter = {
-            storeFlow.value.copy(subsExcludeShowSystemApp = it)
-        }
-    )
     val showInnerDisabledAppFlow = storeFlow.asMutableStateFlow(
         getter = { it.subsExcludeShowInnerDisabledApp },
         setter = {
@@ -55,7 +49,6 @@ class SubsGlobalGroupExcludeVm(stateHandle: SavedStateHandle) : BaseViewModel() 
             args.groupKey
         ).stateInit(emptyList()),
         sortTypeFlow = sortTypeFlow,
-        showSystemAppFlow = showSystemAppFlow,
         showBlockAppFlow = showBlockAppFlow,
     )
     val searchStrFlow = appFilter.searchStrFlow

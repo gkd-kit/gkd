@@ -1,5 +1,6 @@
 package li.songe.gkd.shizuku
 
+import android.Manifest
 import android.content.pm.IPackageManager
 import android.content.pm.PackageInfo
 import li.songe.gkd.META
@@ -21,7 +22,10 @@ class SafePackageManager(private val value: IPackageManager) {
 
     val isSafeMode get() = safeInvokeMethod { value.isSafeMode }
 
-    fun getInstalledPackages(flags: Int, userId: Int): List<PackageInfo> = safeInvokeMethod {
+    fun getInstalledPackages(
+        flags: Int,
+        userId: Int = currentUserId,
+    ): List<PackageInfo> = safeInvokeMethod {
         if (AndroidTarget.TIRAMISU) {
             value.getInstalledPackages(flags.toLong(), userId).list
         } else {
@@ -41,8 +45,16 @@ class SafePackageManager(private val value: IPackageManager) {
         )
     }
 
-    fun grantSelfPermission(permissionName: String) = grantRuntimePermission(
+    private fun grantSelfPermission(permissionName: String) = grantRuntimePermission(
         packageName = META.appId,
         permissionName = permissionName,
     )
+
+    fun allowAllSelfPermission() {
+        grantSelfPermission("com.android.permission.GET_INSTALLED_APPS")
+        grantSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS)
+        if (AndroidTarget.TIRAMISU) {
+            grantSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 }

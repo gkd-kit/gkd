@@ -7,5 +7,6 @@
     <string name="http_server" debug_suffix="true">HTTP服务</string>
     <string name="snapshot_button" debug_suffix="true">快照按钮</string>
     <string name="rule_match" debug_suffix="true">规则匹配</string>
-    <string name="record_activity" debug_suffix="true">记录服务</string>
+    <string name="record_activity" debug_suffix="true">界面服务</string>
+    <string name="record_a11y_event" debug_suffix="true">事件服务</string>
 </resources>

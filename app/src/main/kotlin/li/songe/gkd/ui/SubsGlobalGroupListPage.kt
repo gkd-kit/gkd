@@ -244,7 +244,7 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
             items(globalGroups, { g -> g.key }) { group ->
                 val subsConfig = subsConfigs.find { it.groupKey == group.key }
                 RuleGroupCard(
-                    modifier = Modifier.animateListItem(this),
+                    modifier = Modifier.animateListItem(),
                     subs = subs,
                     appId = null,
                     group = group,

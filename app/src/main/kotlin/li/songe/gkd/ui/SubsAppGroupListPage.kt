@@ -277,7 +277,7 @@ fun SubsAppGroupListPage(
                     it.categoryKey == category?.key
                 }
                 RuleGroupCard(
-                    modifier = Modifier.animateListItem(this),
+                    modifier = Modifier.animateListItem(),
                     subs = subs,
                     appId = appId,
                     group = group,

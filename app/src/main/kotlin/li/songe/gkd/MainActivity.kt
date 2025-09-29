@@ -64,7 +64,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.a11y.topActivityFlow
-import li.songe.gkd.a11y.topAppIdFlow
 import li.songe.gkd.a11y.updateSystemDefaultAppId
 import li.songe.gkd.a11y.updateTopActivity
 import li.songe.gkd.permission.AuthDialog
@@ -75,6 +74,7 @@ import li.songe.gkd.service.HttpService
 import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.fixRestartService
+import li.songe.gkd.service.updateTopAppId
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.BuildDialog
 import li.songe.gkd.ui.component.PerfIcon
@@ -193,7 +193,7 @@ class MainActivity : ComponentActivity() {
         watchKeyboardVisible()
         StatusService.autoStart()
         if (storeFlow.value.enableBlockA11yAppList) {
-            topAppIdFlow.value = META.appId
+            updateTopAppId(META.appId)
         }
         setContent {
             val latestInsets = TopAppBarDefaults.windowInsets

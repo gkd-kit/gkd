@@ -39,7 +39,7 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
     override fun onDestroy() = onDestroyed()
     override val a11yEventCbs = mutableListOf<(AccessibilityEvent) -> Unit>()
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event == null || !event.isUseful) return
+        if (!event.isUseful()) return
         onA11yEvent(event)
     }
 

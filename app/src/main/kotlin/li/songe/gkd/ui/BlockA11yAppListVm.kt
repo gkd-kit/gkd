@@ -17,11 +17,9 @@ class BlockA11yAppListVm : BaseViewModel() {
     val sortTypeFlow = storeFlow.mapNew {
         AppSortOption.objects.findOption(it.a11yAppSort)
     }
-    val showSystemAppFlow = storeFlow.mapNew { s -> s.a11yShowSystemApp }
 
     val appFilter = useAppFilter(
         sortTypeFlow = sortTypeFlow,
-        showSystemAppFlow = showSystemAppFlow,
     )
     val searchStrFlow = appFilter.searchStrFlow
 

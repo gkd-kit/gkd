@@ -27,14 +27,15 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.a11y.topActivityFlow
+import li.songe.gkd.a11y.updateTopActivity
 import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.recordNotif
 import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.shizuku.SafeTaskListener
+import li.songe.gkd.shizuku.safeGetTopCpn
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.style.AppTheme
 import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.util.appInfoMapFlow
 import li.songe.gkd.util.copyText
@@ -42,8 +43,8 @@ import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
 
 
-class RecordService : OverlayWindowService(
-    positionKey = "record"
+class ActivityService : OverlayWindowService(
+    positionKey = "activity"
 ) {
 
     val topAppInfoFlow by lazy {
@@ -59,7 +60,7 @@ class RecordService : OverlayWindowService(
     }
 
     @Composable
-    override fun ComposeContent() = AppTheme(invertedTheme = true) {
+    override fun ComposeContent() {
         val bgColor = MaterialTheme.colorScheme.surface
         Box(
             modifier = Modifier
@@ -111,6 +112,15 @@ class RecordService : OverlayWindowService(
                     recordNotif.copy(text = it.format()).notifyService()
                 }
             }
+            if (!A11yService.isRunning.value) {
+                safeGetTopCpn()?.let { cpn ->
+                    updateTopActivity(
+                        appId = cpn.packageName,
+                        activityId = cpn.className,
+                        type = 2,
+                    )
+                }
+            }
         }
     }
 
@@ -118,10 +128,10 @@ class RecordService : OverlayWindowService(
         val isRunning = MutableStateFlow(false)
         fun start() {
             if (!canDrawOverlaysState.checkOrToast()) return
-            startForegroundServiceByClass(RecordService::class)
+            startForegroundServiceByClass(ActivityService::class)
         }
 
-        fun stop() = stopServiceByClass(RecordService::class)
+        fun stop() = stopServiceByClass(ActivityService::class)
     }
 }
 

@@ -366,7 +366,7 @@ fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
                             )
                     }
                     RuleGroupCard(
-                        modifier = Modifier.animateListItem(this),
+                        modifier = Modifier.animateListItem(),
                         subs = entry.subscription,
                         appId = appId,
                         group = group,

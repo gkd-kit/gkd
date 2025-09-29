@@ -28,7 +28,6 @@ class HomeVm : BaseViewModel() {
     val sortTypeFlow = storeFlow.mapNew {
         AppSortOption.objects.findOption(it.appSort)
     }
-    val showSystemAppFlow = storeFlow.mapNew { s -> s.showSystemApp }
     val showBlockAppFlow = storeFlow.mapNew { s -> s.showBlockApp }
 
     val editWhiteListModeFlow = MutableStateFlow(false)
@@ -42,7 +41,6 @@ class HomeVm : BaseViewModel() {
 
     val appFilter = useAppFilter(
         sortTypeFlow = sortTypeFlow,
-        showSystemAppFlow = showSystemAppFlow,
         showBlockAppFlow = showBlockAppFlow,
         blockAppListFlow = blockAppListFlow,
     )
@@ -60,4 +58,8 @@ class HomeVm : BaseViewModel() {
             MainViewModel.instance.appListKeyFlow.value++
         }
     }
+
+    val showToastInputDlgFlow = MutableStateFlow(false)
+    val showNotifTextInputDlgFlow = MutableStateFlow(false)
+    val showToastSettingsDlgFlow = MutableStateFlow(false)
 }

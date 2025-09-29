@@ -45,9 +45,11 @@ import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
+import li.songe.gkd.service.ActivityService
 import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.a11yPartDisabledFlow
 import li.songe.gkd.service.switchA11yService
+import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.GroupNameText
 import li.songe.gkd.ui.component.PerfIcon
@@ -121,7 +123,7 @@ fun useControlPage(): ScaffoldExt {
                         checked = a11yRunning,
                         onCheckedChange = throttle(vm.viewModelScope.launchAsFn { newEnabled ->
                             if (newEnabled && !writeSecureSettingsState.updateAndGet()) {
-                                writeSecureSettingsState.grantSelf?.invoke()
+                                shizukuContextFlow.value.grantSelf()
                             }
                             if (newEnabled && !writeSecureSettingsState.updateAndGet()) {
                                 mainVm.navigatePage(AuthA11YPageDestination)
@@ -167,9 +169,9 @@ fun useControlPage(): ScaffoldExt {
                 }
             )
 
-            if (store.enableActivityLog) {
+            if (ActivityService.isRunning.collectAsState().value) {
                 PageItemCard(
-                    title = "界面记录",
+                    title = "界面日志",
                     subtitle = "记录打开的应用及界面",
                     imageVector = PerfIcon.Layers,
                     onClick = {

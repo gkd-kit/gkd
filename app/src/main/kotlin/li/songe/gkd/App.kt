@@ -31,6 +31,7 @@ import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initSubsState
 import li.songe.gkd.util.initToast
 import li.songe.gkd.util.toJson5String
+import li.songe.gkd.util.toast
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 
 
@@ -159,6 +160,7 @@ class App : Application() {
             toJson5String(META),
         )
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
+            toast(e.message ?: e.toString())
             LogUtils.d("UncaughtExceptionHandler", t, e)
         }
         initToast()

@@ -22,11 +22,11 @@ import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.RuleStatus
 import li.songe.gkd.data.isSystem
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.service.RecordService
+import li.songe.gkd.service.ActivityService
+import li.songe.gkd.service.updateTopAppId
 import li.songe.gkd.shizuku.safeInvokeMethod
 import li.songe.gkd.store.actionCountFlow
-import li.songe.gkd.store.blockA11yAppListFlow
-import li.songe.gkd.store.blockMatchAppListFlow
+import li.songe.gkd.store.checkAppBlockMatch
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.PKG_FLAGS
@@ -99,10 +99,7 @@ class ActivityRule(
     val topActivity: TopActivity = TopActivity(),
     val ruleSummary: RuleSummary = RuleSummary(),
 ) {
-    val blockMatch = (blockMatchAppListFlow.value.contains(topActivity.appId)
-            || storeFlow.value.enableBlockA11yAppList && blockA11yAppListFlow.value.contains(
-        topActivity.appId
-    ))
+    val blockMatch = checkAppBlockMatch(topActivity.appId)
     val appRules = ruleSummary.appIdToRules[topActivity.appId] ?: emptyList()
     val activityRules = if (blockMatch) emptyList() else appRules.filter { rule ->
         rule.matchActivity(topActivity.appId, topActivity.activityId)
@@ -146,7 +143,7 @@ private var lastAppId = ""
 fun updateTopActivity(appId: String, activityId: String?, type: Int = 0) {
     val t = System.currentTimeMillis()
     if (type > 0 && storeFlow.value.enableBlockA11yAppList) {
-        topAppIdFlow.value = appId
+        updateTopAppId(appId)
     }
     val oldActivity = topActivityFlow.value
     val forced = type > 0
@@ -173,7 +170,7 @@ fun updateTopActivity(appId: String, activityId: String?, type: Int = 0) {
     )
     lastValidActivity = oldActivity
     lastActivityUpdateTime = t
-    if (storeFlow.value.enableActivityLog || RecordService.isRunning.value) {
+    if (ActivityService.isRunning.value) {
         appScope.launchTry(Dispatchers.IO) {
             activityLogMutex.withLock {
                 DbSet.activityLogDao.insert(

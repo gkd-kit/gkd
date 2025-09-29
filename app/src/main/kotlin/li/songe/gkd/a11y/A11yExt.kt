@@ -18,6 +18,7 @@ import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.mapState
 import li.songe.selector.initDefaultTypeInfo
+import kotlin.contracts.contract
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -113,8 +114,14 @@ val AccessibilityNodeInfo.compatChecked: Boolean?
 
 
 private const val interestedEvents = STATE_CHANGED or CONTENT_CHANGED
-val AccessibilityEvent.isUseful: Boolean
-    get() = packageName != null && className != null && eventType.and(interestedEvents) != 0
+fun AccessibilityEvent?.isUseful(): Boolean {
+    contract {
+        returns(true) implies (this@isUseful != null)
+    }
+    return (this != null && packageName != null && className != null && eventType.and(
+        interestedEvents
+    ) != 0)
+}
 
 
 suspend fun AccessibilityService.screenshot(): Bitmap? = suspendCoroutine {
@@ -148,7 +155,7 @@ data class A11yEvent(
     val type: Int,
     val time: Long,
     val appId: String,
-    val className: String,
+    val name: String,
     val event: AccessibilityEvent,
 ) {
     val safeSource: AccessibilityNodeInfo?
@@ -156,7 +163,7 @@ data class A11yEvent(
 
     fun sameAs(other: A11yEvent): Boolean {
         if (other === this) return true
-        return type == other.type && appId == other.appId && className == other.className
+        return type == other.type && appId == other.appId && name == other.name
     }
 }
 
@@ -168,7 +175,7 @@ fun AccessibilityEvent.toA11yEvent(): A11yEvent? {
         type = eventType,
         time = System.currentTimeMillis(),
         appId = appId.toString(),
-        className = b.toString(),
+        name = b.toString(),
         event = this,
     )
 }

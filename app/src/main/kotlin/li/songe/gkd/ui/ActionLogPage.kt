@@ -181,7 +181,7 @@ fun ActionLogPage(
                     val item = list[i] ?: return@items
                     val lastItem = if (i > 0) list[i - 1] else null
                     ActionLogCard(
-                        modifier = Modifier.animateListItem(this),
+                        modifier = Modifier.animateListItem(),
                         i = i,
                         item = item,
                         lastItem = lastItem,
@@ -195,7 +195,7 @@ fun ActionLogPage(
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (list.itemCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                        EmptyText(text = "暂无记录")
+                        EmptyText(text = "暂无数据")
                     }
                 }
             }
@@ -304,7 +304,6 @@ private fun ActionLogCard(
                     if (showActivityId != null) {
                         Text(
                             text = showActivityId,
-                            modifier = Modifier.height(LocalTextStyle.current.lineHeight.value.dp),
                             softWrap = false,
                             maxLines = 1,
                             overflow = TextOverflow.MiddleEllipsis,

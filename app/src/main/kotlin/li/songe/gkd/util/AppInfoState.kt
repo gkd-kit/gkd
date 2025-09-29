@@ -170,18 +170,28 @@ fun updateAllAppInfo(
         }
     }
     if (!canQueryPkgState.updateAndGet() || newAppMap.getMayQueryPkgNoAccess()) {
-        val visiblePkgList = arrayOf(Intent.ACTION_MAIN, Intent.ACTION_VIEW).map { action ->
-            app.packageManager.queryIntentActivities(
-                Intent(action),
-                PackageManager.MATCH_DISABLED_COMPONENTS
-            )
-        }.flatten()
-            .map { it.activityInfo.packageName }.toSet()
-            .filter { !newAppMap.contains(it) }.mapNotNull { app.getPkgInfo(it) }
-        visiblePkgList.forEach { packageInfo ->
-            newAppMap[packageInfo.packageName] = packageInfo.toAppInfo()
-            packageInfo.pkgIcon?.let { icon ->
-                newIconMap[packageInfo.packageName] = icon
+        val pkgList2 = shizukuContextFlow.value.packageManager?.getInstalledPackages(PKG_FLAGS)
+        if (!pkgList2.isNullOrEmpty()) {
+            pkgList2.forEach { packageInfo ->
+                newAppMap[packageInfo.packageName] = packageInfo.toAppInfo()
+                packageInfo.pkgIcon?.let { icon ->
+                    newIconMap[packageInfo.packageName] = icon
+                }
+            }
+        } else {
+            val visiblePkgList = arrayOf(Intent.ACTION_MAIN, Intent.ACTION_VIEW).map { action ->
+                app.packageManager.queryIntentActivities(
+                    Intent(action),
+                    PackageManager.MATCH_DISABLED_COMPONENTS
+                )
+            }.flatten()
+                .map { it.activityInfo.packageName }.toSet()
+                .filter { !newAppMap.contains(it) }.mapNotNull { app.getPkgInfo(it) }
+            visiblePkgList.forEach { packageInfo ->
+                newAppMap[packageInfo.packageName] = packageInfo.toAppInfo()
+                packageInfo.pkgIcon?.let { icon ->
+                    newIconMap[packageInfo.packageName] = icon
+                }
             }
         }
     }

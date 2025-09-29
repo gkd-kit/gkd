@@ -90,7 +90,7 @@ fun ActivityLogPage() {
             },
             title = {
                 Text(
-                    text = "界面记录",
+                    text = "界面日志",
                     modifier = Modifier.noRippleClickable { resetKey.intValue++ },
                 )
             },
@@ -100,8 +100,8 @@ fun ActivityLogPage() {
                         imageVector = PerfIcon.Delete,
                         onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             mainVm.dialogFlow.waitResult(
-                                title = "删除记录",
-                                text = "确定删除所有界面记录?",
+                                title = "删除日志",
+                                text = "确定删除所有界面日志?",
                                 error = true,
                             )
                             DbSet.activityLogDao.deleteAll()
@@ -131,7 +131,7 @@ fun ActivityLogPage() {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (logCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                    EmptyText(text = "暂无记录")
+                    EmptyText(text = "暂无数据")
                 }
             }
         }

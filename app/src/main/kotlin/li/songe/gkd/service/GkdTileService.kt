@@ -19,7 +19,8 @@ import li.songe.gkd.appScope
 import li.songe.gkd.isActivityVisible
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.shizuku.safeGetTopCpn
-import li.songe.gkd.store.blockA11yAppListFlow
+import li.songe.gkd.shizuku.shizukuContextFlow
+import li.songe.gkd.store.actualBlockA11yAppList
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mapState
@@ -50,7 +51,7 @@ fun switchA11yService() = modifyA11yRun {
         A11yService.instance?.disableSelf()
     } else {
         if (!writeSecureSettingsState.updateAndGet()) {
-            writeSecureSettingsState.grantSelf?.invoke()
+            shizukuContextFlow.value.grantSelf()
             if (!writeSecureSettingsState.updateAndGet()) {
                 toast("请先授予「写入安全设置权限」")
                 return@modifyA11yRun
@@ -84,7 +85,7 @@ fun fixRestartService() = modifyA11yRun {
             } else {
                 safeGetTopCpn()?.packageName
             }
-            if (topAppId != null && topAppId in blockA11yAppListFlow.value) {
+            if (topAppId != null && topAppId in actualBlockA11yAppList) {
                 return@modifyA11yRun
             }
         }
@@ -107,21 +108,20 @@ fun fixRestartService() = modifyA11yRun {
     }
 }
 
-private fun forcedUpdateA11yService(disabled: Boolean) = modifyA11yRun {
+private fun forcedUpdateA11yService(disabled: Boolean) {
     if (!storeFlow.value.enableService) {
-        return@modifyA11yRun
+        return
     }
     if (!storeFlow.value.enableBlockA11yAppList) {
-        return@modifyA11yRun
+        return
     }
     if (!writeSecureSettingsState.updateAndGet()) {
-        return@modifyA11yRun
+        return
+    }
+    if (!disabled == A11yService.isRunning.value) {
+        return
     }
     val names = app.getSecureA11yServices()
-    val hasA11y = names.contains(A11yService.a11yCn)
-    if (disabled == !hasA11y) {
-        return@modifyA11yRun
-    }
     if (disabled) {
         A11yService.instance?.apply {
             willDestroyByBlock = true
@@ -135,22 +135,31 @@ private fun forcedUpdateA11yService(disabled: Boolean) = modifyA11yRun {
 
 private const val A11Y_WHITE_APP_AWAIT_TIME = 3000L
 
+@Volatile
+var lastAppIdChangeTime = 0L
+
+fun updateTopAppId(value: String) {
+    lastAppIdChangeTime = System.currentTimeMillis()
+    topAppIdFlow.value = value
+}
+
 val a11yPartDisabledFlow by lazy {
     topAppIdFlow.mapState(appScope) {
-        blockA11yAppListFlow.value.contains(it)
+        actualBlockA11yAppList.contains(it)
     }
 }
 
 fun initA11yWhiteAppList() {
     val actualFlow = topAppIdFlow.drop(1)
     appScope.launch(Dispatchers.Main) {
-        actualFlow.collect { appId ->
-            if (!blockA11yAppListFlow.value.contains(appId)) {
+        actualFlow.collect {
+            if (!actualBlockA11yAppList.contains(topAppIdFlow.value)) {
+                val tempTime = lastAppIdChangeTime
                 if (topActivityFlow.value.sameAs(systemRecentCn)) {
                     // 切换无障碍会造成卡顿，在最近任务界面时，延迟这个卡顿
                     appScope.launch {
                         delay(A11Y_WHITE_APP_AWAIT_TIME)
-                        if (appId == topAppIdFlow.value) {
+                        if (tempTime == lastAppIdChangeTime) {
                             forcedUpdateA11yService(false)
                         }
                     }
@@ -161,8 +170,8 @@ fun initA11yWhiteAppList() {
         }
     }
     appScope.launch(Dispatchers.Main) {
-        actualFlow.debounce(A11Y_WHITE_APP_AWAIT_TIME).collect { appId ->
-            if (blockA11yAppListFlow.value.contains(appId)) {
+        actualFlow.debounce(A11Y_WHITE_APP_AWAIT_TIME).collect {
+            if (actualBlockA11yAppList.contains(topAppIdFlow.value)) {
                 forcedUpdateA11yService(true)
             }
         }

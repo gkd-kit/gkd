@@ -39,6 +39,23 @@ val blockA11yAppListFlow: MutableStateFlow<Set<String>> by lazy {
     )
 }
 
+val actualBlockA11yAppList: Set<String>
+    get() = if (storeFlow.value.blockA11yAppListFollowMatch) {
+        blockMatchAppListFlow.value
+    } else {
+        blockA11yAppListFlow.value
+    }
+
+fun checkAppBlockMatch(appId: String): Boolean {
+    if (blockMatchAppListFlow.value.contains(appId)) {
+        return true
+    }
+    if (storeFlow.value.enableBlockA11yAppList) {
+        return actualBlockA11yAppList.contains(appId)
+    }
+    return false
+}
+
 fun initStore() = appScope.launchTry(Dispatchers.IO) {
     // preload
     storeFlow.value

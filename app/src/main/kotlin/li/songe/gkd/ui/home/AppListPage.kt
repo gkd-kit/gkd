@@ -82,7 +82,6 @@ fun useAppListPage(): ScaffoldExt {
     val context = LocalActivity.current as MainActivity
 
     val vm = viewModel<HomeVm>()
-    val showSystemApp by vm.showSystemAppFlow.collectAsState()
     val showBlockApp by vm.showBlockAppFlow.collectAsState()
     val sortType by vm.sortTypeFlow.collectAsState()
     val appInfos by vm.appInfosFlow.collectAsState()
@@ -230,21 +229,6 @@ fun useAppListPage(): ScaffoldExt {
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary,
                         )
-                        val handle1 = {
-                            storeFlow.update { s -> s.copy(showSystemApp = !showSystemApp) }
-                        }
-                        DropdownMenuItem(
-                            text = {
-                                Text("显示系统应用")
-                            },
-                            trailingIcon = {
-                                Checkbox(
-                                    checked = showSystemApp,
-                                    onCheckedChange = { handle1() }
-                                )
-                            },
-                            onClick = handle1,
-                        )
                         val handle3 = {
                             storeFlow.update { s -> s.copy(showBlockApp = !s.showBlockApp) }
                         }
@@ -319,7 +303,7 @@ fun useAppListPage(): ScaffoldExt {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        val hasShowAll = showSystemApp && showBlockApp
+                        val hasShowAll = showBlockApp
                         EmptyText(text = if (hasShowAll) "暂无搜索结果" else "暂无搜索结果，请尝试修改筛选条件")
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }

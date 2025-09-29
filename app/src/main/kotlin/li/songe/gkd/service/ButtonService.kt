@@ -13,7 +13,6 @@ import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.buttonNotif
 import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.style.AppTheme
 import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.startForegroundServiceByClass
@@ -27,7 +26,7 @@ class ButtonService : OverlayWindowService(
     }.let { }
 
     @Composable
-    override fun ComposeContent() = AppTheme(invertedTheme = true) {
+    override fun ComposeContent() {
         val alpha = 0.75f
         PerfIcon(
             imageVector = PerfIcon.CenterFocusWeak,

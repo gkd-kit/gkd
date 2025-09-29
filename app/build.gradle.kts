@@ -170,6 +170,7 @@ kotlin {
         jvmTarget.set(rootProject.ext["kotlin.jvmTarget"] as JvmTarget)
         freeCompilerArgs.addAll(
             "-opt-in=kotlin.RequiresOptIn",
+            "-opt-in=kotlin.contracts.ExperimentalContracts",
             "-opt-in=kotlinx.coroutines.FlowPreview",
             "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
             "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
