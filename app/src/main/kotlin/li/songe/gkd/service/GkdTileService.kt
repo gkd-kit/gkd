@@ -3,6 +3,7 @@ package li.songe.gkd.service
 import android.provider.Settings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
@@ -12,7 +13,6 @@ import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.META
 import li.songe.gkd.a11y.systemRecentCn
 import li.songe.gkd.a11y.topActivityFlow
-import li.songe.gkd.a11y.topAppIdFlow
 import li.songe.gkd.accessRestrictedSettingsShowFlow
 import li.songe.gkd.app
 import li.songe.gkd.appScope
@@ -36,7 +36,7 @@ class GkdTileService : BaseTileService() {
 
 private val modifyA11yMutex = Mutex()
 private const val A11Y_AWAIT_START_TIME = 2000L
-private const val A11Y_AWAIT_FIX_TIME = 500L
+private const val A11Y_AWAIT_FIX_TIME = 1000L
 
 private fun modifyA11yRun(block: suspend () -> Unit) {
     appScope.launchTry(Dispatchers.IO) {
@@ -108,18 +108,18 @@ fun fixRestartService() = modifyA11yRun {
     }
 }
 
-private fun forcedUpdateA11yService(disabled: Boolean) {
+private fun forcedUpdateA11yService(disabled: Boolean) = modifyA11yRun {
     if (!storeFlow.value.enableService) {
-        return
+        return@modifyA11yRun
     }
     if (!storeFlow.value.enableBlockA11yAppList) {
-        return
+        return@modifyA11yRun
     }
-    if (!writeSecureSettingsState.updateAndGet()) {
-        return
+    if (!writeSecureSettingsState.stateFlow.value) {
+        return@modifyA11yRun
     }
     if (!disabled == A11yService.isRunning.value) {
-        return
+        return@modifyA11yRun
     }
     val names = app.getSecureA11yServices()
     if (disabled) {
@@ -137,16 +137,16 @@ private const val A11Y_WHITE_APP_AWAIT_TIME = 3000L
 
 @Volatile
 var lastAppIdChangeTime = 0L
-
-fun updateTopAppId(value: String) {
-    lastAppIdChangeTime = System.currentTimeMillis()
-    topAppIdFlow.value = value
-}
-
+val topAppIdFlow = MutableStateFlow("")
 val a11yPartDisabledFlow by lazy {
     topAppIdFlow.mapState(appScope) {
         actualBlockA11yAppList.contains(it)
     }
+}
+
+fun updateTopAppId(value: String) {
+    lastAppIdChangeTime = System.currentTimeMillis()
+    topAppIdFlow.value = value
 }
 
 fun initA11yWhiteAppList() {

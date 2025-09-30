@@ -11,6 +11,7 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.os.PowerManager
 import android.provider.Settings
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
@@ -146,6 +147,7 @@ class App : Application() {
     val windowManager by lazy { app.getSystemService(WINDOW_SERVICE) as WindowManager }
     val keyguardManager by lazy { app.getSystemService(KEYGUARD_SERVICE) as KeyguardManager }
     val clipboardManager by lazy { app.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager }
+    val powerManager by lazy { getSystemService(POWER_SERVICE) as PowerManager }
 
     override fun onCreate() {
         super.onCreate()

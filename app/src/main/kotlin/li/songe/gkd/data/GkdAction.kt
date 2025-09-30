@@ -61,7 +61,7 @@ sealed class ActionPerformer(val action: String) {
             return ActionResult(
                 action = action,
                 result = if (0 <= x && 0 <= y && x <= ScreenUtils.getScreenWidth() && y <= ScreenUtils.getScreenHeight()) {
-                    if (shizukuContextFlow.value.inputManager?.tap(x, y) != null) {
+                    if (shizukuContextFlow.value.tap(x, y)) {
                         return ActionResult(
                             action = action,
                             result = true,
@@ -129,11 +129,11 @@ sealed class ActionPerformer(val action: String) {
             return ActionResult(
                 action = action,
                 result = if (0 <= x && 0 <= y && x <= ScreenUtils.getScreenWidth() && y <= ScreenUtils.getScreenHeight()) {
-                    if (shizukuContextFlow.value.inputManager?.tap(
+                    if (shizukuContextFlow.value.tap(
                             x,
                             y,
                             longClickDuration
-                        ) != null
+                        )
                     ) {
                         return ActionResult(
                             action = action,

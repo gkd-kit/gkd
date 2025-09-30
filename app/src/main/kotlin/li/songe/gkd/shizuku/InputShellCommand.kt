@@ -5,6 +5,9 @@ import android.os.Build
 import android.os.SystemClock
 import android.view.Display
 import android.view.InputDevice
+import android.view.KeyCharacterMap
+import android.view.KeyEvent
+import android.view.KeyEventHidden
 import android.view.MotionEvent
 import android.view.MotionEvent.PointerCoords
 import android.view.MotionEvent.PointerProperties
@@ -18,6 +21,7 @@ import kotlin.math.floor
 
 
 // https://github.com/android-cs/16/blob/main/services/core/java/com/android/server/input/InputShellCommand.java
+@Suppress("SameParameterValue")
 class InputShellCommand(val safeInputManager: SafeInputManager) {
     companion object {
         private const val DEFAULT_DEVICE_ID = 0
@@ -49,7 +53,6 @@ class InputShellCommand(val safeInputManager: SafeInputManager) {
         )
     }
 
-    @Suppress("SameParameterValue")
     private fun sendSwipe(
         inputSource: Int,
         x1: Float,
@@ -104,7 +107,6 @@ class InputShellCommand(val safeInputManager: SafeInputManager) {
         )
     }
 
-    @Suppress("SameParameterValue")
     private fun sendTap(
         inputSource: Int,
         x: Float,
@@ -234,5 +236,37 @@ class InputShellCommand(val safeInputManager: SafeInputManager) {
 
     private fun lerp(a: Float, b: Float, alpha: Float): Float {
         return (b - a) * alpha + a
+    }
+
+    fun runKeyEvent(keyCode: Int) {
+        sendKeyEvent(keyCode)
+    }
+
+    private fun sendKeyEvent(keyCode: Int) {
+        val inputSource = InputDevice.SOURCE_UNKNOWN
+        val displayId = Display.INVALID_DISPLAY
+        val async = false
+
+        val now = SystemClock.uptimeMillis()
+        val event = KeyEvent(
+            now, now, KeyEvent.ACTION_DOWN, keyCode, 0,
+            0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0,
+            inputSource
+        )
+        if (AndroidTarget.Q) {
+            Refine.unsafeCast<KeyEventHidden>(event).setDisplayId(displayId)
+        }
+        injectKeyEvent(event, async)
+        val event2 = KeyEvent.changeTimeRepeat(event, SystemClock.uptimeMillis(), 0)
+        injectKeyEvent(KeyEvent.changeAction(event2, KeyEvent.ACTION_UP), async)
+    }
+
+    private fun injectKeyEvent(event: KeyEvent, async: Boolean) {
+        val injectMode: Int = if (async) {
+            InputManagerHidden.INJECT_INPUT_EVENT_MODE_ASYNC
+        } else {
+            InputManagerHidden.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH
+        }
+        safeInputManager.compatInjectInputEvent(event, injectMode)
     }
 }

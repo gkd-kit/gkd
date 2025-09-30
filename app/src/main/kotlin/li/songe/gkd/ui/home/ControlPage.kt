@@ -40,9 +40,6 @@ import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDesti
 import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.permission.foregroundServiceSpecialUseState
-import li.songe.gkd.permission.notificationState
-import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ActivityService
@@ -111,7 +108,7 @@ fun useControlPage(): ScaffoldExt {
                     "无障碍发生故障"
                 } else if (writeSecureSettings) {
                     if (store.enableService && a11yPartDisabledFlow.collectAsState().value) {
-                        "无障碍已局部关闭"
+                        "无障碍局部关闭"
                     } else {
                         "无障碍已关闭"
                     }
@@ -144,15 +141,13 @@ fun useControlPage(): ScaffoldExt {
                         checked = manageRunning && store.enableStatusService,
                         onCheckedChange = throttle(fn = vm.viewModelScope.launchAsFn<Boolean> {
                             if (it) {
-                                requiredPermission(context, foregroundServiceSpecialUseState)
-                                requiredPermission(context, notificationState)
-                                StatusService.start()
+                                StatusService.requestStart(context)
                             } else {
                                 StatusService.stop()
+                                storeFlow.value = store.copy(
+                                    enableStatusService = false
+                                )
                             }
-                            storeFlow.value = store.copy(
-                                enableStatusService = it
-                            )
                         }),
                     )
                 }

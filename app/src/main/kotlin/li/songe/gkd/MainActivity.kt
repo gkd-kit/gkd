@@ -48,6 +48,7 @@ import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
+import com.blankj.utilcode.util.LogUtils
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
@@ -241,6 +242,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        LogUtils.d("MainActivity::onStart")
         activityVisibleState++
         if (topActivityFlow.value.appId != META.appId) {
             updateTopActivity(META.appId, MainActivity::class.jvmName)
@@ -250,6 +252,7 @@ class MainActivity : ComponentActivity() {
     var isFirstResume = true
     override fun onResume() {
         super.onResume()
+        LogUtils.d("MainActivity::onResume")
         if (isFirstResume && startTime - app.startTime < 2000) {
             isFirstResume = false
         } else {
@@ -259,6 +262,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
+        LogUtils.d("MainActivity::onStop")
         activityVisibleState--
     }
 
@@ -315,6 +319,9 @@ private fun updateServiceRunning() {
 private val syncStateMutex = Mutex()
 fun syncFixState() {
     appScope.launchTry(Dispatchers.IO) {
+        if (syncStateMutex.isLocked) {
+            LogUtils.d("syncFixState isLocked")
+        }
         syncStateMutex.withLock {
             updateSystemDefaultAppId()
             updateServiceRunning()

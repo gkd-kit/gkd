@@ -4,6 +4,7 @@ import android.graphics.Rect
 import android.util.Log
 import android.util.LruCache
 import android.view.accessibility.AccessibilityNodeInfo
+import kotlinx.atomicfu.atomic
 import li.songe.gkd.META
 import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.service.A11yService
@@ -45,7 +46,7 @@ class A11yContext(
         LruCache<Pair<AccessibilityNodeInfo, Int>, AccessibilityNodeInfo>(MAX_CACHE_SIZE)
     private var indexCache = LruCache<AccessibilityNodeInfo, Int>(MAX_CACHE_SIZE)
     private var parentCache = LruCache<AccessibilityNodeInfo, AccessibilityNodeInfo>(MAX_CACHE_SIZE)
-    var rootCache: AccessibilityNodeInfo? = null
+    val rootCache = atomic<AccessibilityNodeInfo?>(null)
 
     private fun clearChildCache(node: AccessibilityNodeInfo) {
         repeat(node.childCount.coerceAtMost(MAX_CHILD_SIZE)) { i ->
@@ -56,8 +57,8 @@ class A11yContext(
     }
 
     fun clearNodeCache(eventNode: AccessibilityNodeInfo? = null) {
-        if (rootCache?.packageName != topActivityFlow.value.appId) {
-            rootCache = null
+        if (rootCache.value?.packageName != topActivityFlow.value.appId) {
+            rootCache.value = null
         }
         if (eventNode != null) {
             clearChildCache(eventNode)
@@ -66,8 +67,8 @@ class A11yContext(
                     childCache[p to i] = eventNode
                 }
             }
-            if (rootCache == eventNode) {
-                rootCache = eventNode
+            if (rootCache.value == eventNode) {
+                rootCache.value = eventNode
             } else {
                 if (META.debuggable) {
                     Log.d(
@@ -174,11 +175,11 @@ class A11yContext(
     }
 
     private fun getCacheRoot(node: AccessibilityNodeInfo? = null): AccessibilityNodeInfo? {
-        if (rootCache.notExpiredNode == null) {
-            rootCache = getA11Root()
+        if (rootCache.value.notExpiredNode == null) {
+            rootCache.value = getA11Root()
         }
-        if (node == rootCache) return null
-        return rootCache
+        if (node == rootCache.value) return null
+        return rootCache.value
     }
 
     private fun getCacheParent(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
@@ -190,7 +191,7 @@ class A11yContext(
             if (this != null) {
                 parentCache[node] = this
             } else {
-                rootCache = node
+                rootCache.value = node
             }
         }
     }

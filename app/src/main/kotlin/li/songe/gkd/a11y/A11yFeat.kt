@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.PixelFormat
 import android.util.Log
+import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
@@ -67,7 +68,7 @@ private fun A11yService.useAttachState() {
     onDestroyed {
         if (isActivityVisible()) {
             if (willDestroyByBlock) {
-                toast("无障碍已局部关闭")
+                toast("无障碍局部关闭")
             } else {
                 toast("无障碍已停止")
             }
@@ -209,6 +210,7 @@ private fun A11yService.useAliveOverlayView() {
             format = PixelFormat.TRANSLUCENT
             flags =
                 flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            gravity = Gravity.START or Gravity.TOP
             width = 1
             height = 1
             packageName = context.packageName

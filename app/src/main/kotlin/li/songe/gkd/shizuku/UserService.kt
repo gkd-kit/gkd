@@ -112,7 +112,6 @@ data class CommandResult(
         get() = code == 0
 }
 
-@Suppress("unused")
 data class UserServiceWrapper(
     val userService: IUserService,
     val connection: ServiceConnection,

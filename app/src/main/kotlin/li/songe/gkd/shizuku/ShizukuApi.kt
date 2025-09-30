@@ -3,6 +3,7 @@ package li.songe.gkd.shizuku
 
 import android.content.ComponentName
 import android.content.pm.PackageManager
+import androidx.annotation.WorkerThread
 import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -86,6 +87,11 @@ class ShizukuContext(
     fun grantSelf() {
         appOpsService?.allowAllSelfMode()
         packageManager?.allowAllSelfPermission()
+    }
+
+    @WorkerThread
+    fun tap(x: Float, y: Float, duration: Long = 0): Boolean {
+        return serviceWrapper?.tap(x, y, duration) ?: (inputManager?.tap(x, y, duration) != null)
     }
 }
 

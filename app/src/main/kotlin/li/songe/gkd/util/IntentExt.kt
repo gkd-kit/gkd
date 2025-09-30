@@ -96,6 +96,14 @@ fun openA11ySettings() {
     app.tryStartActivity(intent)
 }
 
+fun openAppDetailsSettings() {
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+        data = "package:${app.packageName}".toUri()
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    }
+    app.tryStartActivity(intent)
+}
+
 fun openUri(uri: String) {
     val u = try {
         uri.toUri()

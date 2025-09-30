@@ -44,4 +44,6 @@ class SafeInputManager(private val value: IInputManager) {
         }
     }
 
+    fun key(keyCode: Int) = command.runKeyEvent(keyCode)
+
 }

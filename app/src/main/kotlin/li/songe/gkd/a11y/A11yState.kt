@@ -132,10 +132,6 @@ class ActivityRule(
 
 val activityRuleFlow = MutableStateFlow(ActivityRule())
 
-val topAppIdFlow by lazy {
-    MutableStateFlow(launcherAppId)
-}
-
 private var appLogCount = 0
 private var lastAppId = ""
 

@@ -1,35 +1,47 @@
 package li.songe.gkd.ui.home
 
+import android.view.KeyEvent
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
@@ -38,14 +50,22 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.generated.destinations.AboutPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
 import com.ramcosta.composedestinations.generated.destinations.BlockA11YAppListPageDestination
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
-import li.songe.gkd.permission.writeSecureSettingsState
+import li.songe.gkd.permission.ignoreBatteryOptimizationsState
+import li.songe.gkd.permission.requiredPermission
+import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.CustomIconButton
 import li.songe.gkd.ui.component.CustomOutlinedTextField
+import li.songe.gkd.ui.component.FullscreenDialog
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
@@ -54,17 +74,20 @@ import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.updateDialogOptions
-import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.iconTextSize
+import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.DarkThemeOption
 import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.mapState
+import li.songe.gkd.util.openA11ySettings
+import li.songe.gkd.util.openAppDetailsSettings
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
@@ -280,6 +303,11 @@ fun useSettingsPage(): ScaffoldExt {
         )
     }
 
+    var showA11yBlockDlg by vm.showA11yBlockDlgFlow.asMutableState()
+    if (showA11yBlockDlg) {
+        BlockA11yDialog(onDismissRequest = { showA11yBlockDlg = false })
+    }
+
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val scrollState = rememberScrollState()
     return ScaffoldExt(
@@ -361,35 +389,21 @@ fun useSettingsPage(): ScaffoldExt {
                     )
                 })
 
-            if (store.enableShizuku && writeSecureSettingsState.stateFlow.collectAsState().value) {
-                AnimatedVisibility(visible = store.enableBlockA11yAppList) {
-                    Row(
+            if (store.enableShizuku) {
+                val scope = rememberCoroutineScope()
+                val lazyOn = remember {
+                    storeFlow.mapState(scope) { it.enableBlockA11yAppList }.debounce(300)
+                        .stateIn(scope, SharingStarted.Eagerly, store.enableBlockA11yAppList)
+                }.collectAsState()
+                AnimatedVisibility(visible = lazyOn.value) {
+                    Text(
                         modifier = Modifier
                             .fillMaxWidth()
                             .titleItemPadding(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            text = "无障碍",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        if (mainVm.hasOtherA11yFlow.collectAsState().value) {
-                            PerfIcon(
-                                modifier = Modifier
-                                    .clip(MaterialTheme.shapes.extraSmall)
-                                    .clickable(onClick = throttle {
-                                        mainVm.dialogFlow.updateDialogOptions(
-                                            title = "无效优化",
-                                            text = "检测到已启用其它应用的无障碍服务，在此情况下，局部关闭是无效优化，因为无障碍不会被完全关闭，建议关闭「局部关闭」功能或其它应用的无障碍服务",
-                                        )
-                                    })
-                                    .iconTextSize(textStyle = MaterialTheme.typography.titleSmall),
-                                imageVector = PerfIcon.SentimentDissatisfied,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    }
+                        text = "无障碍",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 }
                 TextSwitch(
                     title = "局部关闭",
@@ -397,29 +411,14 @@ fun useSettingsPage(): ScaffoldExt {
                     checked = store.enableBlockA11yAppList,
                     onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                         if (it) {
-                            mainVm.dialogFlow.waitResult(
-                                title = "使用说明",
-                                text = "「局部关闭」可解决某些应用无障碍检测或界面异常的问题\n\n切换无障碍会造成触摸卡顿，请自行考虑后再编辑无障碍白名单\n\n如果还使用其它无障碍应用会导致优化无效，因为无障碍不会被完全关闭\n\n此外需额外设置确保无障碍关闭后的持续后台运行\n1. 开启「常驻通知」\n2. 在「最近任务界面」锁定\n3. 允许自启动\n4. 省电策略设置为无限制\n不设置会被系统暂停或结束运行，导致无法恢复无障碍",
-                                confirmText = "继续",
-                                dismissRequest = true,
-                            )
-                        }
-                        storeFlow.value = store.copy(
-                            enableBlockA11yAppList = it
-                        )
-                        if (!it) {
+                            showA11yBlockDlg = true
+                        } else {
                             fixRestartService()
-                        }
-                        if (it) {
-                            if (!shizukuContextFlow.value.ok) {
-                                toast("请先连接 Shizuku")
-                            } else {
-                                !writeSecureSettingsState.updateAndGet()
-                            }
+                            storeFlow.value = store.copy(enableBlockA11yAppList = false)
                         }
                     },
                 )
-                AnimatedVisibility(visible = store.enableBlockA11yAppList) {
+                AnimatedVisibility(visible = lazyOn.value) {
                     SettingItem(title = "白名单", onClick = {
                         mainVm.navigatePage(BlockA11YAppListPageDestination)
                     })
@@ -469,4 +468,163 @@ fun useSettingsPage(): ScaffoldExt {
             Spacer(modifier = Modifier.height(EmptyHeight))
         }
     }
+}
+
+@Composable
+private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onDismissRequest) {
+    val mainVm = LocalMainViewModel.current
+    val statusRunning by StatusService.isRunning.collectAsState()
+    val shizukuOk by shizukuOkState.stateFlow.collectAsState()
+    val ignoreBatteryOptimizations by ignoreBatteryOptimizationsState.stateFlow.collectAsState()
+    val hasOtherA11y by mainVm.hasOtherA11yFlow.collectAsState()
+    val context = LocalActivity.current as MainActivity
+    Scaffold(
+        topBar = {
+            PerfTopAppBar(
+                navigationIcon = {
+                    PerfIconButton(
+                        imageVector = PerfIcon.Close,
+                        onClick = onDismissRequest,
+                    )
+                },
+                title = {
+                    Text(text = "局部关闭")
+                },
+            )
+        },
+        bottomBar = {
+            BottomAppBar {
+                Spacer(modifier = Modifier.weight(1f))
+                TextButton(
+                    enabled = statusRunning && shizukuOk && ignoreBatteryOptimizations && !hasOtherA11y,
+                    onClick = mainVm.viewModelScope.launchAsFn {
+                        onDismissRequest()
+                        delay(200)
+                        storeFlow.update { it.copy(enableBlockA11yAppList = true) }
+                    }
+                ) {
+                    Text(text = "继续")
+                }
+                Spacer(modifier = Modifier.width(itemHorizontalPadding))
+            }
+        },
+    ) { contentPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(contentPadding)
+                .padding(horizontal = itemHorizontalPadding)
+        ) {
+            CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyMedium) {
+                Text(text = "「局部关闭」可在白名单应用内关闭无障碍，来解决某些应用界面异常或无障碍检测的问题")
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(text = "使用须知", style = MaterialTheme.typography.titleMedium)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    RequiredTextItem(text = "切换无障碍会造成短暂触摸卡顿，请自行测试考虑后再编辑白名单")
+                    RequiredTextItem(text = "如果还使用其它无障碍应用会导致优化无效，因为无障碍不会被完全关闭")
+                    RequiredTextItem(text = "必须确保无障碍关闭后的持续后台运行，否则会被系统暂停或结束运行，导致无法恢复无障碍")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(text = "使用条件", style = MaterialTheme.typography.titleMedium)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    RequiredTextItem(
+                        text = "Shizuku 授权",
+                        enabled = !shizukuOk,
+                        imageVector = if (shizukuOk) PerfIcon.Check else PerfIcon.ArrowForward,
+                        onClick = {
+                            mainVm.requestShizuku()
+                        },
+                    )
+                    RequiredTextItem(
+                        text = "开启「常驻通知」",
+                        enabled = !statusRunning,
+                        imageVector = if (statusRunning) PerfIcon.Check else PerfIcon.ArrowForward,
+                        onClick = mainVm.viewModelScope.launchAsFn {
+                            StatusService.requestStart(context)
+                        },
+                    )
+                    RequiredTextItem(
+                        text = "省电策略设置为无限制",
+                        enabled = !ignoreBatteryOptimizations,
+                        imageVector = if (ignoreBatteryOptimizations) PerfIcon.Check else PerfIcon.ArrowForward,
+                        onClick = mainVm.viewModelScope.launchAsFn {
+                            requiredPermission(context, ignoreBatteryOptimizationsState)
+                        },
+                    )
+                    RequiredTextItem(
+                        text = "关闭其它应用的无障碍",
+                        enabled = hasOtherA11y,
+                        imageVector = if (!hasOtherA11y) PerfIcon.Check else PerfIcon.ArrowForward,
+                        onClick = {
+                            openA11ySettings()
+                        },
+                    )
+                    RequiredTextItem(
+                        text = "允许自启动",
+                        enabled = true,
+                        imageVector = PerfIcon.OpenInNew,
+                        onClick = {
+                            openAppDetailsSettings()
+                        },
+                    )
+                    RequiredTextItem(
+                        text = "在「最近任务界面」锁定",
+                        enabled = true,
+                        imageVector = PerfIcon.OpenInNew,
+                        onClick = {
+                            shizukuContextFlow.value.inputManager?.key(KeyEvent.KEYCODE_APP_SWITCH)
+                        },
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(text = "某些场景下无障碍刚启动时概率不工作，如多次遇到此情况则不建议使用此功能")
+            }
+            Spacer(modifier = Modifier.height(EmptyHeight))
+        }
+    }
+}
+
+@Composable
+private fun RequiredTextItem(
+    text: String,
+    imageVector: ImageVector? = null,
+    enabled: Boolean = false,
+    onClick: (() -> Unit)? = null,
+) {
+    Row(
+        modifier = Modifier
+            .clip(MaterialTheme.shapes.extraSmall)
+            .run {
+                if (onClick != null) {
+                    clickable(enabled = enabled, onClick = throttle(onClick))
+                } else {
+                    this
+                }
+            }
+            .padding(horizontal = 4.dp),
+    ) {
+        val density = LocalDensity.current
+        val lineHeightDp = density.run { LocalTextStyle.current.lineHeight.toDp() }
+        Spacer(
+            modifier = Modifier
+                .padding(vertical = (lineHeightDp - 4.dp) / 2)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.tertiary)
+                .size(4.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(text = text)
+        if (imageVector != null) {
+            PerfIcon(
+                imageVector = imageVector,
+                modifier = Modifier.iconTextSize(),
+            )
+        }
+    }
+
 }

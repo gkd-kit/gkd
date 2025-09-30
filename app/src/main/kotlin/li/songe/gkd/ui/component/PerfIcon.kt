@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Api
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.AutoMode
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Delete
@@ -40,7 +41,6 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material.icons.outlined.Save
-import androidx.compose.material.icons.outlined.SentimentDissatisfied
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.outlined.Title
@@ -159,9 +159,9 @@ object PerfIcon {
     val Notifications get() = Icons.Outlined.Notifications
     val Layers get() = Icons.Outlined.Layers
     val Equalizer get() = Icons.Outlined.Equalizer
-    val SentimentDissatisfied get() = Icons.Outlined.SentimentDissatisfied
     val Lock get() = Icons.Outlined.Lock
     val Title get() = Icons.Outlined.Title
     val TextFields get() = Icons.Outlined.TextFields
     val ArrowDownward get() = Icons.Outlined.ArrowDownward
+    val Check get() = Icons.Outlined.Check
 }

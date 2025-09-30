@@ -6,7 +6,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.os.PowerManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.core.content.ContextCompat
@@ -22,6 +21,7 @@ import li.songe.gkd.a11y.isUseful
 import li.songe.gkd.a11y.onA11yFeatInit
 import li.songe.gkd.a11y.setGeneratedTime
 import li.songe.gkd.a11y.typeInfo
+import li.songe.gkd.app
 import li.songe.gkd.data.ActionPerformer
 import li.songe.gkd.data.ActionResult
 import li.songe.gkd.data.GkdAction
@@ -43,6 +43,15 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
         onA11yEvent(event)
     }
 
+    val startTime = System.currentTimeMillis()
+    var justStarted: Boolean = true
+        get() {
+            if (field) {
+                field = System.currentTimeMillis() - startTime < 3_000
+            }
+            return field
+        }
+
     val safeActiveWindow: AccessibilityNodeInfo?
         get() = try {
             // 某些应用耗时 554ms
@@ -51,14 +60,13 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
         } catch (_: Throwable) {
             null
         }.apply {
-            a11yContext.rootCache = this
+            a11yContext.rootCache.value = this
         }
 
     val safeActiveWindowAppId: String?
         get() = safeActiveWindow?.packageName?.toString()
 
     override val scope = useScope()
-    val powerManager by lazy { getSystemService(POWER_SERVICE) as PowerManager }
     var isInteractive = true
         private set
     var outStartQueryJob = {}
@@ -92,7 +100,7 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
         onCreated { a11yRef = this }
         onDestroyed { a11yRef = null }
         onCreated {
-            isInteractive = powerManager.isInteractive
+            isInteractive = app.powerManager.isInteractive
             ContextCompat.registerReceiver(
                 this,
                 screenStateReceiver,

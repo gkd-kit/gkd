@@ -198,6 +198,27 @@ val canWriteExternalStorage by lazy {
     )
 }
 
+val ignoreBatteryOptimizationsState by lazy {
+    val permission = PermissionLists.getRequestIgnoreBatteryOptimizationsPermission()
+    PermissionState(
+        check = {
+            app.powerManager.isIgnoringBatteryOptimizations(app.packageName)
+        },
+        request = {
+            asyncRequestPermission(it, permission)
+        },
+        reason = AuthReason(
+            text = { "当前操作需要「忽略电池优化权限」\n请先前往权限页面授权" },
+            confirm = {
+                XXPermissions.startPermissionActivity(
+                    app,
+                    permission
+                )
+            }
+        ),
+    )
+}
+
 val writeSecureSettingsState by lazy {
     PermissionState(
         check = { checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS) },
@@ -220,6 +241,7 @@ fun updatePermissionState() {
         foregroundServiceSpecialUseState,
         canDrawOverlaysState,
         canWriteExternalStorage,
+        ignoreBatteryOptimizationsState,
         writeSecureSettingsState,
         shizukuOkState,
     ).forEach { it.updateAndGet() }
