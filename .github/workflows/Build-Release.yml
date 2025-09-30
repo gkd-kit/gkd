@@ -66,6 +66,11 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
+          name: outputs
+          path: outputs
+
+      - uses: actions/download-artifact@v4
+        with:
           name: release
           path: release
 
