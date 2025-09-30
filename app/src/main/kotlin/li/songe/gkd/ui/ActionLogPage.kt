@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -315,8 +316,7 @@ private fun ActionLogCard(
                         )
                     }
                     if (subsId == null) {
-                        Text(
-                            text = subscription?.name ?: "id=${actionLog.subsId}",
+                        Row(
                             modifier = Modifier.clickable(onClick = throttle {
                                 if (subsItemsFlow.value.any { it.id == actionLog.subsId }) {
                                     mainVm.sheetSubsIdFlow.value = actionLog.subsId
@@ -324,7 +324,28 @@ private fun ActionLogCard(
                                     toast("订阅不存在")
                                 }
                             })
-                        )
+                        ) {
+                            Text(text = subscription?.name ?: "id=${actionLog.subsId}")
+                            val lineHeightDp = LocalDensity.current.run {
+                                LocalTextStyle.current.lineHeight.toDp()
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .height(lineHeightDp)
+                                    .padding(start = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "v${item.first.subsVersion}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier
+                                        .clip(MaterialTheme.shapes.extraSmall)
+                                        .background(MaterialTheme.colorScheme.tertiaryContainer)
+                                        .padding(horizontal = 2.dp),
+                                )
+                            }
+                        }
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth()
