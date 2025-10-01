@@ -1,5 +1,6 @@
 package li.songe.gkd.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Scaffold
@@ -31,24 +32,26 @@ fun EditBlockAppListPage() {
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
     val vm = viewModel<EditBlockAppListVm>()
+    val onBack = throttle(vm.viewModelScope.launchAsFn {
+        if (vm.getChangedSet() != null) {
+            context.justHideSoftInput()
+            mainVm.dialogFlow.waitResult(
+                title = "提示",
+                text = "当前内容未保存，是否放弃编辑？",
+            )
+        } else {
+            context.hideSoftInput()
+        }
+        mainVm.popBackStack()
+    })
+    BackHandler(onBack = onBack)
     Scaffold(modifier = Modifier, topBar = {
         PerfTopAppBar(
             modifier = Modifier.fillMaxWidth(),
             navigationIcon = {
                 PerfIconButton(
                     imageVector = PerfIcon.ArrowBack,
-                    onClick = throttle(vm.viewModelScope.launchAsFn {
-                        if (vm.getChangedSet() != null) {
-                            context.justHideSoftInput()
-                            mainVm.dialogFlow.waitResult(
-                                title = "提示",
-                                text = "当前内容未保存，是否放弃编辑？",
-                            )
-                        } else {
-                            context.hideSoftInput()
-                        }
-                        mainVm.popBackStack()
-                    })
+                    onClick = onBack,
                 )
             },
             title = { Text(text = "应用白名单") },
