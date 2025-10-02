@@ -118,9 +118,7 @@ fun AccessibilityEvent?.isUseful(): Boolean {
     contract {
         returns(true) implies (this@isUseful != null)
     }
-    return (this != null && packageName != null && className != null && eventType.and(
-        interestedEvents
-    ) != 0)
+    return (this != null && packageName != null && className != null && eventType and interestedEvents != 0)
 }
 
 
