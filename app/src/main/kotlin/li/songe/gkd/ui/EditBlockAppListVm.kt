@@ -16,9 +16,9 @@ class EditBlockAppListVm : BaseViewModel() {
         )
     )
 
-    val indicatorTextFlow = textFlow.debounce(500).map {
-        AppListString.decode(it).size.toString()
-    }.stateInit("")
+    val indicatorSizeFlow = textFlow.debounce(500).map {
+        AppListString.decode(it).size
+    }.stateInit(0)
 
     fun getChangedSet(): Set<String>? {
         val newSet = AppListString.decode(textFlow.value)

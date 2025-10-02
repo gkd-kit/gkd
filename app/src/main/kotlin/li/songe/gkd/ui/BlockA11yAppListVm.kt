@@ -32,9 +32,9 @@ class BlockA11yAppListVm : BaseViewModel() {
     val textFlow = MutableStateFlow("")
     val textChanged get() = blockA11yAppListFlow.value != AppListString.decode(textFlow.value)
 
-    val indicatorTextFlow = textFlow.debounce(500).map {
-        AppListString.decode(it).size.toString()
-    }.stateInit("")
+    val indicatorSizeFlow = textFlow.debounce(500).map {
+        AppListString.decode(it).size
+    }.stateInit(0)
 
     init {
         showSearchBarFlow.launchCollect {

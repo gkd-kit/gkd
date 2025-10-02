@@ -287,7 +287,7 @@ fun BlockA11yAppListPage() {
                 textFlow = vm.textFlow,
                 immediateFocus = true,
                 placeholderText = "请输入应用ID列表\n示例:\ncom.android.systemui\ncom.android.settings",
-                indicatorText = vm.indicatorTextFlow.collectAsState().value,
+                indicatorSize = vm.indicatorSizeFlow.collectAsState().value,
             )
         } else {
             LazyColumn(

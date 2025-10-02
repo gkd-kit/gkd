@@ -30,7 +30,7 @@ fun MultiTextField(
     modifier: Modifier = Modifier,
     textFlow: MutableStateFlow<String>,
     immediateFocus: Boolean = false,
-    indicatorText: String? = null,
+    indicatorSize: Int? = null,
     placeholderText: String? = null,
 ) {
     val text by textFlow.collectAsState()
@@ -55,9 +55,10 @@ fun MultiTextField(
                 colors = textColors,
             )
         }
-        if (text.isNotEmpty()) {
+        val actualSize = indicatorSize ?: text.length
+        if (actualSize > 0 && text.isNotEmpty()) {
             Text(
-                text = indicatorText ?: text.length.toString(),
+                text = actualSize.toString(),
                 modifier = Modifier
                     .padding(8.dp)
                     .align(Alignment.TopEnd)

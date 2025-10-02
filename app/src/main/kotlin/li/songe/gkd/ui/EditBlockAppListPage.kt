@@ -76,7 +76,7 @@ fun EditBlockAppListPage() {
         MultiTextField(
             modifier = Modifier.scaffoldPadding(contentPadding),
             textFlow = vm.textFlow,
-            indicatorText = vm.indicatorTextFlow.collectAsState().value
+            indicatorSize = vm.indicatorSizeFlow.collectAsState().value
         )
     }
 }
