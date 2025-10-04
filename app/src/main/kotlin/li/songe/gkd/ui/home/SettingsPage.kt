@@ -413,8 +413,8 @@ fun useSettingsPage(): ScaffoldExt {
                         if (it) {
                             showA11yBlockDlg = true
                         } else {
-                            fixRestartService()
                             storeFlow.value = store.copy(enableBlockA11yAppList = false)
+                            fixRestartService()
                         }
                     },
                 )
