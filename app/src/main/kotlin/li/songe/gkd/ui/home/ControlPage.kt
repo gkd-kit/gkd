@@ -46,7 +46,6 @@ import li.songe.gkd.service.ActivityService
 import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.a11yPartDisabledFlow
 import li.songe.gkd.service.switchA11yService
-import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.GroupNameText
 import li.songe.gkd.ui.component.PerfIcon
@@ -119,10 +118,7 @@ fun useControlPage(): ScaffoldExt {
                     Switch(
                         checked = a11yRunning,
                         onCheckedChange = throttle(vm.viewModelScope.launchAsFn { newEnabled ->
-                            if (newEnabled && !writeSecureSettingsState.updateAndGet()) {
-                                shizukuContextFlow.value.grantSelf()
-                            }
-                            if (newEnabled && !writeSecureSettingsState.updateAndGet()) {
+                            if (newEnabled && !writeSecureSettingsState.value) {
                                 mainVm.navigatePage(AuthA11YPageDestination)
                             } else {
                                 switchA11yService()

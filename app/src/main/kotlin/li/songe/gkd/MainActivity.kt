@@ -76,6 +76,7 @@ import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.service.updateTopAppId
+import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.BuildDialog
 import li.songe.gkd.ui.component.PerfIcon
@@ -88,6 +89,7 @@ import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.AppTheme
 import li.songe.gkd.util.AndroidTarget
+import li.songe.gkd.util.BarUtils
 import li.songe.gkd.util.EditGithubCookieDlg
 import li.songe.gkd.util.KeyboardUtils
 import li.songe.gkd.util.ShortUrlSet
@@ -119,7 +121,7 @@ class MainActivity : ComponentActivity() {
         get() = ViewCompat.getRootWindowInsets(window.decorView)!!
             .isVisible(WindowInsetsCompat.Type.ime())
 
-    var topBarWindowInsets by mutableStateOf(WindowInsets())
+    var topBarWindowInsets by mutableStateOf(WindowInsets(top = BarUtils.getStatusBarHeight()))
 
     private fun watchKeyboardVisible() {
         if (AndroidTarget.R) {
@@ -325,6 +327,7 @@ fun syncFixState() {
         syncStateMutex.withLock {
             updateSystemDefaultAppId()
             updateServiceRunning()
+            shizukuContextFlow.value.grantSelf()
             updatePermissionState()
             fixRestartService()
         }
@@ -345,9 +348,9 @@ private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Throwable?>) {
                 Column {
                     Text(
                         text = if (installed) {
-                            "Shizuku 授权失败, 请检查是否运行"
+                            "Shizuku 授权失败，请检查是否运行"
                         } else {
-                            "Shizuku 授权失败, 检测到 Shizuku 未安装, 请先下载后安装, 如果你是通过其它方式授权, 请忽略此提示自行查找原因"
+                            "Shizuku 授权失败，检测到 Shizuku 未安装，请先下载后安装，如果你是通过其它方式授权，请忽略此提示自行查找原因"
                         }
                     )
                     Spacer(modifier = Modifier.height(8.dp))

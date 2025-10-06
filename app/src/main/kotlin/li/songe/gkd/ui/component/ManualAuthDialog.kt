@@ -39,7 +39,7 @@ fun ManualAuthDialog(
         }
         AlertDialog(
             onDismissRequest = { onUpdateShow(false) },
-            title = { Text(text = "手动授权") },
+            title = { Text(text = "外部授权") },
             text = {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(text = "1. 有一台安装了 adb 的电脑\n\n2.手机开启调试模式后连接电脑授权调试\n\n3. 在电脑 cmd/pwsh 中运行如下命令")

@@ -19,7 +19,6 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
@@ -33,7 +32,7 @@ import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.permission.AuthReason
-import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.shizuku.updateBinderMutex
@@ -287,29 +286,35 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
         )
     }
 
+    fun switchEnableShizuku(value: Boolean) {
+        if (updateBinderMutex.mutex.isLocked) {
+            toast("正在连接中，请稍后")
+            return
+        }
+        storeFlow.update { s -> s.copy(enableShizuku = value) }
+    }
 
-    fun requestShizuku() = try {
-        Shizuku.requestPermission(Activity.RESULT_OK)
-    } catch (e: Throwable) {
-        shizukuErrorFlow.value = e
+    fun requestShizuku() {
+        if (shizukuContextFlow.value.ok) return
+        if (updateBinderMutex.mutex.isLocked) {
+            toast("正在连接中，请稍后")
+            return
+        }
+        try {
+            Shizuku.requestPermission(Activity.RESULT_OK)
+        } catch (e: Throwable) {
+            shizukuErrorFlow.value = e
+        }
     }
 
     suspend fun guardShizukuContext() {
         if (shizukuContextFlow.value.ok) return
-        if (updateBinderMutex.mutex.isLocked) {
-            toast("正在连接 Shizuku 服务，请稍后")
-            stopCoroutine()
-        }
-        if (!shizukuOkState.stateFlow.value) {
-            requestShizuku()
-            stopCoroutine()
-        }
         if (!storeFlow.value.enableShizuku) {
             storeFlow.update { it.copy(enableShizuku = true) }
-            delay(500)
-            while (updateBinderMutex.mutex.isLocked) {
-                delay(100)
-            }
+        }
+        if (!shizukuGrantedState.updateAndGet()) {
+            requestShizuku()
+            stopCoroutine()
         }
         if (shizukuContextFlow.value.ok) return
         stopCoroutine()
@@ -317,8 +322,9 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
 
     private val a11yServicesFlow = useEnabledA11yServicesFlow()
     val a11yServiceEnabledFlow = useA11yServiceEnabledFlow(a11yServicesFlow)
-    val hasOtherA11yFlow =
-        a11yServicesFlow.mapNew { it.isNotEmpty() && !it.contains(A11yService.a11yCn) }
+    val hasOtherA11yFlow = a11yServicesFlow.mapNew { list ->
+        list.any { it != A11yService.a11yCn }
+    }
 
     init {
         // preload

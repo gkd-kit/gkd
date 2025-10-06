@@ -11,7 +11,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
 import li.songe.gkd.META
-import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.json
 import rikka.shizuku.Shizuku
@@ -91,7 +91,7 @@ private fun unbindUserService(
     connection: ServiceConnection,
     reason: String? = null,
 ) {
-    if (!shizukuOkState.stateFlow.value) return
+    if (!shizukuGrantedState.stateFlow.value) return
     LogUtils.d("unbindUserService", serviceArgs, reason)
     // https://github.com/RikkaApps/Shizuku-API/blob/master/server-shared/src/main/java/rikka/shizuku/server/UserServiceManager.java#L62
     try {

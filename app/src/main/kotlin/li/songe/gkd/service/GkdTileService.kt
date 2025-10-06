@@ -18,7 +18,6 @@ import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.isActivityVisible
 import li.songe.gkd.permission.writeSecureSettingsState
-import li.songe.gkd.shizuku.safeGetTopCpn
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.actualBlockA11yAppList
 import li.songe.gkd.store.storeFlow
@@ -51,8 +50,7 @@ fun switchA11yService() = modifyA11yRun {
         A11yService.instance?.disableSelf()
     } else {
         if (!writeSecureSettingsState.updateAndGet()) {
-            shizukuContextFlow.value.grantSelf()
-            if (!writeSecureSettingsState.updateAndGet()) {
+            if (!writeSecureSettingsState.value) {
                 toast("请先授予「写入安全设置权限」")
                 return@modifyA11yRun
             }
@@ -83,7 +81,7 @@ fun fixRestartService() = modifyA11yRun {
             val topAppId = if (isActivityVisible() || app.justStarted) {
                 META.appId
             } else {
-                safeGetTopCpn()?.packageName
+                shizukuContextFlow.value.topCpn()?.packageName
             }
             if (topAppId != null && topAppId in actualBlockA11yAppList) {
                 return@modifyA11yRun

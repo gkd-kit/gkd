@@ -19,7 +19,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.notif.snapshotNotif
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ScreenshotService
-import li.songe.gkd.shizuku.safeGetTopCpn
+import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
 import java.io.File
 import kotlin.math.min
@@ -119,7 +119,7 @@ object SnapshotExt {
             val (snapshot, bitmap) = coroutineScope {
                 val d1 = async(Dispatchers.IO) {
                     val appId = rootNode.packageName.toString()
-                    var activityId = safeGetTopCpn()?.className
+                    var activityId = shizukuContextFlow.value.topCpn()?.className
                     if (activityId == null) {
                         var topActivity = topActivityFlow.value
                         var i = 0L

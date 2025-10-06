@@ -32,7 +32,6 @@ import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.recordNotif
 import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.shizuku.SafeTaskListener
-import li.songe.gkd.shizuku.safeGetTopCpn
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.PerfIcon
@@ -113,7 +112,7 @@ class ActivityService : OverlayWindowService(
                 }
             }
             if (!A11yService.isRunning.value) {
-                safeGetTopCpn()?.let { cpn ->
+                shizukuContextFlow.value.topCpn()?.let { cpn ->
                     updateTopActivity(
                         appId = cpn.packageName,
                         activityId = cpn.className,

@@ -50,15 +50,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.generated.destinations.AboutPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
 import com.ramcosta.composedestinations.generated.destinations.BlockA11YAppListPageDestination
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
+import li.songe.gkd.app
 import li.songe.gkd.permission.ignoreBatteryOptimizationsState
 import li.songe.gkd.permission.requiredPermission
-import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.permission.writeSecureSettingsState
+import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.shizuku.shizukuContextFlow
@@ -389,40 +392,38 @@ fun useSettingsPage(): ScaffoldExt {
                     )
                 })
 
-            if (store.enableShizuku) {
-                val scope = rememberCoroutineScope()
-                val lazyOn = remember {
-                    storeFlow.mapState(scope) { it.enableBlockA11yAppList }.debounce(300)
-                        .stateIn(scope, SharingStarted.Eagerly, store.enableBlockA11yAppList)
-                }.collectAsState()
-                AnimatedVisibility(visible = lazyOn.value) {
-                    Text(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .titleItemPadding(),
-                        text = "无障碍",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                TextSwitch(
-                    title = "局部关闭",
-                    subtitle = "白名单应用内关闭无障碍",
-                    checked = store.enableBlockA11yAppList,
-                    onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
-                        if (it) {
-                            showA11yBlockDlg = true
-                        } else {
-                            storeFlow.value = store.copy(enableBlockA11yAppList = false)
-                            fixRestartService()
-                        }
-                    },
+            val scope = rememberCoroutineScope()
+            val lazyOn = remember {
+                storeFlow.mapState(scope) { it.enableBlockA11yAppList }.debounce(300)
+                    .stateIn(scope, SharingStarted.Eagerly, store.enableBlockA11yAppList)
+            }.collectAsState()
+            AnimatedVisibility(visible = lazyOn.value) {
+                Text(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .titleItemPadding(),
+                    text = "无障碍",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
                 )
-                AnimatedVisibility(visible = lazyOn.value) {
-                    SettingItem(title = "白名单", onClick = {
-                        mainVm.navigatePage(BlockA11YAppListPageDestination)
-                    })
-                }
+            }
+            TextSwitch(
+                title = "局部关闭",
+                subtitle = "白名单应用内关闭无障碍",
+                checked = store.enableBlockA11yAppList && shizukuContextFlow.collectAsState().value.ok,
+                onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
+                    if (it) {
+                        showA11yBlockDlg = true
+                    } else {
+                        storeFlow.value = store.copy(enableBlockA11yAppList = false)
+                        fixRestartService()
+                    }
+                },
+            )
+            AnimatedVisibility(visible = lazyOn.value) {
+                SettingItem(title = "白名单", onClick = {
+                    mainVm.navigatePage(BlockA11YAppListPageDestination)
+                })
             }
 
             Text(
@@ -474,7 +475,7 @@ fun useSettingsPage(): ScaffoldExt {
 private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onDismissRequest) {
     val mainVm = LocalMainViewModel.current
     val statusRunning by StatusService.isRunning.collectAsState()
-    val shizukuOk by shizukuOkState.stateFlow.collectAsState()
+    val shizukuContext by shizukuContextFlow.collectAsState()
     val ignoreBatteryOptimizations by ignoreBatteryOptimizationsState.stateFlow.collectAsState()
     val hasOtherA11y by mainVm.hasOtherA11yFlow.collectAsState()
     val context = LocalActivity.current as MainActivity
@@ -496,7 +497,7 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
             BottomAppBar {
                 Spacer(modifier = Modifier.weight(1f))
                 TextButton(
-                    enabled = statusRunning && shizukuOk && ignoreBatteryOptimizations && !hasOtherA11y,
+                    enabled = shizukuContext.ok && statusRunning && ignoreBatteryOptimizations && !hasOtherA11y,
                     onClick = mainVm.viewModelScope.launchAsFn {
                         onDismissRequest()
                         delay(200)
@@ -517,14 +518,14 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                 .padding(horizontal = itemHorizontalPadding)
         ) {
             CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyMedium) {
-                Text(text = "「局部关闭」可在白名单应用内关闭无障碍，来解决某些应用界面异常或无障碍检测的问题")
+                Text(text = "「局部关闭」可在白名单应用内关闭无障碍，来解决界面异常，游戏掉帧或无障碍检测的问题")
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(text = "使用须知", style = MaterialTheme.typography.titleMedium)
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    RequiredTextItem(text = "切换无障碍会造成短暂触摸卡顿，请自行测试考虑后再编辑白名单")
-                    RequiredTextItem(text = "如果还使用其它无障碍应用会导致优化无效，因为无障碍不会被完全关闭")
+                    RequiredTextItem(text = "切换无障碍会造成短暂触摸卡顿，请自行测试后再编辑白名单")
+                    RequiredTextItem(text = "使用其它无障碍应用会导致优化无效，因为无障碍不会被完全关闭")
                     RequiredTextItem(text = "必须确保无障碍关闭后的持续后台运行，否则会被系统暂停或结束运行，导致无法恢复无障碍")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -534,10 +535,10 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                 ) {
                     RequiredTextItem(
                         text = "Shizuku 授权",
-                        enabled = !shizukuOk,
-                        imageVector = if (shizukuOk) PerfIcon.Check else PerfIcon.ArrowForward,
-                        onClick = {
-                            mainVm.requestShizuku()
+                        enabled = !shizukuContext.ok,
+                        imageVector = if (shizukuContext.ok) PerfIcon.Check else PerfIcon.ArrowForward,
+                        onClick = mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                            mainVm.guardShizukuContext()
                         },
                     )
                     RequiredTextItem(
@@ -561,7 +562,18 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                         enabled = hasOtherA11y,
                         imageVector = if (!hasOtherA11y) PerfIcon.Check else PerfIcon.ArrowForward,
                         onClick = {
-                            openA11ySettings()
+                            if (writeSecureSettingsState.updateAndGet()) {
+                                if (A11yService.isRunning.value) {
+                                    setOf(A11yService.a11yCn)
+                                } else {
+                                    emptySet()
+                                }.let {
+                                    app.putSecureA11yServices(it)
+                                }
+                                toast("关闭成功")
+                            } else {
+                                openA11ySettings()
+                            }
                         },
                     )
                     RequiredTextItem(
@@ -577,7 +589,12 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                         enabled = true,
                         imageVector = PerfIcon.OpenInNew,
                         onClick = {
-                            shizukuContextFlow.value.inputManager?.key(KeyEvent.KEYCODE_APP_SWITCH)
+                            val m = shizukuContextFlow.value.inputManager
+                            if (m != null) {
+                                m.key(KeyEvent.KEYCODE_APP_SWITCH)
+                            } else {
+                                toast("请先授权 Shizuku")
+                            }
                         },
                     )
                 }
@@ -608,8 +625,7 @@ private fun RequiredTextItem(
             }
             .padding(horizontal = 4.dp),
     ) {
-        val density = LocalDensity.current
-        val lineHeightDp = density.run { LocalTextStyle.current.lineHeight.toDp() }
+        val lineHeightDp = LocalDensity.current.run { LocalTextStyle.current.lineHeight.toDp() }
         Spacer(
             modifier = Modifier
                 .padding(vertical = (lineHeightDp - 4.dp) / 2)

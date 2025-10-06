@@ -18,7 +18,7 @@ import li.songe.gkd.notif.abNotif
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
-import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.storeFlow
@@ -38,7 +38,7 @@ class StatusService : Service(), OnSimpleLife {
     override val scope = useScope()
 
     val shizukuWarnFlow = combine(
-        shizukuOkState.stateFlow,
+        shizukuGrantedState.stateFlow,
         storeFlow.map { it.enableShizuku },
     ) { a, b ->
         !a && b

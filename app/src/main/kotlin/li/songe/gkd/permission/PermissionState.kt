@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.updateAndGet
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
-import li.songe.gkd.shizuku.shizukuCheckGranted
+import li.songe.gkd.shizuku.SafePackageManager
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.util.AndroidTarget
@@ -23,6 +23,7 @@ import li.songe.gkd.util.mayQueryPkgNoAccessFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateAllAppInfo
 import li.songe.gkd.util.updateAppMutex
+import rikka.shizuku.Shizuku
 
 class PermissionState(
     val check: () -> Boolean,
@@ -40,7 +41,6 @@ class PermissionState(
     }
 
     fun checkOrToast(): Boolean = if (!updateAndGet()) {
-        shizukuContextFlow.value.grantSelf()
         val r = updateAndGet()
         if (!r) {
             reason?.text?.let { toast(it()) }
@@ -225,7 +225,18 @@ val writeSecureSettingsState by lazy {
     )
 }
 
-val shizukuOkState by lazy {
+private fun shizukuCheckGranted(): Boolean {
+    val granted = try {
+        Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+    } catch (_: Throwable) {
+        false
+    }
+    if (!granted) return false
+    val u = shizukuContextFlow.value.packageManager ?: SafePackageManager.newBinder()
+    return u?.isSafeMode != null
+}
+
+val shizukuGrantedState by lazy {
     PermissionState(
         check = { shizukuCheckGranted() },
     )
@@ -243,6 +254,6 @@ fun updatePermissionState() {
         canWriteExternalStorage,
         ignoreBatteryOptimizationsState,
         writeSecureSettingsState,
-        shizukuOkState,
+        shizukuGrantedState,
     ).forEach { it.updateAndGet() }
 }

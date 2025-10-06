@@ -59,7 +59,7 @@ import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
-import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.service.ActivityService
 import li.songe.gkd.service.ButtonService
 import li.songe.gkd.service.EventService
@@ -333,8 +333,8 @@ fun AdvancedPage() {
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
-            val shizukuOk by shizukuOkState.stateFlow.collectAsState()
-            if (!shizukuOk) {
+            val shizukuGranted by shizukuGrantedState.stateFlow.collectAsState()
+            AnimatedVisibility(store.enableShizuku && !shizukuGranted) {
                 AuthCard(
                     title = "未授权",
                     subtitle = "点击授权以优化体验",
@@ -359,14 +359,7 @@ fun AdvancedPage() {
                     }
                 },
             ) {
-                if (updateBinderMutex.mutex.isLocked) {
-                    toast("正在连接中，请稍后")
-                    return@TextSwitch
-                }
-                if (it && !shizukuOk) {
-                    toast("未授权")
-                }
-                storeFlow.value = store.copy(enableShizuku = it)
+                mainVm.switchEnableShizuku(it)
             }
 
             val server by HttpService.httpServerFlow.collectAsState()

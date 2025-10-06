@@ -3,7 +3,7 @@ package li.songe.gkd.shizuku
 import android.app.ActivityManager
 import android.app.IActivityTaskManager
 import android.view.Display
-import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.checkExistClass
 
@@ -44,7 +44,7 @@ class SafeActivityTaskManager(private val value: IActivityTaskManager) {
     }
 
     fun unregisterDefault() {
-        if (!shizukuOkState.stateFlow.value) return
+        if (!shizukuGrantedState.stateFlow.value) return
         if (!SafeTaskListener.isAvailable) return
         safeInvokeMethod {
             value.unregisterTaskStackListener(SafeTaskListener.instance)

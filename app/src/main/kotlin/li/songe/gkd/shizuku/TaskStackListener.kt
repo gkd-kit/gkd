@@ -20,7 +20,7 @@ class FixedTaskStackListener : ITaskStackListener.Stub() {
             lastFront = 0
             return
         }
-        val cpn = safeGetTopCpn() ?: return
+        val cpn = shizukuContextFlow.value.topCpn() ?: return
         updateTopActivity(
             appId = cpn.packageName,
             activityId = cpn.className,
@@ -31,7 +31,7 @@ class FixedTaskStackListener : ITaskStackListener.Stub() {
     private var lastFront = 0L
     fun onTaskMovedToFrontCompat(cpn: ComponentName? = null) {
         lastFront = System.currentTimeMillis()
-        val cpn = cpn ?: safeGetTopCpn() ?: return
+        val cpn = cpn ?: shizukuContextFlow.value.topCpn() ?: return
         updateTopActivity(
             appId = cpn.packageName,
             activityId = cpn.className,

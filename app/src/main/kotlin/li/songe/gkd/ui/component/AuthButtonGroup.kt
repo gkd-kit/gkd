@@ -13,32 +13,20 @@ import li.songe.gkd.util.throttle
 
 @Composable
 fun AuthButtonGroup(
-    onClickShizuku: () -> Unit,
-    onClickManual: () -> Unit,
-    onClickRoot: () -> Unit,
+    buttons: List<Pair<String, () -> Unit>>,
 ) {
     FlowRow(
         modifier = Modifier
             .padding(4.dp, 0.dp)
             .fillMaxWidth(),
     ) {
-        TextButton(onClick = throttle(onClickShizuku)) {
-            Text(
-                text = "Shizuku授权",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        }
-        TextButton(onClick = throttle(onClickManual)) {
-            Text(
-                text = "手动授权",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        }
-        TextButton(onClick = throttle(onClickRoot)) {
-            Text(
-                text = "ROOT授权",
-                style = MaterialTheme.typography.bodyLarge,
-            )
+        buttons.forEach { (text, click) ->
+            TextButton(onClick = throttle(click)) {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
         }
     }
 }

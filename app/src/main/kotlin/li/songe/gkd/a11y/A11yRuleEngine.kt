@@ -20,7 +20,7 @@ import li.songe.gkd.isActivityVisible
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.EventService
 import li.songe.gkd.service.a11yPartDisabledFlow
-import li.songe.gkd.shizuku.safeGetTopCpn
+import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.showActionToast
@@ -115,7 +115,7 @@ class A11yRuleEngine(val service: A11yService) {
         }
         if (rightAppId != topActivityFlow.value.appId) {
             // 从 锁屏，下拉通知栏 返回等情况, 应用不会发送事件, 但是系统组件会发送事件
-            val topCpn = safeGetTopCpn()
+            val topCpn = shizukuContextFlow.value.topCpn()
             if (topCpn?.packageName == rightAppId) {
                 updateTopActivity(topCpn.packageName, topCpn.className)
             } else {
@@ -139,7 +139,7 @@ class A11yRuleEngine(val service: A11yService) {
         // https://github.com/gkd-kit/gkd/issues/622
         lastAppId = withTimeoutOrNull(100) {
             runInterruptible(Dispatchers.IO) { service.safeActiveWindowAppId }
-        } ?: safeGetTopCpn()?.packageName
+        } ?: shizukuContextFlow.value.topCpn()?.packageName
         lastGetAppIdTime = System.currentTimeMillis()
         return lastAppId
     }
@@ -201,7 +201,7 @@ class A11yRuleEngine(val service: A11yService) {
 
     fun fixAppId(rightAppId: String) {
         if (topActivityFlow.value.appId == rightAppId) return
-        val topCpn = safeGetTopCpn()
+        val topCpn = shizukuContextFlow.value.topCpn()
         if (topCpn?.packageName == rightAppId) {
             updateTopActivity(topCpn.packageName, topCpn.className)
         } else {

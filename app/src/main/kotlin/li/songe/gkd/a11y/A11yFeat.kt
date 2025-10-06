@@ -19,10 +19,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import li.songe.gkd.appScope
 import li.songe.gkd.isActivityVisible
-import li.songe.gkd.permission.shizukuOkState
+import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.StatusService
-import li.songe.gkd.shizuku.safeGetTopCpn
+import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.ScreenUtils
 import li.songe.gkd.util.SnapshotExt
@@ -50,7 +50,7 @@ fun onA11yFeatInit() = service.run {
     onA11yEvent { onA11yFeatEvent(it) }
     onCreated { StatusService.autoStart() }
     onDestroyed {
-        safeGetTopCpn()?.let {
+        shizukuContextFlow.value.topCpn()?.let {
             // com.android.systemui
             if (!topActivityFlow.value.sameAs(it.packageName, it.className)) {
                 updateTopActivity(it.packageName, it.className)
@@ -102,7 +102,7 @@ private fun watchCheckShizukuState() {
         if (t - lastCheckShizukuTime > 60 * 60_000L) {
             lastCheckShizukuTime = t
             appScope.launchTry(Dispatchers.IO) {
-                shizukuOkState.updateAndGet()
+                shizukuGrantedState.updateAndGet()
             }
         }
     }

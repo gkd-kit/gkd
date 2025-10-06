@@ -22,7 +22,6 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.get
-import com.blankj.utilcode.util.LogUtils
 import kotlinx.serialization.json.JsonElement
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
@@ -30,7 +29,6 @@ import li.songe.gkd.app
 import li.songe.json5.Json5
 import li.songe.json5.Json5EncoderConfig
 import li.songe.json5.encodeToJson5String
-import java.io.DataOutputStream
 import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
 
@@ -89,27 +87,6 @@ fun <S : Comparable<S>> AnimatedContentTransitionScope<S>.getUpDownTransform(): 
     }.using(
         SizeTransform(clip = false)
     )
-}
-
-suspend fun runCommandByRoot(commandText: String) {
-    var p: Process? = null
-    try {
-        p = Runtime.getRuntime().exec("su")
-        val o = DataOutputStream(p.outputStream)
-        o.writeBytes("${commandText}\nexit\n")
-        o.flush()
-        o.close()
-        p.waitFor()
-        if (p.exitValue() == 0) {
-            return
-        }
-    } catch (e: Exception) {
-        toast("运行失败:${e.message}")
-        LogUtils.d(e)
-    } finally {
-        p?.destroy()
-    }
-    stopCoroutine()
 }
 
 val defaultJson5Config = Json5EncoderConfig(indent = "\u0020\u0020", trailingComma = true)
