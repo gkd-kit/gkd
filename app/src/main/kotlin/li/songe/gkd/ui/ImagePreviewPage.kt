@@ -35,20 +35,32 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import coil3.ImageLoader
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
+import coil3.disk.DiskCache
+import coil3.gif.AnimatedImageDecoder
+import coil3.gif.GifDecoder
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import li.songe.gkd.MainActivity
+import li.songe.gkd.app
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.ProfileTransitions
-import li.songe.gkd.util.imageLoader
+import li.songe.gkd.util.AndroidTarget
+import li.songe.gkd.util.coilCacheDir
 import li.songe.gkd.util.throttle
+import okhttp3.OkHttpClient
+import okio.Path.Companion.toOkioPath
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
@@ -139,7 +151,13 @@ private fun UriImage(uri: String) {
     val context = LocalContext.current
     val model = remember(uri) {
         ImageRequest.Builder(context).data(uri)
-            .crossfade(DefaultDurationMillis)
+            .crossfade(DefaultDurationMillis).run {
+                if (URLUtil.isNetworkUrl(uri)) {
+                    this
+                } else {
+                    diskCachePolicy(CachePolicy.DISABLED).memoryCachePolicy(CachePolicy.DISABLED)
+                }
+            }
             .build().apply {
                 imageLoader.enqueue(this)
             }
@@ -190,4 +208,32 @@ private fun UriImage(uri: String) {
             }
         }
     }
+}
+
+private val imageLoader by lazy {
+    ImageLoader.Builder(app)
+        .diskCache {
+            DiskCache.Builder()
+                .directory(coilCacheDir.toOkioPath())
+                .maxSizePercent(0.1)
+                .build()
+        }
+        .components {
+            if (AndroidTarget.P) {
+                add(AnimatedImageDecoder.Factory())
+            } else {
+                add(GifDecoder.Factory())
+            }
+            add(
+                OkHttpNetworkFetcherFactory(
+                    callFactory = {
+                        OkHttpClient.Builder()
+                            .connectTimeout(30.seconds.toJavaDuration())
+                            .readTimeout(30.seconds.toJavaDuration())
+                            .writeTimeout(30.seconds.toJavaDuration())
+                            .build()
+                    }
+                ))
+        }
+        .build()
 }
