@@ -148,7 +148,7 @@ fun WebViewPage(
             client = webViewClient,
             onCreated = {
                 webView.value = it
-                it.addJavascriptInterface(GkdJavascriptInterface(), "gkd")
+                it.addJavascriptInterface(GkdWebViewJsApi, "gkd")
                 it.settings.apply {
                     @SuppressLint("SetJavaScriptEnabled")
                     javaScriptEnabled = true
@@ -163,9 +163,12 @@ fun WebViewPage(
 }
 
 @Suppress("unused")
-private class GkdJavascriptInterface() {
+private object GkdWebViewJsApi {
     @JavascriptInterface
     fun getAppId() = META.appId
+
+    @JavascriptInterface
+    fun getAppName() = META.appName
 
     @JavascriptInterface
     fun getVersionCode() = META.versionCode
@@ -175,10 +178,12 @@ private class GkdJavascriptInterface() {
 
     @JavascriptInterface
     fun getChannel() = META.channel
+
+    @JavascriptInterface
+    fun getDebuggable() = META.debuggable
 }
 
-// 兼容性检测为最近 3 年, 2022-03-29
-private const val MINI_CHROME_VERSION = 100
+private const val MINI_CHROME_VERSION = 107
 private val chromeVersion by lazy {
     WebView.getCurrentWebViewPackage()?.versionName?.run {
         splitToSequence('.').first().toIntOrNull()
