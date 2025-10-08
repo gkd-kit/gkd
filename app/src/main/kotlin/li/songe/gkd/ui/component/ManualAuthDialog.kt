@@ -15,7 +15,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,9 +33,6 @@ fun ManualAuthDialog(
 ) {
     if (show) {
         val mainVm = LocalMainViewModel.current
-        val adbCommandText = remember(commandText) {
-            "adb shell \"$commandText\""
-        }
         AlertDialog(
             onDismissRequest = { onUpdateShow(false) },
             title = { Text(text = "外部授权") },
@@ -53,7 +49,7 @@ fun ManualAuthDialog(
                                 .fillMaxWidth()
                         ) {
                             Text(
-                                text = adbCommandText,
+                                text = commandText,
                                 modifier = Modifier
                                     .clip(MaterialTheme.shapes.extraSmall)
                                     .background(MaterialTheme.colorScheme.secondaryContainer)
@@ -65,7 +61,7 @@ fun ManualAuthDialog(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
                                 .clickable(onClick = throttle {
-                                    copyText(adbCommandText)
+                                    copyText(commandText)
                                 })
                                 .padding(4.dp)
                                 .size(20.dp),

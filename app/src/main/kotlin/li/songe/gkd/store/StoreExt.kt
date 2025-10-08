@@ -4,6 +4,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.appScope
+import li.songe.gkd.service.ExposeService
+import li.songe.gkd.ui.gkdStartCommandText
 import li.songe.gkd.util.AppListString
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.toast
@@ -62,6 +64,8 @@ fun initStore() = appScope.launchTry(Dispatchers.IO) {
     actionCountFlow.value
     blockMatchAppListFlow.value
     blockA11yAppListFlow.value
+    gkdStartCommandText
+    ExposeService.initCommandFile()
 }
 
 fun switchStoreEnableMatch() {

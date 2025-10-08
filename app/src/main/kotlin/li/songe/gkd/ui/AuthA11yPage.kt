@@ -59,6 +59,7 @@ import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openA11ySettings
+import li.songe.gkd.util.shFolder
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
@@ -240,7 +241,7 @@ fun AuthA11yPage() {
     }
 
     ManualAuthDialog(
-        commandText = a11yCommandText,
+        commandText = gkdStartCommandText,
         show = showCopyDlg,
         onUpdateShow = {
             vm.showCopyDlgFlow.value = it
@@ -248,16 +249,20 @@ fun AuthA11yPage() {
     )
 }
 
-private val String.appopsAllowCommand: String
-    get() = "appops set ${META.appId} $this allow"
+private val String.appopsAllow get() = "appops set ${META.appId} $this allow"
+private val String.pmGrant get() = "pm grant ${META.appId} $this"
 
-val appOpsCommand by lazy { "FOREGROUND_SERVICE_SPECIAL_USE".appopsAllowCommand }
-
-private val a11yCommandText by lazy {
-    listOfNotNull(
-        "pm grant ${META.appId} ${Manifest.permission.WRITE_SECURE_SETTINGS}",
-        if (AndroidTarget.TIRAMISU) "ACCESS_RESTRICTED_SETTINGS".appopsAllowCommand else null,
-    ).joinToString("; ")
+val gkdStartCommandText by lazy {
+    val commandText = listOfNotNull(
+        "set -euo pipefail",
+        Manifest.permission.WRITE_SECURE_SETTINGS.pmGrant,
+        if (AndroidTarget.TIRAMISU) "ACCESS_RESTRICTED_SETTINGS".appopsAllow else null,
+        if (AndroidTarget.UPSIDE_DOWN_CAKE) "FOREGROUND_SERVICE_SPECIAL_USE".appopsAllow else null,
+        "echo 'Execution Successful'",
+    ).joinToString("\n")
+    val file = shFolder.resolve("start.sh")
+    file.writeText(commandText)
+    "adb shell sh ${file.absolutePath}"
 }
 
 @Composable

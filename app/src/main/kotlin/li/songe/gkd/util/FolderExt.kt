@@ -19,6 +19,8 @@ private val filesDir: File by lazy {
 
 val dbFolder: File
     get() = filesDir.resolve("db").autoMk()
+val shFolder: File
+    get() = filesDir.resolve("sh").autoMk()
 val storeFolder: File
     get() = filesDir.resolve("store").autoMk()
 val subsFolder: File

@@ -173,7 +173,7 @@
                 android:value="Display a text card for users to show a11y event log" />
         </service>
         <service
-            android:name=".service.SnapshotActionService"
+            android:name=".service.ExposeService"
             android:exported="true"
             android:foregroundServiceType="specialUse"
             tools:ignore="ExportedService">

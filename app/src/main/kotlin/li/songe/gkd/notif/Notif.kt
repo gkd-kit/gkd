@@ -119,10 +119,10 @@ val httpNotif = Notif(
     stopService = HttpService::class,
 )
 
-val snapshotActionNotif = Notif(
+val exposeNotif = Notif(
     id = 104,
-    title = "快照服务正在运行",
-    text = "捕获快照完成后自动关闭",
+    title = "运行外部调用任务中",
+    text = "任务完成后自动关闭",
 )
 
 val snapshotNotif = Notif(

@@ -108,7 +108,7 @@ fun AppOpsAllowPage() {
 
     val showCopyDlg by vm.showCopyDlgFlow.collectAsState()
     ManualAuthDialog(
-        commandText = appOpsCommand,
+        commandText = gkdStartCommandText,
         show = showCopyDlg,
         onUpdateShow = {
             vm.showCopyDlgFlow.value = it
