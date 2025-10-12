@@ -8,13 +8,17 @@ import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import li.songe.gkd.App
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
@@ -146,7 +150,7 @@ private fun updatePartAppInfo(
     userAppIconMapFlow.value = newIconMap
 }
 
-fun updateAllAppInfo() = updateAppMutex.launchTry(appScope, Dispatchers.IO) {
+fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO) {
     val newAppMap = HashMap<String, AppInfo>()
     val newIconMap = HashMap<String, Drawable>()
     val pkgList = app.packageManager.getInstalledPackages(PKG_FLAGS)
@@ -156,7 +160,9 @@ fun updateAllAppInfo() = updateAppMutex.launchTry(appScope, Dispatchers.IO) {
             newIconMap[packageInfo.packageName] = icon
         }
     }
-    if (!canQueryPkgState.updateAndGet()) {
+    val mayAuthDenied = newAppMap.count { !it.value.isSystem } <= 4
+    canQueryPkgState.updateAndGet()
+    if (!canQueryPkgState.value || mayAuthDenied) {
         val pkgList2 = shizukuContextFlow.value.packageManager?.getInstalledPackages(PKG_FLAGS)
         if (!pkgList2.isNullOrEmpty()) {
             pkgList2.forEach { packageInfo ->
@@ -188,13 +194,20 @@ fun updateAllAppInfo() = updateAppMutex.launchTry(appScope, Dispatchers.IO) {
     if (!app.justStarted && isActivityVisible()) {
         toast("应用列表更新成功")
     }
+    if (canQueryPkgState.value && mayAuthDenied && app.justStarted) {
+        // 概率出现：即使有「读取应用列表权限」在刚启动时也只能获取到少量应用，延迟几秒再试一次
+        appScope.launch {
+            delay(App.START_WAIT_TIME)
+            updateAllAppInfo()
+        }
+    }
 }
 
 fun initAppState() {
     packageReceiver
     updateAllAppInfo()
     appScope.launchTry {
-        shizukuContextFlow.collect {
+        shizukuContextFlow.drop(1).collect {
             updateAppMutex.launchTry(appScope, Dispatchers.IO) {
                 updateOtherUserAppInfo()
             }

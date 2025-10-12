@@ -79,6 +79,10 @@ data class AppMeta(
 val META by lazy { AppMeta() }
 
 class App : Application() {
+    companion object {
+        const val START_WAIT_TIME = 3000L
+    }
+
     init {
         innerApp = this
     }
@@ -136,7 +140,7 @@ class App : Application() {
     var justStarted: Boolean = true
         get() {
             if (field) {
-                field = System.currentTimeMillis() - startTime < 3_000
+                field = System.currentTimeMillis() - startTime < START_WAIT_TIME
             }
             return field
         }
