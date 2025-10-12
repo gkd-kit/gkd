@@ -26,6 +26,7 @@ import li.songe.gkd.util.updateAppMutex
 import rikka.shizuku.Shizuku
 
 class PermissionState(
+    val name: String,
     val check: () -> Boolean,
     val request: (suspend (context: MainActivity) -> PermissionResult)? = null,
     /**
@@ -97,6 +98,7 @@ private fun checkAllowedOp(op: String): Boolean = app.appOpsManager.checkOpNoThr
 // https://github.com/gkd-kit/gkd/issues/887
 val foregroundServiceSpecialUseState by lazy {
     PermissionState(
+        name = "特殊用途的前台服务",
         check = {
             if (AndroidTarget.UPSIDE_DOWN_CAKE) {
                 checkAllowedOp("android:foreground_service_special_use")
@@ -119,6 +121,7 @@ val foregroundServiceSpecialUseState by lazy {
 val notificationState by lazy {
     val permission = PermissionLists.getNotificationServicePermission()
     PermissionState(
+        name = "通知权限",
         check = {
             XXPermissions.isGrantedPermission(app, permission)
         },
@@ -135,6 +138,7 @@ val notificationState by lazy {
 val canQueryPkgState by lazy {
     val permission = PermissionLists.getGetInstalledAppsPermission()
     PermissionState(
+        name = "读取应用列表权限",
         check = {
             XXPermissions.isGrantedPermission(app, permission)
         },
@@ -152,6 +156,7 @@ val canQueryPkgState by lazy {
 
 val canDrawOverlaysState by lazy {
     PermissionState(
+        name = "悬浮窗权限",
         check = {
             // https://developer.android.com/security/fraud-prevention/activities?hl=zh-cn#hide_overlay_windows
             Settings.canDrawOverlays(app)
@@ -172,6 +177,7 @@ val canDrawOverlaysState by lazy {
 
 val canWriteExternalStorage by lazy {
     PermissionState(
+        name = "写入外部存储权限",
         check = {
             if (AndroidTarget.Q) {
                 true
@@ -201,6 +207,7 @@ val canWriteExternalStorage by lazy {
 val ignoreBatteryOptimizationsState by lazy {
     val permission = PermissionLists.getRequestIgnoreBatteryOptimizationsPermission()
     PermissionState(
+        name = "忽略电池优化权限",
         check = {
             app.powerManager.isIgnoringBatteryOptimizations(app.packageName)
         },
@@ -221,6 +228,7 @@ val ignoreBatteryOptimizationsState by lazy {
 
 val writeSecureSettingsState by lazy {
     PermissionState(
+        name = "写入安全设置权限",
         check = { checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS) },
     )
 }
@@ -238,7 +246,21 @@ private fun shizukuCheckGranted(): Boolean {
 
 val shizukuGrantedState by lazy {
     PermissionState(
+        name = "Shizuku 权限",
         check = { shizukuCheckGranted() },
+    )
+}
+
+val allPermissionStates by lazy {
+    listOf(
+        notificationState,
+        foregroundServiceSpecialUseState,
+        canDrawOverlaysState,
+        canWriteExternalStorage,
+        ignoreBatteryOptimizationsState,
+        writeSecureSettingsState,
+        canQueryPkgState,
+        shizukuGrantedState,
     )
 }
 
@@ -247,13 +269,5 @@ fun updatePermissionState() {
     if (!updateAppMutex.mutex.isLocked && (stateChanged || mayQueryPkgNoAccessFlow.value)) {
         updateAllAppInfo()
     }
-    arrayOf(
-        notificationState,
-        foregroundServiceSpecialUseState,
-        canDrawOverlaysState,
-        canWriteExternalStorage,
-        ignoreBatteryOptimizationsState,
-        writeSecureSettingsState,
-        shizukuGrantedState,
-    ).forEach { it.updateAndGet() }
+    allPermissionStates.forEach { it.updateAndGet() }
 }

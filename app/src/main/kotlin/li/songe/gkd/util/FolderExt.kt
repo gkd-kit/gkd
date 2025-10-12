@@ -3,6 +3,7 @@ package li.songe.gkd.util
 import android.text.format.DateUtils
 import com.blankj.utilcode.util.LogUtils
 import li.songe.gkd.app
+import li.songe.gkd.permission.allPermissionStates
 import li.songe.gkd.shizuku.shizukuContextFlow
 import java.io.File
 
@@ -73,6 +74,12 @@ fun buildLogFile(): File {
     tempDir.resolve("shizuku.txt").also {
         it.writeText(shizukuContextFlow.value.states.joinToString("\n") { state ->
             state.first + ": " + state.second.toString()
+        })
+        files.add(it)
+    }
+    tempDir.resolve("permission.txt").also {
+        it.writeText(allPermissionStates.joinToString("\n") { state ->
+            state.name + ": " + state.stateFlow.value.toString()
         })
         files.add(it)
     }
