@@ -32,6 +32,7 @@ import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.permission.AuthReason
+import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.shizuku.shizukuContextFlow
@@ -362,6 +363,10 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
         viewModelScope.launch(Dispatchers.IO) {
             // preload
             githubCookieFlow.value
+        }
+
+        canQueryPkgState.stateFlow.launchOnChange {
+            appListKeyFlow.update { it + 1 }
         }
 
         // for OnSimpleLife

@@ -56,7 +56,6 @@ import li.songe.gkd.ui.component.PerfCheckbox
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.isFullVisible
 import li.songe.gkd.ui.component.useListScrollState
@@ -303,7 +302,6 @@ fun BlockA11yAppListPage() {
                         EmptyText(text = "暂无搜索结果")
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
-                    QueryPkgAuthCard()
                 }
             }
         }

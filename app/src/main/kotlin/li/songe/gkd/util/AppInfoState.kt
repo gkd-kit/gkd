@@ -15,12 +15,12 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.META
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.otherUserMapFlow
 import li.songe.gkd.data.toAppInfo
+import li.songe.gkd.isActivityVisible
 import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.shizuku.currentUserId
 import li.songe.gkd.shizuku.shizukuContextFlow
@@ -54,17 +54,6 @@ val visibleAppInfosFlow by lazy {
             collator.compare(a.name, b.name)
         }
     }
-}
-
-private fun Map<String, AppInfo>.getMayQueryPkgNoAccess(): Boolean {
-    return values.count { a -> !a.isSystem && !a.hidden && a.id != META.appId } < MINIMUM_NORMAL_APP_SIZE
-}
-
-// https://github.com/orgs/gkd-kit/discussions/761
-// 某些设备在应用更新后出现权限错乱/缓存错乱
-private const val MINIMUM_NORMAL_APP_SIZE = 8
-val mayQueryPkgNoAccessFlow by lazy {
-    userAppInfoMapFlow.mapState(appScope) { it.getMayQueryPkgNoAccess() }
 }
 
 private val willUpdateAppIds by lazy { MutableStateFlow(emptySet<String>()) }
@@ -157,9 +146,7 @@ private fun updatePartAppInfo(
     userAppIconMapFlow.value = newIconMap
 }
 
-fun updateAllAppInfo(
-    showToast: Boolean = false,
-) = updateAppMutex.launchTry(appScope, Dispatchers.IO) {
+fun updateAllAppInfo() = updateAppMutex.launchTry(appScope, Dispatchers.IO) {
     val newAppMap = HashMap<String, AppInfo>()
     val newIconMap = HashMap<String, Drawable>()
     val pkgList = app.packageManager.getInstalledPackages(PKG_FLAGS)
@@ -169,7 +156,7 @@ fun updateAllAppInfo(
             newIconMap[packageInfo.packageName] = icon
         }
     }
-    if (!canQueryPkgState.updateAndGet() || newAppMap.getMayQueryPkgNoAccess()) {
+    if (!canQueryPkgState.updateAndGet()) {
         val pkgList2 = shizukuContextFlow.value.packageManager?.getInstalledPackages(PKG_FLAGS)
         if (!pkgList2.isNullOrEmpty()) {
             pkgList2.forEach { packageInfo ->
@@ -198,7 +185,7 @@ fun updateAllAppInfo(
     updateOtherUserAppInfo(newAppMap)
     userAppInfoMapFlow.value = newAppMap
     userAppIconMapFlow.value = newIconMap
-    if (showToast) {
+    if (!app.justStarted && isActivityVisible()) {
         toast("应用列表更新成功")
     }
 }

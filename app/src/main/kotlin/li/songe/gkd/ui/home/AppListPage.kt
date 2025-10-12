@@ -46,6 +46,7 @@ import com.ramcosta.composedestinations.generated.destinations.EditBlockAppListP
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.AppInfo
+import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.store.blockMatchAppListFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AnimatedIcon
@@ -260,16 +261,22 @@ fun useAppListPage(): ScaffoldExt {
             )
         }
     ) { contentPadding ->
+        val canQueryPkg by canQueryPkgState.stateFlow.collectAsState()
         PullToRefreshBox(
             modifier = Modifier.padding(contentPadding),
             state = pullToRefreshState,
             isRefreshing = refreshing,
-            onRefresh = { updateAllAppInfo(true) }
+            onRefresh = { updateAllAppInfo() }
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = listState
             ) {
+                if (!canQueryPkg) {
+                    item(key = 1, contentType = 1) {
+                        QueryPkgAuthCard()
+                    }
+                }
                 items(appInfos, { it.id }) { appInfo ->
                     val desc = run {
                         if (editWhiteListMode) return@run null
@@ -307,7 +314,6 @@ fun useAppListPage(): ScaffoldExt {
                         EmptyText(text = if (hasShowAll) "暂无搜索结果" else "暂无搜索结果，请尝试修改筛选条件")
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
-                    QueryPkgAuthCard(hideLoading = true)
                 }
             }
         }

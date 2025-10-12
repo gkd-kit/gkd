@@ -58,7 +58,6 @@ import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfSwitch
 import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.isFullVisible
@@ -370,7 +369,6 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                         EmptyText(text = if (hasShowAll) "暂无搜索结果" else "暂无搜索结果，请尝试修改筛选条件")
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
-                    QueryPkgAuthCard()
                 }
             }
         }

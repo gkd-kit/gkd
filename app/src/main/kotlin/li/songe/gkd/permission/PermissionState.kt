@@ -19,7 +19,6 @@ import li.songe.gkd.shizuku.SafePackageManager
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.mayQueryPkgNoAccessFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateAllAppInfo
 import li.songe.gkd.util.updateAppMutex
@@ -39,6 +38,10 @@ class PermissionState(
 
     fun updateAndGet(): Boolean {
         return stateFlow.updateAndGet { check() }
+    }
+
+    fun updateChanged(): Boolean {
+        return value != updateAndGet()
     }
 
     fun checkOrToast(): Boolean = if (!updateAndGet()) {
@@ -265,9 +268,13 @@ val allPermissionStates by lazy {
 }
 
 fun updatePermissionState() {
-    val stateChanged = canQueryPkgState.stateFlow.value != canQueryPkgState.updateAndGet()
-    if (!updateAppMutex.mutex.isLocked && (stateChanged || mayQueryPkgNoAccessFlow.value)) {
-        updateAllAppInfo()
+    allPermissionStates.forEach {
+        if (it === canQueryPkgState && !updateAppMutex.mutex.isLocked) {
+            if (canQueryPkgState.updateChanged()) {
+                updateAllAppInfo()
+            }
+        } else {
+            it.updateAndGet()
+        }
     }
-    allPermissionStates.forEach { it.updateAndGet() }
 }

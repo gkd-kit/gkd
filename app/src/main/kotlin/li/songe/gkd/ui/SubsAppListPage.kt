@@ -45,7 +45,6 @@ import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.SubsAppCard
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.autoFocus
@@ -257,7 +256,6 @@ fun SubsAppListPage(
                     )
                     Spacer(modifier = Modifier.height(EmptyHeight / 2))
                 }
-                QueryPkgAuthCard()
             }
         }
     }
