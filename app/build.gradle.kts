@@ -53,6 +53,7 @@ plugins {
     alias(libs.plugins.kotlinx.atomicfu)
     alias(libs.plugins.google.ksp)
     alias(libs.plugins.rikka.refine)
+//    alias(libs.plugins.loc)
 }
 
 android {
@@ -196,6 +197,10 @@ composeCompiler {
     )
 }
 
+//loc {
+//    template = "{methodName}({fileName}:{lineNumber})"
+//}
+
 dependencies {
     implementation(libs.kotlin.stdlib)
 
@@ -272,6 +277,7 @@ dependencies {
     implementation(libs.permissions)
 
     implementation(libs.json5)
+    compileOnly(libs.loc.runtime)
 
     implementation(libs.kevinnzouWebview)
 }
