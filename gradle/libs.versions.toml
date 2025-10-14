@@ -11,7 +11,7 @@ destinations = "2.3.0"
 coil = "3.3.0"
 rikka_refine = "4.4.0"
 rikka_shizuku = "13.1.5"
-loc = "0.2.0"
+loc = "0.3.0"
 
 [libraries]
 kotlin_stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }

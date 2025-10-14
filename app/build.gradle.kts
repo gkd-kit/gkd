@@ -53,7 +53,7 @@ plugins {
     alias(libs.plugins.kotlinx.atomicfu)
     alias(libs.plugins.google.ksp)
     alias(libs.plugins.rikka.refine)
-//    alias(libs.plugins.loc)
+    alias(libs.plugins.loc)
 }
 
 android {
@@ -196,10 +196,6 @@ composeCompiler {
         rootProject.layout.projectDirectory.file("stability_config.conf"),
     )
 }
-
-//loc {
-//    template = "{methodName}({fileName}:{lineNumber})"
-//}
 
 dependencies {
     implementation(libs.kotlin.stdlib)
