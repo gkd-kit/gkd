@@ -45,13 +45,13 @@ class ExposeService : Service() {
     companion object {
         fun initCommandFile() {
             val commandText = template
-                .replace("__N__", ExposeService::class.componentName.flattenToShortString())
+                .replace("{service}", ExposeService::class.componentName.flattenToShortString())
             shFolder.resolve("expose.sh").writeText(commandText)
         }
     }
 }
 
-private const val template = """
+private const val template = $$"""set -euo pipefail
 p=''
 if [ -n "$1" ]; then
   p+=" --ei expose $1"
@@ -59,6 +59,6 @@ fi
 if [ -n "$2" ]; then
   p+=" --es data $2"
 fi
-am start-foreground-service -n __N__ ${'$'}p
+am start-foreground-service -n {service} $p
 echo 'Execution Successful'
 """

@@ -180,7 +180,8 @@ kotlin {
             "-opt-in=androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi",
             "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
             "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
-            "-Xcontext-parameters"
+            "-Xcontext-parameters",
+            "-XXLanguage:+MultiDollarInterpolation"
         )
     }
 }
