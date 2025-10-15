@@ -166,7 +166,7 @@ fun updateTopActivity(appId: String, activityId: String?, type: Int = 0) {
     )
     lastValidActivity = oldActivity
     lastActivityUpdateTime = t
-    if (ActivityService.isRunning.value) {
+    if (ActivityService.isRunning.value && appId.isNotEmpty()) {
         appScope.launchTry(Dispatchers.IO) {
             activityLogMutex.withLock {
                 DbSet.activityLogDao.insert(
@@ -197,14 +197,16 @@ fun updateTopActivity(appId: String, activityId: String?, type: Int = 0) {
         if (idChanged) {
             val oldAppId = lastAppId
             lastAppId = appId
-            appChangeTime = t
-            appScope.launchTry {
-                DbSet.appVisitLogDao.insert(oldAppId, appId, t)
-                appLogCount++
-                if (appLogCount % 100 == 0) {
-                    DbSet.appVisitLogDao.deleteKeepLatest()
+            if (oldAppId.isNotEmpty() && appId.isNotEmpty()) {
+                appScope.launchTry {
+                    DbSet.appVisitLogDao.insert(oldAppId, appId, t)
+                    appLogCount++
+                    if (appLogCount % 100 == 0) {
+                        DbSet.appVisitLogDao.deleteKeepLatest()
+                    }
                 }
             }
+            appChangeTime = t
             ruleSummary.globalRules.forEach { it.resetState(t) }
             ruleSummary.appIdToRules[oldActivityRule.topActivity.appId]?.forEach { it.resetState(t) }
             newActivityRule.appRules.forEach { it.resetState(t) }
@@ -228,9 +230,11 @@ fun updateTopActivity(appId: String, activityId: String?, type: Int = 0) {
             }
         }
         activityRuleFlow.value = newActivityRule
-        LogUtils.d(
-            "${oldActivity.format()} -> ${topActivityFlow.value.format()} (type=$type)",
-        )
+        if (appId.isNotEmpty() && oldActivityRule.topActivity.appId.isNotEmpty()) {
+            LogUtils.d(
+                "${oldActivity.format()} -> ${topActivityFlow.value.format()} (type=$type)",
+            )
+        }
     }
 }
 

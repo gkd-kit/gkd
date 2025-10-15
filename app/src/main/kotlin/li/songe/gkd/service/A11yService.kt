@@ -17,6 +17,7 @@ import kotlinx.coroutines.withContext
 import li.songe.gkd.a11y.A11yContext
 import li.songe.gkd.a11y.A11yRuleEngine
 import li.songe.gkd.a11y.a11yContext
+import li.songe.gkd.a11y.appChangeTime
 import li.songe.gkd.a11y.isUseful
 import li.songe.gkd.a11y.onA11yFeatInit
 import li.songe.gkd.a11y.setGeneratedTime
@@ -69,9 +70,7 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
     override val scope = useScope()
     var isInteractive = true
         private set
-    var outStartQueryJob = {}
-    var lastScreenOnTime = 0L
-        private set
+    var onScreenForcedActive = {}
     private val screenStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(
             context: Context?,
@@ -82,11 +81,14 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
             isInteractive = when (action) {
                 Intent.ACTION_SCREEN_ON -> true
                 Intent.ACTION_SCREEN_OFF -> false
+                Intent.ACTION_USER_PRESENT -> true
                 else -> isInteractive
             }
             if (isInteractive) {
-                lastScreenOnTime = System.currentTimeMillis()
-                outStartQueryJob()
+                val t = System.currentTimeMillis()
+                if (t - appChangeTime > 500) { // 37.872(a11y) -> 38.228(onReceive)
+                    onScreenForcedActive()
+                }
             }
         }
     }
@@ -107,6 +109,7 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
                 IntentFilter().apply {
                     addAction(Intent.ACTION_SCREEN_ON)
                     addAction(Intent.ACTION_SCREEN_OFF)
+                    addAction(Intent.ACTION_USER_PRESENT)
                 },
                 ContextCompat.RECEIVER_EXPORTED
             )

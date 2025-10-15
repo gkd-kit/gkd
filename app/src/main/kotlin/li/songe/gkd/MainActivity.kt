@@ -179,6 +179,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         fixSomeProblems()
         super.onCreate(savedInstanceState)
+        LogUtils.d("MainActivity::onCreate")
         mainVm
         launcher
         pickContentLauncher
@@ -266,6 +267,11 @@ class MainActivity : ComponentActivity() {
         super.onStop()
         LogUtils.d("MainActivity::onStop")
         activityVisibleState--
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        LogUtils.d("MainActivity::onDestroy")
     }
 
     private var lastBackPressedTime = 0L

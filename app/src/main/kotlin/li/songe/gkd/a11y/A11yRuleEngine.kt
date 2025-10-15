@@ -37,7 +37,14 @@ private val actionDispatcher = Executors.newSingleThreadExecutor().asCoroutineDi
 
 class A11yRuleEngine(val service: A11yService) {
     init {
-        service.outStartQueryJob = { startQueryJob(byForced = true) }
+        // 关闭屏幕 -> Activity::onStop -> 点亮屏幕 -> Activity::onStart -> Activity::onResume
+        service.onScreenForcedActive = {
+            val oldValue = topActivityFlow.value
+            updateTopActivity("", null)
+            updateTopActivity(oldValue.appId, oldValue.activityId)
+            startQueryJob()
+            Log.d("A11yRuleEngine", "onScreenForcedActive->${oldValue.appId}")
+        }
         service.onA11yConnected {
             if (storeFlow.value.enableBlockA11yAppList && !a11yPartDisabledFlow.value) {
                 startQueryJob(byForced = true)
@@ -52,9 +59,9 @@ class A11yRuleEngine(val service: A11yService) {
     var lastEventTime = 0L
     val eventDeque = ArrayDeque<A11yEvent>()
     fun onNewA11yEvent(event: AccessibilityEvent) {
-        if (event.eventType == CONTENT_CHANGED && event.packageName == systemUiAppId) {
-            if (!service.isInteractive) return // 屏幕关闭后仍然有无障碍事件
-            if (event.packageName != topActivityFlow.value.appId) return
+        if (event.eventType == CONTENT_CHANGED) {
+            if (!service.isInteractive) return // 屏幕关闭后仍然有无障碍事件 type:2048, time:8094, app:com.miui.aod, cls:android.widget.TextView
+            if (event.packageName == systemUiAppId && event.packageName != topActivityFlow.value.appId) return
         }
         // 过滤部分输入法事件
         if (event.packageName == imeAppId && topActivityFlow.value.appId != imeAppId) {
@@ -186,7 +193,7 @@ class A11yRuleEngine(val service: A11yService) {
 
     fun checkFutureStartJob() {
         val t = System.currentTimeMillis()
-        if (t - lastTriggerTime < 3000L || t - appChangeTime < 5000L || t - service.lastScreenOnTime < 3000L) {
+        if (t - lastTriggerTime < 3000L || t - appChangeTime < 5000L) {
             scope.launch(actionDispatcher) {
                 delay(300)
                 startQueryJob()
