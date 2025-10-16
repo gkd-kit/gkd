@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin
 
 ext {
     set("android.namespace", "li.songe.gkd")
-    set("android.buildToolsVersion", "36.0.0")
+    set("android.buildToolsVersion", "36.1.0")
     set("android.compileSdk", 36)
     set("android.targetSdk", 36)
     set("android.minSdk", 26)
