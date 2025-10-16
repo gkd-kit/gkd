@@ -23,7 +23,6 @@ import li.songe.gkd.ui.style.appItemPadding
 @Composable
 fun SubsAppCard(
     data: SubsAppInfoItem,
-    enableSize: Int = data.rawApp.groups.count { g -> g.enable ?: true },
     onClick: (() -> Unit),
     onValueChange: ((Boolean) -> Unit),
 ) {
@@ -43,10 +42,10 @@ fun SubsAppCard(
         ) {
             AppNameText(appInfo = data.appInfo, fallbackName = data.rawApp.name)
             if (rawApp.groups.isNotEmpty()) {
-                val enableDesc = when (enableSize) {
+                val enableDesc = when (data.enableSize) {
                     0 -> "${rawApp.groups.size}组规则/${rawApp.groups.size}关闭"
                     rawApp.groups.size -> "${rawApp.groups.size}组规则"
-                    else -> "${rawApp.groups.size}组规则/${enableSize}启用/${rawApp.groups.size - enableSize}关闭"
+                    else -> "${rawApp.groups.size}组规则/${data.enableSize}启用/${rawApp.groups.size - data.enableSize}关闭"
                 }
                 Text(
                     text = enableDesc,

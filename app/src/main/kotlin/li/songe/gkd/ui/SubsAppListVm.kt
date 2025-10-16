@@ -151,7 +151,7 @@ class SubsAppListVm(stateHandle: SavedStateHandle) : BaseViewModel() {
                 rawApp = it.first,
                 appInfo = it.second,
                 appConfig = appConfigs.find { s -> s.appId == it.first.id },
-                configSize = enableSize,
+                enableSize = enableSize,
             )
         }
     }.stateInit(emptyList())
@@ -169,7 +169,7 @@ data class SubsAppInfoItem(
     val rawApp: RawSubscription.RawApp,
     val appInfo: AppInfo?,
     val appConfig: AppConfig?,
-    val configSize: Int,
+    val enableSize: Int,
 ) {
     val id get() = rawApp.id
 }
