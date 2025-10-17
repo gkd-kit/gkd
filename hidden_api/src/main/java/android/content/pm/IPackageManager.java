@@ -27,6 +27,12 @@ public interface IPackageManager extends IInterface {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     ParceledListSlice<PackageInfo> getInstalledPackages(long flags, int userId);
 
+    @DeprecatedSinceApi(api = Build.VERSION_CODES.TIRAMISU, message = "NoSuchMethodError")
+    PackageInfo getPackageInfo(String packageName, int flags, int userId);
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    PackageInfo getPackageInfo(String packageName, long flags, int userId);
+
     ParceledListSlice<IntentFilter> getAllIntentFilters(String packageName);
 
     void grantRuntimePermission(String packageName, String permissionName, int userId);

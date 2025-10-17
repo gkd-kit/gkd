@@ -3,11 +3,15 @@ package li.songe.gkd.data
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageInfoHidden
+import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
 import dev.rikka.tools.refine.Refine
 import kotlinx.serialization.Serializable
 import li.songe.gkd.app
 import li.songe.gkd.shizuku.currentUserId
+import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.util.AndroidTarget
+import li.songe.gkd.util.pkgIcon
 
 @Serializable
 data class AppInfo(
@@ -58,16 +62,51 @@ private val PackageInfo.isOverlay: Boolean
 val ApplicationInfo.isSystem: Boolean
     get() = flags and ApplicationInfo.FLAG_SYSTEM != 0
 
+private fun checkIfNotHasActivity(packageName: String, userId: Int): Boolean {
+    val flags = PackageManager.MATCH_UNINSTALLED_PACKAGES or PackageManager.GET_ACTIVITIES
+    return if (userId == currentUserId) {
+        app.packageManager.getPackageInfo(
+            packageName,
+            flags,
+        )
+    } else {
+        shizukuContextFlow.value.packageManager?.getPackageInfo(
+            packageName,
+            flags,
+            userId,
+        )
+    }?.activities.let {
+        it == null || it.isEmpty()
+    }
+}
+
+// all->433 isOverlay->354 checkIfNotHasActivity->271
 fun PackageInfo.toAppInfo(
     userId: Int = currentUserId,
-) = AppInfo(
-    userId = userId,
-    id = packageName,
-    versionCode = compatVersionCode,
-    versionName = versionName,
-    mtime = lastUpdateTime,
-    isSystem = applicationInfo?.isSystem ?: false,
-    name = applicationInfo?.run { loadLabel(app.packageManager).toString() } ?: packageName,
-    hidden = activities?.isEmpty() != false || isOverlay,
-    enabled = applicationInfo?.enabled ?: true,
-)
+    hidden: Boolean? = null,
+): AppInfo {
+    val isSystem = applicationInfo?.isSystem ?: false
+    return AppInfo(
+        userId = userId,
+        id = packageName,
+        versionCode = compatVersionCode,
+        versionName = versionName,
+        mtime = lastUpdateTime,
+        isSystem = isSystem,
+        name = applicationInfo?.run { loadLabel(app.packageManager).toString() } ?: packageName,
+        hidden = hidden ?: (isSystem && (isOverlay || checkIfNotHasActivity(packageName, userId))),
+        enabled = applicationInfo?.enabled ?: true,
+    )
+}
+
+fun PackageInfo.toAppInfoAndIcon(
+    userId: Int = currentUserId,
+    hidden: Boolean? = null,
+): Pair<AppInfo, Drawable?> {
+    val appInfo = toAppInfo(userId, hidden)
+    return if (appInfo.hidden) {
+        appInfo to null
+    } else {
+        appInfo to pkgIcon
+    }
+}

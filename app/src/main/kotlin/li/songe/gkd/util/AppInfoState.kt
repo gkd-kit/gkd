@@ -24,6 +24,7 @@ import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.otherUserMapFlow
 import li.songe.gkd.data.toAppInfo
+import li.songe.gkd.data.toAppInfoAndIcon
 import li.songe.gkd.isActivityVisible
 import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.shizuku.currentUserId
@@ -89,7 +90,7 @@ private val packageReceiver by lazy {
     }
 }
 
-const val PKG_FLAGS = PackageManager.MATCH_UNINSTALLED_PACKAGES or PackageManager.GET_ACTIVITIES
+const val PKG_FLAGS = PackageManager.MATCH_UNINSTALLED_PACKAGES
 
 val updateAppMutex = MutexState()
 
@@ -115,8 +116,11 @@ private fun updateOtherUserAppInfo(userAppInfoMap: Map<String, AppInfo>? = null)
     userPackageInfoMap.forEach { (userId, pkgInfoList) ->
         pkgInfoList.forEach { pkgInfo ->
             if (!newAppMap.contains(pkgInfo.packageName)) {
-                newAppMap[pkgInfo.packageName] = pkgInfo.toAppInfo(userId = userId)
-                pkgInfo.pkgIcon?.let { newIconMap[pkgInfo.packageName] = it }
+                val (appInfo, appIcon) = pkgInfo.toAppInfoAndIcon(userId)
+                newAppMap[pkgInfo.packageName] = appInfo
+                if (appIcon != null) {
+                    newIconMap[pkgInfo.packageName] = appIcon
+                }
             }
         }
     }
@@ -153,11 +157,13 @@ private fun updatePartAppInfo(
 fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO) {
     val newAppMap = HashMap<String, AppInfo>()
     val newIconMap = HashMap<String, Drawable>()
+    // see #1169
     val pkgList = app.packageManager.getInstalledPackages(PKG_FLAGS)
-    pkgList.forEach { packageInfo ->
-        newAppMap[packageInfo.packageName] = packageInfo.toAppInfo()
-        packageInfo.pkgIcon?.let { icon ->
-            newIconMap[packageInfo.packageName] = icon
+    pkgList.forEach { pkgInfo ->
+        val (appInfo, appIcon) = pkgInfo.toAppInfoAndIcon()
+        newAppMap[pkgInfo.packageName] = appInfo
+        if (appIcon != null) {
+            newIconMap[pkgInfo.packageName] = appIcon
         }
     }
     val mayAuthDenied = newAppMap.count { !it.value.isSystem } <= 4
@@ -165,10 +171,11 @@ fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO
     if (!canQueryPkgState.value || mayAuthDenied) {
         val pkgList2 = shizukuContextFlow.value.packageManager?.getInstalledPackages(PKG_FLAGS)
         if (!pkgList2.isNullOrEmpty()) {
-            pkgList2.forEach { packageInfo ->
-                newAppMap[packageInfo.packageName] = packageInfo.toAppInfo()
-                packageInfo.pkgIcon?.let { icon ->
-                    newIconMap[packageInfo.packageName] = icon
+            pkgList2.forEach { pkgInfo ->
+                val (appInfo, appIcon) = pkgInfo.toAppInfoAndIcon()
+                newAppMap[pkgInfo.packageName] = appInfo
+                if (appIcon != null) {
+                    newIconMap[pkgInfo.packageName] = appIcon
                 }
             }
         } else {
@@ -180,10 +187,11 @@ fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO
             }.flatten()
                 .map { it.activityInfo.packageName }.toSet()
                 .filter { !newAppMap.contains(it) }.mapNotNull { app.getPkgInfo(it) }
-            visiblePkgList.forEach { packageInfo ->
-                newAppMap[packageInfo.packageName] = packageInfo.toAppInfo()
-                packageInfo.pkgIcon?.let { icon ->
-                    newIconMap[packageInfo.packageName] = icon
+            visiblePkgList.forEach { pkgInfo ->
+                val (appInfo, appIcon) = pkgInfo.toAppInfoAndIcon(hidden = false)
+                newAppMap[pkgInfo.packageName] = appInfo
+                if (appIcon != null) {
+                    newIconMap[pkgInfo.packageName] = appIcon
                 }
             }
         }
