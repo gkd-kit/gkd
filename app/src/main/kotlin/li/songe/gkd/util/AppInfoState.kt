@@ -55,7 +55,7 @@ val systemAppsFlow by lazy { systemAppInfoCacheFlow.mapState(appScope) { c -> c.
 
 val visibleAppInfosFlow by lazy {
     appInfoMapFlow.mapState(appScope) { c ->
-        c.values.filter { it.visible }.sortedWith { a, b ->
+        c.values.filterNot { it.hidden }.sortedWith { a, b ->
             collator.compare(a.name, b.name)
         }
     }

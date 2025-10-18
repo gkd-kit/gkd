@@ -36,8 +36,6 @@ data class AppInfo(
         result = 31 * result + userId
         return result
     }
-
-    val visible get() = !(hidden && isSystem)
 }
 
 val selfAppInfo by lazy {
