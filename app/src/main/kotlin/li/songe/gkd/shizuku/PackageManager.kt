@@ -36,7 +36,7 @@ class SafePackageManager(private val value: IPackageManager) {
     fun getPackageInfo(
         packageName: String,
         flags: Int,
-        userId: Int = currentUserId,
+        userId: Int,
     ): PackageInfo? = safeInvokeMethod {
         if (AndroidTarget.TIRAMISU) {
             value.getPackageInfo(packageName, flags.toLong(), userId)
@@ -44,6 +44,13 @@ class SafePackageManager(private val value: IPackageManager) {
             value.getPackageInfo(packageName, flags, userId)
         }
     }
+
+    fun getApplicationEnabledSetting(
+        packageName: String,
+        userId: Int,
+    ): Int = safeInvokeMethod {
+        value.getApplicationEnabledSetting(packageName, userId)
+    } ?: 0
 
     fun grantRuntimePermission(
         packageName: String,

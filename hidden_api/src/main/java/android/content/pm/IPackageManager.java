@@ -37,4 +37,6 @@ public interface IPackageManager extends IInterface {
 
     void grantRuntimePermission(String packageName, String permissionName, int userId);
 
+    int getApplicationEnabledSetting(String packageName, int userId);
+
 }

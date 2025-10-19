@@ -58,7 +58,7 @@ private val PackageInfo.isOverlay: Boolean
     }
 
 val ApplicationInfo.isSystem: Boolean
-    get() = flags and ApplicationInfo.FLAG_SYSTEM != 0
+    get() = flags and ApplicationInfo.FLAG_SYSTEM != 0 || flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0
 
 private fun checkIfNotHasActivity(packageName: String, userId: Int): Boolean {
     val flags = PackageManager.MATCH_UNINSTALLED_PACKAGES or PackageManager.GET_ACTIVITIES
@@ -78,6 +78,23 @@ private fun checkIfNotHasActivity(packageName: String, userId: Int): Boolean {
     }
 }
 
+private fun PackageInfo.getEnabled(userId: Int): Boolean {
+    val enabled = applicationInfo?.enabled ?: true
+    if (enabled) return true
+    val state = if (userId == currentUserId) {
+        app.packageManager.getApplicationEnabledSetting(packageName)
+    } else {
+        shizukuContextFlow.value.packageManager?.getApplicationEnabledSetting(
+            packageName,
+            currentUserId
+        ) ?: 0
+    }
+    return when (state) {
+        PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER, PackageManager.COMPONENT_ENABLED_STATE_DISABLED_UNTIL_USED -> false
+        else -> true
+    }
+}
+
 // all->433 isOverlay->354 checkIfNotHasActivity->271
 fun PackageInfo.toAppInfo(
     userId: Int = currentUserId,
@@ -93,7 +110,7 @@ fun PackageInfo.toAppInfo(
         isSystem = isSystem,
         name = applicationInfo?.run { loadLabel(app.packageManager).toString() } ?: packageName,
         hidden = hidden ?: (isSystem && (isOverlay || checkIfNotHasActivity(packageName, userId))),
-        enabled = applicationInfo?.enabled ?: true,
+        enabled = getEnabled(userId),
     )
 }
 
