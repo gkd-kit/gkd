@@ -9,6 +9,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.drawable.Drawable
+import android.os.Handler
+import android.os.Looper
 import android.provider.AlarmClock
 import android.provider.MediaStore
 import android.provider.Settings
@@ -226,4 +228,12 @@ object AppListString {
         }
         return set
     }
+}
+
+fun runMainPost(delayMillis: Long = 0L, r: Runnable) {
+    if (delayMillis == 0L && Looper.getMainLooper() == Looper.myLooper()) {
+        r.run()
+        return
+    }
+    Handler(Looper.getMainLooper()).postDelayed(r, delayMillis)
 }

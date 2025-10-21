@@ -4,8 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
-import android.os.Handler
-import android.os.Looper
 import android.webkit.URLUtil
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
@@ -55,6 +53,7 @@ import li.songe.gkd.util.client
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.openWeChatScaner
+import li.songe.gkd.util.runMainPost
 import li.songe.gkd.util.stopCoroutine
 import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsItemsFlow
@@ -90,12 +89,8 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
         if (!backThrottleTimer.expired()) return
         @SuppressLint("RestrictedApi")
         if (navController.currentBackStack.value.size == 1) return
-        if (Looper.getMainLooper() == Looper.myLooper()) {
+        runMainPost {
             navController.popBackStack()
-        } else {
-            Handler(Looper.getMainLooper()).post {
-                navController.popBackStack()
-            }
         }
     }
 
@@ -103,16 +98,12 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
         if (direction.route == navController.currentDestination?.route) {
             return
         }
-        if (Looper.getMainLooper() != Looper.myLooper()) {
-            Handler(Looper.getMainLooper()).post {
-                navigatePage(direction, builder)
+        runMainPost {
+            if (builder != null) {
+                navController.navigate(direction.route, builder)
+            } else {
+                navController.navigate(direction.route)
             }
-            return
-        }
-        if (builder != null) {
-            navController.navigate(direction.route, builder)
-        } else {
-            navController.navigate(direction.route)
         }
     }
 

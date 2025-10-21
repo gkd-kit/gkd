@@ -11,7 +11,7 @@ destinations = "2.3.0"
 coil = "3.3.0"
 rikka_refine = "4.4.0"
 rikka_shizuku = "13.1.5"
-loc = "0.3.0"
+loc = "0.4.0"
 
 [libraries]
 kotlin_stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
@@ -63,7 +63,7 @@ destinations_ksp = { module = "io.github.raamcosta.compose-destinations:ksp", ve
 coil_compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil_network = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 coil_gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil" }
-loc_runtime = { module = "li.songe.loc:loc-runtime", version.ref = "loc" }
+loc_annotation = { module = "li.songe.loc:loc-annotation", version.ref = "loc" }
 reorderable = "sh.calvin.reorderable:reorderable:3.0.0"
 exp4j = "net.objecthunter:exp4j:0.4.8"
 toaster = "com.github.getActivity:Toaster:13.6"

@@ -8,8 +8,6 @@ import android.graphics.Outline
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
 import android.graphics.text.LineBreaker
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
@@ -31,20 +29,13 @@ import li.songe.gkd.service.A11yService
 import li.songe.gkd.store.storeFlow
 import li.songe.loc.Loc
 
+@Loc
 fun toast(
     text: CharSequence,
-    delayMillis: Long = 0L,
     @Loc loc: String = "{methodName}({fileName}:{lineNumber})",
 ) {
-    if (delayMillis > 0) {
-        Handler(Looper.getMainLooper()).postDelayed({
-            Toaster.show(text)
-            Log.d("Toast", "$loc -> $text")
-        }, delayMillis)
-    } else {
-        Toaster.show(text)
-        Log.d("Toast", "$loc -> $text")
-    }
+    Toaster.show(text)
+    Log.d("Toast", "$loc -> $text")
 }
 
 private val darkTheme: Boolean
@@ -171,12 +162,12 @@ private fun showA11yToast(message: CharSequence) {
         windowAnimations = android.R.style.Animation_Toast
     }
     wm.addView(textView, layoutParams)
-    Handler(Looper.getMainLooper()).postDelayed({
+    runMainPost(triggerInterval) {
         try {
             wm.removeViewImmediate(textView)
         } catch (_: Exception) {
         }
-    }, triggerInterval)
+    }
 }
 
 fun copyText(text: String) {

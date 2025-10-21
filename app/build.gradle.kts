@@ -274,7 +274,7 @@ dependencies {
     implementation(libs.permissions)
 
     implementation(libs.json5)
-    compileOnly(libs.loc.runtime)
+    compileOnly(libs.loc.annotation)
 
     implementation(libs.kevinnzouWebview)
 }

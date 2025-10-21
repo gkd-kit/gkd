@@ -18,6 +18,7 @@ import li.songe.gkd.permission.updatePermissionState
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.MutexState
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.runMainPost
 import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
@@ -136,12 +137,12 @@ private fun updateShizukuBinder() = updateBinderMutex.launchTry(appScope, Dispat
             val newValue = shizukuContextFlow.value
             if (newValue.serviceWrapper == null) {
                 if (newValue.packageManager != null) {
-                    toast("Shizuku 服务连接部分失败", delayMillis)
+                    runMainPost(delayMillis) { toast("Shizuku 服务连接部分失败") }
                 } else {
-                    toast("Shizuku 服务连接失败", delayMillis)
+                    runMainPost(delayMillis) { toast("Shizuku 服务连接失败") }
                 }
             } else {
-                toast("Shizuku 服务连接成功", delayMillis)
+                runMainPost(delayMillis) { toast("Shizuku 服务连接成功") }
             }
         }
     } else if (shizukuContextFlow.value.ok) {
