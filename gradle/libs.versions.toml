@@ -1,9 +1,9 @@
 [versions]
-kotlin = "2.2.20"
-ksp = "2.2.20-2.0.4"
+kotlin = "2.2.21"
+ksp = "2.3.0"
 agp = "8.13.0"
-compose = "1.9.3"
-room = "2.8.2"
+compose = "1.9.4"
+room = "2.8.3"
 paging = "3.3.6"
 ktor = "3.3.1"
 atomicfu = "0.29.0"
@@ -11,7 +11,7 @@ destinations = "2.3.0"
 coil = "3.3.0"
 rikka_refine = "4.4.0"
 rikka_shizuku = "13.1.5"
-loc = "0.4.0"
+loc = "0.5.0"
 
 [libraries]
 kotlin_stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }

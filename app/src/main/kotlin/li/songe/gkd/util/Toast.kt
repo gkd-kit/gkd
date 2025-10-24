@@ -32,7 +32,7 @@ import li.songe.loc.Loc
 @Loc
 fun toast(
     text: CharSequence,
-    @Loc loc: String = "{methodName}({fileName}:{lineNumber})",
+    @Loc("{methodName}({fileName}:{lineNumber})") loc: String = "",
 ) {
     Toaster.show(text)
     Log.d("Toast", "$loc -> $text")
