@@ -163,4 +163,10 @@ class ParserUnitTest {
         println("selector: ${ast.value}")
         println("ast: ${ast.stringify()}")
     }
+
+    @Test
+    fun root() {
+        assert(Selector.parse("[null=parent]").isMatchRoot)
+        assert(Selector.parse("[parent=null]").isMatchRoot)
+    }
 }

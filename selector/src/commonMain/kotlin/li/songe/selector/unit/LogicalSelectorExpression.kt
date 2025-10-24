@@ -57,7 +57,10 @@ data class LogicalSelectorExpression(
     }
 
     override val isMatchRoot: Boolean
-        get() = left.isMatchRoot && operator == SelectorLogicalOperator.AndOperator
+        get() = when (operator) {
+            SelectorLogicalOperator.AndOperator -> left.isMatchRoot || right.isMatchRoot
+            SelectorLogicalOperator.OrOperator -> left.isMatchRoot && right.isMatchRoot
+        }
 
     override val fastQueryList: List<FastQuery>
         get() = left.fastQueryList + right.fastQueryList
