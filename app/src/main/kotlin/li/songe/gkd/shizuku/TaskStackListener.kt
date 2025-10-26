@@ -4,6 +4,7 @@ import android.app.ActivityManager
 import android.app.ITaskStackListener
 import android.content.ComponentName
 import android.os.Parcel
+import li.songe.gkd.a11y.ActivityScene
 import li.songe.gkd.a11y.updateTopActivity
 
 class FixedTaskStackListener : ITaskStackListener.Stub() {
@@ -24,7 +25,7 @@ class FixedTaskStackListener : ITaskStackListener.Stub() {
         updateTopActivity(
             appId = cpn.packageName,
             activityId = cpn.className,
-            type = 1,
+            scene = ActivityScene.TaskStack,
         )
     }
 
@@ -35,7 +36,7 @@ class FixedTaskStackListener : ITaskStackListener.Stub() {
         updateTopActivity(
             appId = cpn.packageName,
             activityId = cpn.className,
-            type = 2,
+            scene = ActivityScene.TaskStack,
         )
     }
 

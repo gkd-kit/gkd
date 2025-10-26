@@ -39,11 +39,9 @@ class A11yRuleEngine(val service: A11yService) {
     init {
         // 关闭屏幕 -> Activity::onStop -> 点亮屏幕 -> Activity::onStart -> Activity::onResume
         service.onScreenForcedActive = {
-            val oldValue = topActivityFlow.value
-            updateTopActivity("", null)
-            updateTopActivity(oldValue.appId, oldValue.activityId)
+            val a = topActivityFlow.value
+            updateTopActivity(a.appId, a.activityId, scene = ActivityScene.ScreenOn)
             startQueryJob()
-            Log.d("A11yRuleEngine", "onScreenForcedActive->${oldValue.appId}")
         }
         service.onA11yConnected {
             if (storeFlow.value.enableBlockA11yAppList && !a11yPartDisabledFlow.value) {

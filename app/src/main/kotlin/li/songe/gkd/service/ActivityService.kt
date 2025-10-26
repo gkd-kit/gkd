@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import li.songe.gkd.a11y.ActivityScene
 import li.songe.gkd.a11y.topActivityFlow
 import li.songe.gkd.a11y.updateTopActivity
 import li.songe.gkd.notif.StopServiceReceiver
@@ -116,7 +117,7 @@ class ActivityService : OverlayWindowService(
                     updateTopActivity(
                         appId = cpn.packageName,
                         activityId = cpn.className,
-                        type = 2,
+                        scene = ActivityScene.TaskStack,
                     )
                 }
             }
