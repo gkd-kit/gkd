@@ -2,6 +2,7 @@ package li.songe.gkd.util
 
 import android.text.format.DateUtils
 import com.blankj.utilcode.util.LogUtils
+import li.songe.gkd.META
 import li.songe.gkd.app
 import li.songe.gkd.permission.allPermissionStates
 import li.songe.gkd.shizuku.shizukuContextFlow
@@ -81,6 +82,10 @@ fun buildLogFile(): File {
         it.writeText(allPermissionStates.joinToString("\n") { state ->
             state.name + ": " + state.stateFlow.value.toString()
         })
+        files.add(it)
+    }
+    tempDir.resolve("gkd-${META.versionCode}-v${META.versionName}.json").also {
+        it.writeText(json.encodeToString(META))
         files.add(it)
     }
     val logZipFile = sharedDir.resolve("log-${System.currentTimeMillis()}.zip")
