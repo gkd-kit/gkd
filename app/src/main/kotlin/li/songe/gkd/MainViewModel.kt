@@ -73,7 +73,11 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
 
     init {
         _instance = this
-        addCloseable { _instance = null }
+        addCloseable {
+            if (_instance == this) { // 可能同时存在 2 个 MainViewModel 实例
+                _instance = null
+            }
+        }
     }
 
     override val scope: CoroutineScope
