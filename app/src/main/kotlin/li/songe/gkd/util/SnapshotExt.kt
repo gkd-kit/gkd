@@ -9,6 +9,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import li.songe.gkd.a11y.TopActivity
 import li.songe.gkd.a11y.screenshot
 import li.songe.gkd.a11y.topActivityFlow
@@ -32,21 +34,25 @@ object SnapshotExt {
         return snapshotParentPath(id).resolve("${id}.min.json")
     }
 
-    suspend fun getMinSnapshot(id: Long): ComplexSnapshot {
+    suspend fun getMinSnapshot(id: Long): JsonObject {
         val f = minSnapshotFile(id)
         if (!f.exists()) {
             val text = withContext(Dispatchers.IO) { snapshotFile(id).readText() }
-            val snapshot = withContext(Dispatchers.Default) {
-                json.decodeFromString<ComplexSnapshot>(text)
+            val snapshotJson = withContext(Dispatchers.Default) {
+                // #1185
+                json.decodeFromString<JsonObject>(text)
             }
-            val minSnapshot = snapshot.copy(nodes = emptyList())
+            val minSnapshot = JsonObject(snapshotJson.toMutableMap().apply {
+                this["nodes"] = JsonArray(emptyList())
+            })
             withContext(Dispatchers.IO) {
                 f.writeText(keepNullJson.encodeToString(minSnapshot))
             }
+            return minSnapshot
         }
         val text = withContext(Dispatchers.IO) { f.readText() }
         return withContext(Dispatchers.Default) {
-            json.decodeFromString<ComplexSnapshot>(text)
+            json.decodeFromString<JsonObject>(text)
         }
     }
 
