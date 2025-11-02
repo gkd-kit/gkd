@@ -9,7 +9,14 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.WindowManager
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.core.animation.doOnEnd
@@ -33,12 +40,16 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.a11y.topActivityFlow
 import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.store.createAnyFlow
+import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.ui.icon.DragPan
 import li.songe.gkd.ui.style.AppTheme
+import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.util.BarUtils
 import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.ScreenUtils
 import li.songe.gkd.util.mapState
 import li.songe.gkd.util.px
+import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
 private var tempShareContext: ShareContext? = null
@@ -118,6 +129,25 @@ abstract class OverlayWindowService(
 
     @Composable
     abstract fun ComposeContent()
+
+    @Composable
+    fun ClosableTitle(title: String) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            PerfIcon(imageVector = DragPan, modifier = Modifier.iconTextSize())
+            Text(text = title, modifier = Modifier.weight(1f))
+            PerfIcon(
+                imageVector = PerfIcon.Close,
+                modifier = Modifier
+                    .clip(MaterialTheme.shapes.extraSmall)
+                    .clickable(onClick = throttle {
+                        stopSelf()
+                    })
+                    .iconTextSize()
+            )
+        }
+    }
 
     open fun onClickView() {}
 

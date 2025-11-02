@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
@@ -15,9 +16,11 @@ import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.lifecycleScope
@@ -34,10 +37,8 @@ import li.songe.gkd.notif.recordNotif
 import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.shizuku.SafeTaskListener
 import li.songe.gkd.shizuku.shizukuContextFlow
-import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.style.iconTextSize
-import li.songe.gkd.util.appInfoMapFlow
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
@@ -46,13 +47,6 @@ import li.songe.gkd.util.stopServiceByClass
 class ActivityService : OverlayWindowService(
     positionKey = "activity"
 ) {
-
-    val topAppInfoFlow by lazy {
-        combine(appInfoMapFlow, topActivityFlow) { map, topActivity ->
-            map[topActivity.appId]
-        }.stateIn(lifecycleScope, SharingStarted.Eagerly, null)
-    }
-
     val activityOkFlow by lazy {
         combine(A11yService.isRunning, shizukuContextFlow) { a, b ->
             a || SafeTaskListener.isAvailable
@@ -62,38 +56,42 @@ class ActivityService : OverlayWindowService(
     @Composable
     override fun ComposeContent() {
         val bgColor = MaterialTheme.colorScheme.surface
-        Box(
+        Column(
             modifier = Modifier
                 .clip(MaterialTheme.shapes.small)
                 .background(bgColor.copy(alpha = 0.9f))
+                .width(IntrinsicSize.Max)
                 .padding(4.dp)
         ) {
             CompositionLocalProvider(LocalContentColor provides contentColorFor(bgColor)) {
-                if (activityOkFlow.collectAsState().value) {
-                    val topActivity = topActivityFlow.collectAsState().value
-                    Text(
-                        text = topActivity.number.toString(),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .zIndex(1f)
-                            .clip(MaterialTheme.shapes.extraSmall)
-                            .padding(horizontal = 2.dp),
-                    )
-                    Column {
-                        topAppInfoFlow.collectAsState().value?.let {
-                            AppNameText(appInfo = it)
+                val topActivity by topActivityFlow.collectAsState()
+                val hasAuth by activityOkFlow.collectAsState()
+                ClosableTitle(
+                    title = if (hasAuth) "记录服务" else "记录服务(无权限)"
+                )
+                if (hasAuth) {
+                    Box {
+                        Column(
+                            modifier = Modifier.padding(start = 4.dp)
+                        ) {
+                            RowText(text = topActivity.appId)
+                            RowText(
+                                text = topActivity.shortActivityId,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
                         }
-                        RowText(text = topActivity.appId)
-                        topActivity.shortActivityId?.let {
-                            RowText(text = it)
+                        if (topActivity.number > 0) {
+                            Text(
+                                text = topActivity.number.toString(),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .zIndex(1f)
+                                    .clip(MaterialTheme.shapes.extraSmall)
+                                    .padding(end = 4.dp),
+                            )
                         }
-                    }
-                } else {
-                    Column {
-                        Text(text = "记录服务")
-                        Text(text = "无权限检测界面切换")
                     }
                 }
             }
@@ -136,18 +134,20 @@ class ActivityService : OverlayWindowService(
 }
 
 @Composable
-private fun RowText(text: String) {
+private fun RowText(text: String?, color: Color = Color.Unspecified) {
     Row {
-        Text(text = text, modifier = Modifier.weight(1f, false))
-        Spacer(modifier = Modifier.width(4.dp))
-        PerfIcon(
-            imageVector = PerfIcon.ContentCopy,
-            modifier = Modifier
-                .clip(MaterialTheme.shapes.extraSmall)
-                .clickable(onClick = {
-                    copyText(text)
-                })
-                .iconTextSize(),
-        )
+        Text(text = text ?: "null", color = color, modifier = Modifier.weight(1f, false))
+        if (text != null) {
+            Spacer(modifier = Modifier.width(4.dp))
+            PerfIcon(
+                imageVector = PerfIcon.ContentCopy,
+                modifier = Modifier
+                    .clip(MaterialTheme.shapes.extraSmall)
+                    .clickable(onClick = {
+                        copyText(text)
+                    })
+                    .iconTextSize(),
+            )
+        }
     }
 }

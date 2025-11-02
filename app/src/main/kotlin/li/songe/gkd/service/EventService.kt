@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -58,9 +57,7 @@ import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.isAtBottom
 import li.songe.gkd.ui.component.measureNumberTextWidth
-import li.songe.gkd.ui.icon.DragPan
 import li.songe.gkd.ui.share.ListPlaceholder
-import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
@@ -96,18 +93,9 @@ class EventService : OverlayWindowService(positionKey = "event") {
                     .width(256.dp)
                     .padding(4.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val title = if (A11yService.isRunning.collectAsState().value) {
-                        "事件服务"
-                    } else {
-                        "事件服务(无障碍已关闭)"
-                    }
-                    Text(text = title, modifier = Modifier.weight(1f))
-                    PerfIcon(imageVector = DragPan, modifier = Modifier.iconTextSize())
-                }
+                ClosableTitle(
+                    title = if (A11yService.isRunning.collectAsState().value) "事件服务" else "事件服务(无权限)"
+                )
                 val textStyle = MaterialTheme.typography.labelSmall
                 val numCharWidth = measureNumberTextWidth(textStyle)
                 CompositionLocalProvider(
