@@ -51,6 +51,7 @@ import li.songe.gkd.util.LOCAL_HTTP_SUBS_ID
 import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.SERVER_SCRIPT_URL
 import li.songe.gkd.util.SnapshotExt
+import li.songe.gkd.util.SnapshotExt.getMinSnapshot
 import li.songe.gkd.util.deleteSubscription
 import li.songe.gkd.util.getIpAddressInLocalNetwork
 import li.songe.gkd.util.isPortAvailable
@@ -203,7 +204,14 @@ private fun CoroutineScope.createServer(port: Int) = embeddedServer(CIO, port) {
                 call.respond(SnapshotExt.captureSnapshot())
             }
             post("/getSnapshots") {
-                call.respond(DbSet.snapshotDao.query().first())
+                val list = DbSet.snapshotDao.query().first().mapNotNull {
+                    try {
+                        getMinSnapshot(it.id)
+                    } catch (_: Throwable) {
+                        null
+                    }
+                }
+                call.respond(list)
             }
             post("/updateSubscription") {
                 val subscription =
