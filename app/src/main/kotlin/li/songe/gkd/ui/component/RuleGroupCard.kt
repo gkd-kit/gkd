@@ -171,7 +171,12 @@ fun RuleGroupCard(
     Card(
         modifier = modifier
             .padding(horizontal = 8.dp)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+                onClickLabel = "打开规则详情弹窗",
+                onLongClickLabel = "进入多选模式"
+            ),
         shape = MaterialTheme.shapes.extraSmall,
         colors = CardDefaults.cardColors(
             containerColor = containerColor.value
@@ -209,7 +214,6 @@ fun RuleGroupCard(
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
-                        clickDisabled = isSelectedMode,
                     )
                     if (group.valid) {
                         if (!group.desc.isNullOrBlank()) {
@@ -265,6 +269,7 @@ fun RuleGroupCard(
             if (hasExcludeActivity) {
                 PerfIcon(
                     imageVector = PerfIcon.Block,
+                    contentDescription = "此规则已排除部分页面",
                     tint = if (isSelectedMode) {
                         LocalContentColor.current.copy(alpha = 0.5f)
                     } else {
@@ -286,6 +291,7 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
     val mainVm = LocalMainViewModel.current
     PerfIconButton(
         imageVector = PerfIcon.ToggleOff,
+        contentDescription = "批量关闭规则",
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
                 title = "操作提示",
@@ -301,6 +307,7 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
     )
     PerfIconButton(
         imageVector = PerfIcon.ToggleOn,
+        contentDescription = "批量打开规则",
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
                 title = "操作提示",
@@ -316,6 +323,7 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
     )
     PerfIconButton(
         imageVector = ResetSettings,
+        contentDescription = "批量重置规则开关",
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
                 title = "操作提示",

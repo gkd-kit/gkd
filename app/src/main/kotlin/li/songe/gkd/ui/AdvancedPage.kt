@@ -25,7 +25,6 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -73,6 +72,7 @@ import li.songe.gkd.ui.component.CustomIconButton
 import li.songe.gkd.ui.component.CustomOutlinedTextField
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
+import li.songe.gkd.ui.component.PerfSwitch
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
@@ -325,7 +325,7 @@ fun AdvancedPage() {
                 PerfIcon(
                     modifier = Modifier
                         .clip(MaterialTheme.shapes.extraSmall)
-                        .clickable(onClick = throttle {
+                        .clickable(onClickLabel = "打开 Shizuku 状态弹窗", onClick = throttle {
                             showShizukuState = true
                         })
                         .iconTextSize(textStyle = MaterialTheme.typography.titleSmall),
@@ -358,9 +358,11 @@ fun AdvancedPage() {
                         )
                     }
                 },
-            ) {
-                mainVm.switchEnableShizuku(it)
-            }
+                onCheckedChange = {
+                    mainVm.switchEnableShizuku(it)
+                },
+                onClick = null,
+            )
 
             val server by HttpService.httpServerFlow.collectAsState()
             val httpServerRunning = server != null
@@ -415,7 +417,7 @@ fun AdvancedPage() {
                         }
                     }
                 }
-                Switch(
+                PerfSwitch(
                     checked = httpServerRunning,
                     onCheckedChange = throttle(fn = vm.viewModelScope.launchAsFn<Boolean> {
                         if (it) {
@@ -433,6 +435,7 @@ fun AdvancedPage() {
                 title = "服务端口",
                 subtitle = store.httpServerPort.toString(),
                 imageVector = PerfIcon.Edit,
+                onClickLabel = "编辑服务端口",
                 onClick = {
                     showEditPortDlg = true
                 }
@@ -441,12 +444,13 @@ fun AdvancedPage() {
             TextSwitch(
                 title = "清除订阅",
                 subtitle = "关闭服务时删除内存订阅",
-                checked = store.autoClearMemorySubs
-            ) {
-                storeFlow.value = store.copy(
-                    autoClearMemorySubs = it
-                )
-            }
+                checked = store.autoClearMemorySubs,
+                onCheckedChange = {
+                    storeFlow.update {
+                        it.copy(autoClearMemorySubs = !it.autoClearMemorySubs)
+                    }
+                }
+            )
 
             Text(
                 text = "快照",
@@ -499,18 +503,19 @@ fun AdvancedPage() {
                     } else {
                         ButtonService.stop()
                     }
-                }
+                },
             )
 
             TextSwitch(
                 title = "音量快照",
                 subtitle = "音量变化时保存快照",
-                checked = store.captureVolumeChange
-            ) {
-                storeFlow.value = store.copy(
-                    captureVolumeChange = it
-                )
-            }
+                checked = store.captureVolumeChange,
+                onCheckedChange = {
+                    storeFlow.value = store.copy(
+                        captureVolumeChange = it
+                    )
+                },
+            )
 
             TextSwitch(
                 title = "截屏快照",
@@ -519,6 +524,7 @@ fun AdvancedPage() {
                 suffixIcon = {
                     CustomIconButton(
                         size = 32.dp,
+                        onClickLabel = "打开配置截屏快照弹窗",
                         onClick = throttle {
                             showCaptureScreenshotDlg = true
                         },
@@ -529,34 +535,37 @@ fun AdvancedPage() {
                         )
                     }
                 },
-            ) {
-                storeFlow.value = store.copy(
-                    captureScreenshot = it
-                )
-                if (it && store.screenshotTargetAppId.isEmpty() || store.screenshotEventSelector.isEmpty()) {
-                    toast("请配置目标应用和特征事件选择器")
+                onCheckedChange = {
+                    storeFlow.value = store.copy(
+                        captureScreenshot = it
+                    )
+                    if (it && store.screenshotTargetAppId.isEmpty() || store.screenshotEventSelector.isEmpty()) {
+                        toast("请配置目标应用和特征事件选择器")
+                    }
                 }
-            }
+            )
 
             TextSwitch(
                 title = "隐藏状态栏",
                 subtitle = "隐藏快照截图状态栏",
-                checked = store.hideSnapshotStatusBar
-            ) {
-                storeFlow.value = store.copy(
-                    hideSnapshotStatusBar = it
-                )
-            }
+                checked = store.hideSnapshotStatusBar,
+                onCheckedChange = {
+                    storeFlow.value = store.copy(
+                        hideSnapshotStatusBar = it
+                    )
+                }
+            )
 
             TextSwitch(
                 title = "保存提示",
                 subtitle = "提示「正在保存快照」",
-                checked = store.showSaveSnapshotToast
-            ) {
-                storeFlow.value = store.copy(
-                    showSaveSnapshotToast = it
-                )
-            }
+                checked = store.showSaveSnapshotToast,
+                onCheckedChange = {
+                    storeFlow.value = store.copy(
+                        showSaveSnapshotToast = it
+                    )
+                }
+            )
 
             SettingItem(
                 title = "Github Cookie",

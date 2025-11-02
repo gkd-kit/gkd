@@ -31,6 +31,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -183,6 +187,8 @@ fun BlockA11yAppListPage() {
                             Row {
                                 PerfIconButton(
                                     imageVector = if (store.blockA11yAppListFollowMatch) PerfIcon.Lock else LockOpenRight,
+                                    contentDescription = if (store.blockA11yAppListFollowMatch) "已设置为跟随应用白名单" else "已设置为独立无障碍白名单",
+                                    onClickLabel = "切换模式",
                                     onClick = throttle {
                                         showSearchBar = false
                                         storeFlow.update { it.copy(blockA11yAppListFollowMatch = !it.blockA11yAppListFollowMatch) }
@@ -259,6 +265,7 @@ fun BlockA11yAppListPage() {
         floatingActionButton = {
             AnimationFloatingActionButton(
                 visible = !editable && scrollBehavior.isFullVisible && !store.blockA11yAppListFollowMatch,
+                onClickLabel = "进入白名单文本编辑模式",
                 onClick = {
                     editable = !editable
                 },
@@ -313,11 +320,24 @@ private fun AppItemCard(
     appInfo: AppInfo,
 ) {
     val scope = rememberCoroutineScope()
+    val checked = remember(appInfo.id) {
+        blockA11yAppListFlow.mapState(scope) {
+            it.contains(appInfo.id)
+        }
+    }.collectAsState().value
     Row(
         modifier = Modifier
             .clickable(onClick = throttle {
                 blockA11yAppListFlow.update { it.switchItem(appInfo.id) }
             })
+            .clearAndSetSemantics {
+                contentDescription = "应用：${appInfo.name}"
+                stateDescription = if (checked) "已加入白名单" else "未加入白名单"
+                onClick(
+                    label = if (checked) "从白名单中移除" else "加入白名单",
+                    action = null
+                )
+            }
             .appItemPadding(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -340,11 +360,7 @@ private fun AppItemCard(
         }
         PerfCheckbox(
             key = appInfo.id,
-            checked = remember(appInfo.id) {
-                blockA11yAppListFlow.mapState(scope) {
-                    it.contains(appInfo.id)
-                }
-            }.collectAsState().value,
+            checked = checked,
         )
     }
 }

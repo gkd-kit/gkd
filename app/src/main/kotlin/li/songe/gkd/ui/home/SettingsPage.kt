@@ -142,16 +142,12 @@ fun useSettingsPage(): ScaffoldExt {
                     }
                     showToastInputDlg = false
                 }) {
-                    Text(
-                        text = "确认",
-                    )
+                    Text(text = "确认")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showToastInputDlg = false }) {
-                    Text(
-                        text = "取消",
-                    )
+                    Text(text = "取消")
                 }
             }
         )
@@ -172,6 +168,8 @@ fun useSettingsPage(): ScaffoldExt {
                     Text(text = "通知文案")
                     PerfIconButton(
                         imageVector = PerfIcon.HelpOutline,
+                        contentDescription = "文案规则",
+                        onClickLabel = "打开文案规则弹窗",
                         onClick = throttle {
                             showNotifTextInputDlg = false
                             val confirmAction = {
@@ -180,7 +178,7 @@ fun useSettingsPage(): ScaffoldExt {
                             }
                             mainVm.dialogFlow.updateDialogOptions(
                                 title = "文案规则",
-                                text = "通知文案支持变量替换，规则如下\n\${i} 全局规则数\n\${k} 应用数\n\${u} 应用规则组数\n\${n} 触发次数\n\n示例模板\n\${i}全局/\${k}应用/\${u}规则组/\${n}触发\n\n替换结果\n0全局/1应用/2规则组/3触发",
+                                text = $$"通知文案支持变量替换，规则如下\n${i} 全局规则数\n${k} 应用数\n${u} 应用规则组数\n${n} 触发次数\n\n示例模板\n${i}全局/${k}应用/${u}规则组/${n}触发\n\n替换结果\n0全局/1应用/2规则组/3触发",
                                 confirmAction = confirmAction,
                                 onDismissRequest = confirmAction,
                             )
@@ -344,17 +342,20 @@ fun useSettingsPage(): ScaffoldExt {
                 title = "触发提示",
                 subtitle = store.actionToast,
                 checked = store.toastWhenClick,
-                modifier = Modifier.clickable {
+                onClickLabel = "打开触发提示弹窗",
+                onClick = {
                     showToastInputDlg = true
                 },
                 suffixIcon = {
                     CustomIconButton(
                         size = 32.dp,
+                        onClickLabel = "打开提示设置弹窗",
                         onClick = throttle { showToastSettingsDlg = true },
                     ) {
                         PerfIcon(
                             modifier = Modifier.size(20.dp),
                             id = SafeR.ic_page_info,
+                            contentDescription = "提示设置",
                         )
                     }
                 },
@@ -373,9 +374,8 @@ fun useSettingsPage(): ScaffoldExt {
                     subsStatus
                 },
                 checked = store.useCustomNotifText,
-                modifier = Modifier.clickable {
-                    showNotifTextInputDlg = true
-                },
+                onClickLabel = "打开修改通知文案弹窗",
+                onClick = { showNotifTextInputDlg = true },
                 onCheckedChange = {
                     storeFlow.value = store.copy(
                         useCustomNotifText = it
@@ -388,7 +388,7 @@ fun useSettingsPage(): ScaffoldExt {
                 checked = store.excludeFromRecents,
                 onCheckedChange = {
                     storeFlow.value = store.copy(
-                        excludeFromRecents = it
+                        excludeFromRecents = !store.excludeFromRecents
                     )
                 })
 
@@ -421,13 +421,13 @@ fun useSettingsPage(): ScaffoldExt {
                 },
             )
             AnimatedVisibility(visible = lazyOn.value) {
-                SettingItem(title = "白名单", onClick = {
+                SettingItem(title = "白名单", onClickLabel = "进入无障碍白名单页面", onClick = {
                     mainVm.navigatePage(BlockA11YAppListPageDestination)
                 })
             }
 
             Text(
-                text = "主题",
+                text = "外观",
                 modifier = Modifier.titleItemPadding(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
@@ -485,6 +485,7 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.Close,
+                        onClickLabel = "关闭弹窗",
                         onClick = onDismissRequest,
                     )
                 },
@@ -553,6 +554,7 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                         text = "省电策略设置为无限制",
                         enabled = !ignoreBatteryOptimizations,
                         imageVector = if (ignoreBatteryOptimizations) PerfIcon.Check else PerfIcon.ArrowForward,
+                        onClickLabel = "打开忽略电池优化设置页面",
                         onClick = mainVm.viewModelScope.launchAsFn {
                             requiredPermission(context, ignoreBatteryOptimizationsState)
                         },
@@ -580,6 +582,7 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                         text = "允许自启动",
                         enabled = true,
                         imageVector = PerfIcon.OpenInNew,
+                        onClickLabel = "打开应用详情页面",
                         onClick = {
                             openAppDetailsSettings()
                         },
@@ -588,6 +591,7 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                         text = "在「最近任务界面」锁定",
                         enabled = true,
                         imageVector = PerfIcon.OpenInNew,
+                        onClickLabel = "打开应用详情页面",
                         onClick = {
                             val m = shizukuContextFlow.value.inputManager
                             if (m != null) {
@@ -612,13 +616,18 @@ private fun RequiredTextItem(
     imageVector: ImageVector? = null,
     enabled: Boolean = false,
     onClick: (() -> Unit)? = null,
+    onClickLabel: String? = null,
 ) {
     Row(
         modifier = Modifier
             .clip(MaterialTheme.shapes.extraSmall)
             .run {
                 if (onClick != null) {
-                    clickable(enabled = enabled, onClick = throttle(onClick))
+                    clickable(
+                        enabled = enabled,
+                        onClick = throttle(onClick),
+                        onClickLabel = onClickLabel
+                    )
                 } else {
                     this
                 }

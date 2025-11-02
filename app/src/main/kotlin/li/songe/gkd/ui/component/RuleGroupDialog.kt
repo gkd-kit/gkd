@@ -24,6 +24,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.generated.destinations.ImagePreviewPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
@@ -60,7 +62,6 @@ fun RuleGroupDialog(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 val maxHeight = 300.dp
-//                val showMaxLine = ceil(maxHeight.value / textStyle.lineHeight.value).toInt()
                 Column(
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -69,6 +70,9 @@ fun RuleGroupDialog(
                         .clip(MaterialTheme.shapes.extraSmall)
                         .background(MaterialTheme.colorScheme.secondaryContainer)
                         .verticalScroll(rememberScrollState())
+                        .clearAndSetSemantics {
+                            contentDescription = "规则组内容"
+                        }
                 ) {
                     SelectionContainer {
                         val textState = remember {
@@ -162,6 +166,7 @@ fun RuleGroupDialog(
                 }
                 PerfIconButton(
                     imageVector = PerfIcon.Block,
+                    onClickLabel = "编辑规则排除名单",
                     onClick = throttle(onClickEditExclude),
                 )
                 AnimatedVisibility(
@@ -169,6 +174,7 @@ fun RuleGroupDialog(
                 ) {
                     PerfIconButton(
                         imageVector = ResetSettings,
+                        onClickLabel = "重置开关状态至默认值",
                         onClick = throttle(onClickResetSwitch ?: {}),
                     )
                 }

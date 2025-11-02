@@ -76,9 +76,12 @@ fun AuthA11yPage() {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
-            PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
-                mainVm.popBackStack()
-            })
+            PerfIconButton(
+                imageVector = PerfIcon.ArrowBack,
+                onClickLabel = "返回上级页面",
+                onClick = {
+                    mainVm.popBackStack()
+                })
         }, title = {
             Text(text = "授权状态")
         })

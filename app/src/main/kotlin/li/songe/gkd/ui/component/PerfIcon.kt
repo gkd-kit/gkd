@@ -57,16 +57,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 
 @Composable
 fun PerfIcon(
     imageVector: ImageVector,
     modifier: Modifier = Modifier,
-    tint: Color = LocalContentColor.current
+    tint: Color = LocalContentColor.current,
+    contentDescription: String? = getDefaultDesc(imageVector),
 ) = Icon(
     imageVector = imageVector,
     modifier = modifier,
-    contentDescription = imageVector.name,
+    contentDescription = contentDescription,
     tint = tint
 )
 
@@ -77,14 +80,21 @@ fun PerfIconButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     colors: IconButtonColors = IconButtonDefaults.iconButtonColors(),
+    contentDescription: String? = getDefaultDesc(imageVector),
+    onClickLabel: String? = null,
 ) = IconButton(
-    modifier = modifier,
+    modifier = modifier.semantics {
+        if (onClickLabel != null) {
+            this.onClick(label = onClickLabel, action = null)
+        }
+    },
     enabled = enabled,
     onClick = onClick,
     colors = colors,
 ) {
     PerfIcon(
         imageVector = imageVector,
+        contentDescription = contentDescription,
     )
 }
 
@@ -92,11 +102,12 @@ fun PerfIconButton(
 fun PerfIcon(
     @DrawableRes id: Int,
     modifier: Modifier = Modifier,
-    tint: Color = LocalContentColor.current
+    tint: Color = LocalContentColor.current,
+    contentDescription: String? = null,
 ) = Icon(
     painter = painterResource(id),
     modifier = modifier,
-    contentDescription = null,
+    contentDescription = contentDescription,
     tint = tint
 )
 
@@ -107,15 +118,41 @@ fun PerfIconButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     colors: IconButtonColors = IconButtonDefaults.iconButtonColors(),
+    contentDescription: String? = null,
+    onClickLabel: String? = null,
 ) = IconButton(
-    modifier = modifier,
+    modifier = modifier.semantics {
+        if (onClickLabel != null) {
+            this.onClick(label = onClickLabel, action = null)
+        }
+    },
     enabled = enabled,
     onClick = onClick,
     colors = colors,
 ) {
     PerfIcon(
         id = id,
+        contentDescription = contentDescription,
     )
+}
+
+private fun getDefaultDesc(imageVector: ImageVector): String? = when (imageVector) {
+    PerfIcon.Add -> "添加"
+    PerfIcon.Edit -> "编辑"
+    PerfIcon.Save -> "保存"
+    PerfIcon.Delete -> "删除"
+    PerfIcon.Share -> "分享"
+    PerfIcon.Settings -> "设置"
+    PerfIcon.Close -> "关闭"
+    PerfIcon.ArrowBack -> "返回"
+    PerfIcon.HelpOutline -> "帮助"
+    PerfIcon.ToggleOff -> "关闭"
+    PerfIcon.ToggleOn -> "开启"
+    PerfIcon.History -> "历史记录"
+    PerfIcon.Sort -> "排序筛选"
+    PerfIcon.OpenInNew -> "新页面打开"
+    PerfIcon.ContentCopy -> "复制文本"
+    else -> null
 }
 
 object PerfIcon {

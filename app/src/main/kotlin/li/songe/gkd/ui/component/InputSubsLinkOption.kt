@@ -88,6 +88,7 @@ class InputSubsLinkOption {
                         Text(text = if (initValue.isNotEmpty()) "修改订阅" else "添加订阅")
                         PerfIconButton(
                             imageVector = PerfIcon.HelpOutline,
+                            contentDescription = "订阅帮助",
                             onClick = throttle {
                                 cancel()
                                 mainVm.navigatePage(WebViewPageDestination(initUrl = ShortUrlSet.URL5))

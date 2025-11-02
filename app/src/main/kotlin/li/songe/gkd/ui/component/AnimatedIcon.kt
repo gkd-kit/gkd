@@ -9,6 +9,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import li.songe.gkd.util.SafeR
 
 @Composable
 fun AnimatedIcon(
@@ -16,6 +17,7 @@ fun AnimatedIcon(
     @DrawableRes id: Int,
     atEnd: Boolean = false,
     tint: Color = LocalContentColor.current,
+    contentDescription: String? = getIconDesc(id, atEnd),
 ) {
     val animation = AnimatedImageVector.animatedVectorResource(id)
     val painter = rememberAnimatedVectorPainter(
@@ -25,7 +27,12 @@ fun AnimatedIcon(
     Icon(
         modifier = modifier,
         painter = painter,
-        contentDescription = null,
+        contentDescription = contentDescription,
         tint = tint,
     )
+}
+
+private fun getIconDesc(@DrawableRes id: Int, atEnd: Boolean): String? = when (id) {
+    SafeR.ic_anim_search_close -> if (atEnd) "关闭搜索" else "打开搜索"
+    else -> null
 }

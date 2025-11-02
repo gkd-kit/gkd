@@ -48,7 +48,7 @@ fun BackCloseIcon(
         modifier = modifier
             .size(24.dp)
             .semantics {
-                this.contentDescription = if (backOrClose) "back" else "close"
+                this.contentDescription = if (backOrClose) "返回" else "关闭"
                 this.role = Role.Image
             },
     ) {

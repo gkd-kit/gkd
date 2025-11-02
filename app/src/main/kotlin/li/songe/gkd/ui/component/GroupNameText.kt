@@ -1,6 +1,5 @@
 package li.songe.gkd.ui.component
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
@@ -18,8 +17,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import li.songe.gkd.ui.icon.SportsBasketball
-import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
 
 @Composable
 fun GroupNameText(
@@ -32,7 +29,6 @@ fun GroupNameText(
     overflow: TextOverflow = TextOverflow.Clip,
     softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
-    clickDisabled: Boolean = false,
 ) {
     if (isGlobal) {
         val text = remember(preText, text) {
@@ -45,7 +41,7 @@ fun GroupNameText(
             }
         }
         val textColor = color.takeOrElse { style.color.takeOrElse { LocalContentColor.current } }
-        val inlineContent = remember(style, clickDisabled, textColor) {
+        val inlineContent = remember(style, textColor) {
             mapOf(
                 "icon" to InlineTextContent(
                     placeholder = Placeholder(
@@ -56,11 +52,7 @@ fun GroupNameText(
                 ) {
                     PerfIcon(
                         imageVector = SportsBasketball,
-                        modifier = Modifier
-                            .runIf(!clickDisabled) {
-                                clickable(onClick = throttle { toast("当前是全局规则组") })
-                            }
-                            .fillMaxSize(),
+                        modifier = Modifier.fillMaxSize(),
                         tint = textColor
                     )
                 }
@@ -78,7 +70,6 @@ fun GroupNameText(
         )
     } else {
         Text(
-            modifier = modifier,
             text = if (preText.isNullOrEmpty()) {
                 text
             } else {

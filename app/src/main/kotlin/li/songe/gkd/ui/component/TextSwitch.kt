@@ -9,11 +9,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.ui.style.itemPadding
@@ -32,9 +33,16 @@ fun TextSwitch(
     checked: Boolean = true,
     enabled: Boolean = true,
     onCheckedChange: ((Boolean) -> Unit)? = null,
+    onClick: (() -> Unit)? = { onCheckedChange?.invoke(!checked) },
+    onClickLabel: String? = "切换${title}状态",
 ) {
+    val topModifier = if (onClick != null) {
+        modifier.clickable(onClick = onClick, onClickLabel = onClickLabel)
+    } else {
+        modifier
+    }
     Row(
-        modifier = if (paddingDisabled) modifier else modifier.itemPadding(),
+        modifier = if (paddingDisabled) topModifier else topModifier.itemPadding(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -78,10 +86,13 @@ fun TextSwitch(
             }
         }
         suffixIcon?.invoke()
-        Switch(
+        PerfSwitch(
             checked = checked,
             enabled = enabled,
             onCheckedChange = onCheckedChange?.let { throttle(fn = it) },
+            modifier = Modifier.semantics {
+                this.stateDescription = title + if (checked) "已开启" else "已关闭"
+            }
         )
     }
 }

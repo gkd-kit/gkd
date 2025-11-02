@@ -14,6 +14,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.util.throttle
 
@@ -22,6 +25,8 @@ private const val elevationDurationMillis = 50
 @Composable
 fun AnimationFloatingActionButton(
     modifier: Modifier = Modifier,
+    onClickLabel: String? = null,
+    contentDescription: String? = null,
     visible: Boolean,
     onClick: () -> Unit,
     content: @Composable () -> Unit,
@@ -59,10 +64,19 @@ fun AnimationFloatingActionButton(
     }
     if (innerVisible) {
         FloatingActionButton(
-            modifier = modifier.graphicsLayer(
-                alpha = percent.value,
-                translationX = (1f - percent.value) * maxTranslationX
-            ),
+            modifier = modifier
+                .graphicsLayer(
+                    alpha = percent.value,
+                    translationX = (1f - percent.value) * maxTranslationX
+                )
+                .semantics {
+                    if (contentDescription != null) {
+                        this.contentDescription = contentDescription
+                    }
+                    if (onClickLabel != null) {
+                        this.onClick(label = onClickLabel, action = null)
+                    }
+                },
             elevation = FloatingActionButtonDefaults.elevation(defaultElevation = (defaultElevation.value * 6f).dp),
             onClick = throttle(onClick),
             content = content,

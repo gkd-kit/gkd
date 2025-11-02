@@ -6,6 +6,8 @@ import androidx.compose.material3.SwitchColors
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import li.songe.gkd.util.throttle
 
 @Composable
@@ -22,7 +24,9 @@ fun PerfSwitch(
     Switch(
         checked = checked,
         onCheckedChange = onCheckedChange?.let { throttle(it) },
-        modifier = modifier,
+        modifier = modifier.semantics {
+            stateDescription = if (checked) "已开启" else "已关闭"
+        },
         thumbContent = thumbContent,
         enabled = enabled,
         colors = colors,

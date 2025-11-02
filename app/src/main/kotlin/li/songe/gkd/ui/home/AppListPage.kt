@@ -38,6 +38,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -158,6 +162,8 @@ fun useAppListPage(): ScaffoldExt {
             }, actions = {
                 PerfIconButton(
                     imageVector = PerfIcon.Block,
+                    contentDescription = "切换白名单编辑模式",
+                    onClickLabel = if (editWhiteListMode) "退出编辑" else "进入编辑",
                     colors = IconButtonDefaults.iconButtonColors(
                         contentColor = if (editWhiteListMode) {
                             CheckboxDefaults.colors().checkedBoxColor
@@ -183,12 +189,16 @@ fun useAppListPage(): ScaffoldExt {
                     AnimatedIcon(
                         id = SafeR.ic_anim_search_close,
                         atEnd = showSearchBar,
+                        contentDescription = if (showSearchBar) "关闭搜索" else "搜索应用列表",
                     )
                 }
                 var expanded by remember { mutableStateOf(false) }
-                PerfIconButton(imageVector = PerfIcon.Sort, onClick = {
-                    expanded = true
-                })
+                PerfIconButton(
+                    imageVector = PerfIcon.Sort,
+                    contentDescription = "排序筛选",
+                    onClick = {
+                        expanded = true
+                    })
                 Box(
                     modifier = Modifier
                         .wrapContentSize(Alignment.TopStart)
@@ -256,7 +266,7 @@ fun useAppListPage(): ScaffoldExt {
                     mainVm.navigatePage(EditBlockAppListPageDestination)
                 },
                 content = {
-                    PerfIcon(imageVector = PerfIcon.Edit)
+                    PerfIcon(imageVector = PerfIcon.Edit, contentDescription = "编辑白名单")
                 }
             )
         }
@@ -328,16 +338,35 @@ private fun AppItemCard(
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
     val vm = viewModel<HomeVm>()
+    val editWhiteListMode = vm.editWhiteListModeFlow.collectAsState().value
+    val inWhiteList = blockMatchAppListFlow.collectAsState().value.contains(appInfo.id)
     Row(
         modifier = Modifier
-            .clickable(onClick = throttle {
-                if (vm.editWhiteListModeFlow.value) {
-                    blockMatchAppListFlow.update { it.switchItem(appInfo.id) }
+            .clickable(
+                onClick = throttle {
+                    if (vm.editWhiteListModeFlow.value) {
+                        blockMatchAppListFlow.update { it.switchItem(appInfo.id) }
+                    } else {
+                        context.justHideSoftInput()
+                        mainVm.navigatePage(AppConfigPageDestination(appInfo.id))
+                    }
+                })
+            .clearAndSetSemantics {
+                contentDescription = if (editWhiteListMode) {
+                    appInfo.name
                 } else {
-                    context.justHideSoftInput()
-                    mainVm.navigatePage(AppConfigPageDestination(appInfo.id))
+                    "应用：${appInfo.name}，${desc ?: appInfo.id}"
                 }
-            })
+                if (inWhiteList) {
+                    stateDescription = "已加入白名单"
+                } else if (editWhiteListMode) {
+                    stateDescription = "未加入白名单"
+                }
+                onClick(
+                    label = if (editWhiteListMode) if (inWhiteList) "从白名单中移除" else "加入白名单" else "进入规则汇总页面",
+                    action = null
+                )
+            }
             .appItemPadding(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -358,8 +387,6 @@ private fun AppItemCard(
                 softWrap = false
             )
         }
-        val editWhiteListMode = vm.editWhiteListModeFlow.collectAsState().value
-        val inWhiteList = blockMatchAppListFlow.collectAsState().value.contains(appInfo.id)
         if (editWhiteListMode) {
             PerfCheckbox(
                 key = appInfo.id,

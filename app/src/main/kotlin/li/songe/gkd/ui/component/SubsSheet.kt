@@ -29,6 +29,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -123,7 +125,10 @@ fun SubsSheet(
                 )
                 if (subscription != null) {
                     Column(
-                        modifier = childModifier
+                        modifier = childModifier.clearAndSetSemantics {
+                            contentDescription =
+                                "作者：${subscription.author ?: "未知"}, 版本号：v${subscription.version}, 更新时间：${subsItem.mtimeStr}"
+                        }
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -181,7 +186,7 @@ fun SubsSheet(
                     if (subscription.globalGroups.isNotEmpty() || subsItem.isLocal) {
                         Row(
                             modifier = Modifier
-                                .clickable(onClick = throttle {
+                                .clickable(onClickLabel = "查看全局规则组列表", onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
                                     mainVm.navigatePage(SubsGlobalGroupListPageDestination(subsItem.id))
@@ -217,7 +222,7 @@ fun SubsSheet(
                     if (subscription.appGroups.isNotEmpty() || subsItem.isLocal) {
                         Row(
                             modifier = Modifier
-                                .clickable(onClick = throttle {
+                                .clickable(onClickLabel = "查看应用规则组列表", onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
                                     mainVm.navigatePage(SubsAppListPageDestination(subsItem.id))
@@ -254,7 +259,7 @@ fun SubsSheet(
                     if (subscription.categories.isNotEmpty() || subsItem.isLocal) {
                         Row(
                             modifier = Modifier
-                                .clickable(onClick = throttle {
+                                .clickable(onClickLabel = "查看规则类别列表", onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
                                     mainVm.navigatePage(SubsCategoryPageDestination(subsItem.id))
@@ -290,7 +295,7 @@ fun SubsSheet(
                     if (!subsItem.isLocal && subsItem.updateUrl != null) {
                         Row(
                             modifier = Modifier
-                                .clickable(onClick = throttle {
+                                .clickable(onClickLabel = "编辑订阅链接", onClick = throttle {
                                     if (updateSubsMutex.mutex.isLocked) {
                                         toast("正在刷新订阅,请稍后操作")
                                         return@throttle
@@ -319,7 +324,8 @@ fun SubsSheet(
                                     softWrap = false,
                                     overflow = TextOverflow.MiddleEllipsis,
                                     modifier = Modifier
-                                        .clickable(onClick = {
+                                        .clearAndSetSemantics {}
+                                        .clickable(onClickLabel = "查看订阅链接", onClick = {
                                             mainVm.textFlow.value = subsItem.updateUrl
                                         })
                                 )

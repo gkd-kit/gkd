@@ -26,12 +26,16 @@ fun SettingItem(
     onSuffixClick: (() -> Unit)? = null,
     imageVector: ImageVector? = PerfIcon.KeyboardArrowRight,
     onClick: (() -> Unit)? = null,
+    onClickLabel: String? = null,
 ) {
     Row(
         modifier = Modifier
             .let {
                 if (onClick != null) {
-                    it.clickable(onClick = throttle(fn = onClick))
+                    it.clickable(
+                        onClick = throttle(fn = onClick),
+                        onClickLabel = onClickLabel ?: "进入${title}页面"
+                    )
                 } else {
                     it
                 }

@@ -4,6 +4,7 @@ import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,7 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -30,6 +30,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -50,6 +52,7 @@ import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.GroupNameText
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
+import li.songe.gkd.ui.component.PerfSwitch
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.textSize
 import li.songe.gkd.ui.share.LocalMainViewModel
@@ -80,6 +83,7 @@ fun useControlPage(): ScaffoldExt {
             }, actions = {
                 PerfIconButton(
                     imageVector = PerfIcon.RocketLaunch,
+                    onClickLabel = "前往无障碍授权页面",
                     onClick = throttle {
                         mainVm.navigatePage(AuthA11YPageDestination)
                     },
@@ -97,8 +101,10 @@ fun useControlPage(): ScaffoldExt {
             modifier = Modifier
                 .verticalScroll(scrollState)
                 .padding(contentPadding)
+                .padding(horizontal = itemHorizontalPadding),
+            verticalArrangement = Arrangement.spacedBy(itemHorizontalPadding / 2)
         ) {
-            PageItemCard(
+            PageSwitchItemCard(
                 imageVector = PerfIcon.Memory,
                 title = "服务状态",
                 subtitle = if (a11yRunning) {
@@ -114,47 +120,40 @@ fun useControlPage(): ScaffoldExt {
                 } else {
                     "无障碍未授权"
                 },
-                rightContent = {
-                    Switch(
-                        checked = a11yRunning,
-                        onCheckedChange = throttle(vm.viewModelScope.launchAsFn { newEnabled ->
-                            if (newEnabled && !writeSecureSettingsState.value) {
-                                mainVm.navigatePage(AuthA11YPageDestination)
-                            } else {
-                                switchA11yService()
-                            }
-                        }),
-                    )
-                }
+                checked = a11yRunning,
+                onCheckedChange = vm.viewModelScope.launchAsFn { newEnabled ->
+                    if (newEnabled && !writeSecureSettingsState.value) {
+                        mainVm.navigatePage(AuthA11YPageDestination)
+                    } else {
+                        switchA11yService()
+                    }
+                },
             )
 
-            PageItemCard(
+            PageSwitchItemCard(
                 imageVector = PerfIcon.Notifications,
                 title = "常驻通知",
                 subtitle = "显示运行状态及统计数据",
-                rightContent = {
-                    Switch(
-                        checked = manageRunning && store.enableStatusService,
-                        onCheckedChange = throttle(fn = vm.viewModelScope.launchAsFn<Boolean> {
-                            if (it) {
-                                StatusService.requestStart(context)
-                            } else {
-                                StatusService.stop()
-                                storeFlow.value = store.copy(
-                                    enableStatusService = false
-                                )
-                            }
-                        }),
-                    )
-                }
+                checked = manageRunning && store.enableStatusService,
+                onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
+                    if (it) {
+                        StatusService.requestStart(context)
+                    } else {
+                        StatusService.stop()
+                        storeFlow.value = store.copy(
+                            enableStatusService = false
+                        )
+                    }
+                },
             )
 
-            ServerStatusCard(vm)
+            ServerStatusCard()
 
             PageItemCard(
                 title = "触发记录",
                 subtitle = "规则误触可定位关闭",
                 imageVector = PerfIcon.History,
+                onClickLabel = "打开触发记录页面",
                 onClick = {
                     mainVm.navigatePage(ActionLogPageDestination())
                 }
@@ -165,6 +164,7 @@ fun useControlPage(): ScaffoldExt {
                     title = "界面日志",
                     subtitle = "记录打开的应用及界面",
                     imageVector = PerfIcon.Layers,
+                    onClickLabel = "打开界面日志页面",
                     onClick = {
                         mainVm.navigatePage(ActivityLogPageDestination)
                     }
@@ -175,6 +175,7 @@ fun useControlPage(): ScaffoldExt {
                 title = "了解 GKD",
                 subtitle = "查阅规则文档和常见问题",
                 imageVector = PerfIcon.HelpOutline,
+                onClickLabel = "打开 GKD 文档页面",
                 onClick = {
                     mainVm.navigatePage(WebViewPageDestination(initUrl = HOME_PAGE_URL))
                 }
@@ -190,14 +191,16 @@ private fun PageItemCard(
     imageVector: ImageVector,
     title: String,
     subtitle: String,
-    onClick: () -> Unit = {},
-    rightContent: @Composable (() -> Unit)? = null,
+    onClickLabel: String,
+    onClick: () -> Unit,
 ) {
     Card(
         modifier = Modifier
-            .padding(itemHorizontalPadding, 4.dp)
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+            .fillMaxWidth()
+            .semantics {
+                this.onClick(label = onClickLabel, action = null)
+            },
+        shape = MaterialTheme.shapes.large,
         colors = surfaceCardColors,
         onClick = throttle(fn = onClick)
     ) {
@@ -217,10 +220,50 @@ private fun PageItemCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (rightContent != null) {
-                Spacer(Modifier.width(8.dp))
-                rightContent.invoke()
+        }
+    }
+}
+
+@Composable
+private fun PageSwitchItemCard(
+    imageVector: ImageVector,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    val onClick = throttle { onCheckedChange(!checked) }
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                this.onClick(label = "切换$title", action = null)
+            },
+        shape = MaterialTheme.shapes.large,
+        colors = surfaceCardColors,
+        onClick = onClick,
+    ) {
+        IconTextCard(
+            imageVector = imageVector,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
+            Spacer(Modifier.width(8.dp))
+            PerfSwitch(
+                checked = checked,
+                onCheckedChange = null,
+            )
         }
     }
 }
@@ -251,12 +294,15 @@ private fun IconTextCard(
 }
 
 @Composable
-private fun ServerStatusCard(vm: HomeVm) {
+private fun ServerStatusCard() {
     val mainVm = LocalMainViewModel.current
+    val vm = viewModel<HomeVm>()
     Card(
         modifier = Modifier
-            .padding(itemHorizontalPadding, 4.dp)
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .semantics {
+                onClick(label = "不执行操作", action = null)
+            },
         shape = RoundedCornerShape(20.dp),
         colors = surfaceCardColors,
         onClick = {}
@@ -302,9 +348,7 @@ private fun ServerStatusCard(vm: HomeVm) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(
-                    horizontal = itemVerticalPadding,
-                )
+                .padding(horizontal = itemVerticalPadding)
         ) {
             val subsStatus by vm.subsStatusFlow.collectAsState()
             AnimatedVisibility(subsStatus.isNotEmpty()) {
@@ -322,7 +366,7 @@ private fun ServerStatusCard(vm: HomeVm) {
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
                         .clip(MaterialTheme.shapes.extraSmall)
-                        .clickable(onClick = throttle {
+                        .clickable(onClickLabel = "前往应用的规则汇总页面", onClick = throttle {
                             latestRecordFlow.value?.let {
                                 mainVm.navigatePage(
                                     AppConfigPageDestination(

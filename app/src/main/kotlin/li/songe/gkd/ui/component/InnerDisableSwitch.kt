@@ -2,12 +2,13 @@ package li.songe.gkd.ui.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.material3.Switch
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.util.throttle
 
@@ -31,11 +32,13 @@ fun InnerDisableSwitch(
             )
         }
     }
-    Switch(
+    PerfSwitch(
         checked = false,
         enabled = false,
         onCheckedChange = null,
-        modifier = modifier
+        modifier = modifier.semantics {
+            stateDescription = "已禁用"
+        }
             .minimumInteractiveComponentSize().run {
                 if (isSelectedMode) {
                     this
@@ -44,7 +47,8 @@ fun InnerDisableSwitch(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                         role = Role.Switch,
-                        onClick = throttle(onClick)
+                        onClick = throttle(onClick),
+                        onClickLabel = "打开规则禁用说明",
                     )
                 }
             }

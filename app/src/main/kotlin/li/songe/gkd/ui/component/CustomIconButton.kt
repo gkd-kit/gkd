@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 fun CustomIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onClickLabel: String? = null,
     size: Dp = 40.dp,
     enabled: Boolean = true,
     colors: IconButtonColors = IconButtonDefaults.iconButtonColors(),
@@ -37,6 +38,7 @@ fun CustomIconButton(
                 .background(color = colors.run { if (enabled) containerColor else disabledContainerColor })
                 .clickable(
                     onClick = onClick,
+                    onClickLabel = onClickLabel,
                     enabled = enabled,
                     role = Role.Button,
                     interactionSource = interactionSource,

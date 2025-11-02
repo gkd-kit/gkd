@@ -46,6 +46,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -149,7 +152,14 @@ fun useSubsManagePage(): ScaffoldExt {
                     }
                     Row(
                         modifier = Modifier
-                            .padding(0.dp, itemVerticalPadding),
+                            .padding(0.dp, itemVerticalPadding)
+                            .clickable(
+                                onClickLabel = if (store.subsPowerWarn) "关闭警告" else "开启警告",
+                                onClick = updateValue
+                            )
+                            .semantics(mergeDescendants = true) {
+                                stateDescription = if (store.subsPowerWarn) "已开启" else "已关闭"
+                            },
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -167,13 +177,15 @@ fun useSubsManagePage(): ScaffoldExt {
                         }
                         Checkbox(
                             checked = store.subsPowerWarn,
-                            onCheckedChange = { updateValue() }
+                            onCheckedChange = null,
                         )
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showSettingsDlg = false }) {
+                TextButton(onClick = { showSettingsDlg = false }, modifier = Modifier.semantics {
+                    onClick(label = "关闭弹窗", action = null)
+                }) {
                     Text("关闭")
                 }
             }
@@ -189,6 +201,7 @@ fun useSubsManagePage(): ScaffoldExt {
                 if (isSelectedMode) {
                     PerfIconButton(
                         imageVector = PerfIcon.Close,
+                        contentDescription = "取消选择",
                         onClick = { isSelectedMode = false },
                     )
                 }
@@ -211,9 +224,12 @@ fun useSubsManagePage(): ScaffoldExt {
                 ) {
                     Row {
                         if (it) {
-                            PerfIconButton(imageVector = PerfIcon.Share, onClick = {
-                                mainVm.showShareDataIdsFlow.value = selectedIds
-                            })
+                            PerfIconButton(
+                                imageVector = PerfIcon.Share,
+                                contentDescription = "分享选中订阅",
+                                onClick = {
+                                    mainVm.showShareDataIdsFlow.value = selectedIds
+                                })
                             val canDeleteIds = if (selectedIds.contains(LOCAL_SUBS_ID)) {
                                 selectedIds - LOCAL_SUBS_ID
                             } else {
@@ -225,6 +241,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                 }
                                 PerfIconButton(
                                     imageVector = PerfIcon.Delete,
+                                    contentDescription = "删除选中订阅",
                                     onClick = vm.viewModelScope.launchAsFn {
                                         mainVm.dialogFlow.waitResult(
                                             title = "删除订阅",
@@ -246,9 +263,13 @@ fun useSubsManagePage(): ScaffoldExt {
                                 enter = scaleIn(),
                                 exit = scaleOut(),
                             ) {
-                                PerfIconButton(imageVector = PerfIcon.Eco, onClick = throttle {
-                                    mainVm.navigatePage(SlowGroupPageDestination)
-                                })
+                                PerfIconButton(
+                                    imageVector = PerfIcon.Eco,
+                                    contentDescription = "缓慢查询规则列表",
+                                    onClickLabel = "查看列表",
+                                    onClick = throttle {
+                                        mainVm.navigatePage(SlowGroupPageDestination)
+                                    })
                             }
                             val scope = rememberCoroutineScope()
                             val enableMatch by remember {
@@ -263,21 +284,30 @@ fun useSubsManagePage(): ScaffoldExt {
                                         LocalContentColor.current
                                     }
                                 ),
+                                contentDescription = "规则匹配" + if (enableMatch) "已启用" else "已禁用",
+                                onClickLabel = "切换开关",
                                 onClick = throttle { switchStoreEnableMatch() },
                             )
-                            PerfIconButton(id = SafeR.ic_page_info, onClick = {
-                                showSettingsDlg = true
-                            })
+                            PerfIconButton(
+                                id = SafeR.ic_page_info,
+                                contentDescription = "订阅设置",
+                                onClickLabel = "打开设置弹窗",
+                                onClick = {
+                                    showSettingsDlg = true
+                                })
                         }
                     }
                 }
-                PerfIconButton(imageVector = PerfIcon.MoreVert, onClick = {
-                    if (updateSubsMutex.mutex.isLocked) {
-                        toast("正在刷新订阅，请稍后操作")
-                    } else {
-                        expanded = true
-                    }
-                })
+                PerfIconButton(
+                    imageVector = PerfIcon.MoreVert,
+                    contentDescription = "更多操作",
+                    onClick = {
+                        if (updateSubsMutex.mutex.isLocked) {
+                            toast("正在刷新订阅，请稍后操作")
+                        } else {
+                            expanded = true
+                        }
+                    })
                 Box(
                     modifier = Modifier.wrapContentSize(Alignment.TopStart)
                 ) {
@@ -366,6 +396,8 @@ fun useSubsManagePage(): ScaffoldExt {
         },
         floatingActionButton = {
             AnimationFloatingActionButton(
+                contentDescription = "添加订阅",
+                onClickLabel = "打开添加订阅弹窗",
                 visible = !isSelectedMode,
                 onClick = {
                     if (updateSubsMutex.mutex.isLocked) {

@@ -24,6 +24,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -82,7 +88,17 @@ fun SubsItemCard(
     )
     Card(
         onClick = onClick,
-        modifier = modifier.padding(16.dp, 4.dp),
+        modifier = modifier
+            .padding(16.dp, 4.dp)
+            .semantics {
+                stateDescription = if (isSelectedMode) {
+                    if (isSelected) "已选中" else "未选中"
+                } else {
+                    if (subsItem.enable) "已启用" else "已禁用"
+                }
+                this.onClick(label = "查看订阅详情", action = null)
+                this.onLongClick(label = "进入多选模式", action = null)
+            },
         shape = MaterialTheme.shapes.small,
         interactionSource = interactionSource,
         colors = CardDefaults.cardColors(
@@ -99,6 +115,9 @@ fun SubsItemCard(
             ) {
                 if (subscription != null) {
                     Text(
+                        modifier = Modifier.semantics {
+                            contentDescription = "订阅顺序：$index, 订阅名称 ${subscription.name}"
+                        },
                         text = "$index. ${subscription.name}",
                         maxLines = 1,
                         softWrap = false,
@@ -120,23 +139,34 @@ fun SubsItemCard(
                         if (subsItem.id >= 0) {
                             if (subscription.author != null) {
                                 Text(
+                                    modifier = Modifier.semantics {
+                                        contentDescription = "作者 ${subscription.author}"
+                                    },
                                     text = subscription.author,
                                     style = MaterialTheme.typography.labelSmall,
                                 )
                             }
                             Text(
+                                modifier = Modifier.semantics {
+                                    contentDescription = "订阅版本号 ${subscription.version}"
+                                },
                                 text = "v" + (subscription.version.toString()),
                                 style = MaterialTheme.typography.labelSmall,
                             )
                         } else {
                             Text(
+                                modifier = Modifier.clearAndSetSemantics {},
                                 text = META.appName,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.secondary,
                             )
                         }
+                        val timeStr = formatTimeAgo(subsItem.mtime)
                         Text(
-                            text = formatTimeAgo(subsItem.mtime),
+                            modifier = Modifier.semantics {
+                                contentDescription = "更新时间 $timeStr"
+                            },
+                            text = timeStr,
                             style = MaterialTheme.typography.labelSmall,
                         )
                     }
