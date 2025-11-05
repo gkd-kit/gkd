@@ -81,16 +81,25 @@ private fun checkIfNotHasActivity(packageName: String, userId: Int): Boolean {
 private fun PackageInfo.getEnabled(userId: Int): Boolean {
     val enabled = applicationInfo?.enabled ?: true
     if (enabled) return true
-    val state = if (userId == currentUserId) {
-        app.packageManager.getApplicationEnabledSetting(packageName)
-    } else {
-        shizukuContextFlow.value.packageManager?.getApplicationEnabledSetting(
-            packageName,
-            currentUserId
-        ) ?: 0
+    val state = try {
+        // https://github.com/gkd-kit/gkd/issues/1169#issuecomment-3489260246
+        if (userId == currentUserId) {
+            app.packageManager.getApplicationEnabledSetting(packageName)
+        } else {
+            shizukuContextFlow.value.packageManager?.getApplicationEnabledSetting(
+                packageName,
+                currentUserId
+            )
+        }
+    } catch (_: IllegalArgumentException) {
+        null
     }
     return when (state) {
-        PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER, PackageManager.COMPONENT_ENABLED_STATE_DISABLED_UNTIL_USED -> false
+        null,
+        PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+        PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER,
+        PackageManager.COMPONENT_ENABLED_STATE_DISABLED_UNTIL_USED -> false
+
         else -> true
     }
 }
