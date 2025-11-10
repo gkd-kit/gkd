@@ -1,11 +1,11 @@
 [versions]
 kotlin = "2.2.21"
-ksp = "2.3.0"
+ksp = "2.3.2"
 agp = "8.13.0"
 compose = "1.9.4"
 room = "2.8.3"
 paging = "3.3.6"
-ktor = "3.3.1"
+ktor = "3.3.2"
 atomicfu = "0.29.0"
 destinations = "2.3.0"
 coil = "3.3.0"
@@ -35,7 +35,7 @@ compose_junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = 
 compose_icons = "androidx.compose.material:material-icons-extended:1.7.8"
 compose_material3 = "androidx.compose.material3:material3:1.4.0"
 compose_activity = "androidx.activity:activity-compose:1.11.0"
-compose_navigation = "androidx.navigation:navigation-compose:2.9.5"
+compose_navigation = "androidx.navigation:navigation-compose:2.9.6"
 androidx_appcompat = "androidx.appcompat:appcompat:1.7.1"
 androidx_core_ktx = "androidx.core:core-ktx:1.17.0"
 androidx_lifecycle_runtime_ktx = "androidx.lifecycle:lifecycle-runtime-ktx:2.9.4"
@@ -47,7 +47,7 @@ androidx_room_runtime = { module = "androidx.room:room-runtime", version.ref = "
 androidx_room_compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx_room_ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx_room_paging = { module = "androidx.room:room-paging", version.ref = "room" }
-androidx_splashscreen = "androidx.core:core-splashscreen:1.0.1"
+androidx_splashscreen = "androidx.core:core-splashscreen:1.2.0"
 androidx_paging_runtime = { module = "androidx.paging:paging-runtime", version.ref = "paging" }
 androidx_paging_compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
 google_accompanist_drawablepainter = "com.google.accompanist:accompanist-drawablepainter:0.37.3"
@@ -66,9 +66,9 @@ coil_gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil" }
 loc_annotation = { module = "li.songe.loc:loc-annotation", version.ref = "loc" }
 reorderable = "sh.calvin.reorderable:reorderable:3.0.0"
 exp4j = "net.objecthunter:exp4j:0.4.8"
-toaster = "com.github.getActivity:Toaster:13.6"
+toaster = "com.github.getActivity:Toaster:13.8"
 permissions = "com.github.getActivity:XXPermissions:26.5"
-json5 = "li.songe:json5:0.4.1"
+json5 = "li.songe:json5:0.5.0"
 utilcodex = "com.blankj:utilcodex:1.31.1"
 activityResultLauncher = "com.github.DylanCaiCoding:ActivityResultLauncher:1.1.2"
 kevinnzouWebview = "io.github.kevinnzou:compose-webview:0.33.6"
