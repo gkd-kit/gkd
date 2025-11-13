@@ -66,8 +66,8 @@ android {
         targetSdk = rootProject.ext["android.targetSdk"] as Int
 
         applicationId = "li.songe.gkd"
-        versionCode = 74
-        versionName = "1.11.0"
+        versionCode = 75
+        versionName = "1.11.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -112,7 +112,7 @@ android {
     buildTypes {
         all {
             if (gitInfo.tagName == null) {
-                versionNameSuffix = "-${gitInfo.commitId.substring(0, 7)}"
+                versionNameSuffix = "-${gitInfo.commitId.take(7)}"
             }
         }
         release {
