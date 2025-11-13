@@ -137,7 +137,7 @@ sealed class ResolvedRule(
 
     private val matchChangedTime = atomic(0L)
     val isFirstMatchApp: Boolean
-        get() = matchChangedTime.value == appChangeTime
+        get() = matchChangedTime.value < appChangeTime
 
     private val matchLimitTime = (matchTime ?: 0) + matchDelay
 
