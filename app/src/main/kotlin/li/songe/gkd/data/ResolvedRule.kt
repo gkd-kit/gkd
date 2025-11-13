@@ -125,10 +125,11 @@ sealed class ResolvedRule(
 
     private var actionTriggerTime = atomic(0L)
     fun trigger() {
-        actionTriggerTime.value = System.currentTimeMillis()
+        val t = System.currentTimeMillis()
+        actionTriggerTime.value = t
         actionDelayTriggerTime.value = 0L
         actionCount.incrementAndGet()
-        lastTriggerTime = actionTriggerTime.value
+        lastTriggerTime = t
         lastTriggerRule = this
     }
 
