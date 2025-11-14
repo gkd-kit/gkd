@@ -127,6 +127,7 @@ android {
         debug {
             signingConfig = gkdSigningConfig
             applicationIdSuffix = ".debug"
+            resValue("color", "better_black", "#FF5D92")
             debugSuffixPairList.onEach { (key, value) ->
                 resValue("string", key, "$value-debug")
             }
