@@ -379,15 +379,18 @@ private fun ServerStatusCard() {
                         .fillMaxWidth()
                         .padding(horizontal = 4.dp)
                 ) {
-                    GroupNameText(
+                    Column(
                         modifier = Modifier.weight(1f),
-                        preText = "最近触发: ",
-                        isGlobal = latestRecordFlow.collectAsState().value?.groupType == SubsConfig.GlobalGroupType,
-                        text = latestRecordDesc ?: "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    ) {
+                        GroupNameText(
+                            modifier = Modifier.fillMaxWidth(),
+                            preText = "最近触发: ",
+                            isGlobal = latestRecordFlow.collectAsState().value?.groupType == SubsConfig.GlobalGroupType,
+                            text = latestRecordDesc ?: "",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                     PerfIcon(
                         imageVector = PerfIcon.KeyboardArrowRight,
                         modifier = Modifier.textSize(style = MaterialTheme.typography.bodyMedium),
