@@ -1,5 +1,6 @@
 package li.songe.gkd.data
 
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageInfoHidden
@@ -60,21 +61,18 @@ private val PackageInfo.isOverlay: Boolean
 val ApplicationInfo.isSystem: Boolean
     get() = flags and ApplicationInfo.FLAG_SYSTEM != 0 || flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0
 
-private fun checkIfNotHasActivity(packageName: String, userId: Int): Boolean {
-    val flags = PackageManager.MATCH_UNINSTALLED_PACKAGES or PackageManager.GET_ACTIVITIES
-    return if (userId == currentUserId) {
+private fun checkHasActivity(packageName: String): Boolean {
+    return app.packageManager.getLaunchIntentForPackage(packageName) != null || app.packageManager.queryIntentActivities(
+        Intent().setPackage(packageName),
+        PackageManager.MATCH_DISABLED_COMPONENTS
+    ).isNotEmpty() || try {
         app.packageManager.getPackageInfo(
             packageName,
-            flags,
-        )
-    } else {
-        shizukuContextFlow.value.packageManager?.getPackageInfo(
-            packageName,
-            flags,
-            userId,
-        )
-    }?.activities.let {
-        it == null || it.isEmpty()
+            PackageManager.MATCH_UNINSTALLED_PACKAGES or PackageManager.GET_ACTIVITIES
+        ).activities?.isNotEmpty() == true
+    } catch (_: Throwable) {
+        // #1195 packageManager.getPackageInfo android.os.DeadSystemRuntimeException
+        true
     }
 }
 
@@ -104,7 +102,7 @@ private fun PackageInfo.getEnabled(userId: Int): Boolean {
     }
 }
 
-// all->433 isOverlay->354 checkIfNotHasActivity->271
+// all->433 isOverlay->354 checkAppHasActivity->271
 fun PackageInfo.toAppInfo(
     userId: Int = currentUserId,
     hidden: Boolean? = null,
@@ -118,7 +116,7 @@ fun PackageInfo.toAppInfo(
         mtime = lastUpdateTime,
         isSystem = isSystem,
         name = applicationInfo?.run { loadLabel(app.packageManager).toString() } ?: packageName,
-        hidden = hidden ?: (isSystem && (isOverlay || checkIfNotHasActivity(packageName, userId))),
+        hidden = hidden ?: (isSystem && (isOverlay || !checkHasActivity(packageName))),
         enabled = getEnabled(userId),
     )
 }
