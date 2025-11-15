@@ -7,6 +7,7 @@ import li.songe.gkd.META
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.checkExistClass
 
+@Suppress("unused")
 class SafePackageManager(private val value: IPackageManager) {
     companion object {
         val isAvailable: Boolean

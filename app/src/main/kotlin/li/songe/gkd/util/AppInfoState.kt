@@ -97,13 +97,13 @@ val updateAppMutex = MutexState()
 private fun updateOtherUserAppInfo(userAppInfoMap: Map<String, AppInfo>? = null) {
     val pkgManager = shizukuContextFlow.value.packageManager
     val userManager = shizukuContextFlow.value.userManager
-    if (pkgManager == null || userManager == null) {
+    val actualUserAppInfoMap = userAppInfoMap ?: userAppInfoMapFlow.value
+    if (pkgManager == null || userManager == null || actualUserAppInfoMap.isEmpty()) {
         otherUserMapFlow.value = emptyMap()
         otherUserAppIconMapFlow.value = emptyMap()
         otherUserAppInfoMapFlow.value = emptyMap()
         return
     }
-    val actualUserAppInfoMap = userAppInfoMap ?: userAppInfoMapFlow.value
     val otherUsers = userManager.getUsers().filter { it.id != currentUserId }.sortedBy { it.id }
     val userPackageInfoMap = otherUsers.associate { user ->
         user.id to pkgManager.getInstalledPackages(
@@ -157,7 +157,7 @@ private fun updatePartAppInfo(
 fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO) {
     val newAppMap = HashMap<String, AppInfo>()
     val newIconMap = HashMap<String, Drawable>()
-    // see #1169
+    // see #1169 DeadObjectException BadParcelableException
     val pkgList = app.packageManager.getInstalledPackages(PKG_FLAGS)
     pkgList.forEach { pkgInfo ->
         val (appInfo, appIcon) = pkgInfo.toAppInfoAndIcon()
@@ -180,10 +180,15 @@ fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO
             }
         } else {
             val visiblePkgList = arrayOf(Intent.ACTION_MAIN, Intent.ACTION_VIEW).map { action ->
-                app.packageManager.queryIntentActivities(
-                    Intent(action),
-                    PackageManager.MATCH_DISABLED_COMPONENTS
-                )
+                try {
+                    // DeadObjectException BadParcelableException
+                    app.packageManager.queryIntentActivities(
+                        Intent(action),
+                        PackageManager.MATCH_DISABLED_COMPONENTS
+                    )
+                } catch (_: Throwable) {
+                    emptyList()
+                }
             }.flatten()
                 .map { it.activityInfo.packageName }.toSet()
                 .filter { !newAppMap.contains(it) }.mapNotNull { app.getPkgInfo(it) }

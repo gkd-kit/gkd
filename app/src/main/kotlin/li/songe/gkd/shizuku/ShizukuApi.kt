@@ -28,9 +28,13 @@ inline fun <T> safeInvokeMethod(
     block: () -> T
 ): T? = try {
     block()
-} catch (e: Throwable) {
-    e.printStackTrace()
-    null
+} catch (e: IllegalStateException) {
+    // https://github.com/RikkaApps/Shizuku-API/blob/a27f6e4151ba7b39965ca47edb2bf0aeed7102e5/api/src/main/java/rikka/shizuku/Shizuku.java#L430
+    if (e.message == "binder haven't been received") {
+        null
+    } else {
+        throw e
+    }
 }
 
 fun getStubService(name: String, condition: Boolean): ShizukuBinderWrapper? {
