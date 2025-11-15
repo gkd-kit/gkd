@@ -31,6 +31,8 @@ class ExposeService : Service() {
         LogUtils.d("ExposeService::handleIntent", expose, data)
         when (expose) {
             0 -> SnapshotExt.captureSnapshot()
+            1 -> toast("执行成功")
+
             else -> {
                 toast("未知调用: expose=$expose data=$data")
             }
@@ -52,13 +54,14 @@ class ExposeService : Service() {
 }
 
 private const val template = $$"""set -euo pipefail
+echo '> start expose.sh'
 p=''
-if [ -n "$1" ]; then
+if [ -n "${1:-}" ]; then
   p+=" --ei expose $1"
 fi
-if [ -n "$2" ]; then
+if [ -n "${2:-}" ]; then
   p+=" --es data $2"
 fi
 am start-foreground-service -n {service} $p
-echo 'Execution Successful'
+echo '> expose.sh end'
 """

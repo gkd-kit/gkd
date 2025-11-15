@@ -10,6 +10,8 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 
 class AppOpsAllowVm : ViewModel() {
+    val showCopyDlgFlow = MutableStateFlow(false)
+
     init {
         viewModelScope.launch(Dispatchers.IO) {
             while (isActive) {
@@ -18,5 +20,4 @@ class AppOpsAllowVm : ViewModel() {
             }
         }
     }
-    val showCopyDlgFlow = MutableStateFlow(false)
 }

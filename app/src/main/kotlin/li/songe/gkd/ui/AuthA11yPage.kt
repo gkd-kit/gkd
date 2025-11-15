@@ -25,6 +25,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -57,7 +58,7 @@ import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.ShortUrlSet
-import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openA11ySettings
 import li.songe.gkd.util.shFolder
 import li.songe.gkd.util.throttle
@@ -235,7 +236,7 @@ fun AuthA11yPage() {
                         text = "若能正常开关无障碍请忽略此项",
                         style = MaterialTheme.typography.bodySmall,
                     )
-                    A11yAuthButtonGroup()
+                    A11yAuthButtonGroup(showFix = true)
                     Spacer(modifier = Modifier.height(12.dp))
                 }
             }
@@ -258,10 +259,12 @@ private val String.pmGrant get() = "pm grant ${META.appId} $this"
 val gkdStartCommandText by lazy {
     val commandText = listOfNotNull(
         "set -euo pipefail",
+        "echo '> start start.sh'",
         Manifest.permission.WRITE_SECURE_SETTINGS.pmGrant,
         if (AndroidTarget.TIRAMISU) "ACCESS_RESTRICTED_SETTINGS".appopsAllow else null,
         if (AndroidTarget.UPSIDE_DOWN_CAKE) "FOREGROUND_SERVICE_SPECIAL_USE".appopsAllow else null,
-        "echo 'Execution Successful'",
+        "sh ${shFolder.absolutePath}/expose.sh 1",
+        "echo '> start.sh end'",
     ).joinToString("\n")
     val file = shFolder.resolve("start.sh")
     file.writeText(commandText)
@@ -269,26 +272,32 @@ val gkdStartCommandText by lazy {
 }
 
 @Composable
-private fun A11yAuthButtonGroup() {
+private fun A11yAuthButtonGroup(showFix: Boolean = false) {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<AuthA11yVm>()
     AuthButtonGroup(
-        buttons = listOf(
-            "手动解除" to {
-                mainVm.navigateWebPage(ShortUrlSet.URL2)
-            },
-            "Shizuku 授权" to vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                mainVm.guardShizukuContext()
-                if (writeSecureSettingsState.value) {
-                    toast("授权成功")
-                    storeFlow.update { it.copy(enableService = true) }
-                    fixRestartService()
+        buttons = remember(showFix) {
+            val list = mutableListOf<Pair<String, () -> Unit>>()
+            if (showFix) {
+                list.add("手动解除" to {
+                    mainVm.navigateWebPage(ShortUrlSet.URL2)
+                })
+            }
+            list.add("Shizuku 授权" to {
+                vm.viewModelScope.launchTry(Dispatchers.IO) {
+                    mainVm.guardShizukuContext()
+                    if (writeSecureSettingsState.value) {
+                        toast("授权成功")
+                        storeFlow.update { it.copy(enableService = true) }
+                        fixRestartService()
+                    }
                 }
-            },
-            "外部授权" to {
+            })
+            list.add("外部授权" to {
                 vm.showCopyDlgFlow.value = true
-            },
-        )
+            })
+            list
+        }
     )
 }
 
