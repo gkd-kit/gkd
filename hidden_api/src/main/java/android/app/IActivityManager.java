@@ -20,11 +20,11 @@ public interface IActivityManager extends IInterface {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.P)
-    List<ActivityManager.RunningTaskInfo> getTasks(int maxNum);
-
     @DeprecatedSinceApi(api = Build.VERSION_CODES.P, message = "NoSuchMethodError")
     List<ActivityManager.RunningTaskInfo> getTasks(int maxNum, int flags);
+
+    @RequiresApi(Build.VERSION_CODES.P)
+    List<ActivityManager.RunningTaskInfo> getTasks(int maxNum);
 
     void registerTaskStackListener(ITaskStackListener listener);
 
