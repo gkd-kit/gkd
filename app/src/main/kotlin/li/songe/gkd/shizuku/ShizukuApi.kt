@@ -47,13 +47,14 @@ fun Class<*>.detectHiddenMethod(
     methodName: String,
     vararg args: Pair<Int, List<Class<*>>>,
 ): Int {
-    val method = declaredMethods.find {
-        it.name == methodName
-    } ?: throw NoSuchMethodException()
-    val types = method.parameterTypes.toList()
-    args.forEach { (value, argTypes) ->
-        if (types == argTypes) {
-            return value
+    declaredMethods.forEach { method ->
+        if (method.name == methodName) {
+            val types = method.parameterTypes.toList()
+            args.forEach { (value, argTypes) ->
+                if (types == argTypes) {
+                    return value
+                }
+            }
         }
     }
     throw NoSuchMethodException()
