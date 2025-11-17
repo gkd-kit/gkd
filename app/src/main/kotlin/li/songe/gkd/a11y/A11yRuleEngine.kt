@@ -179,11 +179,16 @@ class A11yRuleEngine(val service: A11yService) {
         if (byEvent == null && service.justStarted) return
         scope.launchTry(queryDispatcher) {
             querying = true
+            val st = System.currentTimeMillis()
             try {
-                Log.d("A11yRuleEngine", "startQueryJob start")
+                Log.d(
+                    "A11yRuleEngine",
+                    "startQueryJob start byEvent=${byEvent != null}, byForced=$byForced, byDelayRule=${byDelayRule != null}"
+                )
                 queryAction(byEvent, byForced, byDelayRule)
             } finally {
-                Log.d("A11yRuleEngine", "startQueryJob end")
+                val et = System.currentTimeMillis() - st
+                Log.d("A11yRuleEngine", "startQueryJob end $et ms")
                 querying = false
             }
         }
