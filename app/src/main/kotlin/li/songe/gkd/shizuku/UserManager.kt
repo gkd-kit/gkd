@@ -28,6 +28,6 @@ class SafeUserManager(private val value: IUserManager) {
             value.getUsers(excludePartial, excludeDying, excludePreCreated)
         } else {
             value.getUsers(excludeDying)
-        }.map { UserInfo(id = it.id, name = it.name) }
+        }.map { UserInfo(id = it.id, name = it.name.trim()) }
     } ?: emptyList()
 }
