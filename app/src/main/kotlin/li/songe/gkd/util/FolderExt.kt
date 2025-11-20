@@ -97,6 +97,7 @@ fun buildLogFile(): File {
         it.writeText(allPermissionStates.joinToString("\n") { state ->
             state.name + ": " + state.stateFlow.value.toString()
         })
+        it.appendText("\nappListAuthAbnormalFlow: ${appListAuthAbnormalFlow.value}")
         files.add(it)
     }
     tempDir.resolve("gkd-${META.versionCode}-v${META.versionName}.json").also {

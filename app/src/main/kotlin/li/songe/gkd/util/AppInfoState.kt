@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import androidx.core.content.ContextCompat
+import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -154,6 +155,8 @@ private fun updatePartAppInfo(
     userAppIconMapFlow.value = newIconMap
 }
 
+val appListAuthAbnormalFlow = MutableStateFlow(false)
+
 fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO) {
     val newAppMap = HashMap<String, AppInfo>()
     val newIconMap = HashMap<String, Drawable>()
@@ -168,7 +171,12 @@ fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO
     }
     val mayAuthDenied = newAppMap.count { !it.value.isSystem } <= 4
     canQueryPkgState.updateAndGet()
+    appListAuthAbnormalFlow.value = canQueryPkgState.value && mayAuthDenied
     if (!canQueryPkgState.value || mayAuthDenied) {
+        LogUtils.d(
+            "updateAllAppInfo",
+            "mayAuthDenied=$mayAuthDenied, newAppMap.size=${newAppMap.size}"
+        )
         val pkgList2 = shizukuContextFlow.value.packageManager?.getInstalledPackages(PKG_FLAGS)
         if (!pkgList2.isNullOrEmpty()) {
             pkgList2.forEach { pkgInfo ->

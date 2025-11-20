@@ -65,6 +65,7 @@ import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.autoFocus
+import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
@@ -74,6 +75,7 @@ import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.SafeR
+import li.songe.gkd.util.appListAuthAbnormalFlow
 import li.songe.gkd.util.getUpDownTransform
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.switchItem
@@ -160,6 +162,19 @@ fun useAppListPage(): ScaffoldExt {
                     }
                 }
             }, actions = {
+                if (appListAuthAbnormalFlow.collectAsState().value) {
+                    PerfIconButton(
+                        imageVector = PerfIcon.WarningAmber,
+                        contentDescription = canQueryPkgState.name + "异常",
+                        tint = MaterialTheme.colorScheme.error,
+                        onClick = throttle {
+                            mainVm.dialogFlow.updateDialogOptions(
+                                title = "权限异常",
+                                text = "检测到已授予「${canQueryPkgState.name}」但实际获取用户应用数量稀少\n\n在应用列表下拉刷新可重新获取，若无法解决可尝试关闭权限后重新授予或重启设备"
+                            )
+                        },
+                    )
+                }
                 PerfIconButton(
                     imageVector = PerfIcon.Block,
                     contentDescription = "切换白名单编辑模式",

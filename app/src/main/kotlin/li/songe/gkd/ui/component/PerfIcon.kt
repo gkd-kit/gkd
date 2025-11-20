@@ -82,6 +82,7 @@ fun PerfIconButton(
     colors: IconButtonColors = IconButtonDefaults.iconButtonColors(),
     contentDescription: String? = getDefaultDesc(imageVector),
     onClickLabel: String? = null,
+    tint: Color = LocalContentColor.current,
 ) = IconButton(
     modifier = modifier.semantics {
         if (onClickLabel != null) {
@@ -95,6 +96,7 @@ fun PerfIconButton(
     PerfIcon(
         imageVector = imageVector,
         contentDescription = contentDescription,
+        tint = tint,
     )
 }
 
