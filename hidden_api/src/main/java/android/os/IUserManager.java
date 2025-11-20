@@ -2,9 +2,6 @@ package android.os;
 
 import android.content.pm.UserInfo;
 
-import androidx.annotation.DeprecatedSinceApi;
-import androidx.annotation.RequiresApi;
-
 import java.util.List;
 
 /**
@@ -17,9 +14,9 @@ public interface IUserManager extends IInterface {
         }
     }
 
-    @DeprecatedSinceApi(api = Build.VERSION_CODES.R, message = "NoSuchMethodError")
+    // android8 - android10, android-16.0.0_r3
     List<UserInfo> getUsers(boolean excludeDying);
 
-    @RequiresApi(Build.VERSION_CODES.R)
+    // android11 - android-16.0.0_r2
     List<UserInfo> getUsers(boolean excludePartial, boolean excludeDying, boolean excludePreCreated);
 }
