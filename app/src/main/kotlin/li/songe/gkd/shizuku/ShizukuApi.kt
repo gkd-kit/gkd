@@ -23,6 +23,7 @@ import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
+import java.lang.reflect.Method
 
 inline fun <T> safeInvokeMethod(
     block: () -> T
@@ -43,11 +44,16 @@ fun getStubService(name: String, condition: Boolean): ShizukuBinderWrapper? {
     return ShizukuBinderWrapper(service)
 }
 
+private fun Method.simpleString(): String {
+    return "${name}(${parameterTypes.joinToString(",") { it.name }}):${returnType.name}"
+}
+
 fun Class<*>.detectHiddenMethod(
     methodName: String,
     vararg args: Pair<Int, List<Class<*>>>,
 ): Int {
-    declaredMethods.forEach { method ->
+    val methodsVal = methods
+    methodsVal.forEach { method ->
         if (method.name == methodName) {
             val types = method.parameterTypes.toList()
             args.forEach { (value, argTypes) ->
@@ -57,7 +63,13 @@ fun Class<*>.detectHiddenMethod(
             }
         }
     }
-    throw NoSuchMethodException()
+    val result = methodsVal.filter { it.name == methodName }
+    if (result.isEmpty()) {
+        throw NoSuchMethodException("${name}::${methodName} not found")
+    } else {
+        LogUtils.d("detectHiddenMethod", *result.map { it.simpleString() }.toTypedArray())
+        throw NoSuchMethodException("${name}::${methodName} not match")
+    }
 }
 
 class ShizukuContext(
