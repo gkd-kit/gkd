@@ -2,56 +2,12 @@ package li.songe.gkd.ui.component
 
 import androidx.annotation.DrawableRes
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
-import androidx.compose.material.icons.filled.Android
-import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.Autorenew
-import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.CenterFocusWeak
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Memory
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.UnfoldMore
-import androidx.compose.material.icons.filled.WarningAmber
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Api
-import androidx.compose.material.icons.outlined.ArrowDownward
-import androidx.compose.material.icons.outlined.AutoMode
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Eco
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Equalizer
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Image
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Layers
-import androidx.compose.material.icons.outlined.LightMode
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.RocketLaunch
-import androidx.compose.material.icons.outlined.Save
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.TextFields
-import androidx.compose.material.icons.outlined.Title
-import androidx.compose.material.icons.outlined.ToggleOff
-import androidx.compose.material.icons.outlined.ToggleOn
-import androidx.compose.material.icons.outlined.VerifiedUser
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonColors
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LocalContentColor
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -66,12 +22,21 @@ fun PerfIcon(
     modifier: Modifier = Modifier,
     tint: Color = LocalContentColor.current,
     contentDescription: String? = getDefaultDesc(imageVector),
-) = Icon(
-    imageVector = imageVector,
-    modifier = modifier,
-    contentDescription = contentDescription,
-    tint = tint
-)
+) = TooltipBox(
+    tooltip = { PlainTooltip { Text(text = contentDescription.orEmpty()) } },
+    state = rememberTooltipState(),
+    enableUserInput = !contentDescription.isNullOrEmpty(),
+    positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+        TooltipAnchorPosition.Start
+    )
+) {
+    Icon(
+        imageVector = imageVector,
+        modifier = modifier,
+        contentDescription = contentDescription,
+        tint = tint
+    )
+}
 
 @Composable
 fun PerfIconButton(
@@ -106,12 +71,21 @@ fun PerfIcon(
     modifier: Modifier = Modifier,
     tint: Color = LocalContentColor.current,
     contentDescription: String? = null,
-) = Icon(
-    painter = painterResource(id),
-    modifier = modifier,
-    contentDescription = contentDescription,
-    tint = tint
-)
+) = TooltipBox(
+    tooltip = { PlainTooltip { Text(text = contentDescription.orEmpty()) } },
+    state = rememberTooltipState(),
+    enableUserInput = !contentDescription.isNullOrEmpty(),
+    positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+        TooltipAnchorPosition.Start
+    )
+) {
+    Icon(
+        painter = painterResource(id),
+        modifier = modifier,
+        contentDescription = contentDescription,
+        tint = tint
+    )
+}
 
 @Composable
 fun PerfIconButton(

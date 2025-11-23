@@ -4,8 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,12 +23,21 @@ fun AnimatedIcon(
         animation,
         atEnd,
     )
-    Icon(
-        modifier = modifier,
-        painter = painter,
-        contentDescription = contentDescription,
-        tint = tint,
-    )
+    TooltipBox(
+        tooltip = { PlainTooltip { Text(text = contentDescription.orEmpty()) } },
+        state = rememberTooltipState(),
+        enableUserInput = !contentDescription.isNullOrEmpty(),
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+            TooltipAnchorPosition.Start
+        )
+    ) {
+        Icon(
+            modifier = modifier,
+            painter = painter,
+            contentDescription = contentDescription,
+            tint = tint,
+        )
+    }
 }
 
 private fun getIconDesc(@DrawableRes id: Int, atEnd: Boolean): String? = when (id) {
