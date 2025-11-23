@@ -331,6 +331,7 @@ fun AdvancedPage() {
                         .iconTextSize(textStyle = MaterialTheme.typography.titleSmall),
                     imageVector = PerfIcon.Api,
                     tint = MaterialTheme.colorScheme.primary,
+                    contentDescription = "Shizuku 状态",
                 )
             }
             val shizukuGranted by shizukuGrantedState.stateFlow.collectAsState()
@@ -532,6 +533,7 @@ fun AdvancedPage() {
                         PerfIcon(
                             modifier = Modifier.size(20.dp),
                             id = SafeR.ic_page_info,
+                            contentDescription = "截屏快照设置",
                         )
                     }
                 },

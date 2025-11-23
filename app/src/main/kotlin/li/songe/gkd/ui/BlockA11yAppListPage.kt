@@ -269,9 +269,8 @@ fun BlockA11yAppListPage() {
                 onClick = {
                     editable = !editable
                 },
-                content = {
-                    PerfIcon(imageVector = PerfIcon.Edit)
-                }
+                imageVector = PerfIcon.Edit,
+                contentDescription = "编辑白名单文本"
             )
         },
     ) { contentPadding ->

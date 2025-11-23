@@ -277,12 +277,11 @@ fun useAppListPage(): ScaffoldExt {
         floatingActionButton = {
             AnimationFloatingActionButton(
                 visible = editWhiteListMode,
+                contentDescription = "编辑白名单",
                 onClick = {
                     mainVm.navigatePage(EditBlockAppListPageDestination)
                 },
-                content = {
-                    PerfIcon(imageVector = PerfIcon.Edit, contentDescription = "编辑白名单")
-                }
+                imageVector = PerfIcon.Edit,
             )
         }
     ) { contentPadding ->

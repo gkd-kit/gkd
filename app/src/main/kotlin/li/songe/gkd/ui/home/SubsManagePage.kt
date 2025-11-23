@@ -408,12 +408,9 @@ fun useSubsManagePage(): ScaffoldExt {
                             mainVm.addOrModifySubs(url)
                         }
                     }
-                }
-            ) {
-                PerfIcon(
-                    imageVector = PerfIcon.Add,
-                )
-            }
+                },
+                imageVector = PerfIcon.Add,
+            )
         },
     ) { contentPadding ->
         val lazyListState = rememberLazyListState()

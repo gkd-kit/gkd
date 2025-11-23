@@ -287,7 +287,8 @@ private fun IconTextCard(
                 .background(MaterialTheme.colorScheme.primaryContainer)
                 .padding(8.dp)
                 .size(24.dp),
-            tint = MaterialTheme.colorScheme.primary
+            tint = MaterialTheme.colorScheme.primary,
+            contentDescription = null,
         )
         Spacer(modifier = Modifier.width(itemHorizontalPadding))
         content()

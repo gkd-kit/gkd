@@ -257,11 +257,8 @@ fun SubsAppGroupListPage(
                         )
                     )
                 },
-                content = {
-                    PerfIcon(
-                        imageVector = PerfIcon.Add,
-                    )
-                }
+                contentDescription = "添加规则",
+                imageVector = PerfIcon.Add,
             )
         }
     }) { contentPadding ->

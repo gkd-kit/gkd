@@ -24,6 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import li.songe.gkd.ui.component.PerfTooltipBox
 
 private fun Animatable<Float, AnimationVector1D>.calc(start: Float, end: Float): Float {
     return start + (end - start) * value
@@ -33,7 +34,25 @@ private fun Animatable<Float, AnimationVector1D>.calc(start: Float, end: Float):
 fun BackCloseIcon(
     backOrClose: Boolean,
     modifier: Modifier = Modifier,
+    contentDescription: String = if (backOrClose) "返回" else "关闭",
     tint: Color = LocalContentColor.current
+) = PerfTooltipBox(
+    tooltipText = contentDescription,
+) {
+    InnerBackCloseIcon(
+        backOrClose = backOrClose,
+        modifier = modifier,
+        contentDescription = contentDescription,
+        tint = tint,
+    )
+}
+
+@Composable
+fun InnerBackCloseIcon(
+    backOrClose: Boolean,
+    modifier: Modifier,
+    contentDescription: String,
+    tint: Color,
 ) {
     // https://codepen.io/lisonge/pen/WbNEoPR
     val percent = remember { Animatable(if (backOrClose) 1f else 0f) }
@@ -48,7 +67,7 @@ fun BackCloseIcon(
         modifier = modifier
             .size(24.dp)
             .semantics {
-                this.contentDescription = if (backOrClose) "返回" else "关闭"
+                this.contentDescription = contentDescription
                 this.role = Role.Image
             },
     ) {

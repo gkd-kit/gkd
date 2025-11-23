@@ -220,19 +220,20 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
         },
         floatingActionButton = {
             if (editable) {
-                AnimationFloatingActionButton(visible = !isSelectedMode, onClick = {
-                    mainVm.navigatePage(
-                        UpsertRuleGroupPageDestination(
-                            subsId = subsItemId,
-                            groupKey = null,
-                            appId = null,
+                AnimationFloatingActionButton(
+                    visible = !isSelectedMode,
+                    onClick = {
+                        mainVm.navigatePage(
+                            UpsertRuleGroupPageDestination(
+                                subsId = subsItemId,
+                                groupKey = null,
+                                appId = null,
+                            )
                         )
-                    )
-                }) {
-                    PerfIcon(
-                        imageVector = PerfIcon.Add,
-                    )
-                }
+                    },
+                    imageVector = PerfIcon.Add,
+                    contentDescription = "添加规则"
+                )
             }
         },
     ) { paddingValues ->

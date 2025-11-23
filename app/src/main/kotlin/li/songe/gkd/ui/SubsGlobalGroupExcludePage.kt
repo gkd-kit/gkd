@@ -272,9 +272,8 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                 onClick = {
                     editable = !editable
                 },
-                content = {
-                    PerfIcon(imageVector = PerfIcon.Edit)
-                }
+                imageVector = PerfIcon.Edit,
+                contentDescription = "编辑禁用名单"
             )
         }
     ) { contentPadding ->

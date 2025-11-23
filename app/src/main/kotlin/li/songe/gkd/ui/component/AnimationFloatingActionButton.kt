@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
@@ -24,12 +25,12 @@ private const val elevationDurationMillis = 50
 
 @Composable
 fun AnimationFloatingActionButton(
-    modifier: Modifier = Modifier,
-    onClickLabel: String? = null,
-    contentDescription: String? = null,
     visible: Boolean,
     onClick: () -> Unit,
-    content: @Composable () -> Unit,
+    imageVector: ImageVector,
+    modifier: Modifier = Modifier,
+    onClickLabel: String? = null,
+    contentDescription: String? = getIconDefaultDesc(imageVector),
 ) {
     val density = LocalDensity.current
     val maxTranslationX = remember(density.density) { density.run { 24.dp.toPx() } }
@@ -63,23 +64,27 @@ fun AnimationFloatingActionButton(
         }
     }
     if (innerVisible) {
-        FloatingActionButton(
-            modifier = modifier
-                .graphicsLayer(
-                    alpha = percent.value,
-                    translationX = (1f - percent.value) * maxTranslationX
-                )
-                .semantics {
-                    if (contentDescription != null) {
-                        this.contentDescription = contentDescription
-                    }
-                    if (onClickLabel != null) {
-                        this.onClick(label = onClickLabel, action = null)
-                    }
+        PerfTooltipBox(contentDescription) {
+            FloatingActionButton(
+                modifier = modifier
+                    .graphicsLayer(
+                        alpha = percent.value,
+                        translationX = (1f - percent.value) * maxTranslationX
+                    )
+                    .semantics {
+                        if (contentDescription != null) {
+                            this.contentDescription = contentDescription
+                        }
+                        if (onClickLabel != null) {
+                            this.onClick(label = onClickLabel, action = null)
+                        }
+                    },
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = (defaultElevation.value * 6f).dp),
+                onClick = throttle(onClick),
+                content = {
+                    PerfIcon(imageVector = imageVector, contentDescription = null)
                 },
-            elevation = FloatingActionButtonDefaults.elevation(defaultElevation = (defaultElevation.value * 6f).dp),
-            onClick = throttle(onClick),
-            content = content,
-        )
+            )
+        }
     }
 }

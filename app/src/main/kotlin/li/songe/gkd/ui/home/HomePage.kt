@@ -75,6 +75,7 @@ fun HomePage() {
                         icon = {
                             PerfIcon(
                                 imageVector = page.navItem.icon,
+                                contentDescription = null,
                             )
                         },
                         label = {

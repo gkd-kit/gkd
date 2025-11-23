@@ -276,9 +276,8 @@ fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
                         )
                     )
                 },
-                content = {
-                    PerfIcon(imageVector = PerfIcon.Add)
-                }
+                imageVector = PerfIcon.Add,
+                contentDescription = "添加规则"
             )
         },
     ) { contentPadding ->

@@ -83,7 +83,10 @@ fun SettingItem(
             }
         }
         if (imageVector != null) {
-            PerfIcon(imageVector = imageVector)
+            PerfIcon(
+                imageVector = imageVector,
+                contentDescription = null,
+            )
         }
     }
 }
