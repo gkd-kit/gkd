@@ -33,7 +33,7 @@ data class ActionLog(
 
     val showActivityId by lazy { getShowActivityId(appId, activityId) }
 
-    val date by lazy { ctime.format("HH:mm:ss SSS") }
+    val date by lazy { ctime.format("MM-dd HH:mm:ss SSS") }
 
     @DeleteTable.Entries(
         DeleteTable(tableName = "click_log")
