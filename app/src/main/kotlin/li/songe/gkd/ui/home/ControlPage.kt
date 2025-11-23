@@ -84,6 +84,7 @@ fun useControlPage(): ScaffoldExt {
                 PerfIconButton(
                     imageVector = PerfIcon.RocketLaunch,
                     onClickLabel = "前往无障碍授权页面",
+                    contentDescription = "无障碍授权",
                     onClick = throttle {
                         mainVm.navigatePage(AuthA11YPageDestination)
                     },
