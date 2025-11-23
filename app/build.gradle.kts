@@ -25,25 +25,6 @@ val gitInfo = GitInfo(
     tagName = runCatching { "git describe --tags --exact-match".runCommand() }.getOrNull(),
 )
 
-val debugSuffixPairList by lazy {
-    javax.xml.parsers.DocumentBuilderFactory
-        .newInstance()
-        .newDocumentBuilder()
-        .parse(file("$projectDir/src/main/res/values/strings.xml"))
-        .documentElement.getElementsByTagName("string").run {
-            (0 until length).mapNotNull { i ->
-                val node = item(i)
-                if (node.attributes.getNamedItem("debug_suffix") != null) {
-                    val key = node.attributes.getNamedItem("name").nodeValue
-                    val value = node.textContent
-                    key to value
-                } else {
-                    null
-                }
-            }
-        }
-}
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.androidx.room)
@@ -110,11 +91,6 @@ android {
     }
 
     buildTypes {
-        all {
-            if (gitInfo.tagName == null) {
-                versionNameSuffix = "-${gitInfo.commitId.take(7)}"
-            }
-        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -123,14 +99,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            if (gitInfo.tagName == null) {
+                versionNameSuffix = "-${gitInfo.commitId.take(7)}"
+            }
         }
         debug {
             signingConfig = gkdSigningConfig
             applicationIdSuffix = ".debug"
             resValue("color", "better_black", "#FF5D92")
-            debugSuffixPairList.onEach { (key, value) ->
-                resValue("string", key, "$value-debug")
-            }
         }
     }
     productFlavors {

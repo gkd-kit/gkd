@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GKD-debug</string>
+    <string name="import_data">导入数据-debug</string>
+    <string name="capture_snapshot">捕获快照-debug</string>
+    <string name="http_server">HTTP服务-debug</string>
+    <string name="snapshot_button">快照按钮-debug</string>
+    <string name="rule_match">规则匹配-debug</string>
+    <string name="record_activity">界面服务-debug</string>
+    <string name="record_a11y_event">事件服务-debug</string>
+</resources>
