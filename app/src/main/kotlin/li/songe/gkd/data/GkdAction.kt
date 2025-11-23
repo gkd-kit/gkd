@@ -187,6 +187,50 @@ sealed class ActionPerformer(val action: String) {
         }
     }
 
+    data object SwipeUp : ActionPerformer("swipeUp") {
+        override fun perform(
+            node: AccessibilityNodeInfo,
+            position: RawSubscription.Position?,
+        ): ActionResult {
+            val screenWidth = ScreenUtils.getScreenWidth().toFloat()
+            val screenHeight = ScreenUtils.getScreenHeight().toFloat()
+            val startX = screenWidth / 2f
+            val startY = screenHeight * 0.8f
+            val endX = screenWidth / 2f
+            val endY = screenHeight * 0.2f
+            val duration = 500L
+            val gestureDescription = GestureDescription.Builder()
+            val path = Path()
+            path.moveTo(startX, startY)
+            path.lineTo(endX, endY)
+            gestureDescription.addStroke(GestureDescription.StrokeDescription(path, 0, duration))
+            service.dispatchGesture(gestureDescription.build(), null, null)
+            return ActionResult(action, true)
+        }
+    }
+
+    data object SwipeDown : ActionPerformer("swipeDown") {
+        override fun perform(
+            node: AccessibilityNodeInfo,
+            position: RawSubscription.Position?,
+        ): ActionResult {
+            val screenWidth = ScreenUtils.getScreenWidth().toFloat()
+            val screenHeight = ScreenUtils.getScreenHeight().toFloat()
+            val startX = screenWidth / 2f
+            val startY = screenHeight * 0.2f
+            val endX = screenWidth / 2f
+            val endY = screenHeight * 0.8f
+            val duration = 500L
+            val gestureDescription = GestureDescription.Builder()
+            val path = Path()
+            path.moveTo(startX, startY)
+            path.lineTo(endX, endY)
+            gestureDescription.addStroke(GestureDescription.StrokeDescription(path, 0, duration))
+            service.dispatchGesture(gestureDescription.build(), null, null)
+            return ActionResult(action, true)
+        }
+    }
+
     data object None : ActionPerformer("none") {
         override fun perform(
             node: AccessibilityNodeInfo,
@@ -209,7 +253,9 @@ sealed class ActionPerformer(val action: String) {
                 LongClickCenter,
                 LongClick,
                 Back,
-                None
+                None,
+                SwipeUp,
+                SwipeDown
             )
         }
 

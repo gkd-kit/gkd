@@ -508,6 +508,7 @@ data class RawSubscription(
         override val versionCode: IntegerMatcher?,
         override val versionName: StringMatcher?,
         val ignoreGlobalGroupMatch: Boolean?,
+        val action: String?,
     ) : RawGroupProps, RawAppRuleProps {
         override val cacheMap by lazy { HashMap<String, Selector?>() }
         override val errorDesc by lazy { getErrorDesc() }
@@ -826,6 +827,7 @@ data class RawSubscription(
             return RawAppGroup(
                 activityIds = getStringIArray(jsonObject, "activityIds"),
                 excludeActivityIds = getStringIArray(jsonObject, "excludeActivityIds"),
+                action = getString(jsonObject, "action"),
                 actionCd = getLong(jsonObject, "actionCd") ?: getLong(jsonObject, "cd"),
                 actionDelay = getLong(jsonObject, "actionDelay") ?: getLong(jsonObject, "delay"),
                 name = getString(jsonObject, "name") ?: error("miss group name"),
