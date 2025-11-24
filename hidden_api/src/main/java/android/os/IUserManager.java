@@ -14,9 +14,8 @@ public interface IUserManager extends IInterface {
         }
     }
 
-    // android8 - android10, android-16.0.0_r3
+    // https://diff.songe.li/i/IUserManager/getUsers
     List<UserInfo> getUsers(boolean excludeDying);
 
-    // android11 - android-16.0.0_r2
     List<UserInfo> getUsers(boolean excludePartial, boolean excludeDying, boolean excludePreCreated);
 }

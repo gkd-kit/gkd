@@ -17,13 +17,11 @@ public interface IActivityTaskManager extends IInterface {
         }
     }
 
-    // android10 - android11
+    // https://diff.songe.li/i/IActivityTaskManager/getTasks
     List<ActivityManager.RunningTaskInfo> getTasks(int maxNum);
 
-    // android12 - android-13.0.0_r15
     List<ActivityManager.RunningTaskInfo> getTasks(int maxNum, boolean filterOnlyVisibleRecents, boolean keepIntentExtra);
 
-    // android-13.0.0_r16+
     List<ActivityManager.RunningTaskInfo> getTasks(int maxNum, boolean filterOnlyVisibleRecents, boolean keepIntentExtra, int displayId);
 
     void registerTaskStackListener(ITaskStackListener listener);
