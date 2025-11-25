@@ -64,7 +64,7 @@ fun AnimationFloatingActionButton(
         }
     }
     if (innerVisible) {
-        PerfTooltipBox(contentDescription) {
+        TooltipIconButtonBox(contentDescription) {
             FloatingActionButton(
                 modifier = modifier
                     .graphicsLayer(

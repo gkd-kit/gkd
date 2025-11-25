@@ -20,7 +20,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -53,7 +52,7 @@ import li.songe.gkd.data.AppInfo
 import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.store.blockMatchAppListFlow
 import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.component.AnimatedIcon
+import li.songe.gkd.ui.component.AnimatedIconButton
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.AppIcon
@@ -190,23 +189,22 @@ fun useAppListPage(): ScaffoldExt {
                         vm.editWhiteListModeFlow.update { !it }
                     },
                 )
-                IconButton(onClick = throttle {
-                    if (showSearchBar) {
-                        if (vm.searchStrFlow.value.isEmpty()) {
-                            vm.showSearchBarFlow.value = false
+                AnimatedIconButton(
+                    onClick = throttle {
+                        if (showSearchBar) {
+                            if (vm.searchStrFlow.value.isEmpty()) {
+                                vm.showSearchBarFlow.value = false
+                            } else {
+                                vm.searchStrFlow.value = ""
+                            }
                         } else {
-                            vm.searchStrFlow.value = ""
+                            vm.showSearchBarFlow.value = true
                         }
-                    } else {
-                        vm.showSearchBarFlow.value = true
-                    }
-                }) {
-                    AnimatedIcon(
-                        id = SafeR.ic_anim_search_close,
-                        atEnd = showSearchBar,
-                        contentDescription = if (showSearchBar) "关闭搜索" else "搜索应用列表",
-                    )
-                }
+                    },
+                    id = SafeR.ic_anim_search_close,
+                    atEnd = showSearchBar,
+                    contentDescription = if (showSearchBar) "关闭搜索" else "搜索应用列表",
+                )
                 var expanded by remember { mutableStateOf(false) }
                 PerfIconButton(
                     imageVector = PerfIcon.Sort,

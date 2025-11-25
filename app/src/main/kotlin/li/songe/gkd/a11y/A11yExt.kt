@@ -4,7 +4,6 @@ import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityService.ScreenshotResult
 import android.accessibilityservice.AccessibilityService.TakeScreenshotCallback
 import android.content.ComponentName
-import android.database.ContentObserver
 import android.graphics.Bitmap
 import android.provider.Settings
 import android.view.Display
@@ -13,6 +12,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import li.songe.gkd.app
+import li.songe.gkd.contentObserver
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.OnSimpleLife
@@ -25,18 +25,15 @@ import kotlin.coroutines.suspendCoroutine
 context(context: OnSimpleLife)
 fun useEnabledA11yServicesFlow(): StateFlow<Set<ComponentName>> {
     val stateFlow = MutableStateFlow(app.getSecureA11yServices())
-    val contextObserver = object : ContentObserver(null) {
-        override fun onChange(selfChange: Boolean) {
-            stateFlow.value = app.getSecureA11yServices()
-        }
+    val contextObserver = contentObserver {
+        stateFlow.value = app.getSecureA11yServices()
     }
-    app.contentResolver.registerContentObserver(
+    app.registerObserver(
         Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),
-        false,
         contextObserver
     )
     context.onDestroyed {
-        app.contentResolver.unregisterContentObserver(contextObserver)
+        app.unregisterObserver(contextObserver)
     }
     return stateFlow
 }

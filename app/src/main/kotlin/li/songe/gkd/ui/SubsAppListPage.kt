@@ -12,7 +12,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -39,7 +38,7 @@ import li.songe.gkd.MainActivity
 import li.songe.gkd.data.AppConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.component.AnimatedIcon
+import li.songe.gkd.ui.component.AnimatedIconButton
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.PerfIcon
@@ -124,22 +123,21 @@ fun SubsAppListPage(
                     )
                 }
             }, actions = {
-                IconButton(onClick = {
-                    if (showSearchBar) {
-                        if (vm.searchStrFlow.value.isEmpty()) {
-                            showSearchBar = false
+                AnimatedIconButton(
+                    onClick = {
+                        if (showSearchBar) {
+                            if (vm.searchStrFlow.value.isEmpty()) {
+                                showSearchBar = false
+                            } else {
+                                vm.searchStrFlow.value = ""
+                            }
                         } else {
-                            vm.searchStrFlow.value = ""
+                            showSearchBar = true
                         }
-                    } else {
-                        showSearchBar = true
-                    }
-                }) {
-                    AnimatedIcon(
-                        id = SafeR.ic_anim_search_close,
-                        atEnd = showSearchBar,
-                    )
-                }
+                    },
+                    id = SafeR.ic_anim_search_close,
+                    atEnd = showSearchBar,
+                )
                 PerfIconButton(
                     imageVector = PerfIcon.Sort,
                     onClick = {

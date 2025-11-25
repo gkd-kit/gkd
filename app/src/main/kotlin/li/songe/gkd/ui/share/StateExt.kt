@@ -1,13 +1,16 @@
 package li.songe.gkd.ui.share
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import kotlinx.coroutines.ExperimentalForInheritanceCoroutinesApi
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
+import li.songe.gkd.util.runMainPost
 
 
 @Composable
@@ -59,4 +62,42 @@ fun <T, S> MutableStateFlow<T>.asMutableStateFlow(
     override suspend fun emit(value: S) = source.emit(setter(value))
     override fun tryEmit(value: S) = source.tryEmit(setter(value))
     override fun resetReplayCache() = source.resetReplayCache()
+}
+
+abstract class UiSharedStateFlow<T> {
+    protected abstract fun getter(): T
+    protected abstract fun onVisible()
+    protected abstract fun onHidden()
+
+    private val stateFlow by lazy { MutableStateFlow(getter()) }
+    private var count = 0
+    private var alive = false
+
+    fun refresh() {
+        stateFlow.value = getter()
+    }
+
+    @Composable
+    fun collectAsState(): State<T> {
+        DisposableEffect(null) {
+            if (count == 0 && !alive) {
+                alive = true
+                onVisible()
+            }
+            count++
+            onDispose {
+                count--
+                if (count == 0) {
+                    runMainPost(1000) {
+                        if (count == 0 && alive) {
+                            alive = false
+                            onHidden()
+                        }
+                    }
+                }
+            }
+        }
+        return stateFlow.collectAsState()
+    }
+
 }

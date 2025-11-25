@@ -66,16 +66,12 @@ fun PerfIcon(
     modifier: Modifier = Modifier,
     tint: Color = LocalContentColor.current,
     contentDescription: String? = getIconDefaultDesc(imageVector),
-) = PerfTooltipBox(
-    tooltipText = contentDescription,
-) {
-    Icon(
-        imageVector = imageVector,
-        modifier = modifier,
-        contentDescription = contentDescription,
-        tint = tint
-    )
-}
+) = Icon(
+    imageVector = imageVector,
+    modifier = modifier,
+    contentDescription = contentDescription,
+    tint = tint
+)
 
 @Composable
 fun PerfIconButton(
@@ -87,21 +83,25 @@ fun PerfIconButton(
     contentDescription: String? = getIconDefaultDesc(imageVector),
     onClickLabel: String? = null,
     tint: Color = LocalContentColor.current,
-) = IconButton(
-    modifier = modifier.semantics {
-        if (onClickLabel != null) {
-            this.onClick(label = onClickLabel, action = null)
-        }
-    },
-    enabled = enabled,
-    onClick = onClick,
-    colors = colors,
+) = TooltipIconButtonBox(
+    contentDescription = contentDescription,
 ) {
-    PerfIcon(
-        imageVector = imageVector,
-        contentDescription = contentDescription,
-        tint = tint,
-    )
+    IconButton(
+        modifier = modifier.semantics {
+            if (onClickLabel != null) {
+                this.onClick(label = onClickLabel, action = null)
+            }
+        },
+        enabled = enabled,
+        onClick = onClick,
+        colors = colors,
+    ) {
+        PerfIcon(
+            imageVector = imageVector,
+            contentDescription = contentDescription,
+            tint = tint,
+        )
+    }
 }
 
 @Composable
@@ -110,16 +110,12 @@ fun PerfIcon(
     modifier: Modifier = Modifier,
     tint: Color = LocalContentColor.current,
     contentDescription: String? = null,
-) = PerfTooltipBox(
-    tooltipText = contentDescription,
-) {
-    Icon(
-        painter = painterResource(id),
-        modifier = modifier,
-        contentDescription = contentDescription,
-        tint = tint
-    )
-}
+) = Icon(
+    painter = painterResource(id),
+    modifier = modifier,
+    contentDescription = contentDescription,
+    tint = tint
+)
 
 @Composable
 fun PerfIconButton(
@@ -130,20 +126,24 @@ fun PerfIconButton(
     colors: IconButtonColors = IconButtonDefaults.iconButtonColors(),
     contentDescription: String? = null,
     onClickLabel: String? = null,
-) = IconButton(
-    modifier = modifier.semantics {
-        if (onClickLabel != null) {
-            this.onClick(label = onClickLabel, action = null)
-        }
-    },
-    enabled = enabled,
-    onClick = onClick,
-    colors = colors,
+) = TooltipIconButtonBox(
+    contentDescription = contentDescription,
 ) {
-    PerfIcon(
-        id = id,
-        contentDescription = contentDescription,
-    )
+    IconButton(
+        modifier = modifier.semantics {
+            if (onClickLabel != null) {
+                this.onClick(label = onClickLabel, action = null)
+            }
+        },
+        enabled = enabled,
+        onClick = onClick,
+        colors = colors,
+    ) {
+        PerfIcon(
+            id = id,
+            contentDescription = contentDescription,
+        )
+    }
 }
 
 fun getIconDefaultDesc(imageVector: ImageVector): String? = when (imageVector) {

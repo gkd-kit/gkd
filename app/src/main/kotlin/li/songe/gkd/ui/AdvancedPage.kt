@@ -68,8 +68,8 @@ import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.shizuku.updateBinderMutex
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AuthCard
-import li.songe.gkd.ui.component.CustomIconButton
 import li.songe.gkd.ui.component.CustomOutlinedTextField
+import li.songe.gkd.ui.component.PerfCustomIconButton
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfSwitch
@@ -523,19 +523,16 @@ fun AdvancedPage() {
                 subtitle = "截屏时保存快照",
                 checked = store.captureScreenshot,
                 suffixIcon = {
-                    CustomIconButton(
+                    PerfCustomIconButton(
                         size = 32.dp,
+                        iconSize = 20.dp,
                         onClickLabel = "打开配置截屏快照弹窗",
                         onClick = throttle {
                             showCaptureScreenshotDlg = true
                         },
-                    ) {
-                        PerfIcon(
-                            modifier = Modifier.size(20.dp),
-                            id = SafeR.ic_page_info,
-                            contentDescription = "截屏快照设置",
-                        )
-                    }
+                        id = SafeR.ic_page_info,
+                        contentDescription = "截屏快照设置",
+                    )
                 },
                 onCheckedChange = {
                     storeFlow.value = store.copy(

@@ -44,7 +44,7 @@ import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.store.blockMatchAppListFlow
 import li.songe.gkd.ui.component.AnimatedBooleanContent
-import li.songe.gkd.ui.component.AnimatedIcon
+import li.songe.gkd.ui.component.AnimatedIconButton
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.AppIcon
@@ -193,22 +193,21 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                         },
                         contentFalse = {
                             Row {
-                                IconButton(onClick = {
-                                    if (showSearchBar) {
-                                        if (searchStr.isEmpty()) {
-                                            showSearchBar = false
+                                AnimatedIconButton(
+                                    onClick = {
+                                        if (showSearchBar) {
+                                            if (searchStr.isEmpty()) {
+                                                showSearchBar = false
+                                            } else {
+                                                searchStr = ""
+                                            }
                                         } else {
-                                            searchStr = ""
+                                            showSearchBar = true
                                         }
-                                    } else {
-                                        showSearchBar = true
-                                    }
-                                }) {
-                                    AnimatedIcon(
-                                        id = SafeR.ic_anim_search_close,
-                                        atEnd = showSearchBar,
-                                    )
-                                }
+                                    },
+                                    id = SafeR.ic_anim_search_close,
+                                    atEnd = showSearchBar,
+                                )
                                 var expanded by remember { mutableStateOf(false) }
                                 PerfIconButton(
                                     imageVector = PerfIcon.Sort,

@@ -49,7 +49,7 @@ import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.store.blockA11yAppListFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AnimatedBooleanContent
-import li.songe.gkd.ui.component.AnimatedIcon
+import li.songe.gkd.ui.component.AnimatedIconButton
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.AppIcon
@@ -199,22 +199,21 @@ fun BlockA11yAppListPage() {
                                 var expanded by remember { mutableStateOf(false) }
                                 AnimatedVisibility(!store.blockA11yAppListFollowMatch) {
                                     Row {
-                                        IconButton(onClick = throttle {
-                                            if (showSearchBar) {
-                                                if (vm.searchStrFlow.value.isEmpty()) {
-                                                    showSearchBar = false
+                                        AnimatedIconButton(
+                                            onClick = throttle {
+                                                if (showSearchBar) {
+                                                    if (vm.searchStrFlow.value.isEmpty()) {
+                                                        showSearchBar = false
+                                                    } else {
+                                                        vm.searchStrFlow.value = ""
+                                                    }
                                                 } else {
-                                                    vm.searchStrFlow.value = ""
+                                                    showSearchBar = true
                                                 }
-                                            } else {
-                                                showSearchBar = true
-                                            }
-                                        }) {
-                                            AnimatedIcon(
-                                                id = SafeR.ic_anim_search_close,
-                                                atEnd = showSearchBar,
-                                            )
-                                        }
+                                            },
+                                            id = SafeR.ic_anim_search_close,
+                                            atEnd = showSearchBar,
+                                        )
                                         PerfIconButton(imageVector = PerfIcon.Sort, onClick = {
                                             expanded = true
                                         })

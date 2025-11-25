@@ -24,7 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import li.songe.gkd.ui.component.PerfTooltipBox
+import li.songe.gkd.ui.component.TooltipIconButtonBox
 
 private fun Animatable<Float, AnimationVector1D>.calc(start: Float, end: Float): Float {
     return start + (end - start) * value
@@ -36,8 +36,8 @@ fun BackCloseIcon(
     modifier: Modifier = Modifier,
     contentDescription: String = if (backOrClose) "返回" else "关闭",
     tint: Color = LocalContentColor.current
-) = PerfTooltipBox(
-    tooltipText = contentDescription,
+) = TooltipIconButtonBox(
+    contentDescription = contentDescription,
 ) {
     InnerBackCloseIcon(
         backOrClose = backOrClose,

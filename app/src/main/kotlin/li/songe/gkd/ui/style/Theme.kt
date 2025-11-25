@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.style
 
+import android.view.accessibility.AccessibilityManager
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -12,6 +13,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -19,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowInsetsControllerCompat
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
@@ -26,6 +29,7 @@ import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.app
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.share.LocalDarkTheme
+import li.songe.gkd.ui.share.LocalIsTalkbackEnabled
 import li.songe.gkd.util.AndroidTarget
 
 private val LightColorScheme = lightColorScheme()
@@ -69,7 +73,23 @@ fun AppTheme(
             }
         }
     }
-    CompositionLocalProvider(LocalDarkTheme provides darkTheme) {
+
+    val isTalkbackEnabledFlow = remember {
+        MutableStateFlow(app.a11yManager.isTouchExplorationEnabled)
+    }
+    DisposableEffect(null) {
+        val listener = AccessibilityManager.TouchExplorationStateChangeListener {
+            isTalkbackEnabledFlow.value = it
+        }
+        app.a11yManager.addTouchExplorationStateChangeListener(listener)
+        onDispose {
+            app.a11yManager.removeTouchExplorationStateChangeListener(listener)
+        }
+    }
+    CompositionLocalProvider(
+        LocalDarkTheme provides darkTheme,
+        LocalIsTalkbackEnabled provides isTalkbackEnabledFlow
+    ) {
         MaterialTheme(
             colorScheme = colorScheme.animation(),
             content = content,

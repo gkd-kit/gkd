@@ -11,9 +11,12 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.database.ContentObserver
+import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.WindowManager
+import android.view.accessibility.AccessibilityManager
 import android.view.inputmethod.InputMethodManager
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.Utils
@@ -78,6 +81,10 @@ data class AppMeta(
 
 val META by lazy { AppMeta() }
 
+fun contentObserver(listener: () -> Unit) = object : ContentObserver(null) {
+    override fun onChange(selfChange: Boolean) = listener()
+}
+
 class App : Application() {
     companion object {
         const val START_WAIT_TIME = 3000L
@@ -92,6 +99,17 @@ class App : Application() {
         if (AndroidTarget.P) {
             HiddenApiBypass.addHiddenApiExemptions("L")
         }
+    }
+
+    fun registerObserver(
+        uri: Uri,
+        observer: ContentObserver
+    ) {
+        contentResolver.registerContentObserver(uri, false, observer)
+    }
+
+    fun unregisterObserver(observer: ContentObserver) {
+        contentResolver.unregisterContentObserver(observer)
     }
 
     fun getSecureString(name: String): String? = Settings.Secure.getString(contentResolver, name)
@@ -152,6 +170,7 @@ class App : Application() {
     val keyguardManager by lazy { app.getSystemService(KEYGUARD_SERVICE) as KeyguardManager }
     val clipboardManager by lazy { app.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager }
     val powerManager by lazy { getSystemService(POWER_SERVICE) as PowerManager }
+    val a11yManager by lazy { getSystemService(ACCESSIBILITY_SERVICE) as AccessibilityManager }
 
     override fun onCreate() {
         super.onCreate()

@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.component
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -20,7 +21,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun CustomIconButton(
+private fun CustomIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onClickLabel: String? = null,
@@ -48,5 +49,29 @@ fun CustomIconButton(
     ) {
         val contentColor = colors.run { if (enabled) contentColor else disabledContentColor }
         CompositionLocalProvider(LocalContentColor provides contentColor, content = content)
+    }
+}
+
+@Composable
+fun PerfCustomIconButton(
+    onClick: () -> Unit,
+    size: Dp,
+    iconSize: Dp,
+    onClickLabel: String? = null,
+    @DrawableRes id: Int,
+    contentDescription: String? = null,
+) = TooltipIconButtonBox(
+    contentDescription = contentDescription,
+) {
+    CustomIconButton(
+        size = size,
+        onClickLabel = onClickLabel,
+        onClick = onClick,
+    ) {
+        PerfIcon(
+            modifier = Modifier.size(iconSize),
+            id = id,
+            contentDescription = contentDescription,
+        )
     }
 }

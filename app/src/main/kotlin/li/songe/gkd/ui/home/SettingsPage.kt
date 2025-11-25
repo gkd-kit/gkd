@@ -66,9 +66,9 @@ import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.component.CustomIconButton
 import li.songe.gkd.ui.component.CustomOutlinedTextField
 import li.songe.gkd.ui.component.FullscreenDialog
+import li.songe.gkd.ui.component.PerfCustomIconButton
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
@@ -347,17 +347,14 @@ fun useSettingsPage(): ScaffoldExt {
                     showToastInputDlg = true
                 },
                 suffixIcon = {
-                    CustomIconButton(
+                    PerfCustomIconButton(
                         size = 32.dp,
+                        iconSize = 20.dp,
                         onClickLabel = "打开提示设置弹窗",
                         onClick = throttle { showToastSettingsDlg = true },
-                    ) {
-                        PerfIcon(
-                            modifier = Modifier.size(20.dp),
-                            id = SafeR.ic_page_info,
-                            contentDescription = "提示设置",
-                        )
-                    }
+                        id = SafeR.ic_page_info,
+                        contentDescription = "提示设置",
+                    )
                 },
                 onCheckedChange = {
                     storeFlow.value = store.copy(
