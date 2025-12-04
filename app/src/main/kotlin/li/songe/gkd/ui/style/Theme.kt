@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -71,6 +72,10 @@ fun AppTheme(
             WindowInsetsControllerCompat(activity.window, activity.window.decorView).apply {
                 isAppearanceLightStatusBars = !darkTheme
             }
+        }
+        val bg = colorScheme.background.toArgb()
+        LaunchedEffect(darkTheme, bg) {
+            activity.window.decorView.setBackgroundColor(bg)
         }
     }
 
