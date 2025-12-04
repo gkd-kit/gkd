@@ -23,8 +23,4 @@ public class AppOpsManagerHidden {
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public static int OP_FOREGROUND_SERVICE_SPECIAL_USE;
-
-    public static String opToPublicName(int op) {
-        throw new RuntimeException("Stub");
-    }
 }
