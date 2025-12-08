@@ -1,14 +1,7 @@
 <resources>
 
-    <style name="AppTheme" parent="android:Theme.Material.NoActionBar" />
+    <style name="AppTheme" parent="AppNightTheme" />
 
-    <style name="SplashScreenTheme" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenAnimatedIcon">
-            @mipmap/gkd_white
-        </item>
-        <item name="windowSplashScreenAnimationDuration">1000</item>
-        <!-- postSplashScreenTheme must invoke installSplashScreen -->
-        <item name="postSplashScreenTheme">@style/AppTheme</item>
-    </style>
+    <style name="SplashScreenTheme" parent="SplashScreenNightTheme" />
 
 </resources>

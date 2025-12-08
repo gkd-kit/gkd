@@ -1,16 +1,23 @@
 <resources>
 
-    <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
+    <style name="AppLightTheme" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@android:color/transparent</item>
     </style>
 
-    <style name="SplashScreenTheme" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenAnimatedIcon">
-            @mipmap/gkd_black
-        </item>
+    <style name="AppNightTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+    </style>
+
+    <style name="SplashScreenLightTheme" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/gkd_black</item>
         <item name="windowSplashScreenAnimationDuration">1000</item>
-        <!-- postSplashScreenTheme must invoke installSplashScreen -->
-        <item name="postSplashScreenTheme">@style/AppTheme</item>
+        <item name="postSplashScreenTheme">@style/AppLightTheme</item>
+    </style>
+
+    <style name="SplashScreenNightTheme" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/gkd_white</item>
+        <item name="windowSplashScreenAnimationDuration">1000</item>
+        <item name="postSplashScreenTheme">@style/AppNightTheme</item>
     </style>
 
     <style name="TransparentTheme">
@@ -18,5 +25,9 @@
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:colorBackgroundCacheHint">@null</item>
     </style>
+
+    <style name="AppTheme" parent="AppLightTheme" />
+
+    <style name="SplashScreenTheme" parent="SplashScreenLightTheme" />
 
 </resources>
