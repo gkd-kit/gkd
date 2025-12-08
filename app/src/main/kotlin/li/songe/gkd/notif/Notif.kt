@@ -13,6 +13,7 @@ import androidx.core.net.toUri
 import kotlinx.atomicfu.atomic
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
+import li.songe.gkd.R
 import li.songe.gkd.app
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.service.ActivityService
@@ -21,7 +22,6 @@ import li.songe.gkd.service.EventService
 import li.songe.gkd.service.HttpService
 import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.componentName
 import kotlin.reflect.KClass
 
@@ -31,7 +31,7 @@ private val pendingIntentReqId = atomic(0)
 data class Notif(
     val channel: NotifChannel = NotifChannel.Default,
     val id: Int,
-    val smallIcon: Int = SafeR.ic_status,
+    val smallIcon: Int = R.drawable.ic_status,
     val title: String,
     val text: String? = null,
     val ongoing: Boolean = true,

@@ -60,6 +60,7 @@ import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
+import li.songe.gkd.R
 import li.songe.gkd.data.Value
 import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
@@ -77,7 +78,6 @@ import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
-import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.UpdateTimeOption
 import li.songe.gkd.util.checkSubsUpdate
@@ -276,7 +276,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                 storeFlow.mapState(scope) { s -> s.enableMatch }
                             }.collectAsState()
                             PerfIconButton(
-                                id = if (enableMatch) SafeR.ic_flash_on else SafeR.ic_flash_off,
+                                id = if (enableMatch) R.drawable.ic_flash_on else R.drawable.ic_flash_on,
                                 colors = IconButtonDefaults.iconButtonColors(
                                     contentColor = if (!enableMatch) {
                                         CheckboxDefaults.colors().checkedBoxColor
@@ -289,7 +289,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                 onClick = throttle { switchStoreEnableMatch() },
                             )
                             PerfIconButton(
-                                id = SafeR.ic_page_info,
+                                id = R.drawable.ic_page_info,
                                 contentDescription = "订阅设置",
                                 onClickLabel = "打开设置弹窗",
                                 onClick = {

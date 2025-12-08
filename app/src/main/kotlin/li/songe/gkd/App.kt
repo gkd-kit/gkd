@@ -30,7 +30,6 @@ import li.songe.gkd.shizuku.initShizuku
 import li.songe.gkd.store.initStore
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.PKG_FLAGS
-import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initSubsState
 import li.songe.gkd.util.initToast
@@ -69,7 +68,7 @@ data class AppMeta(
     val versionCode: Int = selfAppInfo.versionCode,
     val versionName: String = selfAppInfo.versionName!!,
     val appId: String = app.packageName!!,
-    val appName: String = app.getString(SafeR.app_name)
+    val appName: String = app.getString(R.string.app_name)
 ) {
     val commitUrl = "https://github.com/gkd-kit/gkd/".run {
         plus(if (tagName != null) "tree/$tagName" else "commit/$commitId")

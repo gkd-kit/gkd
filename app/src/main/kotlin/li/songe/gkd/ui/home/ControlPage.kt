@@ -41,6 +41,7 @@ import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDest
 import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
 import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import li.songe.gkd.MainActivity
+import li.songe.gkd.R
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
@@ -61,7 +62,6 @@ import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
 import li.songe.gkd.util.HOME_PAGE_URL
-import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.latestRecordDescFlow
 import li.songe.gkd.util.latestRecordFlow
 import li.songe.gkd.util.launchAsFn
@@ -79,7 +79,7 @@ fun useControlPage(): ScaffoldExt {
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             PerfTopAppBar(scrollBehavior = scrollBehavior, title = {
-                Text(text = stringResource(SafeR.app_name))
+                Text(text = stringResource(R.string.app_name))
             }, actions = {
                 PerfIconButton(
                     imageVector = PerfIcon.RocketLaunch,

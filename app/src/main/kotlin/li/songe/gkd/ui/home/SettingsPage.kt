@@ -57,6 +57,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
+import li.songe.gkd.R
 import li.songe.gkd.app
 import li.songe.gkd.permission.ignoreBatteryOptimizationsState
 import li.songe.gkd.permission.requiredPermission
@@ -85,7 +86,6 @@ import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.DarkThemeOption
-import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.mapState
@@ -352,7 +352,7 @@ fun useSettingsPage(): ScaffoldExt {
                         iconSize = 20.dp,
                         onClickLabel = "打开提示设置弹窗",
                         onClick = throttle { showToastSettingsDlg = true },
-                        id = SafeR.ic_page_info,
+                        id = R.drawable.ic_page_info,
                         contentDescription = "提示设置",
                     )
                 },

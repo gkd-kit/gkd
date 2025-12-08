@@ -44,6 +44,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
+import li.songe.gkd.R
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.store.blockA11yAppListFlow
@@ -77,7 +78,6 @@ import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.AppListString
 import li.songe.gkd.util.AppSortOption
-import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.mapState
 import li.songe.gkd.util.switchItem
@@ -211,7 +211,7 @@ fun BlockA11yAppListPage() {
                                                     showSearchBar = true
                                                 }
                                             },
-                                            id = SafeR.ic_anim_search_close,
+                                            id = R.drawable.ic_anim_search_close,
                                             atEnd = showSearchBar,
                                         )
                                         PerfIconButton(imageVector = PerfIcon.Sort, onClick = {

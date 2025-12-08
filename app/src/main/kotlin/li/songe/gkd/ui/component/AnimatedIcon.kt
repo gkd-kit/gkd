@@ -10,7 +10,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import li.songe.gkd.util.SafeR
+import li.songe.gkd.R
 
 @Composable
 private fun AnimatedIcon(
@@ -58,6 +58,6 @@ fun AnimatedIconButton(
 }
 
 private fun getIconDesc(@DrawableRes id: Int, atEnd: Boolean): String? = when (id) {
-    SafeR.ic_anim_search_close -> if (atEnd) "关闭搜索" else "打开搜索"
+    R.drawable.ic_anim_search_close -> if (atEnd) "关闭搜索" else "打开搜索"
     else -> null
 }

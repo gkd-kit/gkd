@@ -54,6 +54,7 @@ import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDe
 import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
+import li.songe.gkd.R
 import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
@@ -85,7 +86,6 @@ import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.appInfoMapFlow
 import li.songe.gkd.util.launchAsFn
@@ -530,7 +530,7 @@ fun AdvancedPage() {
                         onClick = throttle {
                             showCaptureScreenshotDlg = true
                         },
-                        id = SafeR.ic_page_info,
+                        id = R.drawable.ic_page_info,
                         contentDescription = "截屏快照设置",
                     )
                 },

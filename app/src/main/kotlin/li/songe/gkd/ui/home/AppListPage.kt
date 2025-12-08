@@ -48,6 +48,7 @@ import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDest
 import com.ramcosta.composedestinations.generated.destinations.EditBlockAppListPageDestination
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
+import li.songe.gkd.R
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.store.blockMatchAppListFlow
@@ -73,7 +74,6 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.util.AppSortOption
-import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.appListAuthAbnormalFlow
 import li.songe.gkd.util.getUpDownTransform
 import li.songe.gkd.util.ruleSummaryFlow
@@ -201,7 +201,7 @@ fun useAppListPage(): ScaffoldExt {
                             vm.showSearchBarFlow.value = true
                         }
                     },
-                    id = SafeR.ic_anim_search_close,
+                    id = R.drawable.ic_anim_search_close,
                     atEnd = showSearchBar,
                     contentDescription = if (showSearchBar) "关闭搜索" else "搜索应用列表",
                 )

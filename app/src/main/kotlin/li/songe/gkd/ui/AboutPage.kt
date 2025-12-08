@@ -59,6 +59,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
+import li.songe.gkd.R
 import li.songe.gkd.app
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.PerfIcon
@@ -78,7 +79,6 @@ import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.ISSUES_URL
 import li.songe.gkd.util.PLAY_STORE_URL
 import li.songe.gkd.util.REPOSITORY_URL
-import li.songe.gkd.util.SafeR
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.UpdateChannelOption
 import li.songe.gkd.util.buildLogFile
@@ -476,9 +476,9 @@ private fun AnimatedLogoIcon(
     modifier: Modifier = Modifier
 ) {
     val darkTheme = LocalDarkTheme.current
-    val colorRid = if (darkTheme) SafeR.better_white else SafeR.better_black
+    val colorRid = if (darkTheme) R.color.better_white else R.color.better_black
     var atEnd by remember { mutableStateOf(false) }
-    val animation = AnimatedImageVector.animatedVectorResource(id = SafeR.ic_anim_logo)
+    val animation = AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_anim_logo)
     val painter = rememberAnimatedVectorPainter(
         animation,
         atEnd
