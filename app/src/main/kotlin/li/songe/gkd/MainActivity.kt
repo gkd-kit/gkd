@@ -48,7 +48,6 @@ import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
-import com.blankj.utilcode.util.LogUtils
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
 import com.ramcosta.composedestinations.DestinationsNavHost
@@ -92,6 +91,7 @@ import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.BarUtils
 import li.songe.gkd.util.EditGithubCookieDlg
 import li.songe.gkd.util.KeyboardUtils
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.appInfoMapFlow
 import li.songe.gkd.util.componentName
@@ -179,7 +179,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         fixSomeProblems()
         super.onCreate(savedInstanceState)
-        LogUtils.d("MainActivity::onCreate")
+        LogUtils.d()
         mainVm
         launcher
         pickContentLauncher
@@ -245,7 +245,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        LogUtils.d("MainActivity::onStart")
+        LogUtils.d()
         activityVisibleState++
         if (topActivityFlow.value.appId != META.appId) {
             updateTopActivity(META.appId, MainActivity::class.jvmName)
@@ -255,7 +255,7 @@ class MainActivity : ComponentActivity() {
     var isFirstResume = true
     override fun onResume() {
         super.onResume()
-        LogUtils.d("MainActivity::onResume")
+        LogUtils.d()
         if (isFirstResume && startTime - app.startTime < 2000) {
             isFirstResume = false
         } else {
@@ -265,13 +265,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
-        LogUtils.d("MainActivity::onStop")
+        LogUtils.d()
         activityVisibleState--
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        LogUtils.d("MainActivity::onDestroy")
+        LogUtils.d()
     }
 
     private var lastBackPressedTime = 0L

@@ -18,8 +18,6 @@ import android.provider.Settings
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityManager
 import android.view.inputmethod.InputMethodManager
-import com.blankj.utilcode.util.LogUtils
-import com.blankj.utilcode.util.Utils
 import kotlinx.coroutines.MainScope
 import kotlinx.serialization.Serializable
 import li.songe.gkd.data.selfAppInfo
@@ -29,11 +27,11 @@ import li.songe.gkd.service.initA11yWhiteAppList
 import li.songe.gkd.shizuku.initShizuku
 import li.songe.gkd.store.initStore
 import li.songe.gkd.util.AndroidTarget
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.PKG_FLAGS
 import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initSubsState
 import li.songe.gkd.util.initToast
-import li.songe.gkd.util.toJson5String
 import li.songe.gkd.util.toast
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 
@@ -173,16 +171,7 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        Utils.init(this)
-        LogUtils.getConfig().apply {
-            setConsoleSwitch(META.debuggable)
-            saveDays = 7
-            isLog2FileSwitch = true
-        }
-        LogUtils.d(
-            "META",
-            toJson5String(META),
-        )
+        LogUtils.d()
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
             toast(e.message ?: e.toString())
             LogUtils.d("UncaughtExceptionHandler", t, e)

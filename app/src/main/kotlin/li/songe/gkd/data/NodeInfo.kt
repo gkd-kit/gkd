@@ -1,10 +1,10 @@
 package li.songe.gkd.data
 
 import android.view.accessibility.AccessibilityNodeInfo
-import com.blankj.utilcode.util.LogUtils
 import kotlinx.serialization.Serializable
 import li.songe.gkd.a11y.MAX_CHILD_SIZE
 import li.songe.gkd.a11y.topActivityFlow
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.toast
 import kotlin.system.measureTimeMillis
 
@@ -77,8 +77,10 @@ fun info2nodeList(root: AccessibilityNodeInfo?): List<NodeInfo> {
             if (times > MAX_KEEP_SIZE) {
                 // https://github.com/gkd-kit/gkd/issues/28
                 toast("节点数量至多保留$MAX_KEEP_SIZE,丢弃后续节点")
-                LogUtils.w(
-                    root.packageName, topActivityFlow.value.activityId, "节点数量过多"
+                LogUtils.d(
+                    "节点数量过多",
+                    root.packageName,
+                    topActivityFlow.value.activityId,
                 )
                 break
             }

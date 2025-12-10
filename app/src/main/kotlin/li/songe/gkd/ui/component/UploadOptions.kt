@@ -8,7 +8,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewModelScope
-import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
@@ -17,6 +16,7 @@ import li.songe.gkd.MainViewModel
 import li.songe.gkd.data.GithubPoliciesAsset
 import li.songe.gkd.util.GithubCookieException
 import li.songe.gkd.util.LoadStatus
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.uploadFileToGithub

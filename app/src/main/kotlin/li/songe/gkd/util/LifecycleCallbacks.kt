@@ -2,12 +2,12 @@ package li.songe.gkd.util
 
 
 import android.view.accessibility.AccessibilityEvent
-import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.isActivityVisible
+import li.songe.loc.Loc
 import java.util.WeakHashMap
 
 private val cbMap = WeakHashMap<Any, HashMap<Int, MutableList<Any>>>()
@@ -27,14 +27,20 @@ interface OnSimpleLife {
     fun onDestroyed(f: CbFn) = cbs<CbFn>(2).add(f)
     fun onDestroyed() = cbs<CbFn>(2).forEach { it() }
 
-    fun useLogLifecycle() {
-        onCreated { LogUtils.d("onCreated -> " + this::class.simpleName) }
-        onDestroyed { LogUtils.d("onDestroyed -> " + this::class.simpleName) }
+    @Loc
+    fun useLogLifecycle(@Loc loc: String = "") {
+        onCreated { LogUtils.d("onCreated -> " + this::class.simpleName, loc = loc) }
+        onDestroyed { LogUtils.d("onDestroyed -> " + this::class.simpleName, loc = loc) }
         if (this is OnA11yLife) {
-            onA11yConnected { LogUtils.d("onA11yConnected -> " + this::class.simpleName) }
+            onA11yConnected {
+                LogUtils.d(
+                    "onA11yConnected -> " + this::class.simpleName,
+                    loc = loc,
+                )
+            }
         }
         if (this is OnTileLife) {
-            onTileClicked { LogUtils.d("onTileClicked -> " + this::class.simpleName) }
+            onTileClicked { LogUtils.d("onTileClicked -> " + this::class.simpleName, loc = loc) }
         }
     }
 

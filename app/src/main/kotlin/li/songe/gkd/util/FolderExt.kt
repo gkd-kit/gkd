@@ -2,7 +2,6 @@ package li.songe.gkd.util
 
 import android.text.format.DateUtils
 import androidx.annotation.WorkerThread
-import com.blankj.utilcode.util.LogUtils
 import kotlinx.serialization.Serializable
 import li.songe.gkd.META
 import li.songe.gkd.app
@@ -35,6 +34,8 @@ val subsFolder: File
     get() = filesDir.resolve("subscription").autoMk()
 val snapshotFolder: File
     get() = filesDir.resolve("snapshot").autoMk()
+val logFolder: File
+    get() = filesDir.resolve("log").autoMk()
 
 val privateStoreFolder: File
     get() = app.filesDir.resolve("store").autoMk()
@@ -81,8 +82,11 @@ private data class AppJsonData(
 @WorkerThread
 fun buildLogFile(): File {
     val tempDir = createTempDir()
-    val files = mutableListOf(dbFolder, storeFolder, subsFolder)
-    LogUtils.getLogFiles().firstOrNull()?.parentFile?.let { files.add(it) }
+    val files = mutableListOf(dbFolder, storeFolder, subsFolder, logFolder)
+    tempDir.resolve("meta.json").also {
+        it.writeText(toJson5String(META))
+        files.add(it)
+    }
     tempDir.resolve("apps.json").also {
         it.writeText(json.encodeToString(AppJsonData()))
         files.add(it)

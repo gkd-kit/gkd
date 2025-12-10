@@ -5,7 +5,6 @@ import android.content.Intent
 import android.provider.Settings
 import android.util.LruCache
 import android.view.accessibility.AccessibilityNodeInfo
-import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.updateAndGet
@@ -29,6 +28,7 @@ import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.checkAppBlockMatch
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.AndroidTarget
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.PKG_FLAGS
 import li.songe.gkd.util.RuleSummary
 import li.songe.gkd.util.launchTry

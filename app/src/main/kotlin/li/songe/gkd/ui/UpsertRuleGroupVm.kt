@@ -2,7 +2,6 @@ package li.songe.gkd.ui
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.json.JsonArray
@@ -10,6 +9,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.ui.style.clearJson5TransformationCache
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.subsMapFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription

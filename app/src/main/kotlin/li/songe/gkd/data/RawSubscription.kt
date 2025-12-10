@@ -1,7 +1,6 @@
 package li.songe.gkd.data
 
 import android.graphics.Rect
-import com.blankj.utilcode.util.LogUtils
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -17,6 +16,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import li.songe.gkd.a11y.typeInfo
 import li.songe.gkd.util.LOCAL_SUBS_IDS
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.appInfoMapFlow
 import li.songe.gkd.util.distinctByIfAny
 import li.songe.gkd.util.filterIfNotAll

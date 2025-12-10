@@ -11,7 +11,7 @@ destinations = "2.3.0"
 coil = "3.3.0"
 rikka_refine = "4.4.0"
 rikka_shizuku = "13.1.5"
-loc = "0.5.0"
+loc = "0.5.3"
 
 [libraries]
 kotlin_stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
@@ -68,8 +68,8 @@ reorderable = "sh.calvin.reorderable:reorderable:3.0.0"
 exp4j = "net.objecthunter:exp4j:0.4.8"
 toaster = "com.github.getActivity:Toaster:13.8"
 permissions = "com.github.getActivity:XXPermissions:28.0"
+device = "com.github.getActivity:DeviceCompat:2.5"
 json5 = "li.songe:json5:0.5.0"
-utilcodex = "com.blankj:utilcodex:1.31.1"
 activityResultLauncher = "com.github.DylanCaiCoding:ActivityResultLauncher:1.1.2"
 kevinnzouWebview = "io.github.kevinnzou:compose-webview:0.33.6"
 

@@ -1,6 +1,5 @@
 package li.songe.gkd.util
 
-import com.blankj.utilcode.util.LogUtils
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers

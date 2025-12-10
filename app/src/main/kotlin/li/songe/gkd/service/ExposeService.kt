@@ -3,9 +3,9 @@ package li.songe.gkd.service
 import android.app.Service
 import android.content.Intent
 import android.os.Binder
-import com.blankj.utilcode.util.LogUtils
 import li.songe.gkd.appScope
 import li.songe.gkd.notif.exposeNotif
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.launchTry

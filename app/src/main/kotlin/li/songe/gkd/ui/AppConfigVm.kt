@@ -2,7 +2,6 @@ package li.songe.gkd.ui
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -16,6 +15,7 @@ import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.ui.component.toGroupState
 import li.songe.gkd.ui.share.BaseViewModel
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.collator
 import li.songe.gkd.util.findOption

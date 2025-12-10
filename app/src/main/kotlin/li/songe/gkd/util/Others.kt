@@ -230,8 +230,10 @@ object AppListString {
     }
 }
 
+val isMainThread: Boolean get() = Looper.getMainLooper() == Looper.myLooper()
+
 fun runMainPost(delayMillis: Long = 0L, r: Runnable) {
-    if (delayMillis == 0L && Looper.getMainLooper() == Looper.myLooper()) {
+    if (delayMillis == 0L && isMainThread) {
         r.run()
         return
     }

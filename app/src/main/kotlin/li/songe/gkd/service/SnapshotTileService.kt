@@ -1,12 +1,12 @@
 package li.songe.gkd.service
 
 import android.accessibilityservice.AccessibilityService
-import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
 import li.songe.gkd.appScope
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.toast

@@ -8,7 +8,6 @@ import android.webkit.URLUtil
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptionsBuilder
-import com.blankj.utilcode.util.LogUtils
 import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
 import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
@@ -44,6 +43,7 @@ import li.songe.gkd.ui.component.UploadOptions
 import li.songe.gkd.ui.home.BottomNavItem
 import li.songe.gkd.ui.share.BaseViewModel
 import li.songe.gkd.util.LOCAL_SUBS_ID
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.ThrottleTimer
 import li.songe.gkd.util.UpdateStatus
@@ -242,7 +242,7 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
     }
 
     fun handleIntent(intent: Intent) = viewModelScope.launchTry {
-        LogUtils.d("handleIntent", intent)
+        LogUtils.d(intent)
         val uri = intent.data?.normalizeScheme()
         val source = intent.getStringExtra(activityNavSourceName)
         if (uri?.scheme == "gkd") {

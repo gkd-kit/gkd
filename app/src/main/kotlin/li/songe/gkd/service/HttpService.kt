@@ -3,7 +3,6 @@ package li.songe.gkd.service
 import android.app.Service
 import android.content.Intent
 import android.util.Log
-import com.blankj.utilcode.util.LogUtils
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -48,6 +47,7 @@ import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.httpNotif
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.LOCAL_HTTP_SUBS_ID
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.SERVER_SCRIPT_URL
 import li.songe.gkd.util.SnapshotExt

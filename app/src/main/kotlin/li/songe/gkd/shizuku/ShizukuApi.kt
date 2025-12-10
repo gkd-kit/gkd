@@ -3,7 +3,6 @@ package li.songe.gkd.shizuku
 
 import android.content.ComponentName
 import androidx.annotation.WorkerThread
-import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,6 +15,7 @@ import li.songe.gkd.isActivityVisible
 import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.permission.updatePermissionState
 import li.songe.gkd.store.storeFlow
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.MutexState
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.runMainPost

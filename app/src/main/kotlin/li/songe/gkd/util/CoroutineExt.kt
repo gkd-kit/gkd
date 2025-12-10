@@ -1,7 +1,6 @@
 package li.songe.gkd.util
 
 import androidx.compose.runtime.Composable
-import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart

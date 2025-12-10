@@ -12,7 +12,6 @@ import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import androidx.core.content.ContextCompat
-import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
@@ -24,6 +23,7 @@ import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.StatusService
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.ScreenUtils
 import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.UpdateTimeOption
@@ -93,8 +93,6 @@ private fun onA11yFeatEvent(event: AccessibilityEvent) = event.run {
 }
 
 private var lastCheckShizukuTime = 0L
-
-context(event: AccessibilityEvent)
 private fun watchCheckShizukuState() {
     // 借助无障碍轮询校验 shizuku 权限, 因为 shizuku 可能无故被关闭
     if (storeFlow.value.enableShizuku) {
@@ -179,8 +177,6 @@ private fun watchCaptureScreenshot() {
 }
 
 private var lastUpdateSubsTime = 0L
-
-context(event: AccessibilityEvent)
 private fun watchAutoUpdateSubs() {
     val i = storeFlow.value.updateSubsInterval
     if (i <= 0) return

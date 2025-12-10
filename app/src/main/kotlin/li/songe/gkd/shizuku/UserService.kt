@@ -6,12 +6,12 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import android.util.Log
 import androidx.annotation.Keep
-import com.blankj.utilcode.util.LogUtils
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
 import li.songe.gkd.META
 import li.songe.gkd.permission.shizukuGrantedState
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.json
 import rikka.shizuku.Shizuku

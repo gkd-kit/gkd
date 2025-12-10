@@ -23,7 +23,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
-import com.blankj.utilcode.util.LogUtils
 import com.kevinnzou.web.AccompanistWebViewClient
 import com.kevinnzou.web.LoadingState
 import com.kevinnzou.web.WebView
@@ -47,6 +46,7 @@ import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.AndroidTarget
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.client
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.openUri

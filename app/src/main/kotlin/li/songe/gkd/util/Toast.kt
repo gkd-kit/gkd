@@ -8,7 +8,6 @@ import android.graphics.Outline
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
 import android.graphics.text.LineBreaker
-import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
@@ -32,10 +31,10 @@ import li.songe.loc.Loc
 @Loc
 fun toast(
     text: CharSequence,
-    @Loc("{methodName}({fileName}:{lineNumber})") loc: String = "",
+    @Loc loc: String = "",
 ) {
     Toaster.show(text)
-    Log.d("Toast", "$loc -> $text")
+    LogUtils.d(text, loc = loc)
 }
 
 private val darkTheme: Boolean

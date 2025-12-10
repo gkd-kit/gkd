@@ -199,6 +199,10 @@ composeCompiler {
     )
 }
 
+loc {
+    template = "{packageName}.{methodName}({fileName}:{lineNumber})"
+}
+
 dependencies {
     implementation(libs.kotlin.stdlib)
 
@@ -255,7 +259,6 @@ dependencies {
     // https://github.com/Kotlin/kotlinx-atomicfu/issues/145
     implementation(libs.kotlinx.atomicfu)
 
-    implementation(libs.utilcodex)
     implementation(libs.activityResultLauncher)
 
     implementation(libs.destinations.core)
@@ -273,6 +276,7 @@ dependencies {
 
     implementation(libs.toaster)
     implementation(libs.permissions)
+    implementation(libs.device)
 
     implementation(libs.json5)
     compileOnly(libs.loc.annotation)
