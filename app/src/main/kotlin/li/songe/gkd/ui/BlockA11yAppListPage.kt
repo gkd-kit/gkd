@@ -15,10 +15,8 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,6 +54,9 @@ import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.AppIcon
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
+import li.songe.gkd.ui.component.MenuGroupCard
+import li.songe.gkd.ui.component.MenuItemCheckbox
+import li.songe.gkd.ui.component.MenuItemRadioButton
 import li.songe.gkd.ui.component.MultiTextField
 import li.songe.gkd.ui.component.PerfCheckbox
 import li.songe.gkd.ui.component.PerfIcon
@@ -74,8 +75,8 @@ import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.appItemPadding
-import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
+import li.songe.gkd.util.AppGroupOption
 import li.songe.gkd.util.AppListString
 import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.launchAsFn
@@ -91,7 +92,6 @@ fun BlockA11yAppListPage() {
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
     val vm = viewModel<BlockA11yAppListVm>()
-    val sortType by vm.sortTypeFlow.collectAsState()
     val appInfos by vm.appInfosFlow.collectAsState()
     val searchStr by vm.searchStrFlow.collectAsState()
     var showSearchBar by vm.showSearchBarFlow.asMutableState()
@@ -227,32 +227,27 @@ fun BlockA11yAppListPage() {
                                         expanded = expanded,
                                         onDismissRequest = { expanded = false }
                                     ) {
-                                        Text(
-                                            text = "排序",
-                                            modifier = Modifier.menuPadding(),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.primary,
-                                        )
-                                        val handleItem: (AppSortOption) -> Unit = throttle { v ->
-                                            storeFlow.update { s -> s.copy(a11yAppSort = v.value) }
+                                        MenuGroupCard(inTop = true, title = "排序") {
+                                            var sortType by vm.sortTypeFlow.asMutableState()
+                                            AppSortOption.objects.forEach { option ->
+                                                MenuItemRadioButton(
+                                                    text = option.label,
+                                                    selected = sortType == option,
+                                                    onClick = { sortType = option },
+                                                )
+                                            }
                                         }
-                                        AppSortOption.objects.forEach { sortOption ->
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Text(sortOption.label)
-                                                },
-                                                trailingIcon = {
-                                                    RadioButton(
-                                                        selected = sortType == sortOption,
-                                                        onClick = {
-                                                            handleItem(sortOption)
-                                                        }
-                                                    )
-                                                },
-                                                onClick = {
-                                                    handleItem(sortOption)
-                                                },
-                                            )
+                                        MenuGroupCard(inTop = true, title = "筛选") {
+                                            var appGroupType by vm.appGroupTypeFlow.asMutableState()
+                                            AppGroupOption.normalObjects.forEach { option ->
+                                                val newValue = option.invert(appGroupType)
+                                                MenuItemCheckbox(
+                                                    enabled = newValue != 0,
+                                                    text = option.label,
+                                                    checked = option.include(appGroupType),
+                                                    onClick = { appGroupType = newValue },
+                                                )
+                                            }
                                         }
                                     }
                                 }

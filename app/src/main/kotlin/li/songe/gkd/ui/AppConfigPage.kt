@@ -17,7 +17,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,6 +52,8 @@ import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.BatchActionButtonGroup
 import li.songe.gkd.ui.component.EmptyText
+import li.songe.gkd.ui.component.MenuGroupCard
+import li.songe.gkd.ui.component.MenuItemRadioButton
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
@@ -67,7 +68,6 @@ import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.iconTextSize
-import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.RuleSortOption
@@ -231,32 +231,19 @@ fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
                                     }
                                 )
                             } else {
-                                Text(
-                                    text = "排序",
-                                    modifier = Modifier.menuPadding(),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
-                                val handleItem: (RuleSortOption) -> Unit = throttle { v ->
-                                    storeFlow.update { s -> s.copy(appRuleSort = v.value) }
-                                }
-                                RuleSortOption.objects.forEach { s ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(s.label)
-                                        },
-                                        trailingIcon = {
-                                            RadioButton(
-                                                selected = ruleSortType == s,
-                                                onClick = {
-                                                    handleItem(s)
-                                                }
-                                            )
-                                        },
-                                        onClick = {
-                                            handleItem(s)
-                                        },
-                                    )
+                                MenuGroupCard(inTop = true, title = "排序") {
+                                    val handleItem: (RuleSortOption) -> Unit = throttle { v ->
+                                        storeFlow.update { s -> s.copy(appRuleSort = v.value) }
+                                    }
+                                    RuleSortOption.objects.forEach { s ->
+                                        MenuItemRadioButton(
+                                            text = s.label,
+                                            selected = ruleSortType == s,
+                                            onClick = {
+                                                handleItem(s)
+                                            },
+                                        )
+                                    }
                                 }
                             }
                         }

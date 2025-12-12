@@ -7,6 +7,7 @@ import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.blockMatchAppListFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.share.BaseViewModel
+import li.songe.gkd.ui.share.asMutableStateFlow
 import li.songe.gkd.ui.share.useAppFilter
 import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.EMPTY_RULE_TIP
@@ -25,10 +26,24 @@ class HomeVm : BaseViewModel() {
 
     val usedSubsItemCountFlow = usedSubsEntriesFlow.mapNew { it.size }
 
-    val sortTypeFlow = storeFlow.mapNew {
-        AppSortOption.objects.findOption(it.appSort)
-    }
-    val showBlockAppFlow = storeFlow.mapNew { s -> s.showBlockApp }
+    val sortTypeFlow = storeFlow.asMutableStateFlow(
+        getter = { AppSortOption.objects.findOption(it.appSort) },
+        setter = {
+            storeFlow.value.copy(appSort = it.value)
+        }
+    )
+    val showBlockAppFlow = storeFlow.asMutableStateFlow(
+        getter = { it.showBlockApp },
+        setter = {
+            storeFlow.value.copy(showBlockApp = it)
+        }
+    )
+    val appGroupTypeFlow = storeFlow.asMutableStateFlow(
+        getter = { it.appGroupType },
+        setter = {
+            storeFlow.value.copy(appGroupType = it)
+        }
+    )
 
     val editWhiteListModeFlow = MutableStateFlow(false)
     val blockAppListFlow = MutableStateFlow(blockMatchAppListFlow.value).also { stateFlow ->
@@ -40,6 +55,7 @@ class HomeVm : BaseViewModel() {
     }
 
     val appFilter = useAppFilter(
+        appGroupTypeFlow = appGroupTypeFlow,
         sortTypeFlow = sortTypeFlow,
         showBlockAppFlow = showBlockAppFlow,
         blockAppListFlow = blockAppListFlow,

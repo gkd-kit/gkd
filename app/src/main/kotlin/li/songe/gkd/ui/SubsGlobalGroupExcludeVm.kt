@@ -42,8 +42,14 @@ class SubsGlobalGroupExcludeVm(stateHandle: SavedStateHandle) : BaseViewModel() 
             storeFlow.value.copy(subsExcludeShowBlockApp = it)
         }
     )
-
+    val appGroupTypeFlow = storeFlow.asMutableStateFlow(
+        getter = { it.subsExcludeAppGroupType },
+        setter = {
+            storeFlow.value.copy(subsExcludeAppGroupType = it)
+        }
+    )
     val appFilter = useAppFilter(
+        appGroupTypeFlow = appGroupTypeFlow,
         appOrderListFlow = DbSet.actionLogDao.queryLatestUniqueAppIds(
             args.subsItemId,
             args.groupKey
@@ -69,7 +75,6 @@ class SubsGlobalGroupExcludeVm(stateHandle: SavedStateHandle) : BaseViewModel() 
             resetKey.intValue++
         }
     }
-
     val resetKey = mutableIntStateOf(0)
     val excludeTextFlow = MutableStateFlow("")
     val editableFlow = MutableStateFlow(false).apply {

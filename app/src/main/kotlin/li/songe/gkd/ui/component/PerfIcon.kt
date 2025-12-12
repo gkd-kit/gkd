@@ -82,7 +82,6 @@ fun PerfIconButton(
     colors: IconButtonColors = IconButtonDefaults.iconButtonColors(),
     contentDescription: String? = getIconDefaultDesc(imageVector),
     onClickLabel: String? = null,
-    tint: Color = LocalContentColor.current,
 ) = TooltipIconButtonBox(
     contentDescription = contentDescription,
 ) {
@@ -99,7 +98,6 @@ fun PerfIconButton(
         PerfIcon(
             imageVector = imageVector,
             contentDescription = contentDescription,
-            tint = tint,
         )
     }
 }

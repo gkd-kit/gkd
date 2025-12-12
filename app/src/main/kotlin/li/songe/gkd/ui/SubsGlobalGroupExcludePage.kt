@@ -50,10 +50,11 @@ import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.AppIcon
 import li.songe.gkd.ui.component.AppNameText
-import li.songe.gkd.ui.component.DropdownMenuCheckboxItem
-import li.songe.gkd.ui.component.DropdownMenuRadioButtonItem
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.InnerDisableSwitch
+import li.songe.gkd.ui.component.MenuGroupCard
+import li.songe.gkd.ui.component.MenuItemCheckbox
+import li.songe.gkd.ui.component.MenuItemRadioButton
 import li.songe.gkd.ui.component.MultiTextField
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
@@ -73,8 +74,8 @@ import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemPadding
-import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
+import li.songe.gkd.util.AppGroupOption
 import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.systemAppsFlow
@@ -93,9 +94,6 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
     val showAppInfos = vm.showAppInfosFlow.collectAsState().value
 
     var searchStr by vm.searchStrFlow.asMutableState()
-    val showBlockApp by vm.showBlockAppFlow.collectAsState()
-    val showInnerDisabledApp by vm.showInnerDisabledAppFlow.collectAsState()
-    val sortType by vm.sortTypeFlow.collectAsState()
     var editable by vm.editableFlow.asMutableState()
 
     var showSearchBar by rememberSaveable {
@@ -223,41 +221,38 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                                         expanded = expanded,
                                         onDismissRequest = { expanded = false }
                                     ) {
-                                        Text(
-                                            text = "排序",
-                                            modifier = Modifier.menuPadding(),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.primary,
-                                        )
-                                        AppSortOption.objects.forEach { sortOption ->
-                                            DropdownMenuRadioButtonItem(
-                                                text = sortOption.label,
-                                                selected = sortType == sortOption,
-                                                onClick = {
-                                                    vm.sortTypeFlow.value = sortOption
-                                                }
+                                        MenuGroupCard(inTop = true, title = "排序") {
+                                            var sortType by vm.sortTypeFlow.asMutableState()
+                                            AppSortOption.objects.forEach { option ->
+                                                MenuItemRadioButton(
+                                                    text = option.label,
+                                                    selected = sortType == option,
+                                                    onClick = { sortType = option }
+                                                )
+                                            }
+                                        }
+                                        MenuGroupCard(title = "分组") {
+                                            var appGroupType by vm.appGroupTypeFlow.asMutableState()
+                                            AppGroupOption.normalObjects.forEach { option ->
+                                                val newValue = option.invert(appGroupType)
+                                                MenuItemCheckbox(
+                                                    enabled = newValue != 0,
+                                                    text = option.label,
+                                                    checked = option.include(appGroupType),
+                                                    onClick = { appGroupType = newValue },
+                                                )
+                                            }
+                                        }
+                                        MenuGroupCard(title = "筛选") {
+                                            MenuItemCheckbox(
+                                                text = "内置禁用",
+                                                stateFlow = vm.showInnerDisabledAppFlow,
+                                            )
+                                            MenuItemCheckbox(
+                                                text = "白名单",
+                                                stateFlow = vm.showBlockAppFlow,
                                             )
                                         }
-                                        Text(
-                                            text = "筛选",
-                                            modifier = Modifier.menuPadding(),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.primary,
-                                        )
-                                        DropdownMenuCheckboxItem(
-                                            text = "显示内置禁用",
-                                            checked = showInnerDisabledApp,
-                                            onCheckedChange = {
-                                                vm.showInnerDisabledAppFlow.value = it
-                                            }
-                                        )
-                                        DropdownMenuCheckboxItem(
-                                            text = "显示白名单",
-                                            checked = showBlockApp,
-                                            onCheckedChange = {
-                                                vm.showBlockAppFlow.value = it
-                                            }
-                                        )
                                     }
                                 }
                             }
@@ -363,8 +358,7 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (showAppInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        val hasShowAll = showBlockApp && showInnerDisabledApp
-                        EmptyText(text = if (hasShowAll) "暂无搜索结果" else "暂无搜索结果，请尝试修改筛选条件")
+                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsState().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }

@@ -123,3 +123,31 @@ sealed class UpdateChannelOption(
         val objects by lazy { listOf(Stable, Beta) }
     }
 }
+
+sealed interface BinaryOption : Option<Int> {
+    fun include(flag: Int): Boolean = (value and flag) != 0
+    fun invert(flag: Int): Int = value xor flag
+
+    companion object {
+        fun combine(options: Collection<BinaryOption>): Int {
+            return options.fold(0) { a, b -> a or b.value }
+        }
+    }
+}
+
+
+sealed class AppGroupOption(
+    override val value: Int,
+    override val label: String
+) : BinaryOption {
+    override val options get() = allObjects
+
+    data object SystemGroup : AppGroupOption(1 shl 0, "系统应用")
+    data object UserGroup : AppGroupOption(1 shl 1, "用户应用")
+    data object UnInstalledGroup : AppGroupOption(1 shl 2, "未安装应用")
+
+    companion object {
+        val normalObjects by lazy { listOf(SystemGroup, UserGroup) }
+        val allObjects by lazy { listOf(SystemGroup, UserGroup, UnInstalledGroup) }
+    }
+}

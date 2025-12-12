@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -26,10 +25,6 @@ fun Modifier.titleItemPadding(showTop: Boolean = true) = this.padding(
 )
 
 fun Modifier.appItemPadding() = this.padding(itemHorizontalPadding, itemVerticalPadding)
-
-fun Modifier.menuPadding() = this
-    .padding(MenuDefaults.DropdownMenuItemContentPadding)
-    .padding(vertical = 8.dp)
 
 fun Modifier.scaffoldPadding(values: PaddingValues): Modifier {
     return padding(

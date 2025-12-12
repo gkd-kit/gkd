@@ -276,7 +276,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                 storeFlow.mapState(scope) { s -> s.enableMatch }
                             }.collectAsState()
                             PerfIconButton(
-                                id = if (enableMatch) R.drawable.ic_flash_on else R.drawable.ic_flash_on,
+                                id = if (enableMatch) R.drawable.ic_flash_on else R.drawable.ic_flash_off,
                                 colors = IconButtonDefaults.iconButtonColors(
                                     contentColor = if (!enableMatch) {
                                         CheckboxDefaults.colors().checkedBoxColor

@@ -2,6 +2,7 @@ package li.songe.gkd.store
 
 import kotlinx.serialization.Serializable
 import li.songe.gkd.META
+import li.songe.gkd.util.AppGroupOption
 import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.UpdateChannelOption
@@ -35,13 +36,18 @@ data class SettingsStore(
     val showBlockApp: Boolean = true,
     val appRuleSort: Int = RuleSortOption.ByDefault.value,
     val subsAppSort: Int = AppSortOption.ByUsedTime.value,
-    val subsAppShowUninstallApp: Boolean = false,
+    val subsAppShowUninstall: Boolean = false,
+    val subsAppGroupType: Int = AppGroupOption.UserGroup.value or AppGroupOption.SystemGroup.value,
+    val subsAppShowBlock: Boolean = false,
     val subsExcludeSort: Int = AppSortOption.ByUsedTime.value,
-    val subsExcludeShowInnerDisabledApp: Boolean = false,
     val subsExcludeShowBlockApp: Boolean = true,
+    val subsExcludeShowInnerDisabledApp: Boolean = true,
     val subsPowerWarn: Boolean = true,
     val enableShizuku: Boolean = false,
     val enableBlockA11yAppList: Boolean = false,
     val blockA11yAppListFollowMatch: Boolean = true,
     val a11yAppSort: Int = AppSortOption.ByUsedTime.value,
+    val appGroupType: Int = (1 shl AppGroupOption.normalObjects.size) - 1,
+    val a11yAppGroupType: Int = appGroupType,
+    val subsExcludeAppGroupType: Int = appGroupType,
 )

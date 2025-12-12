@@ -70,7 +70,7 @@ private fun A11yService.useAttachState() {
             if (willDestroyByBlock) {
                 toast("无障碍局部关闭")
             } else {
-                toast("无障碍已停止")
+                toast("无障碍已关闭")
             }
         }
     }

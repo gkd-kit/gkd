@@ -12,8 +12,11 @@ import li.songe.gkd.data.AppConfig
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.store.blockMatchAppListFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.share.BaseViewModel
+import li.songe.gkd.ui.share.asMutableStateFlow
+import li.songe.gkd.util.AppGroupOption
 import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.appInfoMapFlow
 import li.songe.gkd.util.collator
@@ -34,34 +37,78 @@ class SubsAppListVm(stateHandle: SavedStateHandle) : BaseViewModel() {
     private val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(args.subsItemId)
         .attachLoad().stateInit(emptyList())
 
-    private val temp0ListFlow = combine(subsFlow, appInfoMapFlow) { subs, appInfoCache ->
-        subs.usedApps.map {
-            it to appInfoCache[it.id]
-        }.sortedWith { a, b ->
-            // 顺序: 已安装(有名字->无名字)->未安装(有名字(来自订阅)->无名字)
-            val x = a.second?.name ?: a.first.name?.let { "\uFFFF" + it }
-            ?: ("\uFFFF\uFFFF" + a.first.id)
-            val y = b.second?.name ?: b.first.name?.let { "\uFFFF" + it }
-            ?: ("\uFFFF\uFFFF" + b.first.id)
-            collator.compare(x, y)
+
+    val appGroupTypeFlow = storeFlow.asMutableStateFlow(
+        getter = { it.subsAppGroupType },
+        setter = { storeFlow.value.copy(subsAppGroupType = it) },
+    )
+    val showBlockAppFlow = storeFlow.asMutableStateFlow(
+        getter = { it.subsAppShowBlock },
+        setter = { storeFlow.value.copy(subsAppShowBlock = it) },
+    )
+
+    private val temp1ListFlow = run {
+        var tempListFlow = combine(
+            subsFlow,
+            appInfoMapFlow,
+        ) { subs, appMap ->
+            subs.usedApps.map {
+                it to appMap[it.id]
+            }.sortedWith { a, b ->
+                // 默认顺序: 已安装(有名字->无名字)->未安装(有名字(来自订阅)->无名字)
+                val x = a.second?.name ?: a.first.name?.let { "\uFFFF" + it }
+                ?: ("\uFFFF\uFFFF" + a.first.id)
+                val y = b.second?.name ?: b.first.name?.let { "\uFFFF" + it }
+                ?: ("\uFFFF\uFFFF" + b.first.id)
+                collator.compare(x, y)
+            }
         }
+        tempListFlow = combine(
+            tempListFlow,
+            appGroupTypeFlow,
+        ) { list, type ->
+            if (type == 0) {
+                return@combine emptyList()
+            }
+            if (AppGroupOption.allObjects.all { it.include(type) }) {
+                return@combine list
+            }
+            var resultList = list
+            if (!AppGroupOption.SystemGroup.include(type)) {
+                resultList = resultList.filterNot { it.second?.isSystem == true }
+            }
+            if (!AppGroupOption.UserGroup.include(type)) {
+                resultList = resultList.filterNot { it.second?.isSystem == false }
+            }
+            if (!AppGroupOption.UnInstalledGroup.include(type)) {
+                resultList = resultList.filterNot { it.second == null }
+            }
+            resultList
+        }
+        tempListFlow = combine(
+            tempListFlow,
+            showBlockAppFlow,
+            blockMatchAppListFlow
+        ) { list, showBlock, blockSet ->
+            if (showBlock) {
+                list
+            } else {
+                list.filterNot { it.first.id in blockSet }
+            }
+        }
+        tempListFlow
     }
 
-    val showUninstallAppFlow = storeFlow.mapNew { it.subsAppShowUninstallApp }
-    private val temp1ListFlow = combine(
-        temp0ListFlow,
-        showUninstallAppFlow,
-    ) { apps, showUninstallApp ->
-        if (showUninstallApp) {
-            apps
-        } else {
-            apps.filter { it.second != null }
-        }
-    }
+    val showAllAppFlow = combine(subsFlow, temp1ListFlow) { subs, list ->
+        subs.apps.size == list.size
+    }.stateInit(false)
 
-    val sortTypeFlow = storeFlow.mapNew {
-        AppSortOption.objects.findOption(it.subsAppSort)
-    }
+    val sortTypeFlow = storeFlow.asMutableStateFlow(
+        getter = { AppSortOption.objects.findOption(it.subsAppSort) },
+        setter = {
+            storeFlow.value.copy(subsAppSort = it.value)
+        }
+    )
     private val appActionOrderMapFlow = DbSet.actionLogDao
         .queryLatestUniqueAppIds(args.subsItemId)
         .map {

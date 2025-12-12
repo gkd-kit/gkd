@@ -8,14 +8,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -33,15 +28,16 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
-import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.data.AppConfig
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AnimatedIconButton
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.EmptyText
+import li.songe.gkd.ui.component.MenuGroupCard
+import li.songe.gkd.ui.component.MenuItemCheckbox
+import li.songe.gkd.ui.component.MenuItemRadioButton
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
@@ -52,11 +48,12 @@ import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.useSubs
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
-import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.ui.style.scaffoldPadding
+import li.songe.gkd.util.AppGroupOption
 import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.LOCAL_SUBS_IDS
 import li.songe.gkd.util.launchAsFn
@@ -85,8 +82,6 @@ fun SubsAppListPage(
         vm.resetKey,
     )
     var expanded by remember { mutableStateOf(false) }
-    val showUninstallApp by vm.showUninstallAppFlow.collectAsState()
-    val sortType by vm.sortTypeFlow.collectAsState()
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -148,53 +143,34 @@ fun SubsAppListPage(
                     modifier = Modifier.wrapContentSize(Alignment.TopStart)
                 ) {
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        Text(
-                            text = "排序",
-                            modifier = Modifier.menuPadding(),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        val handleItem: (AppSortOption) -> Unit = throttle { v ->
-                            storeFlow.update { s -> s.copy(subsAppSort = v.value) }
+                        MenuGroupCard(inTop = true, title = "排序") {
+                            var sortType by vm.sortTypeFlow.asMutableState()
+                            AppSortOption.objects.forEach { option ->
+                                MenuItemRadioButton(
+                                    text = option.label,
+                                    selected = sortType == option,
+                                    onClick = { sortType = option },
+                                )
+                            }
                         }
-                        AppSortOption.objects.forEach { sortOption ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(sortOption.label)
-                                },
-                                trailingIcon = {
-                                    RadioButton(
-                                        selected = sortType == sortOption,
-                                        onClick = {
-                                            handleItem(sortOption)
-                                        })
-                                },
-                                onClick = {
-                                    handleItem(sortOption)
-                                },
+                        MenuGroupCard(title = "分组") {
+                            var appGroupType by vm.appGroupTypeFlow.asMutableState()
+                            AppGroupOption.allObjects.forEach { option ->
+                                val newValue = option.invert(appGroupType)
+                                MenuItemCheckbox(
+                                    enabled = newValue != 0,
+                                    text = option.label,
+                                    checked = option.include(appGroupType),
+                                    onClick = { appGroupType = newValue },
+                                )
+                            }
+                        }
+                        MenuGroupCard(title = "筛选") {
+                            MenuItemCheckbox(
+                                text = "白名单",
+                                stateFlow = vm.showBlockAppFlow,
                             )
                         }
-                        Text(
-                            text = "筛选",
-                            modifier = Modifier.menuPadding(),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        val handle1 = {
-                            storeFlow.update { s -> s.copy(subsAppShowUninstallApp = !s.subsAppShowUninstallApp) }
-                        }
-                        DropdownMenuItem(
-                            text = {
-                                Text("显示未安装应用")
-                            },
-                            trailingIcon = {
-                                Checkbox(
-                                    checked = showUninstallApp,
-                                    onCheckedChange = { handle1() }
-                                )
-                            },
-                            onClick = handle1,
-                        )
                     }
                 }
             })
@@ -247,7 +223,7 @@ fun SubsAppListPage(
                 if (appTripleList.isEmpty() && !firstLoading) {
                     EmptyText(
                         text = if (searchStr.isNotEmpty()) {
-                            if (showUninstallApp) "暂无搜索结果" else "暂无搜索结果，请尝试修改筛选条件"
+                            if (vm.showAllAppFlow.collectAsState().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选"
                         } else {
                             "暂无规则"
                         }

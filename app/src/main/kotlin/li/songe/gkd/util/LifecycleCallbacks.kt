@@ -52,15 +52,21 @@ interface OnSimpleLife {
         onDestroyed { stateFlow.value = false }
     }
 
-    fun useAliveToast(name: String, onlyWhenVisible: Boolean = false, delayMillis: Long = 0L) {
+    @Loc
+    fun useAliveToast(
+        name: String,
+        onlyWhenVisible: Boolean = false,
+        delayMillis: Long = 0L,
+        @Loc loc: String = "",
+    ) {
         onCreated {
             if (isActivityVisible() || !onlyWhenVisible) {
-                runMainPost(delayMillis) { toast("${name}已启动") }
+                runMainPost(delayMillis) { toast("${name}已启动", loc = loc) }
             }
         }
         onDestroyed {
             if (isActivityVisible() || !onlyWhenVisible) {
-                toast("${name}已停止")
+                toast("${name}已关闭", loc = loc)
             }
         }
     }

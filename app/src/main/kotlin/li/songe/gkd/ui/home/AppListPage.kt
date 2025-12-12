@@ -16,18 +16,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,13 +50,15 @@ import li.songe.gkd.R
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.store.blockMatchAppListFlow
-import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AnimatedIconButton
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.AppIcon
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
+import li.songe.gkd.ui.component.MenuGroupCard
+import li.songe.gkd.ui.component.MenuItemCheckbox
+import li.songe.gkd.ui.component.MenuItemRadioButton
 import li.songe.gkd.ui.component.PerfCheckbox
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
@@ -69,10 +69,11 @@ import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
-import li.songe.gkd.ui.style.menuPadding
+import li.songe.gkd.util.AppGroupOption
 import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.appListAuthAbnormalFlow
 import li.songe.gkd.util.getUpDownTransform
@@ -88,8 +89,6 @@ fun useAppListPage(): ScaffoldExt {
     val context = LocalActivity.current as MainActivity
 
     val vm = viewModel<HomeVm>()
-    val showBlockApp by vm.showBlockAppFlow.collectAsState()
-    val sortType by vm.sortTypeFlow.collectAsState()
     val appInfos by vm.appInfosFlow.collectAsState()
     val searchStr by vm.searchStrFlow.collectAsState()
     val ruleSummary by ruleSummaryFlow.collectAsState()
@@ -162,17 +161,18 @@ fun useAppListPage(): ScaffoldExt {
                 }
             }, actions = {
                 if (appListAuthAbnormalFlow.collectAsState().value) {
-                    PerfIconButton(
-                        imageVector = PerfIcon.WarningAmber,
-                        contentDescription = canQueryPkgState.name + "异常",
-                        tint = MaterialTheme.colorScheme.error,
-                        onClick = throttle {
-                            mainVm.dialogFlow.updateDialogOptions(
-                                title = "权限异常",
-                                text = "检测到已授予「${canQueryPkgState.name}」但实际获取用户应用数量稀少\n\n在应用列表下拉刷新可重新获取，若无法解决可尝试关闭权限后重新授予或重启设备"
-                            )
-                        },
-                    )
+                    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
+                        PerfIconButton(
+                            imageVector = PerfIcon.WarningAmber,
+                            contentDescription = canQueryPkgState.name + "异常",
+                            onClick = throttle {
+                                mainVm.dialogFlow.updateDialogOptions(
+                                    title = "权限异常",
+                                    text = "检测到已授予「${canQueryPkgState.name}」但实际获取用户应用数量稀少\n\n在应用列表下拉刷新可重新获取，若无法解决可尝试关闭权限后重新授予或重启设备"
+                                )
+                            },
+                        )
+                    }
                 }
                 PerfIconButton(
                     imageVector = PerfIcon.Block,
@@ -211,7 +211,8 @@ fun useAppListPage(): ScaffoldExt {
                     contentDescription = "排序筛选",
                     onClick = {
                         expanded = true
-                    })
+                    }
+                )
                 Box(
                     modifier = Modifier
                         .wrapContentSize(Alignment.TopStart)
@@ -220,54 +221,34 @@ fun useAppListPage(): ScaffoldExt {
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                     ) {
-                        Text(
-                            text = "排序",
-                            modifier = Modifier.menuPadding(),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        val handleItem: (AppSortOption) -> Unit = throttle { v ->
-                            storeFlow.update { s -> s.copy(appSort = v.value) }
+                        MenuGroupCard(inTop = true, title = "排序") {
+                            var sortType by vm.sortTypeFlow.asMutableState()
+                            AppSortOption.objects.forEach { option ->
+                                MenuItemRadioButton(
+                                    text = option.label,
+                                    selected = sortType == option,
+                                    onClick = { sortType = option },
+                                )
+                            }
                         }
-                        AppSortOption.objects.forEach { sortOption ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(sortOption.label)
-                                },
-                                trailingIcon = {
-                                    RadioButton(
-                                        selected = sortType == sortOption,
-                                        onClick = {
-                                            handleItem(sortOption)
-                                        }
-                                    )
-                                },
-                                onClick = {
-                                    handleItem(sortOption)
-                                },
+                        MenuGroupCard(title = "分组") {
+                            var appGroupType by vm.appGroupTypeFlow.asMutableState()
+                            AppGroupOption.normalObjects.forEach { option ->
+                                val newValue = option.invert(appGroupType)
+                                MenuItemCheckbox(
+                                    enabled = newValue != 0,
+                                    text = option.label,
+                                    checked = option.include(appGroupType),
+                                    onClick = { appGroupType = newValue },
+                                )
+                            }
+                        }
+                        MenuGroupCard(title = "筛选") {
+                            MenuItemCheckbox(
+                                text = "白名单",
+                                stateFlow = vm.showBlockAppFlow,
                             )
                         }
-                        Text(
-                            text = "筛选",
-                            modifier = Modifier.menuPadding(),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        val handle3 = {
-                            storeFlow.update { s -> s.copy(showBlockApp = !s.showBlockApp) }
-                        }
-                        DropdownMenuItem(
-                            text = {
-                                Text("显示白名单")
-                            },
-                            trailingIcon = {
-                                Checkbox(
-                                    checked = showBlockApp,
-                                    onCheckedChange = { handle3() }
-                                )
-                            },
-                            onClick = handle3,
-                        )
                     }
                 }
             })
@@ -332,8 +313,7 @@ fun useAppListPage(): ScaffoldExt {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        val hasShowAll = showBlockApp
-                        EmptyText(text = if (hasShowAll) "暂无搜索结果" else "暂无搜索结果，请尝试修改筛选条件")
+                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsState().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }

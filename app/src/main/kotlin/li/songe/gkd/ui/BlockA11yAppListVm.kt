@@ -7,18 +7,27 @@ import kotlinx.coroutines.flow.map
 import li.songe.gkd.store.blockA11yAppListFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.share.BaseViewModel
+import li.songe.gkd.ui.share.asMutableStateFlow
 import li.songe.gkd.ui.share.useAppFilter
 import li.songe.gkd.util.AppListString
 import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.findOption
 
 class BlockA11yAppListVm : BaseViewModel() {
-
-    val sortTypeFlow = storeFlow.mapNew {
-        AppSortOption.objects.findOption(it.a11yAppSort)
-    }
-
+    val sortTypeFlow = storeFlow.asMutableStateFlow(
+        getter = { AppSortOption.objects.findOption(it.a11yAppSort) },
+        setter = {
+            storeFlow.value.copy(a11yAppSort = it.value)
+        }
+    )
+    val appGroupTypeFlow = storeFlow.asMutableStateFlow(
+        getter = { it.a11yAppGroupType },
+        setter = {
+            storeFlow.value.copy(a11yAppGroupType = it)
+        }
+    )
     val appFilter = useAppFilter(
+        appGroupTypeFlow = appGroupTypeFlow,
         sortTypeFlow = sortTypeFlow,
     )
     val searchStrFlow = appFilter.searchStrFlow
