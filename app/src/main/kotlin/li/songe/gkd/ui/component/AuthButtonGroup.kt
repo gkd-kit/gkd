@@ -14,11 +14,12 @@ import li.songe.gkd.util.throttle
 @Composable
 fun AuthButtonGroup(
     buttons: List<Pair<String, () -> Unit>>,
+    modifier: Modifier = Modifier
+        .padding(4.dp, 0.dp)
+        .fillMaxWidth()
 ) {
     FlowRow(
-        modifier = Modifier
-            .padding(4.dp, 0.dp)
-            .fillMaxWidth(),
+        modifier = modifier,
     ) {
         buttons.forEach { (text, click) ->
             TextButton(onClick = throttle(click)) {

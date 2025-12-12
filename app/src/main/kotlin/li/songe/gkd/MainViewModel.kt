@@ -17,6 +17,7 @@ import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -29,6 +30,7 @@ import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.permission.AuthReason
+import li.songe.gkd.permission.appOpsRestrictStateList
 import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.service.A11yService
@@ -321,6 +323,13 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
     val hasOtherA11yFlow = a11yServicesFlow.mapNew { list ->
         list.any { it != A11yService.a11yCn }
     }
+
+
+    val appOpsRestrictedFlow = combine(
+        *appOpsRestrictStateList.map { it.stateFlow }.toTypedArray(),
+    ) { list ->
+        list.any { !it }
+    }.stateInit(true)
 
     init {
         // preload

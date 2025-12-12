@@ -18,6 +18,10 @@ public class AppOpsManagerHidden {
     @RequiresApi(Build.VERSION_CODES.Q)
     public static int OP_ACCESS_ACCESSIBILITY;
 
+    // https://diff.songe.li/?ref=AppOpsManager%23OP_CREATE_ACCESSIBILITY_OVERLAY
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    public static int OP_CREATE_ACCESSIBILITY_OVERLAY;
+
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     public static int OP_ACCESS_RESTRICTED_SETTINGS;
 

@@ -14,10 +14,11 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.updateAndGet
 import li.songe.gkd.MainActivity
+import li.songe.gkd.MainViewModel
 import li.songe.gkd.app
+import li.songe.gkd.shizuku.SafeAppOpsService
 import li.songe.gkd.shizuku.SafePackageManager
 import li.songe.gkd.shizuku.shizukuContextFlow
-import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateAllAppInfo
@@ -88,8 +89,7 @@ private suspend fun asyncRequestPermission(
     return deferred.await()
 }
 
-@Suppress("SameParameterValue")
-private fun checkAllowedOp(op: String): Boolean = app.appOpsManager.checkOpNoThrow(
+fun checkAllowedOp(op: String): Boolean = app.appOpsManager.checkOpNoThrow(
     op,
     android.os.Process.myUid(),
     app.packageName
@@ -111,13 +111,71 @@ val foregroundServiceSpecialUseState by lazy {
         },
         reason = AuthReason(
             text = { "当前操作权限「特殊用途的前台服务」已被限制, 请先解除限制" },
-            renderConfirm = {
-                val mainVm = LocalMainViewModel.current
-                {
-                    mainVm.navigatePage(AppOpsAllowPageDestination)
-                }
-            }
+            confirm = {
+                MainViewModel.instance.navigatePage(AppOpsAllowPageDestination)
+            },
         ),
+    )
+}
+
+// https://github.com/orgs/gkd-kit/discussions/1234
+val accessA11yState by lazy {
+    PermissionState(
+        name = "访问无障碍",
+        check = {
+            if (AndroidTarget.Q) {
+                checkAllowedOp("android:access_accessibility")
+            } else {
+                true
+            }
+        },
+    )
+}
+
+val createA11yOverlayState by lazy {
+    PermissionState(
+        name = "创建无障碍悬浮窗",
+        check = {
+            if (SafeAppOpsService.supportCreateA11yOverlay) {
+                checkAllowedOp("android:create_accessibility_overlay")
+            } else {
+                true
+            }
+        },
+    )
+}
+
+val getAppOpsStatsState by lazy {
+    PermissionState(
+        name = "获取应用操作状态",
+        check = {
+            ContextCompat.checkSelfPermission(
+                app,
+                "android.permission.GET_APP_OPS_STATS",
+            ) == PackageManager.PERMISSION_GRANTED
+        },
+    )
+}
+
+val accessRestrictedSettingsState by lazy {
+    PermissionState(
+        name = "访问受限设置",
+        check = {
+            if (AndroidTarget.TIRAMISU && getAppOpsStatsState.updateAndGet()) {
+                checkAllowedOp("android:access_restricted_settings")
+            } else {
+                true
+            }
+        },
+    )
+}
+
+val appOpsRestrictStateList by lazy {
+    arrayOf(
+        accessA11yState,
+        createA11yOverlayState,
+        accessRestrictedSettingsState,
+        foregroundServiceSpecialUseState,
     )
 }
 
@@ -258,6 +316,10 @@ val allPermissionStates by lazy {
     listOf(
         notificationState,
         foregroundServiceSpecialUseState,
+        accessA11yState,
+        createA11yOverlayState,
+        getAppOpsStatsState,
+        accessRestrictedSettingsState,
         canDrawOverlaysState,
         canWriteExternalStorage,
         ignoreBatteryOptimizationsState,

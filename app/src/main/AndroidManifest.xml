@@ -22,6 +22,9 @@
     <uses-permission
         android:name="android.permission.WRITE_SECURE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.GET_APP_OPS_STATS"
+        tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
@@ -297,22 +300,6 @@
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
         </service>
-
-        <!--  remove useless -->
-        <activity
-            android:name="com.blankj.utilcode.util.UtilsTransActivity4MainProcess"
-            tools:node="remove" />
-        <activity
-            android:name="com.blankj.utilcode.util.UtilsTransActivity"
-            tools:node="remove" />
-
-        <provider
-            android:name="com.blankj.utilcode.util.UtilsFileProvider"
-            android:authorities="li.songe.gkd.utilcode.fileprovider"
-            tools:node="remove" />
-        <service
-            android:name="com.blankj.utilcode.util.MessengerUtils$ServerService"
-            tools:node="remove" />
 
     </application>
 

@@ -42,6 +42,7 @@ import li.songe.gkd.META
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.fixRestartService
+import li.songe.gkd.shizuku.SafeAppOpsService
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AuthButtonGroup
@@ -261,8 +262,14 @@ val gkdStartCommandText by lazy {
         "set -euo pipefail",
         "echo '> start start.sh'",
         Manifest.permission.WRITE_SECURE_SETTINGS.pmGrant,
+        "android.permission.GET_APP_OPS_STATS".pmGrant,
+        if (AndroidTarget.TIRAMISU) Manifest.permission.POST_NOTIFICATIONS.pmGrant else null,
+        "POST_NOTIFICATION".appopsAllow,
+        "SYSTEM_ALERT_WINDOW".appopsAllow,
+        if (AndroidTarget.Q) "ACCESS_ACCESSIBILITY".appopsAllow else null,
         if (AndroidTarget.TIRAMISU) "ACCESS_RESTRICTED_SETTINGS".appopsAllow else null,
         if (AndroidTarget.UPSIDE_DOWN_CAKE) "FOREGROUND_SERVICE_SPECIAL_USE".appopsAllow else null,
+        if (SafeAppOpsService.supportCreateA11yOverlay) "CREATE_ACCESSIBILITY_OVERLAY".appopsAllow else null,
         "sh ${shFolder.absolutePath}/expose.sh 1",
         "echo '> start.sh end'",
     ).joinToString("\n")

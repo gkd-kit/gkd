@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -38,11 +39,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
+import com.ramcosta.composedestinations.generated.destinations.AppOpsAllowPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
 import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.data.SubsConfig
+import li.songe.gkd.permission.checkAllowedOp
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ActivityService
@@ -79,7 +82,13 @@ fun useControlPage(): ScaffoldExt {
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             PerfTopAppBar(scrollBehavior = scrollBehavior, title = {
-                Text(text = stringResource(R.string.app_name))
+                Text(
+                    text = stringResource(R.string.app_name) + try {
+                        checkAllowedOp("android:access_restricted_settings")
+                    } catch (e: Exception) {
+                        e.message
+                    }
+                )
             }, actions = {
                 PerfIconButton(
                     imageVector = PerfIcon.RocketLaunch,
@@ -105,6 +114,36 @@ fun useControlPage(): ScaffoldExt {
                 .padding(horizontal = itemHorizontalPadding),
             verticalArrangement = Arrangement.spacedBy(itemHorizontalPadding / 2)
         ) {
+            if (mainVm.appOpsRestrictedFlow.collectAsState().value) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics(mergeDescendants = true) {
+                            this.onClick(label = "前往解除限制页面", action = null)
+                        },
+                    shape = MaterialTheme.shapes.large,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                    onClick = throttle {
+                        mainVm.navigatePage(AppOpsAllowPageDestination)
+                    },
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(itemVerticalPadding),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        PerfIcon(imageVector = PerfIcon.WarningAmber)
+                        Text(
+                            modifier = Modifier.weight(1f),
+                            text = "检测到权限受限制，请前往解除",
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        PerfIcon(imageVector = PerfIcon.KeyboardArrowRight)
+                    }
+                }
+            }
             PageSwitchItemCard(
                 imageVector = PerfIcon.Memory,
                 title = "服务状态",

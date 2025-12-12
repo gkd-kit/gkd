@@ -75,6 +75,7 @@ class SafePackageManager(private val value: IPackageManager) {
             grantSelfPermission("com.android.permission.GET_INSTALLED_APPS")
         } catch (e: Throwable) {
         }
+        grantSelfPermission("android.permission.GET_APP_OPS_STATS")
         grantSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS)
         if (AndroidTarget.TIRAMISU) {
             grantSelfPermission(Manifest.permission.POST_NOTIFICATIONS)

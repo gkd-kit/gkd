@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.2.21"
 ksp = "2.3.3"
-agp = "8.13.1"
+agp = "8.13.2"
 compose = "1.10.0"
 room = "2.8.4"
 paging = "3.3.6"

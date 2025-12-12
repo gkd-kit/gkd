@@ -21,6 +21,14 @@ class SafeAppOpsService(
         )?.let {
             SafeAppOpsService(IAppOpsService.Stub.asInterface(it))
         }
+
+        val supportCreateA11yOverlay by lazy {
+            try {
+                AppOpsManager::class.java.getField("OP_CREATE_ACCESSIBILITY_OVERLAY")
+            } catch (_: NoSuchFieldException) {
+                null
+            } != null
+        }
     }
 
     fun setMode(
@@ -49,6 +57,9 @@ class SafeAppOpsService(
         }
         if (AndroidTarget.UPSIDE_DOWN_CAKE) {
             setAllowSelfMode(AppOpsManagerHidden.OP_FOREGROUND_SERVICE_SPECIAL_USE)
+        }
+        if (supportCreateA11yOverlay) {
+            setAllowSelfMode(AppOpsManagerHidden.OP_CREATE_ACCESSIBILITY_OVERLAY)
         }
     }
 }

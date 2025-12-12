@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Binder
 import li.songe.gkd.appScope
 import li.songe.gkd.notif.exposeNotif
+import li.songe.gkd.syncFixState
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.componentName
@@ -31,7 +32,10 @@ class ExposeService : Service() {
         LogUtils.d("ExposeService::handleIntent", expose, data)
         when (expose) {
             0 -> SnapshotExt.captureSnapshot()
-            1 -> toast("执行成功")
+            1 -> {
+                toast("执行成功")
+                syncFixState()
+            }
 
             else -> {
                 toast("未知调用: expose=$expose data=$data")

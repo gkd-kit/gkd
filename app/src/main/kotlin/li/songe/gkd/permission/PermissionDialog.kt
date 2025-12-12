@@ -14,7 +14,6 @@ import li.songe.gkd.util.stopCoroutine
 data class AuthReason(
     val text: () -> String,
     val confirm: ((Activity) -> Unit)? = null,
-    val renderConfirm: @Composable (() -> ((Activity) -> Unit))? = null,
 )
 
 @Composable
@@ -31,10 +30,9 @@ fun AuthDialog(authReasonFlow: MutableStateFlow<AuthReason?>) {
             },
             onDismissRequest = { authReasonFlow.value = null },
             confirmButton = {
-                val composeConfirm = authAction.renderConfirm?.invoke()
                 TextButton(onClick = {
                     authReasonFlow.value = null
-                    (composeConfirm ?: authAction.confirm)?.invoke(context)
+                    authAction.confirm?.invoke(context)
                 }) {
                     Text(text = "确认")
                 }
