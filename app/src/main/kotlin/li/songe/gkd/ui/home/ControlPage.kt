@@ -46,7 +46,6 @@ import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.permission.appOpsRestrictedFlow
-import li.songe.gkd.permission.checkAllowedOp
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ActivityService
@@ -84,11 +83,7 @@ fun useControlPage(): ScaffoldExt {
         topBar = {
             PerfTopAppBar(scrollBehavior = scrollBehavior, title = {
                 Text(
-                    text = stringResource(R.string.app_name) + try {
-                        checkAllowedOp("android:access_restricted_settings")
-                    } catch (e: Exception) {
-                        e.message
-                    }
+                    text = stringResource(R.string.app_name)
                 )
             }, actions = {
                 PerfIconButton(

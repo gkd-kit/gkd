@@ -93,7 +93,7 @@ private suspend fun asyncRequestPermission(
     return deferred.await()
 }
 
-fun checkAllowedOp(op: String): Boolean = app.appOpsManager.checkOpNoThrow(
+private fun checkAllowedOp(op: String): Boolean = app.appOpsManager.checkOpNoThrow(
     op,
     android.os.Process.myUid(),
     app.packageName
