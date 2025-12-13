@@ -45,6 +45,7 @@ import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestin
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.data.SubsConfig
+import li.songe.gkd.permission.appOpsRestrictedFlow
 import li.songe.gkd.permission.checkAllowedOp
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
@@ -114,7 +115,7 @@ fun useControlPage(): ScaffoldExt {
                 .padding(horizontal = itemHorizontalPadding),
             verticalArrangement = Arrangement.spacedBy(itemHorizontalPadding / 2)
         ) {
-            if (mainVm.appOpsRestrictedFlow.collectAsState().value) {
+            if (appOpsRestrictedFlow.collectAsState().value) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()

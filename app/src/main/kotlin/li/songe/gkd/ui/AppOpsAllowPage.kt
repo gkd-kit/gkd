@@ -35,6 +35,7 @@ import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.MainActivity
 import li.songe.gkd.permission.PermissionState
 import li.songe.gkd.permission.appOpsRestrictStateList
+import li.songe.gkd.permission.appOpsRestrictedFlow
 import li.songe.gkd.ui.component.AuthButtonGroup
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.ManualAuthDialog
@@ -59,7 +60,7 @@ fun AppOpsAllowPage() {
     val context = LocalActivity.current as MainActivity
     val vm = viewModel<AppOpsAllowVm>()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    val appOpsRestricted by mainVm.appOpsRestrictedFlow.collectAsState()
+    val appOpsRestricted by appOpsRestrictedFlow.collectAsState()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
             PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {

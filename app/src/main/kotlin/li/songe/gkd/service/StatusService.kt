@@ -15,7 +15,7 @@ import li.songe.gkd.MainActivity
 import li.songe.gkd.a11y.useA11yServiceEnabledFlow
 import li.songe.gkd.app
 import li.songe.gkd.notif.abNotif
-import li.songe.gkd.permission.accessA11yState
+import li.songe.gkd.permission.appOpsRestrictedFlow
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
@@ -48,7 +48,6 @@ class StatusService : Service(), OnSimpleLife {
     val a11yServiceEnabledFlow = useA11yServiceEnabledFlow()
 
     fun statusTriple(): Triple<String, String, String?> {
-        val a11yRestricted = accessA11yState.stateFlow.value
         val abRunning = A11yService.isRunning.value
         val store = storeFlow.value
         val ruleSummary = ruleSummaryFlow.value
@@ -59,8 +58,8 @@ class StatusService : Service(), OnSimpleLife {
         } else {
             META.appName
         }
-        return if (!a11yRestricted) {
-            Triple(title, "无障碍访问受限，请解除限制", "gkd://page")
+        return if (appOpsRestrictedFlow.value) {
+            Triple(title, "权限受限，请解除限制", "gkd://page/3")
         } else if (shizukuWarn) {
             Triple(title, "Shizuku 未连接，请授权或关闭优化", "gkd://page/1")
         } else if (!abRunning) {
@@ -107,7 +106,7 @@ class StatusService : Service(), OnSimpleLife {
                     shizukuWarnFlow,
                     a11yServiceEnabledFlow,
                     writeSecureSettingsState.stateFlow,
-                    accessA11yState.stateFlow,
+                    appOpsRestrictedFlow,
                     topAppIdFlow,
                     actionCountFlow.debounce(1000L),
                 ) {

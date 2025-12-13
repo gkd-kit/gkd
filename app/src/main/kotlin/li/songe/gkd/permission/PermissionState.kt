@@ -12,10 +12,14 @@ import com.hjq.permissions.permission.base.IPermission
 import com.ramcosta.composedestinations.generated.destinations.AppOpsAllowPageDestination
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.updateAndGet
 import li.songe.gkd.MainActivity
 import li.songe.gkd.MainViewModel
 import li.songe.gkd.app
+import li.songe.gkd.appScope
 import li.songe.gkd.shizuku.SafeAppOpsService
 import li.songe.gkd.shizuku.SafePackageManager
 import li.songe.gkd.shizuku.shizukuContextFlow
@@ -177,6 +181,14 @@ val appOpsRestrictStateList by lazy {
         accessRestrictedSettingsState,
         foregroundServiceSpecialUseState,
     )
+}
+
+val appOpsRestrictedFlow by lazy {
+    combine(
+        *appOpsRestrictStateList.map { it.stateFlow }.toTypedArray(),
+    ) { list ->
+        list.any { !it }
+    }.stateIn(appScope, SharingStarted.Eagerly, false)
 }
 
 val notificationState by lazy {
