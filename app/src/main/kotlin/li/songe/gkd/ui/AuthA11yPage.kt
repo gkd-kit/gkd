@@ -1,6 +1,7 @@
 package li.songe.gkd.ui
 
 import android.Manifest
+import android.app.AppOpsManagerHidden
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,6 +40,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.META
+import li.songe.gkd.permission.Manifest_permission_GET_APP_OPS_STATS
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.fixRestartService
@@ -254,7 +256,7 @@ fun AuthA11yPage() {
     )
 }
 
-private val String.appopsAllow get() = "appops set ${META.appId} $this allow"
+private val Int.appopsAllow get() = "appops set ${META.appId} ${AppOpsManagerHidden.opToName(this)} allow"
 private val String.pmGrant get() = "pm grant ${META.appId} $this"
 
 val gkdStartCommandText by lazy {
@@ -262,14 +264,14 @@ val gkdStartCommandText by lazy {
         "set -euo pipefail",
         "echo '> start start.sh'",
         Manifest.permission.WRITE_SECURE_SETTINGS.pmGrant,
-        "android.permission.GET_APP_OPS_STATS".pmGrant,
+        Manifest_permission_GET_APP_OPS_STATS.pmGrant,
         if (AndroidTarget.TIRAMISU) Manifest.permission.POST_NOTIFICATIONS.pmGrant else null,
-        "POST_NOTIFICATION".appopsAllow,
-        "SYSTEM_ALERT_WINDOW".appopsAllow,
-        if (AndroidTarget.Q) "ACCESS_ACCESSIBILITY".appopsAllow else null,
-        if (AndroidTarget.TIRAMISU) "ACCESS_RESTRICTED_SETTINGS".appopsAllow else null,
-        if (AndroidTarget.UPSIDE_DOWN_CAKE) "FOREGROUND_SERVICE_SPECIAL_USE".appopsAllow else null,
-        if (SafeAppOpsService.supportCreateA11yOverlay) "CREATE_ACCESSIBILITY_OVERLAY".appopsAllow else null,
+        AppOpsManagerHidden.OP_POST_NOTIFICATION.appopsAllow,
+        AppOpsManagerHidden.OP_SYSTEM_ALERT_WINDOW.appopsAllow,
+        if (AndroidTarget.Q) AppOpsManagerHidden.OP_ACCESS_ACCESSIBILITY.appopsAllow else null,
+        if (AndroidTarget.TIRAMISU) AppOpsManagerHidden.OP_ACCESS_RESTRICTED_SETTINGS.appopsAllow else null,
+        if (AndroidTarget.UPSIDE_DOWN_CAKE) AppOpsManagerHidden.OP_FOREGROUND_SERVICE_SPECIAL_USE.appopsAllow else null,
+        if (SafeAppOpsService.supportCreateA11yOverlay) AppOpsManagerHidden.OP_CREATE_ACCESSIBILITY_OVERLAY.appopsAllow else null,
         "sh ${shFolder.absolutePath}/expose.sh 1",
         "echo '> start.sh end'",
     ).joinToString("\n")

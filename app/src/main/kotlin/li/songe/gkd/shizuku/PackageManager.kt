@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.IPackageManager
 import android.content.pm.PackageInfo
 import li.songe.gkd.META
+import li.songe.gkd.permission.Manifest_permission_GET_APP_OPS_STATS
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.checkExistClass
 
@@ -19,6 +20,8 @@ class SafePackageManager(private val value: IPackageManager) {
         )?.let {
             SafePackageManager(IPackageManager.Stub.asInterface(it))
         }
+
+        private var canUseGetInstalledApps = true
     }
 
     val isSafeMode get() = safeInvokeMethod { value.isSafeMode }
@@ -71,11 +74,14 @@ class SafePackageManager(private val value: IPackageManager) {
     )
 
     fun allowAllSelfPermission() {
-        try {
-            grantSelfPermission("com.android.permission.GET_INSTALLED_APPS")
-        } catch (e: Throwable) {
+        if (canUseGetInstalledApps) {
+            try {
+                grantSelfPermission("com.android.permission.GET_INSTALLED_APPS")
+            } catch (_: IllegalArgumentException) {
+                canUseGetInstalledApps = false
+            }
         }
-        grantSelfPermission("android.permission.GET_APP_OPS_STATS")
+        grantSelfPermission(Manifest_permission_GET_APP_OPS_STATS)
         grantSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS)
         if (AndroidTarget.TIRAMISU) {
             grantSelfPermission(Manifest.permission.POST_NOTIFICATIONS)

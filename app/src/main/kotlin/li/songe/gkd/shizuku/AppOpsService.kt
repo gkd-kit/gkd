@@ -3,6 +3,8 @@ package li.songe.gkd.shizuku
 import android.app.AppOpsManager
 import android.app.AppOpsManagerHidden
 import android.content.Context
+import android.os.Build
+import androidx.annotation.ChecksSdkIntAtLeast
 import com.android.internal.app.IAppOpsService
 import li.songe.gkd.META
 import li.songe.gkd.util.AndroidTarget
@@ -22,13 +24,16 @@ class SafeAppOpsService(
             SafeAppOpsService(IAppOpsService.Stub.asInterface(it))
         }
 
-        val supportCreateA11yOverlay by lazy {
-            try {
+        private val a11yOverlayOk by lazy {
+            AndroidTarget.UPSIDE_DOWN_CAKE && try {
                 AppOpsManager::class.java.getField("OP_CREATE_ACCESSIBILITY_OVERLAY")
             } catch (_: NoSuchFieldException) {
                 null
             } != null
         }
+
+        @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+        val supportCreateA11yOverlay get() = a11yOverlayOk
     }
 
     fun setMode(

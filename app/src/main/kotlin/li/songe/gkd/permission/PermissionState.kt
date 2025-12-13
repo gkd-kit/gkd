@@ -3,6 +3,7 @@ package li.songe.gkd.permission
 import android.Manifest
 import android.app.Activity
 import android.app.AppOpsManager
+import android.app.AppOpsManagerHidden
 import android.content.pm.PackageManager
 import android.provider.Settings
 import androidx.core.content.ContextCompat
@@ -108,7 +109,7 @@ val foregroundServiceSpecialUseState by lazy {
         name = "特殊用途的前台服务",
         check = {
             if (AndroidTarget.UPSIDE_DOWN_CAKE) {
-                checkAllowedOp("android:foreground_service_special_use")
+                checkAllowedOp(AppOpsManagerHidden.OPSTR_FOREGROUND_SERVICE_SPECIAL_USE)
             } else {
                 true
             }
@@ -128,7 +129,7 @@ val accessA11yState by lazy {
         name = "访问无障碍",
         check = {
             if (AndroidTarget.Q) {
-                checkAllowedOp("android:access_accessibility")
+                checkAllowedOp(AppOpsManagerHidden.OPSTR_ACCESS_ACCESSIBILITY)
             } else {
                 true
             }
@@ -141,7 +142,7 @@ val createA11yOverlayState by lazy {
         name = "创建无障碍悬浮窗",
         check = {
             if (SafeAppOpsService.supportCreateA11yOverlay) {
-                checkAllowedOp("android:create_accessibility_overlay")
+                checkAllowedOp(AppOpsManagerHidden.OPSTR_CREATE_ACCESSIBILITY_OVERLAY)
             } else {
                 true
             }
@@ -149,24 +150,34 @@ val createA11yOverlayState by lazy {
     )
 }
 
+const val Manifest_permission_GET_APP_OPS_STATS = "android.permission.GET_APP_OPS_STATS"
+
 val getAppOpsStatsState by lazy {
     PermissionState(
-        name = "获取应用操作状态",
+        name = "获取应用权限状态",
         check = {
             ContextCompat.checkSelfPermission(
                 app,
-                "android.permission.GET_APP_OPS_STATS",
+                Manifest_permission_GET_APP_OPS_STATS,
             ) == PackageManager.PERMISSION_GRANTED
         },
     )
 }
 
+private var canRestrictsRead = true
 val accessRestrictedSettingsState by lazy {
     PermissionState(
         name = "访问受限设置",
         check = {
-            if (AndroidTarget.TIRAMISU && getAppOpsStatsState.updateAndGet()) {
-                checkAllowedOp("android:access_restricted_settings")
+            if (canRestrictsRead && AndroidTarget.UPSIDE_DOWN_CAKE && getAppOpsStatsState.updateAndGet()) {
+                try {
+                    // https://cs.android.com/android/platform/superproject/+/android-14.0.0_r55:frameworks/base/services/core/java/com/android/server/appop/AppOpsService.java;l=4237
+                    checkAllowedOp(AppOpsManagerHidden.OPSTR_ACCESS_RESTRICTED_SETTINGS)
+                } catch (_: SecurityException) {
+                    // https://cs.android.com/android/platform/superproject/+/android-14.0.0_r54:frameworks/base/services/core/java/com/android/server/appop/AppOpsService.java;l=4227
+                    canRestrictsRead = false
+                    true
+                }
             } else {
                 true
             }
