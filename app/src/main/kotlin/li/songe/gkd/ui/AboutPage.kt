@@ -60,7 +60,6 @@ import kotlinx.coroutines.isActive
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
-import li.songe.gkd.app
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
@@ -84,15 +83,14 @@ import li.songe.gkd.util.UpdateChannelOption
 import li.songe.gkd.util.buildLogFile
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.format
+import li.songe.gkd.util.getShareApkFile
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.saveFileToDownloads
 import li.songe.gkd.util.shareFile
-import li.songe.gkd.util.sharedDir
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
-import java.io.File
 
 @Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
@@ -462,12 +460,6 @@ private fun exportPlayTipTemplate(): AnnotatedString {
             append("建议点此从官网下载")
         }
         append("，或点击下方继续操作")
-    }
-}
-
-private fun getShareApkFile(): File {
-    return sharedDir.resolve("gkd-v${META.versionName}.apk").apply {
-        File(app.packageCodePath).copyTo(this, overwrite = true)
     }
 }
 

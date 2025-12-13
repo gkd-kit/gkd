@@ -31,6 +31,7 @@ import li.songe.gkd.app
 import li.songe.json5.Json5
 import li.songe.json5.Json5EncoderConfig
 import li.songe.json5.encodeToJson5String
+import java.io.File
 import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
 
@@ -238,4 +239,10 @@ fun runMainPost(delayMillis: Long = 0L, r: Runnable) {
         return
     }
     Handler(Looper.getMainLooper()).postDelayed(r, delayMillis)
+}
+
+fun getShareApkFile(): File {
+    return sharedDir.resolve("gkd-v${META.versionName}.apk").apply {
+        File(app.packageCodePath).copyTo(this, overwrite = true)
+    }
 }
