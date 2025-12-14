@@ -34,6 +34,7 @@ import li.songe.gkd.util.RuleSummary
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.systemUiAppId
+import li.songe.loc.Loc
 
 data class TopActivity(
     val appId: String = "",
@@ -140,11 +141,13 @@ sealed class ActivityScene() {
     data object TaskStack : ActivityScene()
 }
 
+@Loc
 @Synchronized
 fun updateTopActivity(
     appId: String,
     activityId: String?,
     scene: ActivityScene = ActivityScene.A11y,
+    @Loc loc: String = "",
 ) {
     val t = System.currentTimeMillis()
     if (scene == ActivityScene.TaskStack && storeFlow.value.enableBlockA11yAppList) {
@@ -233,7 +236,11 @@ fun updateTopActivity(
             }
         }
         activityRuleFlow.value = newActivityRule
-        LogUtils.d("${oldActivity.format()} -> ${topActivityFlow.value.format()} (scene=$scene)")
+        LogUtils.d(
+            "${oldActivity.format()} -> ${topActivityFlow.value.format()} (scene=$scene)",
+            loc = loc,
+            tag = "updateTopActivity",
+        )
     }
 }
 

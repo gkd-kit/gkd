@@ -16,10 +16,10 @@ object LogUtils {
     @Loc
     fun d(
         vararg args: Any?,
-        @Loc("{fileName}") fileName: String = "",
         @Loc loc: String = "",
+        @Loc("{fileName}") fileName: String = "",
+        tag: String = fileName.substringBeforeLast('.'),
     ) {
-        val tag = fileName.take(fileName.lastIndexOf('.'))
         val name = Thread.currentThread().name
         val actualLoc = loc.substring("li.songe.gkd.".length)
         val texts = args.map { stringify(it) }

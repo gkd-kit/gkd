@@ -5,11 +5,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-import kotlin.coroutines.coroutineContext
 
 fun CoroutineScope.launchTry(
     context: CoroutineContext = EmptyCoroutineContext,
@@ -23,10 +23,9 @@ fun CoroutineScope.launchTry(
         e.printStackTrace()
     } catch (_: InterruptRuleMatchException) {
     } catch (e: Throwable) {
-        e.printStackTrace()
         LogUtils.d(e)
         if (!silent) {
-            toast(e.message ?: e.stackTraceToString())
+            toast(e.message ?: e.stackTraceToString(), loc = "")
         }
     }
 }
@@ -43,8 +42,8 @@ fun CoroutineScope.launchAsFn(
         } catch (e: CancellationException) {
             e.printStackTrace()
         } catch (e: Throwable) {
-            e.printStackTrace()
-            toast(e.message ?: e.stackTraceToString())
+            LogUtils.d(e)
+            toast(e.message ?: e.stackTraceToString(), loc = "")
         }
     }
 }
@@ -61,14 +60,14 @@ fun <T> CoroutineScope.launchAsFn(
         } catch (e: CancellationException) {
             e.printStackTrace()
         } catch (e: Throwable) {
-            e.printStackTrace()
-            toast(e.message ?: e.stackTraceToString())
+            LogUtils.d(e)
+            toast(e.message ?: e.stackTraceToString(), loc = "")
         }
     }
 }
 
 suspend fun stopCoroutine(): Nothing {
-    coroutineContext[Job]?.cancel()
+    currentCoroutineContext()[Job]?.cancel()
     yield()
     // the following code will not be run
     throw CancellationException("Coroutine stopped")

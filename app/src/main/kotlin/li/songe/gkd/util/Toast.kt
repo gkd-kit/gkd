@@ -34,7 +34,9 @@ fun toast(
     @Loc loc: String = "",
 ) {
     Toaster.show(text)
-    LogUtils.d(text, loc = loc)
+    if (loc.isNotEmpty()) {
+        LogUtils.d(text, loc = loc)
+    }
 }
 
 private val darkTheme: Boolean
