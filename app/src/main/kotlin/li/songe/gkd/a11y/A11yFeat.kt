@@ -211,7 +211,15 @@ private fun A11yService.useAliveOverlayView() {
             height = 1
             packageName = context.packageName
         }
-        wm.addView(tempView, lp)
+        try {
+            // 某些设备 android.view.WindowManager$BadTokenException
+            wm.addView(tempView, lp)
+            aliveView = tempView
+        } catch (e: Throwable) {
+            aliveView = null
+            LogUtils.d(e)
+            toast("添加无障碍保活失败\n请尝试重启无障碍")
+        }
     }
     onA11yConnected { addA11View() }
     onDestroyed { removeA11View() }
