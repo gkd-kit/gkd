@@ -78,6 +78,7 @@ import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.updateDialogOptions
+import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.style.EmptyHeight
@@ -381,9 +382,16 @@ fun useSettingsPage(): ScaffoldExt {
 
             TextSwitch(
                 title = "后台隐藏",
-                subtitle = "在「最近任务」隐藏本应用",
+                subtitle = "在「最近任务」隐藏卡片",
                 checked = store.excludeFromRecents,
-                onCheckedChange = {
+                onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
+                    if (it) {
+                        mainVm.dialogFlow.waitResult(
+                            title = "后台隐藏",
+                            text = "隐藏卡片后可能导致部分设备无法给任务卡片加锁后台，建议先加锁后再隐藏，若已加锁或没有锁后台机制请继续",
+                            confirmText = "继续",
+                        )
+                    }
                     storeFlow.value = store.copy(
                         excludeFromRecents = !store.excludeFromRecents
                     )
@@ -406,7 +414,7 @@ fun useSettingsPage(): ScaffoldExt {
             }
             TextSwitch(
                 title = "局部关闭",
-                subtitle = "白名单应用内关闭无障碍",
+                subtitle = "白名单内关闭无障碍",
                 checked = store.enableBlockA11yAppList && shizukuContextFlow.collectAsState().value.ok,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
