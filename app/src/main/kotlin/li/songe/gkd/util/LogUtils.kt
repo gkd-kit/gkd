@@ -46,6 +46,20 @@ object LogUtils {
 
 private val logFileExecutor = Executors.newSingleThreadExecutor()
 private const val MAX_LOG_KEEP_DAYS = 7
+private val deviceInfoText by lazy {
+    val deviceInfos = listOf(
+        android.os.Build.MANUFACTURER,
+        android.os.Build.MODEL,
+        DeviceBrand.getBrandName(),
+        DeviceOs.getOsName() + DeviceOs.getOsVersionName() + DeviceOs.getOsBigVersionCode(),
+        DeviceMarketName.getMarketName(app)
+    )
+    buildString {
+        append("Android: ${android.os.Build.VERSION.RELEASE} (${android.os.Build.VERSION.SDK_INT})\n")
+        append("Device: ${deviceInfos.joinToString("/")}\n")
+        append("App: ${META.versionName} (${META.versionCode})\n")
+    }
+}
 
 private fun logToFile(tag: String, name: String, loc: String, texts: List<String>, t: Long) {
     val file = logFolder.resolve("gkd-${t.format("yyyyMMdd")}.log")
@@ -59,29 +73,21 @@ private fun logToFile(tag: String, name: String, loc: String, texts: List<String
                 }
             }
         }
-        val deviceInfos = listOf(
-            android.os.Build.MANUFACTURER,
-            android.os.Build.MODEL,
-            DeviceBrand.getBrandName(),
-            DeviceOs.getOsName() + DeviceOs.getOsVersionName() + DeviceOs.getOsBigVersionCode(),
-            DeviceMarketName.getMarketName(app)
-        )
         sb.append("=== Log ===\n")
         sb.append("Date: ${t.format("yyyy-MM-dd HH:mm:ss.SSS")}\n")
-        sb.append("Android: ${android.os.Build.VERSION.RELEASE} (${android.os.Build.VERSION.SDK_INT})\n")
-        sb.append("Device: ${deviceInfos.joinToString("/")}\n")
-        sb.append("App: ${META.versionName} (${META.versionCode})\n")
+        sb.append(deviceInfoText)
         sb.append("=== Log ===\n\n")
     }
     sb.append(t.format("HH:mm:ss.SSS"))
     sb.append(" $tag, $name, $loc")
-    texts.forEachIndexed { i, text ->
-        if (texts.size == 1) {
-            sb.append("\n")
-        } else {
+    if (texts.size == 1) {
+        sb.append('\n')
+        sb.append(texts[0])
+    } else {
+        texts.forEachIndexed { i, text ->
             sb.append("\n[$i]: ")
+            sb.append(text)
         }
-        sb.append(text)
     }
     sb.append("\n\n")
     file.appendText(sb.toString())

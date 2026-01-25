@@ -11,7 +11,7 @@ import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.UriUtils
 import li.songe.gkd.util.ZipUtils
 import li.songe.gkd.util.checkSubsUpdate
-import li.songe.gkd.util.createTempDir
+import li.songe.gkd.util.createGkdTempDir
 import li.songe.gkd.util.json
 import li.songe.gkd.util.sharedDir
 import li.songe.gkd.util.subsItemsFlow
@@ -53,7 +53,7 @@ private suspend fun importTransferData(transferData: TransferData): Boolean {
 }
 
 suspend fun exportData(subsIds: Collection<Long>): File {
-    val tempDir = createTempDir()
+    val tempDir = createGkdTempDir()
     val dataFile = tempDir.resolve("${TransferData.TYPE}.json")
     dataFile.writeText(
         json.encodeToString(
@@ -85,7 +85,7 @@ suspend fun exportData(subsIds: Collection<Long>): File {
 }
 
 suspend fun importData(uri: Uri) {
-    val tempDir = createTempDir()
+    val tempDir = createGkdTempDir()
     val zipFile = tempDir.resolve("file.zip").apply {
         writeBytes(UriUtils.uri2Bytes(uri))
     }

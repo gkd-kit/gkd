@@ -4,32 +4,28 @@ import android.Manifest
 import android.content.pm.IPackageManager
 import android.content.pm.PackageInfo
 import li.songe.gkd.META
+import li.songe.gkd.app
 import li.songe.gkd.permission.Manifest_permission_GET_APP_OPS_STATS
+import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.checkExistClass
 
 @Suppress("unused")
 class SafePackageManager(private val value: IPackageManager) {
     companion object {
-        val isAvailable: Boolean
-            get() = checkExistClass("android.content.pm.IPackageManager")
 
-        fun newBinder() = getStubService(
-            "package",
-            isAvailable
-        )?.let {
+        fun newBinder() = getShizukuService("package")?.let {
             SafePackageManager(IPackageManager.Stub.asInterface(it))
         }
 
         private var canUseGetInstalledApps = true
     }
 
-    val isSafeMode get() = safeInvokeMethod { value.isSafeMode }
+    val isSafeMode get() = safeInvokeShizuku { value.isSafeMode }
 
     fun getInstalledPackages(
         flags: Int,
         userId: Int = currentUserId,
-    ): List<PackageInfo> = safeInvokeMethod {
+    ): List<PackageInfo> = safeInvokeShizuku {
         if (AndroidTarget.TIRAMISU) {
             value.getInstalledPackages(flags.toLong(), userId).list
         } else {
@@ -41,7 +37,7 @@ class SafePackageManager(private val value: IPackageManager) {
         packageName: String,
         flags: Int,
         userId: Int,
-    ): PackageInfo? = safeInvokeMethod {
+    ): PackageInfo? = safeInvokeShizuku {
         if (AndroidTarget.TIRAMISU) {
             value.getPackageInfo(packageName, flags.toLong(), userId)
         } else {
@@ -52,15 +48,15 @@ class SafePackageManager(private val value: IPackageManager) {
     fun getApplicationEnabledSetting(
         packageName: String,
         userId: Int,
-    ): Int = safeInvokeMethod {
+    ): Int = safeInvokeShizuku {
         value.getApplicationEnabledSetting(packageName, userId)
     } ?: 0
 
-    fun grantRuntimePermission(
+    private fun grantRuntimePermission(
         packageName: String,
         permissionName: String,
         userId: Int = currentUserId,
-    ) = safeInvokeMethod {
+    ) = safeInvokeShizuku {
         value.grantRuntimePermission(
             packageName,
             permissionName,
@@ -68,15 +64,27 @@ class SafePackageManager(private val value: IPackageManager) {
         )
     }
 
-    private fun grantSelfPermission(permissionName: String) = grantRuntimePermission(
-        packageName = META.appId,
-        permissionName = permissionName,
-    )
+    private fun grantSelfPermission(name: String, skipCheck: Boolean = false) {
+        if (!skipCheck) {
+            if (app.checkGrantedPermission(name)) return
+        }
+        grantRuntimePermission(
+            packageName = META.appId,
+            permissionName = name,
+        )
+    }
+
+    fun checkUidPermission(permName: String, uid: Int): Int? = safeInvokeShizuku {
+        value.checkUidPermission(
+            permName,
+            uid
+        )
+    }
 
     fun allowAllSelfPermission() {
-        if (canUseGetInstalledApps) {
+        if (canUseGetInstalledApps && !canQueryPkgState.value) {
             try {
-                grantSelfPermission("com.android.permission.GET_INSTALLED_APPS")
+                grantSelfPermission("com.android.permission.GET_INSTALLED_APPS", skipCheck = true)
             } catch (_: IllegalArgumentException) {
                 canUseGetInstalledApps = false
             }

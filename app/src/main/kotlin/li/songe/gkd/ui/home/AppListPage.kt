@@ -168,7 +168,7 @@ fun useAppListPage(): ScaffoldExt {
                             onClick = throttle {
                                 mainVm.dialogFlow.updateDialogOptions(
                                     title = "权限异常",
-                                    text = "检测到已授予「${canQueryPkgState.name}」但实际获取用户应用数量稀少\n\n在应用列表下拉刷新可重新获取，若无法解决可尝试关闭权限后重新授予或重启设备"
+                                    text = "检测到已授予「${canQueryPkgState.name}」但实际获取应用数量稀少，已使用其它方式获取但可能不全，在应用列表下拉刷新可重新获取，若无法解决可尝试关闭权限后重新授予或重启设备"
                                 )
                             },
                         )

@@ -1,12 +1,10 @@
 package li.songe.gkd.util
 
 
-import android.view.accessibility.AccessibilityEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
-import li.songe.gkd.isActivityVisible
 import li.songe.loc.Loc
 import java.util.WeakHashMap
 
@@ -55,19 +53,14 @@ interface OnSimpleLife {
     @Loc
     fun useAliveToast(
         name: String,
-        onlyWhenVisible: Boolean = false,
         delayMillis: Long = 0L,
         @Loc loc: String = "",
     ) {
         onCreated {
-            if (isActivityVisible() || !onlyWhenVisible) {
-                runMainPost(delayMillis) { toast("${name}已启动", loc = loc) }
-            }
+            toast("${name}已启动", loc = loc, delayMillis = delayMillis)
         }
         onDestroyed {
-            if (isActivityVisible() || !onlyWhenVisible) {
-                toast("${name}已关闭", loc = loc)
-            }
+            toast("${name}已关闭", loc = loc)
         }
     }
 }
@@ -75,10 +68,6 @@ interface OnSimpleLife {
 interface OnA11yLife : OnSimpleLife {
     fun onA11yConnected(f: CbFn) = cbs<CbFn>(3).add(f)
     fun onA11yConnected() = cbs<CbFn>(3).forEach { it() }
-
-    val a11yEventCbs: MutableList<(AccessibilityEvent) -> Unit>
-    fun onA11yEvent(f: (AccessibilityEvent) -> Unit) = a11yEventCbs.add(f)
-    fun onA11yEvent(event: AccessibilityEvent) = a11yEventCbs.forEach { it(event) }
 }
 
 interface OnTileLife : OnSimpleLife {

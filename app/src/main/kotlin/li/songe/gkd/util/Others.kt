@@ -118,18 +118,6 @@ fun drawTextToBitmap(text: String, bitmap: Bitmap) {
     }
 }
 
-// https://github.com/gkd-kit/gkd/issues/44
-// java.lang.ClassNotFoundException:Didn't find class "android.app.IActivityTaskManager" on path: DexPathList
-private val clazzMap = HashMap<String, Boolean>()
-fun checkExistClass(className: String): Boolean = clazzMap[className] ?: try {
-    Class.forName(className)
-    true
-} catch (_: Throwable) {
-    false
-}.apply {
-    clazzMap[className] = this
-}
-
 // https://github.com/gkd-kit/gkd/issues/924
 private val Drawable.safeDrawable: Drawable?
     get() = if (intrinsicHeight > 0 && intrinsicWidth > 0) {
@@ -199,14 +187,15 @@ object AppListString {
     fun encode(set: Set<String>, append: Boolean = false): String {
         val list = set.sorted()
         if (append) {
-            return list.joinToString(separator = "\n\n", postfix = "\n\n") {
-                val name = appInfoMapFlow.value[it]?.name
-                if (name != null) {
-                    "$it\n# $name"
-                } else {
-                    it
+            return list.sortedBy { id -> if (id in appInfoMapFlow.value) 0 else 1 }
+                .joinToString(separator = "\n\n", postfix = "\n\n") {
+                    val name = appInfoMapFlow.value[it]?.name
+                    if (name != null) {
+                        "$it\n# $name"
+                    } else {
+                        it
+                    }
                 }
-            }
         }
         return list.joinToString("\n")
     }

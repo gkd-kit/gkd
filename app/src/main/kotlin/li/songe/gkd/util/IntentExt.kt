@@ -143,8 +143,8 @@ fun <T : Service> startForegroundServiceByClass(clazz: KClass<T>) {
         app.startForegroundService(intent)
     } catch (e: Throwable) {
         LogUtils.d(e)
-        val prefix = if (isActivityVisible()) "" else "${META.appName}: "
-        toast("${prefix}启动服务失败: ${e.message}")
+        val prefix = if (isActivityVisible) "" else "${META.appName}: "
+        toast("${prefix}启动服务失败: ${e.message}", forced = true)
     }
 }
 

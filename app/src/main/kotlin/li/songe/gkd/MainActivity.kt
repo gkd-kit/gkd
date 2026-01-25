@@ -1,8 +1,6 @@
 package li.songe.gkd
 
 import android.app.Activity
-import android.app.ActivityManager
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -69,12 +67,10 @@ import li.songe.gkd.a11y.updateTopActivity
 import li.songe.gkd.permission.AuthDialog
 import li.songe.gkd.permission.updatePermissionState
 import li.songe.gkd.service.A11yService
-import li.songe.gkd.service.ButtonService
-import li.songe.gkd.service.HttpService
-import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.service.StatusService
-import li.songe.gkd.service.fixRestartService
-import li.songe.gkd.service.updateTopAppId
+import li.songe.gkd.service.fixRestartAutomatorService
+import li.songe.gkd.service.updateTopTaskAppId
+import li.songe.gkd.shizuku.automationRegisteredExceptionFlow
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.BuildDialog
@@ -105,7 +101,6 @@ import li.songe.gkd.util.shizukuAppId
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import kotlin.concurrent.Volatile
-import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
 
 class MainActivity : ComponentActivity() {
@@ -197,7 +192,7 @@ class MainActivity : ComponentActivity() {
         watchKeyboardVisible()
         StatusService.autoStart()
         if (storeFlow.value.enableBlockA11yAppList) {
-            updateTopAppId(META.appId)
+            updateTopTaskAppId(META.appId)
         }
         setContent {
             val latestInsets = TopAppBarDefaults.windowInsets
@@ -219,6 +214,7 @@ class MainActivity : ComponentActivity() {
                     if (!mainVm.termsAcceptedFlow.collectAsState().value) {
                         TermsAcceptDialog()
                     } else {
+                        UiAutomationAlreadyRegisteredDlg()
                         AccessRestrictedSettingsDlg()
                         ShizukuErrorDialog(mainVm.shizukuErrorFlow)
                         AuthDialog(mainVm.authReasonFlow)
@@ -290,7 +286,7 @@ class MainActivity : ComponentActivity() {
 
 @Volatile
 private var activityVisibleState = 0
-fun isActivityVisible() = activityVisibleState > 0
+val isActivityVisible get() = activityVisibleState > 0
 
 val activityNavSourceName by lazy { META.appId + ".activity.nav.source" }
 
@@ -305,25 +301,6 @@ fun Activity.navToMainActivity() {
     finish()
 }
 
-@Suppress("DEPRECATION")
-private fun updateServiceRunning() {
-    A11yService.isRunning.value = A11yService.instance != null
-    val list = try {
-        val manager = app.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        manager.getRunningServices(Int.MAX_VALUE) ?: emptyList()
-    } catch (_: Exception) {
-        emptyList()
-    }
-
-    fun checkRunning(cls: KClass<*>): Boolean {
-        return list.any { it.service.className == cls.jvmName }
-    }
-    StatusService.isRunning.value = checkRunning(StatusService::class)
-    ButtonService.isRunning.value = checkRunning(ButtonService::class)
-    ScreenshotService.isRunning.value = checkRunning(ScreenshotService::class)
-    HttpService.isRunning.value = checkRunning(HttpService::class)
-}
-
 private val syncStateMutex = Mutex()
 fun syncFixState() {
     appScope.launchTry(Dispatchers.IO) {
@@ -332,10 +309,9 @@ fun syncFixState() {
         }
         syncStateMutex.withLock {
             updateSystemDefaultAppId()
-            updateServiceRunning()
             shizukuContextFlow.value.grantSelf()
             updatePermissionState()
-            fixRestartService()
+            fixRestartAutomatorService()
         }
     }
 }
@@ -455,7 +431,7 @@ fun AccessRestrictedSettingsDlg() {
             confirmButton = {
                 TextButton({
                     accessRestrictedSettingsShowFlow.value = false
-                    mainVm.navigatePage(AuthA11YPageDestination)
+                    mainVm.navigateWebPage(ShortUrlSet.URL2)
                 }) {
                     Text(text = "解除")
                 }
@@ -467,6 +443,28 @@ fun AccessRestrictedSettingsDlg() {
                     Text(text = "关闭")
                 }
             },
+        )
+    }
+}
+
+@Composable
+fun UiAutomationAlreadyRegisteredDlg() {
+    if (automationRegisteredExceptionFlow.collectAsState().value != null) {
+        AlertDialog(
+            onDismissRequest = {
+                automationRegisteredExceptionFlow.value = null
+            },
+            title = { Text(text = "启动失败") },
+            text = {
+                Text(text = "自动化服务启动失败，检测到自动化服务已被其他应用占用，请先关闭已有服务后重试\n\n注：自动化服务只能同时运行一个，请确保没有其他应用或测试框架占用后再启动")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    automationRegisteredExceptionFlow.value = null
+                }) {
+                    Text(text = "我知道了")
+                }
+            }
         )
     }
 }

@@ -13,11 +13,11 @@ public interface IActivityTaskManager extends IInterface {
     // android10+
     abstract class Stub extends Binder implements IActivityTaskManager {
         public static IActivityTaskManager asInterface(IBinder obj) {
-            throw new RuntimeException("Stub!");
+            throw new RuntimeException();
         }
     }
 
-    // https://diff.songe.li/i/IActivityTaskManager/getTasks
+    // https://diff.songe.li/i/IActivityTaskManager.getTasks
     List<ActivityManager.RunningTaskInfo> getTasks(int maxNum);
 
     List<ActivityManager.RunningTaskInfo> getTasks(int maxNum, boolean filterOnlyVisibleRecents, boolean keepIntentExtra);

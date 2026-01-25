@@ -22,11 +22,10 @@ import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.data.RuleStatus
 import li.songe.gkd.data.isSystem
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.service.updateTopAppId
-import li.songe.gkd.shizuku.safeInvokeMethod
+import li.songe.gkd.service.updateTopTaskAppId
+import li.songe.gkd.shizuku.safeInvokeShizuku
 import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.checkAppBlockMatch
-import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.PKG_FLAGS
@@ -150,8 +149,8 @@ fun updateTopActivity(
     @Loc loc: String = "",
 ) {
     val t = System.currentTimeMillis()
-    if (scene == ActivityScene.TaskStack && storeFlow.value.enableBlockA11yAppList) {
-        updateTopAppId(appId)
+    if (scene == ActivityScene.TaskStack) {
+        updateTopTaskAppId(appId)
     }
     val oldActivity = topActivityFlow.value
     val isSame = scene != ActivityScene.ScreenOn && oldActivity.sameAs(appId, activityId)
@@ -266,7 +265,7 @@ fun updateSystemDefaultAppId() {
     if (app.getPkgInfo(launcherAppId)?.applicationInfo?.isSystem == true) {
         systemRecentCn = launcherCn
     } else {
-        safeInvokeMethod {
+        safeInvokeShizuku {
             if (AndroidTarget.P) {
                 systemRecentCn = ComponentName.unflattenFromString(
                     app.getString(com.android.internal.R.string.config_recentsComponentName)

@@ -3,17 +3,11 @@ package li.songe.gkd.shizuku
 import android.content.Context
 import android.os.IUserManager
 import li.songe.gkd.data.UserInfo
-import li.songe.gkd.util.checkExistClass
 
 class SafeUserManager(private val value: IUserManager) {
     companion object {
-        val isAvailable: Boolean
-            get() = checkExistClass("android.os.IUserManager")
 
-        fun newBinder() = getStubService(
-            Context.USER_SERVICE,
-            isAvailable,
-        )?.let {
+        fun newBinder() = getShizukuService(Context.USER_SERVICE)?.let {
             SafeUserManager(IUserManager.Stub.asInterface(it))
         }
 
@@ -30,7 +24,7 @@ class SafeUserManager(private val value: IUserManager) {
         excludePartial: Boolean = true,
         excludeDying: Boolean = true,
         excludePreCreated: Boolean = true
-    ): List<UserInfo> = safeInvokeMethod {
+    ): List<UserInfo> = safeInvokeShizuku {
         when (getUsersType) {
             1 -> value.getUsers(excludeDying)
             2 -> value.getUsers(excludePartial, excludeDying, excludePreCreated)

@@ -55,7 +55,7 @@ class ScreenshotService : Service(), OnSimpleLife {
         val isRunning = MutableStateFlow(false)
         suspend fun screenshot(): Bitmap? {
             if (!isRunning.value) return null
-            return withTimeoutOrNull(3_000) {
+            return withTimeoutOrNull(5_000) {
                 instance?.screenshotUtil?.execute()
             }
         }

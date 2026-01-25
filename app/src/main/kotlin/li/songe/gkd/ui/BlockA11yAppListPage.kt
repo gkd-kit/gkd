@@ -3,8 +3,6 @@ package li.songe.gkd.ui
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,18 +22,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
@@ -43,22 +34,19 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
-import li.songe.gkd.data.AppInfo
-import li.songe.gkd.service.fixRestartService
+import li.songe.gkd.service.fixRestartAutomatorService
 import li.songe.gkd.store.blockA11yAppListFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AnimatedBooleanContent
 import li.songe.gkd.ui.component.AnimatedIconButton
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.AppBarTextField
-import li.songe.gkd.ui.component.AppIcon
-import li.songe.gkd.ui.component.AppNameText
+import li.songe.gkd.ui.component.AppCheckBoxCard
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.MenuGroupCard
 import li.songe.gkd.ui.component.MenuItemCheckbox
 import li.songe.gkd.ui.component.MenuItemRadioButton
 import li.songe.gkd.ui.component.MultiTextField
-import li.songe.gkd.ui.component.PerfCheckbox
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
@@ -74,13 +62,11 @@ import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.ProfileTransitions
-import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.AppGroupOption
 import li.songe.gkd.util.AppListString
 import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.mapState
 import li.songe.gkd.util.switchItem
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
@@ -192,7 +178,7 @@ fun BlockA11yAppListPage() {
                                     onClick = throttle {
                                         showSearchBar = false
                                         storeFlow.update { it.copy(blockA11yAppListFollowMatch = !it.blockA11yAppListFollowMatch) }
-                                        fixRestartService()
+                                        fixRestartAutomatorService()
                                     }
                                 )
 
@@ -289,12 +275,21 @@ fun BlockA11yAppListPage() {
                 indicatorSize = vm.indicatorSizeFlow.collectAsState().value,
             )
         } else {
+            val blockA11yAppList by blockA11yAppListFlow.collectAsState()
             LazyColumn(
                 modifier = Modifier.scaffoldPadding(contentPadding),
                 state = listState,
             ) {
                 items(appInfos, { it.id }) { appInfo ->
-                    AppItemCard(appInfo)
+                    AppCheckBoxCard(
+                        appInfo = appInfo,
+                        checked = blockA11yAppList.contains(appInfo.id),
+                        onCheckedChange = {
+                            blockA11yAppListFlow.update {
+                                it.switchItem(appInfo.id)
+                            }
+                        },
+                    )
                 }
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
@@ -305,55 +300,5 @@ fun BlockA11yAppListPage() {
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun AppItemCard(
-    appInfo: AppInfo,
-) {
-    val scope = rememberCoroutineScope()
-    val checked = remember(appInfo.id) {
-        blockA11yAppListFlow.mapState(scope) {
-            it.contains(appInfo.id)
-        }
-    }.collectAsState().value
-    Row(
-        modifier = Modifier
-            .clickable(onClick = throttle {
-                blockA11yAppListFlow.update { it.switchItem(appInfo.id) }
-            })
-            .clearAndSetSemantics {
-                contentDescription = "应用：${appInfo.name}"
-                stateDescription = if (checked) "已加入白名单" else "未加入白名单"
-                onClick(
-                    label = if (checked) "从白名单中移除" else "加入白名单",
-                    action = null
-                )
-            }
-            .appItemPadding(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        AppIcon(appId = appInfo.id)
-        Column(
-            modifier = Modifier
-                .weight(1f),
-            verticalArrangement = Arrangement.Center
-        ) {
-            AppNameText(appInfo = appInfo)
-            Text(
-                text = appInfo.id,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                softWrap = false
-            )
-        }
-        PerfCheckbox(
-            key = appInfo.id,
-            checked = checked,
-        )
     }
 }

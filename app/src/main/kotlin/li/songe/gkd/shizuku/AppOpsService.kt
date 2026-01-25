@@ -8,22 +8,17 @@ import androidx.annotation.ChecksSdkIntAtLeast
 import com.android.internal.app.IAppOpsService
 import li.songe.gkd.META
 import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.checkExistClass
 
 class SafeAppOpsService(
     private val value: IAppOpsService
 ) {
     companion object {
-        val isAvailable: Boolean
-            get() = checkExistClass("com.android.internal.app.IAppOpsService")
 
-        fun newBinder() = getStubService(
-            Context.APP_OPS_SERVICE,
-            isAvailable,
-        )?.let {
+        fun newBinder() = getShizukuService(Context.APP_OPS_SERVICE)?.let {
             SafeAppOpsService(IAppOpsService.Stub.asInterface(it))
         }
 
+        // https://diff.songe.li/?ref=AppOpsManager.OP_CREATE_ACCESSIBILITY_OVERLAY
         private val a11yOverlayOk by lazy {
             AndroidTarget.UPSIDE_DOWN_CAKE && try {
                 AppOpsManager::class.java.getField("OP_CREATE_ACCESSIBILITY_OVERLAY")
@@ -36,20 +31,30 @@ class SafeAppOpsService(
         val supportCreateA11yOverlay get() = a11yOverlayOk
     }
 
+    fun checkOperation(
+        code: Int,
+        uid: Int = currentUserId,
+        packageName: String,
+    ): Int? = safeInvokeShizuku {
+        value.checkOperation(code, uid, packageName)
+    }
+
     fun setMode(
         code: Int,
         uid: Int = currentUserId,
         packageName: String,
         mode: Int
-    ) = safeInvokeMethod {
+    ) = safeInvokeShizuku {
         value.setMode(code, uid, packageName, mode)
     }
 
-    private fun setAllowSelfMode(code: Int) = setMode(
-        code = code,
-        packageName = META.appId,
-        mode = AppOpsManager.MODE_ALLOWED,
-    )
+    private fun setAllowSelfMode(code: Int) {
+        val m = checkOperation(code = code, packageName = META.appId) ?: return
+        if (m == AppOpsManager.MODE_ALLOWED) {
+            return
+        }
+        setMode(code = code, packageName = META.appId, mode = AppOpsManager.MODE_ALLOWED)
+    }
 
     fun allowAllSelfMode() {
         setAllowSelfMode(AppOpsManagerHidden.OP_POST_NOTIFICATION)

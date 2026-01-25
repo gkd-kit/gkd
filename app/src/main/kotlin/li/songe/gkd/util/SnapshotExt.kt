@@ -11,15 +11,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import li.songe.gkd.a11y.A11yRuleEngine
 import li.songe.gkd.a11y.TopActivity
-import li.songe.gkd.a11y.screenshot
 import li.songe.gkd.a11y.topActivityFlow
 import li.songe.gkd.data.ComplexSnapshot
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.info2nodeList
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.notif.snapshotNotif
-import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
@@ -106,10 +105,6 @@ object SnapshotExt {
         }
     }
 
-    private suspend fun screenshot(): Bitmap? {
-        return A11yService.instance?.screenshot() ?: ScreenshotService.screenshot()
-    }
-
     private fun cropBitmapStatusBar(bitmap: Bitmap): Bitmap {
         val tempBp = bitmap.run {
             if (!isMutable || config == Bitmap.Config.HARDWARE) {
@@ -129,8 +124,8 @@ object SnapshotExt {
 
     private val captureLoading = MutableStateFlow(false)
     suspend fun captureSnapshot(skipScreenshot: Boolean = false): ComplexSnapshot {
-        if (!A11yService.isRunning.value) {
-            throw RpcError("无障碍不可用，请先授权")
+        if (A11yRuleEngine.instance == null) {
+            throw RpcError("服务不可用，请先授权")
         }
         if (captureLoading.value) {
             throw RpcError("正在保存快照，不可重复操作")
@@ -138,12 +133,11 @@ object SnapshotExt {
         captureLoading.value = true
         try {
             val rootNode =
-                A11yService.instance?.safeActiveWindow
+                A11yRuleEngine.instance?.safeActiveWindow
                     ?: throw RpcError("当前应用没有无障碍信息，捕获失败")
             if (storeFlow.value.showSaveSnapshotToast) {
-                toast("正在保存快照...")
+                toast("正在保存快照...", forced = true)
             }
-
             val (snapshot, bitmap) = coroutineScope {
                 val d1 = async(Dispatchers.IO) {
                     val appId = rootNode.packageName.toString()
@@ -176,9 +170,11 @@ object SnapshotExt {
                     if (skipScreenshot) {
                         emptyScreenBitmap("跳过截图\n请自行替换")
                     } else {
-                        screenshot() ?: emptyScreenBitmap("无截图权限\n请自行替换")
+                        A11yRuleEngine.screenshot()
+                            ?: ScreenshotService.screenshot()
+                            ?: emptyScreenBitmap("无截图权限\n请自行替换")
                     }.let {
-                        if (storeFlow.value.hideSnapshotStatusBar) {
+                        if (storeFlow.value.hideSnapshotStatusBar && BarUtils.checkStatusBarVisible() == true) {
                             cropBitmapStatusBar(it)
                         } else {
                             it
@@ -202,7 +198,7 @@ object SnapshotExt {
                 )
                 DbSet.snapshotDao.insert(snapshot.toSnapshot())
             }
-            toast("快照成功")
+            toast("快照成功", forced = true)
             val desc = snapshot.appInfo?.name ?: snapshot.appId
             snapshotNotif.copy(text = "快照「$desc」已保存至记录").notifySelf()
             return snapshot

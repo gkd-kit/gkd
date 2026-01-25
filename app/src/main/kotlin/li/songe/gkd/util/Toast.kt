@@ -21,19 +21,30 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import com.hjq.toast.Toaster
 import com.hjq.toast.style.WhiteToastStyle
-import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.app
-import li.songe.gkd.appScope
+import li.songe.gkd.isActivityVisible
+import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.service.A11yService
+import li.songe.gkd.service.OverlayWindowService
 import li.songe.gkd.store.storeFlow
 import li.songe.loc.Loc
 
 @Loc
 fun toast(
     text: CharSequence,
+    forced: Boolean = false,
+    delayMillis: Long = 0L,
     @Loc loc: String = "",
 ) {
-    Toaster.show(text)
+    if (delayMillis > 0) {
+        runMainPost(delayMillis) {
+            toast(text = text, forced = forced, loc = loc)
+        }
+        return
+    }
+    if (forced || isActivityVisible || OverlayWindowService.isAnyAlive) {
+        Toaster.show(text)
+    }
     if (loc.isNotEmpty()) {
         LogUtils.d(text, loc = loc)
     }
@@ -109,7 +120,7 @@ private var triggerTime = 0L
 private const val triggerInterval = 2000L
 fun showActionToast() {
     if (!storeFlow.value.toastWhenClick) return
-    appScope.launchTry(Dispatchers.Main) {
+    runMainPost {
         val t = System.currentTimeMillis()
         if (t - triggerTime > triggerInterval + 100) { // 100ms 保证二次显示的时候上一次已经完全消失
             triggerTime = t
@@ -130,6 +141,7 @@ private fun showSystemToast(message: CharSequence) {
     cacheToast = Toast.makeText(app, message, Toast.LENGTH_SHORT).apply {
         show()
     }
+    runMainPost(Toast.LENGTH_SHORT.toLong()) { cacheToast = null }
 }
 
 // 1.使用 WeakReference<View> 在某些机型上导致无法取消
@@ -137,25 +149,30 @@ private fun showSystemToast(message: CharSequence) {
 // https://github.com/gkd-kit/gkd/issues/697
 // https://github.com/gkd-kit/gkd/issues/698
 private fun showA11yToast(message: CharSequence) {
-    val service = A11yService.instance ?: return
-    val wm = service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    val textView = TextView(service).apply {
+    val wm = A11yService.instance?.wm
+        ?: if (canDrawOverlaysState.updateAndGet()) app.windowManager else null
+    if (wm == null) {
+        showSystemToast(message)
+        return
+    }
+    val textView = TextView(app).apply {
         text = message
         id = android.R.id.message
         gravity = Gravity.CENTER
         updateToastView()
     }
-
     val layoutParams = WindowManager.LayoutParams().apply {
-        type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+        type = if (wm == app.windowManager) {
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        } else {
+            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+        }
         format = PixelFormat.TRANSLUCENT
-        flags = arrayOf(
-            flags,
-            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-        ).reduce { acc, i -> acc or i }
-        packageName = service.packageName
+        flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+        packageName = app.packageName
         width = WindowManager.LayoutParams.WRAP_CONTENT
         height = WindowManager.LayoutParams.WRAP_CONTENT
         gravity = Gravity.BOTTOM

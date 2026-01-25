@@ -47,7 +47,7 @@ val debugSuffixPairList by lazy {
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.androidx.room)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlinx.atomicfu)
@@ -89,6 +89,7 @@ android {
     buildFeatures {
         compose = true
         aidl = true
+        resValues = true
     }
 
     val gkdSigningConfig = signingConfigs.create("gkd") {
@@ -106,7 +107,7 @@ android {
             keyPassword = project.properties["PLAY_KEY_PASSWORD"].toString()
         }
     } else {
-        null
+        gkdSigningConfig
     }
 
     buildTypes {
@@ -141,11 +142,11 @@ android {
             resValue("bool", "is_accessibility_tool", "true")
         }
         create("play") {
-            signingConfig = playSigningConfig ?: gkdSigningConfig
+            signingConfig = playSigningConfig
             resValue("bool", "is_accessibility_tool", "false")
         }
         all {
-            dimension = flavorDimensionList.first()
+            dimension = flavorDimensions.first()
             manifestPlaceholders["channel"] = name
         }
     }
@@ -154,7 +155,7 @@ android {
         targetCompatibility = rootProject.ext["android.javaVersion"] as JavaVersion
     }
     dependenciesInfo.includeInApk = false
-    packagingOptions.resources.excludes += setOf(
+    packaging.resources.excludes += setOf(
         // https://github.com/Kotlin/kotlinx.coroutines/issues/2023
         "META-INF/**", "**/attach_hotspot_windows.dll",
 
@@ -233,7 +234,6 @@ dependencies {
     compileOnly(project(":hidden_api"))
     implementation(libs.rikka.shizuku.api)
     implementation(libs.rikka.shizuku.provider)
-    implementation(libs.rikka.refine.runtime)
     implementation(libs.lsposed.hiddenapibypass)
 
     implementation(libs.androidx.room.runtime)

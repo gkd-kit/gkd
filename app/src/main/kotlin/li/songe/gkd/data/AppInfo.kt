@@ -3,12 +3,11 @@ package li.songe.gkd.data
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
-import android.content.pm.PackageInfoHidden
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
-import dev.rikka.tools.refine.Refine
 import kotlinx.serialization.Serializable
 import li.songe.gkd.app
+import li.songe.gkd.shizuku.casted
 import li.songe.gkd.shizuku.currentUserId
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.util.AndroidTarget
@@ -49,13 +48,6 @@ private val PackageInfo.compatVersionCode: Int
     } else {
         @Suppress("DEPRECATION")
         versionCode
-    }
-
-private val PackageInfo.isOverlay: Boolean
-    get() = try {
-        Refine.unsafeCast<PackageInfoHidden>(this).overlayTarget != null
-    } catch (_: Throwable) {
-        false
     }
 
 val ApplicationInfo.isSystem: Boolean
@@ -116,7 +108,9 @@ fun PackageInfo.toAppInfo(
         mtime = lastUpdateTime,
         isSystem = isSystem,
         name = applicationInfo?.run { loadLabel(app.packageManager).toString() } ?: packageName,
-        hidden = hidden ?: (isSystem && (isOverlay || !checkHasActivity(packageName))),
+        hidden = hidden ?: (isSystem && (casted.overlayTarget != null || !checkHasActivity(
+            packageName
+        ))),
         enabled = getEnabled(userId),
     )
 }

@@ -21,6 +21,7 @@ import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.permission.writeSecureSettingsState
+import li.songe.gkd.shizuku.uiAutomationFlow
 import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.OnSimpleLife
@@ -49,6 +50,7 @@ class StatusService : Service(), OnSimpleLife {
 
     fun statusTriple(): Triple<String, String, String?> {
         val abRunning = A11yService.isRunning.value
+        val automationRunning = uiAutomationFlow.value != null
         val store = storeFlow.value
         val ruleSummary = ruleSummaryFlow.value
         val count = actionCountFlow.value
@@ -62,20 +64,33 @@ class StatusService : Service(), OnSimpleLife {
             Triple(title, "权限受限，请解除限制", "gkd://page/3")
         } else if (shizukuWarn) {
             Triple(title, "Shizuku 未连接，请授权或关闭优化", "gkd://page/1")
-        } else if (!abRunning) {
-            val text = if (a11yServiceEnabledFlow.value) {
-                "无障碍发生故障"
-            } else if (writeSecureSettingsState.updateAndGet()) {
-                if (store.enableService && store.enableBlockA11yAppList && a11yPartDisabledFlow.value) {
-                    val name = appInfoMapFlow.value[topAppIdFlow.value]?.name ?: topAppIdFlow.value
-                    "局部关闭「$name」"
+        } else if (!automationRunning && !abRunning) {
+            if (currentAppUseA11y) {
+                val text = if (a11yServiceEnabledFlow.value) {
+                    "无障碍发生故障"
+                } else if (writeSecureSettingsState.updateAndGet()) {
+                    if (store.enableAutomator && store.enableBlockA11yAppList && a11yPartDisabledFlow.value) {
+                        val name =
+                            appInfoMapFlow.value[topAppIdFlow.value]?.name ?: topAppIdFlow.value
+                        "局部关闭 · $name"
+                    } else {
+                        "无障碍已关闭"
+                    }
                 } else {
-                    "无障碍已关闭"
+                    "无障碍未授权"
                 }
+                Triple(title, text, abNotif.uri)
             } else {
-                "无障碍未授权"
+                val text =
+                    if (store.enableAutomator && store.enableBlockA11yAppList && a11yPartDisabledFlow.value) {
+                        val name =
+                            appInfoMapFlow.value[topAppIdFlow.value]?.name ?: topAppIdFlow.value
+                        "局部关闭 · $name"
+                    } else {
+                        "自动化已关闭"
+                    }
+                Triple(title, text, abNotif.uri)
             }
-            Triple(title, text, abNotif.uri)
         } else if (!store.enableMatch) {
             Triple(title, "暂停规则匹配", "gkd://page?tab=1")
         } else if (store.useCustomNotifText) {
@@ -93,14 +108,14 @@ class StatusService : Service(), OnSimpleLife {
         useAliveFlow(isRunning)
         useAliveToast(
             name = "常驻通知",
-            onlyWhenVisible = true,
-            delayMillis = if (app.justStarted) 1000 else 0
+            delayMillis = if (app.justStarted) 1000 else 0,
         )
         onCreated {
             abNotif.notifyService()
             scope.launch {
                 combine(
                     A11yService.isRunning,
+                    uiAutomationFlow,
                     storeFlow,
                     ruleSummaryFlow,
                     shizukuWarnFlow,
@@ -130,6 +145,12 @@ class StatusService : Service(), OnSimpleLife {
 
     companion object {
         val isRunning = MutableStateFlow(false)
+        val needRestart
+            get() = storeFlow.value.enableStatusService
+                    && !isRunning.value
+                    && notificationState.updateAndGet()
+                    && foregroundServiceSpecialUseState.updateAndGet()
+
         fun start() = startForegroundServiceByClass(StatusService::class)
         fun stop() = stopServiceByClass(StatusService::class)
         suspend fun requestStart(context: MainActivity) {
@@ -144,11 +165,7 @@ class StatusService : Service(), OnSimpleLife {
             if (System.currentTimeMillis() - lastAutoStart < 1000) return
             // 重启自动打开通知栏状态服务
             // 需要已有服务或前台才能自主启动，否则报错 startForegroundService() not allowed due to mAllowStartForeground false
-            if (storeFlow.value.enableStatusService
-                && !isRunning.value
-                && notificationState.updateAndGet()
-                && foregroundServiceSpecialUseState.updateAndGet()
-            ) {
+            if (needRestart) {
                 start()
                 lastAutoStart = System.currentTimeMillis()
             }

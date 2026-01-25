@@ -1,10 +1,10 @@
 package li.songe.gkd.service
 
-import android.accessibilityservice.AccessibilityService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
+import li.songe.gkd.a11y.A11yRuleEngine
 import li.songe.gkd.appScope
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.SnapshotExt
@@ -21,14 +21,14 @@ class SnapshotTileService() : BaseTileService() {
 
 private fun execSnapshot() {
     LogUtils.d("SnapshotTileService::onClick")
-    val service = A11yService.instance
+    val service = A11yRuleEngine.instance
     if (service == null) {
-        toast("无障碍没有开启")
+        toast("服务未连接", forced = true)
         return
     }
     appScope.launchTry(Dispatchers.IO) {
         val oldAppId = service.safeActiveWindowAppId
-            ?: return@launchTry toast("获取界面信息根节点失败")
+            ?: return@launchTry toast("获取信息根节点失败", forced = true)
 
         val startTime = System.currentTimeMillis()
         fun timeout(): Boolean {
@@ -41,7 +41,7 @@ private fun execSnapshot() {
                 // https://github.com/gkd-kit/gkd/issues/713
                 delay(250)
                 if (timeout()) {
-                    toast("当前应用没有无障碍信息，捕获失败")
+                    toast("当前应用没有无障碍信息，捕获失败", forced = true)
                     break
                 }
             } else if (latestAppId != oldAppId) {
@@ -49,10 +49,10 @@ private fun execSnapshot() {
                 appScope.launchTry { SnapshotExt.captureSnapshot() }
                 break
             } else {
-                service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
+                A11yRuleEngine.performActionBack()
                 delay(500)
                 if (timeout()) {
-                    toast("未检测到界面切换，捕获失败")
+                    toast("未检测到界面切换，捕获失败", forced = true)
                     break
                 }
             }

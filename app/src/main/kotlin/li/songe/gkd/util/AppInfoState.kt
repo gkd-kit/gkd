@@ -25,7 +25,6 @@ import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.otherUserMapFlow
 import li.songe.gkd.data.toAppInfo
 import li.songe.gkd.data.toAppInfoAndIcon
-import li.songe.gkd.isActivityVisible
 import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.shizuku.currentUserId
 import li.songe.gkd.shizuku.shizukuContextFlow
@@ -211,7 +210,7 @@ fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO
     updateOtherUserAppInfo(newAppMap)
     userAppInfoMapFlow.value = newAppMap
     userAppIconMapFlow.value = newIconMap
-    if (!app.justStarted && isActivityVisible()) {
+    if (!app.justStarted) {
         toast("应用列表更新成功")
     }
     if (canQueryPkgState.value && mayAuthDenied && app.justStarted) {

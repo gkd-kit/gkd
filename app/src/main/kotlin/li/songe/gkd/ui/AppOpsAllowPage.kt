@@ -101,7 +101,7 @@ fun AppOpsAllowPage() {
                                 mainVm.guardShizukuContext()
                                 toast("授权成功")
                             },
-                            "外部授权" to {
+                            "命令授权" to {
                                 vm.showCopyDlgFlow.value = true
                             },
                             "卸载重装" to {

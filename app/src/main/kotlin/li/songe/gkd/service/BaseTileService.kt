@@ -28,7 +28,7 @@ abstract class BaseTileService : TileService(), OnTileLife {
             val t = System.currentTimeMillis()
             if (t - lastA11yFixTime > 3_000L) {
                 lastA11yFixTime = t
-                fixRestartService()
+                fixRestartAutomatorService()
             }
         }
         onTileClicked { StatusService.autoStart() }

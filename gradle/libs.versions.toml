@@ -1,22 +1,22 @@
 [versions]
-kotlin = "2.2.21"
-ksp = "2.3.3"
-agp = "8.13.2"
-compose = "1.10.0"
+kotlin = "2.3.0"
+ksp = "2.3.4"
+agp = "9.0.0"
+compose = "1.10.1"
 room = "2.8.4"
 paging = "3.3.6"
 ktor = "3.3.3"
-atomicfu = "0.29.0"
+atomicfu = "0.30.0"
 destinations = "2.3.0"
 coil = "3.3.0"
 rikka_refine = "4.4.0"
 rikka_shizuku = "13.1.5"
-loc = "0.5.3"
+loc = "0.5.4"
 
 [libraries]
 kotlin_stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlin_test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-kotlinx_serialization_json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0"
+kotlinx_serialization_json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0"
 kotlinx_atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
 ktor_server_core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor_server_cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
@@ -34,7 +34,7 @@ compose_tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "co
 compose_junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "compose" }
 compose_icons = "androidx.compose.material:material-icons-extended:1.7.8"
 compose_material3 = "androidx.compose.material3:material3:1.4.0"
-compose_activity = "androidx.activity:activity-compose:1.12.1"
+compose_activity = "androidx.activity:activity-compose:1.12.2"
 compose_navigation = "androidx.navigation:navigation-compose:2.9.6"
 androidx_appcompat = "androidx.appcompat:appcompat:1.7.1"
 androidx_core_ktx = "androidx.core:core-ktx:1.17.0"
@@ -54,7 +54,6 @@ google_accompanist_drawablepainter = "com.google.accompanist:accompanist-drawabl
 junit = "junit:junit:4.13.2"
 rikka_refine_processor = { module = "dev.rikka.tools.refine:annotation-processor", version.ref = "rikka_refine" }
 rikka_refine_annotation = { module = "dev.rikka.tools.refine:annotation", version.ref = "rikka_refine" }
-rikka_refine_runtime = { module = "dev.rikka.tools.refine:runtime", version.ref = "rikka_refine" }
 rikka_shizuku_api = { module = "dev.rikka.shizuku:api", version.ref = "rikka_shizuku" }
 rikka_shizuku_provider = { module = "dev.rikka.shizuku:provider", version.ref = "rikka_shizuku" }
 lsposed_hiddenapibypass = "org.lsposed.hiddenapibypass:hiddenapibypass:6.1"
@@ -76,7 +75,7 @@ kevinnzouWebview = "io.github.kevinnzou:compose-webview:0.33.6"
 [plugins]
 kotlin_serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin_multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-kotlin_android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin_parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
 kotlin_compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinx_atomicfu = { id = "org.jetbrains.kotlinx.atomicfu", version.ref = "atomicfu" }
 android_library = { id = "com.android.library", version.ref = "agp" }

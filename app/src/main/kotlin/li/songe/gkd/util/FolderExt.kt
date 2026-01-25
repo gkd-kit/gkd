@@ -48,7 +48,7 @@ val sharedDir: File
 private val tempDir: File
     get() = cacheDir.resolve("temp").autoMk()
 
-fun createTempDir(): File {
+fun createGkdTempDir(): File {
     return tempDir
         .resolve(System.currentTimeMillis().toString())
         .apply { mkdirs() }
@@ -81,7 +81,7 @@ private data class AppJsonData(
 
 @WorkerThread
 fun buildLogFile(): File {
-    val tempDir = createTempDir()
+    val tempDir = createGkdTempDir()
     val files = mutableListOf(dbFolder, storeFolder, subsFolder, logFolder)
     tempDir.resolve("meta.json").also {
         it.writeText(toJson5String(META))

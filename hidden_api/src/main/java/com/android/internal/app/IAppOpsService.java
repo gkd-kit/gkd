@@ -10,9 +10,11 @@ import android.os.IInterface;
 public interface IAppOpsService extends IInterface {
     abstract class Stub extends Binder implements IAppOpsService {
         public static IAppOpsService asInterface(IBinder obj) {
-            throw new RuntimeException("Stub!");
+            throw new RuntimeException();
         }
     }
+
+    int checkOperation(int code, int uid, String packageName);
 
     void setMode(int code, int uid, String packageName, int mode);
 }

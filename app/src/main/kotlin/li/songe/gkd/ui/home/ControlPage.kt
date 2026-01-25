@@ -39,9 +39,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
-import com.ramcosta.composedestinations.generated.destinations.AppOpsAllowPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
 import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
+import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.data.SubsConfig
@@ -51,7 +51,11 @@ import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ActivityService
 import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.a11yPartDisabledFlow
-import li.songe.gkd.service.switchA11yService
+import li.songe.gkd.service.switchAutomatorService
+import li.songe.gkd.service.topAppIdFlow
+import li.songe.gkd.shizuku.shizukuContextFlow
+import li.songe.gkd.shizuku.uiAutomationFlow
+import li.songe.gkd.store.actualA11yScopeAppList
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.GroupNameText
 import li.songe.gkd.ui.component.PerfIcon
@@ -65,6 +69,7 @@ import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
 import li.songe.gkd.util.HOME_PAGE_URL
+import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.latestRecordDescFlow
 import li.songe.gkd.util.latestRecordFlow
 import li.songe.gkd.util.launchAsFn
@@ -88,15 +93,14 @@ fun useControlPage(): ScaffoldExt {
             }, actions = {
                 PerfIconButton(
                     imageVector = PerfIcon.RocketLaunch,
-                    onClickLabel = "前往无障碍授权页面",
-                    contentDescription = "无障碍授权",
+                    onClickLabel = "前往工作模式页面",
+                    contentDescription = "工作模式",
                     onClick = throttle {
                         mainVm.navigatePage(AuthA11YPageDestination)
                     },
                 )
             })
-        }
-    ) { contentPadding ->
+        }) { contentPadding ->
         val store by storeFlow.collectAsState()
 
         val a11yRunning by A11yService.isRunning.collectAsState()
@@ -120,7 +124,7 @@ fun useControlPage(): ScaffoldExt {
                     shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                     onClick = throttle {
-                        mainVm.navigatePage(AppOpsAllowPageDestination)
+                        mainVm.navigateWebPage(ShortUrlSet.URL2)
                     },
                 ) {
                     Row(
@@ -140,31 +144,56 @@ fun useControlPage(): ScaffoldExt {
                     }
                 }
             }
-            PageSwitchItemCard(
-                imageVector = PerfIcon.Memory,
-                title = "服务状态",
-                subtitle = if (a11yRunning) {
-                    "无障碍正在运行"
-                } else if (mainVm.a11yServiceEnabledFlow.collectAsState().value) {
-                    "无障碍发生故障"
-                } else if (writeSecureSettings) {
-                    if (store.enableService && a11yPartDisabledFlow.collectAsState().value) {
-                        "无障碍局部关闭"
+            if (store.useA11y || actualA11yScopeAppList.contains(topAppIdFlow.collectAsState().value)) {
+                PageSwitchItemCard(
+                    imageVector = PerfIcon.Memory,
+                    title = "服务状态",
+                    subtitle = if (a11yRunning) {
+                        "无障碍正在运行"
+                    } else if (mainVm.a11yServiceEnabledFlow.collectAsState().value) {
+                        "无障碍发生故障"
+                    } else if (writeSecureSettings) {
+                        if (store.enableAutomator && a11yPartDisabledFlow.collectAsState().value) {
+                            "无障碍局部关闭"
+                        } else {
+                            "无障碍已关闭"
+                        }
                     } else {
-                        "无障碍已关闭"
-                    }
-                } else {
-                    "无障碍未授权"
-                },
-                checked = a11yRunning,
-                onCheckedChange = vm.viewModelScope.launchAsFn { newEnabled ->
-                    if (newEnabled && !writeSecureSettingsState.value) {
-                        mainVm.navigatePage(AuthA11YPageDestination)
+                        "无障碍未授权"
+                    },
+                    checked = a11yRunning,
+                    onCheckedChange = { newEnabled ->
+                        if (newEnabled && !writeSecureSettingsState.value) {
+                            mainVm.navigatePage(AuthA11YPageDestination)
+                        } else {
+                            switchAutomatorService()
+                        }
+                    },
+                )
+            } else {
+                PageSwitchItemCard(
+                    imageVector = PerfIcon.Memory,
+                    title = "服务状态",
+                    subtitle = if (uiAutomationFlow.collectAsState().value != null) {
+                        "自动化正在运行"
+                    } else if (!shizukuContextFlow.collectAsState().value.ok) {
+                        "自动化未授权"
                     } else {
-                        switchA11yService()
-                    }
-                },
-            )
+                        if (store.enableAutomator && a11yPartDisabledFlow.collectAsState().value) {
+                            "自动化局部关闭"
+                        } else {
+                            "自动化已关闭"
+                        }
+                    },
+                    checked = uiAutomationFlow.collectAsState().value != null,
+                    onCheckedChange = vm.viewModelScope.launchAsFn(Dispatchers.IO) { newEnabled ->
+                        if (newEnabled) {
+                            mainVm.guardShizukuContext()
+                        }
+                        switchAutomatorService()
+                    },
+                )
+            }
 
             PageSwitchItemCard(
                 imageVector = PerfIcon.Notifications,
@@ -192,8 +221,7 @@ fun useControlPage(): ScaffoldExt {
                 onClickLabel = "打开触发记录页面",
                 onClick = {
                     mainVm.navigatePage(ActionLogPageDestination())
-                }
-            )
+                })
 
             if (ActivityService.isRunning.collectAsState().value) {
                 PageItemCard(
@@ -203,8 +231,7 @@ fun useControlPage(): ScaffoldExt {
                     onClickLabel = "打开界面日志页面",
                     onClick = {
                         mainVm.navigatePage(ActivityLogPageDestination)
-                    }
-                )
+                    })
             }
 
             PageItemCard(
@@ -214,8 +241,7 @@ fun useControlPage(): ScaffoldExt {
                 onClickLabel = "打开 GKD 文档页面",
                 onClick = {
                     mainVm.navigatePage(WebViewPageDestination(initUrl = HOME_PAGE_URL))
-                }
-            )
+                })
             Spacer(modifier = Modifier.height(EmptyHeight))
         }
     }
@@ -306,8 +332,7 @@ private fun PageSwitchItemCard(
 
 @Composable
 private fun IconTextCard(
-    imageVector: ImageVector,
-    content: @Composable () -> Unit
+    imageVector: ImageVector, content: @Composable () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -339,11 +364,7 @@ private fun ServerStatusCard() {
             .fillMaxWidth()
             .semantics {
                 onClick(label = "不执行操作", action = null)
-            },
-        shape = RoundedCornerShape(20.dp),
-        colors = surfaceCardColors,
-        onClick = {}
-    ) {
+            }, shape = RoundedCornerShape(20.dp), colors = surfaceCardColors, onClick = {}) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -352,8 +373,7 @@ private fun ServerStatusCard() {
                     end = itemVerticalPadding,
                     top = itemVerticalPadding,
                     bottom = itemVerticalPadding / 2
-                ),
-            verticalAlignment = Alignment.CenterVertically
+                ), verticalAlignment = Alignment.CenterVertically
         ) {
             PerfIcon(
                 imageVector = PerfIcon.Equalizer,
@@ -407,8 +427,7 @@ private fun ServerStatusCard() {
                             latestRecordFlow.value?.let {
                                 mainVm.navigatePage(
                                     AppConfigPageDestination(
-                                        appId = it.appId,
-                                        focusLog = it
+                                        appId = it.appId, focusLog = it
                                     )
                                 )
                             }

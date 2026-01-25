@@ -10,11 +10,11 @@ import java.util.List;
 public interface IUserManager extends IInterface {
     abstract class Stub extends Binder implements IUserManager {
         public static IUserManager asInterface(IBinder obj) {
-            throw new RuntimeException("STUB");
+            throw new RuntimeException();
         }
     }
 
-    // https://diff.songe.li/i/IUserManager/getUsers
+    // https://diff.songe.li/i/IUserManager.getUsers
     List<UserInfo> getUsers(boolean excludeDying);
 
     List<UserInfo> getUsers(boolean excludePartial, boolean excludeDying, boolean excludePreCreated);

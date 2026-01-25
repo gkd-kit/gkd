@@ -35,7 +35,6 @@ import li.songe.gkd.a11y.updateTopActivity
 import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.recordNotif
 import li.songe.gkd.permission.canDrawOverlaysState
-import li.songe.gkd.shizuku.SafeTaskListener
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.style.iconTextSize
@@ -49,7 +48,7 @@ class ActivityService : OverlayWindowService(
 ) {
     val activityOkFlow by lazy {
         combine(A11yService.isRunning, shizukuContextFlow) { a, b ->
-            a || SafeTaskListener.isAvailable
+            a || b.ok
         }.stateIn(scope = lifecycleScope, started = SharingStarted.Eagerly, initialValue = false)
     }
 

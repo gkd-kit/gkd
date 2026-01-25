@@ -48,6 +48,21 @@ val actualBlockA11yAppList: Set<String>
         blockA11yAppListFlow.value
     }
 
+val a11yScopeAppListFlow: MutableStateFlow<Set<String>> by lazy {
+    createTextFlow(
+        key = "a11y_scope_app_list",
+        decode = { it?.let(AppListString::decode) ?: setOf("com.tencent.mm") },
+        encode = AppListString::encode,
+    )
+}
+
+val actualA11yScopeAppList: Set<String>
+    get() = if (storeFlow.value.useAutomation) {
+        a11yScopeAppListFlow.value
+    } else {
+        emptySet()
+    }
+
 fun checkAppBlockMatch(appId: String): Boolean {
     if (blockMatchAppListFlow.value.contains(appId)) {
         return true
@@ -64,6 +79,7 @@ fun initStore() = appScope.launchTry(Dispatchers.IO) {
     actionCountFlow.value
     blockMatchAppListFlow.value
     blockA11yAppListFlow.value
+    a11yScopeAppListFlow.value
     gkdStartCommandText
     ExposeService.initCommandFile()
 }
@@ -75,4 +91,9 @@ fun switchStoreEnableMatch() {
         toast("开启规则匹配")
     }
     storeFlow.update { it.copy(enableMatch = !it.enableMatch) }
+}
+
+fun updateEnableAutomator(value: Boolean) {
+    if (value == storeFlow.value.enableAutomator) return
+    storeFlow.update { it.copy(enableAutomator = value) }
 }

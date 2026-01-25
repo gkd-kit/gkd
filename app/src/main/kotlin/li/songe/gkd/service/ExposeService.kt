@@ -3,6 +3,7 @@ package li.songe.gkd.service
 import android.app.Service
 import android.content.Intent
 import android.os.Binder
+import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.notif.exposeNotif
 import li.songe.gkd.syncFixState
@@ -10,6 +11,7 @@ import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.runMainPost
 import li.songe.gkd.util.shFolder
 import li.songe.gkd.util.toast
 
@@ -20,7 +22,7 @@ class ExposeService : Service() {
             try {
                 handleIntent(intent)
             } finally {
-                stopSelf()
+                runMainPost(1000) { stopSelf() }
             }
         }
         return super.onStartCommand(intent, flags, startId)
@@ -31,14 +33,15 @@ class ExposeService : Service() {
         val data = intent?.getStringExtra("data")
         LogUtils.d("ExposeService::handleIntent", expose, data)
         when (expose) {
+            -1 -> StatusService.autoStart()
             0 -> SnapshotExt.captureSnapshot()
             1 -> {
-                toast("执行成功")
+                toast("执行成功", forced = true)
                 syncFixState()
             }
 
             else -> {
-                toast("未知调用: expose=$expose data=$data")
+                toast("未知调用: expose=$expose data=$data", forced = true)
             }
         }
     }
@@ -53,6 +56,16 @@ class ExposeService : Service() {
             val commandText = template
                 .replace("{service}", ExposeService::class.componentName.flattenToShortString())
             shFolder.resolve("expose.sh").writeText(commandText)
+        }
+
+        fun exposeIntent(expose: Int, data: String? = null): Intent {
+            return Intent(app, ExposeService::class.java).apply {
+                putExtra("expose", expose)
+                if (data != null) {
+                    putExtra("data", data)
+                }
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
         }
     }
 }

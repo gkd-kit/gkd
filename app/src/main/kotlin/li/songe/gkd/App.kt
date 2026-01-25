@@ -18,8 +18,10 @@ import android.provider.Settings
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityManager
 import android.view.inputmethod.InputMethodManager
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.MainScope
 import kotlinx.serialization.Serializable
+import li.songe.gkd.a11y.initA11yFeat
 import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.notif.initChannel
 import li.songe.gkd.service.clearHttpSubs
@@ -151,6 +153,11 @@ class App : Application() {
         return resolveAppId(intent)
     }
 
+    fun checkGrantedPermission(permission: String) = ContextCompat.checkSelfPermission(
+        this,
+        permission,
+    ) == PackageManager.PERMISSION_GRANTED
+
     val startTime = System.currentTimeMillis()
     var justStarted: Boolean = true
         get() {
@@ -180,6 +187,7 @@ class App : Application() {
         initStore()
         initChannel()
         initAppState()
+        initA11yFeat()
         initShizuku()
         initSubsState()
         initA11yWhiteAppList()

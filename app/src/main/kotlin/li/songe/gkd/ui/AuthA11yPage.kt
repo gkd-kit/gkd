@@ -2,9 +2,9 @@ package li.songe.gkd.ui
 
 import android.Manifest
 import android.app.AppOpsManagerHidden
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,7 +27,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -37,17 +38,17 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.A11YScopeAppListPageDestination
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.update
 import li.songe.gkd.META
 import li.songe.gkd.permission.Manifest_permission_GET_APP_OPS_STATS
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
-import li.songe.gkd.service.fixRestartService
+import li.songe.gkd.service.fixRestartAutomatorService
 import li.songe.gkd.shizuku.SafeAppOpsService
-import li.songe.gkd.shizuku.shizukuContextFlow
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.component.AuthButtonGroup
+import li.songe.gkd.shizuku.shizukuUsedFlow
+import li.songe.gkd.store.updateEnableAutomator
+import li.songe.gkd.ui.component.AnimatedBooleanContent
 import li.songe.gkd.ui.component.ManualAuthDialog
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
@@ -60,8 +61,9 @@ import li.songe.gkd.ui.style.cardHorizontalPadding
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
 import li.songe.gkd.util.AndroidTarget
+import li.songe.gkd.util.AutomatorModeOption
 import li.songe.gkd.util.ShortUrlSet
-import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openA11ySettings
 import li.songe.gkd.util.shFolder
 import li.songe.gkd.util.throttle
@@ -71,23 +73,21 @@ import li.songe.gkd.util.toast
 @Composable
 fun AuthA11yPage() {
     val mainVm = LocalMainViewModel.current
-
     val vm = viewModel<AuthA11yVm>()
     val showCopyDlg by vm.showCopyDlgFlow.collectAsState()
     val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
     val a11yRunning by A11yService.isRunning.collectAsState()
-
+    val automatorMode by mainVm.automatorModeFlow.collectAsState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
             PerfIconButton(
                 imageVector = PerfIcon.ArrowBack,
-                onClickLabel = "返回上级页面",
                 onClick = {
                     mainVm.popBackStack()
                 })
         }, title = {
-            Text(text = "授权状态")
+            Text(text = "工作模式")
         })
     }) { contentPadding ->
         Column(
@@ -96,152 +96,215 @@ fun AuthA11yPage() {
                 .verticalScroll(rememberScrollState())
                 .padding(contentPadding)
         ) {
-            Text(
-                text = "选择一个授权模式进行操作",
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(itemHorizontalPadding)
-            )
             Card(
                 modifier = Modifier
-                    .padding(itemHorizontalPadding, 0.dp)
+                    .padding(horizontal = itemHorizontalPadding)
                     .fillMaxWidth(),
-                onClick = { },
+                onClick = throttle { mainVm.updateAutomatorMode(AutomatorModeOption.A11yMode) },
                 colors = surfaceCardColors,
             ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(
+                        selected = automatorMode == AutomatorModeOption.A11yMode,
+                        onClick = null,
+                    )
+                    Text(
+                        modifier = Modifier.padding(start = 12.dp),
+                        text = AutomatorModeOption.A11yMode.label,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
                 Text(
-                    modifier = Modifier.padding(cardHorizontalPadding, 8.dp),
-                    text = "普通授权(简单)",
-                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier
+                        .padding(horizontal = cardHorizontalPadding)
+                        .padding(start = 4.dp),
+                    text = "基础",
+                    style = MaterialTheme.typography.titleSmall
                 )
                 TextListItem(
-                    modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
+                    modifier = Modifier
+                        .padding(horizontal = cardHorizontalPadding)
+                        .padding(start = 8.dp, top = 4.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     list = listOf(
                         "授予「无障碍权限」",
                         "无障碍关闭后需重新授权"
                     ),
                 )
-                if (writeSecureSettings || a11yRunning) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
-                        text = "已持有「无障碍权限」，可继续使用",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                } else {
-                    Row(
-                        modifier = Modifier
-                            .padding(4.dp, 0.dp)
-                            .fillMaxWidth(),
-                    ) {
-                        TextButton(onClick = throttle { openA11ySettings() }) {
+                AnimatedBooleanContent(
+                    targetState = writeSecureSettings || a11yRunning,
+                    contentTrue = {
+                        Text(
+                            modifier = Modifier
+                                .padding(horizontal = cardHorizontalPadding)
+                                .padding(start = 8.dp, top = 4.dp),
+                            text = "已持有「无障碍权限」可继续使用",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    },
+                    contentFalse = {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = cardHorizontalPadding),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            TextButton(
+                                onClick = throttle { openA11ySettings() },
+                            ) {
+                                Text(
+                                    text = "手动授权",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                            }
                             Text(
-                                text = "手动授权",
-                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier
+                                    .padding(bottom = 12.dp)
+                                    .clip(MaterialTheme.shapes.extraSmall)
+                                    .clickable(onClick = throttle {
+                                        mainVm.navigateWebPage(ShortUrlSet.URL2)
+                                    })
+                                    .padding(horizontal = 4.dp),
+                                text = "无法开启无障碍?",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
                             )
                         }
                     }
+                )
+                Text(
+                    modifier = Modifier
+                        .padding(horizontal = cardHorizontalPadding)
+                        .padding(start = 4.dp, top = 8.dp),
+                    text = "增强",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                TextListItem(
+                    modifier = Modifier
+                        .padding(horizontal = cardHorizontalPadding)
+                        .padding(start = 8.dp, top = 4.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    list = listOf(
+                        "授予「写入安全设置权限」",
+                        "应用可自行控制开关无障碍",
+                    ),
+                )
+                AnimatedBooleanContent(
+                    targetState = writeSecureSettings,
+                    contentTrue = {
+                        Text(
+                            modifier = Modifier
+                                .padding(horizontal = cardHorizontalPadding)
+                                .padding(start = 8.dp, top = 4.dp),
+                            text = "已持有「写入安全设置权限」 优先使用此项",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    },
+                    contentFalse = {
+                        Row(
+                            modifier = Modifier
+                                .padding(horizontal = cardHorizontalPadding),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            ShizukuAuthButton()
+                            TextButton(onClick = { vm.showCopyDlgFlow.value = true }) {
+                                Text(
+                                    text = "命令授权",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                            }
+                        }
+                    }
+                )
+                TextButton(
+                    modifier = Modifier
+                        .padding(horizontal = cardHorizontalPadding),
+                    onClick = throttle {
+                        if (!writeSecureSettings) {
+                            toast("请先授予「${writeSecureSettingsState.name}」")
+                        }
+                        mainVm.dialogFlow.updateDialogOptions(
+                            title = "无感保活",
+                            text = "添加通知栏快捷开关\n\n1. 下拉通知栏至「快捷开关」标界面\n2. 找到名称为 ${META.appName} 的快捷开关\n3. 添加此开关到通知面板 \n\n只要此快捷开关在通知面板可见\n无论是系统杀后台还是自身崩溃\n简单下拉打开通知即可重启"
+                        )
+                    }
+                ) {
                     Text(
-                        modifier = Modifier
-                            .padding(cardHorizontalPadding, 0.dp)
-                            .clickable {
-                                mainVm.navigateWebPage(ShortUrlSet.URL2)
-                            },
-                        text = "无法开启无障碍?",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        text = "无感保活",
+                        style = MaterialTheme.typography.bodyLarge,
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
                 }
+                Spacer(modifier = Modifier.height(12.dp))
             }
             Spacer(modifier = Modifier.height(12.dp))
             Card(
                 modifier = Modifier
-                    .padding(itemHorizontalPadding, 0.dp)
+                    .padding(horizontal = itemHorizontalPadding)
                     .fillMaxWidth(),
-                onClick = { },
+                onClick = throttle { mainVm.updateAutomatorMode(AutomatorModeOption.AutomationMode) },
                 colors = surfaceCardColors,
             ) {
-                Text(
-                    modifier = Modifier.padding(cardHorizontalPadding, 8.dp),
-                    text = "高级授权(推荐)",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                TextListItem(
-                    modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    list = listOf(
-                        "授予「写入安全设置权限」",
-                        "授权永久有效，包含「无障碍权限」",
-                        "应用可自行控制开关无障碍",
-                        "在通知栏快捷开关可快捷重启，无感保活"
-                    ),
-                )
-                if (!writeSecureSettings) {
-                    A11yAuthButtonGroup()
-                } else {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
-                        text = "已持有「写入安全设置权限」 优先使用此权限",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
                 Row(
-                    modifier = Modifier
-                        .padding(4.dp, 0.dp)
-                        .fillMaxWidth(),
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    TextButton(onClick = throttle {
-                        if (!writeSecureSettings) {
-                            toast("请先授权")
-                        }
-                        mainVm.dialogFlow.updateDialogOptions(
-                            title = "无感保活",
-                            text = "添加通知栏快捷开关\n\n1. 下拉通知栏至「快捷开关」标界面\n2. 找到名称为 ${META.appName} 的快捷开关\n3. 添加此开关到通知面板 \n\n只要此快捷开关在通知面板可见\n无论是系统杀后台还是自身BUG崩溃\n简单下拉打开通知即可重启"
-                        )
-                    }) {
-                        Text(
-                            text = "无感保活",
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            AnimatedVisibility(writeSecureSettings && !shizukuContextFlow.collectAsState().value.ok) {
-                Card(
-                    modifier = Modifier
-                        .padding(itemHorizontalPadding, 0.dp)
-                        .fillMaxWidth(),
-                    onClick = { },
-                    colors = surfaceCardColors,
-                ) {
+                    RadioButton(
+                        selected = automatorMode == AutomatorModeOption.AutomationMode,
+                        onClick = null,
+                    )
                     Text(
-                        modifier = Modifier.padding(cardHorizontalPadding, 8.dp),
-                        text = "解除可能受到的无障碍限制",
+                        modifier = Modifier.padding(start = 12.dp),
+                        text = AutomatorModeOption.AutomationMode.label,
                         style = MaterialTheme.typography.titleMedium,
                     )
-                    TextListItem(
-                        list = listOf(
-                            "某些系统有更严格的无障碍限制",
-                            "在 GKD 更新后会限制其开关无障碍",
-                            "重新授权可解决此问题",
-                        ),
-                        modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        modifier = Modifier.padding(cardHorizontalPadding, 0.dp),
-                        text = "若能正常开关无障碍请忽略此项",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    A11yAuthButtonGroup(showFix = true)
-                    Spacer(modifier = Modifier.height(12.dp))
                 }
+                TextListItem(
+                    modifier = Modifier
+                        .padding(horizontal = cardHorizontalPadding)
+                        .padding(start = 8.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    list = listOf(
+                        "自动化驱动的无障碍",
+                        "不会导致界面显示异常",
+                        "不会被其它应用检测为无障碍",
+                        "部分应用仍需切换至无障碍模式",
+                    ),
+                )
+                AnimatedBooleanContent(
+                    targetState = shizukuUsedFlow.collectAsState().value,
+                    contentTrue = {
+                        Text(
+                            modifier = Modifier
+                                .padding(horizontal = cardHorizontalPadding)
+                                .padding(start = 8.dp, top = 8.dp),
+                            text = "已连接 Shizuku 服务，可继续使用",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    },
+                    contentFalse = {
+                        ShizukuAuthButton(
+                            modifier = Modifier.padding(
+                                start = cardHorizontalPadding
+                            )
+                        )
+                    }
+                )
+                TextButton(
+                    modifier = Modifier.padding(start = cardHorizontalPadding),
+                    onClick = throttle {
+                        mainVm.navigatePage(A11YScopeAppListPageDestination)
+                    },
+                ) {
+                    Text(
+                        text = "局部无障碍",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
             }
             Spacer(modifier = Modifier.height(EmptyHeight))
         }
@@ -254,6 +317,30 @@ fun AuthA11yPage() {
             vm.showCopyDlgFlow.value = it
         },
     )
+}
+
+@Composable
+private fun ShizukuAuthButton(
+    modifier: Modifier = Modifier,
+) {
+    val mainVm = LocalMainViewModel.current
+    val vm = viewModel<AuthA11yVm>()
+    TextButton(
+        modifier = modifier,
+        onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+            mainVm.guardShizukuContext()
+            if (writeSecureSettingsState.value) {
+                toast("授权成功")
+                updateEnableAutomator(true)
+                fixRestartAutomatorService()
+            }
+        })
+    ) {
+        Text(
+            text = "Shizuku 授权",
+            style = MaterialTheme.typography.bodyLarge,
+        )
+    }
 }
 
 private val Int.appopsAllow get() = "appops set ${META.appId} ${AppOpsManagerHidden.opToName(this)} allow"
@@ -281,36 +368,6 @@ val gkdStartCommandText by lazy {
 }
 
 @Composable
-private fun A11yAuthButtonGroup(showFix: Boolean = false) {
-    val mainVm = LocalMainViewModel.current
-    val vm = viewModel<AuthA11yVm>()
-    AuthButtonGroup(
-        buttons = remember(showFix) {
-            val list = mutableListOf<Pair<String, () -> Unit>>()
-            if (showFix) {
-                list.add("手动解除" to {
-                    mainVm.navigateWebPage(ShortUrlSet.URL2)
-                })
-            }
-            list.add("Shizuku 授权" to {
-                vm.viewModelScope.launchTry(Dispatchers.IO) {
-                    mainVm.guardShizukuContext()
-                    if (writeSecureSettingsState.value) {
-                        toast("授权成功")
-                        storeFlow.update { it.copy(enableService = true) }
-                        fixRestartService()
-                    }
-                }
-            })
-            list.add("外部授权" to {
-                vm.showCopyDlgFlow.value = true
-            })
-            list
-        }
-    )
-}
-
-@Composable
 private fun TextListItem(
     list: List<String>,
     modifier: Modifier = Modifier,
@@ -319,6 +376,7 @@ private fun TextListItem(
     val lineHeightDp = LocalDensity.current.run { style.lineHeight.toDp() }
     Column(
         modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         list.forEach { text ->
             Row {

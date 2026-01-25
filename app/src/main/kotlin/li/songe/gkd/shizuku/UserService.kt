@@ -3,28 +3,28 @@ package li.songe.gkd.shizuku
 import android.content.ComponentName
 import android.content.Context
 import android.content.ServiceConnection
+import android.graphics.Bitmap
+import android.graphics.Rect
 import android.os.IBinder
 import android.util.Log
+import android.view.SurfaceControlHidden
 import androidx.annotation.Keep
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.serialization.Serializable
 import li.songe.gkd.META
 import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.componentName
-import li.songe.gkd.util.json
 import rikka.shizuku.Shizuku
 import java.io.DataOutputStream
+import java.io.File
 import kotlin.coroutines.resume
 import kotlin.system.exitProcess
 
 
 @Suppress("unused")
 class UserService : IUserService.Stub {
-    /**
-     * Constructor is required.
-     */
+    @Keep
     constructor() {
         Log.i("UserService", "constructor")
     }
@@ -43,7 +43,7 @@ class UserService : IUserService.Stub {
         destroy()
     }
 
-    override fun execCommand(command: String): String {
+    override fun execCommand(command: String): CommandResult {
         val process = Runtime.getRuntime().exec("sh")
         val outputStream = DataOutputStream(process.outputStream)
         val commandResult = try {
@@ -82,7 +82,32 @@ class UserService : IUserService.Stub {
             process.outputStream.close()
             process.destroy()
         }
-        return json.encodeToString(commandResult)
+        return commandResult
+    }
+
+    override fun takeScreenshot1(width: Int, height: Int): Bitmap? {
+        return SurfaceControlHidden.screenshot(width, height)
+    }
+
+    override fun takeScreenshot2(
+        crop: Rect,
+        rotation: Int
+    ): Bitmap? {
+        val width = crop.width()
+        val height = crop.height()
+        return SurfaceControlHidden.screenshot(crop, width, height, rotation)
+    }
+
+    override fun takeScreenshot3(crop: Rect): Bitmap? {
+        val width = crop.width()
+        val height = crop.height()
+        val displayToken = SurfaceControlHidden.getInternalDisplayToken()
+        val captureArgs = SurfaceControlHidden.DisplayCaptureArgs.Builder(displayToken)
+            .setSourceCrop(crop)
+            .setSize(width, height)
+            .build()
+        val screenshotBuffer = SurfaceControlHidden.captureDisplay(captureArgs)
+        return screenshotBuffer?.asBitmap()
     }
 }
 
@@ -92,7 +117,7 @@ private fun unbindUserService(
     reason: String? = null,
 ) {
     if (!shizukuGrantedState.stateFlow.value) return
-    LogUtils.d("unbindUserService", serviceArgs, reason)
+    LogUtils.d(serviceArgs, reason)
     // https://github.com/RikkaApps/Shizuku-API/blob/master/server-shared/src/main/java/rikka/shizuku/server/UserServiceManager.java#L62
     try {
         Shizuku.unbindUserService(serviceArgs, connection, false)
@@ -100,16 +125,6 @@ private fun unbindUserService(
     } catch (e: Exception) {
         e.printStackTrace()
     }
-}
-
-@Serializable
-data class CommandResult(
-    val code: Int?,
-    val result: String,
-    val error: String?
-) {
-    val ok: Boolean
-        get() = code == 0
 }
 
 data class UserServiceWrapper(
@@ -120,9 +135,7 @@ data class UserServiceWrapper(
     fun destroy() = unbindUserService(serviceArgs, connection)
 
     fun execCommandForResult(command: String): CommandResult = try {
-        val resultStr = userService.execCommand(command)
-        val result = json.decodeFromString<CommandResult>(resultStr)
-        result
+        userService.execCommand(command)
     } catch (e: Throwable) {
         e.printStackTrace()
         CommandResult(code = null, result = "", error = e.message)
@@ -135,6 +148,17 @@ data class UserServiceWrapper(
             "input tap $x $y"
         }
         return execCommandForResult(command).ok
+    }
+
+    fun screencapFile(filePath: String): Boolean {
+        val tempPath = "/data/local/tmp/screencap_${System.currentTimeMillis()}.png"
+        val command = "screencap -p $tempPath"
+        val r = execCommandForResult(command)
+        if (r.ok) {
+            File(tempPath).copyTo(File(filePath), overwrite = true)
+            execCommandForResult("rm $tempPath")
+        }
+        return r.ok
     }
 }
 

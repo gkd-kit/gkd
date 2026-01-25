@@ -5,9 +5,10 @@ import android.os.Parcelable;
 
 import java.util.List;
 
-/** @noinspection rawtypes, unused , Convert2Diamond */
+/**
+ * @noinspection rawtypes, unused
+ */
 public class ParceledListSlice<T extends Parcelable> {
-
     public static final Parcelable.ClassLoaderCreator<ParceledListSlice> CREATOR = new Parcelable.ClassLoaderCreator<ParceledListSlice>() {
         public ParceledListSlice createFromParcel(Parcel var1) {
             throw new UnsupportedOperationException();

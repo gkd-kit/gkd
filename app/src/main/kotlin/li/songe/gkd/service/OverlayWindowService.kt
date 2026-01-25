@@ -49,6 +49,7 @@ import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.ScreenUtils
 import li.songe.gkd.util.mapState
 import li.songe.gkd.util.px
+import li.songe.gkd.util.runMainPost
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
@@ -101,6 +102,12 @@ private class ShareContext {
 abstract class OverlayWindowService(
     val positionKey: String,
 ) : LifecycleService(), SavedStateRegistryOwner, OnSimpleLife {
+    companion object {
+        private var aliveSize = 0
+        val isAnyAlive: Boolean
+            get() = aliveSize > 0
+    }
+
     override fun onCreate() {
         super.onCreate()
         onCreated()
@@ -179,6 +186,10 @@ abstract class OverlayWindowService(
     )
 
     init {
+        aliveSize++
+        onDestroyed {
+            runMainPost(1000) { aliveSize-- }
+        }
         lifecycleScope.launch {
             positionFlow.drop(1).debounce(300).collect { pos ->
                 shareContext.positionMapFlow.update {
@@ -188,9 +199,6 @@ abstract class OverlayWindowService(
                 }
             }
         }
-    }
-
-    init {
         onCreated {
             val marginX = minMargin
             val marginY = minMargin
@@ -224,8 +232,6 @@ abstract class OverlayWindowService(
                     positionFlow.value = listOf(x, y)
                     val startX = layoutParams.x
                     val startY = layoutParams.y
-                    val newX = x
-                    val newY = y
                     fixMoveFlag++
                     val tempFlag = fixMoveFlag
                     ValueAnimator.ofFloat(0f, 1f).apply {
@@ -233,8 +239,8 @@ abstract class OverlayWindowService(
                         addUpdateListener { animator ->
                             if (tempFlag == fixMoveFlag) {
                                 val fraction = animator.animatedValue as Float
-                                layoutParams.x = (startX + (newX - startX) * fraction).toInt()
-                                layoutParams.y = (startY + (newY - startY) * fraction).toInt()
+                                layoutParams.x = (startX + (x - startX) * fraction).toInt()
+                                layoutParams.y = (startY + (y - startY) * fraction).toInt()
                                 windowManager.updateViewLayout(view, layoutParams)
                             } else {
                                 pause()

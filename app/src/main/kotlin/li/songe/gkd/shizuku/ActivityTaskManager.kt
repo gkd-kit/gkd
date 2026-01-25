@@ -2,26 +2,22 @@ package li.songe.gkd.shizuku
 
 import android.app.ActivityManager
 import android.app.IActivityTaskManager
+import android.content.ContextHidden
 import android.view.Display
-import li.songe.gkd.permission.shizukuGrantedState
-import li.songe.gkd.util.checkExistClass
+import li.songe.gkd.util.AndroidTarget
 
 object SafeTaskListener {
-    val isAvailable: Boolean
-        get() = checkExistClass("android.app.ITaskStackListener")
     val instance by lazy { FixedTaskStackListener() }
 }
 
 class SafeActivityTaskManager(private val value: IActivityTaskManager) {
     companion object {
-        val isAvailable: Boolean
-            get() = checkExistClass("android.app.IActivityTaskManager")
-
-        fun newBinder() = getStubService(
-            "activity_task",
-            isAvailable,
-        )?.let {
-            SafeActivityTaskManager(IActivityTaskManager.Stub.asInterface(it))
+        fun newBinder() = if (AndroidTarget.Q) {
+            getShizukuService(ContextHidden.ACTIVITY_TASK_SERVICE)?.let {
+                SafeActivityTaskManager(IActivityTaskManager.Stub.asInterface(it))
+            }
+        } else {
+            null
         }
 
         private val getTasksType by lazy {
@@ -39,7 +35,7 @@ class SafeActivityTaskManager(private val value: IActivityTaskManager) {
         }
     }
 
-    fun getTasks(maxNum: Int): List<ActivityManager.RunningTaskInfo>? = safeInvokeMethod {
+    fun getTasks(maxNum: Int = 1): List<ActivityManager.RunningTaskInfo>? = safeInvokeShizuku {
         when (getTasksType) {
             1 -> value.getTasks(maxNum)
             2 -> value.getTasks(maxNum, false, false)
@@ -49,16 +45,13 @@ class SafeActivityTaskManager(private val value: IActivityTaskManager) {
     }
 
     fun registerDefault() {
-        if (!SafeTaskListener.isAvailable) return
-        safeInvokeMethod {
+        safeInvokeShizuku {
             value.registerTaskStackListener(SafeTaskListener.instance)
         }
     }
 
     fun unregisterDefault() {
-        if (!shizukuGrantedState.stateFlow.value) return
-        if (!SafeTaskListener.isAvailable) return
-        safeInvokeMethod {
+        safeInvokeShizuku {
             value.unregisterTaskStackListener(SafeTaskListener.instance)
         }
     }

@@ -8,6 +8,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
+import li.songe.gkd.data.RpcError
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -25,7 +26,7 @@ fun CoroutineScope.launchTry(
     } catch (e: Throwable) {
         LogUtils.d(e)
         if (!silent) {
-            toast(e.message ?: e.stackTraceToString(), loc = "")
+            toast(e.message ?: e.stackTraceToString(), loc = "", forced = e is RpcError)
         }
     }
 }

@@ -4,13 +4,16 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.META
 import li.songe.gkd.util.AppGroupOption
 import li.songe.gkd.util.AppSortOption
+import li.songe.gkd.util.AutomatorModeOption
 import li.songe.gkd.util.RuleSortOption
 import li.songe.gkd.util.UpdateChannelOption
 import li.songe.gkd.util.UpdateTimeOption
 
 @Serializable
 data class SettingsStore(
-    val enableService: Boolean = true,
+    val enableAutomator: Boolean = false,
+    val automatorMode: Int = AutomatorModeOption.A11yMode.value,
+    val enableShizuku: Boolean = false,
     val enableMatch: Boolean = true,
     val enableStatusService: Boolean = false,
     val excludeFromRecents: Boolean = false,
@@ -43,11 +46,15 @@ data class SettingsStore(
     val subsExcludeShowBlockApp: Boolean = true,
     val subsExcludeShowInnerDisabledApp: Boolean = true,
     val subsPowerWarn: Boolean = true,
-    val enableShizuku: Boolean = false,
     val enableBlockA11yAppList: Boolean = false,
     val blockA11yAppListFollowMatch: Boolean = true,
     val a11yAppSort: Int = AppSortOption.ByUsedTime.value,
+    val a11yScopeAppSort: Int = AppSortOption.ByUsedTime.value,
     val appGroupType: Int = (1 shl AppGroupOption.normalObjects.size) - 1,
     val a11yAppGroupType: Int = appGroupType,
+    val a11yScopeAppGroupType: Int = appGroupType,
     val subsExcludeAppGroupType: Int = appGroupType,
-)
+) {
+    val useA11y get() = automatorMode == AutomatorModeOption.A11yMode.value
+    val useAutomation get() = automatorMode == AutomatorModeOption.AutomationMode.value
+}

@@ -1,9 +1,9 @@
 package li.songe.gkd.data
 
-import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.serialization.Serializable
 import li.songe.gkd.a11y.compatChecked
+import li.songe.gkd.shizuku.casted
 
 @Serializable
 data class AttrInfo(
@@ -35,16 +35,12 @@ data class AttrInfo(
     val depth: Int,
 ) {
     companion object {
-        /**
-         * 不要在多线程中使用
-         */
-        private val rect = Rect()
         fun info2data(
             node: AccessibilityNodeInfo,
             index: Int,
             depth: Int,
         ): AttrInfo {
-            node.getBoundsInScreen(rect)
+            val rect = node.casted.boundsInScreen
             val appId = node.packageName?.toString() ?: ""
             val id: String? = node.viewIdResourceName
             val idPrefix = "$appId:id/"

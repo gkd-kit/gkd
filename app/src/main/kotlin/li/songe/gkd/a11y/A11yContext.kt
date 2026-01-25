@@ -1,13 +1,12 @@
 package li.songe.gkd.a11y
 
-import android.graphics.Rect
 import android.util.Log
 import android.util.LruCache
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.atomicfu.atomic
 import li.songe.gkd.META
 import li.songe.gkd.data.ResolvedRule
-import li.songe.gkd.service.A11yService
+import li.songe.gkd.shizuku.casted
 import li.songe.gkd.util.InterruptRuleMatchException
 import li.songe.selector.FastQuery
 import li.songe.selector.MatchOption
@@ -40,7 +39,8 @@ private val AccessibilityNodeInfo?.notExpiredNode: AccessibilityNodeInfo?
     }
 
 class A11yContext(
-    private val disableInterrupt: Boolean = false
+    private val a11yEngine: A11yRuleEngine,
+    private val interruptable: Boolean = true,
 ) {
     private var childCache =
         LruCache<Pair<AccessibilityNodeInfo, Int>, AccessibilityNodeInfo>(MAX_CACHE_SIZE)
@@ -115,7 +115,7 @@ class A11yContext(
     private var interruptInnerKey = 0
 
     private fun guardInterrupt() {
-        if (disableInterrupt) return
+        if (!interruptable) return
         if (interruptInnerKey == interruptKey) return
         interruptInnerKey = interruptKey
         val rule = currentRule ?: return
@@ -130,7 +130,7 @@ class A11yContext(
 
     private fun getA11Root(): AccessibilityNodeInfo? {
         guardInterrupt()
-        return A11yService.instance?.safeActiveWindow
+        return a11yEngine.safeActiveWindow
     }
 
     private fun getA11Child(node: AccessibilityNodeInfo, index: Int): AccessibilityNodeInfo? {
@@ -252,16 +252,6 @@ class A11yContext(
         }
     }
 
-    private val tempRect = Rect()
-    private var tempRectNode: AccessibilityNodeInfo? = null
-    private fun getTempRect(n: AccessibilityNodeInfo): Rect {
-        if (n !== tempRectNode) {
-            n.getBoundsInScreen(tempRect)
-            tempRectNode = n
-        }
-        return tempRect
-    }
-
     private var tempVid: CharSequence? = null
     private var tempVidNode: AccessibilityNodeInfo? = null
     private fun getTempVid(n: AccessibilityNodeInfo): CharSequence? {
@@ -289,13 +279,13 @@ class A11yContext(
         "longClickable" -> node.isLongClickable
         "visibleToUser" -> node.isVisibleToUser
 
-        "left" -> getTempRect(node).left
-        "top" -> getTempRect(node).top
-        "right" -> getTempRect(node).right
-        "bottom" -> getTempRect(node).bottom
+        "left" -> node.casted.boundsInScreen.left
+        "top" -> node.casted.boundsInScreen.top
+        "right" -> node.casted.boundsInScreen.right
+        "bottom" -> node.casted.boundsInScreen.bottom
 
-        "width" -> getTempRect(node).width()
-        "height" -> getTempRect(node).height()
+        "width" -> node.casted.boundsInScreen.width()
+        "height" -> node.casted.boundsInScreen.height()
 
         "index" -> getCacheIndex(node)
         "depth" -> getCacheDepth(node)
@@ -532,7 +522,7 @@ class A11yContext(
             var resultNode: AccessibilityNodeInfo? = null
             if (rule.anyMatches.isNotEmpty()) {
                 for (selector in rule.anyMatches) {
-                    resultNode = a11yContext.querySelfOrSelector(
+                    resultNode = querySelfOrSelector(
                         queryNode,
                         selector,
                         rule.matchOption,
@@ -542,14 +532,14 @@ class A11yContext(
                 if (resultNode == null) return null
             }
             for (selector in rule.matches) {
-                resultNode = a11yContext.querySelfOrSelector(
+                resultNode = querySelfOrSelector(
                     queryNode,
                     selector,
                     rule.matchOption,
                 ) ?: return null
             }
             for (selector in rule.excludeMatches) {
-                a11yContext.querySelfOrSelector(
+                querySelfOrSelector(
                     queryNode,
                     selector,
                     rule.matchOption,
@@ -557,7 +547,7 @@ class A11yContext(
             }
             if (rule.excludeAllMatches.isNotEmpty()) {
                 val allExclude = rule.excludeAllMatches.all {
-                    a11yContext.querySelfOrSelector(
+                    querySelfOrSelector(
                         queryNode,
                         it,
                         rule.matchOption,
@@ -573,5 +563,3 @@ class A11yContext(
         }
     }
 }
-
-val a11yContext = A11yContext()

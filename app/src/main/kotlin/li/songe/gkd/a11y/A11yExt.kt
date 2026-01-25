@@ -1,12 +1,7 @@
 package li.songe.gkd.a11y
 
-import android.accessibilityservice.AccessibilityService
-import android.accessibilityservice.AccessibilityService.ScreenshotResult
-import android.accessibilityservice.AccessibilityService.TakeScreenshotCallback
 import android.content.ComponentName
-import android.graphics.Bitmap
 import android.provider.Settings
-import android.view.Display
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,8 +14,6 @@ import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.mapState
 import li.songe.selector.initDefaultTypeInfo
 import kotlin.contracts.contract
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 context(context: OnSimpleLife)
 fun useEnabledA11yServicesFlow(): StateFlow<Set<ComponentName>> {
@@ -116,34 +109,6 @@ fun AccessibilityEvent?.isUseful(): Boolean {
         returns(true) implies (this@isUseful != null)
     }
     return (this != null && packageName != null && className != null && eventType and interestedEvents != 0)
-}
-
-
-suspend fun AccessibilityService.screenshot(): Bitmap? = suspendCoroutine {
-    if (AndroidTarget.R) {
-        val callback = object : TakeScreenshotCallback {
-            override fun onSuccess(screenshot: ScreenshotResult) {
-                try {
-                    it.resume(
-                        Bitmap.wrapHardwareBuffer(
-                            screenshot.hardwareBuffer, screenshot.colorSpace
-                        )
-                    )
-                } finally {
-                    screenshot.hardwareBuffer.close()
-                }
-            }
-
-            override fun onFailure(errorCode: Int) = it.resume(null)
-        }
-        takeScreenshot(
-            Display.DEFAULT_DISPLAY,
-            application.mainExecutor,
-            callback
-        )
-    } else {
-        it.resume(null)
-    }
 }
 
 data class A11yEvent(

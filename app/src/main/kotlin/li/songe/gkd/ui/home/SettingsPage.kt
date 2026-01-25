@@ -64,7 +64,7 @@ import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.permission.writeSecureSettingsState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.StatusService
-import li.songe.gkd.service.fixRestartService
+import li.songe.gkd.service.fixRestartAutomatorService
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.CustomOutlinedTextField
@@ -414,14 +414,14 @@ fun useSettingsPage(): ScaffoldExt {
             }
             TextSwitch(
                 title = "局部关闭",
-                subtitle = "白名单内关闭无障碍",
+                subtitle = "白名单内关闭服务",
                 checked = store.enableBlockA11yAppList && shizukuContextFlow.collectAsState().value.ok,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
                         showA11yBlockDlg = true
                     } else {
                         storeFlow.value = store.copy(enableBlockA11yAppList = false)
-                        fixRestartService()
+                        fixRestartAutomatorService()
                     }
                 },
             )
@@ -524,15 +524,15 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                 .padding(horizontal = itemHorizontalPadding)
         ) {
             CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyMedium) {
-                Text(text = "「局部关闭」可在白名单应用内关闭无障碍，来解决界面异常，游戏掉帧或无障碍检测的问题")
+                Text(text = "「局部关闭」可在白名单应用内关闭服务，来解决界面异常，游戏掉帧或无障碍检测的问题")
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(text = "使用须知", style = MaterialTheme.typography.titleMedium)
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    RequiredTextItem(text = "切换无障碍会造成短暂触摸卡顿，请自行测试后再编辑白名单")
+                    RequiredTextItem(text = "切换服务会造成短暂触摸卡顿，请自行测试后再编辑白名单")
                     RequiredTextItem(text = "使用其它无障碍应用会导致优化无效，因为无障碍不会被完全关闭")
-                    RequiredTextItem(text = "必须确保无障碍关闭后的持续后台运行，否则会被系统暂停或结束运行，导致无法恢复无障碍")
+                    RequiredTextItem(text = "必须确保服务关闭后的持续后台运行，否则会被系统暂停或结束运行导致重启失败")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(text = "使用条件", style = MaterialTheme.typography.titleMedium)
@@ -584,7 +584,7 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                         },
                     )
                     RequiredTextItem(
-                        text = "允许自启动",
+                        text = "(可选) 允许自启动",
                         enabled = true,
                         imageVector = PerfIcon.OpenInNew,
                         onClickLabel = "打开应用详情页面",
@@ -593,7 +593,7 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                         },
                     )
                     RequiredTextItem(
-                        text = "在「最近任务界面」锁定",
+                        text = "(可选) 在「最近任务」锁定",
                         enabled = true,
                         imageVector = PerfIcon.OpenInNew,
                         onClickLabel = "打开应用详情页面",
@@ -608,7 +608,7 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "某些场景下无障碍刚启动时概率不工作，如多次遇到此情况则不建议使用此功能")
+                Text(text = "某些场景下服务刚启动时概率不工作，如多次遇到此情况则不建议使用此功能")
             }
             Spacer(modifier = Modifier.height(EmptyHeight))
         }

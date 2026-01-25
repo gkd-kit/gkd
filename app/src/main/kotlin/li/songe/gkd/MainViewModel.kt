@@ -34,6 +34,7 @@ import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.shizuku.shizukuContextFlow
+import li.songe.gkd.shizuku.uiAutomationFlow
 import li.songe.gkd.shizuku.updateBinderMutex
 import li.songe.gkd.store.createTextFlow
 import li.songe.gkd.store.storeFlow
@@ -43,6 +44,7 @@ import li.songe.gkd.ui.component.RuleGroupState
 import li.songe.gkd.ui.component.UploadOptions
 import li.songe.gkd.ui.home.BottomNavItem
 import li.songe.gkd.ui.share.BaseViewModel
+import li.songe.gkd.util.AutomatorModeOption
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.OnSimpleLife
@@ -51,6 +53,7 @@ import li.songe.gkd.util.UpdateStatus
 import li.songe.gkd.util.appIconMapFlow
 import li.songe.gkd.util.clearCache
 import li.songe.gkd.util.client
+import li.songe.gkd.util.findOption
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.openWeChatScaner
@@ -322,6 +325,17 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
     val a11yServiceEnabledFlow = useA11yServiceEnabledFlow(a11yServicesFlow)
     val hasOtherA11yFlow = a11yServicesFlow.mapNew { list ->
         list.any { it != A11yService.a11yCn }
+    }
+
+    val automatorModeFlow = storeFlow.mapNew {
+        AutomatorModeOption.objects.findOption(it.automatorMode)
+    }
+
+    fun updateAutomatorMode(option: AutomatorModeOption) {
+        if (automatorModeFlow.value == option) return
+        storeFlow.update { it.copy(automatorMode = option.value, enableAutomator = false) }
+        A11yService.instance?.shutdown()
+        uiAutomationFlow.value?.shutdown()
     }
 
     init {

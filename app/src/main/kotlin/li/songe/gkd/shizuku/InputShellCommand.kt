@@ -7,14 +7,12 @@ import android.view.Display
 import android.view.InputDevice
 import android.view.KeyCharacterMap
 import android.view.KeyEvent
-import android.view.KeyEventHidden
 import android.view.MotionEvent
 import android.view.MotionEvent.PointerCoords
 import android.view.MotionEvent.PointerProperties
 import android.view.MotionEventHidden
 import android.view.ViewConfiguration
 import androidx.annotation.RequiresApi
-import dev.rikka.tools.refine.Refine
 import li.songe.gkd.util.AndroidTarget
 import java.util.Map
 import kotlin.math.floor
@@ -147,7 +145,7 @@ class InputShellCommand(val safeInputManager: SafeInputManager) {
                 if (mDisplayId == Display.INVALID_DISPLAY && (inputSource and InputDevice.SOURCE_CLASS_POINTER) != 0) {
                     mDisplayId = Display.DEFAULT_DISPLAY
                 }
-                Refine.unsafeCast<MotionEventHidden>(event).setDisplayId(mDisplayId)
+                event.casted.setDisplayId(mDisplayId)
             }
             safeInputManager.compatInjectInputEvent(
                 event, InputManagerHidden.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH
@@ -254,7 +252,7 @@ class InputShellCommand(val safeInputManager: SafeInputManager) {
             inputSource
         )
         if (AndroidTarget.Q) {
-            Refine.unsafeCast<KeyEventHidden>(event).setDisplayId(displayId)
+            event.casted.setDisplayId(displayId)
         }
         injectKeyEvent(event, async)
         val event2 = KeyEvent.changeTimeRepeat(event, SystemClock.uptimeMillis(), 0)

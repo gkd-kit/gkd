@@ -1,13 +1,13 @@
 package li.songe.gkd.data
 
-import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
-import android.graphics.Rect
 import android.view.ViewConfiguration
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.serialization.Serializable
+import li.songe.gkd.a11y.A11yRuleEngine
 import li.songe.gkd.service.A11yService
+import li.songe.gkd.shizuku.casted
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.util.ScreenUtils
 
@@ -28,9 +28,6 @@ data class ActionResult(
 )
 
 sealed class ActionPerformer(val action: String) {
-    val service: AccessibilityService
-        get() = A11yService.instance!!
-
     abstract fun perform(
         node: AccessibilityNodeInfo,
         position: RawSubscription.Position?,
@@ -53,8 +50,7 @@ sealed class ActionPerformer(val action: String) {
             node: AccessibilityNodeInfo,
             position: RawSubscription.Position?,
         ): ActionResult {
-            val rect = Rect()
-            node.getBoundsInScreen(rect)
+            val rect = node.casted.boundsInScreen
             val p = position?.calc(rect)
             val x = p?.first ?: ((rect.right + rect.left) / 2f)
             val y = p?.second ?: ((rect.bottom + rect.top) / 2f)
@@ -63,10 +59,7 @@ sealed class ActionPerformer(val action: String) {
                 result = if (0 <= x && 0 <= y && x <= ScreenUtils.getScreenWidth() && y <= ScreenUtils.getScreenHeight()) {
                     if (shizukuContextFlow.value.tap(x, y)) {
                         return ActionResult(
-                            action = action,
-                            result = true,
-                            shizuku = true,
-                            position = x to y
+                            action = action, result = true, shizuku = true, position = x to y
                         )
                     }
                     val gestureDescription = GestureDescription.Builder()
@@ -77,8 +70,9 @@ sealed class ActionPerformer(val action: String) {
                             path, 0, ViewConfiguration.getTapTimeout().toLong()
                         )
                     )
-                    service.dispatchGesture(gestureDescription.build(), null, null)
-                    true
+                    A11yService.instance?.dispatchGesture(
+                        gestureDescription.build(), null, null
+                    ) != null
                 } else {
                     false
                 },
@@ -119,8 +113,7 @@ sealed class ActionPerformer(val action: String) {
             node: AccessibilityNodeInfo,
             position: RawSubscription.Position?,
         ): ActionResult {
-            val rect = Rect()
-            node.getBoundsInScreen(rect)
+            val rect = node.casted.boundsInScreen
             val p = position?.calc(rect)
             val x = p?.first ?: ((rect.right + rect.left) / 2f)
             val y = p?.second ?: ((rect.bottom + rect.top) / 2f)
@@ -130,16 +123,11 @@ sealed class ActionPerformer(val action: String) {
                 action = action,
                 result = if (0 <= x && 0 <= y && x <= ScreenUtils.getScreenWidth() && y <= ScreenUtils.getScreenHeight()) {
                     if (shizukuContextFlow.value.tap(
-                            x,
-                            y,
-                            longClickDuration
+                            x, y, longClickDuration
                         )
                     ) {
                         return ActionResult(
-                            action = action,
-                            result = true,
-                            shizuku = true,
-                            position = x to y
+                            action = action, result = true, shizuku = true, position = x to y
                         )
                     }
                     val gestureDescription = GestureDescription.Builder()
@@ -150,8 +138,9 @@ sealed class ActionPerformer(val action: String) {
                             path, 0, longClickDuration
                         )
                     )
-                    service.dispatchGesture(gestureDescription.build(), null, null)
-                    true
+                    A11yService.instance?.dispatchGesture(
+                        gestureDescription.build(), null, null
+                    ) != null
                 } else {
                     false
                 },
@@ -182,7 +171,7 @@ sealed class ActionPerformer(val action: String) {
         ): ActionResult {
             return ActionResult(
                 action = action,
-                result = service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
+                result = A11yRuleEngine.performActionBack()
             )
         }
     }
@@ -193,8 +182,7 @@ sealed class ActionPerformer(val action: String) {
             position: RawSubscription.Position?,
         ): ActionResult {
             return ActionResult(
-                action = action,
-                result = true
+                action = action, result = true
             )
         }
     }
@@ -202,14 +190,7 @@ sealed class ActionPerformer(val action: String) {
     companion object {
         private val allSubObjects by lazy {
             arrayOf(
-                ClickNode,
-                ClickCenter,
-                Click,
-                LongClickNode,
-                LongClickCenter,
-                LongClick,
-                Back,
-                None
+                ClickNode, ClickCenter, Click, LongClickNode, LongClickCenter, LongClick, Back, None
             )
         }
 

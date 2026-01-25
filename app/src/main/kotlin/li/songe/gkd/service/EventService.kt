@@ -1,7 +1,6 @@
 package li.songe.gkd.service
 
 import android.view.accessibility.AccessibilityEvent
-import androidx.annotation.MainThread
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -190,21 +189,21 @@ class EventService : OverlayWindowService(positionKey = "event") {
         private var instance: EventService? = null
         private var logAutoId = 0
 
-        @MainThread
-        fun logEvent(event: AccessibilityEvent) = instance?.apply {
+        fun logEvent(event: AccessibilityEvent) {
+            val service = instance ?: return
             if (event.packageName == META.appId) return
             if (logAutoId == 0) return
             logAutoId++
             val eventLog = event.toA11yEventLog(logAutoId)
-            eventLogs.add(eventLog)
-            tempEventListFlow.update { it + eventLog }
-            if (eventLogs.size >= 256) {
-                eventLogs.removeRange(0, 64)
+            service.eventLogs.add(eventLog)
+            service.tempEventListFlow.update { it + eventLog }
+            if (service.eventLogs.size >= 256) {
+                service.eventLogs.removeRange(0, 64)
             }
             if (eventLog.id % 100 == 0) {
                 appScope.launchTry { DbSet.a11yEventLogDao.deleteKeepLatest() }
             }
-        }.let { }
+        }
 
         val isRunning = MutableStateFlow(false)
         fun start() {

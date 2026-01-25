@@ -2,26 +2,18 @@ package li.songe.gkd.a11y
 
 import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Context.WINDOW_SERVICE
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.PixelFormat
 import android.util.Log
-import android.view.Gravity
-import android.view.View
-import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import li.songe.gkd.app
 import li.songe.gkd.appScope
-import li.songe.gkd.isActivityVisible
 import li.songe.gkd.permission.shizukuGrantedState
-import li.songe.gkd.service.A11yService
-import li.songe.gkd.service.StatusService
-import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.ScreenUtils
@@ -30,7 +22,6 @@ import li.songe.gkd.util.UpdateTimeOption
 import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mapState
-import li.songe.gkd.util.toast
 import li.songe.selector.MatchOption
 import li.songe.selector.QueryContext
 import li.songe.selector.Selector
@@ -41,48 +32,7 @@ import li.songe.selector.getCharSequenceInvoke
 import li.songe.selector.getIntInvoke
 
 
-context(service: A11yService)
-fun onA11yFeatInit() = service.run {
-    useAttachState()
-    useAliveOverlayView()
-    useCaptureVolume()
-    useRuleChangedLog()
-    onA11yEvent { onA11yFeatEvent(it) }
-    onCreated { StatusService.autoStart() }
-    onDestroyed {
-        shizukuContextFlow.value.topCpn()?.let {
-            // com.android.systemui
-            if (!topActivityFlow.value.sameAs(it.packageName, it.className)) {
-                updateTopActivity(it.packageName, it.className)
-            }
-        }
-    }
-}
-
-private fun A11yService.useAttachState() {
-    onCreated {
-        if (isActivityVisible()) {
-            toast("无障碍已启动")
-        }
-    }
-    onDestroyed {
-        if (isActivityVisible()) {
-            if (willDestroyByBlock) {
-                toast("无障碍局部关闭")
-            } else {
-                toast("无障碍已关闭")
-            }
-        }
-    }
-    onCreated { storeFlow.update { it.copy(enableService = true) } }
-    onDestroyed {
-        if (!willDestroyByBlock) {
-            storeFlow.update { it.copy(enableService = false) }
-        }
-    }
-}
-
-private fun onA11yFeatEvent(event: AccessibilityEvent) = event.run {
+fun onA11yFeatEvent(event: AccessibilityEvent) = event.run {
     if (event.eventType == STATE_CHANGED) {
         watchCaptureScreenshot()
         if (event.packageName == launcherAppId) {
@@ -187,42 +137,16 @@ private fun watchAutoUpdateSubs() {
     }
 }
 
-private fun A11yService.useAliveOverlayView() {
-    val context = this
-    var aliveView: View? = null
-    val wm by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
-    fun removeA11View() {
-        if (aliveView != null) {
-            wm.removeView(aliveView)
-            aliveView = null
+private fun initRuleChangedLog() {
+    appScope.launch(Dispatchers.Default) {
+        activityRuleFlow.debounce(300).drop(1).collect {
+            if (storeFlow.value.enableMatch && it.currentRules.isNotEmpty()) {
+                LogUtils.d(it.topActivity, *it.currentRules.map { r ->
+                    r.statusText()
+                }.toTypedArray())
+            }
         }
     }
-
-    fun addA11View() {
-        removeA11View()
-        val tempView = View(context)
-        val lp = WindowManager.LayoutParams().apply {
-            type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
-            format = PixelFormat.TRANSLUCENT
-            flags =
-                flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-            gravity = Gravity.START or Gravity.TOP
-            width = 1
-            height = 1
-            packageName = context.packageName
-        }
-        try {
-            // 某些设备 android.view.WindowManager$BadTokenException
-            wm.addView(tempView, lp)
-            aliveView = tempView
-        } catch (e: Throwable) {
-            aliveView = null
-            LogUtils.d(e)
-            toast("添加无障碍保活失败\n请尝试重启无障碍")
-        }
-    }
-    onA11yConnected { addA11View() }
-    onDestroyed { removeA11View() }
 }
 
 private const val volumeChangedAction = "android.media.VOLUME_CHANGED_ACTION"
@@ -241,16 +165,14 @@ private fun createVolumeReceiver() = object : BroadcastReceiver() {
     }
 }
 
-private fun A11yService.useCaptureVolume() {
+private fun initCaptureVolume() {
     var captureVolumeReceiver: BroadcastReceiver? = null
     val changeRegister: (Boolean) -> Unit = {
-        if (captureVolumeReceiver != null) {
-            unregisterReceiver(captureVolumeReceiver)
-        }
+        captureVolumeReceiver?.let(app::unregisterReceiver)
         captureVolumeReceiver = if (it) {
             createVolumeReceiver().apply {
                 ContextCompat.registerReceiver(
-                    this@useCaptureVolume,
+                    app,
                     this,
                     IntentFilter(volumeChangedAction),
                     ContextCompat.RECEIVER_EXPORTED
@@ -260,26 +182,51 @@ private fun A11yService.useCaptureVolume() {
             null
         }
     }
-    onCreated {
-        scope.launch {
-            storeFlow.mapState(scope) { s -> s.captureVolumeChange }.collect(changeRegister)
-        }
+    appScope.launch(Dispatchers.IO) {
+        storeFlow.mapState(appScope) { s -> s.captureVolumeChange }.collect(changeRegister)
     }
-    onDestroyed {
-        if (captureVolumeReceiver != null) {
-            unregisterReceiver(captureVolumeReceiver)
+}
+
+var isInteractive = true
+    private set
+private val screenStateReceiver = object : BroadcastReceiver() {
+    override fun onReceive(
+        context: Context?,
+        intent: Intent?
+    ) {
+        val action = intent?.action ?: return
+        LogUtils.d("screenStateReceiver->${action}")
+        isInteractive = when (action) {
+            Intent.ACTION_SCREEN_ON -> true
+            Intent.ACTION_SCREEN_OFF -> false
+            Intent.ACTION_USER_PRESENT -> true
+            else -> isInteractive
+        }
+        if (isInteractive) {
+            val t = System.currentTimeMillis()
+            if (t - appChangeTime > 500) { // 37.872(a11y) -> 38.228(onReceive)
+                A11yRuleEngine.onScreenForcedActive()
+            }
         }
     }
 }
 
-private fun A11yService.useRuleChangedLog() {
-    scope.launch(Dispatchers.Default) {
-        activityRuleFlow.debounce(300).collect {
-            if (storeFlow.value.enableMatch && it.currentRules.isNotEmpty()) {
-                LogUtils.d(it.topActivity, *it.currentRules.map { r ->
-                    r.statusText()
-                }.toTypedArray())
-            }
-        }
-    }
+private fun initScreenStateReceiver() {
+    isInteractive = app.powerManager.isInteractive
+    ContextCompat.registerReceiver(
+        app,
+        screenStateReceiver,
+        IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_USER_PRESENT)
+        },
+        ContextCompat.RECEIVER_EXPORTED
+    )
+}
+
+fun initA11yFeat() {
+    initRuleChangedLog()
+    initCaptureVolume()
+    initScreenStateReceiver()
 }

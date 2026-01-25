@@ -4,6 +4,8 @@ import android.app.ActivityManager
 import android.app.ITaskStackListener
 import android.content.ComponentName
 import android.os.Parcel
+import kotlinx.atomicfu.atomic
+import kotlinx.atomicfu.updateAndGet
 import li.songe.gkd.a11y.ActivityScene
 import li.songe.gkd.a11y.updateTopActivity
 
@@ -17,11 +19,16 @@ class FixedTaskStackListener : ITaskStackListener.Stub() {
     }
 
     override fun onTaskStackChanged() {
-        if (lastFront > 0 && System.currentTimeMillis() - lastFront < 200) {
-            lastFront = 0
-            return
-        }
         val cpn = shizukuContextFlow.value.topCpn() ?: return
+        val t = System.currentTimeMillis()
+        val skip = defaultFront === lastFront.updateAndGet {
+            if (it.first > 0 && t - it.first < 200 && it.second == cpn) {
+                defaultFront
+            } else {
+                it
+            }
+        }
+        if (skip) return
         updateTopActivity(
             appId = cpn.packageName,
             activityId = cpn.className,
@@ -29,10 +36,11 @@ class FixedTaskStackListener : ITaskStackListener.Stub() {
         )
     }
 
-    private var lastFront = 0L
-    fun onTaskMovedToFrontCompat(cpn: ComponentName? = null) {
-        lastFront = System.currentTimeMillis()
+    private val defaultFront = 0L to ComponentName("", "")
+    private val lastFront = atomic(defaultFront)
+    private fun onTaskMovedToFrontCompat(cpn: ComponentName? = null) {
         val cpn = cpn ?: shizukuContextFlow.value.topCpn() ?: return
+        lastFront.value = System.currentTimeMillis() to cpn
         updateTopActivity(
             appId = cpn.packageName,
             activityId = cpn.className,

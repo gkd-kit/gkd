@@ -15,7 +15,7 @@ import li.songe.gkd.a11y.STATE_CHANGED
 @Serializable
 @Entity(tableName = "a11y_event_log")
 class A11yEventLog(
-    @PrimaryKey() @ColumnInfo(name = "id") val id: Int,
+    @PrimaryKey @ColumnInfo(name = "id") val id: Int,
     @ColumnInfo(name = "ctime") val ctime: Long,
     @ColumnInfo(name = "type") val type: Int,
     @ColumnInfo(name = "appId") val appId: String,
