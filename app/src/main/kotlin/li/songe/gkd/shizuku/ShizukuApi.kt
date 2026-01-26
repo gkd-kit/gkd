@@ -2,18 +2,22 @@ package li.songe.gkd.shizuku
 
 
 import android.content.ComponentName
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.annotation.WorkerThread
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import li.songe.gkd.META
 import li.songe.gkd.app
 import li.songe.gkd.appScope
+import li.songe.gkd.isActivityVisible
 import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.permission.updatePermissionState
 import li.songe.gkd.service.ExposeService
@@ -31,6 +35,7 @@ import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
 import java.lang.reflect.Method
+import kotlin.system.exitProcess
 
 inline fun <T> safeInvokeShizuku(
     block: () -> T
@@ -224,11 +229,36 @@ private fun updateShizukuBinder() = updateBinderMutex.launchTry(appScope, Dispat
             toast("Shizuku 服务连接成功", delayMillis = delayMillis)
         }
     } else if (shizukuContextFlow.value.ok) {
-        uiAutomationFlow.value?.shutdown()
-        shizukuContextFlow.value.destroy()
-        shizukuContextFlow.value = defaultShizukuContext
-        toast("Shizuku 服务已断开")
+        val willRelaunch = uiAutomationFlow.value != null && !shizukuGrantedState.updateAndGet()
+        if (willRelaunch) {
+            // 需要重启应用让系统释放 UiAutomation
+            killRelaunchApp()
+        } else {
+            uiAutomationFlow.value?.shutdown(true)
+            shizukuContextFlow.value.destroy()
+            shizukuContextFlow.value = defaultShizukuContext
+            toast("Shizuku 服务已断开")
+        }
     }
+}
+
+private suspend fun killRelaunchApp() {
+    if (isActivityVisible) {
+        toast("Shizuku 断开，重启应用以释放自动化服务", forced = true)
+        delay(1500)
+        val intent = app.packageManager.getLaunchIntentForPackage(META.appId)!!
+        intent.addFlags(
+            Intent.FLAG_ACTIVITY_NEW_TASK
+                    or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        )
+        app.startActivity(intent)
+    } else {
+        toast("Shizuku 断开，结束应用以释放自动化服务", forced = true)
+        delay(1500)
+    }
+    android.os.Process.killProcess(android.os.Process.myPid())
+    exitProcess(0)
 }
 
 fun initShizuku() {

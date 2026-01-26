@@ -39,31 +39,21 @@ class AutomationService private constructor() : A11yCommonImpl {
     }
 
     override suspend fun screenshot(): Bitmap? = withContext(Dispatchers.IO) {
-        val tempDir = createGkdTempDir()
-        val fp = tempDir.resolve("screenshot.png")
-        val ok = shizukuContextFlow.value.serviceWrapper?.screencapFile(fp.absolutePath)
-        if (ok == true && fp.exists()) {
-            BitmapFactory.decodeFile(fp.absolutePath).apply {
-                tempDir.deleteRecursively()
+        try {
+            uiAutomation.takeScreenshot()
+        } catch (e: Throwable) {
+            LogUtils.d("takeScreenshot failed, rollback to screencapFile", e)
+            val tempDir = createGkdTempDir()
+            val fp = tempDir.resolve("screenshot.png")
+            val ok = shizukuContextFlow.value.serviceWrapper?.screencapFile(fp.absolutePath)
+            if (ok == true && fp.exists()) {
+                BitmapFactory.decodeFile(fp.absolutePath).apply {
+                    tempDir.deleteRecursively()
+                }
+            } else {
+                null
             }
-        } else {
-            null
         }
-//        try {
-//            uiAutomation.takeScreenshot()
-//        } catch (e: Throwable) {
-//            LogUtils.d("takeScreenshot failed, rollback to screencapFile", e)
-//            val tempDir = createGkdTempDir()
-//            val fp = tempDir.resolve("screenshot.png")
-//            val ok = shizukuContextFlow.value.serviceWrapper?.screencapFile(fp.absolutePath)
-//            if (ok == true && fp.exists()) {
-//                BitmapFactory.decodeFile(fp.absolutePath).apply {
-//                    tempDir.deleteRecursively()
-//                }
-//            } else {
-//                null
-//            }
-//        }
     }
 
     override val windowNodeInfo: AccessibilityNodeInfo? get() = uiAutomation.rootInActiveWindow
