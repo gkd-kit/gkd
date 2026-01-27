@@ -20,15 +20,17 @@ class FixedTaskStackListener : ITaskStackListener.Stub() {
 
     override fun onTaskStackChanged() {
         val cpn = shizukuContextFlow.value.topCpn() ?: return
-        val t = System.currentTimeMillis()
-        val skip = defaultFront === lastFront.updateAndGet {
-            if (it.first > 0 && t - it.first < 200 && it.second == cpn) {
-                defaultFront
-            } else {
-                it
+        if (lastFront.value.first > 0) {
+            val t = System.currentTimeMillis()
+            val skip = defaultFront === lastFront.updateAndGet {
+                if (it.first > 0 && t - it.first < 200 && it.second == cpn) {
+                    defaultFront
+                } else {
+                    it
+                }
             }
+            if (skip) return
         }
-        if (skip) return
         updateTopActivity(
             appId = cpn.packageName,
             activityId = cpn.className,
