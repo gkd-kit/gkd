@@ -30,7 +30,6 @@ import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.store.a11yScopeAppListFlow
-import li.songe.gkd.store.blockA11yAppListFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AnimatedBooleanContent
 import li.songe.gkd.ui.component.AnimatedIconButton
@@ -152,7 +151,7 @@ fun A11yScopeAppListPage() {
                                 imageVector = PerfIcon.Save,
                                 onClick = throttle {
                                     if (vm.textChanged) {
-                                        blockA11yAppListFlow.value =
+                                        a11yScopeAppListFlow.value =
                                             AppListString.decode(vm.textFlow.value)
                                         toast("更新成功")
                                     } else {
