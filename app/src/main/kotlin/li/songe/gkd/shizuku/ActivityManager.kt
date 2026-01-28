@@ -51,13 +51,13 @@ class SafeActivityManager(private val value: IActivityManager) {
 
     fun registerDefault() {
         safeInvokeShizuku {
-            value.registerTaskStackListener(SafeTaskListener.instance)
+            value.registerTaskStackListener(FixedTaskStackListener)
         }
     }
 
     fun unregisterDefault() {
         safeInvokeShizuku {
-            value.unregisterTaskStackListener(SafeTaskListener.instance)
+            value.unregisterTaskStackListener(FixedTaskStackListener)
         }
     }
 }

@@ -6,10 +6,6 @@ import android.content.ContextHidden
 import android.view.Display
 import li.songe.gkd.util.AndroidTarget
 
-object SafeTaskListener {
-    val instance by lazy { FixedTaskStackListener() }
-}
-
 class SafeActivityTaskManager(private val value: IActivityTaskManager) {
     companion object {
         fun newBinder() = if (AndroidTarget.Q) {
@@ -46,13 +42,13 @@ class SafeActivityTaskManager(private val value: IActivityTaskManager) {
 
     fun registerDefault() {
         safeInvokeShizuku {
-            value.registerTaskStackListener(SafeTaskListener.instance)
+            value.registerTaskStackListener(FixedTaskStackListener)
         }
     }
 
     fun unregisterDefault() {
         safeInvokeShizuku {
-            value.unregisterTaskStackListener(SafeTaskListener.instance)
+            value.unregisterTaskStackListener(FixedTaskStackListener)
         }
     }
 }
