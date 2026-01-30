@@ -183,7 +183,7 @@ kotlin {
             "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
             "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
             "-Xcontext-parameters",
-            "-XXLanguage:+MultiDollarInterpolation"
+            "-XXLanguage:+MultiDollarInterpolation",
         )
     }
 }
