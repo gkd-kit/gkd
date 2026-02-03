@@ -123,7 +123,10 @@ object SnapshotExt {
     }
 
     private val captureLoading = MutableStateFlow(false)
-    suspend fun captureSnapshot(skipScreenshot: Boolean = false): ComplexSnapshot {
+    suspend fun captureSnapshot(
+        skipScreenshot: Boolean = false,
+        forcedCropStatusBar: Boolean = false,
+    ): ComplexSnapshot {
         if (A11yRuleEngine.instance == null) {
             throw RpcError("服务不可用，请先授权")
         }
@@ -174,7 +177,7 @@ object SnapshotExt {
                             ?: ScreenshotService.screenshot()
                             ?: emptyScreenBitmap("无截图权限\n请自行替换")
                     }.let {
-                        if (storeFlow.value.hideSnapshotStatusBar && BarUtils.checkStatusBarVisible() == true) {
+                        if (storeFlow.value.hideSnapshotStatusBar && (forcedCropStatusBar || BarUtils.checkStatusBarVisible() == true)) {
                             cropBitmapStatusBar(it)
                         } else {
                             it

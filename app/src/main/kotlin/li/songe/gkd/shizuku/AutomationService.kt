@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.HandlerThread
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityWindowInfo
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -57,6 +58,7 @@ class AutomationService private constructor() : A11yCommonImpl {
     }
 
     override val windowNodeInfo: AccessibilityNodeInfo? get() = uiAutomation.rootInActiveWindow
+    override val windowInfos: List<AccessibilityWindowInfo> get() = uiAutomation.windows
     private val startTime = System.currentTimeMillis()
     override var justStarted: Boolean = true
         get() {

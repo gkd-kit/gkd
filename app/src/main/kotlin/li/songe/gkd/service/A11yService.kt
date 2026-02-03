@@ -11,6 +11,7 @@ import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityWindowInfo
 import com.google.android.accessibility.selecttospeak.SelectToSpeakService
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.a11y.A11yCommonImpl
@@ -34,6 +35,7 @@ open class A11yService : AccessibilityService(), OnA11yLife, A11yCommonImpl {
     override val mode get() = AutomatorModeOption.A11yMode
     override val scope = useScope()
     override val windowNodeInfo: AccessibilityNodeInfo? get() = rootInActiveWindow
+    override val windowInfos: List<AccessibilityWindowInfo> get() = windows
     override suspend fun screenshot(): Bitmap? = suspendCoroutine { continuation ->
         if (AndroidTarget.R) {
             takeScreenshot(

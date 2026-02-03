@@ -23,18 +23,25 @@ private fun execSnapshot() {
     LogUtils.d("SnapshotTileService::onClick")
     val service = A11yRuleEngine.instance
     if (service == null) {
+        A11yRuleEngine.performActionBack()
         toast("服务未连接", forced = true)
         return
     }
     appScope.launchTry(Dispatchers.IO) {
         val oldAppId = service.safeActiveWindowAppId
-            ?: return@launchTry toast("获取信息根节点失败", forced = true)
+
+        if (oldAppId == null) {
+            A11yRuleEngine.performActionBack()
+            toast("获取信息根节点失败", forced = true)
+            return@launchTry
+        }
 
         val startTime = System.currentTimeMillis()
         fun timeout(): Boolean {
             return System.currentTimeMillis() - startTime > 3000L
         }
 
+        var ok = false
         while (isActive) {
             val latestAppId = service.safeActiveWindowAppId
             if (latestAppId == null) {
@@ -45,8 +52,9 @@ private fun execSnapshot() {
                     break
                 }
             } else if (latestAppId != oldAppId) {
+                ok = true
                 LogUtils.d("SnapshotTileService::eventExecutor.execute")
-                appScope.launchTry { SnapshotExt.captureSnapshot() }
+                appScope.launchTry { SnapshotExt.captureSnapshot(forcedCropStatusBar = true) }
                 break
             } else {
                 A11yRuleEngine.performActionBack()
@@ -56,6 +64,9 @@ private fun execSnapshot() {
                     break
                 }
             }
+        }
+        if (!ok) {
+            A11yRuleEngine.performActionBack()
         }
     }
 }
