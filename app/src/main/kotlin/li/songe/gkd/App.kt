@@ -19,7 +19,10 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityManager
 import android.view.inputmethod.InputMethodManager
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import li.songe.gkd.a11y.initA11yFeat
 import li.songe.gkd.data.selfAppInfo
@@ -36,6 +39,7 @@ import li.songe.gkd.util.initSubsState
 import li.songe.gkd.util.initToast
 import li.songe.gkd.util.toast
 import org.lsposed.hiddenapibypass.HiddenApiBypass
+import kotlin.system.exitProcess
 
 
 val appScope by lazy { MainScope() }
@@ -153,6 +157,16 @@ class App : Application() {
         return resolveAppId(intent)
     }
 
+    fun startLaunchActivity() {
+        val intent = packageManager.getLaunchIntentForPackage(META.appId)!!
+        intent.addFlags(
+            Intent.FLAG_ACTIVITY_NEW_TASK
+                    or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        )
+        startActivity(intent)
+    }
+
     fun checkGrantedPermission(permission: String) = ContextCompat.checkSelfPermission(
         this,
         permission,
@@ -182,6 +196,14 @@ class App : Application() {
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
             toast(e.message ?: e.toString())
             LogUtils.d("UncaughtExceptionHandler", t, e)
+            appScope.launch(Dispatchers.IO) {
+                delay(1500)
+                if (isActivityVisible) {
+                    startLaunchActivity()
+                }
+                android.os.Process.killProcess(android.os.Process.myPid())
+                exitProcess(0)
+            }
         }
         initToast()
         initStore()
