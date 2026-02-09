@@ -1,8 +1,6 @@
 package li.songe.gkd.ui
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flattenConcat
@@ -23,9 +21,7 @@ import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.usedSubsEntriesFlow
 
 
-class AppConfigVm(stateHandle: SavedStateHandle) : BaseViewModel() {
-    private val args = AppConfigPageDestination.argsFrom(stateHandle)
-
+class AppConfigVm(val route: AppConfigRoute) : BaseViewModel() {
     val ruleSortTypeFlow = storeFlow.mapNew {
         RuleSortOption.objects.findOption(it.appRuleSort)
     }
@@ -34,7 +30,7 @@ class AppConfigVm(stateHandle: SavedStateHandle) : BaseViewModel() {
         list.filter { it.enable }.map { it.id }.sorted()
     }
 
-    private val appConfigsFlow = DbSet.appConfigDao.queryAppUsedList(args.appId).attachLoad()
+    private val appConfigsFlow = DbSet.appConfigDao.queryAppUsedList(route.appId).attachLoad()
 
     private val appUsedSubsIdsFlow = combine(usedSubsIdsFlow, appConfigsFlow) { ids, configs ->
         ids.filter {
@@ -44,7 +40,7 @@ class AppConfigVm(stateHandle: SavedStateHandle) : BaseViewModel() {
 
     private val latestLogsFlow = ruleSortTypeFlow.map {
         if (it == RuleSortOption.ByActionTime) {
-            DbSet.actionLogDao.queryLatestByAppId(args.appId)
+            DbSet.actionLogDao.queryLatestByAppId(route.appId)
         } else {
             flowOf(emptyList())
         }
@@ -54,7 +50,7 @@ class AppConfigVm(stateHandle: SavedStateHandle) : BaseViewModel() {
         .stateInit(emptyList())
 
     val appSubsConfigsFlow = appUsedSubsIdsFlow.map {
-        DbSet.subsConfigDao.queryAppConfig(it, args.appId)
+        DbSet.subsConfigDao.queryAppConfig(it, route.appId)
     }.flattenConcat().attachLoad()
         .stateInit(emptyList())
 
@@ -72,7 +68,7 @@ class AppConfigVm(stateHandle: SavedStateHandle) : BaseViewModel() {
             val globalGroups = e.subscription.globalGroups
                 .filter { g -> configs.find { it.subsId == e.subsItem.id && it.groupKey == g.key }?.enable != false }
             val appGroups = if (usedSubsIds.contains(e.subsItem.id)) {
-                e.subscription.getAppGroups(args.appId)
+                e.subscription.getAppGroups(route.appId)
             } else {
                 emptyList()
             }
@@ -121,7 +117,7 @@ class AppConfigVm(stateHandle: SavedStateHandle) : BaseViewModel() {
 
     private fun getAllSelectedDataSet() = subsPairsFlow.value.map { e ->
         e.second.map { g ->
-            g.toGroupState(subsId = e.first.subsItem.id, appId = args.appId)
+            g.toGroupState(subsId = e.first.subsItem.id, appId = route.appId)
         }
     }.flatten().toSet()
 
@@ -133,7 +129,7 @@ class AppConfigVm(stateHandle: SavedStateHandle) : BaseViewModel() {
         selectedDataSetFlow.value = getAllSelectedDataSet() - selectedDataSetFlow.value
     }
 
-    val focusGroupFlow = args.focusLog?.let {
+    val focusGroupFlow = route.focusLog?.let {
         MutableStateFlow<Triple<Long, String?, Int>?>(
             Triple(
                 it.subsId,

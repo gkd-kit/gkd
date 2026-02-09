@@ -37,13 +37,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
-import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.Serializable
 import li.songe.gkd.data.ActionLog
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.store.storeFlow
@@ -66,7 +63,6 @@ import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.LOCAL_SUBS_ID
@@ -78,12 +74,18 @@ import li.songe.gkd.util.switchItem
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toJson5String
 
-@Suppress("unused")
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data class AppConfigRoute(
+    val appId: String,
+    val focusLog: ActionLog? = null,
+) : NavKey
+
 @Composable
-fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
+fun AppConfigPage(route: AppConfigRoute) {
+    val appId = route.appId
+    val focusLog = route.focusLog
     val mainVm = LocalMainViewModel.current
-    val vm = viewModel<AppConfigVm>()
+    val vm = viewModel { AppConfigVm(route) }
 
     val ruleSortType by vm.ruleSortTypeFlow.collectAsState()
     val groupSize by vm.groupSizeFlow.collectAsState()
@@ -139,7 +141,7 @@ fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
                     if (isSelectedMode) {
                         vm.isSelectedModeFlow.value = false
                     } else {
-                        mainVm.popBackStack()
+                        mainVm.popPage()
                     }
                 }) {
                     BackCloseIcon(backOrClose = !isSelectedMode)
@@ -195,7 +197,7 @@ fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
                     contentFalse = {
                         Row {
                             PerfIconButton(imageVector = PerfIcon.History, onClick = throttle {
-                                mainVm.navigatePage(ActionLogPageDestination(appId = appId))
+                                mainVm.navigatePage(ActionLogRoute(appId = appId))
                             })
                             PerfIconButton(imageVector = PerfIcon.Sort, onClick = {
                                 expanded = true
@@ -256,7 +258,7 @@ fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
                 visible = !isSelectedMode,
                 onClick = {
                     mainVm.navigatePage(
-                        UpsertRuleGroupPageDestination(
+                        UpsertRuleGroupRoute(
                             subsId = LOCAL_SUBS_ID,
                             groupKey = null,
                             appId = appId
@@ -287,7 +289,7 @@ fun AppConfigPage(appId: String, focusLog: ActionLog? = null) {
                             .clip(MaterialTheme.shapes.extraSmall)
                             .clickable(onClick = throttle {
                                 mainVm.navigatePage(
-                                    SubsAppGroupListPageDestination(
+                                    SubsAppGroupListRoute(
                                         subsItemId = subsId,
                                         appId = appId,
                                     )

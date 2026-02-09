@@ -42,14 +42,14 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
-import com.ramcosta.composedestinations.generated.destinations.EditBlockAppListPageDestination
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.store.blockMatchAppListFlow
+import li.songe.gkd.ui.AppConfigRoute
+import li.songe.gkd.ui.EditBlockAppListRoute
 import li.songe.gkd.ui.component.AnimatedIconButton
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.AppBarTextField
@@ -258,7 +258,7 @@ fun useAppListPage(): ScaffoldExt {
                 visible = editWhiteListMode,
                 contentDescription = "编辑白名单",
                 onClick = {
-                    mainVm.navigatePage(EditBlockAppListPageDestination)
+                    mainVm.navigatePage(EditBlockAppListRoute)
                 },
                 imageVector = PerfIcon.Edit,
             )
@@ -340,7 +340,7 @@ private fun AppItemCard(
                         blockMatchAppListFlow.update { it.switchItem(appInfo.id) }
                     } else {
                         context.justHideSoftInput()
-                        mainVm.navigatePage(AppConfigPageDestination(appInfo.id))
+                        mainVm.navigatePage(AppConfigRoute(appInfo.id))
                     }
                 })
             .clearAndSetSemantics {

@@ -1,8 +1,6 @@
 package li.songe.gkd.ui
 
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.lifecycle.SavedStateHandle
-import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupExcludePageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import li.songe.gkd.data.ExcludeData
@@ -14,13 +12,12 @@ import li.songe.gkd.ui.share.useAppFilter
 import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.findOption
 
-class SubsGlobalGroupExcludeVm(stateHandle: SavedStateHandle) : BaseViewModel() {
-    private val args = SubsGlobalGroupExcludePageDestination.argsFrom(stateHandle)
+class SubsGlobalGroupExcludeVm(val route: SubsGlobalGroupExcludeRoute) : BaseViewModel() {
 
-    val subsFlow = mapSafeSubs(args.subsItemId)
-    val groupFlow = subsFlow.mapNew { r -> r.globalGroups.find { g -> g.key == args.groupKey } }
+    val subsFlow = mapSafeSubs(route.subsItemId)
+    val groupFlow = subsFlow.mapNew { r -> r.globalGroups.find { g -> g.key == route.groupKey } }
     val subsConfigFlow = DbSet.subsConfigDao
-        .queryGlobalGroupTypeConfig(args.subsItemId, args.groupKey)
+        .queryGlobalGroupTypeConfig(route.subsItemId, route.groupKey)
         .stateInit(null)
     val excludeDataFlow = subsConfigFlow.mapNew { s -> ExcludeData.parse(s?.exclude) }
 
@@ -51,8 +48,8 @@ class SubsGlobalGroupExcludeVm(stateHandle: SavedStateHandle) : BaseViewModel() 
     val appFilter = useAppFilter(
         appGroupTypeFlow = appGroupTypeFlow,
         appOrderListFlow = DbSet.actionLogDao.queryLatestUniqueAppIds(
-            args.subsItemId,
-            args.groupKey
+            route.subsItemId,
+            route.groupKey
         ).stateInit(emptyList()),
         sortTypeFlow = sortTypeFlow,
         showBlockAppFlow = showBlockAppFlow,

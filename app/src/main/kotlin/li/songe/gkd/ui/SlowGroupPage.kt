@@ -19,10 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
@@ -31,14 +29,15 @@ import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.appInfoMapFlow
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.throttle
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data object SlowGroupRoute : NavKey
+
 @Composable
 fun SlowGroupPage() {
     val mainVm = LocalMainViewModel.current
@@ -53,7 +52,7 @@ fun SlowGroupPage() {
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
-                        mainVm.popBackStack()
+                        mainVm.popPage()
                     })
                 },
                 title = { Text(text = "缓慢查询") },
@@ -83,7 +82,7 @@ fun SlowGroupPage() {
                     modifier = Modifier
                         .clickable(onClick = throttle {
                             mainVm.navigatePage(
-                                SubsGlobalGroupListPageDestination(
+                                SubsGlobalGroupListRoute(
                                     rule.subsItem.id,
                                     group.key
                                 )
@@ -102,7 +101,7 @@ fun SlowGroupPage() {
                     modifier = Modifier
                         .clickable(onClick = throttle {
                             mainVm.navigatePage(
-                                SubsAppGroupListPageDestination(
+                                SubsAppGroupListRoute(
                                     rule.subsItem.id,
                                     rule.app.id,
                                     group.key

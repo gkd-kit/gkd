@@ -30,10 +30,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
+import kotlinx.serialization.Serializable
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.BatchActionButtonGroup
@@ -52,7 +51,6 @@ import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.getUpDownTransform
@@ -63,15 +61,21 @@ import li.songe.gkd.util.toJson5String
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data class SubsAppGroupListRoute(
+    val subsItemId: Long,
+    val appId: String,
+    val focusGroupKey: Int? = null, // 背景/边框高亮一下
+) : NavKey
+
 @Composable
-fun SubsAppGroupListPage(
-    subsItemId: Long,
-    appId: String,
-    @Suppress("unused") focusGroupKey: Int? = null, // 背景/边框高亮一下
-) {
+fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
+    val subsItemId = route.subsItemId
+    val appId = route.appId
+    val focusGroupKey = route.focusGroupKey
+
     val mainVm = LocalMainViewModel.current
-    val vm = viewModel<SubsAppGroupListVm>()
+    val vm = viewModel { SubsAppGroupListVm(route) }
     val subs = vm.subsFlow.collectAsState().value
     val subsConfigs by vm.subsConfigsFlow.collectAsState()
     val categoryConfigs by vm.categoryConfigsFlow.collectAsState()
@@ -113,7 +117,7 @@ fun SubsAppGroupListPage(
                 if (isSelectedMode) {
                     vm.isSelectedModeFlow.value = false
                 } else {
-                    mainVm.popBackStack()
+                    mainVm.popPage()
                 }
             }) {
                 BackCloseIcon(backOrClose = !isSelectedMode)
@@ -250,7 +254,7 @@ fun SubsAppGroupListPage(
                 visible = !isSelectedMode,
                 onClick = {
                     mainVm.navigatePage(
-                        UpsertRuleGroupPageDestination(
+                        UpsertRuleGroupRoute(
                             subsId = subsItemId,
                             groupKey = null,
                             appId = appId

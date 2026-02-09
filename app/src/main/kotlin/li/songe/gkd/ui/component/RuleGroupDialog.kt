@@ -18,7 +18,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -27,16 +26,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
-import com.ramcosta.composedestinations.generated.destinations.ImagePreviewPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
-import com.ramcosta.composedestinations.utils.currentDestinationAsState
 import kotlinx.coroutines.delay
 import li.songe.gkd.data.RawSubscription
+import li.songe.gkd.ui.ImagePreviewRoute
+import li.songe.gkd.ui.SubsAppGroupListRoute
+import li.songe.gkd.ui.SubsGlobalGroupListRoute
 import li.songe.gkd.ui.icon.ResetSettings
 import li.songe.gkd.ui.share.LocalDarkTheme
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.getJson5AnnotatedString
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.throttle
@@ -53,7 +50,6 @@ fun RuleGroupDialog(
     onClickDelete: () -> Unit = {}
 ) {
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text(text = "规则组详情") },
@@ -129,34 +125,34 @@ fun RuleGroupDialog(
         },
         confirmButton = {
             Row {
-                val currentDestination by navController.currentDestinationAsState()
-                val (direction, destination) = remember(subs.id, appId, group.key) {
+                val currentRoute = mainVm.topRoute
+                val targetRoute = remember(subs.id, appId, group.key) {
                     if (group is RawSubscription.RawGlobalGroup) {
-                        SubsGlobalGroupListPageDestination(
+                        SubsGlobalGroupListRoute(
                             subsItemId = subs.id,
                             focusGroupKey = group.key
-                        ) to SubsGlobalGroupListPageDestination
+                        )
                     } else {
-                        SubsAppGroupListPageDestination(
+                        SubsAppGroupListRoute(
                             subsItemId = subs.id,
                             appId = appId.toString(),
                             focusGroupKey = group.key
-                        ) to SubsAppGroupListPageDestination
+                        )
                     }
                 }
-                if (currentDestination?.baseRoute != destination.baseRoute) {
+                if (targetRoute::class != currentRoute::class) {
                     PerfIconButton(imageVector = PerfIcon.ArrowForward, onClick = throttle {
                         onDismissRequest()
-                        mainVm.navigatePage(direction)
+                        mainVm.navigatePage(targetRoute)
                     })
                 }
                 if (group.allExampleUrls.isNotEmpty()) {
                     PerfIconButton(imageVector = PerfIcon.Image, onClick = throttle {
                         onDismissRequest()
                         mainVm.navigatePage(
-                            ImagePreviewPageDestination(
+                            ImagePreviewRoute(
                                 title = group.name,
-                                uris = group.allExampleUrls.toTypedArray()
+                                uris = group.allExampleUrls,
                             )
                         )
                     })

@@ -10,11 +10,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.style.ProfileTransitions
 
 sealed class BottomNavItem(
     val key: Int,
@@ -50,7 +49,9 @@ sealed class BottomNavItem(
     }
 }
 
-@Destination<RootGraph>(style = ProfileTransitions::class, start = true)
+@Serializable
+data object HomeRoute : NavKey
+
 @Composable
 fun HomePage() {
     val mainVm = LocalMainViewModel.current

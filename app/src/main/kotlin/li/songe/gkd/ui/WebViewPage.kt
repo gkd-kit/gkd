@@ -23,12 +23,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.navigation3.runtime.NavKey
 import com.kevinnzou.web.AccompanistWebViewClient
 import com.kevinnzou.web.LoadingState
 import com.kevinnzou.web.WebView
 import com.kevinnzou.web.rememberWebViewState
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +41,6 @@ import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.AndroidTarget
@@ -52,12 +50,12 @@ import li.songe.gkd.util.copyText
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.throttle
 
+@Serializable
+data class WebViewRoute(val initUrl: String) : NavKey
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
-fun WebViewPage(
-    initUrl: String,
-) {
+fun WebViewPage(route: WebViewRoute) {
+    val initUrl = route.initUrl
     val mainVm = LocalMainViewModel.current
     val webViewState = rememberWebViewState(url = initUrl)
     val webViewClient = remember { GkdWebViewClient() }
@@ -68,7 +66,7 @@ fun WebViewPage(
             navigationIcon = {
                 PerfIconButton(
                     imageVector = PerfIcon.ArrowBack,
-                    onClick = { mainVm.popBackStack() },
+                    onClick = { mainVm.popPage() },
                 )
             },
             title = {
@@ -88,7 +86,7 @@ fun WebViewPage(
                 }
             },
             actions = {
-                if (chromeVersion > 0 && chromeVersion < MINI_CHROME_VERSION) {
+                if (chromeVersion in 1..<MINI_CHROME_VERSION) {
                     PerfIconButton(imageVector = PerfIcon.WarningAmber, onClick = throttle {
                         mainVm.dialogFlow.updateDialogOptions(
                             title = "兼容性提示",

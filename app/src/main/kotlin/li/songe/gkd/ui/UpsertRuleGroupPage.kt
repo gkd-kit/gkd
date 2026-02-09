@@ -26,13 +26,10 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
-import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
@@ -41,24 +38,28 @@ import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.share.LocalDarkTheme
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.getJson5Transformation
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
 
-@Suppress("unused")
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data class UpsertRuleGroupRoute(
+    val subsId: Long,
+    val groupKey: Int? = null,
+    val appId: String? = null,
+    val forward: Boolean = false,
+) : NavKey
+
 @Composable
-fun UpsertRuleGroupPage(
-    subsId: Long,
-    groupKey: Int? = null,
-    appId: String? = null,
-    forward: Boolean = false,
-) {
+fun UpsertRuleGroupPage(route: UpsertRuleGroupRoute) {
+    val subsId = route.subsId
+    val appId = route.appId
+    val forward = route.forward
+
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
-    val vm = viewModel<UpsertRuleGroupVm>()
+    val vm = viewModel { UpsertRuleGroupVm(route) }
     val text by vm.textFlow.collectAsState()
 
     val checkIfSaveText = throttle(mainVm.viewModelScope.launchAsFn(Dispatchers.Default) {
@@ -71,7 +72,7 @@ fun UpsertRuleGroupPage(
         } else {
             context.hideSoftInput()
         }
-        mainVm.popBackStack()
+        mainVm.popPage()
     })
 
     val onClickSave = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Main) {
@@ -79,25 +80,21 @@ fun UpsertRuleGroupPage(
         context.hideSoftInput()
         if (forward) {
             if (appId == null) {
-                mainVm.navigatePage(SubsGlobalGroupListPageDestination(subsItemId = subsId)) {
-                    popUpTo(UpsertRuleGroupPageDestination.route) {
-                        inclusive = true
-                    }
-                }
+                mainVm.navigatePage(
+                    SubsGlobalGroupListRoute(subsItemId = subsId),
+                    replaced = true
+                )
             } else {
                 mainVm.navigatePage(
-                    SubsAppGroupListPageDestination(
+                    SubsAppGroupListRoute(
                         subsItemId = subsId,
                         vm.addAppId ?: appId
-                    )
-                ) {
-                    popUpTo(UpsertRuleGroupPageDestination.route) {
-                        inclusive = true
-                    }
-                }
+                    ),
+                    replaced = true
+                )
             }
         } else {
-            mainVm.popBackStack()
+            mainVm.popPage()
         }
     })
     BackHandler(true, checkIfSaveText)

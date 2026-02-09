@@ -36,11 +36,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
-import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDestination
-import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
-import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
-import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
@@ -57,6 +52,11 @@ import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.shizuku.uiAutomationFlow
 import li.songe.gkd.store.actualA11yScopeAppList
 import li.songe.gkd.store.storeFlow
+import li.songe.gkd.ui.ActionLogRoute
+import li.songe.gkd.ui.ActivityLogRoute
+import li.songe.gkd.ui.AppConfigRoute
+import li.songe.gkd.ui.AuthA11yRoute
+import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.component.GroupNameText
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
@@ -96,7 +96,7 @@ fun useControlPage(): ScaffoldExt {
                     onClickLabel = "前往工作模式页面",
                     contentDescription = "工作模式",
                     onClick = throttle {
-                        mainVm.navigatePage(AuthA11YPageDestination)
+                        mainVm.navigatePage(AuthA11yRoute)
                     },
                 )
             })
@@ -164,7 +164,7 @@ fun useControlPage(): ScaffoldExt {
                     checked = a11yRunning,
                     onCheckedChange = { newEnabled ->
                         if (newEnabled && !writeSecureSettingsState.value) {
-                            mainVm.navigatePage(AuthA11YPageDestination)
+                            mainVm.navigatePage(AuthA11yRoute)
                         } else {
                             switchAutomatorService()
                         }
@@ -220,7 +220,7 @@ fun useControlPage(): ScaffoldExt {
                 imageVector = PerfIcon.History,
                 onClickLabel = "打开触发记录页面",
                 onClick = {
-                    mainVm.navigatePage(ActionLogPageDestination())
+                    mainVm.navigatePage(ActionLogRoute())
                 })
 
             if (ActivityService.isRunning.collectAsState().value) {
@@ -230,7 +230,7 @@ fun useControlPage(): ScaffoldExt {
                     imageVector = PerfIcon.Layers,
                     onClickLabel = "打开界面日志页面",
                     onClick = {
-                        mainVm.navigatePage(ActivityLogPageDestination)
+                        mainVm.navigatePage(ActivityLogRoute)
                     })
             }
 
@@ -240,7 +240,7 @@ fun useControlPage(): ScaffoldExt {
                 imageVector = PerfIcon.HelpOutline,
                 onClickLabel = "打开 GKD 文档页面",
                 onClick = {
-                    mainVm.navigatePage(WebViewPageDestination(initUrl = HOME_PAGE_URL))
+                    mainVm.navigatePage(WebViewRoute(initUrl = HOME_PAGE_URL))
                 })
             Spacer(modifier = Modifier.height(EmptyHeight))
         }
@@ -426,7 +426,7 @@ private fun ServerStatusCard() {
                         .clickable(onClickLabel = "前往应用的规则汇总页面", onClick = throttle {
                             latestRecordFlow.value?.let {
                                 mainVm.navigatePage(
-                                    AppConfigPageDestination(
+                                    AppConfigRoute(
                                         appId = it.appId, focusLog = it
                                     )
                                 )

@@ -35,12 +35,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation3.runtime.NavKey
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
+import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.ActivityLog
 import li.songe.gkd.db.DbSet
@@ -58,7 +57,6 @@ import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
@@ -67,7 +65,9 @@ import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data object ActivityLogRoute : NavKey
+
 @Composable
 fun ActivityLogPage() {
     val context = LocalActivity.current as MainActivity
@@ -85,7 +85,7 @@ fun ActivityLogPage() {
             scrollBehavior = scrollBehavior,
             navigationIcon = {
                 PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
-                    mainVm.popBackStack()
+                    mainVm.popPage()
                 })
             },
             title = {
@@ -164,7 +164,7 @@ private fun ActivityLogCard(
                     .clip(MaterialTheme.shapes.extraSmall)
                     .clickable(onClick = throttle {
                         mainVm.navigatePage(
-                            AppConfigPageDestination(
+                            AppConfigRoute(
                                 appId = activityLog.appId,
                             )
                         )

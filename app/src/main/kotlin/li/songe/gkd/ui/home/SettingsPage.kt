@@ -47,9 +47,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.generated.destinations.AboutPageDestination
-import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
-import com.ramcosta.composedestinations.generated.destinations.BlockA11YAppListPageDestination
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
@@ -67,6 +64,9 @@ import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.fixRestartAutomatorService
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
+import li.songe.gkd.ui.AboutRoute
+import li.songe.gkd.ui.AdvancedPageRoute
+import li.songe.gkd.ui.BlockA11yAppListRoute
 import li.songe.gkd.ui.component.CustomOutlinedTextField
 import li.songe.gkd.ui.component.FullscreenDialog
 import li.songe.gkd.ui.component.PerfCustomIconButton
@@ -427,7 +427,7 @@ fun useSettingsPage(): ScaffoldExt {
             )
             AnimatedVisibility(visible = lazyOn.value) {
                 SettingItem(title = "白名单", onClickLabel = "进入无障碍白名单页面", onClick = {
-                    mainVm.navigatePage(BlockA11YAppListPageDestination)
+                    mainVm.navigatePage(BlockA11yAppListRoute)
                 })
             }
 
@@ -464,11 +464,11 @@ fun useSettingsPage(): ScaffoldExt {
             )
 
             SettingItem(title = "高级设置", onClick = {
-                mainVm.navigatePage(AdvancedPageDestination)
+                mainVm.navigatePage(AdvancedPageRoute)
             })
 
             SettingItem(title = "关于", onClick = {
-                mainVm.navigatePage(AboutPageDestination)
+                mainVm.navigatePage(AboutRoute)
             })
 
             Spacer(modifier = Modifier.height(EmptyHeight))

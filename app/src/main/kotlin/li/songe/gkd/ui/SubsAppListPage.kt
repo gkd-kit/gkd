@@ -24,10 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
-import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.data.AppConfig
@@ -51,7 +49,6 @@ import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.AppGroupOption
 import li.songe.gkd.util.AppSortOption
@@ -59,15 +56,16 @@ import li.songe.gkd.util.LOCAL_SUBS_IDS
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
 
+@Serializable
+data class SubsAppListRoute(val subsItemId: Long) : NavKey
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
-fun SubsAppListPage(
-    subsItemId: Long,
-) {
+fun SubsAppListPage(route: SubsAppListRoute) {
+    val subsItemId = route.subsItemId
+
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
-    val vm = viewModel<SubsAppListVm>()
+    val vm = viewModel { SubsAppListVm(route) }
 
     val appTripleList by vm.appItemListFlow.collectAsState()
     val searchStr by vm.searchStrFlow.collectAsState()
@@ -91,7 +89,7 @@ fun SubsAppListPage(
                     imageVector = PerfIcon.ArrowBack,
                     onClick = throttle(vm.viewModelScope.launchAsFn {
                         context.hideSoftInput()
-                        mainVm.popBackStack()
+                        mainVm.popPage()
                     }),
                 )
             }, title = {
@@ -179,7 +177,7 @@ fun SubsAppListPage(
             if (LOCAL_SUBS_IDS.contains(subsItemId)) {
                 FloatingActionButton(onClick = throttle {
                     mainVm.navigatePage(
-                        UpsertRuleGroupPageDestination(
+                        UpsertRuleGroupRoute(
                             subsId = subsItemId,
                             groupKey = null,
                             appId = "",
@@ -203,7 +201,7 @@ fun SubsAppListPage(
                     data = a,
                     onClick = throttle {
                         context.justHideSoftInput()
-                        mainVm.navigatePage(SubsAppGroupListPageDestination(subsItemId, a.id))
+                        mainVm.navigatePage(SubsAppGroupListRoute(subsItemId, a.id))
                     },
                     onValueChange = vm.viewModelScope.launchAsFn { enable ->
                         val newItem = a.appConfig?.copy(

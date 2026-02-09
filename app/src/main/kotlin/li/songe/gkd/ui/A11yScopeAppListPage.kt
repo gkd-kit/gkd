@@ -24,9 +24,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.store.a11yScopeAppListFlow
@@ -54,7 +54,6 @@ import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.AppGroupOption
 import li.songe.gkd.util.AppListString
@@ -64,7 +63,9 @@ import li.songe.gkd.util.switchItem
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data object A11YScopeAppListRoute : NavKey
+
 @Composable
 fun A11yScopeAppListPage() {
     val store by storeFlow.collectAsState()
@@ -106,7 +107,7 @@ fun A11yScopeAppListPage() {
                                 editable = !editable
                             } else {
                                 context.hideSoftInput()
-                                mainVm.popBackStack()
+                                mainVm.popPage()
                             }
                         })
                     ) {

@@ -54,9 +54,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dylanc.activityresult.launcher.launchForResult
-import com.ramcosta.composedestinations.generated.destinations.SlowGroupPageDestination
-import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
-import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
@@ -66,6 +63,9 @@ import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.store.switchStoreEnableMatch
+import li.songe.gkd.ui.SlowGroupRoute
+import li.songe.gkd.ui.UpsertRuleGroupRoute
+import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
@@ -268,7 +268,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                     contentDescription = "缓慢查询规则列表",
                                     onClickLabel = "查看列表",
                                     onClick = throttle {
-                                        mainVm.navigatePage(SlowGroupPageDestination)
+                                        mainVm.navigatePage(SlowGroupRoute)
                                     })
                             }
                             val scope = rememberCoroutineScope()
@@ -365,7 +365,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                     onClick = throttle {
                                         expanded = false
                                         mainVm.navigatePage(
-                                            UpsertRuleGroupPageDestination(
+                                            UpsertRuleGroupRoute(
                                                 subsId = LOCAL_SUBS_ID,
                                                 groupKey = null,
                                                 appId = "",
@@ -379,7 +379,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                     onClick = throttle {
                                         expanded = false
                                         mainVm.navigatePage(
-                                            UpsertRuleGroupPageDestination(
+                                            UpsertRuleGroupRoute(
                                                 subsId = LOCAL_SUBS_ID,
                                                 groupKey = null,
                                                 appId = null,
@@ -488,7 +488,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                                     modifier = Modifier.clickable(onClick = throttle {
                                                         mainVm.dialogFlow.value = null
                                                         mainVm.navigatePage(
-                                                            WebViewPageDestination(
+                                                            WebViewRoute(
                                                                 initUrl = ShortUrlSet.URL6
                                                             )
                                                         )

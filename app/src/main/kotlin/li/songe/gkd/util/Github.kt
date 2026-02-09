@@ -16,7 +16,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.DialogProperties
-import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import io.ktor.client.call.body
 import io.ktor.client.plugins.onUpload
 import io.ktor.client.request.forms.MultiPartFormDataContent
@@ -36,6 +35,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
 import li.songe.gkd.data.GithubPoliciesAsset
+import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.autoFocus
@@ -213,7 +213,7 @@ fun EditGithubCookieDlg() {
                         imageVector = PerfIcon.HelpOutline,
                         onClick = throttle {
                             mainVm.showEditCookieDlgFlow.value = false
-                            mainVm.navigatePage(WebViewPageDestination(initUrl = ShortUrlSet.URL1))
+                            mainVm.navigatePage(WebViewRoute(initUrl = ShortUrlSet.URL1))
                         })
                 }
             },

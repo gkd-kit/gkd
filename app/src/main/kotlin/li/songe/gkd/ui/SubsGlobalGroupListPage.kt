@@ -30,10 +30,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
+import kotlinx.serialization.Serializable
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.BatchActionButtonGroup
@@ -52,7 +51,6 @@ import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.getUpDownTransform
 import li.songe.gkd.util.launchAsFn
@@ -61,12 +59,17 @@ import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 
-@Suppress("unused")
-@Destination<RootGraph>(style = ProfileTransitions::class)
+
+@Serializable
+data class SubsGlobalGroupListRoute(val subsItemId: Long, val focusGroupKey: Int? = null) : NavKey
+
 @Composable
-fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
+fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
+    val subsItemId = route.subsItemId
+    val focusGroupKey = route.focusGroupKey
+
     val mainVm = LocalMainViewModel.current
-    val vm = viewModel<SubsGlobalGroupListVm>()
+    val vm = viewModel { SubsGlobalGroupListVm(route) }
     val subs = vm.subsRawFlow.collectAsState().value
     val subsConfigs by vm.subsConfigsFlow.collectAsState()
 
@@ -109,7 +112,7 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
                     if (isSelectedMode) {
                         vm.isSelectedModeFlow.value = false
                     } else {
-                        mainVm.popBackStack()
+                        mainVm.popPage()
                     }
                 }) {
                     BackCloseIcon(backOrClose = !isSelectedMode)
@@ -224,7 +227,7 @@ fun SubsGlobalGroupListPage(subsItemId: Long, focusGroupKey: Int? = null) {
                     visible = !isSelectedMode,
                     onClick = {
                         mainVm.navigatePage(
-                            UpsertRuleGroupPageDestination(
+                            UpsertRuleGroupRoute(
                                 subsId = subsItemId,
                                 groupKey = null,
                                 appId = null,

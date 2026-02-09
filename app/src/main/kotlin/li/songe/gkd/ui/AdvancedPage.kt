@@ -46,13 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation3.runtime.NavKey
 import com.dylanc.activityresult.launcher.launchForResult
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.A11YEventLogPageDestination
-import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.permission.canDrawOverlaysState
@@ -81,7 +78,6 @@ import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
@@ -93,7 +89,9 @@ import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import li.songe.selector.Selector
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data object AdvancedPageRoute : NavKey
+
 @Composable
 fun AdvancedPage() {
     val context = LocalActivity.current as MainActivity
@@ -297,7 +295,7 @@ fun AdvancedPage() {
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
-                        mainVm.popBackStack()
+                        mainVm.popPage()
                     })
                 },
                 title = { Text(text = "高级设置") },
@@ -464,7 +462,7 @@ fun AdvancedPage() {
                 title = "快照记录",
                 subtitle = "应用界面节点信息及截图",
                 onClick = {
-                    mainVm.navigatePage(SnapshotPageDestination)
+                    mainVm.navigatePage(SnapshotPageRoute)
                 }
             )
 
@@ -590,7 +588,7 @@ fun AdvancedPage() {
                 title = "界面日志",
                 subtitle = "界面切换日志",
                 onClick = {
-                    mainVm.navigatePage(ActivityLogPageDestination)
+                    mainVm.navigatePage(ActivityLogRoute)
                 }
             )
             TextSwitch(
@@ -612,7 +610,7 @@ fun AdvancedPage() {
                 title = "事件日志",
                 subtitle = "无障碍事件日志",
                 onClick = {
-                    mainVm.navigatePage(A11YEventLogPageDestination)
+                    mainVm.navigatePage(A11yEventLogRoute)
                 }
             )
             TextSwitch(

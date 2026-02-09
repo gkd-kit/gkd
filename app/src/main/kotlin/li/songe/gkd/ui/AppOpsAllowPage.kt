@@ -29,9 +29,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
+import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
 import li.songe.gkd.permission.PermissionState
 import li.songe.gkd.permission.appOpsRestrictStateList
@@ -45,7 +45,6 @@ import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.util.getShareApkFile
 import li.songe.gkd.util.launchAsFn
@@ -53,7 +52,9 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.saveFileToDownloads
 import li.songe.gkd.util.toast
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data object AppOpsAllowRoute : NavKey
+
 @Composable
 fun AppOpsAllowPage() {
     val mainVm = LocalMainViewModel.current
@@ -64,7 +65,7 @@ fun AppOpsAllowPage() {
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
             PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
-                mainVm.popBackStack()
+                mainVm.popPage()
             })
         }, title = {
             Text(text = "解除限制")

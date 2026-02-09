@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -21,7 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
@@ -34,16 +32,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 import li.songe.gkd.appScope
 import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.EmptyText
+import li.songe.gkd.ui.component.FullscreenDialog
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
@@ -55,7 +53,6 @@ import li.songe.gkd.ui.icon.ResetSettings
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.EnableGroupOption
 import li.songe.gkd.util.findOption
@@ -66,12 +63,14 @@ import li.songe.gkd.util.toToggleableState
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data class SubsCategoryRoute(val subsItemId: Long) : NavKey
+
 @Composable
-fun SubsCategoryPage(@Suppress("unused") subsItemId: Long) {
+fun SubsCategoryPage(@Suppress("unused") route: SubsCategoryRoute) {
     val mainVm = LocalMainViewModel.current
 
-    val vm = viewModel<SubsCategoryVm>()
+    val vm = viewModel { SubsCategoryVm(route) }
     val subs = vm.subsRawFlow.collectAsState().value
     val categoryConfigMap = vm.categoryConfigMapFlow.collectAsState().value
 
@@ -83,7 +82,7 @@ fun SubsCategoryPage(@Suppress("unused") subsItemId: Long) {
             PerfIconButton(
                 imageVector = PerfIcon.ArrowBack,
                 onClick = {
-                    mainVm.popBackStack()
+                    mainVm.popPage()
                 },
             )
         }, title = {
@@ -186,8 +185,14 @@ private fun CategoryItemCard(
                     text = category.name,
                     style = MaterialTheme.typography.bodyLarge,
                 )
-                if (groups.isNotEmpty()) {
-                    val appSize = subs.categoryToAppMap[category]?.size ?: 0
+                if (!category.desc.isNullOrBlank())
+                    Text(
+                        text = category.desc,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                else if (groups.isNotEmpty()) {
+                    val appSize = subs.getCategoryApps(category.key).size
                     Text(
                         text = "${appSize}应用/${groups.size}规则组",
                         style = MaterialTheme.typography.bodyMedium,
@@ -321,63 +326,90 @@ private fun AddOrEditCategoryDialog(
     category: RawSubscription.RawCategory?,
     onDismissRequest: () -> Unit,
 ) {
-    var value by remember {
-        mutableStateOf(category?.name ?: "")
-    }
+    var nameValue by remember { mutableStateOf(category?.name ?: "") }
+    var descValue by remember { mutableStateOf(category?.desc ?: "") }
     val onClick = appScope.launchAsFn {
         if (category != null) {
             onDismissRequest()
-            updateSubscription(
-                subs.copy(categories = subs.categories.toMutableList().apply {
-                    set(
-                        indexOfFirst { c -> c.key == category.key },
-                        category.copy(name = value)
-                    )
-                })
-            )
-            toast("更新成功")
+            val changed = category.name != nameValue || (category.desc ?: "") != descValue
+            if (changed) {
+                updateSubscription(
+                    subs.copy(categories = subs.categories.toMutableList().apply {
+                        set(
+                            indexOfFirst { c -> c.key == category.key },
+                            category.copy(name = nameValue, desc = descValue)
+                        )
+                    })
+                )
+                toast("更新成功")
+            } else {
+                toast("未修改")
+            }
         } else {
-            if (subs.categories.any { c -> c.name == value }) {
+            if (subs.categories.any { c -> c.name == nameValue }) {
                 error("不可添加同名类别")
             }
             onDismissRequest()
             updateSubscription(
                 subs.copy(categories = subs.categories.toMutableList().apply {
-                    add(RawSubscription.RawCategory(key = (subs.categories.maxOfOrNull { c -> c.key }
-                        ?: -1) + 1, name = value, enable = null))
+                    val c = RawSubscription.RawCategory(
+                        key = (subs.categories.maxOfOrNull { c -> c.key } ?: -1) + 1,
+                        enable = null,
+                        name = nameValue,
+                        desc = descValue,
+                    )
+                    add(c)
                 })
             )
             toast("添加成功")
         }
     }
-    AlertDialog(
-        properties = DialogProperties(dismissOnClickOutside = false),
-        title = { Text(text = if (category == null) "添加类别" else "编辑类别") },
-        text = {
-            OutlinedTextField(
-                value = value,
-                onValueChange = { value = it.trim() },
+    FullscreenDialog(onDismissRequest = onDismissRequest) {
+        Scaffold(
+            topBar = {
+                PerfTopAppBar(
+                    navigationIcon = {
+                        PerfIconButton(
+                            imageVector = PerfIcon.Close,
+                            onClick = throttle(onDismissRequest),
+                        )
+                    },
+                    title = { Text(text = if (category == null) "添加类别" else "编辑类别") },
+                    actions = {
+                        PerfIconButton(
+                            imageVector = PerfIcon.Save,
+                            enabled = nameValue.isNotEmpty(),
+                            onClick = throttle(onClick),
+                        )
+                    }
+                )
+            },
+        ) { paddingValues ->
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .autoFocus(),
-                placeholder = { Text(text = "请输入类别名称") },
-                singleLine = true
-            )
-        },
-        onDismissRequest = {},
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(text = "取消")
-            }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = value.isNotEmpty(),
-                onClick = throttle(onClick)
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp),
             ) {
-                Text(text = "确认")
+                OutlinedTextField(
+                    label = { Text("类别名称") },
+                    value = nameValue,
+                    onValueChange = { nameValue = it.trim() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .autoFocus(),
+                    placeholder = { Text(text = "请输入类别名称") },
+                    singleLine = true,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    label = { Text("类别描述") },
+                    value = descValue,
+                    onValueChange = { descValue = it.trim() },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(text = "请输入类别描述") },
+                    singleLine = true,
+                )
             }
         }
-    )
-
+    }
 }

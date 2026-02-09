@@ -39,11 +39,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.ImagePreviewPageDestination
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.db.DbSet
@@ -63,7 +62,6 @@ import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
@@ -79,7 +77,9 @@ import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data object SnapshotPageRoute : NavKey
+
 @Composable
 fun SnapshotPage() {
     val context = LocalActivity.current as MainActivity
@@ -103,7 +103,7 @@ fun SnapshotPage() {
             scrollBehavior = scrollBehavior,
             navigationIcon = {
                 PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
-                    mainVm.popBackStack()
+                    mainVm.popPage()
                 })
             },
             title = {
@@ -173,7 +173,7 @@ fun SnapshotPage() {
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             selectedSnapshot = null
                             mainVm.navigatePage(
-                                ImagePreviewPageDestination(
+                                ImagePreviewRoute(
                                     title = appInfoMapFlow.value[snapshotVal.appId]?.name
                                         ?: snapshotVal.appId,
                                     uri = snapshotVal.screenshotFile.absolutePath,

@@ -70,6 +70,15 @@ data class RawSubscription(
         }
     }
 
+    fun getSafeCategory(key: Int): RawCategory {
+        return categories.find { it.key == key } ?: RawCategory(
+            key = key,
+            name = key.toString(),
+            enable = false,
+            desc = null
+        )
+    }
+
     val categoryToGroupsMap by lazy {
         val allAppGroups = apps.flatMap { a -> a.groups.map { g -> g to a } }
         allAppGroups.groupBy { g ->
@@ -77,14 +86,14 @@ data class RawSubscription(
         }
     }
 
-    val categoryToAppMap by lazy {
-        val map = mutableMapOf<RawCategory, MutableList<RawApp>>()
+    private val categoryToAppMap by lazy {
+        val map = mutableMapOf<Int, MutableList<RawApp>>()
         categories.forEach { c ->
             apps.forEach { a ->
                 if (a.groups.any { g -> g.name.startsWith(c.name) }) {
-                    val list = map[c]
+                    val list = map[c.key]
                     if (list == null) {
-                        map[c] = mutableListOf(a)
+                        map[c.key] = mutableListOf(a)
                     } else {
                         list.add(a)
                     }
@@ -92,6 +101,10 @@ data class RawSubscription(
             }
         }
         map
+    }
+
+    fun getCategoryApps(categoryKey: Int): List<RawApp> {
+        return categoryToAppMap[categoryKey] ?: emptyList()
     }
 
     fun getAppGroups(appId: String): List<RawAppGroup> {
@@ -224,7 +237,12 @@ data class RawSubscription(
 
 
     @Serializable
-    data class RawCategory(val key: Int, val name: String, val enable: Boolean?)
+    data class RawCategory(
+        val key: Int,
+        val name: String,
+        val enable: Boolean?,
+        val desc: String?,
+    )
 
 
     @Serializable
@@ -994,6 +1012,7 @@ data class RawSubscription(
                         name = getString(jsonElement.jsonObject, "name")
                             ?: error("miss categories[$index].name"),
                         enable = getBoolean(jsonElement.jsonObject, "enable"),
+                        desc = getString(jsonElement.jsonObject, "desc")
                     )
                 } ?: emptyList()).filterIfNotAll { it.name.isNotEmpty() }
                     .distinctByIfAny { it.key },

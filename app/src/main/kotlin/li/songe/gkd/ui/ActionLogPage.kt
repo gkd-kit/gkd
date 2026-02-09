@@ -43,16 +43,13 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation3.runtime.NavKey
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.serialization.Serializable
 import li.songe.gkd.data.ActionLog
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
@@ -76,7 +73,6 @@ import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
@@ -87,16 +83,18 @@ import li.songe.gkd.util.subsMapFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data class ActionLogRoute(
+    val subsId: Long? = null,
+    val appId: String? = null,
+) : NavKey
+
 @Composable
-fun ActionLogPage(
-    subsId: Long? = null,
-    appId: String? = null,
-) {
+fun ActionLogPage(route: ActionLogRoute) {
+    val subsId = route.subsId
+    val appId = route.appId
     val mainVm = LocalMainViewModel.current
-    val vm = viewModel<ActionLogVm>()
-
-
+    val vm = viewModel { ActionLogVm(route) }
     val resetKey = rememberSaveable { mutableIntStateOf(0) }
     val list = vm.pagingDataFlow.collectAsLazyPagingItems()
     val (scrollBehavior, listState) = useListScrollState(resetKey, list.itemCount > 0)
@@ -109,7 +107,7 @@ fun ActionLogPage(
                 PerfIconButton(
                     imageVector = PerfIcon.ArrowBack,
                     onClick = {
-                        mainVm.popBackStack()
+                        mainVm.popPage()
                     },
                 )
             },
@@ -248,7 +246,7 @@ private fun ActionLogCard(
                     .clip(MaterialTheme.shapes.extraSmall)
                     .clickable(onClick = throttle {
                         mainVm.navigatePage(
-                            AppConfigPageDestination(
+                            AppConfigRoute(
                                 appId = actionLog.appId,
                             )
                         )
@@ -414,13 +412,13 @@ private fun ActionLogDialog(
                     onDismissRequest()
                     if (actionLog.groupType == SubsConfig.AppGroupType) {
                         mainVm.navigatePage(
-                            SubsAppGroupListPageDestination(
+                            SubsAppGroupListRoute(
                                 actionLog.subsId, actionLog.appId, actionLog.groupKey
                             )
                         )
                     } else if (actionLog.groupType == SubsConfig.GlobalGroupType) {
                         mainVm.navigatePage(
-                            SubsGlobalGroupListPageDestination(
+                            SubsGlobalGroupListRoute(
                                 actionLog.subsId, actionLog.groupKey
                             )
                         )

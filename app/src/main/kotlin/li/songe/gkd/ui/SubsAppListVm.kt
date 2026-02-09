@@ -1,8 +1,6 @@
 package li.songe.gkd.ui
 
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.lifecycle.SavedStateHandle
-import com.ramcosta.composedestinations.generated.destinations.SubsAppListPageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -23,18 +21,18 @@ import li.songe.gkd.util.collator
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.getGroupEnable
 
-class SubsAppListVm(stateHandle: SavedStateHandle) : BaseViewModel() {
-    private val args = SubsAppListPageDestination.argsFrom(stateHandle)
+class SubsAppListVm(val route: SubsAppListRoute) : BaseViewModel() {
 
-    val subsFlow = mapSafeSubs(args.subsItemId)
+    val subsFlow = mapSafeSubs(route.subsItemId)
 
-    private val appConfigsFlow = DbSet.appConfigDao.queryAppTypeConfig(args.subsItemId)
+    private val appConfigsFlow = DbSet.appConfigDao.queryAppTypeConfig(route.subsItemId)
         .attachLoad().stateInit(emptyList())
 
-    private val groupSubsConfigsFlow = DbSet.subsConfigDao.querySubsGroupTypeConfig(args.subsItemId)
-        .attachLoad().stateInit(emptyList())
+    private val groupSubsConfigsFlow =
+        DbSet.subsConfigDao.querySubsGroupTypeConfig(route.subsItemId)
+            .attachLoad().stateInit(emptyList())
 
-    private val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(args.subsItemId)
+    private val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(route.subsItemId)
         .attachLoad().stateInit(emptyList())
 
 
@@ -110,7 +108,7 @@ class SubsAppListVm(stateHandle: SavedStateHandle) : BaseViewModel() {
         }
     )
     private val appActionOrderMapFlow = DbSet.actionLogDao
-        .queryLatestUniqueAppIds(args.subsItemId)
+        .queryLatestUniqueAppIds(route.subsItemId)
         .map {
             it.mapIndexed { i, appId -> appId to i }.toMap()
         }

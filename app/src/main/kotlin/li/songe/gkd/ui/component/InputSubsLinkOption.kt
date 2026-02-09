@@ -14,8 +14,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.DialogProperties
-import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
+import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.subsItemsFlow
@@ -91,7 +91,7 @@ class InputSubsLinkOption {
                             contentDescription = "订阅帮助",
                             onClick = throttle {
                                 cancel()
-                                mainVm.navigatePage(WebViewPageDestination(initUrl = ShortUrlSet.URL5))
+                                mainVm.navigatePage(WebViewRoute(initUrl = ShortUrlSet.URL5))
                             })
                     }
                 },

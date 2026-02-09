@@ -1,8 +1,6 @@
 package li.songe.gkd.ui
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -15,24 +13,23 @@ import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubscription
 import li.songe.json5.Json5
 
-class UpsertRuleGroupVm(stateHandle: SavedStateHandle) : ViewModel() {
-    val args = UpsertRuleGroupPageDestination.argsFrom(stateHandle)
-    val groupKey = args.groupKey
-    val appId = args.appId
+class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
+    val groupKey = route.groupKey
+    val appId = route.appId
 
     val isEdit = groupKey != null
     val isApp = appId != null
     val isAddAnyApp = appId == ""
 
     private val initialGroup: RawSubscription.RawGroupProps? = run {
-        val subs = subsMapFlow.value[args.subsId]
+        val subs = subsMapFlow.value[route.subsId]
         subs ?: return@run null
         if (groupKey != null) {
             if (appId != null) {
                 subs.getAppGroups(appId)
             } else {
                 subs.globalGroups
-            }.find { it.key == args.groupKey }
+            }.find { it.key == route.groupKey }
         } else {
             null
         }
@@ -52,7 +49,7 @@ class UpsertRuleGroupVm(stateHandle: SavedStateHandle) : ViewModel() {
     var addAppId: String? = null
 
     fun saveRule() {
-        val subs = subsMapFlow.value[args.subsId] ?: error("订阅不存在")
+        val subs = subsMapFlow.value[route.subsId] ?: error("订阅不存在")
         val text = textFlow.value
         if (text.isBlank()) {
             error("规则不能为空")

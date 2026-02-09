@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.navigation3.runtime.NavKey
 import coil3.ImageLoader
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
@@ -45,15 +46,13 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
+import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.coilCacheDir
 import li.songe.gkd.util.throttle
@@ -62,13 +61,18 @@ import okio.Path.Companion.toOkioPath
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data class ImagePreviewRoute(
+    val title: String? = null,
+    val uri: String? = null,
+    val uris: List<String> = emptyList(),
+) : NavKey
+
 @Composable
-fun ImagePreviewPage(
-    title: String? = null,
-    uri: String? = null,
-    uris: Array<String> = emptyArray(),
-) {
+fun ImagePreviewPage(route: ImagePreviewRoute) {
+    val title = route.title
+    val uri = route.uri
+    val uris = route.uris
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
     DisposableEffect(null) {
@@ -91,7 +95,7 @@ fun ImagePreviewPage(
                 .fillMaxWidth(),
             navigationIcon = {
                 PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
-                    mainVm.popBackStack()
+                    mainVm.popPage()
                 })
             },
             title = {

@@ -2,7 +2,6 @@ package li.songe.gkd.shizuku
 
 
 import android.content.ComponentName
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -14,7 +13,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import li.songe.gkd.META
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.isActivityVisible
@@ -246,13 +244,7 @@ private suspend fun killRelaunchApp() {
     if (isActivityVisible) {
         toast("Shizuku 断开，重启应用以释放自动化服务", forced = true)
         delay(1500)
-        val intent = app.packageManager.getLaunchIntentForPackage(META.appId)!!
-        intent.addFlags(
-            Intent.FLAG_ACTIVITY_NEW_TASK
-                    or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        )
-        app.startActivity(intent)
+        app.startLaunchActivity()
     } else {
         toast("Shizuku 断开，结束应用以释放自动化服务", forced = true)
         delay(1500)

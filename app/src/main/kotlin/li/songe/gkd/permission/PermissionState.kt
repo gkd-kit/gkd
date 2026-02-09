@@ -9,7 +9,6 @@ import android.provider.Settings
 import com.hjq.permissions.XXPermissions
 import com.hjq.permissions.permission.PermissionLists
 import com.hjq.permissions.permission.base.IPermission
-import com.ramcosta.composedestinations.generated.destinations.AppOpsAllowPageDestination
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,6 +22,7 @@ import li.songe.gkd.appScope
 import li.songe.gkd.shizuku.SafeAppOpsService
 import li.songe.gkd.shizuku.SafePackageManager
 import li.songe.gkd.shizuku.shizukuContextFlow
+import li.songe.gkd.ui.AppOpsAllowRoute
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateAllAppInfo
@@ -109,7 +109,7 @@ val foregroundServiceSpecialUseState by lazy {
         reason = AuthReason(
             text = { "当前操作权限「特殊用途的前台服务」已被限制, 请先解除限制" },
             confirm = {
-                MainViewModel.instance.navigatePage(AppOpsAllowPageDestination)
+                MainViewModel.instance.navigatePage(AppOpsAllowRoute)
             },
         ),
     )

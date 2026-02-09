@@ -7,7 +7,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.animation.core.AnimationConstants
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -45,13 +47,12 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.ui.NavDisplay
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
-import com.ramcosta.composedestinations.DestinationsNavHost
-import com.ramcosta.composedestinations.generated.NavGraphs
-import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
-import com.ramcosta.composedestinations.utils.currentDestinationAsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
@@ -73,15 +74,58 @@ import li.songe.gkd.service.updateTopTaskAppId
 import li.songe.gkd.shizuku.automationRegisteredExceptionFlow
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
+import li.songe.gkd.ui.A11YScopeAppListRoute
+import li.songe.gkd.ui.A11yEventLogPage
+import li.songe.gkd.ui.A11yEventLogRoute
+import li.songe.gkd.ui.A11yScopeAppListPage
+import li.songe.gkd.ui.AboutPage
+import li.songe.gkd.ui.AboutRoute
+import li.songe.gkd.ui.ActionLogPage
+import li.songe.gkd.ui.ActionLogRoute
+import li.songe.gkd.ui.ActivityLogPage
+import li.songe.gkd.ui.ActivityLogRoute
+import li.songe.gkd.ui.AdvancedPage
+import li.songe.gkd.ui.AdvancedPageRoute
+import li.songe.gkd.ui.AppConfigPage
+import li.songe.gkd.ui.AppConfigRoute
+import li.songe.gkd.ui.AppOpsAllowPage
+import li.songe.gkd.ui.AppOpsAllowRoute
+import li.songe.gkd.ui.AuthA11yPage
+import li.songe.gkd.ui.AuthA11yRoute
+import li.songe.gkd.ui.BlockA11yAppListPage
+import li.songe.gkd.ui.BlockA11yAppListRoute
+import li.songe.gkd.ui.EditBlockAppListPage
+import li.songe.gkd.ui.EditBlockAppListRoute
+import li.songe.gkd.ui.ImagePreviewPage
+import li.songe.gkd.ui.ImagePreviewRoute
+import li.songe.gkd.ui.SlowGroupPage
+import li.songe.gkd.ui.SlowGroupRoute
+import li.songe.gkd.ui.SnapshotPage
+import li.songe.gkd.ui.SnapshotPageRoute
+import li.songe.gkd.ui.SubsAppGroupListPage
+import li.songe.gkd.ui.SubsAppGroupListRoute
+import li.songe.gkd.ui.SubsAppListPage
+import li.songe.gkd.ui.SubsAppListRoute
+import li.songe.gkd.ui.SubsCategoryPage
+import li.songe.gkd.ui.SubsCategoryRoute
+import li.songe.gkd.ui.SubsGlobalGroupExcludePage
+import li.songe.gkd.ui.SubsGlobalGroupExcludeRoute
+import li.songe.gkd.ui.SubsGlobalGroupListPage
+import li.songe.gkd.ui.SubsGlobalGroupListRoute
+import li.songe.gkd.ui.UpsertRuleGroupPage
+import li.songe.gkd.ui.UpsertRuleGroupRoute
+import li.songe.gkd.ui.WebViewPage
+import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.component.BuildDialog
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.ShareDataDialog
 import li.songe.gkd.ui.component.SubsSheet
 import li.songe.gkd.ui.component.TermsAcceptDialog
 import li.songe.gkd.ui.component.TextDialog
+import li.songe.gkd.ui.home.HomePage
+import li.songe.gkd.ui.home.HomeRoute
 import li.songe.gkd.ui.share.FixedWindowInsets
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.LocalNavController
 import li.songe.gkd.ui.style.AppTheme
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.BarUtils
@@ -200,16 +244,53 @@ class MainActivity : ComponentActivity() {
             if (latestInsets.getTop(density) > topBarWindowInsets.getTop(density)) {
                 topBarWindowInsets = FixedWindowInsets(latestInsets)
             }
-            val navController = rememberNavController()
-            mainVm.updateNavController(navController)
             CompositionLocalProvider(
-                LocalNavController provides navController,
                 LocalMainViewModel provides mainVm
             ) {
                 AppTheme {
-                    DestinationsNavHost(
-                        navController = navController,
-                        navGraph = NavGraphs.root
+                    NavDisplay(
+                        entryDecorators = listOf(
+                            rememberSaveableStateHolderNavEntryDecorator(),
+                            rememberViewModelStoreNavEntryDecorator(),
+                        ),
+                        backStack = mainVm.backStack,
+                        onBack = mainVm::popPage,
+                        entryProvider = entryProvider {
+                            entry<HomeRoute> { HomePage() }
+                            entry<AuthA11yRoute> { AuthA11yPage() }
+                            entry<AboutRoute> { AboutPage() }
+                            entry<BlockA11yAppListRoute> { BlockA11yAppListPage() }
+                            entry<AdvancedPageRoute> { AdvancedPage() }
+                            entry<SnapshotPageRoute> { SnapshotPage() }
+                            entry<AppOpsAllowRoute> { AppOpsAllowPage() }
+                            entry<A11YScopeAppListRoute> { A11yScopeAppListPage() }
+                            entry<ActivityLogRoute> { ActivityLogPage() }
+                            entry<A11yEventLogRoute> { A11yEventLogPage() }
+                            entry<EditBlockAppListRoute> { EditBlockAppListPage() }
+                            entry<SlowGroupRoute> { SlowGroupPage() }
+                            entry<SubsAppListRoute> { SubsAppListPage(it) }
+                            entry<WebViewRoute> { WebViewPage(it) }
+                            entry<SubsCategoryRoute> { SubsCategoryPage(it) }
+                            entry<SubsGlobalGroupListRoute> { SubsGlobalGroupListPage(it) }
+                            entry<SubsGlobalGroupExcludeRoute> { SubsGlobalGroupExcludePage(it) }
+                            entry<ActionLogRoute> { ActionLogPage(it) }
+                            entry<ImagePreviewRoute> { ImagePreviewPage(it) }
+                            entry<UpsertRuleGroupRoute> { UpsertRuleGroupPage(it) }
+                            entry<SubsAppGroupListRoute> { SubsAppGroupListPage(it) }
+                            entry<AppConfigRoute> { AppConfigPage(it) }
+                        },
+                        transitionSpec = {
+                            slideInHorizontally(initialOffsetX = { it }) togetherWith
+                                    slideOutHorizontally(targetOffsetX = { -it })
+                        },
+                        popTransitionSpec = {
+                            slideInHorizontally(initialOffsetX = { -it }) togetherWith
+                                    slideOutHorizontally(targetOffsetX = { it })
+                        },
+                        predictivePopTransitionSpec = {
+                            slideInHorizontally(initialOffsetX = { -it }) togetherWith
+                                    slideOutHorizontally(targetOffsetX = { it })
+                        },
                     )
                     if (!mainVm.termsAcceptedFlow.collectAsState().value) {
                         TermsAcceptDialog()
@@ -268,19 +349,6 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         LogUtils.d()
-    }
-
-    private var lastBackPressedTime = 0L
-
-    @Suppress("OVERRIDE_DEPRECATION", "GestureBackNavigation")
-    override fun onBackPressed() {
-        // onBackPressedDispatcher.addCallback is not work, it will be covered by compose navigation
-        val t = System.currentTimeMillis()
-        if (t - lastBackPressedTime > AnimationConstants.DefaultDurationMillis) {
-            lastBackPressedTime = t
-            @Suppress("DEPRECATION")
-            super.onBackPressed()
-        }
     }
 }
 
@@ -408,9 +476,7 @@ fun AccessRestrictedSettingsDlg() {
     }
     val accessRestrictedSettingsShow by accessRestrictedSettingsShowFlow.collectAsState()
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
-    val currentDestination by navController.currentDestinationAsState()
-    val isA11yPage = currentDestination?.route == AuthA11YPageDestination.route
+    val isA11yPage = mainVm.topRoute is AuthA11yRoute
     LaunchedEffect(isA11yPage, accessRestrictedSettingsShow) {
         if (isA11yPage && accessRestrictedSettingsShow && !a11yRunning) {
             toast("请重新授权以解除限制")

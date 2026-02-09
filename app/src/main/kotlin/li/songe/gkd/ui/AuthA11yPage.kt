@@ -36,10 +36,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.A11YScopeAppListPageDestination
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
+import kotlinx.serialization.Serializable
 import li.songe.gkd.META
 import li.songe.gkd.permission.Manifest_permission_GET_APP_OPS_STATS
 import li.songe.gkd.permission.writeSecureSettingsState
@@ -56,7 +55,6 @@ import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.cardHorizontalPadding
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
@@ -69,7 +67,9 @@ import li.songe.gkd.util.shFolder
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data object AuthA11yRoute : NavKey
+
 @Composable
 fun AuthA11yPage() {
     val mainVm = LocalMainViewModel.current
@@ -84,7 +84,7 @@ fun AuthA11yPage() {
             PerfIconButton(
                 imageVector = PerfIcon.ArrowBack,
                 onClick = {
-                    mainVm.popBackStack()
+                    mainVm.popPage()
                 })
         }, title = {
             Text(text = "工作模式")
@@ -296,7 +296,7 @@ fun AuthA11yPage() {
                 TextButton(
                     modifier = Modifier.padding(start = cardHorizontalPadding),
                     onClick = throttle {
-                        mainVm.navigatePage(A11YScopeAppListPageDestination)
+                        mainVm.navigatePage(A11YScopeAppListRoute)
                     },
                 ) {
                     Text(

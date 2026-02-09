@@ -1,21 +1,14 @@
 package li.songe.gkd
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.webkit.URLUtil
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavHostController
-import androidx.navigation.NavOptionsBuilder
-import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
-import com.ramcosta.composedestinations.generated.destinations.AppOpsAllowPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
-import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
-import com.ramcosta.composedestinations.spec.Direction
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
@@ -38,11 +31,16 @@ import li.songe.gkd.shizuku.uiAutomationFlow
 import li.songe.gkd.shizuku.updateBinderMutex
 import li.songe.gkd.store.createTextFlow
 import li.songe.gkd.store.storeFlow
+import li.songe.gkd.ui.AdvancedPageRoute
+import li.songe.gkd.ui.AppOpsAllowRoute
+import li.songe.gkd.ui.SnapshotPageRoute
+import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.component.AlertDialogOptions
 import li.songe.gkd.ui.component.InputSubsLinkOption
 import li.songe.gkd.ui.component.RuleGroupState
 import li.songe.gkd.ui.component.UploadOptions
 import li.songe.gkd.ui.home.BottomNavItem
+import li.songe.gkd.ui.home.HomeRoute
 import li.songe.gkd.ui.share.BaseViewModel
 import li.songe.gkd.util.AutomatorModeOption
 import li.songe.gkd.util.LOCAL_SUBS_ID
@@ -67,12 +65,11 @@ import li.songe.gkd.util.updateSubscription
 import rikka.shizuku.Shizuku
 import kotlin.reflect.jvm.jvmName
 
-private var tempTermsAccepted = false
-
 class MainViewModel : BaseViewModel(), OnSimpleLife {
     companion object {
         private var _instance: MainViewModel? = null
         val instance get() = _instance!!
+        private var tempTermsAccepted = false
     }
 
     init {
@@ -84,40 +81,29 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
         }
     }
 
-    override val scope: CoroutineScope
-        get() = viewModelScope
+    override val scope get() = viewModelScope
 
-    private lateinit var navController: NavHostController
-    fun updateNavController(navController: NavHostController) {
-        this.navController = navController
-    }
+    val backStack: NavBackStack<NavKey> = NavBackStack(HomeRoute)
+    val topRoute get() = backStack.last()
 
     private val backThrottleTimer = ThrottleTimer()
-    fun popBackStack() {
-        if (!backThrottleTimer.expired()) return
-        @SuppressLint("RestrictedApi")
-        if (navController.currentBackStack.value.size == 1) return
-        runMainPost {
-            navController.popBackStack()
+    fun popPage() = runMainPost {
+        if (backThrottleTimer.expired() && backStack.size > 1) {
+            backStack.removeAt(backStack.lastIndex)
         }
     }
 
-    fun navigatePage(direction: Direction, builder: (NavOptionsBuilder.() -> Unit)? = null) {
-        if (direction.route == navController.currentDestination?.route) {
-            return
-        }
-        runMainPost {
-            if (builder != null) {
-                navController.navigate(direction.route, builder)
+    fun navigatePage(navKey: NavKey, replaced: Boolean = false) = runMainPost {
+        if (navKey != backStack.last()) {
+            if (replaced) {
+                backStack[backStack.lastIndex] = navKey
             } else {
-                navController.navigate(direction.route)
+                backStack.add(navKey)
             }
         }
     }
 
-    fun navigateWebPage(url: String) {
-        navigatePage(WebViewPageDestination(url))
-    }
+    fun navigateWebPage(url: String) = navigatePage(WebViewRoute(url))
 
     val dialogFlow = MutableStateFlow<AlertDialogOptions?>(null)
     val authReasonFlow = MutableStateFlow<AuthReason?>(null)
@@ -231,9 +217,9 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
                     }
                 }
 
-                "/1" -> navigatePage(AdvancedPageDestination)
-                "/2" -> navigatePage(SnapshotPageDestination)
-                "/3" -> navigatePage(AppOpsAllowPageDestination)
+                "/1" -> navigatePage(AdvancedPageRoute)
+                "/2" -> navigatePage(SnapshotPageRoute)
+                "/3" -> navigatePage(AppOpsAllowRoute)
                 else -> notFoundToast()
             }
 

@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityWindowInfo
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
 import kotlinx.coroutines.Dispatchers
@@ -403,6 +404,14 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
                 it.mode.value == latestServiceMode.value
             } ?: A11yService.instance
         val instance: A11yRuleEngine? get() = service?.ruleEngine
+
+        fun compatWindows(): List<AccessibilityWindowInfo> {
+            return try {
+                service?.windowInfos
+            } catch (_: Throwable) {
+                null
+            } ?: emptyList()
+        }
 
         fun onScreenForcedActive() {
             instance?.onScreenForcedActive()

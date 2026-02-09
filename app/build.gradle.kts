@@ -225,7 +225,11 @@ dependencies {
 
     implementation(libs.compose.activity)
     implementation(libs.compose.material3)
-    implementation(libs.compose.navigation)
+
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.androidx.material3.adaptive.navigation3)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -255,14 +259,12 @@ dependencies {
 
     implementation(libs.google.accompanist.drawablepainter)
 
+    implementation(libs.kotlinx.serialization.core)
     implementation(libs.kotlinx.serialization.json)
     // https://github.com/Kotlin/kotlinx-atomicfu/issues/145
     implementation(libs.kotlinx.atomicfu)
 
     implementation(libs.activityResultLauncher)
-
-    implementation(libs.destinations.core)
-    ksp(libs.destinations.ksp)
 
     implementation(libs.reorderable)
 

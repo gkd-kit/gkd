@@ -51,12 +51,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
+import kotlinx.serialization.Serializable
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
@@ -72,7 +72,6 @@ import li.songe.gkd.ui.share.LocalDarkTheme
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.ISSUES_URL
@@ -92,7 +91,9 @@ import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data object AboutRoute : NavKey
+
 @Composable
 fun AboutPage() {
     val context = LocalActivity.current as MainActivity
@@ -157,7 +158,7 @@ fun AboutPage() {
                     PerfIconButton(
                         imageVector = PerfIcon.ArrowBack,
                         onClick = {
-                            mainVm.popBackStack()
+                            mainVm.popPage()
                         },
                     )
                 },

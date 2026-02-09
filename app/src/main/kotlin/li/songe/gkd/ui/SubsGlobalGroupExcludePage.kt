@@ -34,8 +34,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.a11y.launcherAppId
@@ -72,7 +72,6 @@ import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.ProfileTransitions
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.AppGroupOption
@@ -82,12 +81,20 @@ import li.songe.gkd.util.systemAppsFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data class SubsGlobalGroupExcludeRoute(
+    val subsItemId: Long,
+    val groupKey: Int,
+) : NavKey
+
 @Composable
-fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
+fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
+    val subsItemId = route.subsItemId
+    val groupKey = route.groupKey
+
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
-    val vm = viewModel<SubsGlobalGroupExcludeVm>()
+    val vm = viewModel { SubsGlobalGroupExcludeVm(route) }
     val subs = vm.subsFlow.collectAsState().value
     val group = vm.groupFlow.collectAsState().value ?: return
     val excludeData = vm.excludeDataFlow.collectAsState().value
@@ -133,7 +140,7 @@ fun SubsGlobalGroupExcludePage(subsItemId: Long, groupKey: Int) {
                             context.justHideSoftInput()
                         } else {
                             context.hideSoftInput()
-                            mainVm.popBackStack()
+                            mainVm.popPage()
                         }
                     })) {
                         BackCloseIcon(backOrClose = !editable)
