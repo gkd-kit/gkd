@@ -126,8 +126,9 @@ fun updateSubscription(subscription: RawSubscription) {
             val subsId = subscription.id
             val subsName = subscription.name
             val newMap = subsMapFlow.value.toMutableMap()
+            val nextSubsRaw: RawSubscription
             if (subsId < 0 && newMap[subsId]?.version == subscription.version) {
-                newMap[subsId] = subscription.run {
+                nextSubsRaw = subscription.run {
                     copy(
                         version = version + 1,
                         apps = apps.filterIfNotAll { it.groups.isNotEmpty() }
@@ -135,8 +136,9 @@ fun updateSubscription(subscription: RawSubscription) {
                     )
                 }
             } else {
-                newMap[subsId] = subscription
+                nextSubsRaw = subscription
             }
+            newMap[subsId] = nextSubsRaw
             subsMapFlow.value = newMap
             if (subsLoadErrorsFlow.value.contains(subsId)) {
                 subsLoadErrorsFlow.update {
@@ -146,9 +148,10 @@ fun updateSubscription(subscription: RawSubscription) {
                 }
             }
             withContext(Dispatchers.IO) {
+                cleanupSubsConfig(subsId, nextSubsRaw)
                 DbSet.subsItemDao.updateMtime(subsId, System.currentTimeMillis())
                 subsFolder.resolve("${subsId}.json")
-                    .writeText(json.encodeToString(newMap[subsId]))
+                    .writeText(json.encodeToString(nextSubsRaw))
             }
             LogUtils.d("更新订阅文件:id=${subsId},name=${subsName}")
         }
@@ -431,6 +434,29 @@ fun initSubsState() {
             refreshRawSubsList(items)
         }
     }
+}
+
+private suspend fun cleanupSubsConfig(subsId: Long, subsRaw: RawSubscription): Int {
+    val globalGroupKeys = subsRaw.globalGroups.map { it.key }.toHashSet()
+    val appIdToGroupKeys = subsRaw.apps.associate { a ->
+        a.id to a.groups.map { g -> g.key }.toHashSet()
+    }
+    val configs = DbSet.subsConfigDao.querySubsItemConfig(listOf(subsId))
+    val deleteList = configs.filter { c ->
+        when (c.type) {
+            SubsConfig.AppGroupType -> {
+                val groupKeys = appIdToGroupKeys[c.appId]
+                groupKeys == null || !groupKeys.contains(c.groupKey)
+            }
+
+            SubsConfig.GlobalGroupType -> !globalGroupKeys.contains(c.groupKey)
+            else -> false
+        }
+    }
+    if (deleteList.isEmpty()) return 0
+    DbSet.subsConfigDao.delete(*deleteList.toTypedArray())
+    LogUtils.d("清理已移除规则配置", "subsId=$subsId, delete=${deleteList.size}")
+    return deleteList.size
 }
 
 val updateSubsMutex = MutexState()
