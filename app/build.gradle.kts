@@ -92,12 +92,13 @@ android {
         resValues = true
     }
 
-    val gkdSigningConfig = signingConfigs.create("gkd") {
-        storeFile = file(project.properties["GKD_STORE_FILE"] as String)
-        storePassword = project.properties["GKD_STORE_PASSWORD"].toString()
-        keyAlias = project.properties["GKD_KEY_ALIAS"].toString()
-        keyPassword = project.properties["GKD_KEY_PASSWORD"].toString()
-    }
+//    val gkdSigningConfig = signingConfigs.create("gkd") {
+//        storeFile = file(project.properties["GKD_STORE_FILE"] as String)
+//        storePassword = project.properties["GKD_STORE_PASSWORD"].toString()
+//        keyAlias = project.properties["GKD_KEY_ALIAS"].toString()
+//        keyPassword = project.properties["GKD_KEY_PASSWORD"].toString()
+//    }
+    val gkdSigningConfig = signingConfigs.getByName("debug")
 
     val playSigningConfig = if (project.hasProperty("PLAY_STORE_FILE")) {
         signingConfigs.create("play") {
