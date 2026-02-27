@@ -8,6 +8,7 @@ class QueryUnitTest {
     val node2 by lazy { getSnapshotNode("https://i.gkd.li/i/14384152") }
     val node3 by lazy { getSnapshotNode("https://i.gkd.li/i/13247610") }
     val node4 by lazy { getSnapshotNode("https://i.gkd.li/i/16076188") }
+    val node5 by lazy { getSnapshotNode("https://i.gkd.li/i/25547842") }
 
     @Test
     fun regexp() {
@@ -74,6 +75,20 @@ class QueryUnitTest {
 
     @Test
     fun example5() {
+        val selector =
+            Selector.parse("ImageView[width>540] + View -> ImageView[width<71] - View[text=null][clickable=true]")
+        println(selector)
+        val nodes = transform.querySelectorAllContext(node5, selector).toList()
+        val pathList = nodes.single().unitResults
+        println(pathList.map { p ->
+            p.unitResults.single().getNodeConnectPath(transform).map {
+                "${it.target.id} ${it.formatConnectOffset} ${it.source.id}"
+            }
+        })
+    }
+
+    @Test
+    fun example6() {
         val selector = Selector.parse("[parent=null]")
         println(selector)
         val targetNode = selector.match(node4, transform, MatchOption.default)

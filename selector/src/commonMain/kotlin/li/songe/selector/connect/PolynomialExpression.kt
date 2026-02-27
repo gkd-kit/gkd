@@ -45,7 +45,7 @@ data class PolynomialExpression(val a: Int = 0, val b: Int = 1) : ConnectExpress
         error("invalid Polynomial: a=$a, b=$b")
     }
 
-    override val minOffset = if (a > 0) {
+    override val minOffset = (if (a > 0) {
         if (b > 0) {
             a + b
         } else if (b == 0) {
@@ -79,9 +79,9 @@ data class PolynomialExpression(val a: Int = 0, val b: Int = 1) : ConnectExpress
         } else {
             invalidValue()
         }
-    } - 1
+    }) - 1
 
-    override val maxOffset = if (a > 0) {
+    override val maxOffset = (if (a > 0) {
         null
     } else if (a == 0) {
         if (b > 0) {
@@ -99,7 +99,7 @@ data class PolynomialExpression(val a: Int = 0, val b: Int = 1) : ConnectExpress
         } else {
             invalidValue()
         }
-    } - 1
+    })?.let { it - 1 }
 
     private val isConstant = minOffset == maxOffset
 
