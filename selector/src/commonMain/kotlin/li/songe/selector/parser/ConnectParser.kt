@@ -10,7 +10,7 @@ internal sealed interface ConnectParser : BaseParser {
 
     private fun isTupleExpression(): Boolean {
         // ^\(\s*\d+\s*,
-        var start = i
+        val start = i
         try {
             if (char == '(') {
                 i++
