@@ -1,6 +1,4 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec
-import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin
 
 ext {
     set("android.namespace", "li.songe.gkd")
@@ -26,11 +24,6 @@ plugins {
     alias(libs.plugins.loc) apply false
     alias(libs.plugins.benmanes.version)
     alias(libs.plugins.littlerobots.version)
-}
-
-// https://kotlinlang.org/docs/js-project-setup.html#use-pre-installed-node-js
-rootProject.plugins.withType<NodeJsPlugin> {
-    project.extensions.getByType<NodeJsEnvSpec>().download = false
 }
 
 val normalVersionRegex by lazy { "^[0-9\\.]+".toRegex() }
