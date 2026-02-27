@@ -50,6 +50,7 @@ sealed class QueryResult<T> {
                         .traversal(contextList[i], transform, polynomialExpression)
                         .indexOf(contextList[i + 1].current)
                 }
+                require(offset >= 0)
                 list.add(
                     QueryPath(
                         propertyWrapper = current,

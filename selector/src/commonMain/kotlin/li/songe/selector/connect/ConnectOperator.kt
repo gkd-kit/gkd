@@ -9,7 +9,6 @@ import kotlin.js.JsExport
 sealed class ConnectOperator(val key: String) : Stringify {
     override fun stringify() = key
     fun formatOffset(offset: Int): String {
-        require(offset >= 0)
         val n = offset + 1
         return if (n == 1) {
             key
@@ -87,7 +86,7 @@ sealed class ConnectOperator(val key: String) : Stringify {
     data object Previous : ConnectOperator("->") {
         override fun <T> traversal(
             context: QueryContext<T>, transform: Transform<T>, connectExpression: ConnectExpression
-        ) = sequence<T> {
+        ) = sequence {
             var prev = context.getPrev(connectExpression.minOffset)
             var offset = connectExpression.minOffset
             while (prev != null) {
