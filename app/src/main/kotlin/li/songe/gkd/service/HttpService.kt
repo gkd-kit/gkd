@@ -214,6 +214,18 @@ private fun CoroutineScope.createServer(port: Int) = embeddedServer(CIO, port) {
                 }
                 call.respond(list)
             }
+            post("/deleteSnapshot") {
+                val data = call.receive<ReqId>()
+                val allSnapshots = DbSet.snapshotDao.query().first()
+                val snapshot = allSnapshots.find { it.id == data.id }
+                if (snapshot != null) {
+                    SnapshotExt.removeSnapshot(data.id)
+                    DbSet.snapshotDao.delete(snapshot)
+                    call.respond(RpcOk("快照删除成功"))
+                } else {
+                    throw RpcError("快照不存在或已被删除")
+                }
+            }
             post("/updateSubscription") {
                 val subscription =
                     RawSubscription.parse(call.receiveText(), json5 = false)
