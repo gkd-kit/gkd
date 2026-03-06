@@ -37,8 +37,6 @@ public interface IPackageManager extends IInterface {
 
     int checkPermission(String permName, String pkgName, int userId);
 
-    int checkUidPermission(String permName, int uid);
-
     void grantRuntimePermission(String packageName, String permissionName, int userId);
 
     int getApplicationEnabledSetting(String packageName, int userId);

@@ -31,29 +31,20 @@ class SafeAppOpsService(
         val supportCreateA11yOverlay get() = a11yOverlayOk
     }
 
-    fun checkOperation(
-        code: Int,
-        uid: Int = currentUserId,
-        packageName: String,
-    ): Int? = safeInvokeShizuku {
-        value.checkOperation(code, uid, packageName)
+    fun checkOperation(code: Int): Int? = safeInvokeShizuku {
+        value.checkOperation(code, android.os.Process.myUid(), META.appId)
     }
 
-    fun setMode(
-        code: Int,
-        uid: Int = currentUserId,
-        packageName: String,
-        mode: Int
-    ) = safeInvokeShizuku {
-        value.setMode(code, uid, packageName, mode)
+    fun setMode(code: Int, mode: Int) = safeInvokeShizuku {
+        value.setMode(code, android.os.Process.myUid(), META.appId, mode)
     }
 
     private fun setAllowSelfMode(code: Int) {
-        val m = checkOperation(code = code, packageName = META.appId) ?: return
+        val m = checkOperation(code = code) ?: return
         if (m == AppOpsManager.MODE_ALLOWED) {
             return
         }
-        setMode(code = code, packageName = META.appId, mode = AppOpsManager.MODE_ALLOWED)
+        setMode(code = code, mode = AppOpsManager.MODE_ALLOWED)
     }
 
     fun allowAllSelfMode() {

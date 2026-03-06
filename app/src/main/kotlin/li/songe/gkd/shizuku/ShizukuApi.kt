@@ -3,8 +3,6 @@ package li.songe.gkd.shizuku
 
 import android.content.ComponentName
 import android.content.pm.PackageManager
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.annotation.WorkerThread
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -85,9 +83,20 @@ fun Class<*>.detectHiddenMethod(
 }
 
 // https://github.com/android-cs/16/blob/main/packages/Shell/AndroidManifest.xml
-@RequiresApi(Build.VERSION_CODES.P)
-private const val Manifest_permission_MANAGE_APP_OPS_MODES =
-    "android.permission.MANAGE_APP_OPS_MODES"
+private fun checkRemotePermission(permission: String): Boolean {
+    return Shizuku.checkRemotePermission(permission) == PackageManager.PERMISSION_GRANTED
+}
+
+private val isAdbRestricted: Boolean
+    get() {
+        if (!checkRemotePermission("android.permission.GRANT_RUNTIME_PERMISSIONS")) {
+            return true
+        }
+        if (AndroidTarget.P && !checkRemotePermission("android.permission.MANAGE_APP_OPS_MODES")) {
+            return true
+        }
+        return false
+    }
 
 class ShizukuContext(
     val serviceWrapper: UserServiceWrapper?,
@@ -125,13 +134,7 @@ class ShizukuContext(
     fun grantSelf() {
         packageManager ?: return
         appOpsService ?: return
-        if (AndroidTarget.P && Shizuku.checkRemotePermission(
-                Manifest_permission_MANAGE_APP_OPS_MODES
-            ) == PackageManager.PERMISSION_DENIED
-        ) {
-            // 部分 ROM 会限制 ADB 权限
-            return
-        }
+        if (isAdbRestricted) return
         appOpsService.allowAllSelfMode()
         packageManager.allowAllSelfPermission()
     }

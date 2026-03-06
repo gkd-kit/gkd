@@ -9,7 +9,7 @@ import li.songe.gkd.permission.Manifest_permission_GET_APP_OPS_STATS
 import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.util.AndroidTarget
 
-@Suppress("unused")
+
 class SafePackageManager(private val value: IPackageManager) {
     companion object {
 
@@ -33,6 +33,7 @@ class SafePackageManager(private val value: IPackageManager) {
         }
     } ?: emptyList()
 
+    @Suppress("unused")
     fun getPackageInfo(
         packageName: String,
         flags: Int,
@@ -71,13 +72,6 @@ class SafePackageManager(private val value: IPackageManager) {
         grantRuntimePermission(
             packageName = META.appId,
             permissionName = name,
-        )
-    }
-
-    fun checkUidPermission(permName: String, uid: Int): Int? = safeInvokeShizuku {
-        value.checkUidPermission(
-            permName,
-            uid
         )
     }
 
