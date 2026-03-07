@@ -28,8 +28,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -105,6 +109,16 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.MiddleEllipsis,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            color = MaterialTheme.colorScheme.onBackground,
+                            shadow = Shadow(
+                                color = Color.Black.copy(alpha = 0.7f),
+                                blurRadius = with(LocalDensity.current) { 2.dp.toPx() },
+                                offset = with(LocalDensity.current) {
+                                    Offset( 1.dp.toPx(), 1.dp.toPx() )
+                                }
+                            )
+                        )
                     )
                 }
             },
@@ -142,7 +156,13 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                 ) {
                     Text(
                         text = "${state.currentPage + 1}/${uris.size}",
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            shadow = Shadow(
+                                color = Color.Black.copy(alpha = 0.8f),
+                                blurRadius = with(LocalDensity.current) { 3.dp.toPx() }
+                            )
+                        )
                     )
                 }
             }
