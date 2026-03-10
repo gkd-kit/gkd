@@ -137,11 +137,10 @@ class ProxyUiAutomationConnection : IUiAutomationConnection.Stub() {
                 }
             }
         } catch (re: RemoteException) {
-            re.rethrowAsRuntimeException()
+            throw re.rethrowAsRuntimeException()
         } finally {
             restoreCallingIdentity(identity)
         }
-        return null
     }
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
@@ -161,7 +160,7 @@ class ProxyUiAutomationConnection : IUiAutomationConnection.Stub() {
                 .build()
             mWindowManager.captureDisplay(DEFAULT_DISPLAY, captureArgs, listener)
         } catch (re: RemoteException) {
-            re.rethrowAsRuntimeException()
+            throw re.rethrowAsRuntimeException()
         } finally {
             restoreCallingIdentity(identity)
         }
@@ -186,7 +185,7 @@ class ProxyUiAutomationConnection : IUiAutomationConnection.Stub() {
                 .build()
             mWindowManager.captureDisplay(displayId, captureArgs, listener)
         } catch (re: RemoteException) {
-            re.rethrowAsRuntimeException()
+            throw re.rethrowAsRuntimeException()
         } finally {
             restoreCallingIdentity(identity)
         }
