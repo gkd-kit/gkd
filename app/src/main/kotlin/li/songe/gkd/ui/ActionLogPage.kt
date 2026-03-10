@@ -78,7 +78,6 @@ import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.mapState
-import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.subsMapFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
@@ -314,15 +313,7 @@ private fun ActionLogCard(
                         )
                     }
                     if (subsId == null) {
-                        Row(
-                            modifier = Modifier.clickable(onClick = throttle {
-                                if (subsItemsFlow.value.any { it.id == actionLog.subsId }) {
-                                    mainVm.sheetSubsIdFlow.value = actionLog.subsId
-                                } else {
-                                    toast("订阅不存在")
-                                }
-                            })
-                        ) {
+                        Row {
                             Text(text = subscription?.name ?: "id=${actionLog.subsId}")
                             val lineHeightDp = LocalDensity.current.run {
                                 LocalTextStyle.current.lineHeight.toDp()
