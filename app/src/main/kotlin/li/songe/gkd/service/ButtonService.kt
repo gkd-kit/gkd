@@ -25,6 +25,8 @@ class ButtonService : OverlayWindowService(
         SnapshotExt.captureSnapshot()
     }.let { }
 
+    override fun onLongClickView() = stopSelf()
+
     @Composable
     override fun ComposeContent() {
         val alpha = 0.75f
