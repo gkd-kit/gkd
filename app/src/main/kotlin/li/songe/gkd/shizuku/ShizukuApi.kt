@@ -156,6 +156,11 @@ class ShizukuContext(
             activityManager?.registerDefault()
         }
         grantSelf()
+        // 某些情况下存在残留进程
+        val size = serviceWrapper?.userService?.killLegacyService()
+        if (size != null && size > 0) {
+            LogUtils.d("killLegacyService $size")
+        }
     }
 }
 

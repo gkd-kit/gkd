@@ -22,20 +22,19 @@ import kotlin.coroutines.resume
 import kotlin.system.exitProcess
 
 
-@Suppress("unused")
-class UserService : IUserService.Stub {
-    @Keep
-    constructor() {
-        Log.i("UserService", "constructor")
-    }
+// https://github.com/RikkaApps/Shizuku/issues/1171#issuecomment-2952442340
+@Keep
+class UserService(val context: Context) : IUserService.Stub() {
 
-    @Keep
-    constructor(context: Context) {
-        Log.i("UserService", "constructor with Context: context=$context")
+    init {
+        Log.d(
+            "UserService",
+            "constructor(context=${context.packageName},pid=${android.os.Process.myPid()},uid=${android.os.Process.myUid()})"
+        )
     }
 
     override fun destroy() {
-        Log.i("UserService", "destroy")
+        Log.d("UserService", "destroy")
         exitProcess(0)
     }
 
@@ -44,6 +43,7 @@ class UserService : IUserService.Stub {
     }
 
     override fun execCommand(command: String): CommandResult {
+        Log.d("UserService", "execCommand(command=$command)")
         val process = Runtime.getRuntime().exec("sh")
         val outputStream = DataOutputStream(process.outputStream)
         val commandResult = try {
@@ -109,7 +109,22 @@ class UserService : IUserService.Stub {
         val screenshotBuffer = SurfaceControlHidden.captureDisplay(captureArgs)
         return screenshotBuffer?.asBitmap()
     }
+
+    override fun killLegacyService(): Int {
+        val pid = android.os.Process.myPid()
+        val idReg = "\\d+".toRegex()
+        val legacyPids = execCommand("ps | grep '${context.packageName}:$shizukuPsSuffix'")
+            .result.lineSequence()
+            .mapNotNull { idReg.find(it)?.value?.toInt() }
+            .filter { it != pid }.toList()
+        if (legacyPids.isNotEmpty()) {
+            execCommand(legacyPids.joinToString(";") { "kill $it" })
+        }
+        return legacyPids.size
+    }
 }
+
+private const val shizukuPsSuffix = "shizuku-user-service"
 
 private fun unbindUserService(
     serviceArgs: Shizuku.UserServiceArgs,
@@ -166,7 +181,7 @@ suspend fun buildServiceWrapper(): UserServiceWrapper? {
     val serviceArgs = Shizuku
         .UserServiceArgs(UserService::class.componentName)
         .daemon(false)
-        .processNameSuffix("shizuku-user-service")
+        .processNameSuffix(shizukuPsSuffix)
         .debuggable(META.debuggable)
         .version(META.versionCode)
         .tag("default")

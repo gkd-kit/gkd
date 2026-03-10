@@ -11,4 +11,5 @@ interface IUserService {
     Bitmap takeScreenshot1(int width, int height) = 3;
     Bitmap takeScreenshot2(in Rect crop, int rotation) = 4;
     Bitmap takeScreenshot3(in Rect crop) = 5;
+    int killLegacyService() = 6;
 }
