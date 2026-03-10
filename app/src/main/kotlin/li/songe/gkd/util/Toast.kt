@@ -22,10 +22,12 @@ import androidx.core.graphics.toColorInt
 import com.hjq.toast.Toaster
 import com.hjq.toast.style.WhiteToastStyle
 import li.songe.gkd.app
+import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.isActivityVisible
 import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.OverlayWindowService
+import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.loc.Loc
 
@@ -118,18 +120,20 @@ private fun setReactiveToastStyle() {
 
 private var triggerTime = 0L
 private const val triggerInterval = 2000L
-fun showActionToast() {
+fun showActionToast(rule: ResolvedRule) {
     if (!storeFlow.value.toastWhenClick) return
     runMainPost {
         val t = System.currentTimeMillis()
         if (t - triggerTime > triggerInterval + 100) { // 100ms 保证二次显示的时候上一次已经完全消失
             triggerTime = t
+            val text = storeFlow.value.actionToast
+                .replace($$"${1}", rule.rule.name.toString())
+                .replace($$"${2}", rule.g.group.name)
+                .replace($$"${3}", actionCountFlow.value.toString())
             if (storeFlow.value.useSystemToast) {
-                showSystemToast(storeFlow.value.actionToast)
+                showSystemToast(text)
             } else {
-                showA11yToast(
-                    storeFlow.value.actionToast
-                )
+                showA11yToast(text)
             }
         }
     }

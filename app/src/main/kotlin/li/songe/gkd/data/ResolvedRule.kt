@@ -4,9 +4,11 @@ import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.updateAndGet
 import li.songe.gkd.a11y.appChangeTime
 import li.songe.gkd.a11y.lastTriggerRule
 import li.songe.gkd.a11y.lastTriggerTime
+import li.songe.gkd.store.actionCountFlow
 import li.songe.selector.MatchOption
 import li.songe.selector.Selector
 
@@ -79,9 +81,9 @@ sealed class ResolvedRule(
             val selfGroupRules = field[group] ?: emptyList()
             val othersGroupRules =
                 (group.scopeKeys ?: emptyList()).distinct().filter { k -> k != group.key }
-                    .map { k ->
+                    .flatMap { k ->
                         field.entries.find { e -> e.key.key == k }?.value ?: emptyList()
-                    }.flatten()
+                    }
             val groupRules = selfGroupRules + othersGroupRules
 
             // 共享次数
@@ -131,6 +133,7 @@ sealed class ResolvedRule(
         actionCount.incrementAndGet()
         lastTriggerTime = t
         lastTriggerRule = this
+        actionCountFlow.updateAndGet { it + 1 }
     }
 
     private var actionCount = atomic(0)
@@ -234,7 +237,7 @@ fun getFixActivityIds(
     appId: String,
     activityIds: List<String>?,
 ): List<String> {
-    if (activityIds == null || activityIds.isEmpty()) return emptyList()
+    if (activityIds.isNullOrEmpty()) return emptyList()
     return activityIds.map { activityId ->
         if (activityId.startsWith('.')) { // .a.b.c -> com.x.y.x.a.b.c
             appId + activityId

@@ -7,7 +7,6 @@ import android.util.LruCache
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.META
@@ -134,7 +133,7 @@ val activityRuleFlow = MutableStateFlow(ActivityRule())
 
 private var lastAppId = ""
 
-sealed class ActivityScene() {
+sealed class ActivityScene {
     data object ScreenOn : ActivityScene()
     data object A11y : ActivityScene()
     data object TaskStack : ActivityScene()
@@ -291,7 +290,6 @@ fun addActionLog(
 ) = appScope.launchTry(Dispatchers.IO) {
     val ctime = System.currentTimeMillis()
     actionLogMutex.withLock {
-        val actionCount = actionCountFlow.updateAndGet { it + 1 }
         val actionLog = ActionLog(
             appId = topActivity.appId,
             activityId = topActivity.activityId,
@@ -304,7 +302,7 @@ fun addActionLog(
             ctime = ctime,
         )
         DbSet.actionLogDao.insert(actionLog)
-        if (actionCount % 100 == 0L) {
+        if (actionCountFlow.value % 100 == 0L) {
             DbSet.actionLogDao.deleteKeepLatest()
         }
     }

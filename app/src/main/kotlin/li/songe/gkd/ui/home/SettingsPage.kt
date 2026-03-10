@@ -108,10 +108,36 @@ fun useSettingsPage(): ScaffoldExt {
         var value by remember {
             mutableStateOf(store.actionToast)
         }
-        val maxCharLen = 32
+        val maxCharLen = 64
         AlertDialog(
             properties = DialogProperties(dismissOnClickOutside = false),
-            title = { Text(text = "触发提示") },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(text = "触发提示")
+                    PerfIconButton(
+                        imageVector = PerfIcon.HelpOutline,
+                        contentDescription = "文案规则",
+                        onClickLabel = "打开文案规则弹窗",
+                        onClick = throttle {
+                            showToastInputDlg = false
+                            val confirmAction = {
+                                mainVm.dialogFlow.value = null
+                                showToastInputDlg = true
+                            }
+                            mainVm.dialogFlow.updateDialogOptions(
+                                title = "文案规则",
+                                text = $$"触发文案支持变量替换，规则如下\n${1} 子规则名称\n${2} 规则组名称\n${3} 触发次数\n\n示例模板\n${1}/${2}/${3}\n\n替换结果\n子规则a/规则组A/3",
+                                confirmAction = confirmAction,
+                                onDismissRequest = confirmAction,
+                            )
+                        },
+                    )
+                }
+            },
             text = {
                 OutlinedTextField(
                     value = value,
@@ -121,7 +147,6 @@ fun useSettingsPage(): ScaffoldExt {
                     onValueChange = {
                         value = it.take(maxCharLen)
                     },
-                    singleLine = true,
                     supportingText = {
                         Text(
                             text = "${value.length} / $maxCharLen",

@@ -391,7 +391,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
                     startQueryJob()
                 }
                 if (actionResult.action != ActionPerformer.None.action) {
-                    showActionToast()
+                    showActionToast(rule)
                 }
                 addActionLog(rule, topActivity, target, actionResult)
             }
