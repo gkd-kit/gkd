@@ -10,6 +10,7 @@ import androidx.navigation3.runtime.NavKey
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
@@ -23,7 +24,6 @@ import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.permission.AuthReason
-import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.shizuku.shizukuContextFlow
@@ -192,18 +192,17 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
         }
     }
 
-    val appListKeyFlow = MutableStateFlow(0)
     val tabFlow = MutableStateFlow(BottomNavItem.Control.key)
+    val resetPageScrollEvent = MutableSharedFlow<BottomNavItem>()
     private var lastClickTabTime = 0L
-    fun updateTab(navItem: BottomNavItem) {
-        if (navItem == BottomNavItem.AppList && navItem.key == tabFlow.value) {
-            // double click
-            if (System.currentTimeMillis() - lastClickTabTime < 500) {
-                appListKeyFlow.update { it + 1 }
-            }
+    fun handleClickTab(navItem: BottomNavItem) {
+        val t = System.currentTimeMillis()
+        // double click
+        if (navItem.key == tabFlow.value && t - lastClickTabTime < 500) {
+            viewModelScope.launch { resetPageScrollEvent.emit(navItem) }
         }
         tabFlow.value = navItem.key
-        lastClickTabTime = System.currentTimeMillis()
+        lastClickTabTime = t
     }
 
     fun handleGkdUri(uri: Uri) {
@@ -362,12 +361,9 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
             githubCookieFlow.value
         }
 
-        canQueryPkgState.stateFlow.launchOnChange {
-            appListKeyFlow.update { it + 1 }
-        }
-
         // for OnSimpleLife
         onCreated()
         addCloseable { onDestroyed() }
+        toast("MainViewModel:init")
     }
 }

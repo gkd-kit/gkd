@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
@@ -31,7 +30,6 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -39,9 +37,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,6 +72,7 @@ import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.SubsItemCard
 import li.songe.gkd.ui.component.TextMenu
+import li.songe.gkd.ui.component.usePinnedScrollBehaviorState
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
@@ -192,7 +193,15 @@ fun useSubsManagePage(): ScaffoldExt {
         )
     }
 
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val scrollKey = rememberSaveable { mutableIntStateOf(0) }
+    val (scrollBehavior, lazyListState) = usePinnedScrollBehaviorState(scrollKey)
+    LaunchedEffect(null) {
+        mainVm.resetPageScrollEvent.collect {
+            if (it == BottomNavItem.SubsManage) {
+                scrollKey.intValue++
+            }
+        }
+    }
     return ScaffoldExt(
         navItem = BottomNavItem.SubsManage,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -413,7 +422,6 @@ fun useSubsManagePage(): ScaffoldExt {
             )
         },
     ) { contentPadding ->
-        val lazyListState = rememberLazyListState()
         val reorderableLazyColumnState =
             rememberReorderableLazyListState(lazyListState) { from, to ->
                 orderSubItems = orderSubItems.toMutableList().apply {

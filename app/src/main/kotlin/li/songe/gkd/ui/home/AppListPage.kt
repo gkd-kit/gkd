@@ -27,10 +27,14 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.LocalSaveableStateRegistry
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,7 +46,9 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.data.AppInfo
@@ -75,6 +81,7 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.util.AppGroupOption
 import li.songe.gkd.util.AppSortOption
+import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.appListAuthAbnormalFlow
 import li.songe.gkd.util.getUpDownTransform
 import li.songe.gkd.util.ruleSummaryFlow
@@ -98,12 +105,33 @@ fun useAppListPage(): ScaffoldExt {
     } else {
         null
     }
-    val appListKey by mainVm.appListKeyFlow.collectAsState()
     val showSearchBar by vm.showSearchBarFlow.collectAsState()
-    val (scrollBehavior, listState) = useListScrollState(appListKey)
     val refreshing by updateAppMutex.state.collectAsState()
     val pullToRefreshState = rememberPullToRefreshState()
     val editWhiteListMode by vm.editWhiteListModeFlow.collectAsState()
+    val savedStateRegistry = LocalSaveableStateRegistry.current
+    if (savedStateRegistry != null) {
+        LogUtils.d(savedStateRegistry.performSave())
+    }
+    val scrollKey = rememberSaveable { mutableIntStateOf(0) }
+    val (scrollBehavior, listState) = useListScrollState(scrollKey)
+    LaunchedEffect(null) {
+        listOf(
+            canQueryPkgState.stateFlow,
+            vm.appInfosFlow,
+        ).forEach {
+            launch {
+                it.drop(1).collect {
+                    scrollKey.intValue++
+                }
+            }
+        }
+        mainVm.resetPageScrollEvent.collect {
+            if (it == BottomNavItem.AppList) {
+                scrollKey.intValue++
+            }
+        }
+    }
     return ScaffoldExt(
         navItem = BottomNavItem.AppList,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -134,7 +162,7 @@ fun useAppListPage(): ScaffoldExt {
                     val titleModifier = Modifier
                         .noRippleClickable(
                             onClick = throttle {
-                                mainVm.appListKeyFlow.update { it + 1 }
+                                scrollKey.intValue++
                             }
                         )
                     if (editWhiteListMode) {

@@ -2,7 +2,6 @@ package li.songe.gkd.ui.home
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
-import li.songe.gkd.MainViewModel
 import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.blockMatchAppListFlow
 import li.songe.gkd.store.storeFlow
@@ -69,11 +68,7 @@ class HomeVm : BaseViewModel() {
             }
         }
     }
-    val appInfosFlow = appFilter.appListFlow.apply {
-        launchOnChange {
-            MainViewModel.instance.appListKeyFlow.value++
-        }
-    }
+    val appInfosFlow = appFilter.appListFlow
 
     val showToastInputDlgFlow = MutableStateFlow(false)
     val showNotifTextInputDlgFlow = MutableStateFlow(false)

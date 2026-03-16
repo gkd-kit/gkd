@@ -70,9 +70,7 @@ fun HomePage() {
                     NavigationBarItem(
                         selected = page.navItem.key == tab,
                         modifier = Modifier,
-                        onClick = {
-                            mainVm.updateTab(page.navItem)
-                        },
+                        onClick = { mainVm.handleClickTab(page.navItem) },
                         icon = {
                             PerfIcon(
                                 imageVector = page.navItem.icon,

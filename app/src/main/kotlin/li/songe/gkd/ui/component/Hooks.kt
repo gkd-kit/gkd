@@ -1,10 +1,12 @@
 package li.songe.gkd.ui.component
 
 import androidx.compose.animation.core.AnimationConstants.DefaultDurationMillis
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
@@ -73,6 +75,7 @@ private fun getCompatStateValue(v: Any?): Any? = when (v) {
 }
 
 // key 函数的依赖变化时, compose 将重置 key 函数那行代码之后所有代码的状态, 因此需要需要将 key 作用域限定在 Composable fun 内
+// 所有的 key 参数必须使用 rememberSaveable 或者 viewModel 来保存状态, 以保证正确的 restore 顺序，否则触发 ClassCastException
 @Composable
 fun useListScrollState(
     v1: Any?,
@@ -83,10 +86,20 @@ fun useListScrollState(
     return key(
         getCompatStateValue(v1),
         getCompatStateValue(v2),
-        getCompatStateValue(v3)
+        getCompatStateValue(v3),
     ) {
         TopAppBarDefaults.enterAlwaysScrollBehavior(canScroll = canScroll) to rememberLazyListState()
     }
+}
+
+@Composable
+fun usePinnedScrollBehaviorState(v1: Any?): Pair<TopAppBarScrollBehavior, LazyListState> {
+    return key(getCompatStateValue(v1)) { TopAppBarDefaults.pinnedScrollBehavior() to rememberLazyListState() }
+}
+
+@Composable
+fun useScrollBehaviorState(v1: Any?): Pair<TopAppBarScrollBehavior, ScrollState> {
+    return key(getCompatStateValue(v1)) { TopAppBarDefaults.enterAlwaysScrollBehavior() to rememberScrollState() }
 }
 
 @Composable
