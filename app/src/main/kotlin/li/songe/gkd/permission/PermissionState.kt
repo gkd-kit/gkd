@@ -313,6 +313,7 @@ val writeSecureSettingsState by lazy {
 }
 
 private fun shizukuCheckGranted(): Boolean {
+    if (Shizuku.getBinder()?.isBinderAlive != true) return false
     val granted = try {
         Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
     } catch (_: Throwable) {
