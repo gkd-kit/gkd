@@ -1,15 +1,15 @@
 [versions]
-kotlin = "2.3.10"
+kotlin = "2.3.20"
 serialization = "1.10.0"
-ksp = "2.3.5"
-agp = "9.0.0"
-compose = "1.10.3"
+ksp = "2.3.6"
+agp = "9.1.0"
+compose = "1.10.5"
 nav3 = "1.0.1"
 room = "2.8.4"
-paging = "3.4.1"
-ktor = "3.4.0"
+paging = "3.4.2"
+ktor = "3.4.1"
 atomicfu = "0.31.0"
-coil = "3.3.0"
+coil = "3.4.0"
 refine = "4.4.0"
 shizuku = "13.1.5"
 loc = "0.5.4"
@@ -36,14 +36,14 @@ compose-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "co
 compose-junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "compose" }
 compose-icons = "androidx.compose.material:material-icons-extended:1.7.8"
 compose-material3 = "androidx.compose.material3:material3:1.4.0"
-compose-activity = "androidx.activity:activity-compose:1.12.4"
+compose-activity = "androidx.activity:activity-compose:1.13.0"
 androidx-appcompat = "androidx.appcompat:appcompat:1.7.1"
-androidx-core-ktx = "androidx.core:core-ktx:1.17.0"
+androidx-core-ktx = "androidx.core:core-ktx:1.18.0"
 androidx-lifecycle-runtime-ktx = "androidx.lifecycle:lifecycle-runtime-ktx:2.10.0"
 androidx-lifecycle-service = "androidx.lifecycle:lifecycle-service:2.10.0"
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3" }
-androidx-material3-adaptive-navigation3 = "androidx.compose.material3.adaptive:adaptive-navigation3:1.3.0-alpha08"
+androidx-material3-adaptive-navigation3 = "androidx.compose.material3.adaptive:adaptive-navigation3:1.3.0-alpha09"
 androidx-lifecycle-viewmodel-navigation3 = "androidx.lifecycle:lifecycle-viewmodel-navigation3:2.10.0"
 androidx-junit = "androidx.test.ext:junit:1.3.0"
 androidx-annotation = "androidx.annotation:annotation:1.9.1"
@@ -87,5 +87,4 @@ androidx-room = { id = "androidx.room", version.ref = "room" }
 google-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 rikka-refine = { id = "dev.rikka.tools.refine", version.ref = "refine" }
 loc = { id = "li.songe.loc", version.ref = "loc" }
-benmanes-version = "com.github.ben-manes.versions:0.53.0"
-littlerobots-version = "nl.littlerobots.version-catalog-update:1.0.1"
+littlerobots-version = "nl.littlerobots.version-catalog-update:1.1.0"

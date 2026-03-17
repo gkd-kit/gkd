@@ -1,3 +1,4 @@
+import nl.littlerobots.vcu.plugin.versionSelector
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 ext {
@@ -22,14 +23,27 @@ plugins {
     alias(libs.plugins.kotlinx.atomicfu) apply false
     alias(libs.plugins.rikka.refine) apply false
     alias(libs.plugins.loc) apply false
-    alias(libs.plugins.benmanes.version)
     alias(libs.plugins.littlerobots.version)
 }
 
-val normalVersionRegex by lazy { "^[0-9\\.]+".toRegex() }
+// ./gradlew versionCatalogUpdate --interactive
+versionCatalogUpdate {
+    versionSelector {
+        val a = it.currentVersion
+        val b = it.candidate.version
+        isSameTypeVersion(a, b) && isNewerVersion(a, b)
+    }
+}
+projectDir.resolve("./gradle/libs.versions.updates.toml").apply {
+    if (exists()) {
+        delete()
+    }
+}
+
+val versionReg = "^[0-9\\.]+".toRegex()
 fun isSameTypeVersion(currentVersion: String, newVersion: String): Boolean {
-    if (normalVersionRegex.matches(currentVersion)) {
-        return normalVersionRegex.matches(newVersion)
+    if (versionReg.matches(currentVersion)) {
+        return versionReg.matches(newVersion)
     }
     arrayOf("alpha", "beta", "dev", "rc").forEach { v ->
         if (currentVersion.contains(v, true)) {
@@ -38,14 +52,20 @@ fun isSameTypeVersion(currentVersion: String, newVersion: String): Boolean {
     }
     throw IllegalArgumentException("Unknown version type: $currentVersion -> $newVersion")
 }
-tasks.withType<com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask> {
-    rejectVersionIf {
-        !isSameTypeVersion(currentVersion, candidate.version)
+
+val numberReg = "\\d+".toRegex()
+fun isNewerVersion(currentVersion: String, newVersion: String): Boolean {
+    val currentParts = numberReg.findAll(currentVersion).map { it.value.toInt() }.toList()
+    val newParts = numberReg.findAll(newVersion).map { it.value.toInt() }.toList()
+    val length = maxOf(currentParts.size, newParts.size)
+    for (i in 0 until length) {
+        val currentPart = currentParts.getOrNull(i) ?: 0
+        val newPart = newParts.getOrNull(i) ?: 0
+        if (currentPart < newPart) {
+            return true
+        } else if (currentPart > newPart) {
+            return false
+        }
     }
-}
-// ./gradlew versionCatalogUpdate --interactive
-projectDir.resolve("./gradle/libs.versions.updates.toml").apply {
-    if (exists()) {
-        delete()
-    }
+    return false
 }
