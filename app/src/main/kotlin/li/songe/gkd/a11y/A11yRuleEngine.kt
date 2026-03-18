@@ -14,6 +14,7 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.META
@@ -42,7 +43,6 @@ import li.songe.selector.Selector
 import java.util.concurrent.Executors
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 
 private val eventDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
@@ -200,15 +200,21 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
     }
 
     // 某些场景耗时 5000 ms
-    private suspend fun getTimeoutActiveWindow(): AccessibilityNodeInfo? = suspendCoroutine { s ->
-        val temp = atomic<Continuation<AccessibilityNodeInfo?>?>(s)
-        scope.launch(Dispatchers.IO) {
-            delay(500L)
-            temp.getAndUpdate { null }?.resume(null)
-        }
-        scope.launch(Dispatchers.IO) {
-            val a = safeActiveWindow
-            temp.getAndUpdate { null }?.resume(a)
+    private suspend fun getTimeoutActiveWindow(): AccessibilityNodeInfo? {
+        return suspendCancellableCoroutine { s ->
+            val temp = atomic<Continuation<AccessibilityNodeInfo?>?>(s)
+            scope.launch(Dispatchers.IO) {
+                delay(500L)
+                if (s.isActive) {
+                    temp.getAndUpdate { null }?.resume(null)
+                }
+            }
+            scope.launch(Dispatchers.IO) {
+                val a = safeActiveWindow
+                if (s.isActive) {
+                    temp.getAndUpdate { null }?.resume(a)
+                }
+            }
         }
     }
 

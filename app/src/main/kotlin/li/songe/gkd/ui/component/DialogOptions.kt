@@ -10,10 +10,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.suspendCancellableCoroutine
 import li.songe.gkd.util.stopCoroutine
 import li.songe.gkd.util.throttle
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 data class AlertDialogOptions(
     val title: @Composable (() -> Unit)? = null,
@@ -111,9 +111,11 @@ suspend fun MutableStateFlow<AlertDialogOptions?>.getResult(
     dismissText: String = DEFAULT_DISMISS_TEXT,
     error: Boolean = false,
 ): Boolean {
-    return suspendCoroutine { s ->
+    return suspendCancellableCoroutine { s ->
         val dismiss = {
-            s.resume(false)
+            if (s.isActive) {
+                s.resume(false)
+            }
             this.value = null
         }
         updateDialogOptions(
@@ -123,7 +125,9 @@ suspend fun MutableStateFlow<AlertDialogOptions?>.getResult(
             onDismissRequest = if (dismissRequest) dismiss else ({}),
             confirmText = confirmText,
             confirmAction = {
-                s.resume(true)
+                if (s.isActive) {
+                    s.resume(true)
+                }
                 this.value = null
             },
             dismissText = dismissText,

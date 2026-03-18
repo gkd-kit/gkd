@@ -15,9 +15,9 @@ import android.media.projection.MediaProjectionManager
 import android.os.Handler
 import android.os.Looper
 import androidx.core.graphics.createBitmap
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 // https://github.com/npes87184/ScreenShareTile/blob/master/app/src/main/java/com/npes87184/screenshottile/ScreenshotService.kt
 
@@ -53,7 +53,7 @@ class ScreenshotUtil(
     }
 
     //    TODO android13 上一半概率获取到全透明图片, android12 暂无此问题
-    suspend fun execute() = suspendCoroutine { block ->
+    suspend fun execute() = suspendCancellableCoroutine { cont ->
         imageReader = ImageReader.newInstance(
             width, height,
             PixelFormat.RGBA_8888, 2
@@ -92,14 +92,18 @@ class ScreenshotUtil(
                     bitmap = Bitmap.createBitmap(bitmapWithStride, 0, 0, width, height)
                     if (!bitmap.isFullTransparent()) {
                         imageReader?.setOnImageAvailableListener(null, null)
-                        block.resume(bitmap)
+                        if (cont.isActive) {
+                            cont.resume(bitmap)
+                        }
                         resumed = true
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 imageReader?.setOnImageAvailableListener(null, null)
-                block.resumeWithException(e)
+                if (cont.isActive) {
+                    cont.resumeWithException(e)
+                }
             } finally {
                 bitmapWithStride?.recycle()
                 image?.close()

@@ -14,29 +14,31 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.suspendCancellableCoroutine
 import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
-import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 
 class InputSubsLinkOption {
     private val showFlow = MutableStateFlow(false)
     private val valueFlow = MutableStateFlow("")
     private val initValueFlow = MutableStateFlow("")
-    private var continuation: Continuation<String?>? = null
+    private var continuation: CancellableContinuation<String?>? = null
 
     private fun resume(value: String?) {
         showFlow.value = false
         valueFlow.value = ""
         initValueFlow.value = ""
-        continuation?.resume(value)
+        if (continuation?.isActive == true) {
+            continuation?.resume(value)
+        }
         continuation = null
     }
 
@@ -65,7 +67,7 @@ class InputSubsLinkOption {
         initValueFlow.value = initValue
         valueFlow.value = initValue
         showFlow.value = true
-        return suspendCoroutine {
+        return suspendCancellableCoroutine {
             continuation = it
         }
     }
