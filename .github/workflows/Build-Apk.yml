@@ -38,12 +38,13 @@ jobs:
       - run: chmod 777 ./gradlew
       - run: ./gradlew app:assembleGkdRelease
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release
           path: app/build/outputs/apk/gkd/release
+          archive: false
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: outputs
           path: app/build/outputs
