@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.a11y.useA11yServiceEnabledFlow
 import li.songe.gkd.a11y.useEnabledA11yServicesFlow
+import li.songe.gkd.data.CrashData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.importData
@@ -33,6 +34,7 @@ import li.songe.gkd.store.createTextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.AdvancedPageRoute
 import li.songe.gkd.ui.AppOpsAllowRoute
+import li.songe.gkd.ui.CrashReportRoute
 import li.songe.gkd.ui.SnapshotPageRoute
 import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.component.AlertDialogOptions
@@ -51,7 +53,10 @@ import li.songe.gkd.util.UpdateStatus
 import li.songe.gkd.util.appIconMapFlow
 import li.songe.gkd.util.clearCache
 import li.songe.gkd.util.client
+import li.songe.gkd.util.crashFolder
+import li.songe.gkd.util.crashTempFolder
 import li.songe.gkd.util.findOption
+import li.songe.gkd.util.json
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.openWeChatScaner
@@ -63,7 +68,9 @@ import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubsMutex
 import li.songe.gkd.util.updateSubscription
 import rikka.shizuku.Shizuku
+import java.nio.file.Files
 import kotlin.reflect.jvm.jvmName
+import kotlin.time.Duration.Companion.days
 
 class MainViewModel : BaseViewModel(), OnSimpleLife {
     companion object {
@@ -323,6 +330,10 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
         uiAutomationFlow.value?.shutdown()
     }
 
+    val showShareLogDlgFlow = MutableStateFlow(false)
+
+    var tempCrashDataList = emptyList<CrashData>()
+
     init {
         // preload
         appIconMapFlow.value
@@ -359,6 +370,31 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
         viewModelScope.launch(Dispatchers.IO) {
             // preload
             githubCookieFlow.value
+        }
+        viewModelScope.launchTry(Dispatchers.IO) {
+            val list = (crashTempFolder.listFiles() ?: emptyArray()).mapNotNull {
+                try {
+                    json.decodeFromString<CrashData>(it.readText())
+                } catch (e: Exception) {
+                    LogUtils.d("解析崩溃日志失败: ${it.name}", e)
+                    null
+                }
+            }.sortedBy { -it.mtime }
+            crashTempFolder.deleteRecursively()
+            val t = System.currentTimeMillis()
+            crashFolder.listFiles()?.filter {
+                val name = it.name
+                !list.any { f -> name == f.filename }
+            }?.forEach {
+                val mtime = Files.getLastModifiedTime(it.toPath()).toMillis()
+                if (t - mtime > 30.days.inWholeMilliseconds) {
+                    it.delete()
+                }
+            }
+            tempCrashDataList = list
+            if (list.isNotEmpty()) {
+                navigatePage(CrashReportRoute)
+            }
         }
 
         // for OnSimpleLife

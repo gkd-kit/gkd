@@ -15,6 +15,7 @@ import android.database.ContentObserver
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityManager
 import android.view.inputmethod.InputMethodManager
@@ -22,9 +23,9 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import li.songe.gkd.a11y.initA11yFeat
+import li.songe.gkd.data.CrashData
 import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.notif.initChannel
 import li.songe.gkd.service.clearHttpSubs
@@ -34,9 +35,11 @@ import li.songe.gkd.store.initStore
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.PKG_FLAGS
+import li.songe.gkd.util.deviceInfoDesc
 import li.songe.gkd.util.initAppState
 import li.songe.gkd.util.initSubsState
 import li.songe.gkd.util.initToast
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.toast
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import kotlin.system.exitProcess
@@ -196,7 +199,21 @@ class App : Application() {
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
             toast(e.message ?: e.toString())
             LogUtils.d("UncaughtExceptionHandler", t, e)
-            appScope.launch(Dispatchers.IO) {
+            val mtime = System.currentTimeMillis()
+            appScope.launchTry(Dispatchers.IO) {
+                CrashData(
+                    id = mtime,
+                    mtime = mtime,
+                    device = deviceInfoDesc,
+                    androidVersionCode = android.os.Build.VERSION.SDK_INT,
+                    androidVersionName = android.os.Build.VERSION.RELEASE,
+                    versionCode = META.versionCode,
+                    versionName = META.versionName,
+                    name = e::class.java.name,
+                    message = e.message,
+                    thread = t.name,
+                    stackTrace = Log.getStackTraceString(e),
+                ).save()
                 delay(1500)
                 if (isActivityVisible) {
                     startLaunchActivity()

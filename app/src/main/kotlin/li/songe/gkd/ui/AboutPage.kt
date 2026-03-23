@@ -79,7 +79,6 @@ import li.songe.gkd.util.PLAY_STORE_URL
 import li.songe.gkd.util.REPOSITORY_URL
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.UpdateChannelOption
-import li.songe.gkd.util.buildLogFile
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.format
 import li.songe.gkd.util.getShareApkFile
@@ -146,7 +145,6 @@ fun AboutPage() {
             },
         )
     }
-    var showShareLogDlg by vm.showShareLogDlgFlow.asMutableState()
     var showShareAppDlg by vm.showShareAppDlgFlow.asMutableState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
@@ -287,7 +285,7 @@ fun AboutPage() {
                 title = "导出日志",
                 imageVector = PerfIcon.Share,
                 onClick = {
-                    showShareLogDlg = true
+                    mainVm.showShareLogDlgFlow.value = true
                 }
             )
             if (mainVm.updateStatus != null) {
@@ -334,54 +332,6 @@ fun AboutPage() {
                 }
             }
             Spacer(modifier = Modifier.height(EmptyHeight))
-        }
-    }
-
-    if (showShareLogDlg) {
-        Dialog(onDismissRequest = { showShareLogDlg = false }) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                val modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                Text(
-                    text = "分享到其他应用", modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareLogDlg = false
-                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val logZipFile = buildLogFile()
-                                context.shareFile(logZipFile, "分享日志文件")
-                            }
-                        })
-                        .then(modifier)
-                )
-                Text(
-                    text = "保存到下载", modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareLogDlg = false
-                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val logZipFile = buildLogFile()
-                                context.saveFileToDownloads(logZipFile)
-                            }
-                        })
-                        .then(modifier)
-                )
-                Text(
-                    text = "生成链接(需科学上网)",
-                    modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareLogDlg = false
-                            mainVm.uploadOptions.startTask(
-                                getFile = { buildLogFile() }
-                            )
-                        })
-                        .then(modifier)
-                )
-            }
         }
     }
 

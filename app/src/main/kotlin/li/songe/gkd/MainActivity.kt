@@ -94,6 +94,8 @@ import li.songe.gkd.ui.AuthA11yPage
 import li.songe.gkd.ui.AuthA11yRoute
 import li.songe.gkd.ui.BlockA11yAppListPage
 import li.songe.gkd.ui.BlockA11yAppListRoute
+import li.songe.gkd.ui.CrashReportPage
+import li.songe.gkd.ui.CrashReportRoute
 import li.songe.gkd.ui.EditBlockAppListPage
 import li.songe.gkd.ui.EditBlockAppListRoute
 import li.songe.gkd.ui.ImagePreviewPage
@@ -119,6 +121,7 @@ import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.component.BuildDialog
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.ShareDataDialog
+import li.songe.gkd.ui.component.ShareLogDlg
 import li.songe.gkd.ui.component.SubsSheet
 import li.songe.gkd.ui.component.TermsAcceptDialog
 import li.songe.gkd.ui.component.TextDialog
@@ -278,6 +281,7 @@ class MainActivity : ComponentActivity() {
                             entry<UpsertRuleGroupRoute> { UpsertRuleGroupPage(it) }
                             entry<SubsAppGroupListRoute> { SubsAppGroupListPage(it) }
                             entry<AppConfigRoute> { AppConfigPage(it) }
+                            entry<CrashReportRoute> { CrashReportPage() }
                         },
                         transitionSpec = {
                             slideInHorizontally(initialOffsetX = { it }) togetherWith
@@ -308,6 +312,7 @@ class MainActivity : ComponentActivity() {
                         mainVm.inputSubsLinkOption.ContentDialog()
                         mainVm.ruleGroupState.Render()
                         TextDialog(mainVm.textFlow)
+                        ShareLogDlg(mainVm.showShareLogDlgFlow)
                     }
                 }
             }
