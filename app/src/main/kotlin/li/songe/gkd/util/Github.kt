@@ -137,7 +137,8 @@ suspend fun uploadFileToGithub(
         cookie,
         """
         {
-            query: '50e7774b5a519b88858e02e46e0348da',
+            persistedQueryName: 'addCommentMutation',
+            query: 'edafa18ab5734f05c9893cbc92d0dfb1',
             variables: {
               connections: [
                 'client:I_kwDOJ3SWBc6viUWN:__Issue__backTimelineItems_connection(visibleEventsOnly:true)',
@@ -151,6 +152,8 @@ suspend fun uploadFileToGithub(
         """.json5ToJsonString()
     )
     val commentResult = json.decodeFromString<JsonElement>(commentResultResp.bodyAsText())
+
+    // "xxx"
     val commentId = (commentResult.jsonObject["data"]
         ?.jsonObject["addComment"]
         ?.jsonObject["timelineEdge"]
@@ -165,6 +168,7 @@ suspend fun uploadFileToGithub(
         cookie,
         """
         {
+            persistedQueryName: 'updateIssueSubscriptionMutation',
             query: 'd0752b2e49295017f67c84f21bfe41a3',
             variables: {
                 input: { state: 'UNSUBSCRIBED', subscribableId: 'I_kwDOJ3SWBc6viUWN' },
@@ -178,9 +182,13 @@ suspend fun uploadFileToGithub(
         cookie,
         """
         {
+            persistedQueryName: 'deleteIssueCommentMutation',
             query: 'b0f125991160e607a64d9407db9c01b3',
             variables: {
-                connections: [],
+                connections: [
+                    'client:I_kwDOJ3SWBc6viUWN:__Issue__frontTimelineItems_connection(visibleEventsOnly:true)',
+                    'client:I_kwDOJ3SWBc6viUWN:__Issue__backTimelineItems_connection(visibleEventsOnly:true)',
+                ],
                 input: { id: $commentId },
             },
         }
