@@ -3,9 +3,9 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 ext {
     set("android.namespace", "li.songe.gkd")
-    set("android.buildToolsVersion", "36.1.0")
-    set("android.compileSdk", 36)
-    set("android.targetSdk", 36)
+    set("android.buildToolsVersion", "37.0.0")
+    set("android.compileSdk", 37)
+    set("android.targetSdk", 37)
     set("android.minSdk", 26)
     set("android.javaVersion", JavaVersion.VERSION_11)
     set("kotlin.jvmTarget", JvmTarget.JVM_11)
