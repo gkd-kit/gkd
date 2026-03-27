@@ -52,7 +52,7 @@ fun RuleGroupDialog(
     val mainVm = LocalMainViewModel.current
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text(text = "规则组详情") },
+        title = { Text(text = "规则详情") },
         text = {
             Box(
                 modifier = Modifier.fillMaxWidth()
@@ -67,7 +67,7 @@ fun RuleGroupDialog(
                         .background(MaterialTheme.colorScheme.secondaryContainer)
                         .verticalScroll(rememberScrollState())
                         .clearAndSetSemantics {
-                            contentDescription = "规则组内容"
+                            contentDescription = "规则内容"
                         }
                 ) {
                     SelectionContainer {

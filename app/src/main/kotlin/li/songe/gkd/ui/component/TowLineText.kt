@@ -15,6 +15,7 @@ fun TowLineText(
     subtitle: String,
     modifier: Modifier = Modifier,
     showApp: Boolean = false,
+    appFallbackName: String? = null,
 ) {
     Column(
         modifier = modifier,
@@ -28,7 +29,7 @@ fun TowLineText(
         )
         CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.titleSmall) {
             if (showApp) {
-                AppNameText(appId = subtitle)
+                AppNameText(appId = subtitle, fallbackName = appFallbackName)
             } else {
                 Text(
                     text = subtitle,

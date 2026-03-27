@@ -4,20 +4,16 @@ import androidx.compose.runtime.mutableIntStateOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.map
-import li.songe.gkd.MainViewModel
 import li.songe.gkd.data.AppConfig
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.store.blockMatchAppListFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.share.BaseViewModel
 import li.songe.gkd.ui.share.asMutableStateFlow
-import li.songe.gkd.util.AppGroupOption
+import li.songe.gkd.ui.share.useSubsAppFilter
 import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.appInfoMapFlow
-import li.songe.gkd.util.collator
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.getGroupEnable
 
@@ -36,6 +32,12 @@ class SubsAppListVm(val route: SubsAppListRoute) : BaseViewModel() {
         .attachLoad().stateInit(emptyList())
 
 
+    val sortTypeFlow = storeFlow.asMutableStateFlow(
+        getter = { AppSortOption.objects.findOption(it.subsAppSort) },
+        setter = {
+            storeFlow.value.copy(subsAppSort = it.value)
+        }
+    )
     val appGroupTypeFlow = storeFlow.asMutableStateFlow(
         getter = { it.subsAppGroupType },
         setter = { storeFlow.value.copy(subsAppGroupType = it) },
@@ -45,101 +47,26 @@ class SubsAppListVm(val route: SubsAppListRoute) : BaseViewModel() {
         setter = { storeFlow.value.copy(subsAppShowBlock = it) },
     )
 
-    private val temp1ListFlow = run {
-        var tempListFlow = combine(
-            subsFlow,
-            appInfoMapFlow,
-        ) { subs, appMap ->
-            subs.usedApps.map {
-                it to appMap[it.id]
-            }.sortedWith { a, b ->
-                // 默认顺序: 已安装(有名字->无名字)->未安装(有名字(来自订阅)->无名字)
-                val x = a.second?.name ?: a.first.name?.let { "\uFFFF" + it }
-                ?: ("\uFFFF\uFFFF" + a.first.id)
-                val y = b.second?.name ?: b.first.name?.let { "\uFFFF" + it }
-                ?: ("\uFFFF\uFFFF" + b.first.id)
-                collator.compare(x, y)
-            }
-        }
-        tempListFlow = combine(
-            tempListFlow,
-            appGroupTypeFlow,
-        ) { list, type ->
-            if (type == 0) {
-                return@combine emptyList()
-            }
-            if (AppGroupOption.allObjects.all { it.include(type) }) {
-                return@combine list
-            }
-            var resultList = list
-            if (!AppGroupOption.SystemGroup.include(type)) {
-                resultList = resultList.filterNot { it.second?.isSystem == true }
-            }
-            if (!AppGroupOption.UserGroup.include(type)) {
-                resultList = resultList.filterNot { it.second?.isSystem == false }
-            }
-            if (!AppGroupOption.UnInstalledGroup.include(type)) {
-                resultList = resultList.filterNot { it.second == null }
-            }
-            resultList
-        }
-        tempListFlow = combine(
-            tempListFlow,
-            showBlockAppFlow,
-            blockMatchAppListFlow
-        ) { list, showBlock, blockSet ->
-            if (showBlock) {
-                list
-            } else {
-                list.filterNot { it.first.id in blockSet }
-            }
-        }
-        tempListFlow
-    }
+    private val temp1ListFlow = useSubsAppFilter(
+        subsId = route.subsItemId,
+        appsFlow = subsFlow.mapNew { it.apps },
+        sortTypeFlow = sortTypeFlow,
+        appGroupTypeFlow = appGroupTypeFlow,
+        showBlockAppFlow = showBlockAppFlow,
+    )
 
     val showAllAppFlow = combine(subsFlow, temp1ListFlow) { subs, list ->
         subs.apps.size == list.size
     }.stateInit(false)
 
-    val sortTypeFlow = storeFlow.asMutableStateFlow(
-        getter = { AppSortOption.objects.findOption(it.subsAppSort) },
-        setter = {
-            storeFlow.value.copy(subsAppSort = it.value)
-        }
-    )
-    private val appActionOrderMapFlow = DbSet.actionLogDao
-        .queryLatestUniqueAppIds(route.subsItemId)
-        .map {
-            it.mapIndexed { i, appId -> appId to i }.toMap()
-        }
-    private val temp2ListFlow = combine(
-        temp1ListFlow,
-        appActionOrderMapFlow,
-        sortTypeFlow,
-        MainViewModel.instance.appVisitOrderMapFlow,
-    ) { apps, appIdToOrder, sortType, appVisitOrderMap ->
-        when (sortType) {
-
-            AppSortOption.ByActionTime -> {
-                apps.sortedBy { a -> appIdToOrder[a.first.id] ?: Int.MAX_VALUE }
-            }
-
-            AppSortOption.ByAppName -> {
-                apps
-            }
-
-            AppSortOption.ByUsedTime -> {
-                apps.sortedBy { a -> appVisitOrderMap[a.first.id] ?: Int.MAX_VALUE }
-            }
-        }
-    }
-
     val searchStrFlow = MutableStateFlow("")
     private val debounceSearchStr = searchStrFlow.debounce(200).stateInit(searchStrFlow.value)
     val temp3ListFlow = combine(
-        temp2ListFlow,
+        temp1ListFlow,
+        appInfoMapFlow,
         debounceSearchStr,
-    ) { apps, searchStr ->
+    ) { list, appMap, searchStr ->
+        val apps = list.map { it to appMap[it.id] }
         if (searchStr.isBlank()) {
             apps
         } else {
@@ -180,16 +107,16 @@ class SubsAppListVm(val route: SubsAppListRoute) : BaseViewModel() {
         categoryConfigsFlow,
         appConfigsFlow,
         groupSubsConfigsFlow,
-    ) { subsRaw, apps, categoryConfigs, appConfigs, groupSubsConfigs ->
-        val groupToCategoryMap = subsRaw.groupToCategoryMap
+    ) { subs, apps, categoryConfigs, appConfigs, groupSubsConfigs ->
         apps.map {
             val appGroupSubsConfigs = groupSubsConfigs.filter { s -> s.appId == it.first.id }
             val enableSize = it.first.groups.count { g ->
+                val category = subs.getCategory(g.name)
                 getGroupEnable(
                     g,
                     appGroupSubsConfigs.find { c -> c.groupKey == g.key },
-                    groupToCategoryMap[g],
-                    categoryConfigs.find { c -> c.categoryKey == groupToCategoryMap[g]?.key }
+                    category,
+                    categoryConfigs.find { c -> c.categoryKey == category?.key }
                 )
             }
             SubsAppInfoItem(

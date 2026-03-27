@@ -66,8 +66,8 @@ data class ShowGroupState(
         } else {
             subs.globalGroups
         }?.find { it.key == groupKey } ?: error("require group")
-        val category = subs.groupToCategoryMap[group] ?: return null
-        return DbSet.categoryConfigDao.queryCategoryConfig(subsId, category.key)
+        val category = subs.getCategory(group.name) ?: return null
+        return DbSet.categoryConfigDao.queryCategoryConfig(subsId, category.key).first()
     }
 }
 
@@ -116,7 +116,7 @@ suspend fun batchUpdateGroupEnable(
             val oldEnable = getGroupEnable(
                 targetGroup,
                 subsConfig,
-                subscription.groupToCategoryMap[targetGroup],
+                subscription.getCategory(targetGroup.name),
                 categoryConfig
             )
             // app rule
@@ -130,7 +130,7 @@ suspend fun batchUpdateGroupEnable(
             val newEnable = getGroupEnable(
                 targetGroup,
                 newSubsConfig,
-                subscription.groupToCategoryMap[targetGroup],
+                subscription.getCategory(targetGroup.name),
                 categoryConfig
             )
             if (enable == newEnable && oldEnable == newEnable) {
@@ -304,7 +304,7 @@ class RuleGroupState(
                                             ).stringify()
                                         )
                                     )
-                                    toast("已重置局部开关至初始状态")
+                                    toast("已重置局部开关至默认值")
                                 }
                             } else {
                                 null
@@ -313,7 +313,7 @@ class RuleGroupState(
                             subsConfig.enable?.let {
                                 mainVm.viewModelScope.launchAsFn {
                                     DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
-                                    toast("已重置开关至初始状态")
+                                    toast("已重置开关至默认值")
                                 }
                             }
                         }
@@ -321,7 +321,7 @@ class RuleGroupState(
                         subsConfig.enable?.let {
                             mainVm.viewModelScope.launchAsFn {
                                 DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
-                                toast("已重置开关至初始状态")
+                                toast("已重置开关至默认值")
                             }
                         }
                     }
@@ -329,7 +329,7 @@ class RuleGroupState(
                 onClickDelete = mainVm.viewModelScope.launchAsFn {
                     dismissGroupShow()
                     val r = mainVm.dialogFlow.getResult(
-                        title = "删除规则组",
+                        title = "删除规则",
                         text = "确定删除 ${showGroup.name} ?",
                         error = true,
                     )

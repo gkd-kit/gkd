@@ -12,6 +12,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
@@ -34,6 +35,7 @@ fun AppNameText(
     appInfo: AppInfo? = null,
     fallbackName: String? = null,
     style: TextStyle = LocalTextStyle.current,
+    color: Color = Color.Unspecified,
 ) {
     val info = appInfo ?: appInfoMapFlow.collectAsState().value[appId]
     val showSystemIcon = info?.isSystem == true
@@ -56,6 +58,7 @@ fun AppNameText(
             overflow = TextOverflow.Ellipsis,
             textDecoration = textDecoration,
             style = style,
+            color = color,
         )
     } else {
         val userNameColor = MaterialTheme.colorScheme.tertiary
@@ -111,6 +114,7 @@ fun AppNameText(
             overflow = TextOverflow.Ellipsis,
             textDecoration = textDecoration,
             style = style,
+            color = color,
         )
     }
 }

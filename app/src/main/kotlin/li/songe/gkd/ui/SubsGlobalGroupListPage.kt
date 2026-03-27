@@ -149,8 +149,8 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                                             Dispatchers.Default
                                         ) {
                                             mainVm.dialogFlow.waitResult(
-                                                title = "删除规则组",
-                                                text = "删除当前所选规则组?",
+                                                title = "删除规则",
+                                                text = "删除当前所选规则?",
                                                 error = true,
                                             )
                                             val keys = selectedDataSet.mapNotNull { g ->
@@ -254,7 +254,6 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                     group = group,
                     focusGroupFlow = vm.focusGroupFlow,
                     subsConfig = subsConfig,
-                    category = null,
                     categoryConfig = null,
                     isSelectedMode = isSelectedMode,
                     isSelected = selectedDataSet.any { it.groupKey == group.key },

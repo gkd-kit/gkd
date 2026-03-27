@@ -81,8 +81,6 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
     val categoryConfigs by vm.categoryConfigsFlow.collectAsState()
     val app by vm.subsAppFlow.collectAsState()
 
-    val groupToCategoryMap = subs.groupToCategoryMap
-
     val editable = subsItemId < 0
     val isSelectedMode = vm.isSelectedModeFlow.collectAsState().value
     val selectedDataSet = vm.selectedDataSetFlow.collectAsState().value
@@ -135,6 +133,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                     title = subs.name,
                     subtitle = appId,
                     showApp = true,
+                    appFallbackName = app.name,
                 )
             }
         }, actions = {
@@ -162,8 +161,8 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                                 imageVector = PerfIcon.Delete,
                                 onClick = throttle(vm.viewModelScope.launchAsFn {
                                     mainVm.dialogFlow.waitResult(
-                                        title = "删除规则组",
-                                        text = "删除当前所选规则组?",
+                                        title = "删除规则",
+                                        text = "删除当前所选规则?",
                                         error = true,
                                     )
                                     val keys = selectedDataSet.mapNotNull { g -> g.groupKey }
@@ -272,7 +271,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             items(app.groups, { it.key }) { group ->
-                val category = groupToCategoryMap[group]
+                val category = subs.getCategory(group.name)
                 val subsConfig = subsConfigs.find { it.groupKey == group.key }
                 val categoryConfig = categoryConfigs.find {
                     it.categoryKey == category?.key
@@ -282,7 +281,6 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                     subs = subs,
                     appId = appId,
                     group = group,
-                    category = category,
                     subsConfig = subsConfig,
                     categoryConfig = categoryConfig,
                     focusGroupFlow = vm.focusGroupFlow,

@@ -322,7 +322,7 @@ fun AppConfigPage(route: AppConfigRoute) {
                         is RawSubscription.RawGlobalGroup -> globalSubsConfigs
                     }.find { it.subsId == entry.subsItem.id && it.groupKey == group.key }
                     val category = when (group) {
-                        is RawSubscription.RawAppGroup -> entry.subscription.groupToCategoryMap[group]
+                        is RawSubscription.RawAppGroup -> entry.subscription.getCategory(group.name)
                         is RawSubscription.RawGlobalGroup -> null
                     }
                     val categoryConfig = if (category != null) {
@@ -359,7 +359,6 @@ fun AppConfigPage(route: AppConfigRoute) {
                         appId = appId,
                         group = group,
                         subsConfig = subsConfig,
-                        category = category,
                         categoryConfig = categoryConfig,
                         onLongClick = onLongClick,
                         isSelectedMode = isSelectedMode,

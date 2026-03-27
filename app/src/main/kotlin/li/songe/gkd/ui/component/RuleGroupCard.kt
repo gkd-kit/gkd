@@ -3,11 +3,9 @@ package li.songe.gkd.ui.component
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -44,6 +42,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.getGlobalGroupChecked
 import li.songe.gkd.ui.icon.ResetSettings
 import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.util.getGroupEnable
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
@@ -58,7 +57,6 @@ fun RuleGroupCard(
     appId: String?,
     group: RawSubscription.RawGroupProps,
     subsConfig: SubsConfig?,
-    category: RawSubscription.RawCategory?,
     categoryConfig: CategoryConfig?,
     focusGroupFlow: MutableStateFlow<Triple<Long, String?, Int>?>? = null,
     isSelectedMode: Boolean = false,
@@ -67,6 +65,7 @@ fun RuleGroupCard(
     onSelectedChange: () -> Unit = {},
 ) {
     val mainVm = LocalMainViewModel.current
+    val category = subs.getCategory(group.name)
 
     val inGlobalAppPage = appId != null && group is RawSubscription.RawGlobalGroup
 
@@ -194,17 +193,13 @@ fun RuleGroupCard(
         }
         Box {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Column(
                     modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                    verticalArrangement = Arrangement.SpaceBetween
+                        .padding(8.dp)
+                        .weight(1f),
                 ) {
                     GroupNameText(
                         modifier = Modifier.fillMaxWidth(),
@@ -237,9 +232,12 @@ fun RuleGroupCard(
                     }
                 }
                 val percent = usePercentAnimatable(!isSelectedMode)
-                val switchModifier = Modifier.graphicsLayer(
-                    alpha = 0.5f + (1 - 0.5f) * percent.value,
-                )
+                val switchModifier = Modifier
+                    .noRippleClickable(onClick = {})
+                    .padding(8.dp)
+                    .graphicsLayer(
+                        alpha = 0.5f + (1 - 0.5f) * percent.value,
+                    )
                 if (!group.valid) {
                     InnerDisableSwitch(
                         modifier = switchModifier,
@@ -327,13 +325,13 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
                 title = "操作提示",
-                text = "是否将所选规则重置开关至初始状态?\n\n注: 也可在「订阅-规则类别」操作"
+                text = "是否将所选规则重置开关至默认值?\n\n注: 也可在「订阅-规则类别」操作"
             )
             val list = batchUpdateGroupEnable(selectedDataSet, null)
             if (list.isNotEmpty()) {
-                toast("已重置 ${list.size} 条规则开关至初始状态")
+                toast("重置 ${list.size} 规则")
             } else {
-                toast("无规则被改变")
+                toast("无可重置规则")
             }
         })
     )

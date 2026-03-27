@@ -53,7 +53,7 @@ data class CategoryConfig(
         fun queryConfig(subsItemId: Long): Flow<List<CategoryConfig>>
 
         @Query("SELECT * FROM category_config WHERE subs_id=:subsId AND category_key=:categoryKey")
-        suspend fun queryCategoryConfig(subsId: Long, categoryKey: Int): CategoryConfig?
+        fun queryCategoryConfig(subsId: Long, categoryKey: Int): Flow<CategoryConfig?>
 
         @Query("SELECT * FROM category_config WHERE subs_id IN (:subsItemIds)")
         suspend fun querySubsItemConfig(subsItemIds: List<Long>): List<CategoryConfig>

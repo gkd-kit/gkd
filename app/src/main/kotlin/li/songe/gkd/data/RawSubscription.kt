@@ -79,23 +79,22 @@ data class RawSubscription(
         )
     }
 
-    val categoryToGroupsMap by lazy {
-        val allAppGroups = apps.flatMap { a -> a.groups.map { g -> g to a } }
-        allAppGroups.groupBy { g ->
-            categories.find { c -> g.first.name.startsWith(c.name) }
-        }
-    }
-
-    private val categoryToAppMap by lazy {
+    private val categoryAppsMap: Map<Int, List<RawApp>> by lazy {
         val map = mutableMapOf<Int, MutableList<RawApp>>()
+        val usedGroups = mutableListOf<RawAppGroup>()
         categories.forEach { c ->
             apps.forEach { a ->
-                if (a.groups.any { g -> g.name.startsWith(c.name) }) {
+                val subGroups = a.groups.filter { g ->
+                    g.name.startsWith(c.name) && !usedGroups.any { g2 -> g2 === g }
+                }
+                if (subGroups.isNotEmpty()) {
+                    usedGroups.addAll(subGroups)
                     val list = map[c.key]
+                    val b = a.copy(groups = subGroups)
                     if (list == null) {
-                        map[c.key] = mutableListOf(a)
+                        map[c.key] = mutableListOf(b)
                     } else {
-                        list.add(a)
+                        list.add(b)
                     }
                 }
             }
@@ -103,8 +102,20 @@ data class RawSubscription(
         map
     }
 
+    private val categoryGroupsMap: Map<Int, List<RawAppGroup>> by lazy {
+        categoryAppsMap.mapValues { (key, apps) ->
+            apps.flatMap { it.groups }
+        }
+    }
+
     fun getCategoryApps(categoryKey: Int): List<RawApp> {
-        return categoryToAppMap[categoryKey] ?: emptyList()
+        return categoryAppsMap[categoryKey] ?: emptyList()
+    }
+
+    fun getCategoryGroups(categoryKey: Int) = categoryGroupsMap[categoryKey] ?: emptyList()
+
+    fun getCategory(groupName: String): RawCategory? {
+        return categories.find { c -> groupName.startsWith(c.name) }
     }
 
     fun getAppGroups(appId: String): List<RawAppGroup> {
@@ -119,16 +130,18 @@ data class RawSubscription(
         )
     }
 
-    val groupToCategoryMap by lazy {
-        val map = mutableMapOf<RawAppGroup, RawCategory>()
-        categoryToGroupsMap.forEach { (key, value) ->
-            value.forEach { (g) ->
-                if (key != null) {
-                    map[g] = key
-                }
-            }
-        }
-        map
+    fun getAppByGroup(group: RawAppGroup): RawApp {
+        return apps.find { a -> a.groups.any { g -> g === group } }
+            ?: throw IllegalStateException("App not found for group ${group.name}")
+    }
+
+    fun getCategoryCompatDesc(categoryKey: Int): String? {
+        val c = getSafeCategory(categoryKey)
+        if (!c.desc.isNullOrBlank()) return c.desc
+        val groupSize = categoryGroupsMap[categoryKey]?.size ?: 0
+        val appSize = categoryAppsMap[categoryKey]?.size ?: 0
+        if (groupSize > 0) return "${appSize}应用/${groupSize}规则"
+        return null
     }
 
     val appGroups by lazy {
@@ -181,7 +194,7 @@ data class RawSubscription(
             } else {
                 ""
             } + if (appGroupsSize > 0) {
-                "${appsSize}应用/${appGroupsSize}规则组"
+                "${appsSize}应用/${appGroupsSize}规则"
             } else {
                 ""
             }
@@ -579,9 +592,9 @@ data class RawSubscription(
     companion object {
 
         private fun RawGroupProps.getErrorDesc(): String? {
-            val allSelectorStrings = rules.map { r ->
+            val allSelectorStrings = rules.flatMap { r ->
                 r.getAllSelectorStrings()
-            }.flatten()
+            }
             allSelectorStrings.forEach { source ->
                 try {
                     val selector = Selector.parse(source)

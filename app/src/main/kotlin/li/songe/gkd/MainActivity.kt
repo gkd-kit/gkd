@@ -108,6 +108,8 @@ import li.songe.gkd.ui.SubsAppGroupListPage
 import li.songe.gkd.ui.SubsAppGroupListRoute
 import li.songe.gkd.ui.SubsAppListPage
 import li.songe.gkd.ui.SubsAppListRoute
+import li.songe.gkd.ui.SubsCategoryGroupPage
+import li.songe.gkd.ui.SubsCategoryGroupRoute
 import li.songe.gkd.ui.SubsCategoryPage
 import li.songe.gkd.ui.SubsCategoryRoute
 import li.songe.gkd.ui.SubsGlobalGroupExcludePage
@@ -282,6 +284,7 @@ class MainActivity : ComponentActivity() {
                             entry<SubsAppGroupListRoute> { SubsAppGroupListPage(it) }
                             entry<AppConfigRoute> { AppConfigPage(it) }
                             entry<CrashReportRoute> { CrashReportPage() }
+                            entry<SubsCategoryGroupRoute> { SubsCategoryGroupPage(it) }
                         },
                         transitionSpec = {
                             slideInHorizontally(initialOffsetX = { it }) togetherWith
