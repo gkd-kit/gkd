@@ -33,6 +33,6 @@ object AndroidTarget {
     val BAKLAVA = Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA
 
     /** Android 17+ */
-    @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.CINNAMON_BUN)
-    val CINNAMON_BUN = Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN
+    @get:ChecksSdkIntAtLeast(api = 37)
+    val CINNAMON_BUN = Build.VERSION.SDK_INT >= 37 //Build.VERSION_CODES.CINNAMON_BUN
 }
