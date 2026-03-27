@@ -38,10 +38,17 @@ jobs:
       - run: chmod 777 ./gradlew
       - run: ./gradlew app:assembleGkdRelease
 
+      - name: Rename APK
+        run: |
+          VERSION_NAME=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts)
+          COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)
+          NEW_NAME="gkd-beta-$VERSION_NAME-$COMMIT_HASH.apk"
+          mv app/build/outputs/apk/gkd/release/app-gkd-release.apk app/build/outputs/apk/gkd/release/$NEW_NAME
+
       - uses: actions/upload-artifact@v7
         with:
           archive: false
-          path: app/build/outputs/apk/gkd/release/app-gkd-release.apk
+          path: app/build/outputs/apk/gkd/release/gkd-beta-*.apk
 
       - uses: actions/upload-artifact@v7
         with:
