@@ -185,19 +185,20 @@ fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO
                 }
             }
         } else {
-            val visiblePkgList = arrayOf(Intent.ACTION_MAIN, Intent.ACTION_VIEW).map { action ->
-                try {
-                    // DeadObjectException BadParcelableException
-                    app.packageManager.queryIntentActivities(
-                        Intent(action),
-                        PackageManager.MATCH_DISABLED_COMPONENTS
-                    )
-                } catch (_: Throwable) {
-                    emptyList()
+            val visiblePkgList =
+                arrayOf(Intent.ACTION_MAIN, Intent.ACTION_VIEW).asSequence().flatMap { action ->
+                    try {
+                        // DeadObjectException BadParcelableException
+                        app.packageManager.queryIntentActivities(
+                            Intent(action),
+                            PackageManager.MATCH_DISABLED_COMPONENTS
+                        )
+                    } catch (_: Throwable) {
+                        emptyList()
+                    }
                 }
-            }.flatten()
-                .map { it.activityInfo.packageName }.toSet()
-                .filter { !newAppMap.contains(it) }.mapNotNull { app.getPkgInfo(it) }
+                    .map { it.activityInfo.packageName }.toSet()
+                    .filter { !newAppMap.contains(it) }.mapNotNull { app.getPkgInfo(it) }.toList()
             visiblePkgList.forEach { pkgInfo ->
                 val (appInfo, appIcon) = pkgInfo.toAppInfoAndIcon(hidden = false)
                 newAppMap[pkgInfo.packageName] = appInfo

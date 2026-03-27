@@ -133,7 +133,7 @@ fun useSettingsPage(): ScaffoldExt {
                             }
                             mainVm.dialogFlow.updateDialogOptions(
                                 title = "文案规则",
-                                text = $$"触发文案支持变量替换，规则如下\n${1} 子规则名称\n${2} 规则组名称\n${3} 触发次数\n\n示例模板\n${1}/${2}/${3}\n\n替换结果\n子规则a/规则组A/3",
+                                text = $$"触发文案支持变量替换，规则如下\n${1} 子规则名称\n${2} 规则名称\n${3} 触发次数\n\n示例模板\n${1}/${2}/${3}\n\n替换结果\n子规则a/规则A/3",
                                 confirmAction = confirmAction,
                                 onDismissRequest = confirmAction,
                             )
@@ -207,7 +207,7 @@ fun useSettingsPage(): ScaffoldExt {
                             }
                             mainVm.dialogFlow.updateDialogOptions(
                                 title = "文案规则",
-                                text = $$"通知文案支持变量替换，规则如下\n${i} 全局规则数\n${k} 应用数\n${u} 应用规则组数\n${n} 触发次数\n\n示例模板\n${i}全局/${k}应用/${u}规则组/${n}触发\n\n替换结果\n0全局/1应用/2规则组/3触发",
+                                text = $$"通知文案支持变量替换，规则如下\n${i} 全局规则数\n${k} 应用数\n${u} 应用规则数\n${n} 触发次数\n\n示例模板\n${i}全局/${k}应用/${u}规则/${n}触发\n\n替换结果\n0全局/1应用/2规则/3触发",
                                 confirmAction = confirmAction,
                                 onDismissRequest = confirmAction,
                             )

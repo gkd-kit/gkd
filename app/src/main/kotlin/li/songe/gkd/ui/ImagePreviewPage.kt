@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation3.runtime.NavKey
 import coil3.ImageLoader
 import coil3.compose.AsyncImagePainter
@@ -81,8 +82,12 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
     val context = LocalActivity.current as MainActivity
     DisposableEffect(null) {
         val controller = WindowCompat.getInsetsController(context.window, context.window.decorView)
+        val oldBehavior = controller.systemBarsBehavior
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         controller.hide(WindowInsetsCompat.Type.statusBars())
         onDispose {
+            controller.systemBarsBehavior = oldBehavior
             controller.show(WindowInsetsCompat.Type.statusBars())
         }
     }
@@ -115,7 +120,7 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                                 color = Color.Black.copy(alpha = 0.7f),
                                 blurRadius = with(LocalDensity.current) { 2.dp.toPx() },
                                 offset = with(LocalDensity.current) {
-                                    Offset( 1.dp.toPx(), 1.dp.toPx() )
+                                    Offset(1.dp.toPx(), 1.dp.toPx())
                                 }
                             )
                         )

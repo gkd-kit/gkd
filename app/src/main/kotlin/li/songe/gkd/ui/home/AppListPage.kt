@@ -33,7 +33,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.LocalSaveableStateRegistry
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -81,7 +80,6 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.util.AppGroupOption
 import li.songe.gkd.util.AppSortOption
-import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.appListAuthAbnormalFlow
 import li.songe.gkd.util.getUpDownTransform
 import li.songe.gkd.util.ruleSummaryFlow
@@ -109,10 +107,6 @@ fun useAppListPage(): ScaffoldExt {
     val refreshing by updateAppMutex.state.collectAsState()
     val pullToRefreshState = rememberPullToRefreshState()
     val editWhiteListMode by vm.editWhiteListModeFlow.collectAsState()
-    val savedStateRegistry = LocalSaveableStateRegistry.current
-    if (savedStateRegistry != null) {
-        LogUtils.d(savedStateRegistry.performSave())
-    }
     val scrollKey = rememberSaveable { mutableIntStateOf(0) }
     val (scrollBehavior, listState) = useListScrollState(scrollKey)
     LaunchedEffect(null) {

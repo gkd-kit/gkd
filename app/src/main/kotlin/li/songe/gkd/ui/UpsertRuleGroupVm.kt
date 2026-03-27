@@ -81,7 +81,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
                         }
                         RawSubscription.parseApp(jsonObject).let { newApp ->
                             if (newApp.groups.isEmpty()) {
-                                error("至少输入一个规则组")
+                                error("至少输入一个规则")
                             }
                             newApp.groups.first()
                         }
@@ -97,7 +97,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
             }
             newGroup.errorDesc?.let(::error)
             if (newGroup.key != groupKey) {
-                error("不能更改规则组的key")
+                error("不能更改规则的key")
             }
             val newSubs = if (appId != null) {
                 newGroup as RawSubscription.RawAppGroup
@@ -125,7 +125,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
                 val newApp = try {
                     RawSubscription.parseApp(jsonObject).apply {
                         if (groups.isEmpty()) {
-                            error("至少输入一个规则组")
+                            error("至少输入一个规则")
                         }
                     }
                 } catch (e: Exception) {
@@ -161,7 +161,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
                         }
                         RawSubscription.parseApp(jsonObject).apply {
                             if (groups.isEmpty()) {
-                                error("至少输入一个规则组")
+                                error("至少输入一个规则")
                             }
                         }.groups
                     } else {
@@ -222,9 +222,9 @@ private fun checkGroupKeyName(
     newGroup: RawSubscription.RawGroupProps
 ) {
     if (groups.any { it.name == newGroup.name }) {
-        error("已存在同名「${newGroup.name}」规则组")
+        error("已存在同名「${newGroup.name}」规则")
     }
     if (groups.any { it.key == newGroup.key }) {
-        error("已存在同 key=${newGroup.key} 规则组")
+        error("已存在同 key=${newGroup.key} 规则")
     }
 }

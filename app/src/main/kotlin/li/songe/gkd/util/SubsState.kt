@@ -126,9 +126,8 @@ fun updateSubscription(subscription: RawSubscription) {
             val subsId = subscription.id
             val subsName = subscription.name
             val newMap = subsMapFlow.value.toMutableMap()
-            val nextSubsRaw: RawSubscription
-            if (subsId < 0 && newMap[subsId]?.version == subscription.version) {
-                nextSubsRaw = subscription.run {
+            val nextSubsRaw = if (subsId < 0 && newMap[subsId]?.version == subscription.version) {
+                subscription.run {
                     copy(
                         version = version + 1,
                         apps = apps.filterIfNotAll { it.groups.isNotEmpty() }
@@ -136,7 +135,7 @@ fun updateSubscription(subscription: RawSubscription) {
                     )
                 }
             } else {
-                nextSubsRaw = subscription
+                subscription
             }
             newMap[subsId] = nextSubsRaw
             subsMapFlow.value = newMap
@@ -230,7 +229,7 @@ data class RuleSummary(
         } else {
             ""
         } + if (appGroupSize > 0) {
-            "${appSize}应用/${appGroupSize}规则组"
+            "${appSize}应用/${appGroupSize}规则"
         } else {
             ""
         }
@@ -311,7 +310,7 @@ val ruleSummaryFlow by lazy {
                 val subAppGroupToRules = mutableMapOf<RawSubscription.RawAppGroup, List<AppRule>>()
                 val groupAndEnables = appRaw.groups.map { group ->
                     val config = appGroupConfigs.find { c -> c.groupKey == group.key }
-                    val category = rawSubs.groupToCategoryMap[group]
+                    val category = rawSubs.getCategory(group.name)
                     val categoryConfig =
                         subCategoryConfigs.find { c -> c.categoryKey == category?.key }
                     val enable = getGroupEnable(

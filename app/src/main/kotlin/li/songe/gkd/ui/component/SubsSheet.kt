@@ -193,7 +193,7 @@ fun SubsSheet(
                     if (subscription.globalGroups.isNotEmpty() || subsItem.isLocal) {
                         Row(
                             modifier = Modifier
-                                .clickable(onClickLabel = "查看全局规则组列表", onClick = throttle {
+                                .clickable(onClickLabel = "查看全局规则列表", onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
                                     mainVm.navigatePage(SubsGlobalGroupListRoute(subsItem.id))
@@ -210,7 +210,7 @@ fun SubsSheet(
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                                 Text(
-                                    text = if (subscription.globalGroups.isNotEmpty()) "共 ${subscription.globalGroups.size} 全局规则组" else "暂无",
+                                    text = if (subscription.globalGroups.isNotEmpty()) "共 ${subscription.globalGroups.size} 全局规则" else "暂无",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.let {
                                         if (subscription.globalGroups.isEmpty()) {
@@ -229,7 +229,7 @@ fun SubsSheet(
                     if (subscription.appGroups.isNotEmpty() || subsItem.isLocal) {
                         Row(
                             modifier = Modifier
-                                .clickable(onClickLabel = "查看应用规则组列表", onClick = throttle {
+                                .clickable(onClickLabel = "查看应用规则列表", onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
                                     mainVm.navigatePage(SubsAppListRoute(subsItem.id))
@@ -246,7 +246,7 @@ fun SubsSheet(
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                                 Text(
-                                    text = if (subscription.appGroups.isNotEmpty()) "共 ${subscription.apps.size} 应用 ${subscription.appGroups.size} 规则组" else "暂无",
+                                    text = if (subscription.appGroups.isNotEmpty()) "共 ${subscription.apps.size} 应用 ${subscription.appGroups.size} 规则" else "暂无",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.let {
                                         if (subscription.appGroups.isEmpty()) {

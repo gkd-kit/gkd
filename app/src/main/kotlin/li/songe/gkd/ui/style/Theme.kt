@@ -17,12 +17,13 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowInsetsControllerCompat
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
@@ -79,12 +80,10 @@ fun AppTheme(
         }
     }
 
-    val isTalkbackEnabledFlow = remember {
-        MutableStateFlow(app.a11yManager.isTouchExplorationEnabled)
-    }
+    var isTalkbackEnabled by remember { mutableStateOf(app.a11yManager.isTouchExplorationEnabled) }
     DisposableEffect(null) {
         val listener = AccessibilityManager.TouchExplorationStateChangeListener {
-            isTalkbackEnabledFlow.value = it
+            isTalkbackEnabled = it
         }
         app.a11yManager.addTouchExplorationStateChangeListener(listener)
         onDispose {
@@ -93,7 +92,7 @@ fun AppTheme(
     }
     CompositionLocalProvider(
         LocalDarkTheme provides darkTheme,
-        LocalIsTalkbackEnabled provides isTalkbackEnabledFlow
+        LocalIsTalkbackEnabled provides isTalkbackEnabled
     ) {
         MaterialTheme(
             colorScheme = colorScheme.animation(),
