@@ -35,13 +35,15 @@ jobs:
           echo GKD_KEY_ALIAS='${{ secrets.GKD_KEY_ALIAS }}' >> gradle.properties
           echo GKD_KEY_PASSWORD='${{ secrets.GKD_KEY_PASSWORD }}' >> gradle.properties
 
+      - run: echo GKD_RENAME_APK_FLAG=1 >> gradle.properties
+
       - run: chmod 777 ./gradlew
       - run: ./gradlew app:assembleGkdRelease
 
       - uses: actions/upload-artifact@v7
         with:
           archive: false
-          path: app/build/outputs/apk/gkd/release/app-gkd-release.apk
+          path: app/build/outputs/apk/gkd/release/*.apk
 
       - uses: actions/upload-artifact@v7
         with:

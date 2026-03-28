@@ -1,3 +1,4 @@
+import com.android.build.api.variant.impl.VariantOutputImpl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import kotlin.reflect.full.declaredMemberProperties
 
@@ -17,7 +18,9 @@ data class GitInfo(
     val commitId: String,
     val commitTime: String,
     val tagName: String?,
-)
+) {
+    val versionNameSuffix get() = if (tagName == null) ("-" + commitId.take(7)) else null
+}
 
 val gitInfo = GitInfo(
     commitId = "git rev-parse HEAD".runCommand(),
@@ -112,9 +115,7 @@ android {
 
     buildTypes {
         all {
-            if (gitInfo.tagName == null) {
-                versionNameSuffix = "-${gitInfo.commitId.take(7)}"
-            }
+            versionNameSuffix = gitInfo.versionNameSuffix
         }
         release {
             isMinifyEnabled = true
@@ -166,6 +167,15 @@ android {
         "**/custom.config.conf",
         "**/custom.config.yaml",
     )
+}
+
+if (project.hasProperty("GKD_RENAME_APK_FLAG")) {
+    androidComponents.onVariants { variant ->
+        variant.outputs.onEach { output ->
+            output as VariantOutputImpl
+            output.outputFileName = "gkd-v${output.versionName.get()}.apk"
+        }
+    }
 }
 
 kotlin {
