@@ -14,20 +14,22 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -40,13 +42,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -108,7 +108,7 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
     }
     Box(
         modifier = Modifier
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color.Black)
             .fillMaxSize()
             .pointerInput(Unit) {
                 detectTapGestures(onTap = {
@@ -118,6 +118,19 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
     ) {
         val showUri = uri ?: if (uris.size == 1) uris.first() else null
         val state = rememberPagerState { uris.size }
+
+        if (showUri != null) {
+            UriImage(showUri)
+        } else if (uris.isNotEmpty()) {
+            HorizontalPager(
+                modifier = Modifier.fillMaxSize(),
+                state = state,
+                pageContent = {
+                    UriImage(uris[it])
+                }
+            )
+        }
+
         AnimatedVisibility(
             visible = showBars,
             enter = fadeIn() + slideInVertically(initialOffsetY = { -it }),
@@ -126,79 +139,63 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                 .zIndex(1f)
                 .fillMaxWidth()
         ) {
-            PerfTopAppBar(
-                navigationIcon = {
-                    PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
-                        mainVm.popPage()
-                    })
-                },
-                title = {
-                    if (title != null) {
-                        Text(
-                            text = title,
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.MiddleEllipsis,
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                color = MaterialTheme.colorScheme.onBackground,
-                                shadow = Shadow(
-                                    color = Color.Black.copy(alpha = 0.7f),
-                                    blurRadius = with(LocalDensity.current) { 2.dp.toPx() },
-                                    offset = with(LocalDensity.current) {
-                                        Offset(1.dp.toPx(), 1.dp.toPx())
-                                    }
+            Column {
+                PerfTopAppBar(
+                    modifier = Modifier.background(Color.Black.copy(alpha = 0.5f)),
+                    navigationIcon = {
+                        PerfIconButton(
+                            imageVector = PerfIcon.ArrowBack,
+                            onClick = { mainVm.popPage() },
+                            colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White)
+                        )
+                    },
+                    title = {
+                        if (title != null) {
+                            Text(
+                                text = title,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.MiddleEllipsis,
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Medium
                                 )
                             )
-                        )
-                    }
-                },
-                actions = {
-                    val currentUri = showUri ?: uris.getOrNull(state.currentPage)
-                    if (currentUri != null && URLUtil.isNetworkUrl(currentUri)) {
-                        PerfIconButton(imageVector = PerfIcon.OpenInNew, onClick = throttle(fn = {
-                            mainVm.openUrl(currentUri)
-                        }))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.1f)
+                        }
+                    },
+                    actions = {
+                        val currentUri = showUri ?: uris.getOrNull(state.currentPage)
+                        if (currentUri != null && URLUtil.isNetworkUrl(currentUri)) {
+                            PerfIconButton(
+                                imageVector = PerfIcon.OpenInNew,
+                                onClick = throttle(fn = { mainVm.openUrl(currentUri) }),
+                                colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        navigationIconContentColor = Color.White,
+                        titleContentColor = Color.White,
+                        actionIconContentColor = Color.White
+                    )
                 )
-            )
-        }
-        if (showUri != null) {
-            UriImage(showUri)
-        } else if (uris.isNotEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                HorizontalPager(
-                    modifier = Modifier.fillMaxSize(),
-                    state = state,
-                    pageContent = {
-                        UriImage(uris[it])
-                    }
-                )
-                AnimatedVisibility(
-                    visible = showBars,
-                    enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                ) {
-                    val navBarsPadding = WindowInsets.navigationBars.asPaddingValues()
+
+                if (uris.size > 1) {
                     Box(
-                        Modifier
+                        modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 64.dp + navBarsPadding.calculateBottomPadding()),
-                        contentAlignment = Alignment.BottomCenter
+                            .padding(top = 12.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "${state.currentPage + 1}/${uris.size}",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                shadow = Shadow(
-                                    color = Color.Black.copy(alpha = 0.8f),
-                                    blurRadius = with(LocalDensity.current) { 3.dp.toPx() }
-                                )
+                            text = "${state.currentPage + 1} / ${uris.size}",
+                            modifier = Modifier
+                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                .padding(horizontal = 12.dp, vertical = 4.dp),
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Bold
                             )
                         )
                     }
