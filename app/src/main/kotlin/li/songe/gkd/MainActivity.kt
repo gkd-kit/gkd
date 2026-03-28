@@ -162,8 +162,8 @@ class MainActivity : ComponentActivity() {
     val imePlayingFlow = MutableStateFlow(false)
 
     private val imeVisible: Boolean
-        get() = ViewCompat.getRootWindowInsets(window.decorView)!!
-            .isVisible(WindowInsetsCompat.Type.ime())
+        get() = ViewCompat.getRootWindowInsets(window.decorView)
+            ?.isVisible(WindowInsetsCompat.Type.ime()) == true  // fix #1315
 
     var topBarWindowInsets by mutableStateOf(WindowInsets(top = BarUtils.getStatusBarHeight()))
 
