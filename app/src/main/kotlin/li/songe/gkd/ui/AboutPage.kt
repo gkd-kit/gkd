@@ -15,10 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -48,7 +46,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
@@ -66,6 +63,7 @@ import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
+import li.songe.gkd.ui.component.TextListDialog
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.share.LocalDarkTheme
@@ -336,60 +334,34 @@ fun AboutPage() {
     }
 
     if (showShareAppDlg) {
-        Dialog(onDismissRequest = { showShareAppDlg = false }) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                val modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                Text(
-                    text = "分享到其他应用", modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareAppDlg = false
-                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
-                                if (!META.isGkdChannel) {
-                                    mainVm.dialogFlow.waitResult(
-                                        title = "分享提示",
-                                        textContent = { Text(text = exportPlayTipTemplate()) },
-                                        confirmText = "继续",
-                                    )
-                                }
-                                context.shareFile(getShareApkFile(), "分享安装文件")
-                            }
-                        })
-                        .then(modifier)
-                )
-                Text(
-                    text = "保存到下载", modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareAppDlg = false
-                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
-                                if (!META.isGkdChannel) {
-                                    mainVm.dialogFlow.waitResult(
-                                        title = "保存提示",
-                                        textContent = { Text(text = exportPlayTipTemplate()) },
-                                        confirmText = "继续",
-                                    )
-                                }
-                                context.saveFileToDownloads(getShareApkFile())
-                            }
-                        })
-                        .then(modifier)
-                )
-                Text(
-                    text = "Google Play", modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareAppDlg = false
-                            mainVm.openUrl(PLAY_STORE_URL)
-                        })
-                        .then(modifier)
-                )
-            }
-        }
+        TextListDialog(
+            onDismiss = { showShareAppDlg = false },
+            textList = listOf(
+                "分享到其他应用" to mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                    if (!META.isGkdChannel) {
+                        mainVm.dialogFlow.waitResult(
+                            title = "分享提示",
+                            textContent = { Text(text = exportPlayTipTemplate()) },
+                            confirmText = "继续",
+                        )
+                    }
+                    context.shareFile(getShareApkFile(), "分享安装文件")
+                },
+                "保存到下载" to mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                    if (!META.isGkdChannel) {
+                        mainVm.dialogFlow.waitResult(
+                            title = "保存提示",
+                            textContent = { Text(text = exportPlayTipTemplate()) },
+                            confirmText = "继续",
+                        )
+                    }
+                    context.saveFileToDownloads(getShareApkFile())
+                },
+                "Google Play" to {
+                    mainVm.openUrl(PLAY_STORE_URL)
+                },
+            )
+        )
     }
 }
 

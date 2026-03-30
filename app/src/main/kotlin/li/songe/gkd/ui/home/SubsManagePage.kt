@@ -1,8 +1,6 @@
 package li.songe.gkd.ui.home
 
-import android.content.Intent
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.scaleIn
@@ -53,13 +51,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.dylanc.activityresult.launcher.launchForResult
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.data.Value
-import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.store.switchStoreEnableMatch
@@ -100,7 +94,6 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
 fun useSubsManagePage(): ScaffoldExt {
-    val context = LocalActivity.current as MainActivity
     val mainVm = LocalMainViewModel.current
 
     val vm = viewModel<HomeVm>()
@@ -233,12 +226,6 @@ fun useSubsManagePage(): ScaffoldExt {
                 ) {
                     Row {
                         if (it) {
-                            PerfIconButton(
-                                imageVector = PerfIcon.Share,
-                                contentDescription = "分享选中订阅",
-                                onClick = {
-                                    mainVm.showShareDataIdsFlow.value = selectedIds
-                                })
                             val canDeleteIds = if (selectedIds.contains(LOCAL_SUBS_ID)) {
                                 selectedIds - LOCAL_SUBS_ID
                             } else {
@@ -350,25 +337,6 @@ fun useSubsManagePage(): ScaffoldExt {
                                     }
                                 )
                             } else {
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(text = "导入本地数据")
-                                    },
-                                    onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                                        expanded = false
-                                        val result =
-                                            context.launcher.launchForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                                                addCategory(Intent.CATEGORY_OPENABLE)
-                                                type = "application/zip"
-                                            })
-                                        val uri = result.data?.data
-                                        if (uri == null) {
-                                            toast("未选择文件")
-                                            return@launchAsFn
-                                        }
-                                        importData(uri)
-                                    },
-                                )
                                 DropdownMenuItem(
                                     text = { Text(text = "添加应用规则") },
                                     onClick = throttle {

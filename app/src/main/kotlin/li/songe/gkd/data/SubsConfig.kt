@@ -52,6 +52,9 @@ data class SubsConfig(
     @Dao
     interface SubsConfigDao {
 
+        @Query("SELECT * FROM subs_config")
+        suspend fun queryAll(): List<SubsConfig>
+
         @Update
         suspend fun update(vararg objects: SubsConfig): Int
 

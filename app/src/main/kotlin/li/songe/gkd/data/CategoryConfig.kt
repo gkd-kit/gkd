@@ -25,6 +25,9 @@ data class CategoryConfig(
     @Dao
     interface CategoryConfigDao {
 
+        @Query("SELECT * FROM category_config")
+        suspend fun queryAll(): List<CategoryConfig>
+
         @Update
         suspend fun update(vararg objects: CategoryConfig): Int
 

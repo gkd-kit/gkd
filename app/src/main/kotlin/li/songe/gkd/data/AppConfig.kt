@@ -23,6 +23,9 @@ data class AppConfig(
 ) {
     @Dao
     interface AppConfigDao {
+        @Query("SELECT * FROM app_config")
+        suspend fun queryAll(): List<AppConfig>
+
         @Update
         suspend fun update(vararg objects: AppConfig): Int
 

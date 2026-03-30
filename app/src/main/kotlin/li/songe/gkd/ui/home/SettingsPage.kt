@@ -76,6 +76,7 @@ import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.SettingItem
+import li.songe.gkd.ui.component.TextListDialog
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.autoFocus
@@ -89,12 +90,15 @@ import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.AndroidTarget
+import li.songe.gkd.util.BackupUtils
 import li.songe.gkd.util.DarkThemeOption
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.mapState
 import li.songe.gkd.util.openA11ySettings
 import li.songe.gkd.util.openAppDetailsSettings
+import li.songe.gkd.util.saveFileToDownloads
+import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
@@ -337,6 +341,37 @@ fun useSettingsPage(): ScaffoldExt {
     if (showA11yBlockDlg) {
         BlockA11yDialog(onDismissRequest = { showA11yBlockDlg = false })
     }
+    if (vm.showBackupDlgFlow.collectAsState().value) {
+        TextListDialog(
+            onDismiss = { vm.showBackupDlgFlow.value = false },
+            textList = listOf(
+                "导入备份" to vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                    val uri = context.pickFile("application/zip")
+                    if (uri != null) {
+                        BackupUtils.importBackUpData(uri)
+                    }
+                },
+                "导出备份" to {
+                    vm.showExportBackupDlgFlow.value = true
+                },
+            )
+        )
+    }
+    if (vm.showExportBackupDlgFlow.collectAsState().value) {
+        TextListDialog(
+            onDismiss = { vm.showExportBackupDlgFlow.value = false },
+            textList = listOf(
+                "分享到其他应用" to vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                    val file = BackupUtils.exportBackUpData()
+                    context.shareFile(file, "分享备份文件")
+                },
+                "保存到下载" to vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                    val file = BackupUtils.exportBackUpData()
+                    context.saveFileToDownloads(file)
+                },
+            )
+        )
+    }
 
     val scrollKey = rememberSaveable { mutableIntStateOf(0) }
     val (scrollBehavior, scrollState) = useScrollBehaviorState(scrollKey)
@@ -500,6 +535,9 @@ fun useSettingsPage(): ScaffoldExt {
 
             SettingItem(title = "高级设置", onClick = {
                 mainVm.navigatePage(AdvancedPageRoute)
+            })
+            SettingItem(title = "备份恢复", onClick = {
+                vm.showBackupDlgFlow.value = true
             })
 
             SettingItem(title = "关于", onClick = {

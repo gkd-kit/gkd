@@ -2,6 +2,7 @@ package li.songe.gkd.store
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalForInheritanceCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.debounce
@@ -41,6 +42,19 @@ private fun writeStoreText(file: File, text: String) {
     )
 }
 
+@OptIn(ExperimentalForInheritanceCoroutinesApi::class)
+class MutableStoreStateFlow<T>(
+    val filename: String,
+    val decode: (String?) -> T,
+    val encode: (T) -> String,
+    private val stateFlow: MutableStateFlow<T>,
+) : MutableStateFlow<T> by stateFlow {
+    fun encodeSelf(): String = encode(value)
+    fun updateByDecode(text: String?) {
+        value = decode(text)
+    }
+}
+
 fun <T> createTextFlow(
     key: String,
     decode: (String?) -> T,
@@ -48,9 +62,9 @@ fun <T> createTextFlow(
     private: Boolean = false,
     scope: CoroutineScope = appScope,
     debounceMillis: Long = 0,
-): MutableStateFlow<T> {
-    val name = if (key.contains('.')) key else "$key.txt"
-    val file = (if (private) privateStoreFolder else storeFolder).resolve(name)
+): MutableStoreStateFlow<T> {
+    val filename = if (key.contains('.')) key else "$key.txt"
+    val file = (if (private) privateStoreFolder else storeFolder).resolve(filename)
     val initText = readStoreText(file)
     val initValue = decode(initText)
     val stateFlow = MutableStateFlow(initValue)
@@ -61,7 +75,12 @@ fun <T> createTextFlow(
             }
         }
     }
-    return stateFlow
+    return MutableStoreStateFlow(
+        filename = filename,
+        decode = decode,
+        encode = encode,
+        stateFlow = stateFlow,
+    )
 }
 
 inline fun <reified T> createAnyFlow(
@@ -71,7 +90,7 @@ inline fun <reified T> createAnyFlow(
     private: Boolean = false,
     scope: CoroutineScope = appScope,
     debounceMillis: Long = 0,
-): MutableStateFlow<T> {
+): MutableStoreStateFlow<T> {
     return createTextFlow(
         key = "$key.json",
         decode = {

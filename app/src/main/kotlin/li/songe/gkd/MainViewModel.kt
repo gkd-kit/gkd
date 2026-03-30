@@ -22,7 +22,6 @@ import li.songe.gkd.a11y.useEnabledA11yServicesFlow
 import li.songe.gkd.data.CrashData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
-import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.permission.AuthReason
 import li.songe.gkd.permission.shizukuGrantedState
@@ -45,6 +44,7 @@ import li.songe.gkd.ui.home.BottomNavItem
 import li.songe.gkd.ui.home.HomeRoute
 import li.songe.gkd.ui.share.BaseViewModel
 import li.songe.gkd.util.AutomatorModeOption
+import li.songe.gkd.util.BackupUtils
 import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.OnSimpleLife
@@ -126,8 +126,6 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
     val inputSubsLinkOption = InputSubsLinkOption()
 
     val sheetSubsIdFlow = MutableStateFlow<Long?>(null)
-
-    val showShareDataIdsFlow = MutableStateFlow<Set<Long>?>(null)
 
     val appOrderListFlow = DbSet.actionLogDao.queryLatestUniqueAppIds().stateInit(emptyList())
     val appVisitOrderMapFlow = DbSet.appVisitLogDao.query().map {
@@ -245,9 +243,7 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
         if (uri?.scheme == "gkd") {
             handleGkdUri(uri)
         } else if (source == OpenFileActivity::class.jvmName && uri != null) {
-            toast("加载导入中...")
-            tabFlow.value = BottomNavItem.SubsManage.key
-            withContext(Dispatchers.IO) { importData(uri) }
+            withContext(Dispatchers.IO) { BackupUtils.importBackUpData(uri) }
         }
     }
 

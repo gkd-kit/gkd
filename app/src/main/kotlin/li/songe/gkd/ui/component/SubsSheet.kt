@@ -384,11 +384,6 @@ fun SubsSheet(
                         sheetSubsIdFlow.value = null
                         mainVm.navigatePage(ActionLogRoute(subsId = subsItem.id))
                     })
-                    if (subscription != null || !subsItem.isLocal) {
-                        PerfIconButton(imageVector = PerfIcon.Share, onClick = throttle {
-                            mainVm.showShareDataIdsFlow.value = setOf(subsItem.id)
-                        })
-                    }
                     if (subsItem.id != LOCAL_SUBS_ID) {
                         PerfIconButton(
                             imageVector = PerfIcon.Delete,

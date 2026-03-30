@@ -79,7 +79,7 @@
             android:name=".OpenFileActivity"
             android:exported="true"
             android:theme="@style/TransparentTheme">
-            <intent-filter android:label="@string/import_data">
+            <intent-filter android:label="@string/import_backup">
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />

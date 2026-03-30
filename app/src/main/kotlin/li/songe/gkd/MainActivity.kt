@@ -2,6 +2,7 @@ package li.songe.gkd
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -53,6 +54,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
+import com.dylanc.activityresult.launcher.launchForResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
@@ -122,7 +124,6 @@ import li.songe.gkd.ui.WebViewPage
 import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.component.BuildDialog
 import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.component.ShareDataDialog
 import li.songe.gkd.ui.component.ShareLogDlg
 import li.songe.gkd.ui.component.SubsSheet
 import li.songe.gkd.ui.component.TermsAcceptDialog
@@ -218,6 +219,17 @@ class MainActivity : ComponentActivity() {
         return false
     }
 
+    suspend fun pickFile(contentType: String): Uri? {
+        val u = launcher.launchForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = contentType
+        }).data?.data
+        if (u == null) {
+            toast("未选择文件")
+        }
+        return u
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         enableEdgeToEdge()
@@ -311,7 +323,6 @@ class MainActivity : ComponentActivity() {
                         EditGithubCookieDlg()
                         mainVm.updateStatus?.UpgradeDialog()
                         SubsSheet(mainVm, mainVm.sheetSubsIdFlow)
-                        ShareDataDialog(mainVm, mainVm.showShareDataIdsFlow)
                         mainVm.inputSubsLinkOption.ContentDialog()
                         mainVm.ruleGroupState.Render()
                         TextDialog(mainVm.textFlow)
