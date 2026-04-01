@@ -3,7 +3,6 @@ package li.songe.gkd.ui
 import android.webkit.URLUtil
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationConstants.DefaultDurationMillis
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -11,14 +10,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.calculatePan
-import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,14 +35,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -71,7 +63,6 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
@@ -82,10 +73,11 @@ import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.coilCacheDir
 import li.songe.gkd.util.throttle
+import me.saket.telephoto.zoomable.ZoomableContentLocation
+import me.saket.telephoto.zoomable.rememberZoomableState
+import me.saket.telephoto.zoomable.zoomable
 import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
-import kotlin.math.abs
-import kotlin.math.max
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
@@ -98,15 +90,21 @@ data class ImagePreviewRoute(
 
 @Composable
 fun ImagePreviewPage(route: ImagePreviewRoute) {
-    val title = route.title
-    val uri = route.uri
-    val uris = route.uris
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
     var showBars by remember { mutableStateOf(true) }
-    var userScrollEnabled by remember { mutableStateOf(true) }
 
-    DisposableEffect(null) {
+    // 路由同时支持单图和多图，这里先统一成一个列表，后续 pager / 单图逻辑都共用它。
+    val previewUris = remember(route.uri, route.uris) {
+        route.uris.ifEmpty {
+            route.uri?.let(::listOf) ?: emptyList()
+        }
+    }
+    val singleUri = previewUris.singleOrNull()
+    val pagerState = rememberPagerState(pageCount = { previewUris.size.coerceAtLeast(1) })
+
+    // 这个页面需要接近相册页的沉浸式效果，因此进入时隐藏状态栏，离开时恢复原设置。
+    DisposableEffect(Unit) {
         val controller = WindowCompat.getInsetsController(context.window, context.window.decorView)
         val oldBehavior = controller.systemBarsBehavior
         controller.systemBarsBehavior =
@@ -117,41 +115,32 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
             controller.show(WindowInsetsCompat.Type.statusBars())
         }
     }
+
     Box(
         modifier = Modifier
             .background(Color.Black)
             .fillMaxSize()
     ) {
-        val showUri = uri ?: if (uris.size == 1) uris.first() else null
-        val state = rememberPagerState { uris.size }
+        when {
+            singleUri != null -> {
+                UriImage(
+                    uri = singleUri,
+                    onToggleBars = { showBars = !showBars },
+                )
+            }
 
-        LaunchedEffect(state.currentPage) {
-            userScrollEnabled = true
-        }
-
-        if (showUri != null) {
-            UriImage(
-                uri = showUri,
-                onToggleBars = { showBars = !showBars },
-                onScaleChange = { userScrollEnabled = it <= 1f }
-            )
-        } else if (uris.isNotEmpty()) {
-            HorizontalPager(
-                modifier = Modifier.fillMaxSize(),
-                state = state,
-                userScrollEnabled = userScrollEnabled,
-                pageContent = { index ->
-                    UriImage(
-                        uri = uris[index],
-                        onToggleBars = { showBars = !showBars },
-                        onScaleChange = { scale ->
-                            if (index == state.currentPage) {
-                                userScrollEnabled = scale <= 1f
-                            }
-                        }
-                    )
-                }
-            )
+            previewUris.isNotEmpty() -> {
+                HorizontalPager(
+                    modifier = Modifier.fillMaxSize(),
+                    state = pagerState,
+                    pageContent = { index ->
+                        UriImage(
+                            uri = previewUris[index],
+                            onToggleBars = { showBars = !showBars },
+                        )
+                    }
+                )
+            }
         }
 
         AnimatedVisibility(
@@ -163,6 +152,7 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                 .fillMaxWidth()
         ) {
             Column {
+                val currentUri = singleUri ?: previewUris.getOrNull(pagerState.currentPage)
                 PerfTopAppBar(
                     modifier = Modifier.background(Color.Black.copy(alpha = 0.5f)),
                     navigationIcon = {
@@ -173,7 +163,7 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                         )
                     },
                     title = {
-                        if (title != null) {
+                        route.title?.let { title ->
                             Text(
                                 text = title,
                                 maxLines = 1,
@@ -187,7 +177,6 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                         }
                     },
                     actions = {
-                        val currentUri = showUri ?: uris.getOrNull(state.currentPage)
                         if (currentUri != null && URLUtil.isNetworkUrl(currentUri)) {
                             PerfIconButton(
                                 imageVector = PerfIcon.OpenInNew,
@@ -204,7 +193,7 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                     )
                 )
 
-                if (uris.size > 1) {
+                if (previewUris.size > 1) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -212,7 +201,7 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "${state.currentPage + 1} / ${uris.size}",
+                            text = "${pagerState.currentPage + 1} / ${previewUris.size}",
                             modifier = Modifier
                                 .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                                 .padding(horizontal = 12.dp, vertical = 4.dp),
@@ -228,24 +217,27 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
     }
 }
 
-// 图片预览一些功能demo
 @Composable
 private fun UriImage(
     uri: String,
     onToggleBars: () -> Unit = {},
-    onScaleChange: (Float) -> Unit = {}
 ) {
     val context = LocalContext.current
+    // 手势层切至Telephoto,loading,error还是使用AsyncImagePainter.State统一驱动
     val model = remember(uri) {
-        ImageRequest.Builder(context).data(uri)
-            .crossfade(DefaultDurationMillis).run {
+        ImageRequest.Builder(context)
+            .data(uri)
+            .crossfade(DefaultDurationMillis)
+            .run {
                 if (URLUtil.isNetworkUrl(uri)) {
                     this
                 } else {
-                    diskCachePolicy(CachePolicy.DISABLED).memoryCachePolicy(CachePolicy.DISABLED)
+                    diskCachePolicy(CachePolicy.DISABLED)
+                        .memoryCachePolicy(CachePolicy.DISABLED)
                 }
             }
-            .build().apply {
+            .build()
+            .apply {
                 imageLoader.enqueue(this)
             }
     }
@@ -257,12 +249,15 @@ private fun UriImage(
         contentAlignment = Alignment.Center
     ) {
         when (val stateVal = state) {
-            AsyncImagePainter.State.Empty -> {}
+            AsyncImagePainter.State.Empty -> Unit
+
             is AsyncImagePainter.State.Loading -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(uri) { detectTapGestures(onTap = { onToggleBars() }) },
+                        .pointerInput(uri) {
+                            detectTapGestures(onTap = { onToggleBars() })
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(40.dp))
@@ -270,120 +265,11 @@ private fun UriImage(
             }
 
             is AsyncImagePainter.State.Success -> {
-                val scope = rememberCoroutineScope()
-                val scale = remember(uri) { Animatable(1f) }
-                val offsetX = remember(uri) { Animatable(0f) }
-                val offsetY = remember(uri) { Animatable(0f) }
-
-                BoxWithConstraints(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val containerWidth = constraints.maxWidth.toFloat()
-                    val containerHeight = constraints.maxHeight.toFloat()
-
-                    val intrinsicSize = painter.intrinsicSize
-                    val imageHeight = remember(intrinsicSize, containerWidth) {
-                        if (intrinsicSize != Size.Unspecified && intrinsicSize.width > 0) {
-                            containerWidth * (intrinsicSize.height / intrinsicSize.width)
-                        } else {
-                            containerHeight
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .pointerInput(uri) {
-                                detectTapGestures(
-                                    onTap = { onToggleBars() },
-                                    onDoubleTap = { tapOffset ->
-                                        scope.launch {
-                                            // 双指缩放控制
-                                            if (scale.value > 1f) {
-                                                launch { scale.animateTo(1f) }
-                                                launch { offsetX.animateTo(0f) }
-                                                launch { offsetY.animateTo(0f) }
-                                                onScaleChange(1f)
-                                            } else {
-                                                // 双指缩放以两个手指开合你看到的上下手指中心点为中心的偏移量缩放控制计算，防止在中间缩放图片
-                                                val targetScale = 3f
-                                                val center = Offset(containerWidth / 2, containerHeight / 2)
-                                                var targetOffsetX = (center.x - tapOffset.x) * (targetScale - 1)
-                                                var targetOffsetY = (center.y - tapOffset.y) * (targetScale - 1)
-
-                                                val maxOffsetX = max(0f, (containerWidth * targetScale - containerWidth) / 2f)
-                                                val maxOffsetY = max(0f, (imageHeight * targetScale - containerHeight) / 2f)
-                                                targetOffsetX = targetOffsetX.coerceIn(-maxOffsetX, maxOffsetX)
-                                                targetOffsetY = targetOffsetY.coerceIn(-maxOffsetY, maxOffsetY)
-
-                                                launch { scale.animateTo(targetScale) }
-                                                launch { offsetX.animateTo(targetOffsetX) }
-                                                launch { offsetY.animateTo(targetOffsetY) }
-                                                onScaleChange(targetScale)
-                                            }
-                                        }
-                                    }
-                                )
-                            }
-                            .pointerInput(uri, containerWidth, containerHeight, imageHeight) {
-                                awaitEachGesture {
-                                    awaitFirstDown(requireUnconsumed = false)
-                                    do {
-                                        val event = awaitPointerEvent()
-                                        val zoomChange = event.calculateZoom()
-                                        val panChange = event.calculatePan()
-
-                                        if (zoomChange != 1f) {
-                                            val targetScale = (scale.value * zoomChange).coerceIn(1f, 5f)
-                                            scope.launch {
-                                                scale.snapTo(targetScale)
-                                            }
-                                            onScaleChange(targetScale)
-                                            event.changes.forEach { it.consume() }
-                                        // 处理平移手势拖动
-                                        } else if (scale.value > 1f) {
-                                            val currentScale = scale.value
-                                            val maxOffsetX = max(0f, (containerWidth * currentScale - containerWidth) / 2f)
-                                            val maxOffsetY = max(0f, (imageHeight * currentScale - containerHeight) / 2f)
-
-                                            val atLeftEdge = offsetX.value >= maxOffsetX
-                                            val atRightEdge = offsetX.value <= -maxOffsetX
-
-                                            val isHorizontalPan = abs(panChange.x) > abs(panChange.y)
-                                            val isScrollingOut = (panChange.x > 0 && atLeftEdge) || (panChange.x < 0 && atRightEdge)
-
-                                            if (isHorizontalPan && isScrollingOut) {
-                                                // 让 HorizontalPager 处理
-                                            } else {
-                                                scope.launch {
-                                                    offsetX.snapTo((offsetX.value + panChange.x).coerceIn(-maxOffsetX, maxOffsetX))
-                                                    offsetY.snapTo((offsetY.value + panChange.y).coerceIn(-maxOffsetY, maxOffsetY))
-                                                }
-                                                event.changes.forEach { it.consume() }
-                                            }
-                                        }
-                                    } while (event.changes.any { it.pressed })
-                                }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // 渲染图片
-                        Image(
-                            painter = painter,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .graphicsLayer(
-                                    scaleX = scale.value,
-                                    scaleY = scale.value,
-                                    translationX = offsetX.value,
-                                    translationY = offsetY.value
-                                )
-                                .fillMaxWidth(),
-                            contentScale = ContentScale.FillWidth
-                        )
-                    }
-                }
+                ZoomableImageContent(
+                    uri = uri,
+                    painter = painter,
+                    onToggleBars = onToggleBars,
+                )
             }
 
             is AsyncImagePainter.State.Error -> {
@@ -391,7 +277,9 @@ private fun UriImage(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(uri) { detectTapGestures(onTap = { onToggleBars() }) },
+                        .pointerInput(uri) {
+                            detectTapGestures(onTap = { onToggleBars() })
+                        },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
@@ -419,6 +307,40 @@ private fun UriImage(
     }
 }
 
+@Composable
+private fun ZoomableImageContent(
+    uri: String,
+    painter: Painter,
+    onToggleBars: () -> Unit,
+) {
+    // 每个 pager page 都独立持有一个 ZoomableState，避免翻页后复用缩放位置。
+    val zoomableState = rememberZoomableState()
+    val intrinsicSize = painter.intrinsicSize
+
+    // Image() 的绘制区域和实际图片内容边界并不总是完全一致。
+    // 把内容位置告诉 Telephoto 后，边缘检测和与 pager 的手势协同会更稳定。
+    LaunchedEffect(uri, intrinsicSize) {
+        if (intrinsicSize != Size.Unspecified && intrinsicSize.width > 0f && intrinsicSize.height > 0f) {
+            zoomableState.setContentLocation(
+                ZoomableContentLocation.scaledInsideAndCenterAligned(intrinsicSize)
+            )
+        }
+    }
+
+    Image(
+        painter = painter,
+        contentDescription = null,
+        modifier = Modifier
+            .fillMaxSize()
+            .zoomable(
+                state = zoomableState,
+                onClick = { onToggleBars() },
+            ),
+        contentScale = ContentScale.Fit,
+        alignment = Alignment.Center,
+    )
+}
+
 private val imageLoader by lazy {
     ImageLoader.Builder(app)
         .diskCache {
@@ -442,7 +364,8 @@ private val imageLoader by lazy {
                             .writeTimeout(30.seconds.toJavaDuration())
                             .build()
                     }
-                ))
+                )
+            )
         }
         .build()
 }
