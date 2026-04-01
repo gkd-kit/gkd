@@ -442,8 +442,9 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
                 a, selector, MatchOption(fastQuery = gkdAction.fastQuery)
             ) ?: throw RpcError("没有查询到节点")
             return withContext(Dispatchers.IO) {
-                ActionPerformer.getAction(gkdAction.action ?: ActionPerformer.None.action)
-                    .perform(targetNode, gkdAction.position)
+                ActionPerformer
+                    .getAction(gkdAction.action ?: ActionPerformer.None.action)
+                    .perform(targetNode, gkdAction)
             }
         }
 

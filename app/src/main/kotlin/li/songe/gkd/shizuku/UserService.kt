@@ -165,6 +165,11 @@ data class UserServiceWrapper(
         return execCommandForResult(command).ok
     }
 
+    fun swipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Long): Boolean {
+        val command = "input swipe $x1 $y1 $x2 $y2 $duration"
+        return execCommandForResult(command).ok
+    }
+
     fun screencapFile(filePath: String): Boolean {
         val tempPath = "/data/local/tmp/screencap_${System.currentTimeMillis()}.png"
         val command = "screencap -p $tempPath"

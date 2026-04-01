@@ -144,6 +144,16 @@ class ShizukuContext(
         return serviceWrapper?.tap(x, y, duration) ?: (inputManager?.tap(x, y, duration) != null)
     }
 
+    fun swipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Long): Boolean {
+        return serviceWrapper?.swipe(x1, y1, x2, y2, duration) ?: (inputManager?.swipe(
+            x1,
+            y1,
+            x2,
+            y2,
+            duration
+        ) != null)
+    }
+
     fun topCpn(): ComponentName? {
         return (activityTaskManager?.getTasks()
             ?: activityManager?.getTasks())?.firstOrNull()?.topActivity

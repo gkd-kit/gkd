@@ -22,4 +22,8 @@ object ScreenUtils {
     }
 
     fun isScreenLock(): Boolean = app.keyguardManager.inKeyguardRestrictedInputMode()
+
+    fun inScreen(x: Float, y: Float): Boolean {
+        return 0 <= x && 0 <= y && x <= getScreenWidth() && y <= getScreenHeight()
+    }
 }

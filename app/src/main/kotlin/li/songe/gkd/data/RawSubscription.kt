@@ -14,9 +14,11 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
+import li.songe.gkd.a11y.A11yRuleEngine
 import li.songe.gkd.a11y.typeInfo
 import li.songe.gkd.util.LOCAL_SUBS_IDS
 import li.songe.gkd.util.LogUtils
+import li.songe.gkd.util.ScreenUtils
 import li.songe.gkd.util.appInfoMapFlow
 import li.songe.gkd.util.distinctByIfAny
 import li.songe.gkd.util.filterIfNotAll
@@ -60,16 +62,6 @@ data class RawSubscription(
 
     val hasRule get() = globalGroups.isNotEmpty() || apps.any { it.groups.isNotEmpty() }
 
-    val usedApps by lazy {
-        apps.run {
-            if (any { it.groups.isEmpty() }) {
-                filterNot { it.groups.isEmpty() }
-            } else {
-                this
-            }
-        }
-    }
-
     fun getSafeCategory(key: Int): RawCategory {
         return categories.find { it.key == key } ?: RawCategory(
             key = key,
@@ -111,8 +103,6 @@ data class RawSubscription(
     fun getCategoryApps(categoryKey: Int): List<RawApp> {
         return categoryAppsMap[categoryKey] ?: emptyList()
     }
-
-    fun getCategoryGroups(categoryKey: Int) = categoryGroupsMap[categoryKey] ?: emptyList()
 
     fun getCategory(groupName: String): RawCategory? {
         return categories.find { c -> groupName.startsWith(c.name) }
@@ -260,15 +250,37 @@ data class RawSubscription(
 
     @Serializable
     data class Position(
-        val left: String?, val top: String?, val right: String?, val bottom: String?
+        val left: String?,
+        val top: String?,
+        val right: String?,
+        val bottom: String?,
+        val x: String?,
+        val y: String?,
     ) {
         private val leftExp by lazy { getExpression(left) }
         private val topExp by lazy { getExpression(top) }
         private val rightExp by lazy { getExpression(right) }
         private val bottomExp by lazy { getExpression(bottom) }
+        private val xExp by lazy { getExpression(x) }
+        private val yExp by lazy { getExpression(y) }
 
         val isValid by lazy {
-            ((leftExp != null && (topExp != null || bottomExp != null)) || (rightExp != null && (topExp != null || bottomExp != null)))
+            arrayOf(
+                leftExp to topExp,
+                leftExp to bottomExp,
+                rightExp to topExp,
+                rightExp to bottomExp,
+                xExp to yExp,
+            ).any {
+                it.first != null && it.second != null
+            }
+        }
+
+
+        private val isUseAppRect by lazy {
+            listOfNotNull(leftExp, topExp, rightExp, bottomExp, xExp, yExp).any { exp ->
+                exp.variableNames.any { v -> v == "appWidth" || v == "appHeight" }
+            }
         }
 
         /**
@@ -276,11 +288,23 @@ data class RawSubscription(
          */
         fun calc(rect: Rect): Pair<Float, Float>? {
             if (!isValid) return null
+            val appRect = if (isUseAppRect) {
+                Rect().apply {
+                    A11yRuleEngine.service?.windowNodeInfo?.getBoundsInScreen(this)
+                }
+            } else {
+                null
+            }
             arrayOf(
-                leftExp, topExp, rightExp, bottomExp
+                leftExp,
+                topExp,
+                rightExp,
+                bottomExp,
+                xExp,
+                yExp,
             ).forEach { exp ->
                 if (exp != null) {
-                    setVariables(exp, rect)
+                    setVariables(exp, rect, appRect)
                 }
             }
             try {
@@ -301,6 +325,10 @@ data class RawSubscription(
                     if (bottomExp != null) {
                         return (rect.right - rightExp!!.evaluate()
                             .toFloat()) to (rect.bottom - bottomExp!!.evaluate().toFloat())
+                    }
+                } else if (xExp != null) {
+                    if (yExp != null) {
+                        return xExp!!.evaluate().toFloat() to yExp!!.evaluate().toFloat()
                     }
                 }
             } catch (e: Exception) {
@@ -334,12 +362,26 @@ data class RawSubscription(
         val priorityActionMaximum: Int?
     }
 
-    sealed interface RawRuleProps : RawCommonProps {
+    @Serializable
+    data class SwipeArg(
+        val start: Position,
+        val end: Position?,
+        val duration: Long,
+    )
+
+    interface LocationProps {
+        // click
+        val position: Position?
+
+        // swipe
+        val swipeArg: SwipeArg?
+    }
+
+    sealed interface RawRuleProps : RawCommonProps, LocationProps {
         val name: String?
         val key: Int?
         val preKeys: List<Int>?
         val action: String?
-        val position: Position?
         val matches: List<String>?
         val anyMatches: List<String>?
         val excludeMatches: List<String>?
@@ -499,6 +541,7 @@ data class RawSubscription(
         override val preKeys: List<Int>?,
         override val action: String?,
         override val position: Position?,
+        override val swipeArg: SwipeArg?,
         override val matches: List<String>?,
         override val excludeMatches: List<String>?,
         override val excludeAllMatches: List<String>?,
@@ -559,6 +602,7 @@ data class RawSubscription(
         override val preKeys: List<Int>?,
         override val action: String?,
         override val position: Position?,
+        override val swipeArg: SwipeArg?,
         override val matches: List<String>?,
         override val excludeMatches: List<String>?,
         override val excludeAllMatches: List<String>?,
@@ -623,7 +667,7 @@ data class RawSubscription(
             "random"
         )
 
-        private fun setVariables(exp: Expression, rect: Rect) {
+        private fun setVariables(exp: Expression, rect: Rect, appRect: Rect?) {
             exp.setVariable("left", rect.left.toDouble())
             exp.setVariable("top", rect.top.toDouble())
             exp.setVariable("right", rect.right.toDouble())
@@ -631,6 +675,12 @@ data class RawSubscription(
             exp.setVariable("width", rect.width().toDouble())
             exp.setVariable("height", rect.height().toDouble())
             exp.setVariable("random", Math.random())
+            exp.setVariable("screenWidth", ScreenUtils.getScreenWidth().toDouble())
+            exp.setVariable("screenHeight", ScreenUtils.getScreenHeight().toDouble())
+            if (appRect != null) {
+                exp.setVariable("appWidth", appRect.width().toDouble())
+                exp.setVariable("appHeight", appRect.height().toDouble())
+            }
         }
 
         private fun getExpression(value: String?): Expression? {
@@ -657,20 +707,35 @@ data class RawSubscription(
             }
         }
 
-        private fun getPosition(jsonObject: JsonObject?): Position? {
-            return when (val element = jsonObject?.get("position")) {
-                JsonNull, null -> null
-                is JsonObject -> {
-                    Position(
-                        left = element["left"]?.jsonPrimitive?.content,
-                        bottom = element["bottom"]?.jsonPrimitive?.content,
-                        top = element["top"]?.jsonPrimitive?.content,
-                        right = element["right"]?.jsonPrimitive?.content,
-                    )
-                }
+        private fun getPosition(jsonObject: JsonObject?, useSelf: Boolean = false): Position? {
+            return when (val element = if (useSelf) jsonObject else jsonObject?.get("position")) {
+                is JsonObject -> Position(
+                    left = element["left"]?.jsonPrimitive?.content,
+                    bottom = element["bottom"]?.jsonPrimitive?.content,
+                    top = element["top"]?.jsonPrimitive?.content,
+                    right = element["right"]?.jsonPrimitive?.content,
+                    x = element["x"]?.jsonPrimitive?.content,
+                    y = element["y"]?.jsonPrimitive?.content,
+                )
 
                 else -> null
             }
+        }
+
+        private fun getSwipeArg(
+            jsonObject: JsonObject?
+        ): SwipeArg? = when (val element = jsonObject?.get("swipeArg")) {
+            is JsonObject -> {
+                SwipeArg(
+                    start = getPosition(element["start"]?.jsonObject, true)
+                        ?: error("swipe start position is required"),
+                    end = getPosition(element["end"]?.jsonObject, true),
+                    duration = element["duration"]?.jsonPrimitive?.long
+                        ?: error("swipe duration is required"),
+                )
+            }
+
+            else -> null
         }
 
         private fun getStringIArray(jsonObject: JsonObject?, name: String): List<String>? {
@@ -841,6 +906,7 @@ data class RawSubscription(
                 versionCode = getCompatVersionCode(jsonObject),
                 versionName = getCompatVersionName(jsonObject),
                 position = getPosition(jsonObject),
+                swipeArg = getSwipeArg(jsonObject),
                 forcedTime = getLong(jsonObject, "forcedTime"),
                 priorityTime = getLong(jsonObject, "priorityTime"),
                 priorityActionMaximum = getInt(jsonObject, "priorityActionMaximum"),
@@ -958,6 +1024,7 @@ data class RawSubscription(
                 order = getInt(jsonObject, "order"),
                 forcedTime = getLong(jsonObject, "forcedTime"),
                 position = getPosition(jsonObject),
+                swipeArg = getSwipeArg(jsonObject),
                 priorityTime = getLong(jsonObject, "priorityTime"),
                 priorityActionMaximum = getInt(jsonObject, "priorityActionMaximum"),
             )
