@@ -118,7 +118,7 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
 
     Box(
         modifier = Modifier
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .fillMaxSize()
     ) {
         when {
@@ -327,18 +327,26 @@ private fun ZoomableImageContent(
         }
     }
 
-    Image(
-        painter = painter,
-        contentDescription = null,
+    // 限制图片成功状态下的深色画布背景，防止非必要全局黑色背景不跟随主题
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .zoomable(
-                state = zoomableState,
-                onClick = { onToggleBars() },
-            ),
-        contentScale = ContentScale.Fit,
-        alignment = Alignment.Center,
-    )
+            .background(Color.Black),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painter,
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .zoomable(
+                    state = zoomableState,
+                    onClick = { onToggleBars() },
+                ),
+            contentScale = ContentScale.Fit,
+            alignment = Alignment.Center,
+        )
+    }
 }
 
 private val imageLoader by lazy {
