@@ -57,11 +57,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
-import li.songe.gkd.app
 import li.songe.gkd.permission.ignoreBatteryOptimizationsState
 import li.songe.gkd.permission.requiredPermission
-import li.songe.gkd.permission.writeSecureSettingsState
-import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.fixRestartAutomatorService
 import li.songe.gkd.shizuku.shizukuContextFlow
@@ -95,7 +92,6 @@ import li.songe.gkd.util.DarkThemeOption
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.mapState
-import li.songe.gkd.util.openA11ySettings
 import li.songe.gkd.util.openAppDetailsSettings
 import li.songe.gkd.util.saveFileToDownloads
 import li.songe.gkd.util.shareFile
@@ -555,7 +551,6 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
     val statusRunning by StatusService.isRunning.collectAsState()
     val shizukuContext by shizukuContextFlow.collectAsState()
     val ignoreBatteryOptimizations by ignoreBatteryOptimizationsState.stateFlow.collectAsState()
-    val hasOtherA11y by mainVm.hasOtherA11yFlow.collectAsState()
     val context = LocalActivity.current as MainActivity
     Scaffold(
         topBar = {
@@ -576,7 +571,7 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
             BottomAppBar {
                 Spacer(modifier = Modifier.weight(1f))
                 TextButton(
-                    enabled = shizukuContext.ok && statusRunning && ignoreBatteryOptimizations && !hasOtherA11y,
+                    enabled = shizukuContext.ok && statusRunning && ignoreBatteryOptimizations,
                     onClick = mainVm.viewModelScope.launchAsFn {
                         onDismissRequest()
                         delay(200)
@@ -604,7 +599,7 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     RequiredTextItem(text = "切换服务会造成短暂触摸卡顿，请自行测试后再编辑白名单")
-                    RequiredTextItem(text = "使用其它无障碍应用会导致优化无效，因为无障碍不会被完全关闭")
+                    RequiredTextItem(text = "使用其它无障碍应用可能导致优化无效，可在服务关闭后自行确认")
                     RequiredTextItem(text = "必须确保服务关闭后的持续后台运行，否则会被系统暂停或结束运行导致重启失败")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -635,25 +630,6 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                         onClickLabel = "打开忽略电池优化设置页面",
                         onClick = mainVm.viewModelScope.launchAsFn {
                             requiredPermission(context, ignoreBatteryOptimizationsState)
-                        },
-                    )
-                    RequiredTextItem(
-                        text = "关闭其它应用的无障碍",
-                        enabled = hasOtherA11y,
-                        imageVector = if (!hasOtherA11y) PerfIcon.Check else PerfIcon.ArrowForward,
-                        onClick = {
-                            if (writeSecureSettingsState.updateAndGet()) {
-                                if (A11yService.isRunning.value) {
-                                    setOf(A11yService.a11yCn)
-                                } else {
-                                    emptySet()
-                                }.let {
-                                    app.putSecureA11yServices(it)
-                                }
-                                toast("关闭成功")
-                            } else {
-                                openA11ySettings()
-                            }
                         },
                     )
                     RequiredTextItem(

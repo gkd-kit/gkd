@@ -311,9 +311,6 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
 
     private val a11yServicesFlow = useEnabledA11yServicesFlow()
     val a11yServiceEnabledFlow = useA11yServiceEnabledFlow(a11yServicesFlow)
-    val hasOtherA11yFlow = a11yServicesFlow.mapNew { list ->
-        list.any { it != A11yService.a11yCn }
-    }
 
     val automatorModeFlow = storeFlow.mapNew {
         AutomatorModeOption.objects.findOption(it.automatorMode)
