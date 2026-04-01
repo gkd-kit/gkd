@@ -50,6 +50,7 @@ import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.BatchActionButtonGroup
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.MenuGroupCard
+import li.songe.gkd.ui.component.MenuItemCheckbox
 import li.songe.gkd.ui.component.MenuItemRadioButton
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
@@ -94,7 +95,6 @@ fun AppConfigPage(route: AppConfigRoute) {
     val (scrollBehavior, listState) = useListScrollState(
         resetKey,
         groupSize > 0,
-        ruleSortType.value
     )
     if (focusLog != null && groupSize > 0) {
         LaunchedEffect(null) {
@@ -247,6 +247,12 @@ fun AppConfigPage(route: AppConfigRoute) {
                                         )
                                     }
                                 }
+                                MenuGroupCard(title = "筛选") {
+                                    MenuItemCheckbox(
+                                        text = "未启用",
+                                        stateFlow = vm.showDisabledRuleFlow,
+                                    )
+                                }
                             }
                         }
                     }
@@ -371,7 +377,7 @@ fun AppConfigPage(route: AppConfigRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (groupSize == 0 && !firstLoading) {
-                    EmptyText(text = "暂无规则")
+                    EmptyText(text = if (vm.showDisabledRuleFlow.collectAsState().value) "暂无数据" else "暂无数据，或修改筛选")
                 }
             }
         }

@@ -57,6 +57,7 @@ data class SettingsStore(
     val a11yAppGroupType: Int = appGroupType,
     val a11yScopeAppGroupType: Int = appGroupType,
     val subsExcludeAppGroupType: Int = appGroupType,
+    val showDisabledRule: Boolean = true,
 ) {
     val useA11y get() = automatorMode == AutomatorModeOption.A11yMode.value
     val useAutomation get() = automatorMode == AutomatorModeOption.AutomationMode.value

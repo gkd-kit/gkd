@@ -283,6 +283,32 @@ fun RuleGroupCard(
     }
 }
 
+fun getActualGroupChecked(
+    subs: RawSubscription,
+    group: RawSubscription.RawGroupProps,
+    appId: String?,
+    subsConfig: SubsConfig?,
+    categoryConfig: CategoryConfig?,
+): Boolean {
+    if (!group.valid) return false
+    val inGlobalAppPage = appId != null && group is RawSubscription.RawGlobalGroup
+    return if (inGlobalAppPage) {
+        getGlobalGroupChecked(
+            subs,
+            ExcludeData.parse(subsConfig?.exclude),
+            group,
+            appId,
+        )
+    } else {
+        getGroupEnable(
+            group,
+            subsConfig,
+            subs.getCategory(group.name),
+            categoryConfig,
+        )
+    } ?: false
+}
+
 
 @Composable
 fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) {
