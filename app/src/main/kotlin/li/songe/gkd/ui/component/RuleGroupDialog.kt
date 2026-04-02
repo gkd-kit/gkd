@@ -188,31 +188,34 @@ fun RuleGroupDialog(
 
 // 规则组示例图需要保留“图片属于哪个子规则”的上下文，预览页才能显示更具体的标题。
 private fun buildRuleGroupPreviewItems(group: RawSubscription.RawGroupProps): List<ImagePreviewItem> {
-    val seenUris = linkedSetOf<String>()
-    return buildList {
-        group.exampleUrls.orEmpty().forEach { uri ->
-            if (seenUris.add(uri)) {
-                add(
-                    ImagePreviewItem(
-                        uri = uri,
-                        title = group.name,
-                    )
-                )
-            }
+    val uriTitlesMap = linkedMapOf<String, LinkedHashSet<String>>()
+
+    fun addPreviewItem(uri: String, title: String?) {
+        val titles = uriTitlesMap.getOrPut(uri) { linkedSetOf() }
+        title?.takeIf { it.isNotBlank() }?.let(titles::add)
+    }
+
+    group.exampleUrls.orEmpty().forEach { uri ->
+        addPreviewItem(
+            uri = uri,
+            title = group.name,
+        )
+    }
+    group.rules.forEach { rule ->
+        val ruleTitle = buildRulePreviewTitle(rule)
+        rule.exampleUrls.orEmpty().forEach { uri ->
+            addPreviewItem(
+                uri = uri,
+                title = ruleTitle,
+            )
         }
-        group.rules.forEach { rule ->
-            val ruleTitle = buildRulePreviewTitle(rule)
-            rule.exampleUrls.orEmpty().forEach { uri ->
-                if (seenUris.add(uri)) {
-                    add(
-                        ImagePreviewItem(
-                            uri = uri,
-                            title = ruleTitle,
-                        )
-                    )
-                }
-            }
-        }
+    }
+
+    return uriTitlesMap.map { (uri, titles) ->
+        ImagePreviewItem(
+            uri = uri,
+            titles = titles.toList(),
+        )
     }
 }
 

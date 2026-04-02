@@ -54,44 +54,36 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation3.runtime.NavKey
 import coil3.EventListener
-import coil3.ImageLoader
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.decode.Decoder
-import coil3.disk.DiskCache
 import coil3.fetch.Fetcher
-import coil3.gif.AnimatedImageDecoder
-import coil3.gif.GifDecoder
-import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.CachePolicy
 import coil3.request.ErrorResult
 import coil3.request.ImageRequest
 import coil3.request.Options
 import coil3.request.SuccessResult
 import coil3.request.crossfade
+import coil3.imageLoader
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
-import li.songe.gkd.app
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.coilCacheDir
 import li.songe.gkd.util.throttle
 import me.saket.telephoto.zoomable.ZoomableContentLocation
 import me.saket.telephoto.zoomable.rememberZoomableState
 import me.saket.telephoto.zoomable.zoomable
-import okhttp3.OkHttpClient
-import okio.Path.Companion.toOkioPath
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.toJavaDuration
 
 @Serializable
 data class ImagePreviewItem(
     val uri: String,
     val title: String? = null,
+    val titles: List<String> = emptyList(),
 )
 
 @Serializable
@@ -106,6 +98,7 @@ data class ImagePreviewRoute(
 fun ImagePreviewPage(route: ImagePreviewRoute) {
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
+    val imageLoader = context.imageLoader
     var showBars by remember { mutableStateOf(true) }
 
     // 路由同时兼容旧的 uri/uris 和新的 items，预览页内部统一按图片项处理。
@@ -137,19 +130,24 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
         }
     }
 
-    // 规则组示例图通常会连续查看，因此进入预览后直接预加载组内所有图片
+    // 规则组示例图会连续横滑，但预取并发限制在 2，避免与首图显示请求抢带宽。
     LaunchedEffect(previewUris) {
         if (previewUris.size <= 1) return@LaunchedEffect
         previewUris
             .drop(1)
             .filter(URLUtil::isNetworkUrl)
-            .forEach { preloadUri ->
-                imageLoader.enqueue(
-                    buildPreviewImageRequest(
-                        context = context,
-                        uri = preloadUri,
-                    )
-                )
+            .chunked(2)
+            .forEach { uriBatch ->
+                uriBatch.map { preloadUri ->
+                    async {
+                        imageLoader.execute(
+                            buildPreviewImageRequest(
+                                context = context,
+                                uri = preloadUri,
+                            )
+                        )
+                    }
+                }.awaitAll()
             }
     }
 
@@ -202,7 +200,8 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                     },
                     title = {
                         val baseTitle = route.title?.takeIf { it.isNotBlank() }
-                        val itemTitle = currentPreviewItem?.title
+                        val itemTitle = currentPreviewItem
+                            ?.let(::buildPreviewSubtitle)
                             ?.takeIf { it.isNotBlank() && it != baseTitle }
                         when {
                             baseTitle != null && itemTitle != null -> {
@@ -304,61 +303,54 @@ private fun UriImage(
     onToggleBars: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val imageLoader = context.imageLoader
     val isNetworkImage = remember(uri) { URLUtil.isNetworkUrl(uri) }
     val phaseTextFlow = remember(uri) { MutableStateFlow<String?>(null) }
     val phaseText by phaseTextFlow.collectAsState()
-
-    // 预览页添加请求阶段文字。
-    val requestImageLoader = remember(uri, isNetworkImage) {
-        imageLoader.newBuilder()
-            .eventListenerFactory {
-                object : EventListener() {
-                    override fun onStart(request: ImageRequest) {
-                        phaseTextFlow.value = "请求中"
-                    }
-
-                    override fun fetchStart(
-                        request: ImageRequest,
-                        fetcher: Fetcher,
-                        options: Options,
-                    ) {
-                        phaseTextFlow.value = if (isNetworkImage) "下载中" else "读取中"
-                    }
-
-                    override fun decodeStart(
-                        request: ImageRequest,
-                        decoder: Decoder,
-                        options: Options,
-                    ) {
-                        phaseTextFlow.value = "解码中"
-                    }
-
-                    override fun onSuccess(request: ImageRequest, result: SuccessResult) {
-                        phaseTextFlow.value = null
-                    }
-
-                    override fun onError(request: ImageRequest, result: ErrorResult) {
-                        phaseTextFlow.value = null
-                    }
-
-                    override fun onCancel(request: ImageRequest) {
-                        phaseTextFlow.value = null
-                    }
-                }
-            }
-            .build()
-    }
 
     // 手势层切至 Telephoto，loading / error 还是使用 AsyncImagePainter.State 统一驱动。
     val model = remember(uri) {
         buildPreviewImageRequest(
             context = context,
             uri = uri,
+            listener = object : EventListener() {
+                override fun onStart(request: ImageRequest) {
+                    phaseTextFlow.value = "请求中"
+                }
+
+                override fun fetchStart(
+                    request: ImageRequest,
+                    fetcher: Fetcher,
+                    options: Options,
+                ) {
+                    phaseTextFlow.value = if (isNetworkImage) "下载中" else "读取中"
+                }
+
+                override fun decodeStart(
+                    request: ImageRequest,
+                    decoder: Decoder,
+                    options: Options,
+                ) {
+                    phaseTextFlow.value = "解码中"
+                }
+
+                override fun onSuccess(request: ImageRequest, result: SuccessResult) {
+                    phaseTextFlow.value = null
+                }
+
+                override fun onError(request: ImageRequest, result: ErrorResult) {
+                    phaseTextFlow.value = null
+                }
+
+                override fun onCancel(request: ImageRequest) {
+                    phaseTextFlow.value = null
+                }
+            }
         )
     }
     val painter = rememberAsyncImagePainter(
         model = model,
-        imageLoader = requestImageLoader,
+        imageLoader = imageLoader,
     )
     val state by painter.state.collectAsState()
 
@@ -479,10 +471,12 @@ private fun ZoomableImageContent(
 private fun buildPreviewImageRequest(
     context: android.content.Context,
     uri: String,
+    listener: EventListener? = null,
 ): ImageRequest {
     return ImageRequest.Builder(context)
         .data(uri)
         .crossfade(DefaultDurationMillis)
+        .listener(listener)
         .run {
             if (URLUtil.isNetworkUrl(uri)) {
                 this
@@ -494,31 +488,12 @@ private fun buildPreviewImageRequest(
         .build()
 }
 
-private val imageLoader by lazy {
-    ImageLoader.Builder(app)
-        .diskCache {
-            DiskCache.Builder()
-                .directory(coilCacheDir.toOkioPath())
-                .maxSizePercent(0.1)
-                .build()
-        }
-        .components {
-            if (AndroidTarget.P) {
-                add(AnimatedImageDecoder.Factory())
-            } else {
-                add(GifDecoder.Factory())
-            }
-            add(
-                OkHttpNetworkFetcherFactory(
-                    callFactory = {
-                        OkHttpClient.Builder()
-                            .connectTimeout(30.seconds.toJavaDuration())
-                            .readTimeout(30.seconds.toJavaDuration())
-                            .writeTimeout(30.seconds.toJavaDuration())
-                            .build()
-                    }
-                )
-            )
-        }
-        .build()
+private fun buildPreviewSubtitle(item: ImagePreviewItem): String? {
+    val titles = buildList {
+        item.title?.takeIf { it.isNotBlank() }?.let(::add)
+        item.titles
+            .mapNotNull { it.takeIf(String::isNotBlank) }
+            .forEach(::add)
+    }.distinct()
+    return titles.takeIf { it.isNotEmpty() }?.joinToString(" / ")
 }
