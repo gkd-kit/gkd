@@ -123,6 +123,22 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
         }
     }
 
+    // 规则组示例图通常会连续查看，因此进入预览后直接预加载组内所有图片
+    LaunchedEffect(previewUris) {
+        if (previewUris.size <= 1) return@LaunchedEffect
+        previewUris
+            .drop(1)
+            .filter(URLUtil::isNetworkUrl)
+            .forEach { preloadUri ->
+                imageLoader.enqueue(
+                    buildPreviewImageRequest(
+                        context = context,
+                        uri = preloadUri,
+                    )
+                )
+            }
+    }
+
     Box(
         modifier = Modifier
             .background(MaterialTheme.colorScheme.background)
@@ -277,18 +293,10 @@ private fun UriImage(
 
     // 手势层切至 Telephoto，loading / error 还是使用 AsyncImagePainter.State 统一驱动。
     val model = remember(uri) {
-        ImageRequest.Builder(context)
-            .data(uri)
-            .crossfade(DefaultDurationMillis)
-            .run {
-                if (isNetworkImage) {
-                    this
-                } else {
-                    diskCachePolicy(CachePolicy.DISABLED)
-                        .memoryCachePolicy(CachePolicy.DISABLED)
-                }
-            }
-            .build()
+        buildPreviewImageRequest(
+            context = context,
+            uri = uri,
+        )
     }
     val painter = rememberAsyncImagePainter(
         model = model,
@@ -408,6 +416,24 @@ private fun ZoomableImageContent(
             alignment = Alignment.Center,
         )
     }
+}
+
+private fun buildPreviewImageRequest(
+    context: android.content.Context,
+    uri: String,
+): ImageRequest {
+    return ImageRequest.Builder(context)
+        .data(uri)
+        .crossfade(DefaultDurationMillis)
+        .run {
+            if (URLUtil.isNetworkUrl(uri)) {
+                this
+            } else {
+                diskCachePolicy(CachePolicy.DISABLED)
+                    .memoryCachePolicy(CachePolicy.DISABLED)
+            }
+        }
+        .build()
 }
 
 private val imageLoader by lazy {
