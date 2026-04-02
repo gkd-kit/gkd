@@ -53,16 +53,23 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation3.runtime.NavKey
+import coil3.EventListener
 import coil3.ImageLoader
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
+import coil3.decode.Decoder
 import coil3.disk.DiskCache
+import coil3.fetch.Fetcher
 import coil3.gif.AnimatedImageDecoder
 import coil3.gif.GifDecoder
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.CachePolicy
+import coil3.request.ErrorResult
 import coil3.request.ImageRequest
+import coil3.request.Options
+import coil3.request.SuccessResult
 import coil3.request.crossfade
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
@@ -223,13 +230,58 @@ private fun UriImage(
     onToggleBars: () -> Unit = {},
 ) {
     val context = LocalContext.current
-    // 手势层切至Telephoto,loading,error还是使用AsyncImagePainter.State统一驱动
+    val isNetworkImage = remember(uri) { URLUtil.isNetworkUrl(uri) }
+    val phaseTextFlow = remember(uri) { MutableStateFlow<String?>(null) }
+    val phaseText by phaseTextFlow.collectAsState()
+
+    // 预览页添加请求阶段文字。
+    val requestImageLoader = remember(uri, isNetworkImage) {
+        imageLoader.newBuilder()
+            .eventListenerFactory {
+                object : EventListener() {
+                    override fun onStart(request: ImageRequest) {
+                        phaseTextFlow.value = "请求中"
+                    }
+
+                    override fun fetchStart(
+                        request: ImageRequest,
+                        fetcher: Fetcher,
+                        options: Options,
+                    ) {
+                        phaseTextFlow.value = if (isNetworkImage) "下载中" else "读取中"
+                    }
+
+                    override fun decodeStart(
+                        request: ImageRequest,
+                        decoder: Decoder,
+                        options: Options,
+                    ) {
+                        phaseTextFlow.value = "解码中"
+                    }
+
+                    override fun onSuccess(request: ImageRequest, result: SuccessResult) {
+                        phaseTextFlow.value = null
+                    }
+
+                    override fun onError(request: ImageRequest, result: ErrorResult) {
+                        phaseTextFlow.value = null
+                    }
+
+                    override fun onCancel(request: ImageRequest) {
+                        phaseTextFlow.value = null
+                    }
+                }
+            }
+            .build()
+    }
+
+    // 手势层切至 Telephoto，loading / error 还是使用 AsyncImagePainter.State 统一驱动。
     val model = remember(uri) {
         ImageRequest.Builder(context)
             .data(uri)
             .crossfade(DefaultDurationMillis)
             .run {
-                if (URLUtil.isNetworkUrl(uri)) {
+                if (isNetworkImage) {
                     this
                 } else {
                     diskCachePolicy(CachePolicy.DISABLED)
@@ -237,11 +289,11 @@ private fun UriImage(
                 }
             }
             .build()
-            .apply {
-                imageLoader.enqueue(this)
-            }
     }
-    val painter = rememberAsyncImagePainter(model)
+    val painter = rememberAsyncImagePainter(
+        model = model,
+        imageLoader = requestImageLoader,
+    )
     val state by painter.state.collectAsState()
 
     Box(
@@ -252,15 +304,24 @@ private fun UriImage(
             AsyncImagePainter.State.Empty -> Unit
 
             is AsyncImagePainter.State.Loading -> {
-                Box(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .pointerInput(uri) {
                             detectTapGestures(onTap = { onToggleBars() })
                         },
-                    contentAlignment = Alignment.Center
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(40.dp))
+                    phaseText?.let { text ->
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = text,
+                            color = MaterialTheme.colorScheme.outline,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                 }
             }
 
