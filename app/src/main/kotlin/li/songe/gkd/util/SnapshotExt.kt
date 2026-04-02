@@ -99,6 +99,7 @@ object SnapshotExt {
         }
     }
 
+    @Suppress("SameParameterValue")
     private fun emptyScreenBitmap(text: String): Bitmap {
         return createBitmap(ScreenUtils.getScreenWidth(), ScreenUtils.getScreenHeight()).apply {
             drawTextToBitmap(text, this)
@@ -123,10 +124,7 @@ object SnapshotExt {
     }
 
     private val captureLoading = MutableStateFlow(false)
-    suspend fun captureSnapshot(
-        skipScreenshot: Boolean = false,
-        forcedCropStatusBar: Boolean = false,
-    ): ComplexSnapshot {
+    suspend fun captureSnapshot(forcedCropStatusBar: Boolean = false): ComplexSnapshot {
         if (A11yRuleEngine.instance == null) {
             throw RpcError("服务不可用，请先授权")
         }
@@ -170,19 +168,16 @@ object SnapshotExt {
                     )
                 }
                 val d2 = async(Dispatchers.IO) {
-                    if (skipScreenshot) {
-                        emptyScreenBitmap("跳过截图\n请自行替换")
-                    } else {
-                        A11yRuleEngine.screenshot()
-                            ?: ScreenshotService.screenshot()
-                            ?: emptyScreenBitmap("无截图权限\n请自行替换")
-                    }.let {
-                        if (storeFlow.value.hideSnapshotStatusBar && (forcedCropStatusBar || BarUtils.checkStatusBarVisible() == true)) {
-                            cropBitmapStatusBar(it)
-                        } else {
-                            it
+                    (A11yRuleEngine.screenshot()
+                        ?: ScreenshotService.screenshot()
+                        ?: emptyScreenBitmap("无截图权限\n请自行替换")
+                            ).let {
+                            if (storeFlow.value.hideSnapshotStatusBar && (forcedCropStatusBar || BarUtils.checkStatusBarVisible() == true)) {
+                                cropBitmapStatusBar(it)
+                            } else {
+                                it
+                            }
                         }
-                    }
                 }
                 d1.await() to d2.await()
             }

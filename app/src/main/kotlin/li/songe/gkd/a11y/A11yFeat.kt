@@ -122,7 +122,7 @@ private fun watchCaptureScreenshot() {
         if (it == null) return
     }
     appScope.launchTry {
-        SnapshotExt.captureSnapshot(skipScreenshot = true)
+        SnapshotExt.captureSnapshot()
     }
 }
 
