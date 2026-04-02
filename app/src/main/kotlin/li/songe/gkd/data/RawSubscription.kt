@@ -14,7 +14,6 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
-import li.songe.gkd.a11y.A11yRuleEngine
 import li.songe.gkd.a11y.typeInfo
 import li.songe.gkd.util.LOCAL_SUBS_IDS
 import li.songe.gkd.util.LogUtils
@@ -276,25 +275,11 @@ data class RawSubscription(
             }
         }
 
-
-        private val isUseAppRect by lazy {
-            listOfNotNull(leftExp, topExp, rightExp, bottomExp, xExp, yExp).any { exp ->
-                exp.variableNames.any { v -> v == "appWidth" || v == "appHeight" }
-            }
-        }
-
         /**
          * return (x, y)
          */
         fun calc(rect: Rect): Pair<Float, Float>? {
             if (!isValid) return null
-            val appRect = if (isUseAppRect) {
-                Rect().apply {
-                    A11yRuleEngine.service?.windowNodeInfo?.getBoundsInScreen(this)
-                }
-            } else {
-                null
-            }
             arrayOf(
                 leftExp,
                 topExp,
@@ -304,7 +289,7 @@ data class RawSubscription(
                 yExp,
             ).forEach { exp ->
                 if (exp != null) {
-                    setVariables(exp, rect, appRect)
+                    setVariables(exp, rect)
                 }
             }
             try {
@@ -667,7 +652,7 @@ data class RawSubscription(
             "random"
         )
 
-        private fun setVariables(exp: Expression, rect: Rect, appRect: Rect?) {
+        private fun setVariables(exp: Expression, rect: Rect) {
             exp.setVariable("left", rect.left.toDouble())
             exp.setVariable("top", rect.top.toDouble())
             exp.setVariable("right", rect.right.toDouble())
@@ -677,10 +662,6 @@ data class RawSubscription(
             exp.setVariable("random", Math.random())
             exp.setVariable("screenWidth", ScreenUtils.getScreenWidth().toDouble())
             exp.setVariable("screenHeight", ScreenUtils.getScreenHeight().toDouble())
-            if (appRect != null) {
-                exp.setVariable("appWidth", appRect.width().toDouble())
-                exp.setVariable("appHeight", appRect.height().toDouble())
-            }
         }
 
         private fun getExpression(value: String?): Expression? {
