@@ -89,10 +89,17 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
 @Serializable
+data class ImagePreviewItem(
+    val uri: String,
+    val title: String? = null,
+)
+
+@Serializable
 data class ImagePreviewRoute(
     val title: String? = null,
     val uri: String? = null,
     val uris: List<String> = emptyList(),
+    val items: List<ImagePreviewItem> = emptyList(),
 ) : NavKey
 
 @Composable
@@ -101,14 +108,21 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
     val context = LocalActivity.current as MainActivity
     var showBars by remember { mutableStateOf(true) }
 
-    // 路由同时支持单图和多图，这里先统一成一个列表，后续 pager / 单图逻辑都共用它。
-    val previewUris = remember(route.uri, route.uris) {
-        route.uris.ifEmpty {
-            route.uri?.let(::listOf) ?: emptyList()
+    // 路由同时兼容旧的 uri/uris 和新的 items，预览页内部统一按图片项处理。
+    val previewItems = remember(route.uri, route.uris, route.items) {
+        when {
+            route.items.isNotEmpty() -> route.items
+            route.uris.isNotEmpty() -> route.uris.map { uri ->
+                ImagePreviewItem(uri = uri)
+            }
+
+            route.uri != null -> listOf(ImagePreviewItem(uri = route.uri))
+            else -> emptyList()
         }
     }
-    val singleUri = previewUris.singleOrNull()
-    val pagerState = rememberPagerState(pageCount = { previewUris.size.coerceAtLeast(1) })
+    val previewUris = remember(previewItems) { previewItems.map { it.uri } }
+    val singleItem = previewItems.singleOrNull()
+    val pagerState = rememberPagerState(pageCount = { previewItems.size.coerceAtLeast(1) })
 
     // 这个页面需要接近相册页的沉浸式效果，因此进入时隐藏状态栏，离开时恢复原设置。
     DisposableEffect(Unit) {
@@ -145,20 +159,20 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
             .fillMaxSize()
     ) {
         when {
-            singleUri != null -> {
+            singleItem != null -> {
                 UriImage(
-                    uri = singleUri,
+                    uri = singleItem.uri,
                     onToggleBars = { showBars = !showBars },
                 )
             }
 
-            previewUris.isNotEmpty() -> {
+            previewItems.isNotEmpty() -> {
                 HorizontalPager(
                     modifier = Modifier.fillMaxSize(),
                     state = pagerState,
                     pageContent = { index ->
                         UriImage(
-                            uri = previewUris[index],
+                            uri = previewItems[index].uri,
                             onToggleBars = { showBars = !showBars },
                         )
                     }
@@ -175,7 +189,8 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                 .fillMaxWidth()
         ) {
             Column {
-                val currentUri = singleUri ?: previewUris.getOrNull(pagerState.currentPage)
+                val currentPreviewItem = singleItem ?: previewItems.getOrNull(pagerState.currentPage)
+                val currentUri = currentPreviewItem?.uri
                 PerfTopAppBar(
                     modifier = Modifier.background(Color.Black.copy(alpha = 0.5f)),
                     navigationIcon = {
@@ -186,17 +201,60 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                         )
                     },
                     title = {
-                        route.title?.let { title ->
-                            Text(
-                                text = title,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.MiddleEllipsis,
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Medium
+                        val baseTitle = route.title?.takeIf { it.isNotBlank() }
+                        val itemTitle = currentPreviewItem?.title
+                            ?.takeIf { it.isNotBlank() && it != baseTitle }
+                        when {
+                            baseTitle != null && itemTitle != null -> {
+                                Column {
+                                    Text(
+                                        text = baseTitle,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        overflow = TextOverflow.MiddleEllipsis,
+                                        style = MaterialTheme.typography.titleLarge.copy(
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    )
+                                    Text(
+                                        text = itemTitle,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        overflow = TextOverflow.MiddleEllipsis,
+                                        style = MaterialTheme.typography.titleSmall.copy(
+                                            color = Color.White.copy(alpha = 0.8f),
+                                            fontWeight = FontWeight.Normal
+                                        )
+                                    )
+                                }
+                            }
+
+                            baseTitle != null -> {
+                                Text(
+                                    text = baseTitle,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.MiddleEllipsis,
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 )
-                            )
+                            }
+
+                            itemTitle != null -> {
+                                Text(
+                                    text = itemTitle,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.MiddleEllipsis,
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                )
+                            }
                         }
                     },
                     actions = {
@@ -216,7 +274,7 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                     )
                 )
 
-                if (previewUris.size > 1) {
+                if (previewItems.size > 1) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -224,7 +282,7 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "${pagerState.currentPage + 1} / ${previewUris.size}",
+                            text = "${pagerState.currentPage + 1} / ${previewItems.size}",
                             modifier = Modifier
                                 .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                                 .padding(horizontal = 12.dp, vertical = 4.dp),
