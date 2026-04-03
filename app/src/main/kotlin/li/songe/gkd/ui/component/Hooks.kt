@@ -2,6 +2,7 @@ package li.songe.gkd.ui.component
 
 import androidx.compose.animation.core.AnimationConstants.DefaultDurationMillis
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
@@ -15,7 +16,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -74,8 +74,6 @@ private fun getCompatStateValue(v: Any?): Any? = when (v) {
     else -> v
 }
 
-// key 函数的依赖变化时, compose 将重置 key 函数那行代码之后所有代码的状态, 因此需要需要将 key 作用域限定在 Composable fun 内
-// 所有的 key 参数必须使用 rememberSaveable 或者 viewModel 来保存状态, 以保证正确的 restore 顺序，否则触发 ClassCastException
 @Composable
 fun useListScrollState(
     v1: Any?,
@@ -83,23 +81,44 @@ fun useListScrollState(
     v3: Any? = null,
     canScroll: () -> Boolean = { true },
 ): Pair<TopAppBarScrollBehavior, LazyListState> {
-    return key(
-        getCompatStateValue(v1),
-        getCompatStateValue(v2),
-        getCompatStateValue(v3),
-    ) {
-        TopAppBarDefaults.enterAlwaysScrollBehavior(canScroll = canScroll) to rememberLazyListState()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(canScroll = canScroll)
+    val scrollState = rememberLazyListState()
+    LaunchedEffect(getCompatStateValue(v1), getCompatStateValue(v2), getCompatStateValue(v3)) {
+        resetScroll(scrollBehavior, scrollState)
     }
+    return scrollBehavior to scrollState
 }
 
 @Composable
 fun usePinnedScrollBehaviorState(v1: Any?): Pair<TopAppBarScrollBehavior, LazyListState> {
-    return key(getCompatStateValue(v1)) { TopAppBarDefaults.pinnedScrollBehavior() to rememberLazyListState() }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val scrollState = rememberLazyListState()
+    LaunchedEffect(getCompatStateValue(v1)) {
+        resetScroll(scrollBehavior, scrollState)
+    }
+    return scrollBehavior to scrollState
 }
 
 @Composable
 fun useScrollBehaviorState(v1: Any?): Pair<TopAppBarScrollBehavior, ScrollState> {
-    return key(getCompatStateValue(v1)) { TopAppBarDefaults.enterAlwaysScrollBehavior() to rememberScrollState() }
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val scrollState = rememberScrollState()
+    LaunchedEffect(getCompatStateValue(v1)) {
+        resetScroll(scrollBehavior, scrollState)
+    }
+    return scrollBehavior to scrollState
+}
+
+private suspend fun resetScroll(
+    scrollBehavior: TopAppBarScrollBehavior,
+    scrollState: ScrollableState,
+) {
+    when (scrollState) {
+        is LazyListState -> scrollState.scrollToItem(0)
+        is ScrollState -> scrollState.scrollTo(0)
+    }
+    scrollBehavior.state.heightOffset = 0f
+    scrollBehavior.state.contentOffset = 0f
 }
 
 @Composable

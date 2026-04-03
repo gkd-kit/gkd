@@ -26,7 +26,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
@@ -73,7 +72,8 @@ class EventService : OverlayWindowService(positionKey = "event") {
         CompositionLocalProvider(
             LocalContentColor provides contentColorFor(bgColor),
         ) {
-            val listState = key(eventLogs.isEmpty()) { rememberLazyListState() }
+            val listState = rememberLazyListState()
+            LaunchedEffect(eventLogs.isEmpty()) { listState.scrollToItem(0) }
             val isAtBottom by listState.isAtBottom()
             val subScope = rememberCoroutineScope()
             SideEffect {
