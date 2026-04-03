@@ -283,6 +283,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network)
     implementation(libs.coil.gif)
+    implementation(libs.telephoto.zoomable)
 
     implementation(libs.exp4j)
 
