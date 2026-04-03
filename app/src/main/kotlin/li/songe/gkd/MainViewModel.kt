@@ -67,6 +67,7 @@ import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubsMutex
 import li.songe.gkd.util.updateSubscription
+import li.songe.loc.Loc
 import rikka.shizuku.Shizuku
 import java.nio.file.Files
 import kotlin.reflect.jvm.jvmName
@@ -80,8 +81,10 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
     }
 
     init {
+        LogUtils.d("MainViewModel:init")
         _instance = this
         addCloseable {
+            LogUtils.d("MainViewModel:close")
             if (_instance == this) { // 可能同时存在 2 个 MainViewModel 实例
                 _instance = null
             }
@@ -94,19 +97,30 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
     val topRoute get() = backStack.last()
 
     private val backThrottleTimer = ThrottleTimer()
-    fun popPage() = runMainPost {
+
+    @Loc
+    fun popPage(@Loc loc: String = "") = runMainPost {
         if (backThrottleTimer.expired() && backStack.size > 1) {
+            val old = backStack.last()
             backStack.removeAt(backStack.lastIndex)
+            LogUtils.d("popPage", "$old -> ${backStack.last()}", loc = loc)
         }
     }
 
-    fun navigatePage(navKey: NavKey, replaced: Boolean = false) = runMainPost {
+    @Loc
+    fun navigatePage(
+        navKey: NavKey,
+        replaced: Boolean = false,
+        @Loc loc: String = "",
+    ) = runMainPost {
         if (navKey != backStack.last()) {
+            val old = backStack.last()
             if (replaced) {
                 backStack[backStack.lastIndex] = navKey
             } else {
                 backStack.add(navKey)
             }
+            LogUtils.d("navigatePage", "$old -> ${backStack.last()}", loc = loc)
         }
     }
 
@@ -393,6 +407,5 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
         // for OnSimpleLife
         onCreated()
         addCloseable { onDestroyed() }
-        toast("MainViewModel:init")
     }
 }
