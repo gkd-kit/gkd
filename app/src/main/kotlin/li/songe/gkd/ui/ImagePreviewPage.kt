@@ -6,8 +6,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.AnimationConstants.DefaultDurationMillis
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -58,13 +56,13 @@ import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.decode.Decoder
 import coil3.fetch.Fetcher
+import coil3.imageLoader
 import coil3.request.CachePolicy
 import coil3.request.ErrorResult
 import coil3.request.ImageRequest
 import coil3.request.Options
 import coil3.request.SuccessResult
 import coil3.request.crossfade
-import coil3.imageLoader
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -117,16 +115,26 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
     val singleItem = previewItems.singleOrNull()
     val pagerState = rememberPagerState(pageCount = { previewItems.size.coerceAtLeast(1) })
 
-    // 这个页面需要接近相册页的沉浸式效果，因此进入时隐藏状态栏，离开时恢复原设置。
-    DisposableEffect(Unit) {
-        val controller = WindowCompat.getInsetsController(context.window, context.window.decorView)
+    val controller = remember {
+        WindowCompat.getInsetsController(context.window, context.window.decorView)
+    }
+    DisposableEffect(null) {
         val oldBehavior = controller.systemBarsBehavior
+        val oldLight = controller.isAppearanceLightStatusBars
         controller.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        controller.hide(WindowInsetsCompat.Type.statusBars())
+        controller.isAppearanceLightStatusBars = false
         onDispose {
             controller.systemBarsBehavior = oldBehavior
+            controller.isAppearanceLightStatusBars = oldLight
             controller.show(WindowInsetsCompat.Type.statusBars())
+        }
+    }
+    LaunchedEffect(showBars) {
+        if (showBars) {
+            controller.show(WindowInsetsCompat.Type.statusBars())
+        } else {
+            controller.hide(WindowInsetsCompat.Type.statusBars())
         }
     }
 
@@ -153,7 +161,7 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
 
     Box(
         modifier = Modifier
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color.Black)
             .fillMaxSize()
     ) {
         when {
@@ -180,14 +188,15 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
 
         AnimatedVisibility(
             visible = showBars,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { -it }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { -it }),
+            enter = fadeIn(),
+            exit = fadeOut(),
             modifier = Modifier
                 .zIndex(1f)
                 .fillMaxWidth()
         ) {
             Column {
-                val currentPreviewItem = singleItem ?: previewItems.getOrNull(pagerState.currentPage)
+                val currentPreviewItem =
+                    singleItem ?: previewItems.getOrNull(pagerState.currentPage)
                 val currentUri = currentPreviewItem?.uri
                 PerfTopAppBar(
                     modifier = Modifier.background(Color.Black.copy(alpha = 0.5f)),
@@ -462,7 +471,7 @@ private fun ZoomableImageContent(
                     state = zoomableState,
                     onClick = { onToggleBars() },
                 ),
-            contentScale = ContentScale.Fit,
+            contentScale = ContentScale.Inside,
             alignment = Alignment.Center,
         )
     }
