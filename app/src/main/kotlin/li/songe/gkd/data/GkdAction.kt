@@ -4,6 +4,7 @@ import android.accessibilityservice.GestureDescription
 import android.graphics.Path
 import android.view.ViewConfiguration
 import android.view.accessibility.AccessibilityNodeInfo
+import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import li.songe.gkd.a11y.A11yRuleEngine
 import li.songe.gkd.service.A11yService
@@ -29,13 +30,13 @@ data class ActionResult(
 )
 
 sealed class ActionPerformer(val action: String) {
-    abstract fun perform(
+    abstract suspend fun perform(
         node: AccessibilityNodeInfo,
         locationProps: RawSubscription.LocationProps,
     ): ActionResult
 
     data object ClickNode : ActionPerformer("clickNode") {
-        override fun perform(
+        override suspend fun perform(
             node: AccessibilityNodeInfo,
             locationProps: RawSubscription.LocationProps,
         ): ActionResult {
@@ -47,7 +48,7 @@ sealed class ActionPerformer(val action: String) {
     }
 
     data object ClickCenter : ActionPerformer("clickCenter") {
-        override fun perform(
+        override suspend fun perform(
             node: AccessibilityNodeInfo,
             locationProps: RawSubscription.LocationProps,
         ): ActionResult {
@@ -85,7 +86,7 @@ sealed class ActionPerformer(val action: String) {
     }
 
     data object Click : ActionPerformer("click") {
-        override fun perform(
+        override suspend fun perform(
             node: AccessibilityNodeInfo,
             locationProps: RawSubscription.LocationProps,
         ): ActionResult {
@@ -100,7 +101,7 @@ sealed class ActionPerformer(val action: String) {
     }
 
     data object LongClickNode : ActionPerformer("longClickNode") {
-        override fun perform(
+        override suspend fun perform(
             node: AccessibilityNodeInfo,
             locationProps: RawSubscription.LocationProps,
         ): ActionResult {
@@ -108,7 +109,7 @@ sealed class ActionPerformer(val action: String) {
                 action = action,
                 result = node.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK).apply {
                     if (this) {
-                        Thread.sleep(LongClickCenter.LONG_DURATION)
+                        delay(LongClickCenter.LONG_DURATION)
                     }
                 }
             )
@@ -117,7 +118,7 @@ sealed class ActionPerformer(val action: String) {
 
     data object LongClickCenter : ActionPerformer("longClickCenter") {
         const val LONG_DURATION = 500L
-        override fun perform(
+        override suspend fun perform(
             node: AccessibilityNodeInfo,
             locationProps: RawSubscription.LocationProps,
         ): ActionResult {
@@ -150,7 +151,7 @@ sealed class ActionPerformer(val action: String) {
                         gestureDescription.build(), null, null
                     ) != null).apply {
                         if (this) {
-                            Thread.sleep(LONG_DURATION)
+                            delay(LONG_DURATION)
                         }
                     }
                 },
@@ -160,7 +161,7 @@ sealed class ActionPerformer(val action: String) {
     }
 
     data object LongClick : ActionPerformer("longClick") {
-        override fun perform(
+        override suspend fun perform(
             node: AccessibilityNodeInfo,
             locationProps: RawSubscription.LocationProps,
         ): ActionResult {
@@ -175,7 +176,7 @@ sealed class ActionPerformer(val action: String) {
     }
 
     data object Back : ActionPerformer("back") {
-        override fun perform(
+        override suspend fun perform(
             node: AccessibilityNodeInfo,
             locationProps: RawSubscription.LocationProps,
         ): ActionResult {
@@ -187,7 +188,7 @@ sealed class ActionPerformer(val action: String) {
     }
 
     data object None : ActionPerformer("none") {
-        override fun perform(
+        override suspend fun perform(
             node: AccessibilityNodeInfo,
             locationProps: RawSubscription.LocationProps,
         ): ActionResult {
@@ -199,7 +200,7 @@ sealed class ActionPerformer(val action: String) {
     }
 
     data object Swipe : ActionPerformer("swipe") {
-        override fun perform(
+        override suspend fun perform(
             node: AccessibilityNodeInfo,
             locationProps: RawSubscription.LocationProps,
         ): ActionResult {
@@ -251,7 +252,7 @@ sealed class ActionPerformer(val action: String) {
                         gestureDescription.build(), null, null
                     ) != null).apply {
                         if (this) {
-                            Thread.sleep(swipeArg.duration)
+                            delay(swipeArg.duration)
                         }
                     },
                     position = endX to endY,

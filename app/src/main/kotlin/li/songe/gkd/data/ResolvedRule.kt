@@ -163,9 +163,7 @@ sealed class ResolvedRule(
         ActionPerformer.Swipe.action
     })
 
-    fun performAction(node: AccessibilityNodeInfo): ActionResult {
-        return performer.perform(node, rule)
-    }
+    suspend fun performAction(node: AccessibilityNodeInfo) = performer.perform(node, rule)
 
     val matchDelayJob = atomic<Job?>(null)
 
