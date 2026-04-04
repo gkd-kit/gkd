@@ -23,6 +23,7 @@ import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
 import java.io.File
+import java.util.ArrayList
 import kotlin.reflect.KClass
 
 fun MainActivity.shareFile(file: File, title: String) {
@@ -43,7 +44,44 @@ fun MainActivity.shareFile(file: File, title: String) {
     )
 }
 
-suspend fun MainActivity.saveFileToDownloads(file: File) {
+/**
+ * 多文件分享单独保留一个入口，是因为 ACTION_SEND_MULTIPLE 和单文件分享的 Intent 结构不同，
+ * 这样既能复用 FileProvider，又不会把原来的单文件调用点搅乱。
+ */
+fun MainActivity.shareFiles(files: List<File>, title: String) {
+    if (files.isEmpty()) return
+    if (files.size == 1) {
+        shareFile(files.first(), title)
+        return
+    }
+    val uris = ArrayList<Uri>(files.size).apply {
+        files.forEach { file ->
+            add(
+                FileProvider.getUriForFile(
+                    app,
+                    "${app.packageName}.provider",
+                    file,
+                )
+            )
+        }
+    }
+    val mimeTypes = files.mapNotNull { file ->
+        MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.extension.lowercase())
+    }.distinct()
+    val intent = Intent().apply {
+        action = Intent.ACTION_SEND_MULTIPLE
+        putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+        type = mimeTypes.singleOrNull() ?: "*/*"
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    tryStartActivity(Intent.createChooser(intent, title))
+}
+
+/**
+ * 批量保存时会连续写多个文件，这里增加 showToast 开关，避免每个文件都弹一次提示打断体验。
+ */
+suspend fun MainActivity.saveFileToDownloads(file: File, showToast: Boolean = true) {
     if (AndroidTarget.Q) {
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, file.name)
@@ -65,7 +103,9 @@ suspend fun MainActivity.saveFileToDownloads(file: File) {
         )
         targetFile.writeBytes(file.readBytes())
     }
-    toast("已保存 ${file.name} 到下载")
+    if (showToast) {
+        toast("已保存 ${file.name} 到下载")
+    }
 }
 
 fun Context.tryStartActivity(intent: Intent) {
