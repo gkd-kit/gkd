@@ -95,13 +95,25 @@ android {
         resValues = true
     }
 
-    val gkdSigningConfig = signingConfigs.create("gkd") {
-        storeFile = file(project.properties["GKD_STORE_FILE"] as String)
-        storePassword = project.properties["GKD_STORE_PASSWORD"].toString()
-        keyAlias = project.properties["GKD_KEY_ALIAS"].toString()
-        keyPassword = project.properties["GKD_KEY_PASSWORD"].toString()
+    // ------------------------------------------------------------------------------
+    // 签名配置管理 (Signing Configurations)
+    // ------------------------------------------------------------------------------
+
+    // 1. GKD 渠道签名：优先读取 GKD_STORE_FILE 等环境变量/属性
+    // 若缺失签名信息（如本地环境未配置），则回退至 debug 签名以防止构建 Evaluation 阶段崩溃
+    val gkdSigningConfig = if (project.hasProperty("GKD_STORE_FILE")) {
+        signingConfigs.create("gkd") {
+            storeFile = file(project.properties["GKD_STORE_FILE"] as String)
+            storePassword = project.findProperty("GKD_STORE_PASSWORD")?.toString()
+            keyAlias = project.findProperty("GKD_KEY_ALIAS")?.toString()
+            keyPassword = project.findProperty("GKD_KEY_PASSWORD")?.toString()
+        }
+    } else {
+        // Fallback: 缺失变量时回退使用 debug 签名（满足本地测试/test需求）
+        signingConfigs.getByName("debug")
     }
 
+    // 2. Play 渠道签名
     val playSigningConfig = if (project.hasProperty("PLAY_STORE_FILE")) {
         signingConfigs.create("play") {
             storeFile = file(project.properties["PLAY_STORE_FILE"].toString())
