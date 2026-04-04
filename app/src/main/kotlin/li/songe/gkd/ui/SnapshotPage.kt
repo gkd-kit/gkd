@@ -3,7 +3,6 @@ package li.songe.gkd.ui
 import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +21,6 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -66,7 +64,6 @@ import li.songe.gkd.ui.component.PerfCheckbox
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.animateListItem
 import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.component.useListScrollState
 import li.songe.gkd.ui.component.waitResult
@@ -152,16 +149,22 @@ fun SnapshotPage() {
     var selectionMenuExpanded by remember { mutableStateOf(false) }
 
     /**
-     * 页面始终先按 App 聚合，再按可选的 ActivityId 二次分组。
-     * 这样排序规则只在这一处生效，卡片和顶栏都可以直接消费整理好的结果。
+     * 分组整理会对整份快照列表做 group/sort，数据量大时如果直接在 Compose 主线程里算，
+     * 会明显拖慢页面首帧。这里改成异步生成展示模型，列表层只消费已经整理好的结果。
      */
-    val appSections = remember(snapshots, appInfoMap, sortMode, groupByActivityId) {
-        buildSnapshotSections(
-            snapshots = snapshots,
-            appNameMap = appInfoMap.mapValues { entry -> entry.value.name },
-            sortMode = sortMode,
-            groupByActivityId = groupByActivityId,
-        )
+    var appSections by remember { mutableStateOf<List<SnapshotAppSection>>(emptyList()) }
+    LaunchedEffect(snapshots, appInfoMap, sortMode, groupByActivityId) {
+        appSections = withContext(Dispatchers.Default) {
+            buildSnapshotSections(
+                snapshots = snapshots,
+                appNameMap = snapshots.asSequence()
+                    .map { snapshot -> snapshot.appId }
+                    .distinct()
+                    .associateWith { appId -> appInfoMap[appId]?.name ?: appId },
+                sortMode = sortMode,
+                groupByActivityId = groupByActivityId,
+            )
+        }
     }
     val selectedSnapshots = remember(snapshots, selectedSnapshotIds) {
         snapshots.filter { snapshot -> selectedSnapshotIds.contains(snapshot.id) }
@@ -390,6 +393,10 @@ fun SnapshotPage() {
                     modifier = Modifier.scaffoldPadding(contentPadding),
                     state = listState,
                 ) {
+                    /**
+                     * 这里不再给首屏列表项加 animateListItem。
+                     * 快照页更偏数据浏览页，进入速度比首屏动画更重要，尤其是在大量历史快照时。
+                     */
                     appSections.forEach { section ->
                         item("app-${section.appId}") {
                             SnapshotAppHeader(section = section)
@@ -404,7 +411,7 @@ fun SnapshotPage() {
                                     key = { snapshot -> snapshot.id },
                                 ) { snapshot ->
                                     SnapshotCard(
-                                        modifier = Modifier.animateListItem(),
+                                        modifier = Modifier,
                                         snapshot = snapshot,
                                         appName = section.appName,
                                         isSelectionMode = isSelectionMode,
@@ -431,7 +438,7 @@ fun SnapshotPage() {
                                 key = { snapshot -> snapshot.id },
                             ) { snapshot ->
                                 SnapshotCard(
-                                    modifier = Modifier.animateListItem(),
+                                    modifier = Modifier,
                                     snapshot = snapshot,
                                     appName = section.appName,
                                     isSelectionMode = isSelectionMode,
@@ -653,84 +660,82 @@ private fun SnapshotCard(
     onLongClick: () -> Unit,
     onSelectedChange: () -> Unit,
 ) {
-    val containerColor by animateColorAsState(
-        targetValue = if (isSelected) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceContainer
-        },
-        label = "snapshotCardContainerColor",
-    )
     val actualOnClick = if (isSelectionMode) onSelectedChange else onClick
     val activityLabel = remember(snapshot.appId, snapshot.activityId) {
         snapshot.toDisplayActivityTitle()
     }
-    Card(
+    /**
+     * 这个列表页的数据量可能很大，首屏更重要的是尽快出内容。
+     * 这里不用带动画的 Card 容器，改成更轻的背景块，优先降低进入页面时的组合和绘制成本。
+     */
+    Row(
         modifier = modifier
             .padding(horizontal = itemHorizontalPadding, vertical = itemVerticalPadding / 2)
+            .background(
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainer
+                },
+                shape = MaterialTheme.shapes.small,
+            )
             .combinedClickable(
                 onClick = actualOnClick,
                 onLongClick = if (isSelectionMode) ({}) else onLongClick,
                 onClickLabel = if (isSelectionMode) "切换快照选中状态" else "打开快照操作弹窗",
                 onLongClickLabel = "进入多选模式",
-            ),
-        shape = MaterialTheme.shapes.small,
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Spacer(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(2.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column(
-                modifier = Modifier.weight(1f),
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Spacer(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(2.dp)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Column(
+            modifier = Modifier.weight(1f),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(
-                        text = appName,
-                        overflow = TextOverflow.Ellipsis,
-                        maxLines = 1,
-                        softWrap = false,
-                    )
-                    FixedTimeText(
-                        text = snapshot.date,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
                 Text(
-                    text = activityLabel,
-                    style = MaterialTheme.typography.bodyMedium,
-                    softWrap = false,
+                    text = appName,
+                    overflow = TextOverflow.Ellipsis,
                     maxLines = 1,
-                    overflow = TextOverflow.MiddleEllipsis,
-                    color = if (snapshot.activityId == null) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
+                    softWrap = false,
+                )
+                FixedTimeText(
+                    text = snapshot.date,
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
-            if (isSelectionMode) {
-                Spacer(modifier = Modifier.width(8.dp))
-                PerfCheckbox(
-                    checked = isSelected,
-                    onCheckedChange = { onSelectedChange() },
-                    modifier = Modifier.size(24.dp),
-                )
-            }
+            Text(
+                text = activityLabel,
+                style = MaterialTheme.typography.bodyMedium,
+                softWrap = false,
+                maxLines = 1,
+                overflow = TextOverflow.MiddleEllipsis,
+                color = if (snapshot.activityId == null) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+            )
+        }
+        if (isSelectionMode) {
+            Spacer(modifier = Modifier.width(8.dp))
+            PerfCheckbox(
+                checked = isSelected,
+                onCheckedChange = { onSelectedChange() },
+                modifier = Modifier.size(24.dp),
+            )
         }
     }
 }
