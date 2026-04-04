@@ -58,9 +58,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
+import li.songe.gkd.permission.canDrawOverlaysState
+import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.ignoreBatteryOptimizationsState
+import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.service.StatusService
+import li.songe.gkd.service.TrackService
 import li.songe.gkd.service.fixRestartAutomatorService
 import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
@@ -411,6 +415,21 @@ fun useSettingsPage(): ScaffoldExt {
                                 useSystemToast = it
                             )
                         })
+                    TextSwitch(
+                        title = "轨迹提示",
+                        subtitle = "显示触发位置信息",
+                        checked = TrackService.isRunning.collectAsState().value,
+                        onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
+                            if (it) {
+                                requiredPermission(context, foregroundServiceSpecialUseState)
+                                requiredPermission(context, notificationState)
+                                requiredPermission(context, canDrawOverlaysState)
+                                TrackService.start()
+                            } else {
+                                TrackService.stop()
+                            }
+                        }
+                    )
                 }
             }
 

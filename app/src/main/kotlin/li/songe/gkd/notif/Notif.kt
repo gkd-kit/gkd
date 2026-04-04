@@ -22,6 +22,7 @@ import li.songe.gkd.service.ButtonService
 import li.songe.gkd.service.EventService
 import li.songe.gkd.service.HttpService
 import li.songe.gkd.service.ScreenshotService
+import li.songe.gkd.service.TrackService
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.componentName
 import kotlin.reflect.KClass
@@ -150,4 +151,11 @@ val eventNotif = Notif(
     title = "事件服务正在运行",
     uri = "gkd://page/1",
     stopService = EventService::class,
+)
+
+val trackNotif = Notif(
+    id = 108,
+    title = "轨迹服务正在运行",
+    uri = "gkd://page?tab=3",
+    stopService = TrackService::class,
 )
