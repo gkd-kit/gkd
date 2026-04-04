@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -294,44 +295,6 @@ fun useSettingsPage(): ScaffoldExt {
             })
     }
 
-    var showToastSettingsDlg by vm.showToastSettingsDlgFlow.asMutableState()
-    if (showToastSettingsDlg) {
-        AlertDialog(
-            onDismissRequest = { showToastSettingsDlg = false },
-            title = { Text("提示设置") },
-            text = {
-                TextSwitch(
-                    paddingDisabled = true,
-                    title = "系统提示",
-                    subtitle = "系统样式触发提示",
-                    suffix = "查看限制",
-                    onSuffixClick = {
-                        showToastSettingsDlg = false
-                        val confirmAction = {
-                            mainVm.dialogFlow.value = null
-                            showToastSettingsDlg = true
-                        }
-                        mainVm.dialogFlow.updateDialogOptions(
-                            title = "限制说明",
-                            text = "系统 Toast 存在频率限制, 触发过于频繁会被系统强制不显示\n\n如果只使用开屏一类低频率规则可使用系统提示, 否则建议关闭此项使用自定义样式提示",
-                            confirmAction = confirmAction,
-                            onDismissRequest = confirmAction,
-                        )
-                    },
-                    checked = store.useSystemToast,
-                    onCheckedChange = {
-                        storeFlow.value = store.copy(
-                            useSystemToast = it
-                        )
-                    })
-            },
-            confirmButton = {
-                TextButton(onClick = { showToastSettingsDlg = false }) {
-                    Text("关闭")
-                }
-            }
-        )
-    }
 
     var showA11yBlockDlg by vm.showA11yBlockDlgFlow.asMutableState()
     if (showA11yBlockDlg) {
@@ -404,7 +367,7 @@ fun useSettingsPage(): ScaffoldExt {
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
-
+            val showToastSettingsDlg by vm.showToastSettingsDlgFlow.asMutableState()
             TextSwitch(
                 title = "触发提示",
                 subtitle = store.actionToast,
@@ -418,9 +381,10 @@ fun useSettingsPage(): ScaffoldExt {
                         size = 32.dp,
                         iconSize = 20.dp,
                         onClickLabel = "打开提示设置弹窗",
-                        onClick = throttle { showToastSettingsDlg = true },
+                        onClick = { vm.showToastSettingsDlgFlow.update { !it } },
                         id = R.drawable.ic_page_info,
                         contentDescription = "提示设置",
+                        tint = if (showToastSettingsDlg) MaterialTheme.colorScheme.primary else LocalContentColor.current,
                     )
                 },
                 onCheckedChange = {
@@ -428,6 +392,27 @@ fun useSettingsPage(): ScaffoldExt {
                         toastWhenClick = it
                     )
                 })
+
+            AnimatedVisibility(visible = showToastSettingsDlg) {
+                Column {
+                    TextSwitch(
+                        title = "提示样式",
+                        subtitle = "使用系统样式",
+                        suffix = "查看限制",
+                        onSuffixClick = {
+                            mainVm.dialogFlow.updateDialogOptions(
+                                title = "限制说明",
+                                text = "系统 Toast 存在频率限制, 触发过于频繁会被系统强制不显示\n\n如果只使用开屏一类低频率规则可使用系统提示, 否则建议关闭此项使用自定义样式提示",
+                            )
+                        },
+                        checked = store.useSystemToast,
+                        onCheckedChange = {
+                            storeFlow.value = store.copy(
+                                useSystemToast = it
+                            )
+                        })
+                }
+            }
 
             val subsStatus by vm.subsStatusFlow.collectAsState()
             TextSwitch(

@@ -16,6 +16,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -60,6 +61,7 @@ fun PerfCustomIconButton(
     onClickLabel: String? = null,
     @DrawableRes id: Int,
     contentDescription: String? = null,
+    tint: Color = LocalContentColor.current,
 ) = TooltipIconButtonBox(
     contentDescription = contentDescription,
 ) {
@@ -72,6 +74,7 @@ fun PerfCustomIconButton(
             modifier = Modifier.size(iconSize),
             id = id,
             contentDescription = contentDescription,
+            tint = tint,
         )
     }
 }

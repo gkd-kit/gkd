@@ -21,6 +21,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -34,6 +35,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,7 +72,6 @@ import li.songe.gkd.ui.component.CustomOutlinedTextField
 import li.songe.gkd.ui.component.PerfCustomIconButton
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
-import li.songe.gkd.ui.component.PerfSwitch
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextSwitch
@@ -286,6 +287,7 @@ fun AdvancedPage() {
                 }
             })
     }
+    var showHttpSettingDlg by rememberSaveable { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
@@ -373,83 +375,90 @@ fun AdvancedPage() {
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
-            Row(
-                modifier = Modifier.itemPadding(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "HTTP服务",
-                        style = MaterialTheme.typography.bodyLarge,
+            TextSwitch(
+                title = "HTTP服务",
+                subtitle = "在浏览器下连接调试",
+                suffixIcon = {
+                    PerfCustomIconButton(
+                        size = 32.dp,
+                        iconSize = 20.dp,
+                        onClickLabel = "打开HTTP设置弹窗",
+                        onClick = { showHttpSettingDlg = !showHttpSettingDlg },
+                        id = R.drawable.ic_page_info,
+                        contentDescription = "HTTP设置",
+                        tint = if (showHttpSettingDlg) MaterialTheme.colorScheme.primary else LocalContentColor.current,
                     )
-                    CompositionLocalProvider(
-                        LocalTextStyle provides MaterialTheme.typography.bodyMedium
+                },
+                checked = httpServerRunning,
+                onCheckedChange = throttle(fn = vm.viewModelScope.launchAsFn<Boolean> {
+                    if (it) {
+                        requiredPermission(context, foregroundServiceSpecialUseState)
+                        requiredPermission(context, notificationState)
+                        HttpService.start()
+                    } else {
+                        HttpService.stop()
+                    }
+                })
+            )
+            AnimatedVisibility(visible = httpServerRunning) {
+                CompositionLocalProvider(
+                    LocalTextStyle provides MaterialTheme.typography.bodyMedium
+                ) {
+                    Column(
+                        modifier = Modifier.itemPadding()
                     ) {
-                        Text(text = if (httpServerRunning) "点击链接打开即可自动连接" else "在浏览器下连接调试工具")
-                        AnimatedVisibility(httpServerRunning) {
-                            Column {
-                                Row {
-                                    val localUrl = "http://127.0.0.1:${store.httpServerPort}"
-                                    Text(
-                                        text = localUrl,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
-                                        modifier = Modifier.clickable(onClick = throttle {
-                                            mainVm.openUrl(localUrl)
-                                        }),
-                                    )
-                                    Spacer(modifier = Modifier.width(2.dp))
-                                    Text(text = "仅本设备可访问")
-                                }
-                                localNetworkIps.forEach { host ->
-                                    val lanUrl = "http://${host}:${store.httpServerPort}"
-                                    Text(
-                                        text = lanUrl,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
-                                        modifier = Modifier.clickable(onClick = throttle {
-                                            mainVm.openUrl(lanUrl)
-                                        })
-                                    )
-                                }
+                        Text(text = "点击下方链接即可连接")
+                        Row {
+                            val localUrl = "http://127.0.0.1:${store.httpServerPort}"
+                            Text(
+                                text = localUrl,
+                                color = MaterialTheme.colorScheme.primary,
+                                style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
+                                modifier = Modifier.clickable(onClick = throttle {
+                                    mainVm.openUrl(localUrl)
+                                }),
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(text = "仅本设备访问")
+                        }
+                        localNetworkIps.forEach { host ->
+                            val lanUrl = "http://${host}:${store.httpServerPort}"
+                            Text(
+                                text = lanUrl,
+                                color = MaterialTheme.colorScheme.primary,
+                                style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
+                                modifier = Modifier.clickable(onClick = throttle {
+                                    mainVm.openUrl(lanUrl)
+                                })
+                            )
+                        }
+                    }
+                }
+            }
+            AnimatedVisibility(visible = showHttpSettingDlg) {
+                Column {
+                    SettingItem(
+                        title = "服务端口",
+                        subtitle = store.httpServerPort.toString(),
+                        imageVector = PerfIcon.Edit,
+                        onClickLabel = "编辑服务端口",
+                        onClick = {
+                            showHttpSettingDlg = false
+                            showEditPortDlg = true
+                        }
+                    )
+                    TextSwitch(
+                        title = "清除订阅",
+                        subtitle = "关闭服务时删除内存订阅",
+                        checked = store.autoClearMemorySubs,
+                        onCheckedChange = {
+                            storeFlow.update {
+                                it.copy(autoClearMemorySubs = !it.autoClearMemorySubs)
                             }
                         }
-                    }
+                    )
                 }
-                PerfSwitch(
-                    checked = httpServerRunning,
-                    onCheckedChange = throttle(fn = vm.viewModelScope.launchAsFn<Boolean> {
-                        if (it) {
-                            requiredPermission(context, foregroundServiceSpecialUseState)
-                            requiredPermission(context, notificationState)
-                            HttpService.start()
-                        } else {
-                            HttpService.stop()
-                        }
-                    })
-                )
             }
-
-            SettingItem(
-                title = "服务端口",
-                subtitle = store.httpServerPort.toString(),
-                imageVector = PerfIcon.Edit,
-                onClickLabel = "编辑服务端口",
-                onClick = {
-                    showEditPortDlg = true
-                }
-            )
-
-            TextSwitch(
-                title = "清除订阅",
-                subtitle = "关闭服务时删除内存订阅",
-                checked = store.autoClearMemorySubs,
-                onCheckedChange = {
-                    storeFlow.update {
-                        it.copy(autoClearMemorySubs = !it.autoClearMemorySubs)
-                    }
-                }
-            )
 
             Text(
                 text = "快照",
