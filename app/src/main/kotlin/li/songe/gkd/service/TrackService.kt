@@ -42,6 +42,7 @@ import li.songe.gkd.app
 import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.trackNotif
 import li.songe.gkd.shizuku.casted
+import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.ScreenUtils
 import li.songe.gkd.util.runMainPost
@@ -183,6 +184,10 @@ class TrackService : LifecycleService(), SavedStateRegistryOwner, OnSimpleLife {
         PixelFormat.TRANSLUCENT,
     ).apply {
         gravity = Gravity.START or Gravity.TOP
+        if (AndroidTarget.S) {
+            // fix #1325
+            alpha = app.inputManager.maximumObscuringOpacityForTouch
+        }
     }
 
     init {

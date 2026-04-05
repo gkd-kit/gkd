@@ -13,6 +13,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.database.ContentObserver
 import android.hardware.display.DisplayManager
+import android.hardware.input.InputManager
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
@@ -189,6 +190,7 @@ class App : Application() {
     val activityManager by lazy { app.getSystemService(ACTIVITY_SERVICE) as ActivityManager }
     val appOpsManager by lazy { app.getSystemService(APP_OPS_SERVICE) as AppOpsManager }
     val inputMethodManager by lazy { app.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager }
+    val inputManager by lazy { app.getSystemService(INPUT_SERVICE) as InputManager }
     val windowManager by lazy { app.getSystemService(WINDOW_SERVICE) as WindowManager }
     val displayManager by lazy { app.getSystemService(DISPLAY_SERVICE) as DisplayManager }
     val keyguardManager by lazy { app.getSystemService(KEYGUARD_SERVICE) as KeyguardManager }
