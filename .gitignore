@@ -20,7 +20,7 @@ local.properties
 *.jks
 *.keystore
 
-/_assets
+/.cache
 /.kotlin
 
 /gradle/libs.versions.updates.toml

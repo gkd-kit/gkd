@@ -36,7 +36,7 @@ data class Snapshot(
 )
 
 private val assetsDir by lazy {
-    File("../_assets").apply {
+    File("../.cache").apply {
         if (!exists()) {
             mkdir()
         }
