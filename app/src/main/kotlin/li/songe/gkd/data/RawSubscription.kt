@@ -263,16 +263,11 @@ data class RawSubscription(
         private val xExp by lazy { getExpression(x) }
         private val yExp by lazy { getExpression(y) }
 
+        private val xArr by lazy { arrayOf(leftExp, rightExp, xExp) }
+        private val yArr by lazy { arrayOf(topExp, bottomExp, yExp) }
+
         val isValid by lazy {
-            arrayOf(
-                leftExp to topExp,
-                leftExp to bottomExp,
-                rightExp to topExp,
-                rightExp to bottomExp,
-                xExp to yExp,
-            ).any {
-                it.first != null && it.second != null
-            }
+            xArr.any { it != null } && yArr.any { it != null }
         }
 
         /**
@@ -280,46 +275,30 @@ data class RawSubscription(
          */
         fun calc(rect: Rect): Pair<Float, Float>? {
             if (!isValid) return null
-            arrayOf(
-                leftExp,
-                topExp,
-                rightExp,
-                bottomExp,
-                xExp,
-                yExp,
-            ).forEach { exp ->
-                if (exp != null) {
-                    setVariables(exp, rect)
-                }
-            }
+            xArr.forEach { setVariables(it, rect) }
+            yArr.forEach { setVariables(it, rect) }
             try {
-                if (leftExp != null) {
-                    if (topExp != null) {
-                        return (rect.left + leftExp!!.evaluate()
-                            .toFloat()) to (rect.top + topExp!!.evaluate().toFloat())
-                    }
-                    if (bottomExp != null) {
-                        return (rect.left + leftExp!!.evaluate()
-                            .toFloat()) to (rect.bottom - bottomExp!!.evaluate().toFloat())
-                    }
-                } else if (rightExp != null) {
-                    if (topExp != null) {
-                        return (rect.right - rightExp!!.evaluate()
-                            .toFloat()) to (rect.top + topExp!!.evaluate().toFloat())
-                    }
-                    if (bottomExp != null) {
-                        return (rect.right - rightExp!!.evaluate()
-                            .toFloat()) to (rect.bottom - bottomExp!!.evaluate().toFloat())
-                    }
-                } else if (xExp != null) {
-                    if (yExp != null) {
-                        return xExp!!.evaluate().toFloat() to yExp!!.evaluate().toFloat()
-                    }
+                val x0 = xArr.find { it != null }!!.evaluate().toFloat()
+                val y0 = yArr.find { it != null }!!.evaluate().toFloat()
+                val x = when {
+                    leftExp != null -> rect.left + x0
+                    rightExp != null -> rect.right - x0
+                    xExp != null -> x0
+                    else -> null
+                }
+                val y = when {
+                    topExp != null -> rect.top + y0
+                    bottomExp != null -> rect.bottom - y0
+                    yExp != null -> y0
+                    else -> null
+                }
+                if (x != null && y != null) {
+                    return x to y
                 }
             } catch (e: Exception) {
                 // 可能存在 1/0 导致错误
                 e.printStackTrace()
-                LogUtils.d(e)
+                LogUtils.d("Position.calc", e)
                 toast(e.message ?: e.stackTraceToString())
             }
             return null
@@ -652,7 +631,8 @@ data class RawSubscription(
             "random"
         )
 
-        private fun setVariables(exp: Expression, rect: Rect) {
+        private fun setVariables(exp: Expression?, rect: Rect) {
+            if (exp == null) return
             exp.setVariable("left", rect.left.toDouble())
             exp.setVariable("top", rect.top.toDouble())
             exp.setVariable("right", rect.right.toDouble())
