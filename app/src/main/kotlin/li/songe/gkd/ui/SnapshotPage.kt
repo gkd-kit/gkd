@@ -19,11 +19,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items as lazyItems
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.items as staggeredItems
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -91,7 +91,7 @@ private val SnapshotSidebarWidth = 72.dp
 private val SnapshotSidebarPadding = 8.dp
 private val SnapshotGridSpacing = 12.dp
 private val SnapshotGridPadding = 16.dp
-private val SnapshotGridMinCardWidth = 136.dp
+private val SnapshotGridMinCardWidth = 172.dp // 增加最小宽度，确保横屏快照在格子里有足够高度
 
 @Composable
 fun SnapshotPage() {
@@ -105,7 +105,6 @@ fun SnapshotPage() {
     val previewSnapshotState = remember { mutableStateOf<Snapshot?>(null) }
     val selectedAppIdState = rememberSaveable { mutableStateOf<String?>(null) }
 
-    // 侧栏只有 App 维度，当前选中项若失效则自动回退到“最新快照所属 App”。
     val selectedGroup = remember(appGroups, selectedAppIdState.value) {
         appGroups.firstOrNull { it.appId == selectedAppIdState.value } ?: appGroups.firstOrNull()
     }
@@ -116,7 +115,6 @@ fun SnapshotPage() {
                 PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = { mainVm.popPage() })
             },
             title = {
-                // 顶栏保留页面名，同时补充当前 App 名称，避免侧栏只有图标时用户失去上下文。
                 Column {
                     Text(text = "快照记录")
                     selectedGroup?.let { group ->
@@ -211,7 +209,6 @@ private fun SnapshotSidebar(
     selectedAppId: String,
     onSelectApp: (String) -> Unit,
 ) {
-    // 左栏只承担“切换当前 App”职责，保持窄宽度和简单高亮，避免再次引入复杂分组滚动同步。
     LazyColumn(
         modifier = Modifier
             .fillMaxHeight()
@@ -256,16 +253,14 @@ private fun SnapshotGrid(
     BoxWithConstraints(
         modifier = modifier.fillMaxSize()
     ) {
-        // 网格列数只允许 2~3 列，并以最小可读宽度做阈值，避免手机上为了“塞更多”把卡片压得太小。
         val availableWidth = maxWidth - SnapshotGridPadding * 2
-        val canUseThreeColumns =
-            (availableWidth - SnapshotGridSpacing * 2) / 3 >= SnapshotGridMinCardWidth
-        val columnCount = if (canUseThreeColumns) 3 else 2
+        // 动态计算列数并限制最大列数，确保即便在横屏下，卡片宽度也足够显示横屏截图。
+        val columnCount = (availableWidth / SnapshotGridMinCardWidth).toInt().coerceIn(2, 5)
         val cardWidth =
             (availableWidth - SnapshotGridSpacing * (columnCount - 1)) / columnCount
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(columnCount),
+        LazyVerticalStaggeredGrid(
+            columns = StaggeredGridCells.Fixed(columnCount),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = SnapshotGridPadding,
@@ -274,9 +269,9 @@ private fun SnapshotGrid(
                 bottom = SnapshotGridPadding * 2,
             ),
             horizontalArrangement = Arrangement.spacedBy(SnapshotGridSpacing),
-            verticalArrangement = Arrangement.spacedBy(SnapshotGridSpacing),
+            verticalItemSpacing = SnapshotGridSpacing,
         ) {
-            gridItems(group.snapshots, key = { it.id }) { snapshot ->
+            staggeredItems(group.snapshots, key = { it.id }) { snapshot ->
                 SnapshotGridCard(
                     snapshot = snapshot,
                     thumbnailWidth = cardWidth,
@@ -284,7 +279,7 @@ private fun SnapshotGrid(
                     onPreview = { onPreviewSnapshot(snapshot) },
                 )
             }
-            item(span = { GridItemSpan(columnCount) }) {
+            item(span = StaggeredGridItemSpan.FullLine) {
                 Spacer(modifier = Modifier.size(1.dp))
             }
         }
@@ -304,11 +299,17 @@ private fun SnapshotGridCard(
     val thumbnailWidthPx = remember(thumbnailWidth, density) {
         with(density) { thumbnailWidth.roundToPx().coerceAtLeast(1) }
     }
-    val thumbnailHeightPx = remember(thumbnailWidthPx) {
-        (thumbnailWidthPx * 4f / 3f).toInt().coerceAtLeast(1)
+    val aspectRatio = remember(snapshot.screenWidth, snapshot.screenHeight) {
+        if (snapshot.screenWidth > 0 && snapshot.screenHeight > 0) {
+            snapshot.screenWidth.toFloat() / snapshot.screenHeight.toFloat()
+        } else {
+            3f / 4f
+        }
+    }
+    val thumbnailHeightPx = remember(thumbnailWidthPx, aspectRatio) {
+        (thumbnailWidthPx / aspectRatio).toInt().coerceAtLeast(1)
     }
 
-    // 缩略图仍直接读本地 png，但显式限制目标尺寸，避免网格里把原始大图按全尺寸解码。
     val thumbnailRequest = remember(snapshot.id, thumbnailWidthPx, thumbnailHeightPx) {
         ImageRequest.Builder(context)
             .data(snapshot.screenshotFile)
@@ -326,11 +327,10 @@ private fun SnapshotGridCard(
             .padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        // 点击和长按都放在缩略图区域处理，能兼容“点击更多”和“长按看大图”这两条不同路径。
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(3f / 4f)
+                .aspectRatio(aspectRatio)
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color.Black.copy(alpha = 0.88f))
                 .combinedClickable(
@@ -375,23 +375,41 @@ private fun SnapshotPeekDialog(
     onDismissRequest: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val aspectRatio = remember(snapshot.screenWidth, snapshot.screenHeight) {
+        if (snapshot.screenWidth > 0 && snapshot.screenHeight > 0) {
+            snapshot.screenWidth.toFloat() / snapshot.screenHeight.toFloat()
+        } else {
+            1f
+        }
+    }
 
-    // 这个预览窗只承担“临时看细节”的职责，不复用正式图片预览页，避免再次引入缩放和分页复杂度。
     Dialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.72f))
                 .noRippleClickable(onClick = onDismissRequest),
             contentAlignment = Alignment.Center,
         ) {
+            val parentWidth = maxWidth
+            val parentHeight = maxHeight
+            val parentAspectRatio = if (parentHeight > 0.dp) parentWidth / parentHeight else 1f
+
+            val containerModifier = if (aspectRatio > parentAspectRatio) {
+                Modifier
+                    .fillMaxWidth(0.85f)
+                    .aspectRatio(aspectRatio)
+            } else {
+                Modifier
+                    .fillMaxHeight(0.85f)
+                    .aspectRatio(aspectRatio)
+            }
+
             Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.8f)
-                    .fillMaxHeight(0.8f)
+                modifier = containerModifier
                     .clip(RoundedCornerShape(24.dp))
                     .background(colorScheme.surfaceContainerHighest)
                     .noRippleClickable(onClick = {}),
@@ -427,7 +445,6 @@ private fun SnapshotActionDialog(
     val vm = viewModel<SnapshotVm>()
     val colorScheme = MaterialTheme.colorScheme
 
-    // 单条快照的管理入口保持原语义不变，只把触发源从旧列表项迁到了新网格卡片。
     Dialog(onDismissRequest = onDismissRequest) {
         Card(
             modifier = Modifier
