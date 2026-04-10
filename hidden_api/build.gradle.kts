@@ -13,6 +13,6 @@ android {
 
 dependencies {
     compileOnly(libs.androidx.annotation)
-    compileOnly(libs.rikka.refine.annotation)
-    annotationProcessor(libs.rikka.refine.processor)
+    compileOnly(libs.remap.annotation)
+    annotationProcessor(libs.remap.processor)
 }

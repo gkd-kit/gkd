@@ -2,12 +2,12 @@ package android.view.accessibility;
 
 import android.graphics.Rect;
 
-import dev.rikka.tools.refine.RefineAs;
+import li.songe.remap.RemapType;
 
 /**
  * @noinspection unused
  */
-@RefineAs(AccessibilityNodeInfo.class)
+@RemapType(AccessibilityNodeInfo.class)
 public class AccessibilityNodeInfoHidden {
     public Rect getBoundsInScreen() {
         throw new RuntimeException();

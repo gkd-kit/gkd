@@ -1,11 +1,11 @@
 package android.content.pm;
 
-import dev.rikka.tools.refine.RefineAs;
+import li.songe.remap.RemapType;
 
 /**
  * @noinspection unused
  */
-@RefineAs(PackageInfo.class)
+@RemapType(PackageInfo.class)
 public class PackageInfoHidden {
     public String overlayTarget;
 }

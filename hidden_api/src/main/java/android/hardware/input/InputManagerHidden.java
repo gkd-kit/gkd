@@ -1,12 +1,12 @@
 package android.hardware.input;
 
 
-import dev.rikka.tools.refine.RefineAs;
+import li.songe.remap.RemapType;
 
 /**
  * @noinspection unused
  */
-@RefineAs(InputManager.class)
+@RemapType(InputManager.class)
 public class InputManagerHidden {
     public static int INJECT_INPUT_EVENT_MODE_ASYNC;
     public static int INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH;

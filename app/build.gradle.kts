@@ -55,7 +55,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlinx.atomicfu)
     alias(libs.plugins.google.ksp)
-    alias(libs.plugins.rikka.refine)
+    alias(libs.plugins.remap)
     alias(libs.plugins.loc)
 }
 
@@ -244,7 +244,6 @@ dependencies {
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
-    implementation(libs.androidx.material3.adaptive.navigation3)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -5,12 +5,12 @@ import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
-import dev.rikka.tools.refine.RefineAs;
+import li.songe.remap.RemapType;
 
 /**
  * @noinspection unused
  */
-@RefineAs(Configuration.class)
+@RemapType(Configuration.class)
 public class ConfigurationHidden {
     @RequiresApi(Build.VERSION_CODES.P)
     public WindowConfiguration windowConfiguration;

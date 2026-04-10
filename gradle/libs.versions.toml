@@ -11,7 +11,7 @@ ktor = "3.4.2"
 atomicfu = "0.32.1"
 coil = "3.4.0"
 telephoto = "0.19.0"
-refine = "4.4.0"
+remap = "0.1.1"
 shizuku = "13.1.5"
 loc = "0.5.4"
 
@@ -44,7 +44,6 @@ androidx-lifecycle-runtime-ktx = "androidx.lifecycle:lifecycle-runtime-ktx:2.10.
 androidx-lifecycle-service = "androidx.lifecycle:lifecycle-service:2.10.0"
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3" }
-androidx-material3-adaptive-navigation3 = "androidx.compose.material3.adaptive:adaptive-navigation3:1.3.0-alpha10"
 androidx-lifecycle-viewmodel-navigation3 = "androidx.lifecycle:lifecycle-viewmodel-navigation3:2.10.0"
 androidx-junit = "androidx.test.ext:junit:1.3.0"
 androidx-annotation = "androidx.annotation:annotation:1.10.0"
@@ -58,8 +57,8 @@ androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.r
 androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
 google-accompanist-drawablepainter = "com.google.accompanist:accompanist-drawablepainter:0.37.3"
 junit = "junit:junit:4.13.2"
-rikka-refine-processor = { module = "dev.rikka.tools.refine:annotation-processor", version.ref = "refine" }
-rikka-refine-annotation = { module = "dev.rikka.tools.refine:annotation", version.ref = "refine" }
+remap-processor = { module = "li.songe.remap:remap-processor", version.ref = "remap" }
+remap-annotation = { module = "li.songe.remap:remap-annotation", version.ref = "remap" }
 rikka-shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
 rikka-shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
 lsposed-hiddenapibypass = "org.lsposed.hiddenapibypass:hiddenapibypass:6.1"
@@ -87,6 +86,6 @@ android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
 google-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-rikka-refine = { id = "dev.rikka.tools.refine", version.ref = "refine" }
+remap = { id = "li.songe.remap", version.ref = "remap" }
 loc = { id = "li.songe.loc", version.ref = "loc" }
 littlerobots-version = "nl.littlerobots.version-catalog-update:1.1.0"

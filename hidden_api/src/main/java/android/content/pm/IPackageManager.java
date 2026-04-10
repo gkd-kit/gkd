@@ -9,6 +9,8 @@ import android.os.IInterface;
 import androidx.annotation.DeprecatedSinceApi;
 import androidx.annotation.RequiresApi;
 
+import li.songe.remap.RemapMethod;
+
 /**
  * @noinspection unused
  */
@@ -27,6 +29,10 @@ public interface IPackageManager extends IInterface {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     ParceledListSlice<PackageInfo> getInstalledPackages(long flags, int userId);
 
+    // android17+
+    @RemapMethod("getInstalledPackages")
+    PackageInfoList getInstalledPackagesV17(long flags, int userId);
+
     @DeprecatedSinceApi(api = Build.VERSION_CODES.TIRAMISU)
     PackageInfo getPackageInfo(String packageName, int flags, int userId);
 
@@ -40,5 +46,4 @@ public interface IPackageManager extends IInterface {
     void grantRuntimePermission(String packageName, String permissionName, int userId);
 
     int getApplicationEnabledSetting(String packageName, int userId);
-
 }

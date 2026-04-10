@@ -4,12 +4,12 @@ import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
-import dev.rikka.tools.refine.RefineAs;
+import li.songe.remap.RemapType;
 
 /**
  * @noinspection unused
  */
-@RefineAs(AccessibilityServiceInfo.class)
+@RemapType(AccessibilityServiceInfo.class)
 public class AccessibilityServiceInfoHidden {
     public static int FLAG_FORCE_DIRECT_BOOT_AWARE;
 

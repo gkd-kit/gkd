@@ -5,12 +5,12 @@ import android.os.Looper;
 
 import androidx.annotation.RequiresApi;
 
-import dev.rikka.tools.refine.RefineAs;
+import li.songe.remap.RemapType;
 
 /**
  * @noinspection unused
  */
-@RefineAs(UiAutomation.class)
+@RemapType(UiAutomation.class)
 public class UiAutomationHidden {
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)

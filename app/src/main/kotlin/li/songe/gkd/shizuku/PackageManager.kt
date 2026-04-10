@@ -2,7 +2,6 @@ package li.songe.gkd.shizuku
 
 import android.Manifest
 import android.content.pm.IPackageManager
-import android.content.pm.IPackageManagerCompat
 import android.content.pm.PackageInfo
 import li.songe.gkd.META
 import li.songe.gkd.app
@@ -28,7 +27,7 @@ class SafePackageManager(private val value: IPackageManager) {
         userId: Int = currentUserId,
     ): List<PackageInfo> = safeInvokeShizuku {
         if (AndroidTarget.CINNAMON_BUN) {
-            (value as IPackageManagerCompat).getInstalledPackages(flags.toLong(), userId).list
+            value.getInstalledPackagesV17(flags.toLong(), userId).list
         } else if (AndroidTarget.TIRAMISU) {
             value.getInstalledPackages(flags.toLong(), userId).list
         } else {

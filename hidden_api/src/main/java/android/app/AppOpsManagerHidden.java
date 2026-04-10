@@ -1,16 +1,15 @@
 package android.app;
 
-
 import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
-import dev.rikka.tools.refine.RefineAs;
+import li.songe.remap.RemapType;
 
 /**
  * @noinspection unused
  */
-@RefineAs(AppOpsManager.class)
+@RemapType(AppOpsManager.class)
 public class AppOpsManagerHidden {
     public static int OP_POST_NOTIFICATION;
     @RequiresApi(Build.VERSION_CODES.P)

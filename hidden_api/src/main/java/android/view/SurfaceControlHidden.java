@@ -4,12 +4,12 @@ import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.os.IBinder;
 
-import dev.rikka.tools.refine.RefineAs;
+import li.songe.remap.RemapType;
 
 /**
  * @noinspection unused
  */
-@RefineAs(SurfaceControl.class)
+@RemapType(SurfaceControl.class)
 public class SurfaceControlHidden {
     public static IBinder getInternalDisplayToken() {
         throw new RuntimeException();

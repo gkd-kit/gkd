@@ -5,12 +5,12 @@ import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
-import dev.rikka.tools.refine.RefineAs;
+import li.songe.remap.RemapType;
 
 /**
  * @noinspection unused
  */
-@RefineAs(TaskInfo.class)
+@RemapType(TaskInfo.class)
 @RequiresApi(Build.VERSION_CODES.Q)
 public class TaskInfoHidden {
     public Configuration configuration;
