@@ -1,10 +1,10 @@
 [versions]
 kotlin = "2.3.20"
-serialization = "1.10.0"
+serialization = "1.11.0"
 ksp = "2.3.6"
 agp = "9.1.0"
 compose = "1.10.6"
-nav3 = "1.0.1"
+nav3 = "1.1.0"
 room = "2.8.4"
 paging = "3.4.2"
 ktor = "3.4.2"
@@ -44,10 +44,10 @@ androidx-lifecycle-runtime-ktx = "androidx.lifecycle:lifecycle-runtime-ktx:2.10.
 androidx-lifecycle-service = "androidx.lifecycle:lifecycle-service:2.10.0"
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3" }
-androidx-material3-adaptive-navigation3 = "androidx.compose.material3.adaptive:adaptive-navigation3:1.3.0-alpha09"
+androidx-material3-adaptive-navigation3 = "androidx.compose.material3.adaptive:adaptive-navigation3:1.3.0-alpha10"
 androidx-lifecycle-viewmodel-navigation3 = "androidx.lifecycle:lifecycle-viewmodel-navigation3:2.10.0"
 androidx-junit = "androidx.test.ext:junit:1.3.0"
-androidx-annotation = "androidx.annotation:annotation:1.9.1"
+androidx-annotation = "androidx.annotation:annotation:1.10.0"
 androidx-espresso = "androidx.test.espresso:espresso-core:3.7.0"
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
@@ -70,8 +70,8 @@ telephoto-zoomable = { module = "me.saket.telephoto:zoomable", version.ref = "te
 loc-annotation = { module = "li.songe.loc:loc-annotation", version.ref = "loc" }
 reorderable = "sh.calvin.reorderable:reorderable:3.0.0"
 exp4j = "net.objecthunter:exp4j:0.4.8"
-toaster = "com.github.getActivity:Toaster:13.8"
-permissions = "com.github.getActivity:XXPermissions:28.0"
+toaster = "com.github.getActivity:Toaster:15.0"
+permissions = "com.github.getActivity:XXPermissions:28.2"
 device = "com.github.getActivity:DeviceCompat:2.6"
 json5 = "li.songe:json5:0.5.0"
 activityResultLauncher = "com.github.DylanCaiCoding:ActivityResultLauncher:1.1.2"
