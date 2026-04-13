@@ -31,7 +31,6 @@ import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.loc.Loc
 
-@Loc
 fun toast(
     text: CharSequence,
     forced: Boolean = false,

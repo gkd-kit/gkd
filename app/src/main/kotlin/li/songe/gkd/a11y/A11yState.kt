@@ -139,7 +139,6 @@ sealed class ActivityScene {
     data object TaskStack : ActivityScene()
 }
 
-@Loc
 @Synchronized
 fun updateTopActivity(
     appId: String,

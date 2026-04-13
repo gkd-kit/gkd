@@ -98,7 +98,6 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
 
     private val backThrottleTimer = ThrottleTimer()
 
-    @Loc
     fun popPage(@Loc loc: String = "") = runMainPost {
         if (backThrottleTimer.expired() && backStack.size > 1) {
             val old = backStack.last()
@@ -107,7 +106,6 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
         }
     }
 
-    @Loc
     fun navigatePage(
         navKey: NavKey,
         replaced: Boolean = false,

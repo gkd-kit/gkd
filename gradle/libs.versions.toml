@@ -13,7 +13,7 @@ coil = "3.4.0"
 telephoto = "0.19.0"
 remap = "0.1.1"
 shizuku = "13.1.5"
-loc = "0.5.4"
+loc = "0.6.2"
 
 [libraries]
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }

@@ -25,7 +25,6 @@ interface OnSimpleLife {
     fun onDestroyed(f: CbFn) = cbs<CbFn>(2).add(f)
     fun onDestroyed() = cbs<CbFn>(2).forEach { it() }
 
-    @Loc
     fun useLogLifecycle(@Loc loc: String = "") {
         onCreated { LogUtils.d("onCreated -> " + this::class.simpleName, loc = loc) }
         onDestroyed { LogUtils.d("onDestroyed -> " + this::class.simpleName, loc = loc) }
@@ -50,7 +49,6 @@ interface OnSimpleLife {
         onDestroyed { stateFlow.value = false }
     }
 
-    @Loc
     fun useAliveToast(
         name: String,
         delayMillis: Long = 0L,

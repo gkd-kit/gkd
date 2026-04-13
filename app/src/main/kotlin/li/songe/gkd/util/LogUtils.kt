@@ -13,7 +13,6 @@ import java.util.concurrent.Executors
 import kotlin.time.Duration.Companion.days
 
 object LogUtils {
-    @Loc
     fun d(
         vararg args: Any?,
         @Loc loc: String = "",
