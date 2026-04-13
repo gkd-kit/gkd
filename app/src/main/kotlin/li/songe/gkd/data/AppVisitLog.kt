@@ -17,7 +17,7 @@ import li.songe.gkd.util.systemUiAppId
     tableName = "app_visit_log",
 )
 data class AppVisitLog(
-    @PrimaryKey() @ColumnInfo(name = "id") val id: String,
+    @PrimaryKey @ColumnInfo(name = "id") val id: String,
     @ColumnInfo(name = "mtime") val mtime: Long,
 ) {
     @Dao
@@ -59,7 +59,8 @@ data class AppVisitLog(
 }
 
 private fun fixAppVisitTime(appId: String, t: Long): Long = when (appId) {
-    META.appId, launcherAppId, systemUiAppId -> t - 60_000
+    META.appId -> t - 120_000
+    launcherAppId, systemUiAppId -> t - 60_000
     else -> t
 }
 
