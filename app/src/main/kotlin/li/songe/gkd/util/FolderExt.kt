@@ -3,6 +3,7 @@ package li.songe.gkd.util
 import android.text.format.DateUtils
 import androidx.annotation.WorkerThread
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import li.songe.gkd.META
 import li.songe.gkd.app
 import li.songe.gkd.data.AppInfo
@@ -21,7 +22,15 @@ fun File.autoMk(): File {
 }
 
 private val filesDir: File by lazy {
-    app.getExternalFilesDir(null) ?: error("failed getExternalFilesDir")
+    val markFile = app.filesDir.resolve(".gkd")
+    if (markFile.isFile) {
+        app.filesDir
+    } else {
+        // fix #1333
+        app.getExternalFilesDir(null) ?: app.filesDir.also {
+            markFile.createNewFile()
+        }
+    }
 }
 
 val dbFolder: File
@@ -42,7 +51,7 @@ val crashTempFolder: File
     get() = filesDir.resolve("crash/temp").autoMk()
 
 val privateStoreFolder: File
-    get() = app.filesDir.resolve("store").autoMk()
+    get() = app.filesDir.resolve("private-store").autoMk()
 
 private val cacheDir by lazy { app.externalCacheDir ?: app.cacheDir }
 val coilCacheDir: File
@@ -87,10 +96,6 @@ private data class AppJsonData(
 fun buildLogFile(): File {
     val tempDir = createGkdTempDir()
     val files = mutableListOf(dbFolder, storeFolder, subsFolder, logFolder, crashFolder)
-    tempDir.resolve("meta.json").also {
-        it.writeText(toJson5String(META))
-        files.add(it)
-    }
     tempDir.resolve("apps.json").also {
         it.writeText(json.encodeToString(AppJsonData()))
         files.add(it)
@@ -108,8 +113,11 @@ fun buildLogFile(): File {
         it.appendText("\nappListAuthAbnormalFlow: ${appListAuthAbnormalFlow.value}")
         files.add(it)
     }
+    val formattedJson = Json(from = json) {
+        prettyPrint = true
+    }
     tempDir.resolve("gkd-${META.versionCode}-v${META.versionName}.json").also {
-        it.writeText(json.encodeToString(META))
+        it.writeText(formattedJson.encodeToString(META))
         files.add(it)
     }
     val logZipFile = sharedDir.resolve("log-${System.currentTimeMillis()}.zip")
