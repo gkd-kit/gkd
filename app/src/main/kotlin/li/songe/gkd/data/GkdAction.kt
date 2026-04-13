@@ -210,11 +210,17 @@ sealed class ActionPerformer(val action: String) {
             locationProps: RawSubscription.LocationProps,
         ): ActionResult {
             val rect = node.casted.boundsInScreen
-            val swipeArg = locationProps.swipeArg ?: return None.perform(node, locationProps)
+            val swipeArg = locationProps.swipeArg ?: return ActionResult(
+                action = action,
+                result = false,
+            )
             val startP = swipeArg.start.calc(rect)
             val endP = swipeArg.end?.calc(rect) ?: startP
             if (startP == null || endP == null) {
-                return None.perform(node, locationProps)
+                return ActionResult(
+                    action = action,
+                    result = false,
+                )
             }
             val startX = startP.first
             val startY = startP.second
