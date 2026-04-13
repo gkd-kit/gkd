@@ -621,14 +621,16 @@ data class RawSubscription(
             return null
         }
 
-        private val expVars = arrayOf(
+        private val preFillExpVars = arrayOf(
             "left",
             "top",
             "right",
             "bottom",
             "width",
             "height",
-            "random"
+            "random",
+            "screenWidth",
+            "screenHeight",
         )
 
         private fun setVariables(exp: Expression?, rect: Rect) {
@@ -647,8 +649,8 @@ data class RawSubscription(
         private fun getExpression(value: String?): Expression? {
             return if (value != null) {
                 try {
-                    ExpressionBuilder(value).variables(*expVars).build().apply {
-                        expVars.forEach { v ->
+                    ExpressionBuilder(value).variables(*preFillExpVars).build().apply {
+                        preFillExpVars.forEach { v ->
                             // 预填充作 validate
                             setVariable(v, 0.0)
                         }
