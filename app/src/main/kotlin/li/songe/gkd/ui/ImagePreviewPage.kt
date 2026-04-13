@@ -52,11 +52,16 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation3.runtime.NavKey
 import coil3.EventListener
+import coil3.ImageLoader
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.decode.Decoder
+import coil3.disk.DiskCache
 import coil3.fetch.Fetcher
+import coil3.gif.AnimatedImageDecoder
+import coil3.gif.GifDecoder
 import coil3.imageLoader
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.CachePolicy
 import coil3.request.ErrorResult
 import coil3.request.ImageRequest
@@ -68,14 +73,21 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
+import li.songe.gkd.app
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.util.AndroidTarget
+import li.songe.gkd.util.coilCacheDir
 import li.songe.gkd.util.throttle
 import me.saket.telephoto.zoomable.ZoomableContentLocation
 import me.saket.telephoto.zoomable.rememberZoomableState
 import me.saket.telephoto.zoomable.zoomable
+import okhttp3.OkHttpClient
+import okio.Path.Companion.toOkioPath
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 
 @Serializable
 data class ImagePreviewItem(
@@ -92,21 +104,45 @@ data class ImagePreviewRoute(
     val items: List<ImagePreviewItem> = emptyList(),
 ) : NavKey
 
+private val imageLoader by lazy {
+    ImageLoader.Builder(app)
+        .diskCache {
+            DiskCache.Builder()
+                .directory(coilCacheDir.toOkioPath())
+                .maxSizePercent(0.1)
+                .build()
+        }
+        .components {
+            if (AndroidTarget.P) {
+                add(AnimatedImageDecoder.Factory())
+            } else {
+                add(GifDecoder.Factory())
+            }
+            add(
+                OkHttpNetworkFetcherFactory(
+                    callFactory = {
+                        OkHttpClient.Builder()
+                            .connectTimeout(30.seconds.toJavaDuration())
+                            .readTimeout(30.seconds.toJavaDuration())
+                            .writeTimeout(30.seconds.toJavaDuration())
+                            .build()
+                    }
+                ))
+        }
+        .build()
+}
+
 @Composable
 fun ImagePreviewPage(route: ImagePreviewRoute) {
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
-    val imageLoader = context.imageLoader
     var showBars by remember { mutableStateOf(true) }
 
     // 路由同时兼容旧的 uri/uris 和新的 items，预览页内部统一按图片项处理。
-    val previewItems = remember(route.uri, route.uris, route.items) {
+    val previewItems = remember(route) {
         when {
             route.items.isNotEmpty() -> route.items
-            route.uris.isNotEmpty() -> route.uris.map { uri ->
-                ImagePreviewItem(uri = uri)
-            }
-
+            route.uris.isNotEmpty() -> route.uris.map { ImagePreviewItem(it) }
             route.uri != null -> listOf(ImagePreviewItem(uri = route.uri))
             else -> emptyList()
         }
