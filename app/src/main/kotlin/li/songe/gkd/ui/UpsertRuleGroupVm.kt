@@ -58,7 +58,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
             toast("规则无变动")
             return
         }
-        val jsonObject = runCatching { Json5.parseToJson5Element(text) }.run {
+        var jsonObject = runCatching { Json5.parseToJson5Element(text) }.run {
             if (isFailure) {
                 error("非法格式\n${exceptionOrNull()?.message}")
             }
@@ -67,12 +67,28 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
         if (jsonObject !is JsonObject) {
             error("规则应为对象格式")
         }
+        // 自动填充 key
+        if (jsonObject["name"] != null && jsonObject["key"] == null) {
+            jsonObject = JsonObject(jsonObject + mapOf("key" to JsonPrimitive(groupKey ?: 0)))
+        }
+        if (jsonObject["id"] is JsonPrimitive && jsonObject["groups"] is JsonArray) {
+            val groups = jsonObject["groups"] as JsonArray
+            val newGroups = groups.map {
+                if (it is JsonObject && it["name"] != null && it["key"] == null) {
+                    JsonObject(it + mapOf("key" to JsonPrimitive(groupKey ?: 0)))
+                } else {
+                    it
+                }
+            }
+            jsonObject = JsonObject(mapOf("groups" to JsonArray(newGroups)) + jsonObject)
+        }
+
         if (jsonObject == initialGroup?.cacheJsonObject) {
             toast("规则无变动")
             return
         }
         if (groupKey != null) {
-            val newGroup = try {
+            var newGroup = try {
                 if (appId != null) {
                     if (jsonObject["groups"] is JsonArray) {
                         val id = jsonObject["id"] ?: error("缺少id")
@@ -97,7 +113,15 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
             }
             newGroup.errorDesc?.let(::error)
             if (newGroup.key != groupKey) {
-                error("不能更改规则的key")
+                // 自动修正 key 与原来一致
+                newGroup = when (newGroup) {
+                    is RawSubscription.RawAppGroup -> newGroup.copy(key = groupKey)
+                    is RawSubscription.RawGlobalGroup -> newGroup.copy(key = groupKey)
+                }
+            }
+            if (newGroup == initialGroup) {
+                toast("规则无变动")
+                return
             }
             val newSubs = if (appId != null) {
                 newGroup as RawSubscription.RawAppGroup
@@ -122,7 +146,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
             updateSubscription(newSubs)
         } else {
             if (isAddAnyApp) {
-                val newApp = try {
+                var newApp = try {
                     RawSubscription.parseApp(jsonObject).apply {
                         if (groups.isEmpty()) {
                             error("至少输入一个规则")
@@ -137,6 +161,17 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
                     newApp.groups.forEach { g ->
                         checkGroupKeyName(oldApp.groups, g)
                     }
+                    // 自动修正 key 与原来不重复
+                    val usedKeys = oldApp.groups.map { it.key }.toHashSet()
+                    newApp = newApp.copy(groups = newApp.groups.map { g ->
+                        if (g.key in usedKeys) {
+                            g.copy(key = usedKeys.max() + 1).also {
+                                usedKeys.add(it.key)
+                            }
+                        } else {
+                            g
+                        }
+                    })
                 }
                 val newSubs = subs.copy(apps = subs.apps.toMutableList().apply {
                     val i = indexOfFirst { a -> a.id == newApp.id }
@@ -153,7 +188,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
                 updateSubscription(newSubs)
             } else if (appId != null) {
                 // add specified app group
-                val newGroups = try {
+                var newGroups = try {
                     if (jsonObject["groups"] is JsonArray) {
                         val id = jsonObject["id"] ?: error("缺少id")
                         if (!(id is JsonPrimitive && id.isString && id.content == appId)) {
@@ -176,6 +211,17 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
                     checkGroupKeyName(oldApp.groups, g)
                     g.errorDesc?.let { error(it) }
                 }
+                // 自动修正 key 与原来不重复
+                val usedKeys = oldApp.groups.map { it.key }.toHashSet()
+                newGroups = newGroups.map { g ->
+                    if (g.key in usedKeys) {
+                        g.copy(key = usedKeys.max() + 1).also {
+                            usedKeys.add(it.key)
+                        }
+                    } else {
+                        g
+                    }
+                }
                 val newSubs = subs.copy(apps = subs.apps.toMutableList().apply {
                     val newApp = oldApp.copy(groups = oldApp.groups + newGroups)
                     val i = indexOfFirst { a -> a.id == newApp.id }
@@ -191,13 +237,16 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
                 updateSubscription(newSubs)
             } else {
                 // add global group
-                val newGroup = try {
+                var newGroup = try {
                     RawSubscription.parseGlobalGroup(jsonObject)
                 } catch (e: Exception) {
                     LogUtils.d(e)
                     error("非法规则\n${e.message}")
                 }
                 checkGroupKeyName(subs.globalGroups, newGroup)
+                if (subs.globalGroups.any { it.key == newGroup.key }) {
+                    newGroup = newGroup.copy(key = subs.globalGroups.maxOf { it.key } + 1)
+                }
                 updateSubscription(
                     subs.copy(
                         globalGroups = subs.globalGroups + newGroup
@@ -223,8 +272,5 @@ private fun checkGroupKeyName(
 ) {
     if (groups.any { it.name == newGroup.name }) {
         error("已存在同名「${newGroup.name}」规则")
-    }
-    if (groups.any { it.key == newGroup.key }) {
-        error("已存在同 key=${newGroup.key} 规则")
     }
 }
