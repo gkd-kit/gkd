@@ -27,7 +27,7 @@ public interface IUiAutomationConnection {
 
     void shutdown();
 
-    // https://diff.songe.li/?ref=IUiAutomationConnection.takeScreenshot
+    // https://diff.songe.li/i/IUiAutomationConnection.takeScreenshot
     @DeprecatedSinceApi(api = Build.VERSION_CODES.P)
     Bitmap takeScreenshot(int width, int height);
 

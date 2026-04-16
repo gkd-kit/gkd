@@ -16,7 +16,7 @@ public interface ITaskStackListener {
     // 应用->桌面不会回调，分屏下切换窗口不会回调，但从最近任务界面移除窗口会回调
     void onTaskStackChanged();
 
-    // https://diff.songe.li/?ref=ITaskStackListener.onTaskMovedToFront
+    // https://diff.songe.li/i/ITaskStackListener.onTaskMovedToFront
     // android8 - android9
     void onTaskMovedToFront(int taskId);
 

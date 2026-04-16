@@ -23,21 +23,21 @@ public interface IWindowManager extends IInterface {
 
     int getDefaultDisplayRotation();
 
-    // https://diff.songe.li/?ref=IWindowManager.freezeRotation
+    // https://diff.songe.li/i/IWindowManager.freezeRotation
     @DeprecatedSinceApi(api = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     void freezeRotation(int rotation);
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     void freezeRotation(int rotation, String caller);
 
-    // https://diff.songe.li/?ref=IWindowManager.thawRotation
+    // https://diff.songe.li/i/IWindowManager.thawRotation
     @DeprecatedSinceApi(api = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     void thawRotation();
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     void thawRotation(String caller);
 
-    // https://diff.songe.li/?ref=IWindowManager.captureDisplay
+    // https://diff.songe.li/i/IWindowManager.captureDisplay
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     void captureDisplay(int displayId, ScreenCapture.CaptureArgs captureArgs, ScreenCapture.ScreenCaptureListener listener);
 

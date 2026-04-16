@@ -18,7 +18,7 @@ class SafeAppOpsService(
             SafeAppOpsService(IAppOpsService.Stub.asInterface(it))
         }
 
-        // https://diff.songe.li/?ref=AppOpsManager.OP_CREATE_ACCESSIBILITY_OVERLAY
+        // https://diff.songe.li/i/AppOpsManager.OP_CREATE_ACCESSIBILITY_OVERLAY
         private val a11yOverlayOk by lazy {
             AndroidTarget.UPSIDE_DOWN_CAKE && try {
                 AppOpsManager::class.java.getField("OP_CREATE_ACCESSIBILITY_OVERLAY")

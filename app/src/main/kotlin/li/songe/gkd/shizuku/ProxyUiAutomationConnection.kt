@@ -17,7 +17,7 @@ import li.songe.gkd.util.AndroidTarget
 import rikka.shizuku.Shizuku
 
 
-// https://diff.songe.li/?ref=UiAutomationConnection
+// https://diff.songe.li/i/UiAutomationConnection
 class ProxyUiAutomationConnection : IUiAutomationConnection.Stub() {
     companion object {
         private const val INITIAL_FROZEN_ROTATION_UNSPECIFIED = -1
@@ -79,7 +79,7 @@ class ProxyUiAutomationConnection : IUiAutomationConnection.Stub() {
         }
     }
 
-    // https://diff.songe.li/?ref=UiAutomationConnection.takeScreenshot
+    // https://diff.songe.li/i/UiAutomationConnection.takeScreenshot
     override fun takeScreenshot(width: Int, height: Int): Bitmap? {
         synchronized(mLock) {
             throwIfCalledByNotTrustedUidLocked()
