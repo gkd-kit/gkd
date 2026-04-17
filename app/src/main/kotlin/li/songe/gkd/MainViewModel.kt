@@ -368,7 +368,7 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
             clearCache()
         }
 
-        if (updateStatus != null && termsAcceptedFlow.value) {
+        if (termsAcceptedFlow.value && updateStatus?.canRecheck == true) {
             updateStatus.checkUpdate()
         }
 

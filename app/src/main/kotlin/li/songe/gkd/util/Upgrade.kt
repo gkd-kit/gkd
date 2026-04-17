@@ -34,6 +34,7 @@ import li.songe.gkd.store.createAnyFlow
 import li.songe.gkd.store.storeFlow
 import java.io.File
 import java.net.URI
+import kotlin.time.Duration.Companion.days
 
 
 private val UPDATE_URL: String
@@ -56,6 +57,8 @@ data class VersionLog(
     val desc: String,
 )
 
+private var lastCheckTime = 0L
+
 class UpdateStatus(val scope: CoroutineScope) {
     private val checkUpdatingMutex = MutexState()
     val checkUpdatingFlow
@@ -73,9 +76,12 @@ class UpdateStatus(val scope: CoroutineScope) {
     }
     private var lastManual = false
 
-    fun checkUpdate(manual: Boolean = false) = scope.launchTry(Dispatchers.IO, silent = manual) {
+    val canRecheck get() = System.currentTimeMillis() - lastCheckTime > 1.days.inWholeMilliseconds
+
+    fun checkUpdate(manual: Boolean = false) = scope.launchTry(Dispatchers.IO, silent = !manual) {
         lastManual = manual
         checkUpdatingMutex.whenUnLock {
+            lastCheckTime = System.currentTimeMillis()
             if (!NetworkUtils.isAvailable()) {
                 error("网络不可用")
             }
