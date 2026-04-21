@@ -2,7 +2,7 @@
 kotlin = "2.3.20"
 serialization = "1.11.0"
 ksp = "2.3.6"
-agp = "9.1.0"
+agp = "9.1.1"
 compose = "1.10.6"
 nav3 = "1.1.0"
 room = "2.8.4"
@@ -67,7 +67,7 @@ coil-network = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = 
 coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil" }
 telephoto-zoomable = { module = "me.saket.telephoto:zoomable", version.ref = "telephoto" }
 loc-annotation = { module = "li.songe.loc:loc-annotation", version.ref = "loc" }
-reorderable = "sh.calvin.reorderable:reorderable:3.0.0"
+reorderable = "sh.calvin.reorderable:reorderable:3.1.0"
 exp4j = "net.objecthunter:exp4j:0.4.8"
 toaster = "com.github.getActivity:Toaster:15.0"
 permissions = "com.github.getActivity:XXPermissions:28.2"
