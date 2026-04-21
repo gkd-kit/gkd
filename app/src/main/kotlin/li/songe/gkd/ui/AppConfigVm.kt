@@ -73,9 +73,11 @@ class AppConfigVm(val route: AppConfigRoute) : BaseViewModel() {
     private val temp1ListFlow = combine(
         appUsedSubsIdsFlow,
         usedSubsEntriesFlow,
-    ) { usedSubsIds, list ->
+        globalSubsConfigsFlow,
+    ) { usedSubsIds, list, configs ->
         list.map { e ->
             val globalGroups = e.subscription.globalGroups
+                .filter { g -> configs.find { it.subsId == e.subsItem.id && it.groupKey == g.key }?.enable != false }
             val appGroups = if (usedSubsIds.contains(e.subsItem.id)) {
                 e.subscription.getAppGroups(route.appId)
             } else {
