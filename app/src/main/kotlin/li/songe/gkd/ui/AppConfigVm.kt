@@ -73,11 +73,9 @@ class AppConfigVm(val route: AppConfigRoute) : BaseViewModel() {
     private val temp1ListFlow = combine(
         appUsedSubsIdsFlow,
         usedSubsEntriesFlow,
-        globalSubsConfigsFlow,
-    ) { usedSubsIds, list, configs ->
+    ) { usedSubsIds, list ->
         list.map { e ->
             val globalGroups = e.subscription.globalGroups
-                .filter { g -> configs.find { it.subsId == e.subsItem.id && it.groupKey == g.key }?.enable != false }
             val appGroups = if (usedSubsIds.contains(e.subsItem.id)) {
                 e.subscription.getAppGroups(route.appId)
             } else {
@@ -115,7 +113,7 @@ class AppConfigVm(val route: AppConfigRoute) : BaseViewModel() {
                     appId = route.appId,
                     subsConfig = subsConfig,
                     categoryConfig = categoryConfig,
-                )
+                ) && (group !is RawSubscription.RawGlobalGroup || subsConfig?.enable != false)
                 if (checked) {
                     checkedSet.add(Triple(entry.subsItem.id, group.groupType, group.key))
                 }
@@ -124,14 +122,20 @@ class AppConfigVm(val route: AppConfigRoute) : BaseViewModel() {
         checkedSet
     }.stateInit(emptySet())
 
-    private val actualCheckedGroupSetFlow = MutableStateFlow(checkedGroupSetFlow.value)
+    private val actualCheckedGroupSetFlow =
+        MutableStateFlow<Set<Triple<Long, Int, Int>>>(emptySet())
 
     init {
         showDisabledRuleFlow.launchOnChange {
             actualCheckedGroupSetFlow.value = checkedGroupSetFlow.value
         }
-        checkedGroupSetFlow.launchOnChange { a ->
-            actualCheckedGroupSetFlow.update { b -> a + b }
+        viewModelScope.launch {
+            combine(checkedGroupSetFlow, firstLoadingFlow) { a, first -> first to a }
+                .collect { (first, a) ->
+                    if (!first) {
+                        actualCheckedGroupSetFlow.update { b -> a + b }
+                    }
+                }
         }
     }
 
@@ -228,4 +232,3 @@ class AppConfigVm(val route: AppConfigRoute) : BaseViewModel() {
     }
 
 }
-
