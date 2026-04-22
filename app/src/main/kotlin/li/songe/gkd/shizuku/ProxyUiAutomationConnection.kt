@@ -244,23 +244,16 @@ class ProxyUiAutomationConnection : IUiAutomationConnection.Stub() {
         }
     }
 
+    // 部分魔改Android14 ROM可能无新api导致崩溃
     private fun restoreRotationStateLocked() {
         try {
             if (mInitialFrozenRotation != INITIAL_FROZEN_ROTATION_UNSPECIFIED) {
-                if (AndroidTarget.UPSIDE_DOWN_CAKE) {
-                    mWindowManager.freezeRotation(
-                        mInitialFrozenRotation,
-                        "UiAutomationConnection#restoreRotationStateLocked"
-                    )
-                } else {
-                    mWindowManager.freezeRotation(mInitialFrozenRotation)
-                }
+                mWindowManager.freezeRotationCompat(
+                    mInitialFrozenRotation,
+                    "UiAutomationConnection#restoreRotationStateLocked"
+                )
             } else {
-                if (AndroidTarget.UPSIDE_DOWN_CAKE) {
-                    mWindowManager.thawRotation("UiAutomationConnection#restoreRotationStateLocked")
-                } else {
-                    mWindowManager.thawRotation()
-                }
+                mWindowManager.thawRotationCompat("UiAutomationConnection#restoreRotationStateLocked")
             }
         } catch (_: RemoteException) {
         }
