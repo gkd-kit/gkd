@@ -95,6 +95,7 @@ fun AppConfigPage(route: AppConfigRoute) {
     val (scrollBehavior, listState) = useListScrollState(
         resetKey,
         groupSize > 0,
+        firstLoading,
     )
     if (focusLog != null && groupSize > 0) {
         LaunchedEffect(null) {
@@ -326,13 +327,13 @@ fun AppConfigPage(route: AppConfigRoute) {
                     val subsConfig = when (group) {
                         is RawSubscription.RawAppGroup -> appSubsConfigs
                         is RawSubscription.RawGlobalGroup -> globalSubsConfigs
-                    }.find { it.subsId == entry.subsItem.id && it.groupKey == group.key }
+                    }?.find { it.subsId == entry.subsItem.id && it.groupKey == group.key }
                     val category = when (group) {
                         is RawSubscription.RawAppGroup -> entry.subscription.getCategory(group.name)
                         is RawSubscription.RawGlobalGroup -> null
                     }
                     val categoryConfig = if (category != null) {
-                        categoryConfigs.find { it.subsId == subsId && it.categoryKey == category.key }
+                        categoryConfigs?.find { it.subsId == subsId && it.categoryKey == category.key }
                     } else {
                         null
                     }

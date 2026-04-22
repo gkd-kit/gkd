@@ -58,23 +58,24 @@ class AppConfigVm(val route: AppConfigRoute) : BaseViewModel() {
     }.flattenConcat().attachLoad().stateInit(emptyList())
 
     val globalSubsConfigsFlow = DbSet.subsConfigDao.queryUsedGlobalConfig().attachLoad()
-        .stateInit(emptyList())
+        .stateInit(null)
 
     val appSubsConfigsFlow = appUsedSubsIdsFlow.map {
         DbSet.subsConfigDao.queryAppConfig(it, route.appId)
     }.flattenConcat().attachLoad()
-        .stateInit(emptyList())
+        .stateInit(null)
 
     val categoryConfigsFlow = appUsedSubsIdsFlow.map {
         DbSet.categoryConfigDao.queryBySubsIds(it)
     }.flattenConcat().attachLoad()
-        .stateInit(emptyList())
+        .stateInit(null)
 
     private val temp1ListFlow = combine(
         appUsedSubsIdsFlow,
         usedSubsEntriesFlow,
         globalSubsConfigsFlow,
     ) { usedSubsIds, list, configs ->
+        if (configs == null) return@combine emptyList()
         list.map { e ->
             val globalGroups = e.subscription.globalGroups
                 .filter { g -> configs.find { it.subsId == e.subsItem.id && it.groupKey == g.key }?.enable != false }
@@ -93,6 +94,9 @@ class AppConfigVm(val route: AppConfigRoute) : BaseViewModel() {
         categoryConfigsFlow,
         appSubsConfigsFlow,
     ) { list, globalSubsConfigs, categoryConfigs, appSubsConfigs ->
+        if (globalSubsConfigs == null || categoryConfigs == null || appSubsConfigs == null) {
+            return@combine emptySet()
+        }
         val checkedSet = mutableSetOf<Triple<Long, Int, Int>>()
         list.forEach { (entry, groups) ->
             groups.forEach { group ->
