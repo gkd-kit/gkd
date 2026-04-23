@@ -15,24 +15,10 @@ class SafeActivityTaskManager(private val value: IActivityTaskManager) {
         } else {
             null
         }
-
-        private val getTasksType by lazy {
-            IActivityTaskManager::class.java.detectHiddenMethod(
-                "getTasks",
-                1 to listOf(Int::class.java),
-                2 to listOf(Int::class.java, Boolean::class.java, Boolean::class.java),
-                3 to listOf(
-                    Int::class.java,
-                    Boolean::class.java,
-                    Boolean::class.java,
-                    Int::class.java
-                ),
-            )
-        }
     }
 
     fun getTasks(maxNum: Int = 1): List<ActivityManager.RunningTaskInfo>? = safeInvokeShizuku {
-        when (getTasksType) {
+        when (HiddenApiType.getTasks) {
             1 -> value.getTasks(maxNum)
             2 -> value.getTasks(maxNum, false, false)
             3 -> value.getTasks(maxNum, false, false, Display.INVALID_DISPLAY)

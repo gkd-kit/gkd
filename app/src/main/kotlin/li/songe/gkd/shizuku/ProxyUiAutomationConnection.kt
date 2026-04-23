@@ -247,19 +247,17 @@ class ProxyUiAutomationConnection : IUiAutomationConnection.Stub() {
     private fun restoreRotationStateLocked() {
         try {
             if (mInitialFrozenRotation != INITIAL_FROZEN_ROTATION_UNSPECIFIED) {
-                if (AndroidTarget.UPSIDE_DOWN_CAKE) {
-                    mWindowManager.freezeRotation(
+                when (HiddenApiType.freezeRotation) {
+                    1 -> mWindowManager.freezeRotation(mInitialFrozenRotation)
+                    2 -> mWindowManager.freezeRotation(
                         mInitialFrozenRotation,
                         "UiAutomationConnection#restoreRotationStateLocked"
                     )
-                } else {
-                    mWindowManager.freezeRotation(mInitialFrozenRotation)
                 }
             } else {
-                if (AndroidTarget.UPSIDE_DOWN_CAKE) {
-                    mWindowManager.thawRotation("UiAutomationConnection#restoreRotationStateLocked")
-                } else {
-                    mWindowManager.thawRotation()
+                when (HiddenApiType.thawRotation) {
+                    1 -> mWindowManager.thawRotation()
+                    2 -> mWindowManager.thawRotation("UiAutomationConnection#restoreRotationStateLocked")
                 }
             }
         } catch (_: RemoteException) {

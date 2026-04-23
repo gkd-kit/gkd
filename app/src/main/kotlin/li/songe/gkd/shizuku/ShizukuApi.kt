@@ -30,7 +30,6 @@ import li.songe.gkd.util.toast
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
-import java.lang.reflect.Method
 import kotlin.system.exitProcess
 
 inline fun <T> safeInvokeShizuku(
@@ -52,34 +51,6 @@ class ShizukuOffException : IllegalStateException("Shizuku is off")
 
 fun getShizukuService(name: String): ShizukuBinderWrapper? {
     return SystemServiceHelper.getSystemService(name)?.let(::ShizukuBinderWrapper)
-}
-
-private fun Method.simpleString(): String {
-    return "${name}(${parameterTypes.joinToString(",") { it.name }}):${returnType.name}"
-}
-
-fun Class<*>.detectHiddenMethod(
-    methodName: String,
-    vararg args: Pair<Int, List<Class<*>>>,
-): Int {
-    val methodsVal = methods
-    methodsVal.forEach { method ->
-        if (method.name == methodName) {
-            val types = method.parameterTypes.toList()
-            args.forEach { (value, argTypes) ->
-                if (types == argTypes) {
-                    return value
-                }
-            }
-        }
-    }
-    val result = methodsVal.filter { it.name == methodName }
-    if (result.isEmpty()) {
-        throw NoSuchMethodException("${name}::${methodName} not found")
-    } else {
-        LogUtils.d("detectHiddenMethod", *result.map { it.simpleString() }.toTypedArray())
-        throw NoSuchMethodException("${name}::${methodName} not match")
-    }
 }
 
 // https://github.com/android-cs/16/blob/main/packages/Shell/AndroidManifest.xml

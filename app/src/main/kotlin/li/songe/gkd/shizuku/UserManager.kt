@@ -10,14 +10,6 @@ class SafeUserManager(private val value: IUserManager) {
         fun newBinder() = getShizukuService(Context.USER_SERVICE)?.let {
             SafeUserManager(IUserManager.Stub.asInterface(it))
         }
-
-        private val getUsersType by lazy {
-            IUserManager::class.java.detectHiddenMethod(
-                "getUsers",
-                1 to listOf(Boolean::class.java),
-                2 to listOf(Boolean::class.java, Boolean::class.java, Boolean::class.java),
-            )
-        }
     }
 
     fun getUsers(
@@ -25,7 +17,7 @@ class SafeUserManager(private val value: IUserManager) {
         excludeDying: Boolean = true,
         excludePreCreated: Boolean = true
     ): List<UserInfo> = safeInvokeShizuku {
-        when (getUsersType) {
+        when (HiddenApiType.getUsers) {
             1 -> value.getUsers(excludeDying)
             2 -> value.getUsers(excludePartial, excludeDying, excludePreCreated)
             else -> value.getUsers(excludeDying)

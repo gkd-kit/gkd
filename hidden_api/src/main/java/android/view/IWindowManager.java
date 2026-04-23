@@ -27,14 +27,14 @@ public interface IWindowManager extends IInterface {
     @DeprecatedSinceApi(api = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     void freezeRotation(int rotation);
 
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    // @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     void freezeRotation(int rotation, String caller);
 
     // https://diff.songe.li/i/IWindowManager.thawRotation
     @DeprecatedSinceApi(api = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     void thawRotation();
 
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    // @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     void thawRotation(String caller);
 
     // https://diff.songe.li/i/IWindowManager.captureDisplay
