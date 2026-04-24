@@ -31,6 +31,7 @@ public interface IPackageManager extends IInterface {
 
     // android17+
     @RemapMethod("getInstalledPackages")
+    @RequiresApi(Build.VERSION_CODES.CINNAMON_BUN)
     PackageInfoList getInstalledPackagesV17(long flags, int userId);
 
     @DeprecatedSinceApi(api = Build.VERSION_CODES.TIRAMISU)
