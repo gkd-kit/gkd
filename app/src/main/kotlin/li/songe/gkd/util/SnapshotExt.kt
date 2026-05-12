@@ -139,6 +139,7 @@ object SnapshotExt {
             if (storeFlow.value.showSaveSnapshotToast) {
                 toast("正在保存快照...", forced = true)
             }
+            var notHaveScreen = true
             val (snapshot, bitmap) = coroutineScope {
                 val d1 = async(Dispatchers.IO) {
                     val appId = rootNode.packageName.toString()
@@ -170,7 +171,10 @@ object SnapshotExt {
                 val d2 = async(Dispatchers.IO) {
                     (A11yRuleEngine.screenshot()
                         ?: ScreenshotService.screenshot()
-                        ?: emptyScreenBitmap("无截图权限\n请自行替换")
+                        ?: run {
+                            notHaveScreen = false
+                            emptyScreenBitmap("无截图权限\n请自行替换")
+                        }
                             ).let {
                             if (storeFlow.value.hideSnapshotStatusBar && (forcedCropStatusBar || BarUtils.checkStatusBarVisible() == true)) {
                                 cropBitmapStatusBar(it)
@@ -196,7 +200,12 @@ object SnapshotExt {
                 )
                 DbSet.snapshotDao.insert(snapshot.toSnapshot())
             }
-            toast("快照成功", forced = true)
+            val tip = if (notHaveScreen) {
+                "快照成功"
+            } else {
+                "快照成功 (无截图)"
+            }
+            toast(tip, forced = true)
             val desc = snapshot.appInfo?.name ?: snapshot.appId
             snapshotNotif.copy(text = "快照「$desc」已保存至记录").notifySelf()
             return snapshot
