@@ -104,6 +104,10 @@ suspend fun uploadFileToGithub(
         throw GithubCookieException("检测到 cookie 失效, 请更换")
     }
     val policiesResp = policiesRawResp.body<UploadPoliciesAssetsResponse>()
+    if (!policiesResp.asset.href.startsWith("https://github.com/") &&
+        !policiesResp.asset.href.startsWith("https://user-attachments.githubusercontent.com/")) {
+        throw GithubCookieException("收到不受信任的资源链接")
+    }
 
     // upload to s3
     val byteArray = file.readBytes()
