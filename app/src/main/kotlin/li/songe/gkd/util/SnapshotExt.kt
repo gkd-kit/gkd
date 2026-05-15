@@ -122,7 +122,12 @@ object SnapshotExt {
         }
         return tempBp
     }
-
+    // 截图三种状态
+    private enum class ScreenWhy {
+        Pass,
+        NotHave,
+        Block,
+    }
     private val captureLoading = MutableStateFlow(false)
     suspend fun captureSnapshot(forcedCropStatusBar: Boolean = false): ComplexSnapshot {
         if (A11yRuleEngine.instance == null) {
@@ -139,8 +144,7 @@ object SnapshotExt {
             if (storeFlow.value.showSaveSnapshotToast) {
                 toast("正在保存快照...", forced = true)
             }
-            var notHaveScreen = false
-            val (snapshot, bitmap) = coroutineScope {
+            val (snapshot, screenResult) = coroutineScope {  // 快照数据+截图(图片 && 状态)
                 val d1 = async(Dispatchers.IO) {
                     val appId = rootNode.packageName.toString()
                     var activityId = shizukuContextFlow.value.topCpn()?.className
@@ -169,20 +173,34 @@ object SnapshotExt {
                     )
                 }
                 val d2 = async(Dispatchers.IO) {
-                    (A11yRuleEngine.screenshot()
-                        ?: ScreenshotService.screenshot()
-                        ?: (emptyScreenBitmap("无截图权限\n请自行替换") .also { notHaveScreen = true }
-                            ).let {
-                            if (storeFlow.value.hideSnapshotStatusBar && (forcedCropStatusBar || BarUtils.checkStatusBarVisible() == true)) {
-                                cropBitmapStatusBar(it)
-                            } else {
-                                it
-                            }
+                    val rawPicture =  // 获取原始图片
+                        A11yRuleEngine.screenshot()  // 无障碍
+                        ?: ScreenshotService.screenshot() // 截图服务
+
+                    val (finalBitmap, status) = when {
+                        rawPicture == null -> {
+                            emptyScreenBitmap("无截图权限\n请自行替换") to ScreenWhy.NotHave
                         }
-                    )
+                        /*isAppProtected(rawPicture) -> {
+                            rawPicture to ScreenWhy.Block
+                        }*/
+                        else -> {
+                            rawPicture to ScreenWhy.Pass
+                        }
+                    }
+
+                    val processedBitmap = if (status == ScreenWhy.Pass &&
+                        storeFlow.value.hideSnapshotStatusBar && (forcedCropStatusBar || BarUtils.checkStatusBarVisible() == true)) {
+                          cropBitmapStatusBar(finalBitmap)
+                    } else {
+                        finalBitmap
+                    }
+                    processedBitmap to status
                 }
                 d1.await() to d2.await()
             }
+
+            val (bitmap, currentStatus) = screenResult // 拆开(图片+状态)
             withContext(Dispatchers.IO) {
                 snapshotParentPath(snapshot.id).autoMk()
                 screenshotFile(snapshot.id).outputStream().use { stream ->
@@ -198,10 +216,10 @@ object SnapshotExt {
                 )
                 DbSet.snapshotDao.insert(snapshot.toSnapshot())
             }
-            val tip = if (notHaveScreen) {
-                "快照成功 (无截图)"
-            } else {
-                "快照成功"
+            val tip = when (currentStatus) {
+                ScreenWhy.NotHave -> "快照成功 (无截图)"
+                ScreenWhy.Block -> "快照成功 (目标App疑似截屏保护)"
+                ScreenWhy.Pass -> "快照成功"
             }
             toast(tip, forced = true)
             val desc = snapshot.appInfo?.name ?: snapshot.appId
