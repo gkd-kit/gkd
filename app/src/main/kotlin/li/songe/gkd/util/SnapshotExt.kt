@@ -135,7 +135,6 @@ object SnapshotExt {
         // 缩小图片
         val size = 64
         val scaled = bitmap.scale(size, size, false)
-        bitmap.recycleIfTemp()
 
         /* 强制转为 ARGB_8888（软件位图）
         部分设备,Android版本scale()返回仍是HARDWARE
