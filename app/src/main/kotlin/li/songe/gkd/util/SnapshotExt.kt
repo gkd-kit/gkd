@@ -139,7 +139,7 @@ object SnapshotExt {
             if (storeFlow.value.showSaveSnapshotToast) {
                 toast("正在保存快照...", forced = true)
             }
-            var notHaveScreen = true
+            var notHaveScreen = false
             val (snapshot, bitmap) = coroutineScope {
                 val d1 = async(Dispatchers.IO) {
                     val appId = rootNode.packageName.toString()
@@ -171,10 +171,7 @@ object SnapshotExt {
                 val d2 = async(Dispatchers.IO) {
                     (A11yRuleEngine.screenshot()
                         ?: ScreenshotService.screenshot()
-                        ?: run {
-                            notHaveScreen = false
-                            emptyScreenBitmap("无截图权限\n请自行替换")
-                        }
+                        ?: (emptyScreenBitmap("无截图权限\n请自行替换") .also { notHaveScreen = true }
                             ).let {
                             if (storeFlow.value.hideSnapshotStatusBar && (forcedCropStatusBar || BarUtils.checkStatusBarVisible() == true)) {
                                 cropBitmapStatusBar(it)
@@ -182,6 +179,7 @@ object SnapshotExt {
                                 it
                             }
                         }
+                    )
                 }
                 d1.await() to d2.await()
             }
@@ -201,9 +199,9 @@ object SnapshotExt {
                 DbSet.snapshotDao.insert(snapshot.toSnapshot())
             }
             val tip = if (notHaveScreen) {
-                "快照成功"
-            } else {
                 "快照成功 (无截图)"
+            } else {
+                "快照成功"
             }
             toast(tip, forced = true)
             val desc = snapshot.appInfo?.name ?: snapshot.appId
