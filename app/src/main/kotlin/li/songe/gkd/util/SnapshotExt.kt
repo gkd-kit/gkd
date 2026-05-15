@@ -2,6 +2,7 @@ package li.songe.gkd.util
 
 import android.graphics.Bitmap
 import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
 import androidx.core.graphics.set
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -128,6 +129,49 @@ object SnapshotExt {
         NotHave,
         Block,
     }
+    // App拒绝提供画面判定逻辑
+    private fun isAppProtected(bitmap: Bitmap): Boolean {
+        // 缩小图片
+        val size = 64
+        val scaled = bitmap.scale(size, size, false)
+        //  像素一次性读取到数组
+        val pixels = IntArray(size * size)
+        scaled.getPixels(pixels, 0, size, 0, 0, size, size)
+        // 内存回收
+        if (scaled !== bitmap) {
+            scaled.recycle()
+        }
+        val ignore = (size * 0.2).toInt()  //  忽略图片编译
+        // 统计变量
+        var sum = 0.0  //  亮度总和
+        var sumSq = 0.0  //  平方总和
+        var count = 0 // 样本数量
+        // 采样
+        val step = 2 //隔一个像素取样
+        for (y in ignore until size - ignore step step) {  // ignore(忽略边缘)
+            for (x in ignore until size - ignore step step) {
+                // 提取RGB
+                val p = pixels[y * size + x]
+                val r = (p shr 16) and 0xff
+                val g = (p shr 8) and 0xff
+                val b = p and 0xff
+                // 计算亮度
+                val l = 0.299 * r + 0.587 * g + 0.114 * b
+                // 统计
+                sum += l
+                sumSq += l * l
+                count++
+            }
+        }
+        // 防止除零
+        if (count == 0) return false
+        // 平均值和方差计算
+        val mean = sum / count
+        val variance = sumSq / count - mean * mean
+
+        // 判断值设定
+        return variance < 2 && (mean !in 20.0..235.0)
+    }
     private val captureLoading = MutableStateFlow(false)
     suspend fun captureSnapshot(forcedCropStatusBar: Boolean = false): ComplexSnapshot {
         if (A11yRuleEngine.instance == null) {
@@ -181,9 +225,9 @@ object SnapshotExt {
                         rawPicture == null -> {
                             emptyScreenBitmap("无截图权限\n请自行替换") to ScreenWhy.NotHave
                         }
-                        /*isAppProtected(rawPicture) -> {
+                        isAppProtected(rawPicture) -> {
                             rawPicture to ScreenWhy.Block
-                        }*/
+                        }
                         else -> {
                             rawPicture to ScreenWhy.Pass
                         }
