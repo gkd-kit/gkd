@@ -280,7 +280,7 @@ object SnapshotExt {
             }
             val tip = when (currentStatus) {
                 ScreenWhy.NotHave -> "快照成功 (无截图)"
-                ScreenWhy.Block -> "快照成功 (目标App疑似截屏保护)"
+                ScreenWhy.Block -> "快照成功 (此App禁止截屏??)"
                 ScreenWhy.Pass -> "快照成功"
             }
             toast(tip, forced = true)
