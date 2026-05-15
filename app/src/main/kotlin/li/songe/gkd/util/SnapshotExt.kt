@@ -132,16 +132,10 @@ object SnapshotExt {
     // App拒绝提供画面判定逻辑
     private fun isAppProtected(bitmap: Bitmap): Boolean {
         fun Bitmap.recycleIfTemp() { if (this !== bitmap) recycle() }
-        // 去掉状态栏
-        val tempBp = if (BarUtils.checkStatusBarVisible() == true) {
-            cropBitmapStatusBar(bitmap)
-        } else {
-            bitmap
-        }
         // 缩小图片
         val size = 64
-        val scaled = tempBp.scale(size, size, false)
-        tempBp.recycleIfTemp()
+        val scaled = bitmap.scale(size, size, false)
+        bitmap.recycleIfTemp()
 
         /* 强制转为 ARGB_8888（软件位图）
         部分设备,Android版本scale()返回仍是HARDWARE
@@ -158,7 +152,7 @@ object SnapshotExt {
         val pixels = IntArray(size * size)
         softBitmap.getPixels(pixels, 0, size, 0, 0, size, size)
         softBitmap.recycleIfTemp()
-        val ignore = (size * 0.1).toInt()  //  忽略图片边缘
+        val ignore = (size * 0.08).toInt()  //  忽略图片边缘
         // 统计变量
         var sum = 0.0  //  亮度总和
         var sumSq = 0.0  //  平方总和
