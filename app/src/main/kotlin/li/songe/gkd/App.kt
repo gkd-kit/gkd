@@ -9,6 +9,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.LauncherApps
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.database.ContentObserver
@@ -197,6 +198,7 @@ class App : Application() {
     val clipboardManager by lazy { app.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager }
     val powerManager by lazy { getSystemService(POWER_SERVICE) as PowerManager }
     val a11yManager by lazy { getSystemService(ACCESSIBILITY_SERVICE) as AccessibilityManager }
+    val launcherApps by lazy { getSystemService(LAUNCHER_APPS_SERVICE) as LauncherApps }
 
     val compatDisplay: Display
         get() = if (AndroidTarget.R) {

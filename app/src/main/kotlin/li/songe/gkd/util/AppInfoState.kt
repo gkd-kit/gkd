@@ -4,8 +4,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
+import android.os.UserHandle
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -60,33 +62,58 @@ val visibleAppInfosFlow by lazy {
     }
 }
 
-private val willUpdateAppIds by lazy { MutableStateFlow(emptySet<String>()) }
+private val willUpdateAppIds = MutableStateFlow(emptySet<String>())
 
-private val packageReceiver by lazy {
-    object : BroadcastReceiver() {
-        val actions = arrayOf(
-            Intent.ACTION_PACKAGE_ADDED,
-            Intent.ACTION_PACKAGE_REPLACED,
-            Intent.ACTION_PACKAGE_REMOVED
-        )
+private fun dispatchAppUpdate(appId: String) = willUpdateAppIds.update { it + appId }
 
+private fun registerPackageListener() {
+    val packageReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            // PACKAGE_REMOVED->PACKAGE_ADDED->PACKAGE_REPLACED
             val appId = intent?.data?.schemeSpecificPart ?: return
-            willUpdateAppIds.update { it + appId }
+            dispatchAppUpdate(appId)
         }
-    }.apply {
-        val intentFilter = IntentFilter().apply {
-            actions.forEach { addAction(it) }
-            addDataScheme("package")
-        }
-        ContextCompat.registerReceiver(
-            app,
-            this,
-            intentFilter,
-            ContextCompat.RECEIVER_EXPORTED
-        )
     }
+    ContextCompat.registerReceiver(
+        app,
+        packageReceiver,
+        IntentFilter().apply {
+            arrayOf(
+                Intent.ACTION_PACKAGE_ADDED,
+                Intent.ACTION_PACKAGE_REPLACED,
+                Intent.ACTION_PACKAGE_REMOVED,
+            ).forEach { addAction(it) }
+            addDataScheme("package")
+        },
+        ContextCompat.RECEIVER_EXPORTED,
+    )
+
+    // 某些设备 ACTION_PACKAGE_ADDED 接收不到，使用 LauncherApps.Callback 作为补充
+    val packageCallback = object : LauncherApps.Callback() {
+        override fun onPackageAdded(packageName: String, user: UserHandle) {
+            dispatchAppUpdate(packageName)
+        }
+
+        override fun onPackageChanged(packageName: String, user: UserHandle) {
+            dispatchAppUpdate(packageName)
+        }
+
+        override fun onPackageRemoved(packageName: String, user: UserHandle) {
+            dispatchAppUpdate(packageName)
+        }
+
+        override fun onPackagesAvailable(
+            p0: Array<String>,
+            p1: UserHandle,
+            p2: Boolean
+        ) = Unit
+
+        override fun onPackagesUnavailable(
+            p0: Array<String>,
+            p1: UserHandle,
+            p2: Boolean
+        ) = Unit
+    }
+    app.launcherApps.registerCallback(packageCallback)
 }
 
 const val PKG_FLAGS = PackageManager.MATCH_UNINSTALLED_PACKAGES
@@ -134,6 +161,7 @@ private fun updatePartAppInfo(
     willUpdateAppIds.update { it - appIds }
     val newAppMap = HashMap(userAppInfoMapFlow.value)
     val newIconMap = HashMap(userAppIconMapFlow.value)
+    val oldMapSize = newAppMap.size
     appIds.forEach { appId ->
         val info = app.getPkgInfo(appId)
         if (info != null) {
@@ -151,6 +179,11 @@ private fun updatePartAppInfo(
     updateOtherUserAppInfo(newAppMap)
     userAppInfoMapFlow.value = newAppMap
     userAppIconMapFlow.value = newIconMap
+    LogUtils.d(
+        "updatePartAppInfo",
+        "change=${appIds.map { (if (newAppMap.contains(it)) "+" else "-") + it }}",
+        "size=${oldMapSize}->${newAppMap.size}"
+    )
 }
 
 val appListAuthAbnormalFlow = MutableStateFlow(false)
@@ -224,7 +257,7 @@ fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO
 }
 
 fun initAppState() {
-    packageReceiver
+    registerPackageListener()
     updateAllAppInfo()
     appScope.launchTry {
         shizukuContextFlow.drop(1).collect {
