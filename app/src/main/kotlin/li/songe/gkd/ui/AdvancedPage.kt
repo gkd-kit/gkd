@@ -296,13 +296,13 @@ fun AdvancedPage() {
     var showAiConfigDlg by vm.showAiConfigDlgFlow.asMutableState()
     if (showAiConfigDlg) {
         val aiConfig = store.aiConfig
-        var protocolValue by remember { mutableStateOf(aiConfig.protocol) }
-        var apiUrlValue by remember { mutableStateOf(aiConfig.apiUrl) }
-        var apiKeyValue by remember { mutableStateOf(aiConfig.apiKey) }
-        var modelValue by remember { mutableStateOf(aiConfig.model) }
-        var temperatureValue by remember { mutableStateOf(aiConfig.temperature.toString()) }
-        var topPValue by remember { mutableStateOf(aiConfig.topP.toString()) }
-        var maxTokensValue by remember { mutableStateOf(aiConfig.maxTokens.toString()) }
+        var protocolValue by remember(aiConfig) { mutableStateOf(aiConfig.protocol) }
+        var apiUrlValue by remember(aiConfig) { mutableStateOf(aiConfig.apiUrl) }
+        var apiKeyValue by remember(aiConfig) { mutableStateOf(aiConfig.apiKey) }
+        var modelValue by remember(aiConfig) { mutableStateOf(aiConfig.model) }
+        var temperatureValue by remember(aiConfig) { mutableStateOf(aiConfig.temperature.toString()) }
+        var topPValue by remember(aiConfig) { mutableStateOf(aiConfig.topP.toString()) }
+        var maxTokensValue by remember(aiConfig) { mutableStateOf(aiConfig.maxTokens.toString()) }
         var modelList by remember { mutableStateOf<List<String>>(emptyList()) }
         var modelListLoading by remember { mutableStateOf(false) }
         var modelMenuExpanded by remember { mutableStateOf(false) }
