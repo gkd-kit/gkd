@@ -49,6 +49,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.eventNotif
 import li.songe.gkd.permission.canDrawOverlaysState
+import li.songe.gkd.shizuku.uiAutomationFlow
 import li.songe.gkd.ui.EventLogCard
 import li.songe.gkd.ui.component.LocalNumberCharWidth
 import li.songe.gkd.ui.component.PerfIcon
@@ -93,7 +94,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
                     .padding(4.dp)
             ) {
                 ClosableTitle(
-                    title = if (A11yService.isRunning.collectAsState().value) "事件服务" else "事件服务(无权限)"
+                    title = if (A11yService.isRunning.collectAsState().value || uiAutomationFlow.collectAsState().value != null) "事件服务" else "事件服务(无权限)"
                 )
                 val textStyle = MaterialTheme.typography.labelSmall
                 val numCharWidth = measureNumberTextWidth(textStyle)
