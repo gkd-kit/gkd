@@ -11,17 +11,25 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import li.songe.gkd.a11y.A11yContext
+import li.songe.gkd.a11y.A11yRuleEngine
 import li.songe.gkd.app
 import li.songe.gkd.appScope
+import li.songe.gkd.data.ActionPerformer
+import li.songe.gkd.data.GkdAction
 import li.songe.gkd.data.RawSubscription
+import li.songe.gkd.data.info2nodeList
 import li.songe.gkd.store.AiConfig
 import li.songe.gkd.store.storeFlow
+import li.songe.selector.MatchOption
+import li.songe.selector.Selector
 import java.util.concurrent.TimeUnit
 
 @Serializable
@@ -244,6 +252,202 @@ object AiRuleGenerator {
         }
     }
 
+    /**
+     * 加强模式：双击快照按钮触发
+     * 1. 捕获快照 → AI 生成规则
+     * 2. 执行规则点击 → 等待界面变化 → 再次捕获节点树
+     * 3. 对比两次节点树判断规则是否生效
+     * 4. 未生效则将失败规则加入 prompt，让 AI 重新生成
+     */
+    suspend fun enhancedGenerate() {
+        val config = storeFlow.value.aiConfig
+        if (!storeFlow.value.aiEnable) {
+            toast("请先启用 AI 规则")
+            return
+        }
+        if (config.apiUrl.isBlank() || config.apiKey.isBlank() || config.model.isBlank()) {
+            toast("请先配置 AI 规则设置")
+            return
+        }
+        if (isGenerating.value) {
+            toast("AI 正在生成中，请稍后再试")
+            return
+        }
+        isGenerating.value = true
+        try {
+            // Step 1: 捕获快照
+            toast("加强模式：正在捕获快照...", forced = true)
+            val snapshot = SnapshotExt.captureSnapshot()
+            val snapshotJson = withContext(Dispatchers.IO) {
+                SnapshotExt.snapshotFile(snapshot.id).readText()
+            }
+
+            // Step 2: AI 生成规则
+            toast("加强模式：AI 正在生成规则...", forced = true)
+            val prompt = loadPrompt()
+            val userContent = "$prompt\n$snapshotJson"
+            val result = callAiApi(config, userContent)
+            val ruleText = extractContent(result)
+            var parsed = parseAndValidateRule(ruleText)
+
+            if (parsed == null) {
+                toast("AI 生成规则失败：JSON 解析错误")
+                return
+            }
+
+            // Step 3: 尝试执行规则并验证
+            var lastRuleText = ruleText
+            val maxRetries = 2
+            for (attempt in 0 until maxRetries) {
+                val selectors = extractSelectors(parsed)
+                if (selectors.isEmpty()) {
+                    toast("加强模式：未找到有效选择器")
+                    insertRuleToSubscription(parsed)
+                    return
+                }
+
+                // 获取当前节点树，尝试匹配并执行
+                val engine = A11yRuleEngine.instance
+                if (engine == null) {
+                    toast("无障碍服务不可用")
+                    insertRuleToSubscription(parsed)
+                    return
+                }
+
+                val rootNode = engine.safeActiveWindow
+                if (rootNode == null) {
+                    toast("无法获取当前界面节点")
+                    insertRuleToSubscription(parsed)
+                    return
+                }
+
+                // 记录执行前的节点树特征
+                val beforeNodes = info2nodeList(rootNode)
+                val beforeSignature = snapshotSignature(beforeNodes)
+
+                // 尝试用选择器匹配并执行点击
+                var actionExecuted = false
+                val a11yContext = A11yContext(engine, interruptable = false)
+                for (selectorStr in selectors) {
+                    val selector = Selector.parseOrNull(selectorStr) ?: continue
+                    val targetNode = a11yContext.querySelfOrSelector(
+                        rootNode, selector, MatchOption()
+                    )
+                    if (targetNode != null) {
+                        val actionResult = ActionPerformer.Click.perform(
+                            targetNode, GkdAction(selector = selectorStr)
+                        )
+                        if (actionResult.result) {
+                            actionExecuted = true
+                            LogUtils.d("加强模式：执行点击成功, selector=$selectorStr")
+                            break
+                        }
+                    }
+                }
+
+                if (!actionExecuted) {
+                    LogUtils.d("加强模式：选择器未匹配到任何节点，attempt=$attempt")
+                    if (attempt == maxRetries - 1) {
+                        toast("加强模式：规则未能匹配节点，已保存供手动调整")
+                        insertRuleToSubscription(parsed)
+                        return
+                    }
+                    // 未匹配到，重新生成
+                    toast("加强模式：规则未匹配，正在重新生成...")
+                    val retryContent = buildRetryPrompt(prompt, snapshotJson, lastRuleText, "选择器未匹配到任何节点")
+                    val retryResult = callAiApi(config, retryContent)
+                    val retryRuleText = extractContent(retryResult)
+                    parsed = parseAndValidateRule(retryRuleText) ?: run {
+                        toast("加强模式：重试失败")
+                        return
+                    }
+                    lastRuleText = retryRuleText
+                    continue
+                }
+
+                // Step 4: 等待界面变化
+                delay(1500)
+
+                // 再次捕获节点树（不保存）
+                val afterRootNode = engine.safeActiveWindow
+                if (afterRootNode == null) {
+                    // 界面消失，规则很可能生效了（弹窗关闭）
+                    toast("加强模式：规则验证成功（界面已变化）")
+                    insertRuleToSubscription(parsed)
+                    return
+                }
+                val afterNodes = info2nodeList(afterRootNode)
+                val afterSignature = snapshotSignature(afterNodes)
+
+                // Step 5: 对比判断
+                if (beforeSignature != afterSignature) {
+                    // 界面发生变化，规则生效
+                    toast("加强模式：规则验证成功！")
+                    insertRuleToSubscription(parsed)
+                    return
+                }
+
+                // 界面未变化，规则可能未生效
+                if (attempt < maxRetries - 1) {
+                    toast("加强模式：规则未生效，正在重新生成...")
+                    val retryContent = buildRetryPrompt(prompt, snapshotJson, lastRuleText, "点击执行后界面未发生变化，规则可能不正确")
+                    val retryResult = callAiApi(config, retryContent)
+                    val retryRuleText = extractContent(retryResult)
+                    parsed = parseAndValidateRule(retryRuleText) ?: run {
+                        toast("加强模式：重试解析失败，保存当前规则")
+                        return
+                    }
+                    lastRuleText = retryRuleText
+                } else {
+                    toast("加强模式：多次尝试后规则仍未生效，已保存最新版本")
+                    insertRuleToSubscription(parsed)
+                }
+            }
+        } catch (e: Exception) {
+            toast("加强模式失败：${e.message}")
+            LogUtils.d("Enhanced generate failed", e)
+        } finally {
+            isGenerating.value = false
+        }
+    }
+
+    private fun extractSelectors(subs: RawSubscription): List<String> {
+        return subs.apps.flatMap { app ->
+            app.groups.flatMap { group ->
+                group.rules.flatMap { rule ->
+                    rule.matches.orEmpty()
+                }
+            }
+        }
+    }
+
+    private fun snapshotSignature(nodes: List<li.songe.gkd.data.NodeInfo>): String {
+        // 用节点数量 + 可见节点的 text/desc 拼接作为简单签名
+        val visibleTexts = nodes.mapNotNull { node ->
+            val text = node.attr.text ?: node.attr.desc
+            if (node.attr.visibleToUser && text != null) text else null
+        }.sorted()
+        return "${nodes.size}:${visibleTexts.hashCode()}"
+    }
+
+    private fun buildRetryPrompt(
+        originalPrompt: String,
+        snapshotJson: String,
+        previousRule: String,
+        failureReason: String,
+    ): String {
+        return """$originalPrompt
+
+$snapshotJson
+
+---
+注意：上一次生成的规则未能生效。
+失败原因：$failureReason
+上次生成的规则（请勿再使用相同的选择器）：
+$previousRule
+
+请分析失败原因，重新选择更准确的目标节点和选择器。"""
+    }
     private suspend fun callAiApi(config: AiConfig, userContent: String): String {
         val endpoint = buildApiEndpoint(config)
         val requestBody = buildRequestBody(config, userContent)

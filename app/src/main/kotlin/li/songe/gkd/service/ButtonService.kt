@@ -13,6 +13,7 @@ import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.buttonNotif
 import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.ui.component.PerfIcon
+import li.songe.gkd.util.AiRuleGenerator
 import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.startForegroundServiceByClass
@@ -21,8 +22,24 @@ import li.songe.gkd.util.stopServiceByClass
 class ButtonService : OverlayWindowService(
     positionKey = "button"
 ) {
+    private var lastClickTime = 0L
+
     override fun onClickView() = appScope.launchTry {
-        SnapshotExt.captureSnapshot()
+        val now = System.currentTimeMillis()
+        val gap = now - lastClickTime
+        lastClickTime = now
+        if (gap < 400) {
+            // 双击 → 加强模式
+            lastClickTime = 0L
+            AiRuleGenerator.enhancedGenerate()
+        } else {
+            // 等待判断是否双击
+            kotlinx.coroutines.delay(400)
+            if (lastClickTime == now) {
+                // 未被后续点击覆盖，执行单击
+                SnapshotExt.captureSnapshot()
+            }
+        }
     }.let { }
 
     override fun onLongClickView() = stopSelf()
