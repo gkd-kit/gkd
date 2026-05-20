@@ -10,6 +10,17 @@ import li.songe.gkd.util.UpdateChannelOption
 import li.songe.gkd.util.UpdateTimeOption
 
 @Serializable
+data class AiConfig(
+    val protocol: String = "openai",
+    val apiUrl: String = "",
+    val apiKey: String = "",
+    val model: String = "",
+    val temperature: Float = 0f,
+    val topP: Float = 1f,
+    val maxTokens: Int = 4096,
+)
+
+@Serializable
 data class SettingsStore(
     val enableAutomator: Boolean = false,
     val automatorMode: Int = AutomatorModeOption.A11yMode.value,
@@ -58,6 +69,8 @@ data class SettingsStore(
     val a11yScopeAppGroupType: Int = appGroupType,
     val subsExcludeAppGroupType: Int = appGroupType,
     val showDisabledRule: Boolean = true,
+    val aiEnable: Boolean = false,
+    val aiConfig: AiConfig = AiConfig(),
 ) {
     val useA11y get() = automatorMode == AutomatorModeOption.A11yMode.value
     val useAutomation get() = automatorMode == AutomatorModeOption.AutomationMode.value

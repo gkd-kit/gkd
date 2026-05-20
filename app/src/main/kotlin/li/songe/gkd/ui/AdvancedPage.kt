@@ -21,6 +21,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -82,6 +84,8 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
+import li.songe.gkd.util.AiRuleGenerator
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.appInfoMapFlow
@@ -289,6 +293,288 @@ fun AdvancedPage() {
     }
     var showHttpSettingDlg by rememberSaveable { mutableStateOf(false) }
 
+    var showAiConfigDlg by vm.showAiConfigDlgFlow.asMutableState()
+    if (showAiConfigDlg) {
+        val aiConfig = store.aiConfig
+        var protocolValue by remember { mutableStateOf(aiConfig.protocol) }
+        var apiUrlValue by remember { mutableStateOf(aiConfig.apiUrl) }
+        var apiKeyValue by remember { mutableStateOf(aiConfig.apiKey) }
+        var modelValue by remember { mutableStateOf(aiConfig.model) }
+        var temperatureValue by remember { mutableStateOf(aiConfig.temperature.toString()) }
+        var topPValue by remember { mutableStateOf(aiConfig.topP.toString()) }
+        var maxTokensValue by remember { mutableStateOf(aiConfig.maxTokens.toString()) }
+        var modelList by remember { mutableStateOf<List<String>>(emptyList()) }
+        var modelListLoading by remember { mutableStateOf(false) }
+        var modelMenuExpanded by remember { mutableStateOf(false) }
+        var testResult by remember { mutableStateOf<String?>(null) }
+        var testLoading by remember { mutableStateOf(false) }
+
+        AlertDialog(
+            properties = DialogProperties(dismissOnClickOutside = false),
+            title = { Text(text = "AI 规则设置") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    // Protocol selector
+                    Text(text = "协议", style = MaterialTheme.typography.labelMedium)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        listOf("openai", "anthropic").forEach { proto ->
+                            TextButton(
+                                onClick = { protocolValue = proto },
+                                modifier = Modifier.weight(1f),
+                                colors = if (protocolValue == proto) {
+                                    androidx.compose.material3.ButtonDefaults.textButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    )
+                                } else {
+                                    androidx.compose.material3.ButtonDefaults.textButtonColors()
+                                },
+                            ) {
+                                Text(
+                                    text = proto.replaceFirstChar { it.uppercase() },
+                                    color = if (protocolValue == proto) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        LocalContentColor.current
+                                    },
+                                )
+                            }
+                        }
+                    }
+
+                    CustomOutlinedTextField(
+                        label = { Text("API 地址") },
+                        value = apiUrlValue,
+                        placeholder = { Text(text = if (protocolValue == "openai") "https://api.openai.com" else "https://api.anthropic.com") },
+                        onValueChange = { apiUrlValue = it },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    CustomOutlinedTextField(
+                        label = { Text("API Key") },
+                        value = apiKeyValue,
+                        placeholder = { Text(text = "请输入 API Key") },
+                        onValueChange = { apiKeyValue = it },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        ExposedDropdownMenuBox(
+                            expanded = modelMenuExpanded,
+                            onExpandedChange = { modelMenuExpanded = it },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            CustomOutlinedTextField(
+                                label = { Text("模型") },
+                                value = modelValue,
+                                placeholder = { Text(text = "请输入模型名称") },
+                                onValueChange = { modelValue = it; modelMenuExpanded = false },
+                                singleLine = true,
+                                modifier = Modifier.menuAnchor(),
+                                trailingIcon = {
+                                    if (modelListLoading) {
+                                        CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                                    } else if (modelList.isNotEmpty()) {
+                                        PerfIcon(imageVector = PerfIcon.UnfoldMore)
+                                    }
+                                },
+                            )
+                            ExposedDropdownMenu(
+                                expanded = modelMenuExpanded && modelList.isNotEmpty(),
+                                onDismissRequest = { modelMenuExpanded = false },
+                            ) {
+                                modelList.forEach { m ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = m,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = if (m == modelValue) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                                            )
+                                        },
+                                        onClick = {
+                                            modelValue = m
+                                            modelMenuExpanded = false
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                        PerfIconButton(
+                            imageVector = PerfIcon.Autorenew,
+                            onClick = throttle {
+                                if (apiUrlValue.isBlank() || apiKeyValue.isBlank()) {
+                                    toast("请先填写 API 地址和 Key")
+                                    return@throttle
+                                }
+                                modelListLoading = true
+                                vm.viewModelScope.launchTry {
+                                    val result = AiRuleGenerator.fetchModelList(
+                                        aiConfig.copy(
+                                            protocol = protocolValue,
+                                            apiUrl = apiUrlValue,
+                                            apiKey = apiKeyValue,
+                                            model = modelValue,
+                                        )
+                                    )
+                                    modelListLoading = false
+                                    result.onSuccess { list ->
+                                        modelList = list
+                                        if (list.isNotEmpty() && modelValue.isBlank()) {
+                                            modelValue = list.first()
+                                        }
+                                        modelMenuExpanded = list.isNotEmpty()
+                                        toast("获取到 ${list.size} 个模型")
+                                    }.onFailure { e ->
+                                        toast("获取模型列表失败：${e.message}")
+                                    }
+                                }
+                            },
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        CustomOutlinedTextField(
+                            label = { Text("Temperature") },
+                            value = temperatureValue,
+                            onValueChange = { temperatureValue = it },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        )
+                        CustomOutlinedTextField(
+                            label = { Text("Top P") },
+                            value = topPValue,
+                            onValueChange = { topPValue = it },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        CustomOutlinedTextField(
+                            label = { Text("Max Tokens") },
+                            value = maxTokensValue,
+                            onValueChange = { maxTokensValue = it },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Test button
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        TextButton(
+                            onClick = throttle {
+                                if (apiUrlValue.isBlank() || apiKeyValue.isBlank() || modelValue.isBlank()) {
+                                    toast("请先填写完整配置")
+                                    return@throttle
+                                }
+                                testLoading = true
+                                testResult = null
+                                vm.viewModelScope.launchTry {
+                                    val result = AiRuleGenerator.testConnection(
+                                        aiConfig.copy(
+                                            protocol = protocolValue,
+                                            apiUrl = apiUrlValue,
+                                            apiKey = apiKeyValue,
+                                            model = modelValue,
+                                        )
+                                    )
+                                    testLoading = false
+                                    result.onSuccess {
+                                        testResult = "连接成功"
+                                        toast("连接测试成功")
+                                    }.onFailure { e ->
+                                        testResult = "失败：${e.message}"
+                                        toast("连接测试失败：${e.message}")
+                                    }
+                                }
+                            },
+                            enabled = !testLoading,
+                        ) {
+                            if (testLoading) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                            Text(text = "测试连接")
+                        }
+                        testResult?.let {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (it.startsWith("失败")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.align(Alignment.CenterVertically),
+                            )
+                        }
+                    }
+                }
+            },
+            onDismissRequest = { showAiConfigDlg = false },
+            confirmButton = {
+                TextButton(onClick = throttle {
+                    val temp = temperatureValue.toFloatOrNull()
+                    val topP = topPValue.toFloatOrNull()
+                    val maxTokens = maxTokensValue.toIntOrNull()
+                    if (temp == null || topP == null || maxTokens == null) {
+                        toast("参数格式错误")
+                        return@throttle
+                    }
+                    storeFlow.update {
+                        it.copy(
+                            aiConfig = it.aiConfig.copy(
+                                protocol = protocolValue,
+                                apiUrl = apiUrlValue.trim().trimEnd('/'),
+                                apiKey = apiKeyValue.trim(),
+                                model = modelValue.trim(),
+                                temperature = temp,
+                                topP = topP,
+                                maxTokens = maxTokens,
+                            )
+                        )
+                    }
+                    toast("AI 配置已保存")
+                    showAiConfigDlg = false
+                }) {
+                    Text(text = "确认")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAiConfigDlg = false }) {
+                    Text(text = "取消")
+                }
+            },
+        )
+    }
+
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -472,6 +758,32 @@ fun AdvancedPage() {
                 subtitle = "应用界面节点信息及截图",
                 onClick = {
                     mainVm.navigatePage(SnapshotPageRoute)
+                }
+            )
+
+            TextSwitch(
+                title = "AI 规则",
+                subtitle = "保存快照后自动生成规则",
+                checked = store.aiEnable,
+                suffixIcon = {
+                    PerfCustomIconButton(
+                        size = 32.dp,
+                        iconSize = 20.dp,
+                        onClickLabel = "打开 AI 规则配置弹窗",
+                        onClick = throttle {
+                            showAiConfigDlg = true
+                        },
+                        id = R.drawable.ic_page_info,
+                        contentDescription = "AI 规则设置",
+                    )
+                },
+                onCheckedChange = {
+                    if (it && (store.aiConfig.apiUrl.isBlank() || store.aiConfig.apiKey.isBlank())) {
+                        toast("请先配置 AI 设置")
+                        showAiConfigDlg = true
+                        return@TextSwitch
+                    }
+                    storeFlow.value = store.copy(aiEnable = it)
                 }
             )
 

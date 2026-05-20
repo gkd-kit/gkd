@@ -15,6 +15,7 @@ import kotlinx.serialization.json.JsonObject
 import li.songe.gkd.a11y.A11yRuleEngine
 import li.songe.gkd.a11y.TopActivity
 import li.songe.gkd.a11y.topActivityFlow
+import li.songe.gkd.appScope
 import li.songe.gkd.data.ComplexSnapshot
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.info2nodeList
@@ -286,6 +287,11 @@ object SnapshotExt {
             toast(tip, forced = true)
             val desc = snapshot.appInfo?.name ?: snapshot.appId
             snapshotNotif.copy(text = "快照「$desc」已保存至记录").notifySelf()
+            if (storeFlow.value.aiEnable) {
+                appScope.launchTry {
+                    AiRuleGenerator.generateRule(snapshot.id)
+                }
+            }
             return snapshot
         } finally {
             captureLoading.value = false
