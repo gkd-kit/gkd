@@ -69,8 +69,8 @@ android {
         targetSdk = rootProject.ext["android.targetSdk"] as Int
 
         applicationId = "li.songe.gkd"
-        versionCode = 91
-        versionName = "1.12.0"
+        versionCode = 92
+        versionName = "1.12.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

@@ -232,9 +232,6 @@ private fun CoroutineScope.createServer(port: Int) = embeddedServer(CIO, port) {
                 call.respond(RpcOk())
             }
             post("/execSelector") {
-                if (!A11yService.isRunning.value) {
-                    throw RpcError("无障碍没有运行")
-                }
                 val gkdAction = call.receive<GkdAction>()
                 call.respond(A11yRuleEngine.execAction(gkdAction))
             }
