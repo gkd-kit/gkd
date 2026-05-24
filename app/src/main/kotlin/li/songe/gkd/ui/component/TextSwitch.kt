@@ -90,9 +90,6 @@ fun TextSwitch(
             checked = checked,
             enabled = enabled,
             onCheckedChange = onCheckedChange?.let { throttle(fn = it) },
-            modifier = Modifier.semantics {
-                this.stateDescription = title + if (checked) "已开启" else "已关闭"
-            }
         )
     }
 }
