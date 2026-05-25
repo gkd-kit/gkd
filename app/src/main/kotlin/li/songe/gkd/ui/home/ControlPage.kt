@@ -303,16 +303,12 @@ private fun PageSwitchItemCard(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
-    val onClick = throttle { onCheckedChange(!checked) }
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .semantics(mergeDescendants = true) {
-                this.onClick(label = "切换$title", action = null)
-            },
+            .fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
         colors = surfaceCardColors,
-        onClick = onClick,
+        onClick = throttle { onCheckedChange(!checked) },
     ) {
         IconTextCard(
             imageVector = imageVector,
@@ -333,7 +329,7 @@ private fun PageSwitchItemCard(
             Spacer(Modifier.width(8.dp))
             PerfSwitch(
                 checked = checked,
-                onCheckedChange = null,
+                onCheckedChange = onCheckedChange,
             )
         }
     }

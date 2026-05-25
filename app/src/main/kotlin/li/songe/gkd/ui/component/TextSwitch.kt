@@ -13,7 +13,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -37,7 +39,7 @@ fun TextSwitch(
     onClickLabel: String? = "切换${title}状态",
 ) {
     val topModifier = if (onClick != null) {
-        modifier.clickable(onClick = onClick, onClickLabel = onClickLabel)
+        modifier.clickable(onClick = onClick, onClickLabel = onClickLabel, role = Role.Switch)
     } else {
         modifier
     }
@@ -89,9 +91,10 @@ fun TextSwitch(
         PerfSwitch(
             checked = checked,
             enabled = enabled,
-            onCheckedChange = onCheckedChange?.let { throttle(fn = it) },
-            modifier = Modifier.semantics {
-                this.stateDescription = title + if (checked) "已开启" else "已关闭"
+            onCheckedChange = null,
+            modifier = Modifier.clearAndSetSemantics {
+                role = Role.Switch
+                stateDescription = title + if (checked) "已开启" else "已关闭"
             }
         )
     }

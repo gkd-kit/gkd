@@ -40,6 +40,9 @@ import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.invalidateMeasurement
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -664,10 +667,18 @@ fun PerfTriStateSwitch(
     colors: TriStateSwitchColors = TriStateSwitchDefaults.colors(),
     interactionSource: MutableInteractionSource? = null,
 ) = androidx.compose.runtime.key(key) {
+    val stateDesc = when (checked) {
+        true -> "已开启"
+        false -> "已关闭"
+        null -> "未设置"
+    }
     TriStateSwitch(
         checked = checked,
         onCheckedChange = onCheckedChange,
-        modifier = modifier,
+        modifier = modifier.clearAndSetSemantics {
+            role = Role.Switch
+            stateDescription = stateDesc
+        },
         thumbContent = thumbContent,
         enabled = enabled,
         colors = colors,
