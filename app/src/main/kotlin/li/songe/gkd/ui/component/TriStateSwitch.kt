@@ -42,7 +42,7 @@ import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -676,8 +676,8 @@ fun PerfTriStateSwitch(
         checked = checked,
         onCheckedChange = onCheckedChange,
         modifier = modifier.clearAndSetSemantics {
-            role = Role.Switch
-            stateDescription = stateDesc
+            role = Role.ToggleButton
+            contentDescription = "开关，$stateDesc"
         },
         thumbContent = thumbContent,
         enabled = enabled,

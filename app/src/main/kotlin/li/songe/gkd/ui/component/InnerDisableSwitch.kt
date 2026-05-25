@@ -8,8 +8,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.stateDescription
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.util.throttle
 
@@ -38,8 +38,8 @@ fun InnerDisableSwitch(
         enabled = false,
         onCheckedChange = null,
         modifier = modifier.clearAndSetSemantics {
-            role = Role.Switch
-            stateDescription = "已禁用"
+            role = Role.ToggleButton
+            contentDescription = "开关，已禁用"
         }
             .minimumInteractiveComponentSize().run {
                 if (isSelectedMode) {

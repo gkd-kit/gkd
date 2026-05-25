@@ -2,6 +2,7 @@ package li.songe.gkd.ui.component
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -25,11 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
@@ -89,20 +86,9 @@ fun SubsItemCard(
         tween()
     )
     Card(
-        onClick = onClick,
         modifier = modifier
-            .padding(16.dp, 4.dp)
-            .semantics {
-                stateDescription = if (isSelectedMode) {
-                    if (isSelected) "已选中" else "未选中"
-                } else {
-                    if (subsItem.enable) "已启用" else "已禁用"
-                }
-                this.onClick(label = "查看订阅详情", action = null)
-                this.onLongClick(label = "进入多选模式", action = null)
-            },
+            .padding(16.dp, 4.dp),
         shape = MaterialTheme.shapes.small,
-        interactionSource = interactionSource,
         colors = CardDefaults.cardColors(
             containerColor = containerColor.value
         ),
@@ -112,7 +98,17 @@ fun SubsItemCard(
             modifier = Modifier.padding(8.dp),
         ) {
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onClick)
+                    .semantics(mergeDescendants = true) {
+                        stateDescription = if (isSelectedMode) {
+                            if (isSelected) "已选中" else "未选中"
+                        } else {
+                            if (subsItem.enable) "已启用" else "已禁用"
+                        }
+                    }
+                    .padding(end = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 if (subscription != null) {
@@ -213,36 +209,10 @@ fun SubsItemCard(
             }
             PerfSwitch(
                 key = subsItem.id,
-                modifier = switchModifier.clearAndSetSemantics {
-                    role = Role.Switch
-                    stateDescription = if (subsItem.enable) "已开启" else "已关闭"
-                },
+                modifier = switchModifier,
                 checked = subsItem.enable,
                 onCheckedChange = if (isSelectedMode) null else throttle(fn = onCheckedChange),
             )
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

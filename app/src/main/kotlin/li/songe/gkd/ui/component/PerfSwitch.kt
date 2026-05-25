@@ -8,8 +8,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.stateDescription
 import li.songe.gkd.util.throttle
 
 @Composable
@@ -27,8 +27,8 @@ fun PerfSwitch(
         checked = checked,
         onCheckedChange = onCheckedChange?.let { throttle(it) },
         modifier = modifier.clearAndSetSemantics {
-            role = Role.Switch
-            stateDescription = if (checked) "已开启" else "已关闭"
+            role = Role.ToggleButton
+            contentDescription = if (checked) "开关，已开启" else "开关，已关闭"
         },
         thumbContent = thumbContent,
         enabled = enabled,

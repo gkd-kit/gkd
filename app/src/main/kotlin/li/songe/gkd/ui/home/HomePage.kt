@@ -9,6 +9,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
@@ -69,12 +73,15 @@ fun HomePage() {
                 pages.forEach { page ->
                     NavigationBarItem(
                         selected = page.navItem.key == tab,
-                        modifier = Modifier,
+                        modifier = Modifier.clearAndSetSemantics {
+                            contentDescription = page.navItem.label
+                            role = Role.Tab
+                        },
                         onClick = { mainVm.handleClickTab(page.navItem) },
                         icon = {
                             PerfIcon(
                                 imageVector = page.navItem.icon,
-                                contentDescription = page.navItem.label,
+                                contentDescription = null,
                             )
                         },
                         label = {

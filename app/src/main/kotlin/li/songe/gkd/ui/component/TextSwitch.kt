@@ -15,8 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.ui.style.itemPadding
@@ -93,8 +93,8 @@ fun TextSwitch(
             enabled = enabled,
             onCheckedChange = null,
             modifier = Modifier.clearAndSetSemantics {
-                role = Role.Switch
-                stateDescription = title + if (checked) "已开启" else "已关闭"
+                role = Role.ToggleButton
+                contentDescription = title + if (checked) "开关，已开启" else "开关，已关闭"
             }
         )
     }
