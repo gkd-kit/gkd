@@ -13,6 +13,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.store.blockMatchAppListFlow
@@ -69,6 +73,10 @@ fun SubsAppCard(
         }
         PerfSwitch(
             key = data.id,
+            modifier = Modifier.clearAndSetSemantics {
+                role = Role.Switch
+                stateDescription = (data.appConfig?.enable ?: (data.appInfo != null)).let { if (it) "已开启" else "已关闭" }
+            },
             checked = data.appConfig?.enable ?: (data.appInfo != null),
             onCheckedChange = onValueChange,
         )

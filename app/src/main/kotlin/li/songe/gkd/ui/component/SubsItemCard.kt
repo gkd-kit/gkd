@@ -25,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
@@ -211,7 +213,10 @@ fun SubsItemCard(
             }
             PerfSwitch(
                 key = subsItem.id,
-                modifier = switchModifier,
+                modifier = switchModifier.clearAndSetSemantics {
+                    role = Role.Switch
+                    stateDescription = if (subsItem.enable) "已开启" else "已关闭"
+                },
                 checked = subsItem.enable,
                 onCheckedChange = if (isSelectedMode) null else throttle(fn = onCheckedChange),
             )
