@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.selection.triStateToggleable
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -40,6 +40,9 @@ import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.invalidateMeasurement
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -110,15 +113,27 @@ private fun TriStateSwitch(
                 null -> true
                 true -> false
             }
+            val toggleableState = when (checked) {
+                true -> ToggleableState.On
+                false -> ToggleableState.Off
+                null -> ToggleableState.Indeterminate
+            }
             Modifier
                 .minimumInteractiveComponentSize()
-                .toggleable(
-                    value = checked == true,
-                    onValueChange = { onCheckedChange(nextState) },
+                .semantics {
+                    stateDescription = when (checked) {
+                        true -> "开启"
+                        false -> "关闭"
+                        null -> "跟随"
+                    }
+                }
+                .triStateToggleable(
+                    state = toggleableState,
                     enabled = enabled,
                     role = Role.Switch,
                     interactionSource = interactionSource,
                     indication = null,
+                    onClick = { onCheckedChange(nextState) },
                 )
         } else {
             Modifier
