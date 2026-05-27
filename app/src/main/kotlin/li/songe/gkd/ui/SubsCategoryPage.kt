@@ -1,5 +1,6 @@
 package li.songe.gkd.ui
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
@@ -189,7 +191,7 @@ private fun CategoryItemCard(
             }
             PerfTriStateSwitch(
                 modifier = Modifier
-                    .noRippleClickable(onClick = {})
+                    .pointerInput(Unit) { detectTapGestures { } } // 防止误触边界
                     .padding(8.dp),
                 checked = getCategoryEnable(category, categoryConfig),
                 onCheckedChange = throttle(appScope.launchAsFn<Boolean?> {
