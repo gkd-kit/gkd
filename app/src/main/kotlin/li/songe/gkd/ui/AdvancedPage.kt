@@ -383,7 +383,7 @@ fun AdvancedPage() {
                             CustomOutlinedTextField(
                                 label = { Text("模型") },
                                 value = modelValue,
-                                placeholder = { Text(text = "请输入模型名称") },
+                                placeholder = { Text(text = "模型名称(推荐flash模型)") },
                                 onValueChange = { modelValue = it; modelMenuExpanded = false },
                                 singleLine = true,
                                 modifier = Modifier.menuAnchor(),

@@ -68,7 +68,7 @@ android {
         minSdk = rootProject.ext["android.minSdk"] as Int
         targetSdk = rootProject.ext["android.targetSdk"] as Int
 
-        applicationId = "li.songe.gkd"
+        applicationId = "li.songe.gkd.plus"
         versionCode = 92
         versionName = "1.12.1"
 
@@ -177,7 +177,7 @@ if (project.hasProperty("GKD_RENAME_APK_FLAG")) {
     androidComponents.onVariants { variant ->
         variant.outputs.onEach { output ->
             output as VariantOutputImpl
-            output.outputFileName = "gkd-v${output.versionName.get()}.apk"
+            output.outputFileName = "gkd-plus-v${output.versionName.get()}.apk"
         }
     }
 }

@@ -228,8 +228,8 @@ object AiRuleGenerator {
             val ruleText = extractContent(result)
             LogUtils.d("AI after extractContent (first 2000 chars): ${ruleText.take(2000)}")
 
-            val parsed = parseAndValidateRule(ruleText)
-            if (parsed == null) {
+            val currentRule = parseAndValidateRule(ruleText)
+            if (currentRule == null) {
                 toast("AI 生成的规则 JSON 不合法，重试中...")
                 val retryResult = callAiApi(config, userContent)
                 val retryText = extractContent(retryResult)
@@ -240,7 +240,7 @@ object AiRuleGenerator {
                 }
                 insertRuleToSubscription(retryParsed)
             } else {
-                insertRuleToSubscription(parsed)
+                insertRuleToSubscription(currentRule)
             }
             toast("AI 规则生成成功并已添加到本地规则")
         } catch (e: Exception) {
@@ -276,21 +276,19 @@ object AiRuleGenerator {
         isGenerating.value = true
         try {
             // Step 1: 捕获快照
-            toast("加强模式：正在捕获快照...", forced = true)
+            //toast("加强模式：正在捕获快照...", forced = true)
             val snapshot = SnapshotExt.captureSnapshot()
             val snapshotJson = withContext(Dispatchers.IO) {
                 SnapshotExt.snapshotFile(snapshot.id).readText()
             }
 
             // Step 2: AI 生成规则
-            toast("加强模式：AI 正在生成规则...", forced = true)
+            toast("加强模式：AI 正在生成规则...\n 请勿离开当前界面", forced = true)
             val prompt = loadPrompt()
             val userContent = "$prompt\n$snapshotJson"
             val result = callAiApi(config, userContent)
             val ruleText = extractContent(result)
-            var parsed = parseAndValidateRule(ruleText)
-
-            if (parsed == null) {
+            var currentRule = parseAndValidateRule(ruleText) ?: run {
                 toast("AI 生成规则失败：JSON 解析错误")
                 return
             }
@@ -299,10 +297,10 @@ object AiRuleGenerator {
             var lastRuleText = ruleText
             val maxRetries = 2
             for (attempt in 0 until maxRetries) {
-                val selectors = extractSelectors(parsed)
-                if (selectors.isEmpty()) {
+                val actions = extractActions(currentRule)
+                if (actions.isEmpty()) {
                     toast("加强模式：未找到有效选择器")
-                    insertRuleToSubscription(parsed)
+                    insertRuleToSubscription(currentRule)
                     return
                 }
 
@@ -310,14 +308,14 @@ object AiRuleGenerator {
                 val engine = A11yRuleEngine.instance
                 if (engine == null) {
                     toast("无障碍服务不可用")
-                    insertRuleToSubscription(parsed)
+                    insertRuleToSubscription(currentRule)
                     return
                 }
 
                 val rootNode = engine.safeActiveWindow
                 if (rootNode == null) {
                     toast("无法获取当前界面节点")
-                    insertRuleToSubscription(parsed)
+                    insertRuleToSubscription(currentRule)
                     return
                 }
 
@@ -325,21 +323,21 @@ object AiRuleGenerator {
                 val beforeNodes = info2nodeList(rootNode)
                 val beforeSignature = snapshotSignature(beforeNodes)
 
-                // 尝试用选择器匹配并执行点击
+                // 尝试用生成规则匹配并执行动作
                 var actionExecuted = false
                 val a11yContext = A11yContext(engine, interruptable = false)
-                for (selectorStr in selectors) {
-                    val selector = Selector.parseOrNull(selectorStr) ?: continue
+                for (action in actions) {
+                    val selector = Selector.parseOrNull(action.selector) ?: continue
                     val targetNode = a11yContext.querySelfOrSelector(
-                        rootNode, selector, MatchOption()
+                        rootNode, selector, MatchOption(fastQuery = action.fastQuery)
                     )
                     if (targetNode != null) {
-                        val actionResult = ActionPerformer.Click.perform(
-                            targetNode, GkdAction(selector = selectorStr)
-                        )
+                        val actionResult = ActionPerformer
+                            .getAction(action.action ?: ActionPerformer.Click.action)
+                            .perform(targetNode, action)
                         if (actionResult.result) {
                             actionExecuted = true
-                            LogUtils.d("加强模式：执行点击成功, selector=$selectorStr")
+                            LogUtils.d("加强模式：执行动作成功, action=${action.action}, selector=${action.selector}")
                             break
                         }
                     }
@@ -349,7 +347,7 @@ object AiRuleGenerator {
                     LogUtils.d("加强模式：选择器未匹配到任何节点，attempt=$attempt")
                     if (attempt == maxRetries - 1) {
                         toast("加强模式：规则未能匹配节点，已保存供手动调整")
-                        insertRuleToSubscription(parsed)
+                        insertRuleToSubscription(currentRule)
                         return
                     }
                     // 未匹配到，重新生成
@@ -357,7 +355,7 @@ object AiRuleGenerator {
                     val retryContent = buildRetryPrompt(prompt, snapshotJson, lastRuleText, "选择器未匹配到任何节点")
                     val retryResult = callAiApi(config, retryContent)
                     val retryRuleText = extractContent(retryResult)
-                    parsed = parseAndValidateRule(retryRuleText) ?: run {
+                    currentRule = parseAndValidateRule(retryRuleText) ?: run {
                         toast("加强模式：重试失败")
                         return
                     }
@@ -373,7 +371,7 @@ object AiRuleGenerator {
                 if (afterRootNode == null) {
                     // 界面消失，规则很可能生效了（弹窗关闭）
                     toast("加强模式：规则验证成功（界面已变化）")
-                    insertRuleToSubscription(parsed)
+                    insertRuleToSubscription(currentRule)
                     return
                 }
                 val afterNodes = info2nodeList(afterRootNode)
@@ -383,7 +381,7 @@ object AiRuleGenerator {
                 if (beforeSignature != afterSignature) {
                     // 界面发生变化，规则生效
                     toast("加强模式：规则验证成功！")
-                    insertRuleToSubscription(parsed)
+                    insertRuleToSubscription(currentRule)
                     return
                 }
 
@@ -393,14 +391,14 @@ object AiRuleGenerator {
                     val retryContent = buildRetryPrompt(prompt, snapshotJson, lastRuleText, "点击执行后界面未发生变化，规则可能不正确")
                     val retryResult = callAiApi(config, retryContent)
                     val retryRuleText = extractContent(retryResult)
-                    parsed = parseAndValidateRule(retryRuleText) ?: run {
+                    currentRule = parseAndValidateRule(retryRuleText) ?: run {
                         toast("加强模式：重试解析失败，保存当前规则")
                         return
                     }
                     lastRuleText = retryRuleText
                 } else {
                     toast("加强模式：多次尝试后规则仍未生效，已保存最新版本")
-                    insertRuleToSubscription(parsed)
+                    insertRuleToSubscription(currentRule)
                 }
             }
         } catch (e: Exception) {
@@ -411,11 +409,19 @@ object AiRuleGenerator {
         }
     }
 
-    private fun extractSelectors(subs: RawSubscription): List<String> {
+    private fun extractActions(subs: RawSubscription): List<GkdAction> {
         return subs.apps.flatMap { app ->
             app.groups.flatMap { group ->
                 group.rules.flatMap { rule ->
-                    rule.matches.orEmpty()
+                    rule.matches.orEmpty().map { selector ->
+                        GkdAction(
+                            selector = selector,
+                            fastQuery = rule.fastQuery ?: group.fastQuery ?: false,
+                            action = rule.action,
+                            position = rule.position,
+                            swipeArg = rule.swipeArg,
+                        )
+                    }
                 }
             }
         }
@@ -531,7 +537,7 @@ $previousRule
         try {
             val jsonElement = json.parseToJsonElement(text)
             val app = RawSubscription.parseApp(jsonElement.jsonObject)
-            LogUtils.d("AI parsed as RawApp: id=${app.id}, groups=${app.groups.size}")
+            LogUtils.d("AI currentRule as RawApp: id=${app.id}, groups=${app.groups.size}")
             // Build a minimal subscription containing this app
             return RawSubscription(
                 id = -1L,
