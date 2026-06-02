@@ -1,0 +1,100 @@
+package li.songe.gkd.ui.student
+
+import li.songe.gkd.data.AppConfig
+import li.songe.gkd.data.AppInfo
+import li.songe.gkd.data.RawSubscription
+import li.songe.gkd.data.SubsConfig
+import li.songe.gkd.util.collator
+
+data class StudentAppCandidate(
+    val appId: String,
+    val appName: String,
+    val subscriptionName: String?,
+    val groupCount: Int,
+    val selected: Boolean,
+)
+
+fun buildStudentCandidates(
+    subscription: RawSubscription?,
+    installedApps: Map<String, AppInfo>,
+    selectedAppIds: Set<String>,
+    query: String,
+): List<StudentAppCandidate> {
+    subscription ?: return emptyList()
+
+    val normalizedQuery = query.trim()
+    return subscription.apps.asSequence()
+        .filter { rawApp -> rawApp.groups.isNotEmpty() }
+        .mapNotNull { rawApp ->
+            val installedApp = installedApps[rawApp.id] ?: return@mapNotNull null
+            StudentAppCandidate(
+                appId = rawApp.id,
+                appName = installedApp.name,
+                subscriptionName = rawApp.name,
+                groupCount = rawApp.groups.size,
+                selected = selectedAppIds.contains(rawApp.id),
+            )
+        }
+        .filter { candidate ->
+            normalizedQuery.isEmpty() ||
+                candidate.appName.contains(normalizedQuery, ignoreCase = true) ||
+                candidate.appId.contains(normalizedQuery, ignoreCase = true) ||
+                candidate.subscriptionName?.contains(normalizedQuery, ignoreCase = true) == true
+        }
+        .sortedWith { a, b ->
+            collator.compare(a.appName, b.appName).takeIf { it != 0 }
+                ?: collator.compare(a.appId, b.appId)
+        }
+        .toList()
+}
+
+fun buildStudentAppConfigs(
+    subsId: Long,
+    subscription: RawSubscription,
+    selectedAppIds: Set<String>,
+    existingConfigs: List<AppConfig>,
+): List<AppConfig> {
+    val existingConfigsByAppId = existingConfigs
+        .filter { config -> config.subsId == subsId }
+        .associateBy { config -> config.appId }
+
+    return subscription.apps
+        .filter { rawApp -> rawApp.groups.isNotEmpty() }
+        .map { rawApp ->
+            val enable = selectedAppIds.contains(rawApp.id)
+            existingConfigsByAppId[rawApp.id]?.copy(enable = enable)
+                ?: AppConfig(
+                    enable = enable,
+                    subsId = subsId,
+                    appId = rawApp.id,
+                )
+        }
+}
+
+fun buildStudentGlobalDisableConfigs(
+    subsId: Long,
+    subscription: RawSubscription,
+    existingConfigs: List<SubsConfig>,
+): List<SubsConfig> {
+    val existingConfigsByGroupKey = existingConfigs
+        .filter { config ->
+            config.subsId == subsId && config.type == SubsConfig.GlobalGroupType
+        }
+        .associateBy { config -> config.groupKey }
+
+    return subscription.globalGroups.map { group ->
+        existingConfigsByGroupKey[group.key]?.copy(
+            type = SubsConfig.GlobalGroupType,
+            enable = false,
+            subsId = subsId,
+            appId = "",
+            groupKey = group.key,
+            exclude = "",
+        ) ?: SubsConfig(
+            type = SubsConfig.GlobalGroupType,
+            enable = false,
+            subsId = subsId,
+            groupKey = group.key,
+        )
+    }
+}
