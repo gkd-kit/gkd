@@ -244,6 +244,40 @@ class StudentOnboardingModelsTest {
         assertNotEquals(303L, byGroupKey.getValue(2).id)
     }
 
+    @Test
+    fun buildStudentGlobalDisableConfigsKeepsSplashAdGlobalGroupEnabled() {
+        val subsId = 233L
+        val configs = buildStudentGlobalDisableConfigs(
+            subsId = subsId,
+            subscription = subscription(
+                globalGroups = listOf(
+                    globalGroup(key = 1, name = "开屏广告屏蔽"),
+                    globalGroup(key = 2, name = "普通全局规则"),
+                )
+            ),
+            existingConfigs = listOf(
+                SubsConfig(
+                    id = 101L,
+                    type = SubsConfig.GlobalGroupType,
+                    enable = false,
+                    subsId = subsId,
+                    groupKey = 1,
+                ),
+                SubsConfig(
+                    id = 202L,
+                    type = SubsConfig.GlobalGroupType,
+                    enable = true,
+                    subsId = subsId,
+                    groupKey = 2,
+                ),
+            ),
+        )
+
+        val byGroupKey = configs.associateBy { it.groupKey }
+        assertEquals(true, byGroupKey.getValue(1).enable)
+        assertEquals(false, byGroupKey.getValue(2).enable)
+    }
+
     private fun subscription(
         apps: List<RawSubscription.RawApp> = emptyList(),
         globalGroups: List<RawSubscription.RawGlobalGroup> = emptyList(),

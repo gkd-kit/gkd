@@ -57,6 +57,20 @@ fun isStudentPermissionReady(
     return a11yRunning && canQueryPackages && !appOpsRestricted
 }
 
+private val studentEnabledGlobalGroupKeywords = listOf(
+    "开屏广告屏蔽",
+    "开屏广告",
+)
+
+private fun shouldEnableStudentGlobalGroup(group: RawSubscription.RawGlobalGroup): Boolean {
+    return listOf(
+        group.name,
+        group.desc.orEmpty(),
+    ).any { text ->
+        studentEnabledGlobalGroupKeywords.any { keyword -> text.contains(keyword) }
+    }
+}
+
 fun buildStudentCandidates(
     subscription: RawSubscription?,
     installedApps: Map<String, AppInfo>,
@@ -139,16 +153,17 @@ fun buildStudentGlobalDisableConfigs(
         .associateBy { config -> config.groupKey }
 
     return subscription.globalGroups.map { group ->
+        val enable = shouldEnableStudentGlobalGroup(group)
         existingConfigsByGroupKey[group.key]?.copy(
             type = SubsConfig.GlobalGroupType,
-            enable = false,
+            enable = enable,
             subsId = subsId,
             appId = "",
             groupKey = group.key,
             exclude = "",
         ) ?: SubsConfig(
             type = SubsConfig.GlobalGroupType,
-            enable = false,
+            enable = enable,
             subsId = subsId,
             groupKey = group.key,
         )
