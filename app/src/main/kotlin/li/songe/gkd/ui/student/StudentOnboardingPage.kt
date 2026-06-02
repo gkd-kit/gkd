@@ -248,7 +248,7 @@ fun StudentOnboardingPage() {
                         canNext = canApply,
                         nextText = if (isApplying) "应用中" else "应用选择",
                         onBack = { step.intValue = STEP_PERMISSION },
-                        onNext = vm::applySelectedPlan,
+                        onNext = { vm.applySelectedPlan(context) },
                     )
                 }
 
@@ -557,7 +557,7 @@ private fun StudentCompleteStep(
             textAlign = TextAlign.Center,
         )
         Text(
-            text = "后续仍可在订阅管理或 App 配置页调整规则；如果某个学校 App 不想处理，可以单独关闭它。",
+            text = "已尝试开启常驻通知来保持服务运行。后续仍可在订阅管理或 App 配置页调整规则；如果后台清理后仍停止，请把省电策略设为无限制或在最近任务中锁定 GKD。",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

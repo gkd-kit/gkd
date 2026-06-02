@@ -4,6 +4,9 @@ import li.songe.gkd.data.AppConfig
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
+import li.songe.gkd.store.SettingsStore
+import li.songe.gkd.util.AutomatorModeOption
+import li.songe.gkd.util.UpdateChannelOption
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -170,6 +173,26 @@ class StudentOnboardingModelsTest {
         assertEquals("命令授权", help.secondaryActionText)
         assertEquals("查看完整兜底方案", help.fallbackActionText)
         assertFalse(help.actionTexts.any { it.contains("应用详情") })
+    }
+
+    @Test
+    fun buildStudentCompletedStoreKeepsA11yAutomationAliveAfterOnboarding() {
+        val store = buildStudentCompletedStore(
+            SettingsStore(
+                enableAutomator = false,
+                automatorMode = AutomatorModeOption.AutomationMode.value,
+                enableStatusService = false,
+                actionToast = "GKD",
+                customNotifTitle = "GKD",
+                updateChannel = UpdateChannelOption.Stable.value,
+            )
+        )
+
+        assertTrue(store.enableAutomator)
+        assertEquals(AutomatorModeOption.A11yMode.value, store.automatorMode)
+        assertTrue(store.enableStatusService)
+        assertEquals(STUDENT_ONBOARDING_VERSION, store.studentOnboardingCompletedVersion)
+        assertEquals(STUDENT_ONBOARDING_VERSION, store.studentOnboardingCardDismissedVersion)
     }
 
     @Test

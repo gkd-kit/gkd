@@ -11,12 +11,15 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import li.songe.gkd.MainActivity
 import li.songe.gkd.MainViewModel
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.permission.appOpsRestrictStateList
 import li.songe.gkd.permission.appOpsRestrictedFlow as permissionAppOpsRestrictedFlow
 import li.songe.gkd.permission.canQueryPkgState
+import li.songe.gkd.service.StatusService
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.share.BaseViewModel
 import li.songe.gkd.util.appInfoMapFlow
@@ -180,11 +183,16 @@ class StudentOnboardingVm : BaseViewModel() {
         }
     }
 
-    fun applySelectedPlan() = viewModelScope.launchTry(Dispatchers.IO) {
+    fun applySelectedPlan(context: MainActivity) = viewModelScope.launchTry {
         if (isApplyingFlow.value) return@launchTry
         isApplyingFlow.value = true
         try {
-            applySelectedPlanInternal(selectedAppIdsMutableFlow.value)
+            val applied = withContext(Dispatchers.IO) {
+                applySelectedPlanInternal(selectedAppIdsMutableFlow.value)
+            }
+            if (applied) {
+                StatusService.requestStart(context)
+            }
         } finally {
             isApplyingFlow.value = false
         }
@@ -253,10 +261,7 @@ class StudentOnboardingVm : BaseViewModel() {
         }
         DbSet.subsItemDao.updateEnable(subsItem.id, true)
         storeFlow.update { store ->
-            store.copy(
-                studentOnboardingCompletedVersion = STUDENT_ONBOARDING_VERSION,
-                studentOnboardingCardDismissedVersion = STUDENT_ONBOARDING_VERSION,
-            )
+            buildStudentCompletedStore(store)
         }
         toast("已为 ${selectedAppIds.size} 个 App 开启学生入门配置")
         return true

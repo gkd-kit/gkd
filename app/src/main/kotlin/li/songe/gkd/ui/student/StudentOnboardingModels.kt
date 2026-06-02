@@ -4,6 +4,8 @@ import li.songe.gkd.data.AppConfig
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
+import li.songe.gkd.store.SettingsStore
+import li.songe.gkd.util.AutomatorModeOption
 import li.songe.gkd.util.collator
 
 data class StudentAppCandidate(
@@ -30,6 +32,14 @@ fun buildStudentRestrictedSettingsHelp() = StudentRestrictedSettingsHelp(
     primaryActionText = "一键解除限制",
     secondaryActionText = "命令授权",
     fallbackActionText = "查看完整兜底方案",
+)
+
+fun buildStudentCompletedStore(store: SettingsStore) = store.copy(
+    enableAutomator = true,
+    automatorMode = AutomatorModeOption.A11yMode.value,
+    enableStatusService = true,
+    studentOnboardingCompletedVersion = STUDENT_ONBOARDING_VERSION,
+    studentOnboardingCardDismissedVersion = STUDENT_ONBOARDING_VERSION,
 )
 
 private val studentAppMatchKeywords = listOf(
