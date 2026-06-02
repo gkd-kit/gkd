@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.MainViewModel
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.permission.appOpsRestrictedFlow as permissionAppOpsRestrictedFlow
 import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.share.BaseViewModel
@@ -32,6 +33,7 @@ class StudentOnboardingVm : BaseViewModel() {
     val isApplyingFlow = MutableStateFlow(false)
 
     val canQueryPackagesFlow = canQueryPkgState.stateFlow
+    val appOpsRestrictedFlow = permissionAppOpsRestrictedFlow
 
     val recommendedSubsItemFlow = subsItemsFlow.mapNew { subsItems ->
         subsItems.find { item -> item.id == STUDENT_RECOMMENDED_SUBSCRIPTION_ID }
@@ -142,29 +144,14 @@ class StudentOnboardingVm : BaseViewModel() {
         selectedAppIdsMutableFlow.value = emptySet()
     }
 
-    fun applySelectedPlan() = viewModelScope.launchTry(Dispatchers.IO) {
-        if (isApplyingFlow.value) return@launchTry
-        isApplyingFlow.value = true
-        try {
-            applySelectedPlanInternal(selectedAppIdsMutableFlow.value)
-        } finally {
-            isApplyingFlow.value = false
+    fun prepareStudentSelection(mainVm: MainViewModel) = viewModelScope.launchTry(Dispatchers.IO) {
+        if (isImportingSubscriptionFlow.value || isApplyingFlow.value) return@launchTry
+        if (!canQueryPackagesFlow.value) return@launchTry
+        if (!ensureRecommendedSubscription(mainVm)) {
+            toast("推荐订阅导入失败，请稍后重试")
+            return@launchTry
         }
-    }
-
-    fun applyQuickStudentPlan(mainVm: MainViewModel) = viewModelScope.launchTry(Dispatchers.IO) {
-        if (isApplyingFlow.value) return@launchTry
-        isApplyingFlow.value = true
-        try {
-            if (!canQueryPackagesFlow.value) {
-                toast("请先授权读取应用列表")
-                return@launchTry
-            }
-            if (!ensureRecommendedSubscription(mainVm)) {
-                toast("推荐订阅导入失败，请稍后重试")
-                return@launchTry
-            }
-
+        if (selectedAppIdsMutableFlow.value.isEmpty()) {
             val defaultSelectedAppIds = buildDefaultStudentSelectedAppIds(
                 buildStudentCandidates(
                     subscription = recommendedSubscriptionFlow.value,
@@ -173,12 +160,18 @@ class StudentOnboardingVm : BaseViewModel() {
                     query = "",
                 )
             )
+            selectedAppIdsMutableFlow.value = defaultSelectedAppIds
             if (defaultSelectedAppIds.isEmpty()) {
                 toast("没有识别到学校常用 App，请手动选择")
-                return@launchTry
             }
-            selectedAppIdsMutableFlow.value = defaultSelectedAppIds
-            applySelectedPlanInternal(defaultSelectedAppIds)
+        }
+    }
+
+    fun applySelectedPlan() = viewModelScope.launchTry(Dispatchers.IO) {
+        if (isApplyingFlow.value) return@launchTry
+        isApplyingFlow.value = true
+        try {
+            applySelectedPlanInternal(selectedAppIdsMutableFlow.value)
         } finally {
             isApplyingFlow.value = false
         }

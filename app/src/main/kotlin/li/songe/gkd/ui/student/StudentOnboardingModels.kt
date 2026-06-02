@@ -49,6 +49,14 @@ fun buildDefaultStudentSelectedAppIds(
         .toSet()
 }
 
+fun isStudentPermissionReady(
+    a11yRunning: Boolean,
+    canQueryPackages: Boolean,
+    appOpsRestricted: Boolean,
+): Boolean {
+    return a11yRunning && canQueryPackages && !appOpsRestricted
+}
+
 fun buildStudentCandidates(
     subscription: RawSubscription?,
     installedApps: Map<String, AppInfo>,

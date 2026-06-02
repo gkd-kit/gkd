@@ -128,6 +128,38 @@ class StudentOnboardingModelsTest {
     }
 
     @Test
+    fun isStudentPermissionReadyRequiresA11yQueryPackagesAndNoRestriction() {
+        assertTrue(
+            isStudentPermissionReady(
+                a11yRunning = true,
+                canQueryPackages = true,
+                appOpsRestricted = false,
+            )
+        )
+        assertFalse(
+            isStudentPermissionReady(
+                a11yRunning = false,
+                canQueryPackages = true,
+                appOpsRestricted = false,
+            )
+        )
+        assertFalse(
+            isStudentPermissionReady(
+                a11yRunning = true,
+                canQueryPackages = false,
+                appOpsRestricted = false,
+            )
+        )
+        assertFalse(
+            isStudentPermissionReady(
+                a11yRunning = true,
+                canQueryPackages = true,
+                appOpsRestricted = true,
+            )
+        )
+    }
+
+    @Test
     fun buildStudentAppConfigsWritesExplicitEntriesForEverySupportedSubscriptionApp() {
         val subsId = 233L
         val subscription = subscription(

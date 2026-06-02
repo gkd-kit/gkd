@@ -46,6 +46,7 @@ import li.songe.gkd.MainActivity
 import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.service.A11yService
+import li.songe.gkd.ui.AppOpsAllowRoute
 import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.component.AppIcon
 import li.songe.gkd.ui.component.CustomOutlinedTextField
@@ -59,8 +60,10 @@ import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
 import li.songe.gkd.util.AutomatorModeOption
+import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openA11ySettings
+import li.songe.gkd.util.openAppDetailsSettings
 import li.songe.gkd.util.throttle
 
 @Serializable
@@ -72,7 +75,7 @@ private const val STEP_APPS = 2
 private const val STEP_COMPLETE = 3
 private const val STEP_COUNT = 4
 
-private val stepTitles = listOf("准备", "一键配置", "调整 App", "完成")
+private val stepTitles = listOf("准备", "自动准备", "选择 App", "完成")
 
 @Composable
 fun StudentOnboardingPage() {
@@ -83,6 +86,7 @@ fun StudentOnboardingPage() {
 
     val a11yRunning by A11yService.isRunning.collectAsState()
     val canQueryPackages by vm.canQueryPackagesFlow.collectAsState()
+    val appOpsRestricted by vm.appOpsRestrictedFlow.collectAsState()
     val recommendedReady by vm.recommendedSubscriptionReadyFlow.collectAsState()
     val supportedInstalledCount by vm.supportedInstalledCountFlow.collectAsState()
     val defaultSelectedCount by vm.defaultSelectedCountFlow.collectAsState()
@@ -94,6 +98,11 @@ fun StudentOnboardingPage() {
     val isApplying by vm.isApplyingFlow.collectAsState()
     val completed by vm.completedFlow.collectAsState()
     val searchText by vm.searchStrFlow.collectAsState()
+    val permissionReady = isStudentPermissionReady(
+        a11yRunning = a11yRunning,
+        canQueryPackages = canQueryPackages,
+        appOpsRestricted = appOpsRestricted,
+    )
 
     LaunchedEffect(Unit) {
         mainVm.updateAutomatorMode(AutomatorModeOption.A11yMode)
@@ -102,6 +111,20 @@ fun StudentOnboardingPage() {
     LaunchedEffect(completed) {
         if (completed) {
             step.intValue = STEP_COMPLETE
+        }
+    }
+
+    LaunchedEffect(permissionReady, completed) {
+        if (permissionReady && !completed && step.intValue == STEP_PERMISSION) {
+            step.intValue = STEP_QUICK_SETUP
+            vm.prepareStudentSelection(mainVm)
+        }
+    }
+
+    LaunchedEffect(recommendedReady, isImporting, step.intValue) {
+        if (step.intValue == STEP_QUICK_SETUP && recommendedReady && !isImporting) {
+            vm.seedDefaultSelection()
+            step.intValue = STEP_APPS
         }
     }
 
@@ -147,15 +170,22 @@ fun StudentOnboardingPage() {
                         modifier = Modifier.weight(1f),
                         a11yRunning = a11yRunning,
                         canQueryPackages = canQueryPackages,
+                        appOpsRestricted = appOpsRestricted,
                         onOpenA11ySettings = { openA11ySettings() },
                         onRequestQueryPackages = requestQueryPackages,
+                        onOpenRestrictionGuide = { mainVm.navigateWebPage(ShortUrlSet.URL2) },
+                        onOpenAppDetails = { openAppDetailsSettings() },
+                        onOpenRestrictionPage = { mainVm.navigatePage(AppOpsAllowRoute) },
                     )
                     StudentStepActions(
                         canBack = false,
-                        canNext = a11yRunning && canQueryPackages,
-                        nextText = "去一键配置",
+                        canNext = permissionReady,
+                        nextText = "继续",
                         onBack = {},
-                        onNext = { step.intValue = STEP_QUICK_SETUP },
+                        onNext = {
+                            step.intValue = STEP_QUICK_SETUP
+                            vm.prepareStudentSelection(mainVm)
+                        },
                     )
                 }
 
@@ -168,7 +198,7 @@ fun StudentOnboardingPage() {
                         isImporting = isImporting,
                         isApplying = isApplying,
                         canQuickApply = a11yRunning && canQuickApply,
-                        onQuickApply = { vm.applyQuickStudentPlan(mainVm) },
+                        onQuickApply = { vm.prepareStudentSelection(mainVm) },
                         onAdjust = {
                             vm.seedDefaultSelection()
                             step.intValue = STEP_APPS
@@ -193,6 +223,7 @@ fun StudentOnboardingPage() {
                         modifier = Modifier.weight(1f),
                         canQueryPackages = canQueryPackages,
                         recommendedReady = recommendedReady,
+                        isImporting = isImporting,
                         searchText = searchText,
                         selectedCount = selectedCount,
                         candidates = candidates,
@@ -207,7 +238,7 @@ fun StudentOnboardingPage() {
                         canBack = true,
                         canNext = canApply,
                         nextText = if (isApplying) "应用中" else "应用选择",
-                        onBack = { step.intValue = STEP_QUICK_SETUP },
+                        onBack = { step.intValue = STEP_PERMISSION },
                         onNext = vm::applySelectedPlan,
                     )
                 }
@@ -250,8 +281,12 @@ private fun StudentPermissionStep(
     modifier: Modifier,
     a11yRunning: Boolean,
     canQueryPackages: Boolean,
+    appOpsRestricted: Boolean,
     onOpenA11ySettings: () -> Unit,
     onRequestQueryPackages: () -> Unit,
+    onOpenRestrictionGuide: () -> Unit,
+    onOpenAppDetails: () -> Unit,
+    onOpenRestrictionPage: () -> Unit,
 ) {
     Column(
         modifier = modifier
@@ -261,29 +296,60 @@ private fun StudentPermissionStep(
     ) {
         StudentInfoCard(
             title = "先让服务跑起来",
-            text = "学生版默认使用系统无障碍服务，不需要 Shizuku 或写入安全设置。打开无障碍后回到这里，两个状态都就绪就能继续。",
+            text = "学生版默认使用普通无障碍服务。系统如果提示受限设置，开关通常不在「应用权限」列表里，需要按解除步骤处理后再回到这里。",
         )
         StudentStatusCard {
             StudentStatusRow(title = "无障碍服务", ready = a11yRunning)
             StudentStatusRow(title = "读取应用列表", ready = canQueryPackages)
+            StudentStatusRow(title = "受限设置", ready = !appOpsRestricted)
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Button(
-                modifier = Modifier.weight(1f),
-                enabled = !a11yRunning,
-                onClick = throttle(onOpenA11ySettings),
+        if (appOpsRestricted) {
+            StudentInfoCard(
+                title = "先解除系统限制",
+                text = "当前安装方式触发了系统受限设置，直接去无障碍页可能无法给 GKD 开权限。先看解除步骤，或进入原项目的解除限制页使用命令/重装等兜底方案。",
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(text = if (a11yRunning) "无障碍已开启" else "打开无障碍设置")
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = throttle(onOpenRestrictionGuide),
+                ) {
+                    Text(text = "查看解除步骤")
+                }
+                OutlinedButton(
+                    modifier = Modifier.weight(1f),
+                    onClick = throttle(onOpenAppDetails),
+                ) {
+                    Text(text = "打开应用详情")
+                }
             }
             OutlinedButton(
-                modifier = Modifier.weight(1f),
-                enabled = !canQueryPackages,
-                onClick = throttle(onRequestQueryPackages),
+                modifier = Modifier.fillMaxWidth(),
+                onClick = throttle(onOpenRestrictionPage),
             ) {
-                Text(text = if (canQueryPackages) "列表已授权" else "授权应用列表")
+                Text(text = "进入解除限制页")
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Button(
+                    modifier = Modifier.weight(1f),
+                    enabled = !a11yRunning,
+                    onClick = throttle(onOpenA11ySettings),
+                ) {
+                    Text(text = if (a11yRunning) "无障碍已开启" else "打开无障碍设置")
+                }
+                OutlinedButton(
+                    modifier = Modifier.weight(1f),
+                    enabled = !canQueryPackages,
+                    onClick = throttle(onRequestQueryPackages),
+                ) {
+                    Text(text = if (canQueryPackages) "列表已授权" else "授权应用列表")
+                }
             }
         }
         Spacer(modifier = Modifier.height(EmptyHeight))
@@ -310,8 +376,8 @@ private fun StudentQuickSetupStep(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         StudentInfoCard(
-            title = "学生极速模式",
-            text = "点一次会导入或更新推荐订阅，只为已安装且像学校常用工具的 App 开启规则，其他订阅支持 App 会保持关闭。",
+            title = "正在自动准备",
+            text = "这里会自动导入或更新推荐订阅，并预选已安装的学校常用 App。你只需要在下一步确认最终要开启哪些 App。",
         )
         StudentStatusCard {
             StudentStatusRow(title = STUDENT_RECOMMENDED_SUBSCRIPTION_NAME, ready = recommendedReady)
@@ -320,7 +386,7 @@ private fun StudentQuickSetupStep(
                 value = if (recommendedReady) "${supportedInstalledCount} 个" else "导入后识别",
             )
             StudentMetricRow(
-                title = "将自动开启",
+                title = "已自动预选",
                 value = if (recommendedReady) "${defaultSelectedCount} 个" else "导入后识别",
             )
         }
@@ -331,9 +397,9 @@ private fun StudentQuickSetupStep(
         ) {
             Text(
                 text = when {
-                    isApplying -> "配置中"
+                    isApplying -> "处理中"
                     isImporting -> "导入中"
-                    else -> "一键配置学校常用 App"
+                    else -> "重试自动准备"
                 }
             )
         }
@@ -346,7 +412,7 @@ private fun StudentQuickSetupStep(
                 enabled = recommendedReady && supportedInstalledCount > 0 && !isApplying,
                 onClick = throttle(onAdjust),
             ) {
-                Text(text = "调整选择")
+                Text(text = "进入 App 选择")
             }
             TextButton(
                 modifier = Modifier.weight(1f),
@@ -364,6 +430,7 @@ private fun StudentAppsStep(
     modifier: Modifier,
     canQueryPackages: Boolean,
     recommendedReady: Boolean,
+    isImporting: Boolean,
     searchText: String,
     selectedCount: Int,
     candidates: List<StudentAppCandidate>,
@@ -413,7 +480,7 @@ private fun StudentAppsStep(
             !recommendedReady -> {
                 StudentEmptyState(
                     modifier = Modifier.weight(1f),
-                    text = "请先导入推荐订阅。",
+                    text = if (isImporting) "正在自动导入推荐订阅。" else "推荐订阅还没有准备好，请返回上一步重试。",
                 )
             }
 
