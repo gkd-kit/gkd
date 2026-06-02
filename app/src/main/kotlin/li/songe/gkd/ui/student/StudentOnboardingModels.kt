@@ -14,6 +14,41 @@ data class StudentAppCandidate(
     val selected: Boolean,
 )
 
+private val studentAppMatchKeywords = listOf(
+    "运动世界校园",
+    "慧生活798",
+    "慧生活",
+    "步道乐跑",
+    "闪动校园",
+    "智慧校园",
+    "志愿汇",
+    "学习通",
+    "超星",
+    "易校园",
+    "校园",
+    "乐跑",
+    "chaoxing",
+    "xuexitong",
+    "yixiaoyuan",
+    "campus",
+)
+
+fun buildDefaultStudentSelectedAppIds(
+    candidates: List<StudentAppCandidate>,
+): Set<String> {
+    return candidates.asSequence()
+        .filter { candidate ->
+            val searchableText = listOf(
+                candidate.appId,
+                candidate.appName,
+                candidate.subscriptionName.orEmpty(),
+            ).joinToString(separator = " ").lowercase()
+            studentAppMatchKeywords.any { keyword -> searchableText.contains(keyword) }
+        }
+        .map { candidate -> candidate.appId }
+        .toSet()
+}
+
 fun buildStudentCandidates(
     subscription: RawSubscription?,
     installedApps: Map<String, AppInfo>,

@@ -89,6 +89,45 @@ class StudentOnboardingModelsTest {
     }
 
     @Test
+    fun buildDefaultStudentSelectedAppIdsSelectsLikelyCampusAppsOnly() {
+        val candidates = listOf(
+            StudentAppCandidate(
+                appId = "com.chaoxing.mobile",
+                appName = "学习通",
+                subscriptionName = "超星学习通",
+                groupCount = 3,
+                selected = false,
+            ),
+            StudentAppCandidate(
+                appId = "com.example.sport",
+                appName = "每日锻炼",
+                subscriptionName = "步道乐跑",
+                groupCount = 1,
+                selected = false,
+            ),
+            StudentAppCandidate(
+                appId = "com.yixiaoyuan.app",
+                appName = "饭卡",
+                subscriptionName = "一卡通",
+                groupCount = 1,
+                selected = false,
+            ),
+            StudentAppCandidate(
+                appId = "com.shopping.client",
+                appName = "购物 App",
+                subscriptionName = "普通广告规则",
+                groupCount = 2,
+                selected = false,
+            ),
+        )
+
+        assertEquals(
+            setOf("com.chaoxing.mobile", "com.example.sport", "com.yixiaoyuan.app"),
+            buildDefaultStudentSelectedAppIds(candidates),
+        )
+    }
+
+    @Test
     fun buildStudentAppConfigsWritesExplicitEntriesForEverySupportedSubscriptionApp() {
         val subsId = 233L
         val subscription = subscription(

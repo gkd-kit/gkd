@@ -45,7 +45,7 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
 import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.permission.requiredPermission
-import li.songe.gkd.ui.AuthA11yRoute
+import li.songe.gkd.service.A11yService
 import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.component.AppIcon
 import li.songe.gkd.ui.component.CustomOutlinedTextField
@@ -58,19 +58,21 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
+import li.songe.gkd.util.AutomatorModeOption
 import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.openA11ySettings
 import li.songe.gkd.util.throttle
 
 @Serializable
 data object StudentOnboardingRoute : NavKey
 
 private const val STEP_PERMISSION = 0
-private const val STEP_SUBSCRIPTION = 1
+private const val STEP_QUICK_SETUP = 1
 private const val STEP_APPS = 2
 private const val STEP_COMPLETE = 3
 private const val STEP_COUNT = 4
 
-private val stepTitles = listOf("权限", "订阅", "选择 App", "完成")
+private val stepTitles = listOf("准备", "一键配置", "调整 App", "完成")
 
 @Composable
 fun StudentOnboardingPage() {
@@ -79,23 +81,32 @@ fun StudentOnboardingPage() {
     val vm = viewModel<StudentOnboardingVm>()
     val step = rememberSaveable { mutableIntStateOf(STEP_PERMISSION) }
 
+    val a11yRunning by A11yService.isRunning.collectAsState()
     val canQueryPackages by vm.canQueryPackagesFlow.collectAsState()
-    val notificationGranted by vm.notificationGrantedFlow.collectAsState()
-    val writeSecureSettingsGranted by vm.writeSecureSettingsGrantedFlow.collectAsState()
-    val appOpsRestricted by vm.appOpsRestrictedFlow.collectAsState()
     val recommendedReady by vm.recommendedSubscriptionReadyFlow.collectAsState()
+    val supportedInstalledCount by vm.supportedInstalledCountFlow.collectAsState()
+    val defaultSelectedCount by vm.defaultSelectedCountFlow.collectAsState()
     val candidates by vm.candidatesFlow.collectAsState()
     val selectedCount by vm.selectedCountFlow.collectAsState()
     val canApply by vm.canApplyFlow.collectAsState()
+    val canQuickApply by vm.canQuickApplyFlow.collectAsState()
     val isImporting by vm.isImportingSubscriptionFlow.collectAsState()
     val isApplying by vm.isApplyingFlow.collectAsState()
     val completed by vm.completedFlow.collectAsState()
     val searchText by vm.searchStrFlow.collectAsState()
 
+    LaunchedEffect(Unit) {
+        mainVm.updateAutomatorMode(AutomatorModeOption.A11yMode)
+    }
+
     LaunchedEffect(completed) {
         if (completed) {
             step.intValue = STEP_COMPLETE
         }
+    }
+
+    val requestQueryPackages = mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
+        requiredPermission(context, canQueryPkgState)
     }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -134,33 +145,33 @@ fun StudentOnboardingPage() {
                 STEP_PERMISSION -> {
                     StudentPermissionStep(
                         modifier = Modifier.weight(1f),
+                        a11yRunning = a11yRunning,
                         canQueryPackages = canQueryPackages,
-                        notificationGranted = notificationGranted,
-                        writeSecureSettingsGranted = writeSecureSettingsGranted,
-                        appOpsRestricted = appOpsRestricted,
-                        onRequestQueryPackages = mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                            requiredPermission(context, canQueryPkgState)
-                        },
-                        onOpenWorkMode = {
-                            mainVm.navigatePage(AuthA11yRoute)
-                        },
+                        onOpenA11ySettings = { openA11ySettings() },
+                        onRequestQueryPackages = requestQueryPackages,
                     )
                     StudentStepActions(
                         canBack = false,
-                        canNext = true,
-                        nextText = "继续",
+                        canNext = a11yRunning && canQueryPackages,
+                        nextText = "去一键配置",
                         onBack = {},
-                        onNext = { step.intValue = STEP_SUBSCRIPTION },
+                        onNext = { step.intValue = STEP_QUICK_SETUP },
                     )
                 }
 
-                STEP_SUBSCRIPTION -> {
-                    StudentSubscriptionStep(
+                STEP_QUICK_SETUP -> {
+                    StudentQuickSetupStep(
                         modifier = Modifier.weight(1f),
                         recommendedReady = recommendedReady,
+                        supportedInstalledCount = supportedInstalledCount,
+                        defaultSelectedCount = defaultSelectedCount,
                         isImporting = isImporting,
-                        onImport = {
-                            vm.addRecommendedSubscription(mainVm)
+                        isApplying = isApplying,
+                        canQuickApply = a11yRunning && canQuickApply,
+                        onQuickApply = { vm.applyQuickStudentPlan(mainVm) },
+                        onAdjust = {
+                            vm.seedDefaultSelection()
+                            step.intValue = STEP_APPS
                         },
                         onOpenSource = {
                             mainVm.navigatePage(
@@ -170,10 +181,10 @@ fun StudentOnboardingPage() {
                     )
                     StudentStepActions(
                         canBack = true,
-                        canNext = recommendedReady,
-                        nextText = "选择 App",
+                        canNext = false,
+                        nextText = "",
                         onBack = { step.intValue = STEP_PERMISSION },
-                        onNext = { step.intValue = STEP_APPS },
+                        onNext = {},
                     )
                 }
 
@@ -190,15 +201,13 @@ fun StudentOnboardingPage() {
                             vm.setAppSelected(candidate.appId, !candidate.selected)
                         },
                         onClearSelection = vm::clearSelectedApps,
-                        onRequestQueryPackages = mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                            requiredPermission(context, canQueryPkgState)
-                        },
+                        onRequestQueryPackages = requestQueryPackages,
                     )
                     StudentStepActions(
                         canBack = true,
                         canNext = canApply,
                         nextText = if (isApplying) "应用中" else "应用选择",
-                        onBack = { step.intValue = STEP_SUBSCRIPTION },
+                        onBack = { step.intValue = STEP_QUICK_SETUP },
                         onNext = vm::applySelectedPlan,
                     )
                 }
@@ -239,12 +248,10 @@ private fun StudentStepHeader(step: Int) {
 @Composable
 private fun StudentPermissionStep(
     modifier: Modifier,
+    a11yRunning: Boolean,
     canQueryPackages: Boolean,
-    notificationGranted: Boolean,
-    writeSecureSettingsGranted: Boolean,
-    appOpsRestricted: Boolean,
+    onOpenA11ySettings: () -> Unit,
     onRequestQueryPackages: () -> Unit,
-    onOpenWorkMode: () -> Unit,
 ) {
     Column(
         modifier = modifier
@@ -253,31 +260,30 @@ private fun StudentPermissionStep(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         StudentInfoCard(
-            title = "准备基础权限",
-            text = "应用列表权限用于只展示你已安装且订阅支持的 App；工作模式权限用于实际执行跳过操作。",
+            title = "先让服务跑起来",
+            text = "学生版默认使用系统无障碍服务，不需要 Shizuku 或写入安全设置。打开无障碍后回到这里，两个状态都就绪就能继续。",
         )
         StudentStatusCard {
+            StudentStatusRow(title = "无障碍服务", ready = a11yRunning)
             StudentStatusRow(title = "读取应用列表", ready = canQueryPackages)
-            StudentStatusRow(title = "通知权限", ready = notificationGranted)
-            StudentStatusRow(title = "增强授权", ready = writeSecureSettingsGranted)
-            StudentStatusRow(title = "受限设置", ready = !appOpsRestricted)
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            Button(
+                modifier = Modifier.weight(1f),
+                enabled = !a11yRunning,
+                onClick = throttle(onOpenA11ySettings),
+            ) {
+                Text(text = if (a11yRunning) "无障碍已开启" else "打开无障碍设置")
+            }
             OutlinedButton(
                 modifier = Modifier.weight(1f),
                 enabled = !canQueryPackages,
                 onClick = throttle(onRequestQueryPackages),
             ) {
-                Text(text = if (canQueryPackages) "已授权列表" else "授权列表")
-            }
-            Button(
-                modifier = Modifier.weight(1f),
-                onClick = throttle(onOpenWorkMode),
-            ) {
-                Text(text = "工作模式")
+                Text(text = if (canQueryPackages) "列表已授权" else "授权应用列表")
             }
         }
         Spacer(modifier = Modifier.height(EmptyHeight))
@@ -285,11 +291,16 @@ private fun StudentPermissionStep(
 }
 
 @Composable
-private fun StudentSubscriptionStep(
+private fun StudentQuickSetupStep(
     modifier: Modifier,
     recommendedReady: Boolean,
+    supportedInstalledCount: Int,
+    defaultSelectedCount: Int,
     isImporting: Boolean,
-    onImport: () -> Unit,
+    isApplying: Boolean,
+    canQuickApply: Boolean,
+    onQuickApply: () -> Unit,
+    onAdjust: () -> Unit,
     onOpenSource: () -> Unit,
 ) {
     Column(
@@ -299,32 +310,45 @@ private fun StudentSubscriptionStep(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         StudentInfoCard(
-            title = "导入推荐订阅",
-            text = "推荐订阅来自上游社区维护者，导入后仍会让你逐个选择要开启的 App。",
+            title = "学生极速模式",
+            text = "点一次会导入或更新推荐订阅，只为已安装且像学校常用工具的 App 开启规则，其他订阅支持 App 会保持关闭。",
         )
         StudentStatusCard {
             StudentStatusRow(title = STUDENT_RECOMMENDED_SUBSCRIPTION_NAME, ready = recommendedReady)
+            StudentMetricRow(
+                title = "已安装且订阅支持",
+                value = if (recommendedReady) "${supportedInstalledCount} 个" else "导入后识别",
+            )
+            StudentMetricRow(
+                title = "将自动开启",
+                value = if (recommendedReady) "${defaultSelectedCount} 个" else "导入后识别",
+            )
+        }
+        Button(
+            modifier = Modifier.fillMaxWidth(),
+            enabled = canQuickApply,
+            onClick = throttle(onQuickApply),
+        ) {
             Text(
-                modifier = Modifier.padding(top = 4.dp),
-                text = STUDENT_RECOMMENDED_SUBSCRIPTION_URL,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+                text = when {
+                    isApplying -> "配置中"
+                    isImporting -> "导入中"
+                    else -> "一键配置学校常用 App"
+                }
             )
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Button(
-                modifier = Modifier.weight(1f),
-                enabled = !isImporting,
-                onClick = throttle(onImport),
-            ) {
-                Text(text = if (isImporting) "导入中" else if (recommendedReady) "更新订阅" else "导入订阅")
-            }
             OutlinedButton(
+                modifier = Modifier.weight(1f),
+                enabled = recommendedReady && supportedInstalledCount > 0 && !isApplying,
+                onClick = throttle(onAdjust),
+            ) {
+                Text(text = "调整选择")
+            }
+            TextButton(
                 modifier = Modifier.weight(1f),
                 onClick = throttle(onOpenSource),
             ) {
@@ -381,7 +405,7 @@ private fun StudentAppsStep(
                 StudentEmptyState(
                     modifier = Modifier.weight(1f),
                     text = "需要应用列表权限来匹配你已安装的学校常用 App。",
-                    actionText = "授权列表",
+                    actionText = "授权应用列表",
                     onAction = onRequestQueryPackages,
                 )
             }
@@ -448,7 +472,7 @@ private fun StudentCompleteStep(
             textAlign = TextAlign.Center,
         )
         Text(
-            text = "后续你仍然可以在订阅管理里调整规则，或在 App 配置页单独关闭某个学校 App。",
+            text = "后续仍可在订阅管理或 App 配置页调整规则；如果某个学校 App 不想处理，可以单独关闭它。",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -531,6 +555,29 @@ private fun StudentStatusRow(
         )
         Text(
             text = if (ready) "已就绪" else "待处理",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun StudentMetricRow(
+    title: String,
+    value: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            modifier = Modifier.weight(1f),
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            text = value,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -637,12 +684,14 @@ private fun StudentStepActions(
                 Text(text = "上一步")
             }
         }
-        Button(
-            modifier = Modifier.weight(1f),
-            enabled = canNext,
-            onClick = throttle(onNext),
-        ) {
-            Text(text = nextText)
+        if (canNext || nextText.isNotEmpty()) {
+            Button(
+                modifier = Modifier.weight(1f),
+                enabled = canNext,
+                onClick = throttle(onNext),
+            ) {
+                Text(text = nextText)
+            }
         }
     }
 }
