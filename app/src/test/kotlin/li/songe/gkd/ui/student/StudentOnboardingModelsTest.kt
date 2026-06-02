@@ -120,6 +120,7 @@ class StudentOnboardingModelsTest {
         assertTrue(byAppId.getValue("com.new.selected").enable)
         assertEquals(subsId, byAppId.getValue("com.new.selected").subsId)
         assertNotEquals(33L, byAppId.getValue("com.new.selected").id)
+        assertEquals(configs.size, configs.map { it.id }.toSet().size)
     }
 
     @Test

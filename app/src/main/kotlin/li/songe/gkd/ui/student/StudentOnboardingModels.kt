@@ -54,6 +54,18 @@ fun buildStudentAppConfigs(
     selectedAppIds: Set<String>,
     existingConfigs: List<AppConfig>,
 ): List<AppConfig> {
+    val usedConfigIds = existingConfigs.mapTo(mutableSetOf()) { config -> config.id }
+    var nextGeneratedConfigId = System.currentTimeMillis()
+    fun nextConfigId(): Long {
+        while (usedConfigIds.contains(nextGeneratedConfigId)) {
+            nextGeneratedConfigId += 1
+        }
+        val id = nextGeneratedConfigId
+        usedConfigIds.add(id)
+        nextGeneratedConfigId += 1
+        return id
+    }
+
     val existingConfigsByAppId = existingConfigs
         .filter { config -> config.subsId == subsId }
         .associateBy { config -> config.appId }
@@ -64,6 +76,7 @@ fun buildStudentAppConfigs(
             val enable = selectedAppIds.contains(rawApp.id)
             existingConfigsByAppId[rawApp.id]?.copy(enable = enable)
                 ?: AppConfig(
+                    id = nextConfigId(),
                     enable = enable,
                     subsId = subsId,
                     appId = rawApp.id,
