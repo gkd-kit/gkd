@@ -133,6 +133,8 @@ import li.songe.gkd.ui.home.HomeRoute
 import li.songe.gkd.ui.share.FixedWindowInsets
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.AppTheme
+import li.songe.gkd.ui.student.StudentOnboardingPage
+import li.songe.gkd.ui.student.StudentOnboardingRoute
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.BarUtils
 import li.songe.gkd.util.EditGithubCookieDlg
@@ -297,6 +299,7 @@ class MainActivity : ComponentActivity() {
                             entry<AppConfigRoute> { AppConfigPage(it) }
                             entry<CrashReportRoute> { CrashReportPage() }
                             entry<SubsCategoryGroupRoute> { SubsCategoryGroupPage(it) }
+                            entry<StudentOnboardingRoute> { StudentOnboardingPage() }
                         },
                         transitionSpec = {
                             slideInHorizontally(initialOffsetX = { it }) togetherWith

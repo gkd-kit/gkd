@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.data.SubsConfig
@@ -70,6 +71,8 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
+import li.songe.gkd.ui.student.STUDENT_ONBOARDING_VERSION
+import li.songe.gkd.ui.student.StudentOnboardingRoute
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.latestRecordDescFlow
@@ -223,6 +226,13 @@ fun useControlPage(): ScaffoldExt {
 
             ServerStatusCard()
 
+            if (
+                store.studentOnboardingCompletedVersion < STUDENT_ONBOARDING_VERSION &&
+                store.studentOnboardingCardDismissedVersion < STUDENT_ONBOARDING_VERSION
+            ) {
+                StudentOnboardingEntryCard()
+            }
+
             PageItemCard(
                 title = "触发记录",
                 subtitle = "规则误触可定位关闭",
@@ -256,6 +266,52 @@ fun useControlPage(): ScaffoldExt {
     }
 }
 
+
+@Composable
+private fun StudentOnboardingEntryCard() {
+    val mainVm = LocalMainViewModel.current
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics {
+                this.onClick(label = "打开学生入门页面", action = null)
+            },
+        shape = MaterialTheme.shapes.large,
+        colors = surfaceCardColors,
+        onClick = throttle {
+            mainVm.navigatePage(StudentOnboardingRoute)
+        },
+    ) {
+        IconTextCard(
+            imageVector = PerfIcon.RocketLaunch,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "学生入门",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    text = "按学校常用 App 选择开启跳广告",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            PerfIconButton(
+                imageVector = PerfIcon.Close,
+                contentDescription = "隐藏学生入门",
+                onClick = {
+                    storeFlow.update { store ->
+                        store.copy(
+                            studentOnboardingCardDismissedVersion = STUDENT_ONBOARDING_VERSION
+                        )
+                    }
+                },
+            )
+        }
+    }
+}
 
 @Composable
 private fun PageItemCard(
