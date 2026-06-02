@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GKD 学生入门</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --accent: #2563eb;
+      --line: color-mix(in srgb, CanvasText 14%, transparent);
+      --muted: color-mix(in srgb, CanvasText 64%, transparent);
+      --panel: color-mix(in srgb, Canvas 94%, CanvasText 6%);
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.7;
+      color: CanvasText;
+      background: Canvas;
+    }
+    main {
+      width: min(920px, 100%);
+      margin: 0 auto;
+      padding: 32px 18px 56px;
+    }
+    header {
+      padding: 28px 0 20px;
+      border-bottom: 1px solid var(--line);
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 7vw, 3.8rem);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin: 34px 0 12px;
+      font-size: 1.35rem;
+      letter-spacing: 0;
+    }
+    p {
+      margin: 0 0 12px;
+    }
+    a {
+      color: var(--accent);
+    }
+    .lead {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 1.08rem;
+    }
+    .panel {
+      margin: 16px 0;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+    .steps {
+      display: grid;
+      gap: 10px;
+      margin: 14px 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: step;
+    }
+    .steps li {
+      counter-increment: step;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .steps li::before {
+      content: counter(step) ". ";
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .muted {
+      color: var(--muted);
+    }
+    code {
+      padding: 0.12em 0.36em;
+      border-radius: 6px;
+      background: var(--panel);
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 0.95em;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>GKD 学生入门</h1>
+      <p class="lead">面向大学生的上手流程：先导入推荐订阅，再只选择自己已安装、确实需要跳广告的学校常用 App。</p>
+    </header>
+
+    <section>
+      <h2>适合谁</h2>
+      <p>如果你被运动世界校园、慧生活798、步道乐跑、闪动校园、智慧校园、志愿汇、学习通、易校园等高校常用 App 的启动页、弹窗或流程干扰，这个入口会比完整研究 GKD 规则更省时间。</p>
+      <p>它不会默认开启全部规则。你需要自己勾选要启用的 App，未选择的 App 会保持关闭。</p>
+    </section>
+
+    <section>
+      <h2>怎么用</h2>
+      <ol class="steps">
+        <li>在首页进入「学生入门」。</li>
+        <li>确认应用列表权限和工作模式权限。</li>
+        <li>导入推荐订阅。</li>
+        <li>在已安装 App 列表里勾选需要跳过广告或弹窗的 App。</li>
+        <li>点击应用选择，回到首页后正常使用。</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>订阅来源</h2>
+      <div class="panel">
+        <p><strong>推荐订阅：</strong>甘霖的GKD订阅</p>
+        <p><strong>订阅地址：</strong><code>https://registry.npmmirror.com/@ganlinte/gkd-subscription/latest/files/dist/ganlin_gkd.json5</code></p>
+        <p><strong>来源仓库：</strong><a href="https://github.com/ganlinte/GKD-subscription">ganlinte/GKD-subscription</a></p>
+      </div>
+      <p class="muted">订阅规则由对应订阅维护者维护。本入口只是降低第一次配置成本，不代表这些规则由 GKD 主项目或本学生入口作者原创。</p>
+    </section>
+
+    <section>
+      <h2>开源与上游</h2>
+      <p>这个学生入口基于 <a href="https://github.com/gkd-kit/gkd">gkd-kit/gkd</a> 优化，应该保留原项目名称、上游链接、许可证和源码可得性，不应包装成完全无关的新作品。</p>
+      <p>GKD 使用 <a href="../../LICENSE">GPL-3.0</a> 开源。分发修改版时，请同步提供对应源码、说明改动，并尊重上游项目和订阅维护者的署名。</p>
+    </section>
+
+    <section>
+      <h2>给新生群的说明</h2>
+      <p>推荐分享方式是发这个说明页和安装包/源码链接，让同学知道它做了什么、需要什么权限、规则来自哪里。不要承诺它能处理所有广告，也不要让别人无脑全开所有 App。</p>
+    </section>
+  </main>
+</body>
+</html>

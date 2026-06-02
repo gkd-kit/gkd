@@ -37,6 +37,8 @@
 
 GKD **默认不提供规则**，需自行添加本地规则，或者通过订阅链接的方式获取远程规则
 
+学生入门增强入口会帮助新用户导入推荐订阅，并只为用户勾选的已安装 App 写入开启配置；订阅规则仍来自对应订阅维护者，使用和分发修改版时请保留上游来源、许可证和源码说明。详见 [学生入门说明](docs/student-onboarding/index.html)。
+
 也可通过 [subscription-template](https://github.com/gkd-kit/subscription-template) 快速构建自己的远程订阅
 
 第三方订阅列表可在 <https://github.com/topics/gkd-subscription> 查看
