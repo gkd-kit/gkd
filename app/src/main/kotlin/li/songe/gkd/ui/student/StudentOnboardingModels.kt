@@ -14,6 +14,24 @@ data class StudentAppCandidate(
     val selected: Boolean,
 )
 
+data class StudentRestrictedSettingsHelp(
+    val title: String,
+    val text: String,
+    val primaryActionText: String,
+    val secondaryActionText: String,
+    val fallbackActionText: String,
+) {
+    val actionTexts = listOf(primaryActionText, secondaryActionText, fallbackActionText)
+}
+
+fun buildStudentRestrictedSettingsHelp() = StudentRestrictedSettingsHelp(
+    title = "自动解除系统限制",
+    text = "当前系统没有在应用详情页提供稳定的解除开关。先尝试 Shizuku 自动授权；如果没有 Shizuku，就使用命令授权。完成后回到这里继续开启无障碍。",
+    primaryActionText = "一键解除限制",
+    secondaryActionText = "命令授权",
+    fallbackActionText = "查看完整兜底方案",
+)
+
 private val studentAppMatchKeywords = listOf(
     "运动世界校园",
     "慧生活798",

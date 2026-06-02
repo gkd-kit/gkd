@@ -160,6 +160,19 @@ class StudentOnboardingModelsTest {
     }
 
     @Test
+    fun buildStudentRestrictedSettingsHelpPrefersWorkingAuthPaths() {
+        val help = buildStudentRestrictedSettingsHelp()
+
+        assertEquals("自动解除系统限制", help.title)
+        assertTrue(help.text.contains("Shizuku"))
+        assertTrue(help.text.contains("命令授权"))
+        assertEquals("一键解除限制", help.primaryActionText)
+        assertEquals("命令授权", help.secondaryActionText)
+        assertEquals("查看完整兜底方案", help.fallbackActionText)
+        assertFalse(help.actionTexts.any { it.contains("应用详情") })
+    }
+
+    @Test
     fun buildStudentAppConfigsWritesExplicitEntriesForEverySupportedSubscriptionApp() {
         val subsId = 233L
         val subscription = subscription(

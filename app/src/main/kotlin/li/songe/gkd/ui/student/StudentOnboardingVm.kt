@@ -2,15 +2,19 @@ package li.songe.gkd.ui.student
 
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.MainViewModel
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.permission.appOpsRestrictStateList
 import li.songe.gkd.permission.appOpsRestrictedFlow as permissionAppOpsRestrictedFlow
 import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.store.storeFlow
@@ -34,6 +38,15 @@ class StudentOnboardingVm : BaseViewModel() {
 
     val canQueryPackagesFlow = canQueryPkgState.stateFlow
     val appOpsRestrictedFlow = permissionAppOpsRestrictedFlow
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            while (isActive) {
+                appOpsRestrictStateList.forEach { it.updateAndGet() }
+                delay(1000)
+            }
+        }
+    }
 
     val recommendedSubsItemFlow = subsItemsFlow.mapNew { subsItems ->
         subsItems.find { item -> item.id == STUDENT_RECOMMENDED_SUBSCRIPTION_ID }

@@ -30,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,13 +44,16 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
+import li.songe.gkd.permission.appOpsRestrictStateList
 import li.songe.gkd.permission.canQueryPkgState
 import li.songe.gkd.permission.requiredPermission
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.ui.AppOpsAllowRoute
 import li.songe.gkd.ui.WebViewRoute
+import li.songe.gkd.ui.gkdStartCommandText
 import li.songe.gkd.ui.component.AppIcon
 import li.songe.gkd.ui.component.CustomOutlinedTextField
+import li.songe.gkd.ui.component.ManualAuthDialog
 import li.songe.gkd.ui.component.PerfCheckbox
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
@@ -60,11 +64,10 @@ import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
 import li.songe.gkd.util.AutomatorModeOption
-import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openA11ySettings
-import li.songe.gkd.util.openAppDetailsSettings
 import li.songe.gkd.util.throttle
+import li.songe.gkd.util.toast
 
 @Serializable
 data object StudentOnboardingRoute : NavKey
@@ -83,6 +86,7 @@ fun StudentOnboardingPage() {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<StudentOnboardingVm>()
     val step = rememberSaveable { mutableIntStateOf(STEP_PERMISSION) }
+    val showCommandAuth = rememberSaveable { mutableStateOf(false) }
 
     val a11yRunning by A11yService.isRunning.collectAsState()
     val canQueryPackages by vm.canQueryPackagesFlow.collectAsState()
@@ -131,6 +135,11 @@ fun StudentOnboardingPage() {
     val requestQueryPackages = mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
         requiredPermission(context, canQueryPkgState)
     }
+    val tryAllowRestrictions = mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
+        mainVm.guardShizukuContext()
+        val allAllowed = appOpsRestrictStateList.all { it.updateAndGet() }
+        toast(if (allAllowed) "授权成功" else "已尝试授权，请稍后确认状态")
+    }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
@@ -173,8 +182,8 @@ fun StudentOnboardingPage() {
                         appOpsRestricted = appOpsRestricted,
                         onOpenA11ySettings = { openA11ySettings() },
                         onRequestQueryPackages = requestQueryPackages,
-                        onOpenRestrictionGuide = { mainVm.navigateWebPage(ShortUrlSet.URL2) },
-                        onOpenAppDetails = { openAppDetailsSettings() },
+                        onTryAllowRestrictions = tryAllowRestrictions,
+                        onOpenCommandAuth = { showCommandAuth.value = true },
                         onOpenRestrictionPage = { mainVm.navigatePage(AppOpsAllowRoute) },
                     )
                     StudentStepActions(
@@ -255,6 +264,14 @@ fun StudentOnboardingPage() {
             }
         }
     }
+
+    ManualAuthDialog(
+        commandText = gkdStartCommandText,
+        show = showCommandAuth.value,
+        onUpdateShow = {
+            showCommandAuth.value = it
+        },
+    )
 }
 
 @Composable
@@ -284,8 +301,8 @@ private fun StudentPermissionStep(
     appOpsRestricted: Boolean,
     onOpenA11ySettings: () -> Unit,
     onRequestQueryPackages: () -> Unit,
-    onOpenRestrictionGuide: () -> Unit,
-    onOpenAppDetails: () -> Unit,
+    onTryAllowRestrictions: () -> Unit,
+    onOpenCommandAuth: () -> Unit,
     onOpenRestrictionPage: () -> Unit,
 ) {
     Column(
@@ -304,9 +321,10 @@ private fun StudentPermissionStep(
             StudentStatusRow(title = "受限设置", ready = !appOpsRestricted)
         }
         if (appOpsRestricted) {
+            val restrictedHelp = buildStudentRestrictedSettingsHelp()
             StudentInfoCard(
-                title = "先解除系统限制",
-                text = "当前安装方式触发了系统受限设置，直接去无障碍页可能无法给 GKD 开权限。先看解除步骤，或进入原项目的解除限制页使用命令/重装等兜底方案。",
+                title = restrictedHelp.title,
+                text = restrictedHelp.text,
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -314,22 +332,22 @@ private fun StudentPermissionStep(
             ) {
                 Button(
                     modifier = Modifier.weight(1f),
-                    onClick = throttle(onOpenRestrictionGuide),
+                    onClick = throttle(onTryAllowRestrictions),
                 ) {
-                    Text(text = "查看解除步骤")
+                    Text(text = restrictedHelp.primaryActionText)
                 }
                 OutlinedButton(
                     modifier = Modifier.weight(1f),
-                    onClick = throttle(onOpenAppDetails),
+                    onClick = throttle(onOpenCommandAuth),
                 ) {
-                    Text(text = "打开应用详情")
+                    Text(text = restrictedHelp.secondaryActionText)
                 }
             }
             OutlinedButton(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = throttle(onOpenRestrictionPage),
             ) {
-                Text(text = "进入解除限制页")
+                Text(text = restrictedHelp.fallbackActionText)
             }
         } else {
             Row(
