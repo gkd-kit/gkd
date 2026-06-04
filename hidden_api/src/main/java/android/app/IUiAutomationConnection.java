@@ -7,6 +7,7 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 import android.window.ScreenCapture;
+import android.window.ScreenCaptureInternal;
 
 import androidx.annotation.DeprecatedSinceApi;
 import androidx.annotation.RequiresApi;
@@ -45,4 +46,8 @@ public interface IUiAutomationConnection {
 
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     boolean takeScreenshot(Rect crop, ScreenCapture.ScreenCaptureListener listener, int displayId);
+
+    // android-16.0.0_r4
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    boolean takeScreenshot(Rect crop, ScreenCaptureInternal.ScreenCaptureListener listener, int displayId);
 }

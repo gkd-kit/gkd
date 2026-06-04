@@ -5,6 +5,7 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.IInterface;
 import android.window.ScreenCapture;
+import android.window.ScreenCaptureInternal;
 
 import androidx.annotation.DeprecatedSinceApi;
 import androidx.annotation.RequiresApi;
@@ -41,4 +42,7 @@ public interface IWindowManager extends IInterface {
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     void captureDisplay(int displayId, ScreenCapture.CaptureArgs captureArgs, ScreenCapture.ScreenCaptureListener listener);
 
+    // android-16.0.0_r4
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    void captureDisplay(int displayId, ScreenCaptureInternal.CaptureArgs captureArgs, ScreenCaptureInternal.ScreenCaptureListener listener);
 }

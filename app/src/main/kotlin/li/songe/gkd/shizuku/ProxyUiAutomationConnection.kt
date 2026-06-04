@@ -12,6 +12,7 @@ import android.os.RemoteException
 import android.view.Display.DEFAULT_DISPLAY
 import android.view.accessibility.AccessibilityEvent
 import android.window.ScreenCapture
+import android.window.ScreenCaptureInternal
 import androidx.annotation.RequiresApi
 import li.songe.gkd.util.AndroidTarget
 import rikka.shizuku.Shizuku
@@ -181,6 +182,31 @@ class ProxyUiAutomationConnection : IUiAutomationConnection.Stub() {
         val identity = clearCallingIdentity()
         try {
             val captureArgs = ScreenCapture.CaptureArgs.Builder()
+                .setSourceCrop(crop)
+                .build()
+            mWindowManager.captureDisplay(displayId, captureArgs, listener)
+        } catch (re: RemoteException) {
+            throw re.rethrowAsRuntimeException()
+        } finally {
+            restoreCallingIdentity(identity)
+        }
+        return true
+    }
+
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    override fun takeScreenshot(
+        crop: Rect,
+        listener: ScreenCaptureInternal.ScreenCaptureListener,
+        displayId: Int,
+    ): Boolean {
+        synchronized(mLock) {
+            throwIfCalledByNotTrustedUidLocked()
+            throwIfShutdownLocked()
+            throwIfNotConnectedLocked()
+        }
+        val identity = clearCallingIdentity()
+        try {
+            val captureArgs = ScreenCaptureInternal.CaptureArgs.Builder()
                 .setSourceCrop(crop)
                 .build()
             mWindowManager.captureDisplay(displayId, captureArgs, listener)
