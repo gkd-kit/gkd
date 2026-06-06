@@ -95,7 +95,9 @@ private data class AppJsonData(
 @WorkerThread
 fun buildLogFile(): File {
     val tempDir = createGkdTempDir()
-    val files = mutableListOf(dbFolder, storeFolder, subsFolder, logFolder, crashFolder)
+    val files = listOf(dbFolder, storeFolder, subsFolder, logFolder, crashFolder).filter {
+        it.list()?.isNotEmpty() == true
+    }.toMutableList()
     tempDir.resolve("apps.json").also {
         it.writeText(json.encodeToString(AppJsonData()))
         files.add(it)

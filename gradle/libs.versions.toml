@@ -1,19 +1,19 @@
 [versions]
 kotlin = "2.3.21"
 serialization = "1.11.0"
-ksp = "2.3.8"
+ksp = "2.3.9"
 agp = "9.2.1"
 compose = "1.11.2"
 nav3 = "1.1.2"
 room = "2.8.4"
 paging = "3.5.0"
 ktor = "3.5.0"
-atomicfu = "0.32.1"
+atomicfu = "0.33.0"
 coil = "3.4.0"
 telephoto = "0.19.0"
-remap = "0.1.1"
+remap = "0.1.2"
 shizuku = "13.1.5"
-loc = "0.6.2"
+loc = "0.7.0"
 
 [libraries]
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
