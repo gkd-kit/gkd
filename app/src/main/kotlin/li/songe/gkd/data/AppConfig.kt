@@ -3,6 +3,7 @@ package li.songe.gkd.data
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
@@ -14,6 +15,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 @Entity(
     tableName = "app_config",
+    indices = [
+        Index("subs_id"),
+        Index("app_id"),
+    ],
 )
 data class AppConfig(
     @PrimaryKey @ColumnInfo(name = "id") val id: Long = System.currentTimeMillis(),

@@ -5,6 +5,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.DeleteTable
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
@@ -17,6 +18,10 @@ import li.songe.gkd.util.getShowActivityId
 @Serializable
 @Entity(
     tableName = "action_log",
+    indices = [
+        Index("app_id"),
+        Index("subs_id"),
+    ],
 )
 data class ActionLog(
     @PrimaryKey(autoGenerate = true) @ColumnInfo(name = "id") val id: Int = 0,

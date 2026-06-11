@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
@@ -18,6 +19,9 @@ import li.songe.gkd.util.format
 @Serializable
 @Entity(
     tableName = "subs_item",
+    indices = [
+        Index("enable"),
+    ],
 )
 data class SubsItem(
     @PrimaryKey @ColumnInfo(name = "id") val id: Long,

@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
@@ -32,6 +33,10 @@ private fun buildUniqueTimeMillisId(): Long {
 @Serializable
 @Entity(
     tableName = "subs_config",
+    indices = [
+        Index("subs_id"),
+        Index(value = ["type", "subs_id"]),
+    ],
 )
 data class SubsConfig(
     @PrimaryKey @ColumnInfo(name = "id") val id: Long = buildUniqueTimeMillisId(),

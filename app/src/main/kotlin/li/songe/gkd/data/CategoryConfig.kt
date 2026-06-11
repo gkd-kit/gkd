@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
@@ -15,6 +16,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 @Entity(
     tableName = "category_config",
+    indices = [
+        Index("subs_id"),
+        Index(value = ["subs_id", "category_key"]),
+    ],
 )
 data class CategoryConfig(
     @PrimaryKey @ColumnInfo(name = "id") val id: Long = System.currentTimeMillis(),

@@ -5,6 +5,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.DeleteTable
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
@@ -15,6 +16,9 @@ import li.songe.gkd.util.getShowActivityId
 
 @Entity(
     tableName = "activity_log_v2",
+    indices = [
+        Index("ctime"),
+    ],
 )
 data class ActivityLog(
     // 不使用时间戳作为主键的原因
