@@ -256,6 +256,10 @@ val ruleSummaryFlow by lazy {
     ) { subsEntries, appInfoCache, appConfigs, subsConfigs, categoryConfigs ->
         val globalSubsConfigs = subsConfigs.filter { c -> c.type == SubsConfig.GlobalGroupType }
         val groupSubsConfigs = subsConfigs.filter { c -> c.type == SubsConfig.AppGroupType }
+        val globalSubsConfigsMap = globalSubsConfigs.groupBy { it.subsId }
+        val appConfigsMap = appConfigs.groupBy { it.subsId }
+        val groupSubsConfigsMap = groupSubsConfigs.groupBy { it.subsId }
+        val categoryConfigsMap = categoryConfigs.groupBy { it.subsId }
         val appRules = HashMap<String, MutableList<AppRule>>()
         val appGroups = HashMap<String, List<RawSubscription.RawAppGroup>>()
         val appAllGroups =
@@ -264,7 +268,7 @@ val ruleSummaryFlow by lazy {
         val globalGroups = mutableListOf<ResolvedGlobalGroup>()
         subsEntries.forEach { (subsItem, rawSubs) ->
             // global scope
-            val subGlobalSubsConfigs = globalSubsConfigs.filter { c -> c.subsId == subsItem.id }
+            val subGlobalSubsConfigs = globalSubsConfigsMap[subsItem.id] ?: emptyList()
             val subGlobalGroupToRules =
                 mutableMapOf<RawSubscription.RawGlobalGroup, List<GlobalRule>>()
             rawSubs.globalGroups.filter { g ->
@@ -297,9 +301,9 @@ val ruleSummaryFlow by lazy {
             subGlobalGroupToRules.clear()
 
             // app scope
-            val subAppConfigs = appConfigs.filter { c -> c.subsId == subsItem.id }
-            val subGroupSubsConfigs = groupSubsConfigs.filter { c -> c.subsId == subsItem.id }
-            val subCategoryConfigs = categoryConfigs.filter { c -> c.subsId == subsItem.id }
+            val subAppConfigs = appConfigsMap[subsItem.id] ?: emptyList()
+            val subGroupSubsConfigs = groupSubsConfigsMap[subsItem.id] ?: emptyList()
+            val subCategoryConfigs = categoryConfigsMap[subsItem.id] ?: emptyList()
             rawSubs.apps.filter { appRaw ->
                 // 筛选 当前启用的 app 订阅规则
                 appRaw.groups.isNotEmpty() && (subAppConfigs.find { c -> c.appId == appRaw.id }?.enable
@@ -364,7 +368,7 @@ val ruleSummaryFlow by lazy {
             appIdToGroups = appGroups,
             appIdToAllGroups = appAllGroups
         )
-    }.flowOn(Dispatchers.Default).stateIn(appScope, SharingStarted.Eagerly, RuleSummary())
+    }.flowOn(Dispatchers.Default).stateIn(appScope, SharingStarted.WhileSubscribed(5000), RuleSummary())
 }
 
 fun getSubsStatus(ruleSummary: RuleSummary, count: Long): String {
