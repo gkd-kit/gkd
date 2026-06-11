@@ -91,6 +91,7 @@ fun AppConfigPage(route: AppConfigRoute) {
     val ruleSortType by vm.ruleSortTypeFlow.collectAsState()
     val groupSize by vm.groupSizeFlow.collectAsState()
     val firstLoading by vm.firstLoadingFlow.collectAsState()
+    val focusGroup by vm.focusGroupFlow.collectAsState()
     val resetKey = rememberSaveable { mutableIntStateOf(0) }
     val (scrollBehavior, listState) = useListScrollState(
         resetKey,
@@ -99,7 +100,7 @@ fun AppConfigPage(route: AppConfigRoute) {
     )
     if (focusLog != null && groupSize > 0) {
         LaunchedEffect(null) {
-            if (vm.focusGroupFlow?.value != null) {
+            if (vm.focusGroupFlow.value != null) {
                 val i = vm.subsPairsFlow.value.run {
                     var j = 0
                     forEach { (entry, groups) ->
@@ -371,7 +372,8 @@ fun AppConfigPage(route: AppConfigRoute) {
                         isSelectedMode = isSelectedMode,
                         isSelected = isSelected,
                         onSelectedChange = onSelectedChange,
-                        focusGroupFlow = vm.focusGroupFlow,
+                        focusGroup = focusGroup,
+                        onClearFocus = { vm.focusGroupFlow.value = null },
                     )
                 }
             }

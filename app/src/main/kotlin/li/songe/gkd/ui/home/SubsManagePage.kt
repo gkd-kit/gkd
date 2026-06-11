@@ -451,6 +451,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                     isSelectedMode = false
                                 }
                             },
+                            subsRefreshing = refreshing,
                         )
                     }
                 }

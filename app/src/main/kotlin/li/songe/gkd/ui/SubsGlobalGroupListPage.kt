@@ -72,6 +72,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
     val vm = viewModel { SubsGlobalGroupListVm(route) }
     val subs = vm.subsRawFlow.collectAsState().value
     val subsConfigs by vm.subsConfigsFlow.collectAsState()
+    val focusGroup by vm.focusGroupFlow.collectAsState()
 
     val editable = subsItemId < 0
     val globalGroups = subs.globalGroups
@@ -96,7 +97,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
     val (scrollBehavior, listState) = useListScrollState(resetKey, globalGroups.isEmpty())
     if (focusGroupKey != null) {
         LaunchedEffect(null) {
-            if (vm.focusGroupFlow?.value != null) {
+            if (vm.focusGroupFlow.value != null) {
                 val i = globalGroups.indexOfFirst { it.key == focusGroupKey }
                 if (i >= 0) {
                     listState.scrollToItem(i)
@@ -252,7 +253,8 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                     subs = subs,
                     appId = null,
                     group = group,
-                    focusGroupFlow = vm.focusGroupFlow,
+                    focusGroup = focusGroup,
+                    onClearFocus = { vm.focusGroupFlow.value = null },
                     subsConfig = subsConfig,
                     categoryConfig = null,
                     isSelectedMode = isSelectedMode,

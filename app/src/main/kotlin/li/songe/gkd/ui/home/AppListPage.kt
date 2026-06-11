@@ -107,6 +107,8 @@ fun useAppListPage(): ScaffoldExt {
     val refreshing by updateAppMutex.state.collectAsState()
     val pullToRefreshState = rememberPullToRefreshState()
     val editWhiteListMode by vm.editWhiteListModeFlow.collectAsState()
+    val blockMatchAppList by blockMatchAppListFlow.collectAsState()
+    val showAllApp by vm.appFilter.showAllAppFlow.collectAsState()
     val scrollKey = rememberSaveable { mutableIntStateOf(0) }
     val (scrollBehavior, listState) = useListScrollState(scrollKey)
     LaunchedEffect(null) {
@@ -330,12 +332,14 @@ fun useAppListPage(): ScaffoldExt {
                     AppItemCard(
                         appInfo = appInfo,
                         desc = desc,
+                        editWhiteListMode = editWhiteListMode,
+                        blockMatchAppList = blockMatchAppList,
                     )
                 }
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsState().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
+                        EmptyText(text = if (showAllApp) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }
@@ -348,12 +352,13 @@ fun useAppListPage(): ScaffoldExt {
 private fun AppItemCard(
     appInfo: AppInfo,
     desc: String?,
+    editWhiteListMode: Boolean,
+    blockMatchAppList: Set<String>,
 ) {
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
     val vm = viewModel<HomeVm>()
-    val editWhiteListMode = vm.editWhiteListModeFlow.collectAsState().value
-    val inWhiteList = blockMatchAppListFlow.collectAsState().value.contains(appInfo.id)
+    val inWhiteList = blockMatchAppList.contains(appInfo.id)
     Row(
         modifier = Modifier
             .clickable(

@@ -2,6 +2,7 @@ package li.songe.gkd.ui
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.ui.component.FocusGroup
 import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.ui.share.BaseViewModel
 
@@ -20,13 +21,13 @@ class SubsAppGroupListVm(val route: SubsAppGroupListRoute) : BaseViewModel() {
     val isSelectedModeFlow = MutableStateFlow(false)
     val selectedDataSetFlow = MutableStateFlow(emptySet<ShowGroupState>())
 
-    val focusGroupFlow = route.focusGroupKey?.let {
-        MutableStateFlow<Triple<Long, String?, Int>?>(
-            Triple(
+    val focusGroupFlow = MutableStateFlow<FocusGroup?>(
+        route.focusGroupKey?.let {
+            FocusGroup(
                 route.subsItemId,
                 route.appId,
                 route.focusGroupKey
             )
-        )
-    }
+        }
+    )
 }

@@ -12,6 +12,8 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.store.storeFlow
+import li.songe.gkd.ui.component.CheckedGroup
+import li.songe.gkd.ui.component.FocusGroup
 import li.songe.gkd.ui.component.ShowGroupState
 import li.songe.gkd.ui.component.getActualGroupChecked
 import li.songe.gkd.ui.component.toGroupState
@@ -97,7 +99,7 @@ class AppConfigVm(val route: AppConfigRoute) : BaseViewModel() {
         if (globalSubsConfigs == null || categoryConfigs == null || appSubsConfigs == null) {
             return@combine emptySet()
         }
-        val checkedSet = mutableSetOf<Triple<Long, Int, Int>>()
+        val checkedSet = mutableSetOf<CheckedGroup>()
         list.forEach { (entry, groups) ->
             groups.forEach { group ->
                 val subsConfig = when (group) {
@@ -121,7 +123,7 @@ class AppConfigVm(val route: AppConfigRoute) : BaseViewModel() {
                     categoryConfig = categoryConfig,
                 ) && (group !is RawSubscription.RawGlobalGroup || subsConfig?.enable != false)
                 if (checked) {
-                    checkedSet.add(Triple(entry.subsItem.id, group.groupType, group.key))
+                    checkedSet.add(CheckedGroup(entry.subsItem.id, group.groupType, group.key))
                 }
             }
         }
@@ -129,7 +131,7 @@ class AppConfigVm(val route: AppConfigRoute) : BaseViewModel() {
     }.stateInit(emptySet())
 
     private val actualCheckedGroupSetFlow =
-        MutableStateFlow<Set<Triple<Long, Int, Int>>>(emptySet())
+        MutableStateFlow<Set<CheckedGroup>>(emptySet())
 
     init {
         showDisabledRuleFlow.launchOnChange {
@@ -156,7 +158,7 @@ class AppConfigVm(val route: AppConfigRoute) : BaseViewModel() {
             val newList = mutableListOf<Pair<UsedSubsEntry, List<RawSubscription.RawGroupProps>>>()
             list.forEach { (entry, groups) ->
                 val newGroups = groups.filter { g ->
-                    checkedSet.contains(Triple(entry.subsItem.id, g.groupType, g.key))
+                    checkedSet.contains(CheckedGroup(entry.subsItem.id, g.groupType, g.key))
                 }
                 if (newGroups.isNotEmpty()) {
                     newList.add(entry to newGroups)
@@ -219,15 +221,15 @@ class AppConfigVm(val route: AppConfigRoute) : BaseViewModel() {
         selectedDataSetFlow.value = getAllSelectedDataSet() - selectedDataSetFlow.value
     }
 
-    val focusGroupFlow = route.focusLog?.let {
-        MutableStateFlow<Triple<Long, String?, Int>?>(
-            Triple(
+    val focusGroupFlow = MutableStateFlow<FocusGroup?>(
+        route.focusLog?.let {
+            FocusGroup(
                 it.subsId,
                 if (it.groupType == SubsConfig.AppGroupType) it.appId else null,
                 it.groupKey,
             )
-        )
-    }
+        }
+    )
 
     init {
         viewModelScope.launch {

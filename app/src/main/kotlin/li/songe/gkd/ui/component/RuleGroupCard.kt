@@ -17,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,7 +30,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
 import li.songe.gkd.appScope
 import li.songe.gkd.data.CategoryConfig
@@ -58,7 +56,8 @@ fun RuleGroupCard(
     group: RawSubscription.RawGroupProps,
     subsConfig: SubsConfig?,
     categoryConfig: CategoryConfig?,
-    focusGroupFlow: MutableStateFlow<Triple<Long, String?, Int>?>? = null,
+    focusGroup: FocusGroup? = null,
+    onClearFocus: (() -> Unit)? = null,
     isSelectedMode: Boolean = false,
     isSelected: Boolean = false,
     onLongClick: () -> Unit = {},
@@ -70,13 +69,12 @@ fun RuleGroupCard(
     val inGlobalAppPage = appId != null && group is RawSubscription.RawGlobalGroup
 
     var highlighted by remember { mutableStateOf(false) }
-    if (focusGroupFlow != null) {
-        val focusGroup by focusGroupFlow.collectAsState()
-        if (subs.id == focusGroup?.first && group.key == focusGroup?.third && if (group is RawSubscription.RawAppGroup) appId == focusGroup?.second else focusGroup?.second == null) {
+    if (focusGroup != null && onClearFocus != null) {
+        if (subs.id == focusGroup.subsId && group.key == focusGroup.groupKey && if (group is RawSubscription.RawAppGroup) appId == focusGroup.appId else focusGroup.appId == null) {
             LaunchedEffect(isSelectedMode) {
                 if (isSelectedMode) {
                     highlighted = false
-                    focusGroupFlow.value = null
+                    onClearFocus()
                     return@LaunchedEffect
                 }
                 delay(300)
@@ -88,7 +86,7 @@ fun RuleGroupCard(
                     i++
                 }
                 highlighted = false
-                focusGroupFlow.value = null
+                onClearFocus()
             }
         }
     }

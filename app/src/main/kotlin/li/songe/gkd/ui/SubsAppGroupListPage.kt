@@ -80,6 +80,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
     val subsConfigs by vm.subsConfigsFlow.collectAsState()
     val categoryConfigs by vm.categoryConfigsFlow.collectAsState()
     val app by vm.subsAppFlow.collectAsState()
+    val focusGroup by vm.focusGroupFlow.collectAsState()
 
     val editable = subsItemId < 0
     val isSelectedMode = vm.isSelectedModeFlow.collectAsState().value
@@ -101,7 +102,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
     val (scrollBehavior, listState) = useListScrollState(resetKey, app.groups.isEmpty())
     if (focusGroupKey != null) {
         LaunchedEffect(null) {
-            if (vm.focusGroupFlow?.value != null) {
+            if (vm.focusGroupFlow.value != null) {
                 val i = app.groups.indexOfFirst { it.key == focusGroupKey }
                 if (i >= 0) {
                     listState.scrollToItem(i)
@@ -283,7 +284,8 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                     group = group,
                     subsConfig = subsConfig,
                     categoryConfig = categoryConfig,
-                    focusGroupFlow = vm.focusGroupFlow,
+                    focusGroup = focusGroup,
+                    onClearFocus = { vm.focusGroupFlow.value = null },
                     isSelectedMode = isSelectedMode,
                     isSelected = selectedDataSet.any { it.groupKey == group.key },
                     onLongClick = {

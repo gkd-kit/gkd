@@ -58,6 +58,7 @@ fun SubsItemCard(
     isSelected: Boolean,
     onCheckedChange: ((Boolean) -> Unit),
     onSelectedChange: (() -> Unit)? = null,
+    subsRefreshing: Boolean = false,
 ) {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<HomeVm>()
@@ -67,7 +68,6 @@ fun SubsItemCard(
     val subsRefreshError by remember(subsItem.id) {
         subsRefreshErrorsFlow.mapState(vm.viewModelScope) { it[subsItem.id] }
     }.collectAsState()
-    val subsRefreshing by updateSubsMutex.state.collectAsState()
     val dragged by interactionSource.collectIsDraggedAsState()
     val onClick = {
         if (!dragged) {
