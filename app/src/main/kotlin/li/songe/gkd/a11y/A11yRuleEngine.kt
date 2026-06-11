@@ -319,9 +319,8 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
                     return
                 }
                 (if (queryEvents.size > 1) {
-                    val hasDiffItem = queryEvents.any { e ->
-                        queryEvents.any { e2 -> !e.sameAs(e2) }
-                    }
+                    val first = queryEvents.first()
+                    val hasDiffItem = queryEvents.drop(1).any { !it.sameAs(first) }
                     if (hasDiffItem) {
                         // 存在不同的事件节点, 全部丢弃使用 root 查询
                         null

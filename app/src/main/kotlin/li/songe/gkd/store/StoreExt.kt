@@ -12,7 +12,8 @@ import li.songe.gkd.util.toast
 val storeFlow by lazy {
     createAnyFlow(
         key = "store",
-        default = { SettingsStore() }
+        default = { SettingsStore() },
+        debounceMillis = 100,
     )
 }
 
