@@ -109,10 +109,21 @@ fun buildLogFile(): File {
         files.add(it)
     }
     tempDir.resolve("permission.txt").also {
-        it.writeText(allPermissionStates.joinToString("\n") { state ->
-            state.name + ": " + state.stateFlow.value.toString()
-        })
-        it.appendText("\nappListAuthAbnormalFlow: ${appListAuthAbnormalFlow.value}")
+        val p1 = allPermissionStates.filter { s -> s.value }
+        if (p1.isNotEmpty()) {
+            it.appendText("已授权\n" + p1.joinToString("\n") { s -> s.name })
+            it.appendText("\n\n")
+        }
+        val p2 = allPermissionStates.filter { s -> !s.value }
+        if (p2.isNotEmpty()) {
+            it.appendText("未授权\n" + p2.joinToString("\n") { s -> s.name })
+            it.appendText("\n\n")
+        }
+        if (appListAuthAbnormalFlow.value) {
+            it.appendText("其它\n")
+            it.appendText("读取应用列表权限异常")
+        }
+        it.appendText("\n")
         files.add(it)
     }
     val formattedJson = Json(from = json) {
