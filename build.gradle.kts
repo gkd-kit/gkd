@@ -1,15 +1,10 @@
-import nl.littlerobots.vcu.plugin.versionSelector
+import com.android.build.api.dsl.ApplicationExtension
+import com.android.build.api.dsl.LibraryExtension
+import com.android.build.gradle.AppPlugin
+import com.android.build.gradle.LibraryPlugin
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
-ext {
-    set("android.namespace", "li.songe.gkd")
-    set("android.buildToolsVersion", "37.0.0")
-    set("android.compileSdk", 37)
-    set("android.targetSdk", 37)
-    set("android.minSdk", 26)
-    set("android.javaVersion", JavaVersion.VERSION_11)
-    set("kotlin.jvmTarget", JvmTarget.JVM_11)
-}
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 plugins {
     alias(libs.plugins.google.ksp) apply false
@@ -26,46 +21,65 @@ plugins {
     alias(libs.plugins.littlerobots.version)
 }
 
-// ./gradlew versionCatalogUpdate --interactive
-versionCatalogUpdate {
-    versionSelector {
-        val a = it.currentVersion
-        val b = it.candidate.version
-        isSameTypeVersion(a, b) && isNewerVersion(a, b)
-    }
-}
-projectDir.resolve("./gradle/libs.versions.updates.toml").apply {
-    if (exists()) {
-        delete()
-    }
-}
-
-val versionReg = "^[0-9\\.]+".toRegex()
-fun isSameTypeVersion(currentVersion: String, newVersion: String): Boolean {
-    if (versionReg.matches(currentVersion)) {
-        return versionReg.matches(newVersion)
-    }
-    arrayOf("alpha", "beta", "dev", "rc").forEach { v ->
-        if (currentVersion.contains(v, true)) {
-            return newVersion.contains(v, true)
-        }
-    }
-    throw IllegalArgumentException("Unknown version type: $currentVersion -> $newVersion")
+object Cfg {
+    val compileSdk get() = 37
+    val buildToolsVersion get() = "37.0.0"
+    val minSdk get() = 26
+    val targetSdk get() = compileSdk
+    val sourceVersion = JavaVersion.VERSION_11
+    val targetVersion get() = sourceVersion
+    val kotlinTargetVersion get() = JvmTarget.fromTarget(targetVersion.majorVersion)
+    val kotlinCompilerArgs = listOf(
+        "-opt-in=kotlin.RequiresOptIn",
+        "-opt-in=kotlin.contracts.ExperimentalContracts",
+        "-opt-in=kotlinx.coroutines.FlowPreview",
+        "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+        "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
+        "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+        "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
+        "-opt-in=androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi",
+        "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
+        "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
+        "-XXLanguage:+MultiDollarInterpolation",
+    )
 }
 
-val numberReg = "\\d+".toRegex()
-fun isNewerVersion(currentVersion: String, newVersion: String): Boolean {
-    val currentParts = numberReg.findAll(currentVersion).map { it.value.toInt() }.toList()
-    val newParts = numberReg.findAll(newVersion).map { it.value.toInt() }.toList()
-    val length = maxOf(currentParts.size, newParts.size)
-    for (i in 0 until length) {
-        val currentPart = currentParts.getOrNull(i) ?: 0
-        val newPart = newParts.getOrNull(i) ?: 0
-        if (currentPart < newPart) {
-            return true
-        } else if (currentPart > newPart) {
-            return false
+subprojects {
+    tasks.withType<KotlinJvmCompile>().configureEach {
+        compilerOptions {
+            jvmTarget.set(Cfg.kotlinTargetVersion)
         }
     }
-    return false
+    plugins.withType<AppPlugin> {
+        tasks.withType<KotlinCompilationTask<*>>().configureEach {
+            compilerOptions {
+                freeCompilerArgs.addAll(Cfg.kotlinCompilerArgs)
+            }
+        }
+        extensions.getByType(ApplicationExtension::class.java).apply {
+            compileSdk = Cfg.compileSdk
+            buildToolsVersion = Cfg.buildToolsVersion
+            defaultConfig {
+                minSdk = Cfg.minSdk
+                targetSdk = Cfg.targetSdk
+            }
+            compileOptions {
+                sourceCompatibility = Cfg.sourceVersion
+                targetCompatibility = Cfg.targetVersion
+            }
+        }
+    }
+    plugins.withType<LibraryPlugin> {
+        extensions.getByType(LibraryExtension::class.java).apply {
+            compileSdk = Cfg.compileSdk
+            buildToolsVersion = Cfg.buildToolsVersion
+            defaultConfig {
+                minSdk = Cfg.minSdk
+            }
+            compileOptions {
+                sourceCompatibility = Cfg.sourceVersion
+                targetCompatibility = Cfg.targetVersion
+            }
+        }
+    }
 }

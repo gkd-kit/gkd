@@ -1,16 +1,10 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
-    jvm {
-        compilerOptions {
-            jvmTarget.set(rootProject.ext["kotlin.jvmTarget"] as JvmTarget)
-        }
-    }
+    jvm {}
     js {
         compilerOptions {
             target.set("es2015")

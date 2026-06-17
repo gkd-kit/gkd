@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.3.21"
+kotlin = "2.4.0"
 serialization = "1.11.0"
 ksp = "2.3.9"
 agp = "9.2.1"
@@ -9,11 +9,11 @@ room = "2.8.4"
 paging = "3.5.0"
 ktor = "3.5.0"
 atomicfu = "0.33.0"
-coil = "3.4.0"
+coil = "3.5.0"
 telephoto = "0.19.0"
 remap = "0.1.2"
 shizuku = "13.1.5"
-loc = "0.7.0"
+loc = "0.7.1"
 
 [libraries]
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
@@ -39,7 +39,7 @@ compose-icons = "androidx.compose.material:material-icons-extended:1.7.8"
 compose-material3 = "androidx.compose.material3:material3:1.4.0"
 compose-activity = "androidx.activity:activity-compose:1.13.0"
 androidx-appcompat = "androidx.appcompat:appcompat:1.7.1"
-androidx-core-ktx = "androidx.core:core-ktx:1.18.0"
+androidx-core-ktx = "androidx.core:core-ktx:1.19.0"
 androidx-lifecycle-runtime-ktx = "androidx.lifecycle:lifecycle-runtime-ktx:2.10.0"
 androidx-lifecycle-service = "androidx.lifecycle:lifecycle-service:2.10.0"
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3" }
