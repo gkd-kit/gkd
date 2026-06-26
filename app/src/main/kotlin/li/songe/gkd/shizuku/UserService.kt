@@ -43,6 +43,10 @@ class UserService(val context: Context) : IUserService.Stub() {
     }
 
     override fun execCommand(command: String): CommandResult {
+        val callingUid = android.os.Binder.getCallingUid()
+        if (callingUid != context.applicationInfo.uid) {
+            throw SecurityException("Unauthorized caller uid=$callingUid")
+        }
         Log.d("UserService", "execCommand(command=$command)")
         val process = Runtime.getRuntime().exec("sh")
         val outputStream = DataOutputStream(process.outputStream)
