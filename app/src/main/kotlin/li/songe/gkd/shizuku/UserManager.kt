@@ -21,6 +21,6 @@ class SafeUserManager(private val value: IUserManager) {
             1 -> value.getUsers(excludeDying)
             2 -> value.getUsers(excludePartial, excludeDying, excludePreCreated)
             else -> value.getUsers(excludeDying)
-        }.map { UserInfo(id = it.id, name = it.name.trim()) }
+        }.map { UserInfo(id = it.id, name = it.name) }
     } ?: emptyList()
 }
