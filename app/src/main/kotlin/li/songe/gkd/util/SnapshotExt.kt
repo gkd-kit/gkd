@@ -56,7 +56,7 @@ object SnapshotExt {
         }
     }
 
-    fun screenshotFile(id: Long) = snapshotParentPath(id).resolve("${id}.png")
+    fun screenshotFile(id: Long) = snapshotParentPath(id).resolve("${id}.webp")
 
     suspend fun snapshotZipFile(
         snapshotId: Long,
@@ -266,7 +266,7 @@ object SnapshotExt {
             withContext(Dispatchers.IO) {
                 snapshotParentPath(snapshot.id).autoMk()
                 screenshotFile(snapshot.id).outputStream().use { stream ->
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                    bitmap.compress(Bitmap.CompressFormat.WEBP, 85, stream)
                 }
                 snapshotFile(snapshot.id).writeText(keepNullJson.encodeToString(snapshot))
                 minSnapshotFile(snapshot.id).writeText(
