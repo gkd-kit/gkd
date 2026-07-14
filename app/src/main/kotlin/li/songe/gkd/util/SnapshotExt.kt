@@ -56,8 +56,17 @@ object SnapshotExt {
         }
     }
 
-    fun screenshotFile(id: Long) = snapshotParentPath(id).resolve("${id}.webp")
+    fun screenshotFile(id: Long): File {
+        val webp = snapshotParentPath(id).resolve("${id}.webp")
+        // 存在webp优先返回；不存在则返回旧png文件
+        if (webp.exists()) return webp
+        return snapshotParentPath(id).resolve("${id}.png")
+    }
 
+    // 仅在[保存新快照]时调用，强制输出webp，不要在读取逻辑使用
+    private fun newScreenshotOutputFile(id: Long): File {
+        return snapshotParentPath(id).resolve("${id}.webp")
+    }
     suspend fun snapshotZipFile(
         snapshotId: Long,
         appId: String? = null,
@@ -265,7 +274,7 @@ object SnapshotExt {
             val (bitmap, currentStatus) = screenResult // 拆开(图片+状态)
             withContext(Dispatchers.IO) {
                 snapshotParentPath(snapshot.id).autoMk()
-                screenshotFile(snapshot.id).outputStream().use { stream ->
+                newScreenshotOutputFile(snapshot.id).outputStream().use { stream ->
                     bitmap.compress(Bitmap.CompressFormat.WEBP, 85, stream)
                 }
                 snapshotFile(snapshot.id).writeText(keepNullJson.encodeToString(snapshot))
