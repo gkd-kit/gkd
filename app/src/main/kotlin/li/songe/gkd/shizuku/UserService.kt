@@ -20,6 +20,7 @@ import java.io.DataOutputStream
 import java.io.File
 import kotlin.coroutines.resume
 import kotlin.system.exitProcess
+import kotlin.time.Duration.Companion.milliseconds
 
 
 // https://github.com/RikkaApps/Shizuku/issues/1171#issuecomment-2952442340
@@ -153,7 +154,7 @@ data class UserServiceWrapper(
         userService.execCommand(command)
     } catch (e: Throwable) {
         e.printStackTrace()
-        CommandResult(code = null, result = "", error = e.message)
+        CommandResult(code = -1, result = "", error = e.message)
     }
 
     fun tap(x: Float, y: Float, duration: Long = 0): Boolean {
@@ -214,7 +215,7 @@ suspend fun buildServiceWrapper(): UserServiceWrapper? {
             LogUtils.d("onServiceDisconnected", componentName)
         }
     }
-    return withTimeoutOrNull(3000) {
+    return withTimeoutOrNull(3000.milliseconds) {
         suspendCancellableCoroutine { continuation ->
             resumeCallback = { continuation.resume(it) }
             try {

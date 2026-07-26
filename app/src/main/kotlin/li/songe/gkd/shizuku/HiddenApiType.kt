@@ -1,6 +1,5 @@
 package li.songe.gkd.shizuku
 
-import android.app.IActivityTaskManager
 import android.os.IUserManager
 import android.view.IWindowManager
 import li.songe.gkd.util.LogUtils
@@ -13,21 +12,6 @@ object HiddenApiType {
             "getUsers",
             1 to listOf(Boolean::class.java),
             2 to listOf(Boolean::class.java, Boolean::class.java, Boolean::class.java),
-        )
-    }
-
-    // https://diff.songe.li/i/IActivityTaskManager.getTasks
-    val getTasks by lazy {
-        IActivityTaskManager::class.java.detectHiddenMethod(
-            "getTasks",
-            1 to listOf(Int::class.java),
-            2 to listOf(Int::class.java, Boolean::class.java, Boolean::class.java),
-            3 to listOf(
-                Int::class.java,
-                Boolean::class.java,
-                Boolean::class.java,
-                Int::class.java
-            ),
         )
     }
 

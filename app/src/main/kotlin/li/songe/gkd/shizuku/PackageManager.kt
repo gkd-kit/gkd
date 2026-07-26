@@ -35,19 +35,6 @@ class SafePackageManager(private val value: IPackageManager) {
         }
     } ?: emptyList()
 
-    @Suppress("unused")
-    fun getPackageInfo(
-        packageName: String,
-        flags: Int,
-        userId: Int,
-    ): PackageInfo? = safeInvokeShizuku {
-        if (AndroidTarget.TIRAMISU) {
-            value.getPackageInfo(packageName, flags.toLong(), userId)
-        } else {
-            value.getPackageInfo(packageName, flags, userId)
-        }
-    }
-
     fun getApplicationEnabledSetting(
         packageName: String,
         userId: Int,

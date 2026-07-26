@@ -32,6 +32,7 @@ import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
 import kotlin.system.exitProcess
+import kotlin.time.Duration.Companion.milliseconds
 
 inline fun <T> safeInvokeShizuku(
     block: () -> T
@@ -75,7 +76,6 @@ class ShizukuContext(
     val packageManager: SafePackageManager?,
     val userManager: SafeUserManager?,
     val activityManager: SafeActivityManager?,
-    val activityTaskManager: SafeActivityTaskManager?,
     val appOpsService: SafeAppOpsService?,
     val inputManager: SafeInputManager?,
     val a11yManager: SafeAccessibilityManager?,
@@ -84,17 +84,12 @@ class ShizukuContext(
     val ok get() = this !== defaultShizukuContext
     fun destroy() {
         serviceWrapper?.destroy()
-        if (activityTaskManager != null) {
-            activityTaskManager.unregisterDefault()
-        } else {
-            activityManager?.unregisterDefault()
-        }
+        activityManager?.unregisterDefault()
     }
 
     val states = listOf(
         "IUserService" to serviceWrapper,
         "IActivityManager" to activityManager,
-        "IActivityTaskManager" to activityTaskManager,
         "IAppOpsService" to appOpsService,
         "IInputManager" to inputManager,
         "IPackageManager" to packageManager,
@@ -113,7 +108,7 @@ class ShizukuContext(
 
     @WorkerThread
     fun tap(x: Float, y: Float, duration: Long = 0): Boolean {
-        return serviceWrapper?.tap(x, y, duration) ?: (inputManager?.tap(x, y, duration) != null)
+        return serviceWrapper?.tap(x, y, duration) ?: (inputManager?.tap(x, y, duration) == true)
     }
 
     fun swipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Long): Boolean {
@@ -123,23 +118,17 @@ class ShizukuContext(
             x2,
             y2,
             duration
-        ) != null)
+        ) == true)
     }
 
     fun getTasks(maxNum: Int = 1): List<ActivityManager.RunningTaskInfo> {
-        return activityTaskManager?.getTasks(maxNum)
-            ?: activityManager?.getTasks(maxNum)
-            ?: emptyList()
+        return activityManager?.getTasks(maxNum) ?: emptyList()
     }
 
     fun topCpn(): ComponentName? = getTasks().firstOrNull()?.topActivity
 
     init {
-        if (activityTaskManager != null) {
-            activityTaskManager.registerDefault()
-        } else {
-            activityManager?.registerDefault()
-        }
+        activityManager?.registerDefault()
         grantSelf()
         // 某些情况下存在残留进程
         val size = serviceWrapper?.userService?.killLegacyService()
@@ -155,7 +144,6 @@ private val defaultShizukuContext by lazy {
         packageManager = null,
         userManager = null,
         activityManager = null,
-        activityTaskManager = null,
         appOpsService = null,
         inputManager = null,
         a11yManager = null,
@@ -183,11 +171,10 @@ private fun updateShizukuBinder() = updateBinderMutex.launchTry(appScope, Dispat
             toast("正在连接 Shizuku 服务...")
         }
         val shizukuContext = ShizukuContext(
-            serviceWrapper = buildServiceWrapper(),
+            serviceWrapper = null,
             packageManager = SafePackageManager.newBinder(),
             userManager = SafeUserManager.newBinder(),
             activityManager = SafeActivityManager.newBinder(),
-            activityTaskManager = SafeActivityTaskManager.newBinder(),
             appOpsService = SafeAppOpsService.newBinder(),
             inputManager = SafeInputManager.newBinder(),
             a11yManager = SafeAccessibilityManager.newBinder(),
@@ -236,11 +223,11 @@ private fun updateShizukuBinder() = updateBinderMutex.launchTry(appScope, Dispat
 private suspend fun killRelaunchApp() {
     if (isActivityVisible) {
         toast("Shizuku 断开，重启应用以释放自动化服务", forced = true)
-        delay(1500)
+        delay(1500.milliseconds)
         app.startLaunchActivity()
     } else {
         toast("Shizuku 断开，结束应用以释放自动化服务", forced = true)
-        delay(1500)
+        delay(1500.milliseconds)
     }
     android.os.Process.killProcess(android.os.Process.myPid())
     exitProcess(0)

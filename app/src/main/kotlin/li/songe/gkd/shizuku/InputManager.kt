@@ -2,10 +2,8 @@ package li.songe.gkd.shizuku
 
 import android.content.Context
 import android.hardware.input.IInputManager
-import android.view.InputEvent
 import androidx.annotation.WorkerThread
 import li.songe.gkd.util.AndroidTarget
-
 
 class SafeInputManager(private val value: IInputManager) {
     companion object {
@@ -14,34 +12,46 @@ class SafeInputManager(private val value: IInputManager) {
         }
     }
 
-    private val command = InputShellCommand(this)
+    private val compat = InputManagerCompat(value)
 
-    fun compatInjectInputEvent(
-        ev: InputEvent,
-        mode: Int,
-    ) = safeInvokeShizuku {
-        if (AndroidTarget.TIRAMISU) {
-            // https://github.com/android-cs/16/blob/main/core/java/android/hardware/input/InputManagerGlobal.java#L1707
-            value.injectInputEventToTarget(ev, mode, android.os.Process.INVALID_UID)
+    @WorkerThread
+    fun tap(x: Float, y: Float, duration: Long = 0): Boolean {
+        if (!AndroidTarget.S) {
+            return compat.tap(x, y, duration)
+        }
+        return if (duration > 0) {
+            value.asBinder().shellCommand(
+                "swipe",
+                x.toString(),
+                y.toString(),
+                x.toString(),
+                y.toString(),
+                duration.toString(),
+            ).ok
         } else {
-            value.injectInputEvent(ev, mode)
+            value.asBinder().shellCommand("tap", x.toString(), y.toString()).ok
         }
     }
 
     @WorkerThread
-    fun tap(x: Float, y: Float, duration: Long = 0) {
-        if (duration > 0) {
-            command.runSwipe(x, y, x, y, duration)
-        } else {
-            command.runTap(x, y)
+    fun swipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Long): Boolean {
+        if (!AndroidTarget.S) {
+            return compat.swipe(x1, y1, x2, y2, duration)
         }
+        return value.asBinder().shellCommand(
+            "swipe",
+            x1.toString(),
+            y1.toString(),
+            x2.toString(),
+            y2.toString(),
+            duration.toString(),
+        ).ok
     }
 
-    @WorkerThread
-    fun swipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Long) {
-        command.runSwipe(x1, y1, x2, y2, duration)
+    fun key(keyCode: Int): Boolean {
+        if (!AndroidTarget.S) {
+            return compat.key(keyCode)
+        }
+        return value.asBinder().shellCommand("keyevent", keyCode.toString()).ok
     }
-
-    fun key(keyCode: Int) = command.runKeyEvent(keyCode)
-
 }

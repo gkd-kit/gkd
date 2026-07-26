@@ -5,7 +5,7 @@ import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class CommandResult(
-    val code: Int?,
+    val code: Int,
     val result: String,
     val error: String?
 ) : Parcelable {

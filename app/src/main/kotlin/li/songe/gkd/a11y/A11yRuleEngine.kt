@@ -462,7 +462,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
 
         fun performActionBack(): Boolean {
             val r1 = shizukuContextFlow.value.inputManager?.key(KeyEvent.KEYCODE_BACK)
-            if (r1 != null) return true
+            if (r1 == true) return true
             return A11yService.instance?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK) == true
         }
 
