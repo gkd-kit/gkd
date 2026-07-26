@@ -20,8 +20,8 @@ import java.io.OutputStream
 object ImageUtils {
     fun save2Album(
         src: Bitmap,
-        quality: Int = 100,
-        format: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG,
+        quality: Int = 85,
+        format: Bitmap.CompressFormat = Bitmap.CompressFormat.WEBP,
         recycle: Boolean = true,
     ): Boolean {
         val safeDirName = app.packageName
