@@ -65,6 +65,16 @@ GKD **默认不提供规则**，需自行添加本地规则，或者通过订阅
 
 </details>
 
+## 衍生
+
+开发过程中的衍生项目，它们正在被 gkd 使用，也许对你有帮助
+
+- [kotlin-json5](https://github.com/lisonge/kotlin-json5)
+- [kotlin-loc](https://github.com/lisonge/kotlin-loc)
+- [android-api-diff](https://github.com/android-cs/android-api-diff)
+- [remap](https://github.com/lisonge/remap)
+- [priv-kit](https://github.com/priv-kit/priv-kit)
+
 ## 捐赠
 
 如果 GKD 对你有用, 可以通过以下链接支持该项目
@@ -72,7 +82,3 @@ GKD **默认不提供规则**，需自行添加本地规则，或者通过订阅
 <https://github.com/lisonge/sponsor>
 
 或前往 [Google Play](https://play.google.com/store/apps/details?id=li.songe.gkd) 给个好评
-
-## Star History
-
-[![Stargazers over time](https://starchart.cc/gkd-kit/gkd.svg?variant=adaptive)](https://starchart.cc/gkd-kit/gkd)
