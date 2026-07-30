@@ -218,7 +218,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso)
 
-    compileOnly(project(":hidden_api"))
+    compileOnly(project(":hidden-api"))
     implementation(libs.rikka.shizuku.api)
     implementation(libs.rikka.shizuku.provider)
     implementation(libs.lsposed.hiddenapibypass)

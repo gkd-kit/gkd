@@ -1,7 +1,7 @@
 rootProject.name = "gkd"
 include(
     ":app",
-    ":hidden_api",
+    ":hidden-api",
     ":selector",
 )
 
