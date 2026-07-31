@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Android API Diff'
+  short_description: 'Query Android API changes and generate hidden API code'
+  default_prompt: 'Use $android-api-diff to inspect an Android framework API across versions.'
