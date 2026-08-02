@@ -16,7 +16,6 @@ import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.componentName
 import rikka.shizuku.Shizuku
-import java.io.DataOutputStream
 import java.io.File
 import kotlin.coroutines.resume
 import kotlin.system.exitProcess
@@ -44,17 +43,10 @@ class UserService(val context: Context) : IUserService.Stub() {
     }
 
     override fun execCommand(command: String): CommandResult {
-        Log.d("UserService", "execCommand(command=$command)")
-        val process = Runtime.getRuntime().exec("sh")
-        val outputStream = DataOutputStream(process.outputStream)
+        Log.d("UserService", "execCommand")
+        val args = arrayOf("sh", "-c", command)
+        val process = Runtime.getRuntime().exec(args)
         val commandResult = try {
-            command.split('\n').filter { it.isNotBlank() }.forEach {
-                outputStream.write(it.toByteArray())
-                outputStream.writeBytes('\n'.toString())
-                outputStream.flush()
-            }
-            outputStream.writeBytes("exit\n")
-            outputStream.flush()
             CommandResult(
                 code = process.waitFor(),
                 result = process.inputStream.bufferedReader().readText(),
@@ -78,7 +70,6 @@ class UserService(val context: Context) : IUserService.Stub() {
                 error = e.message,
             )
         } finally {
-            outputStream.close()
             process.inputStream.close()
             process.outputStream.close()
             process.destroy()
