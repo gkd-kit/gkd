@@ -16,16 +16,26 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
 
+internal val webpLossyCompressFormat = if (AndroidTarget.R) {
+    Bitmap.CompressFormat.WEBP_LOSSY
+} else {
+    @Suppress("DEPRECATION")
+    Bitmap.CompressFormat.WEBP
+}
 
 object ImageUtils {
     fun save2Album(
         src: Bitmap,
         quality: Int = 85,
-        format: Bitmap.CompressFormat = Bitmap.CompressFormat.WEBP,
+        format: Bitmap.CompressFormat = webpLossyCompressFormat,
         recycle: Boolean = true,
     ): Boolean {
         val safeDirName = app.packageName
-        val suffix: String? = if (Bitmap.CompressFormat.JPEG == format) "JPG" else format.name
+        val suffix = when {
+            Bitmap.CompressFormat.JPEG == format -> "JPG"
+            format.name.startsWith("WEBP") -> "WEBP"
+            else -> format.name
+        }
         val fileName = System.currentTimeMillis().toString() + "_" + quality + "." + suffix
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             if (!canWriteExternalStorage.updateAndGet()) {

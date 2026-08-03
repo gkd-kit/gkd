@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import li.songe.gkd.app
 import li.songe.gkd.appScope
-import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.ScreenUtils
@@ -35,22 +34,7 @@ fun onA11yFeatEvent(event: AccessibilityEvent) = event.run {
     if (event.eventType == STATE_CHANGED) {
         watchCaptureScreenshot()
         if (event.packageName == launcherAppId) {
-            watchCheckShizukuState()
             watchAutoUpdateSubs()
-        }
-    }
-}
-
-private var lastCheckShizukuTime = 0L
-private fun watchCheckShizukuState() {
-    // 借助无障碍轮询校验 shizuku 权限, 因为 shizuku 可能无故被关闭
-    if (storeFlow.value.enableShizuku) {
-        val t = System.currentTimeMillis()
-        if (t - lastCheckShizukuTime > 60 * 60_000L) {
-            lastCheckShizukuTime = t
-            appScope.launchTry(Dispatchers.IO) {
-                shizukuGrantedState.updateAndGet()
-            }
         }
     }
 }

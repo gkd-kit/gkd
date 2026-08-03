@@ -19,7 +19,7 @@ import li.songe.gkd.a11y.A11yCommonImpl
 import li.songe.gkd.a11y.A11yRuleEngine
 import li.songe.gkd.a11y.topActivityFlow
 import li.songe.gkd.a11y.updateTopActivity
-import li.songe.gkd.shizuku.shizukuContextFlow
+import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.store.updateEnableAutomator
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.AutomatorModeOption
@@ -125,10 +125,12 @@ abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLi
         onCreated { StatusService.autoStart() }
         onDestroyed {
             synchronized(topActivityFlow) {
-                shizukuContextFlow.value.topCpn()?.let { cpn ->
-                    // com.android.systemui
-                    if (!topActivityFlow.value.sameAs(cpn.packageName, cpn.className)) {
-                        updateTopActivity(cpn.packageName, cpn.className)
+                privilegeContextFlow.value?.run {
+                    topCpn()?.let { cpn ->
+                        // com.android.systemui
+                        if (!topActivityFlow.value.sameAs(cpn.packageName, cpn.className)) {
+                            updateTopActivity(cpn.packageName, cpn.className)
+                        }
                     }
                 }
             }

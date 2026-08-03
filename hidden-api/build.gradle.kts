@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "hidden_api"
+    namespace = "hidden.api"
 }
 
 dependencies {

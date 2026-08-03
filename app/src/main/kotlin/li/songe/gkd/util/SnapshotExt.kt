@@ -21,7 +21,7 @@ import li.songe.gkd.data.info2nodeList
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.notif.snapshotNotif
 import li.songe.gkd.service.ScreenshotService
-import li.songe.gkd.shizuku.shizukuContextFlow
+import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.store.storeFlow
 import java.io.File
 import kotlin.math.min
@@ -218,7 +218,9 @@ object SnapshotExt {
             val (snapshot, screenResult) = coroutineScope {  // 快照数据+截图(图片 && 状态)
                 val d1 = async(Dispatchers.IO) {
                     val appId = rootNode.packageName.toString()
-                    var activityId = shizukuContextFlow.value.topCpn()?.className
+                    var activityId = privilegeContextFlow.value?.run {
+                        topCpn()?.className
+                    }
                     if (activityId == null) {
                         var topActivity = topActivityFlow.value
                         var i = 0L
@@ -275,7 +277,7 @@ object SnapshotExt {
             withContext(Dispatchers.IO) {
                 snapshotParentPath(snapshot.id).autoMk()
                 newScreenshotOutputFile(snapshot.id).outputStream().use { stream ->
-                    bitmap.compress(Bitmap.CompressFormat.WEBP, 85, stream)
+                    bitmap.compress(webpLossyCompressFormat, 85, stream)
                 }
                 snapshotFile(snapshot.id).writeText(keepNullJson.encodeToString(snapshot))
                 minSnapshotFile(snapshot.id).writeText(

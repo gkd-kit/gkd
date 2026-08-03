@@ -18,10 +18,10 @@ public class AppOpsManagerHidden {
     @RequiresApi(Build.VERSION_CODES.Q)
     public static String OPSTR_ACCESS_ACCESSIBILITY;
 
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    // 14.0.0_r29 - 14.0.0_r37, 14.0.0_r50 - 17
     public static int OP_CREATE_ACCESSIBILITY_OVERLAY;
 
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    // 14.0.0_r29 - 14.0.0_r37, 14.0.0_r50 - 17
     public static String OPSTR_CREATE_ACCESSIBILITY_OVERLAY;
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)

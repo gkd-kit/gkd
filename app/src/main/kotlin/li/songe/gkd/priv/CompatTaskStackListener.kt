@@ -1,4 +1,4 @@
-package li.songe.gkd.shizuku
+package li.songe.gkd.priv
 
 import android.app.ActivityManager
 import android.app.ITaskStackListener
@@ -10,7 +10,7 @@ import li.songe.gkd.a11y.topActivityFlow
 import li.songe.gkd.a11y.updateTopActivity
 import li.songe.gkd.util.AndroidTarget
 
-object FixedTaskStackListener : ITaskStackListener.Stub() {
+object CompatTaskStackListener : ITaskStackListener.Stub() {
 
     // https://github.com/gkd-kit/gkd/issues/941#issuecomment-2784035441
     override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean = try {
@@ -20,7 +20,7 @@ object FixedTaskStackListener : ITaskStackListener.Stub() {
     }
 
     override fun onTaskStackChanged(): Unit = synchronized(topActivityFlow) {
-        val cpn = shizukuContextFlow.value.topCpn() ?: return
+        val cpn = privilegeContextFlow.value?.topCpn() ?: return
         if (lastFront.first > 0 && lastFront.second == cpn && System.currentTimeMillis() - lastFront.first > 200) {
             lastFront = defaultFront
             return
@@ -37,7 +37,7 @@ object FixedTaskStackListener : ITaskStackListener.Stub() {
     private fun onTaskMovedToFrontCompat(
         cpn: ComponentName? = null
     ): Unit = synchronized(topActivityFlow) {
-        val cpn = cpn ?: shizukuContextFlow.value.topCpn() ?: return
+        val cpn = cpn ?: privilegeContextFlow.value?.topCpn() ?: return
         lastFront = System.currentTimeMillis() to cpn
         updateTopActivity(
             appId = cpn.packageName,
@@ -47,7 +47,7 @@ object FixedTaskStackListener : ITaskStackListener.Stub() {
     }
 
     override fun onTaskMovedToFront(taskId: Int) {
-        val taskInfo = shizukuContextFlow.value.getTasks().firstOrNull() ?: return
+        val taskInfo = privilegeContextFlow.value?.topTask() ?: return
         @Suppress("DEPRECATION")
         if (taskInfo.id != taskId) {
             return
@@ -56,7 +56,7 @@ object FixedTaskStackListener : ITaskStackListener.Stub() {
     }
 
     override fun onTaskMovedToFront(taskInfo: ActivityManager.RunningTaskInfo) {
-        if (AndroidTarget.Q && taskInfo.casted.displayId != Display.DEFAULT_DISPLAY) {
+        if (AndroidTarget.Q && taskInfo.toHidden.displayId != Display.DEFAULT_DISPLAY) {
             return
         }
         onTaskMovedToFrontCompat(taskInfo.topActivity)

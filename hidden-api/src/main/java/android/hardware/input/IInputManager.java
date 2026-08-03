@@ -8,7 +8,7 @@ import android.view.InputEvent;
 public interface IInputManager extends IInterface {
     abstract class Stub extends Binder implements IInputManager {
         public static IInputManager asInterface(IBinder binder) {
-            throw new IllegalArgumentException("Stub!");
+            throw new RuntimeException();
         }
     }
 

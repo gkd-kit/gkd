@@ -33,7 +33,7 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.app
 import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.trackNotif
-import li.songe.gkd.shizuku.casted
+import li.songe.gkd.priv.toHidden
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.DefaultSimpleLifeImpl
 import li.songe.gkd.util.OnSimpleLife
@@ -326,8 +326,8 @@ class TrackService : LifecycleService(), SavedStateRegistryOwner,
         fun addA11yNodePosition(node: AccessibilityNodeInfo) {
             service?.addPoint(
                 TrackPoint(
-                    node.casted.boundsInScreen.centerX().toFloat(),
-                    node.casted.boundsInScreen.centerY().toFloat(),
+                    node.toHidden.boundsInScreen.centerX().toFloat(),
+                    node.toHidden.boundsInScreen.centerY().toFloat(),
                 )
             )
         }

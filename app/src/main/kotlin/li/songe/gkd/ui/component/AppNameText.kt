@@ -25,7 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.otherUserMapFlow
-import li.songe.gkd.shizuku.currentUserId
+import li.songe.gkd.priv.currentUserId
 import li.songe.gkd.util.appInfoMapFlow
 
 @Composable

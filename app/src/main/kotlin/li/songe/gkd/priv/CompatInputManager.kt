@@ -1,5 +1,6 @@
-package li.songe.gkd.shizuku
+package li.songe.gkd.priv
 
+import android.content.Context
 import android.hardware.input.IInputManager
 import android.hardware.input.InputManagerHidden
 import android.os.SystemClock
@@ -10,9 +11,55 @@ import android.view.KeyCharacterMap
 import android.view.KeyEvent
 import android.view.MotionEvent
 import li.songe.gkd.util.AndroidTarget
+import priv.kit.core.binder.PrivilegeBinderWrapper
+
+class CompatInputManager {
+    val value: IInputManager = IInputManager.Stub.asInterface(
+        requireNotNull(
+            PrivilegeBinderWrapper.fromSystemService(Context.INPUT_SERVICE),
+        ),
+    )
+    private val legacy = LegacyInputInjector(value)
+
+    fun tap(x: Float, y: Float, duration: Long = 0): Boolean {
+        return if (AndroidTarget.S) {
+            if (duration > 0) {
+                swipe(x, y, x, y, duration)
+            } else {
+                value.asBinder().shellCommand("tap", x.toString(), y.toString()).ok
+            }
+        } else {
+            legacy.tap(x, y, duration)
+        }
+    }
+
+    fun swipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Long): Boolean {
+        return if (AndroidTarget.S) {
+            value.asBinder().shellCommand(
+                "swipe",
+                x1.toString(),
+                y1.toString(),
+                x2.toString(),
+                y2.toString(),
+                duration.toString(),
+            ).ok
+        } else {
+            legacy.swipe(x1, y1, x2, y2, duration)
+        }
+    }
+
+    fun keyevent(keyCode: Int): Boolean {
+        return if (AndroidTarget.S) {
+            value.asBinder().shellCommand("keyevent", keyCode.toString()).ok
+        } else {
+            legacy.keyevent(keyCode)
+        }
+    }
+}
 
 // Android 8-11 compatibility path based on cmds/input Input.java.
-class InputManagerCompat(private val value: IInputManager) {
+@Suppress("SameParameterValue")
+private class LegacyInputInjector(private val value: IInputManager) {
     companion object {
         private const val DEFAULT_DEVICE_ID = 0
         private const val DEFAULT_SIZE = 1.0f
@@ -22,7 +69,7 @@ class InputManagerCompat(private val value: IInputManager) {
         private const val DEFAULT_EDGE_FLAGS = 0
     }
 
-    fun tap(x: Float, y: Float, duration: Long = 0): Boolean {
+    fun tap(x: Float, y: Float, duration: Long): Boolean {
         return if (duration > 0) {
             swipe(x, y, x, y, duration)
         } else {
@@ -75,7 +122,7 @@ class InputManagerCompat(private val value: IInputManager) {
         ) && success
     }
 
-    fun key(keyCode: Int): Boolean {
+    fun keyevent(keyCode: Int): Boolean {
         val now = SystemClock.uptimeMillis()
         val event = KeyEvent(
             now,
@@ -90,15 +137,16 @@ class InputManagerCompat(private val value: IInputManager) {
             InputDevice.SOURCE_KEYBOARD,
         )
         if (AndroidTarget.Q) {
-            event.casted.setDisplayId(Display.INVALID_DISPLAY)
+            event.toHidden.setDisplayId(Display.INVALID_DISPLAY)
         }
-        return injectInputEvent(event) &&
-            injectInputEvent(KeyEvent.changeAction(event, KeyEvent.ACTION_UP))
+        val downSuccess = injectInputEvent(event)
+        val upSuccess = injectInputEvent(KeyEvent.changeAction(event, KeyEvent.ACTION_UP))
+        return downSuccess && upSuccess
     }
 
     private fun sendTap(x: Float, y: Float): Boolean {
         val now = SystemClock.uptimeMillis()
-        return injectMotionEvent(
+        val downSuccess = injectMotionEvent(
             inputSource = InputDevice.SOURCE_TOUCHSCREEN,
             action = MotionEvent.ACTION_DOWN,
             downTime = now,
@@ -106,7 +154,8 @@ class InputManagerCompat(private val value: IInputManager) {
             x = x,
             y = y,
             pressure = 1.0f,
-        ) && injectMotionEvent(
+        )
+        val upSuccess = injectMotionEvent(
             inputSource = InputDevice.SOURCE_TOUCHSCREEN,
             action = MotionEvent.ACTION_UP,
             downTime = now,
@@ -115,6 +164,7 @@ class InputManagerCompat(private val value: IInputManager) {
             y = y,
             pressure = 0.0f,
         )
+        return downSuccess && upSuccess
     }
 
     private fun injectMotionEvent(
@@ -140,25 +190,27 @@ class InputManagerCompat(private val value: IInputManager) {
             getInputDeviceId(inputSource),
             DEFAULT_EDGE_FLAGS,
         )
-        event.source = inputSource
-        if (AndroidTarget.Q) {
-            var displayId = Display.INVALID_DISPLAY
-            if ((inputSource and InputDevice.SOURCE_CLASS_POINTER) != 0) {
-                displayId = Display.DEFAULT_DISPLAY
+        return try {
+            event.source = inputSource
+            if (AndroidTarget.Q) {
+                var displayId = Display.INVALID_DISPLAY
+                if ((inputSource and InputDevice.SOURCE_CLASS_POINTER) != 0) {
+                    displayId = Display.DEFAULT_DISPLAY
+                }
+                event.toHidden.setDisplayId(displayId)
             }
-            event.casted.setDisplayId(displayId)
+            injectInputEvent(event)
+        } finally {
+            event.recycle()
         }
-        return injectInputEvent(event)
     }
 
     private fun injectInputEvent(event: InputEvent): Boolean {
         return try {
-            safeInvokeShizuku {
-                value.injectInputEvent(
-                    event,
-                    InputManagerHidden.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH,
-                )
-            } == true
+            value.injectInputEvent(
+                event,
+                InputManagerHidden.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH,
+            )
         } catch (e: Throwable) {
             e.printStackTrace()
             false

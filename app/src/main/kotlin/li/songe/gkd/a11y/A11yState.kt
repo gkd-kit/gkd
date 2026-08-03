@@ -23,7 +23,6 @@ import li.songe.gkd.data.RuleStatus
 import li.songe.gkd.data.isSystem
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.service.updateTopTaskAppId
-import li.songe.gkd.shizuku.safeInvokeShizuku
 import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.checkAppBlockMatch
 import li.songe.gkd.util.AndroidTarget
@@ -263,12 +262,10 @@ fun updateSystemDefaultAppId() {
     if (app.getPkgInfo(launcherAppId)?.applicationInfo?.isSystem == true) {
         systemRecentCn = launcherCn
     } else {
-        safeInvokeShizuku {
-            if (AndroidTarget.P) {
-                systemRecentCn = ComponentName.unflattenFromString(
-                    app.getString(com.android.internal.R.string.config_recentsComponentName)
-                ) ?: systemRecentCn
-            }
+        if (AndroidTarget.P) {
+            systemRecentCn = ComponentName.unflattenFromString(
+                app.getString(com.android.internal.R.string.config_recentsComponentName)
+            ) ?: systemRecentCn
         }
         if (systemRecentCn.packageName.isEmpty()) {
             // https://github.com/android-cs/8/blob/main/packages/SystemUI/src/com/android/systemui/recents/RecentsActivity.java

@@ -32,9 +32,10 @@ import li.songe.gkd.a11y.initA11yFeat
 import li.songe.gkd.data.CrashData
 import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.notif.initChannel
+import li.songe.gkd.priv.gkdPrivilegeUiConfig
+import li.songe.gkd.priv.initPrivilege
 import li.songe.gkd.service.clearHttpSubs
 import li.songe.gkd.service.initA11yWhiteAppList
-import li.songe.gkd.shizuku.initShizuku
 import li.songe.gkd.store.initStore
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.LogUtils
@@ -46,7 +47,10 @@ import li.songe.gkd.util.initToast
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.toast
 import org.lsposed.hiddenapibypass.HiddenApiBypass
+import priv.kit.core.PrivilegeConfig
+import priv.kit.ui.PrivilegeUi
 import kotlin.system.exitProcess
+import kotlin.time.Duration.Companion.milliseconds
 
 
 val appScope by lazy { MainScope() }
@@ -106,6 +110,10 @@ class App : Application() {
 
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
+        PrivilegeConfig.configure(
+            followDeathDelayMillis = 0,
+            activeReconnectOnOwnerDeath = false,
+        )
         if (AndroidTarget.P) {
             HiddenApiBypass.addHiddenApiExemptions("L")
         }
@@ -229,7 +237,7 @@ class App : Application() {
                     thread = t.name,
                     stackTrace = Log.getStackTraceString(e),
                 ).save()
-                delay(1500)
+                delay(1500.milliseconds)
                 if (isActivityVisible) {
                     startLaunchActivity()
                 }
@@ -242,7 +250,10 @@ class App : Application() {
         initChannel()
         initAppState()
         initA11yFeat()
-        initShizuku()
+        initPrivilege()
+        appScope.launchTry(Dispatchers.IO) {
+            PrivilegeUi.startSilently(gkdPrivilegeUiConfig)
+        }
         initSubsState()
         initA11yWhiteAppList()
         clearHttpSubs()

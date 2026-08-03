@@ -1,15 +1,7 @@
 package android.app;
 
 import android.accessibilityservice.IAccessibilityServiceClient;
-import android.graphics.Bitmap;
-import android.graphics.Rect;
 import android.os.Binder;
-import android.os.Build;
-import android.window.ScreenCapture;
-import android.window.ScreenCaptureInternal;
-
-import androidx.annotation.DeprecatedSinceApi;
-import androidx.annotation.RequiresApi;
 
 public interface IUiAutomationConnection {
     abstract class Stub extends Binder implements IUiAutomationConnection {
@@ -20,25 +12,4 @@ public interface IUiAutomationConnection {
     void disconnect();
 
     void shutdown();
-
-    @DeprecatedSinceApi(api = Build.VERSION_CODES.P)
-    Bitmap takeScreenshot(int width, int height);
-
-    @RequiresApi(Build.VERSION_CODES.P)
-    @DeprecatedSinceApi(api = Build.VERSION_CODES.S)
-    Bitmap takeScreenshot(Rect crop, int rotation);
-
-    @RequiresApi(Build.VERSION_CODES.S)
-    @DeprecatedSinceApi(api = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-    Bitmap takeScreenshot(Rect crop);
-
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-    @DeprecatedSinceApi(api = Build.VERSION_CODES.BAKLAVA)
-    boolean takeScreenshot(Rect crop, ScreenCapture.ScreenCaptureListener listener);
-
-    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-    boolean takeScreenshot(Rect crop, ScreenCapture.ScreenCaptureListener listener, int displayId);
-
-    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-    boolean takeScreenshot(Rect crop, ScreenCaptureInternal.ScreenCaptureListener listener, int displayId);
 }

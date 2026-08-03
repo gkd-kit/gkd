@@ -28,8 +28,9 @@ import li.songe.gkd.data.otherUserMapFlow
 import li.songe.gkd.data.toAppInfo
 import li.songe.gkd.data.toAppInfoAndIcon
 import li.songe.gkd.permission.canQueryPkgState
-import li.songe.gkd.shizuku.currentUserId
-import li.songe.gkd.shizuku.shizukuContextFlow
+import li.songe.gkd.priv.currentUserId
+import li.songe.gkd.priv.privilegeContextFlow
+import kotlin.time.Duration.Companion.milliseconds
 
 val userAppInfoMapFlow = MutableStateFlow(emptyMap<String, AppInfo>())
 val userAppIconMapFlow = MutableStateFlow(emptyMap<String, Drawable>())
@@ -121,8 +122,9 @@ const val PKG_FLAGS = PackageManager.MATCH_UNINSTALLED_PACKAGES
 val updateAppMutex = MutexState()
 
 private fun updateOtherUserAppInfo(userAppInfoMap: Map<String, AppInfo>? = null) {
-    val pkgManager = shizukuContextFlow.value.packageManager
-    val userManager = shizukuContextFlow.value.userManager
+    val privilegeContext = privilegeContextFlow.value
+    val pkgManager = privilegeContext?.packageManager
+    val userManager = privilegeContext?.userManager
     val actualUserAppInfoMap = userAppInfoMap ?: userAppInfoMapFlow.value
     if (pkgManager == null || userManager == null || actualUserAppInfoMap.isEmpty()) {
         otherUserMapFlow.value = emptyMap()
@@ -132,7 +134,7 @@ private fun updateOtherUserAppInfo(userAppInfoMap: Map<String, AppInfo>? = null)
     }
     val otherUsers = userManager.getUsers().filter { it.id != currentUserId }.sortedBy { it.id }
     val userPackageInfoMap = otherUsers.associate { user ->
-        user.id to pkgManager.getInstalledPackages(
+        user.id to pkgManager.value.getInstalledPackagesAsUser(
             PKG_FLAGS,
             user.id
         ).filterNot { actualUserAppInfoMap.contains(it.packageName) }
@@ -208,7 +210,9 @@ fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO
             "updateAllAppInfo",
             "mayAuthDenied=$mayAuthDenied, newAppMap.size=${newAppMap.size}"
         )
-        val pkgList2 = shizukuContextFlow.value.packageManager?.getInstalledPackages(PKG_FLAGS)
+        val pkgList2 = privilegeContextFlow.value?.run {
+            packageManager.value.getInstalledPackagesAsUser(PKG_FLAGS, currentUserId)
+        }
         if (!pkgList2.isNullOrEmpty()) {
             pkgList2.forEach { pkgInfo ->
                 val (appInfo, appIcon) = pkgInfo.toAppInfoAndIcon()
@@ -250,7 +254,7 @@ fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO
     if (canQueryPkgState.value && mayAuthDenied && app.justStarted) {
         // 概率出现：即使有「读取应用列表权限」在刚启动时也只能获取到少量应用，延迟几秒再试一次
         appScope.launch {
-            delay(App.START_WAIT_TIME)
+            delay(App.START_WAIT_TIME.milliseconds)
             updateAllAppInfo()
         }
     }
@@ -260,15 +264,21 @@ fun initAppState() {
     registerPackageListener()
     updateAllAppInfo()
     appScope.launchTry {
-        shizukuContextFlow.drop(1).collect {
+        privilegeContextFlow.drop(1).collect {
             updateAppMutex.launchTry(appScope, Dispatchers.IO) {
                 updateOtherUserAppInfo()
             }
         }
     }
     appScope.launchTry {
-        willUpdateAppIds.debounce(3000)
+        willUpdateAppIds.debounce(3000.milliseconds)
             .filter { it.isNotEmpty() }
-            .collect { updatePartAppInfo(it) }
+            .collect { appIds ->
+                try {
+                    updatePartAppInfo(appIds)
+                } catch (e: Throwable) {
+                    LogUtils.d("update app info failed", e)
+                }
+            }
     }
 }

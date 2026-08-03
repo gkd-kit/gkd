@@ -71,10 +71,9 @@ android {
             useSupportLibrary = true
         }
         androidResources {
-            localeFilters += listOf("zh", "en")
+            localeFilters += listOf("zh-rCN", "en")
         }
         ndk {
-            // noinspection ChromeOsAbiSupport
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
 
@@ -113,6 +112,7 @@ android {
 
     buildTypes {
         all {
+            vcsInfo.include = false
             versionNameSuffix = gitInfo.versionNameSuffix
         }
         release {
@@ -149,17 +149,16 @@ android {
             manifestPlaceholders["channel"] = name
         }
     }
-    dependenciesInfo.includeInApk = false
+    // https://github.com/LSPosed/AndroidHiddenApiBypass
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+    // https://priv-kit.pages.dev/zh/guide/getting-started#native-library-packaging
+    packaging.jniLibs.useLegacyPackaging = true
     packaging.resources.excludes += setOf(
-        // https://github.com/Kotlin/kotlinx.coroutines/issues/2023
-        "META-INF/**", "**/attach_hotspot_windows.dll",
-
-        "**.properties", "**.bin", "**/*.proto",
-        "**/kotlin-tooling-metadata.json",
-
-        // ktor
-        "**/custom.config.conf",
-        "**/custom.config.yaml",
+        "META-INF/**",
+        "DebugProbesKt.bin",
     )
 }
 
@@ -218,9 +217,13 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso)
 
+    // AndroidTest shares this runtime dependency with the app and requires the newer version.
+    implementation(libs.androidx.concurrent.futures)
+
     compileOnly(project(":hidden-api"))
     implementation(libs.rikka.shizuku.api)
     implementation(libs.rikka.shizuku.provider)
+    implementation(libs.priv.kit.ui)
     implementation(libs.lsposed.hiddenapibypass)
 
     implementation(libs.androidx.room.runtime)
@@ -267,5 +270,8 @@ dependencies {
     implementation(libs.json5)
     compileOnly(libs.loc.annotation)
 
-    implementation(libs.kevinnzouWebview)
+    // compose-webview declares Material but does not use it.
+    implementation(libs.kevinnzouWebview) {
+        exclude(group = "com.google.android.material", module = "material")
+    }
 }

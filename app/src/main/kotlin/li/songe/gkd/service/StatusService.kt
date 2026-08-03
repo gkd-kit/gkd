@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -18,10 +17,10 @@ import li.songe.gkd.notif.abNotif
 import li.songe.gkd.permission.appOpsRestrictedFlow
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
+import li.songe.gkd.permission.privilegeGrantedState
 import li.songe.gkd.permission.requiredPermission
-import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.permission.writeSecureSettingsState
-import li.songe.gkd.shizuku.uiAutomationFlow
+import li.songe.gkd.priv.uiAutomationFlow
 import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.DefaultSimpleLifeImpl
@@ -38,11 +37,12 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
     override fun onCreate() = onCreated()
     override fun onDestroy() = onDestroyed()
 
-    val shizukuWarnFlow = combine(
-        shizukuGrantedState.stateFlow,
-        storeFlow.map { it.enableShizuku },
-    ) { a, b ->
-        !a && b
+    val privilegeWarnFlow = combine(
+        privilegeGrantedState.stateFlow,
+        storeFlow,
+    ) { granted, store ->
+        !granted && store.enableAutomator &&
+                (store.useAutomation || store.enableBlockA11yAppList)
     }.stateIn(scope, SharingStarted.Eagerly, false)
 
     val a11yServiceEnabledFlow = useA11yServiceEnabledFlow()
@@ -53,7 +53,7 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         val store = storeFlow.value
         val ruleSummary = ruleSummaryFlow.value
         val count = actionCountFlow.value
-        val shizukuWarn = shizukuWarnFlow.value
+        val privilegeWarn = privilegeWarnFlow.value
         val title = if (store.useCustomNotifText) {
             store.customNotifTitle.replaceTemplate(ruleSummary, count)
         } else {
@@ -61,8 +61,8 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         }
         return if (appOpsRestrictedFlow.value) {
             Triple(title, "权限受限，请解除限制", "gkd://page/3")
-        } else if (shizukuWarn) {
-            Triple(title, "Shizuku 未连接，请授权或关闭优化", "gkd://page/1")
+        } else if (privilegeWarn) {
+            Triple(title, "特权服务未连接，请完成授权", "gkd://page/4")
         } else if (!automationRunning && !abRunning) {
             if (currentAppUseA11y) {
                 val text = if (a11yServiceEnabledFlow.value) {
@@ -117,7 +117,7 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
                     uiAutomationFlow,
                     storeFlow,
                     ruleSummaryFlow,
-                    shizukuWarnFlow,
+                    privilegeWarnFlow,
                     a11yServiceEnabledFlow,
                     writeSecureSettingsState.stateFlow,
                     appOpsRestrictedFlow,

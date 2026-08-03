@@ -30,8 +30,8 @@ import li.songe.gkd.isActivityVisible
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.EventService
 import li.songe.gkd.service.topAppIdFlow
-import li.songe.gkd.shizuku.shizukuContextFlow
-import li.songe.gkd.shizuku.uiAutomationFlow
+import li.songe.gkd.priv.privilegeContextFlow
+import li.songe.gkd.priv.uiAutomationFlow
 import li.songe.gkd.store.actualBlockA11yAppList
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.AndroidTarget
@@ -45,6 +45,7 @@ import li.songe.selector.Selector
 import java.util.concurrent.Executors
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
+import kotlin.time.Duration.Companion.milliseconds
 
 
 private val eventDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
@@ -188,7 +189,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
         if (rightAppId != topActivityFlow.value.appId) {
             synchronized(topActivityFlow) {
                 // 从 锁屏，下拉通知栏 返回等情况, 应用不会发送事件, 但是系统组件会发送事件
-                val topCpn = shizukuContextFlow.value.topCpn()
+                val topCpn = privilegeContextFlow.value?.topCpn()
                 if (topCpn?.packageName == rightAppId) {
                     updateTopActivity(topCpn.packageName, topCpn.className)
                 } else {
@@ -211,9 +212,9 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
         if (lastAppId != null && System.currentTimeMillis() - lastGetAppIdTime <= 100) return lastAppId
         // 某些应用通过无障碍获取 safeActiveWindow 耗时长，导致多个事件连续堆积堵塞，无法检测到 appId 切换导致状态异常
         // https://github.com/gkd-kit/gkd/issues/622
-        lastAppId = withTimeoutOrNull(100) {
+        lastAppId = withTimeoutOrNull(100.milliseconds) {
             runInterruptible(Dispatchers.IO) { safeActiveWindowAppId }
-        } ?: shizukuContextFlow.value.topCpn()?.packageName
+        } ?: privilegeContextFlow.value?.run { topCpn()?.packageName }
         lastGetAppIdTime = System.currentTimeMillis()
         return lastAppId
     }
@@ -223,7 +224,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
         return suspendCancellableCoroutine { s ->
             val temp = atomic<Continuation<AccessibilityNodeInfo?>?>(s)
             scope.launch(Dispatchers.IO) {
-                delay(500L)
+                delay(500L.milliseconds)
                 if (s.isActive) {
                     temp.getAndUpdate { null }?.resume(null)
                 }
@@ -278,12 +279,12 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
         val t = System.currentTimeMillis()
         if (t - lastTriggerTime < 3000L || t - appChangeTime < 3000L) {
             scope.launch(actionDispatcher) {
-                delay(300)
+                delay(300.milliseconds)
                 startQueryJob()
             }
         } else if (activityRuleFlow.value.hasFeatureAction) {
             scope.launch(actionDispatcher) {
-                delay(300)
+                delay(300.milliseconds)
                 startQueryJob(byForced = true)
             }
         }
@@ -292,7 +293,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
     private fun fixAppId(rightAppId: String) {
         if (topActivityFlow.value.appId == rightAppId) return
         synchronized(topActivityFlow) {
-            val topCpn = shizukuContextFlow.value.topCpn()
+            val topCpn = privilegeContextFlow.value?.topCpn()
             if (topCpn?.packageName == rightAppId) {
                 updateTopActivity(topCpn.packageName, topCpn.className)
             } else {
@@ -300,7 +301,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
             }
         }
         scope.launch(actionDispatcher) {
-            delay(300)
+            delay(300.milliseconds)
             startQueryJob()
         }
     }
@@ -345,7 +346,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
         activityRule.currentRules.forEach { rule ->
             if (rule.status == RuleStatus.Status3 && rule.matchDelayJob.value == null) {
                 rule.matchDelayJob.value = scope.launch(actionDispatcher) {
-                    delay(rule.matchDelay)
+                    delay(rule.matchDelay.milliseconds)
                     rule.matchDelayJob.value = null
                     startQueryJob(byDelayRule = rule)
                 }
@@ -406,7 +407,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
             val target = a11yContext.queryRule(rule, nodeVal) ?: continue
             if (rule.checkDelay() && rule.actionDelayJob.value == null) {
                 rule.actionDelayJob.value = scope.launch(actionDispatcher) {
-                    delay(rule.actionDelay)
+                    delay(rule.actionDelay.milliseconds)
                     rule.actionDelayJob.value = null
                     startQueryJob(byDelayRule = rule)
                 }
@@ -419,7 +420,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
                 val topActivity = topActivityFlow.value
                 rule.trigger()
                 scope.launch(actionDispatcher) {
-                    delay(300)
+                    delay(300.milliseconds)
                     startQueryJob()
                 }
                 if (actionResult.action != ActionPerformer.None.action) {
@@ -461,7 +462,9 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
         }
 
         fun performActionBack(): Boolean {
-            val r1 = shizukuContextFlow.value.inputManager?.key(KeyEvent.KEYCODE_BACK)
+            val r1 = privilegeContextFlow.value?.run {
+                inputManager.keyevent(KeyEvent.KEYCODE_BACK)
+            }
             if (r1 == true) return true
             return A11yService.instance?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK) == true
         }

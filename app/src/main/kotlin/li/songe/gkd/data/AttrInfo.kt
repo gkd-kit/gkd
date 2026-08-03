@@ -3,7 +3,7 @@ package li.songe.gkd.data
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.serialization.Serializable
 import li.songe.gkd.a11y.compatChecked
-import li.songe.gkd.shizuku.casted
+import li.songe.gkd.priv.toHidden
 
 @Serializable
 data class AttrInfo(
@@ -40,7 +40,7 @@ data class AttrInfo(
             index: Int,
             depth: Int,
         ): AttrInfo {
-            val rect = node.casted.boundsInScreen
+            val rect = node.toHidden.boundsInScreen
             val appId = node.packageName?.toString() ?: ""
             val id: String? = node.viewIdResourceName
             val idPrefix = "$appId:id/"

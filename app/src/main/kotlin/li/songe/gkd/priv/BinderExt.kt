@@ -1,18 +1,27 @@
-package li.songe.gkd.shizuku
+package li.songe.gkd.priv
 
 import android.os.IBinder
-import android.os.Parcel
 import android.os.ParcelFileDescriptor
 import android.os.ResultReceiver
+import priv.kit.core.binder.PrivilegeBinderWrapper
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.FutureTask
 
-private const val SHELL_COMMAND_TRANSACTION = ('_'.code shl 24) or
-    ('C'.code shl 16) or
-    ('M'.code shl 8) or
-    'D'.code
+fun IBinder.dump(vararg args: String): String {
+    val outputPipe = ParcelFileDescriptor.createPipe()
+    val output = outputPipe[0].readTextAsync("IBinder.dump")
+    try {
+        dump(outputPipe[1].fileDescriptor, args)
+    } catch (e: Throwable) {
+        outputPipe[0].closeQuietly()
+        throw e
+    } finally {
+        outputPipe[1].closeQuietly()
+    }
+    return output.get()
+}
 
-fun IBinder.shellCommand(vararg args: String): CommandResult {
+fun IBinder.shellCommand(vararg args: String): ShellCommandResult {
     val stdoutPipe = ParcelFileDescriptor.createPipe()
     val stderrPipe = ParcelFileDescriptor.createPipe()
     val stdout = stdoutPipe[0].readTextAsync()
@@ -46,7 +55,7 @@ fun IBinder.shellCommand(vararg args: String): CommandResult {
 
     val result = stdout.getTextOrEmpty()
     val error = stderr.getTextOrEmpty().ifBlank { thrown?.message }
-    return CommandResult(
+    return ShellCommandResult(
         code = shellResultCode,
         result = result,
         error = error,
@@ -59,34 +68,35 @@ private fun IBinder.transactShellCommand(
     args: Array<String>,
     resultReceiver: ResultReceiver,
 ) {
-    val data = Parcel.obtain()
-    val reply = Parcel.obtain()
     val stdinPipe = ParcelFileDescriptor.createPipe()
     try {
         stdinPipe[1].closeQuietly()
-        data.writeFileDescriptor(stdinPipe[0].fileDescriptor)
-        data.writeFileDescriptor(out.fileDescriptor)
-        data.writeFileDescriptor(err.fileDescriptor)
-        data.writeStringArray(args)
-        data.writeStrongBinder(null)
-        resultReceiver.writeToParcel(data, 0)
-        transact(SHELL_COMMAND_TRANSACTION, data, reply, 0)
-        reply.readException()
+        check(this is PrivilegeBinderWrapper) {
+            "shellCommand requires PrivilegeBinderWrapper"
+        }
+        shellCommand(
+            input = stdinPipe[0].fileDescriptor,
+            output = out.fileDescriptor,
+            error = err.fileDescriptor,
+            args = args,
+            shellCallback = null,
+            resultReceiver = resultReceiver,
+        )
     } finally {
         stdinPipe[0].closeQuietly()
         stdinPipe[1].closeQuietly()
-        data.recycle()
-        reply.recycle()
     }
 }
 
-private fun ParcelFileDescriptor.readTextAsync(): FutureTask<String> {
+private fun ParcelFileDescriptor.readTextAsync(
+    threadName: String = "IBinder.shellCommand",
+): FutureTask<String> {
     val task = FutureTask {
         ParcelFileDescriptor.AutoCloseInputStream(this).bufferedReader().use { reader ->
             reader.readText()
         }
     }
-    Thread(task, "IBinder.shellCommand").apply {
+    Thread(task, threadName).apply {
         isDaemon = true
         start()
     }

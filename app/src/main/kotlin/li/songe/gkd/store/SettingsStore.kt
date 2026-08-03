@@ -13,7 +13,6 @@ import li.songe.gkd.util.UpdateTimeOption
 data class SettingsStore(
     val enableAutomator: Boolean = false,
     val automatorMode: Int = AutomatorModeOption.A11yMode.value,
-    val enableShizuku: Boolean = false,
     val enableMatch: Boolean = true,
     val enableStatusService: Boolean = false,
     val excludeFromRecents: Boolean = false,

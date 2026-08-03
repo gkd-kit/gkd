@@ -1,7 +1,5 @@
 package li.songe.gkd.ui
 
-import android.Manifest
-import android.app.AppOpsManagerHidden
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,21 +32,14 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
-import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.Serializable
 import li.songe.gkd.META
-import li.songe.gkd.permission.Manifest_permission_GET_APP_OPS_STATS
 import li.songe.gkd.permission.writeSecureSettingsState
+import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.service.A11yService
-import li.songe.gkd.service.fixRestartAutomatorService
-import li.songe.gkd.shizuku.SafeAppOpsService
-import li.songe.gkd.shizuku.shizukuUsedFlow
-import li.songe.gkd.store.updateEnableAutomator
 import li.songe.gkd.ui.component.AnimatedBooleanContent
-import li.songe.gkd.ui.component.ManualAuthDialog
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
@@ -58,12 +49,9 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.cardHorizontalPadding
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
-import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.AutomatorModeOption
 import li.songe.gkd.util.ShortUrlSet
-import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openA11ySettings
-import li.songe.gkd.util.shFolder
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
@@ -73,10 +61,10 @@ data object AuthA11yRoute : NavKey
 @Composable
 fun AuthA11yPage() {
     val mainVm = LocalMainViewModel.current
-    val vm = viewModel<AuthA11yVm>()
-    val showCopyDlg by vm.showCopyDlgFlow.collectAsState()
+    viewModel<AuthA11yVm>()
     val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
     val a11yRunning by A11yService.isRunning.collectAsState()
+    val privilegeContext by privilegeContextFlow.collectAsState()
     val automatorMode by mainVm.automatorModeFlow.collectAsState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
@@ -205,19 +193,9 @@ fun AuthA11yPage() {
                         )
                     },
                     contentFalse = {
-                        Row(
-                            modifier = Modifier
-                                .padding(horizontal = cardHorizontalPadding),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            ShizukuAuthButton()
-                            TextButton(onClick = { vm.showCopyDlgFlow.value = true }) {
-                                Text(
-                                    text = "命令授权",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                )
-                            }
-                        }
+                        PrivilegeAuthButton(
+                            modifier = Modifier.padding(horizontal = cardHorizontalPadding),
+                        )
                     }
                 )
                 TextButton(
@@ -245,7 +223,13 @@ fun AuthA11yPage() {
                 modifier = Modifier
                     .padding(horizontal = itemHorizontalPadding)
                     .fillMaxWidth(),
-                onClick = throttle { mainVm.updateAutomatorMode(AutomatorModeOption.AutomationMode) },
+                onClick = throttle {
+                    if (privilegeContext == null) {
+                        mainVm.navigatePage(PrivilegePageRoute)
+                        return@throttle
+                    }
+                    mainVm.updateAutomatorMode(AutomatorModeOption.AutomationMode)
+                },
                 colors = surfaceCardColors,
             ) {
                 Row(
@@ -275,18 +259,18 @@ fun AuthA11yPage() {
                     ),
                 )
                 AnimatedBooleanContent(
-                    targetState = shizukuUsedFlow.collectAsState().value,
+                    targetState = privilegeContext != null,
                     contentTrue = {
                         Text(
                             modifier = Modifier
                                 .padding(horizontal = cardHorizontalPadding)
                                 .padding(start = 8.dp, top = 8.dp),
-                            text = "已连接 Shizuku 服务，可继续使用",
+                            text = "已连接特权服务，可继续使用",
                             style = MaterialTheme.typography.bodySmall,
                         )
                     },
                     contentFalse = {
-                        ShizukuAuthButton(
+                        PrivilegeAuthButton(
                             modifier = Modifier.padding(
                                 start = cardHorizontalPadding
                             )
@@ -310,61 +294,24 @@ fun AuthA11yPage() {
         }
     }
 
-    ManualAuthDialog(
-        commandText = gkdStartCommandText,
-        show = showCopyDlg,
-        onUpdateShow = {
-            vm.showCopyDlgFlow.value = it
-        },
-    )
 }
 
 @Composable
-private fun ShizukuAuthButton(
+private fun PrivilegeAuthButton(
     modifier: Modifier = Modifier,
 ) {
     val mainVm = LocalMainViewModel.current
-    val vm = viewModel<AuthA11yVm>()
     TextButton(
         modifier = modifier,
-        onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-            mainVm.guardShizukuContext()
-            if (writeSecureSettingsState.value) {
-                toast("授权成功")
-                updateEnableAutomator(true)
-                fixRestartAutomatorService()
-            }
-        })
+        onClick = throttle {
+            mainVm.navigatePage(PrivilegePageRoute)
+        },
     ) {
         Text(
-            text = "Shizuku 授权",
+            text = "高级授权",
             style = MaterialTheme.typography.bodyLarge,
         )
     }
-}
-
-private val Int.appopsAllow get() = "appops set ${META.appId} ${AppOpsManagerHidden.opToName(this)} allow"
-private val String.pmGrant get() = "pm grant ${META.appId} $this"
-
-val gkdStartCommandText by lazy {
-    val commandText = listOfNotNull(
-        "set -euo pipefail",
-        "echo '> start start.sh'",
-        Manifest.permission.WRITE_SECURE_SETTINGS.pmGrant,
-        Manifest_permission_GET_APP_OPS_STATS.pmGrant,
-        if (AndroidTarget.TIRAMISU) Manifest.permission.POST_NOTIFICATIONS.pmGrant else null,
-        AppOpsManagerHidden.OP_POST_NOTIFICATION.appopsAllow,
-        AppOpsManagerHidden.OP_SYSTEM_ALERT_WINDOW.appopsAllow,
-        if (AndroidTarget.Q) AppOpsManagerHidden.OP_ACCESS_ACCESSIBILITY.appopsAllow else null,
-        if (AndroidTarget.TIRAMISU) AppOpsManagerHidden.OP_ACCESS_RESTRICTED_SETTINGS.appopsAllow else null,
-        if (AndroidTarget.UPSIDE_DOWN_CAKE) AppOpsManagerHidden.OP_FOREGROUND_SERVICE_SPECIAL_USE.appopsAllow else null,
-        if (SafeAppOpsService.supportCreateA11yOverlay) AppOpsManagerHidden.OP_CREATE_ACCESSIBILITY_OVERLAY.appopsAllow else null,
-        "sh ${shFolder.absolutePath}/expose.sh 1",
-        "echo '> start.sh end'",
-    ).joinToString("\n")
-    val file = shFolder.resolve("start.sh")
-    file.writeText(commandText)
-    "adb shell sh ${file.absolutePath}"
 }
 
 @Composable

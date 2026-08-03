@@ -20,7 +20,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -39,7 +38,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -58,16 +56,12 @@ import li.songe.gkd.permission.canDrawOverlaysState
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
-import li.songe.gkd.permission.shizukuGrantedState
 import li.songe.gkd.service.ActivityService
 import li.songe.gkd.service.ButtonService
 import li.songe.gkd.service.EventService
 import li.songe.gkd.service.HttpService
 import li.songe.gkd.service.ScreenshotService
-import li.songe.gkd.shizuku.shizukuContextFlow
-import li.songe.gkd.shizuku.updateBinderMutex
 import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.component.AuthCard
 import li.songe.gkd.ui.component.CustomOutlinedTextField
 import li.songe.gkd.ui.component.PerfCustomIconButton
 import li.songe.gkd.ui.component.PerfIcon
@@ -79,7 +73,6 @@ import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.AndroidTarget
@@ -166,31 +159,6 @@ fun AdvancedPage() {
                     )
                 }
             }
-        )
-    }
-
-    var showShizukuState by vm.showShizukuStateFlow.asMutableState()
-    if (showShizukuState) {
-        val onDismissRequest = { showShizukuState = false }
-        AlertDialog(
-            title = { Text(text = "授权状态") },
-            text = {
-                val states = shizukuContextFlow.collectAsState().value.states
-                Column {
-                    states.forEach { (name, value) ->
-                        Text(
-                            text = name,
-                            textDecoration = if (value != null) null else TextDecoration.LineThrough,
-                        )
-                    }
-                }
-            },
-            onDismissRequest = onDismissRequest,
-            confirmButton = {
-                TextButton(onClick = onDismissRequest) {
-                    Text(text = "我知道了")
-                }
-            },
         )
     }
 
@@ -310,59 +278,20 @@ fun AdvancedPage() {
                 .verticalScroll(rememberScrollState())
                 .padding(contentPadding),
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .titleItemPadding(showTop = false),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    modifier = Modifier,
-                    text = "Shizuku",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                PerfIcon(
-                    modifier = Modifier
-                        .clip(MaterialTheme.shapes.extraSmall)
-                        .clickable(onClickLabel = "打开 Shizuku 状态弹窗", onClick = throttle {
-                            showShizukuState = true
-                        })
-                        .iconTextSize(textStyle = MaterialTheme.typography.titleSmall),
-                    imageVector = PerfIcon.Api,
-                    tint = MaterialTheme.colorScheme.primary,
-                    contentDescription = "Shizuku 状态",
-                )
-            }
-            val shizukuGranted by shizukuGrantedState.stateFlow.collectAsState()
-            AnimatedVisibility(store.enableShizuku && !shizukuGranted) {
-                AuthCard(
-                    title = "未授权",
-                    subtitle = "点击授权以优化体验",
-                    onAuthClick = {
-                        mainVm.requestShizuku()
-                    }
-                )
-            }
-            TextSwitch(
-                title = "启用优化",
-                subtitle = "提升权限优化体验",
-                suffix = "了解更多",
-                suffixUnderline = true,
-                onSuffixClick = { mainVm.navigateWebPage(ShortUrlSet.URL14) },
-                checked = store.enableShizuku,
-                suffixIcon = {
-                    if (updateBinderMutex.state.collectAsState().value) {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .size(20.dp),
-                        )
-                    }
+            Text(
+                text = "特权服务",
+                modifier = Modifier.titleItemPadding(showTop = false),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            SettingItem(
+                title = "特权服务",
+                subtitle = "管理授权与启动方式",
+                imageVector = PerfIcon.ArrowForward,
+                onClickLabel = "打开高级授权页面",
+                onClick = {
+                    mainVm.navigatePage(PrivilegePageRoute)
                 },
-                onCheckedChange = {
-                    mainVm.switchEnableShizuku(it)
-                },
-                onClick = null,
             )
 
             val server by HttpService.httpServerFlow.collectAsState()

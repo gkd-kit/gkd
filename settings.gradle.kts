@@ -7,7 +7,6 @@ include(
 
 pluginManagement {
     repositories {
-        mavenLocal()
         mavenCentral()
         google {
             content {
@@ -23,7 +22,6 @@ pluginManagement {
 
 dependencyResolutionManagement {
     repositories {
-        mavenLocal()
         mavenCentral()
         google {
             content {

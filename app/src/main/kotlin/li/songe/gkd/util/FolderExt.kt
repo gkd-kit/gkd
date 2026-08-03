@@ -10,8 +10,7 @@ import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.UserInfo
 import li.songe.gkd.data.otherUserMapFlow
 import li.songe.gkd.permission.allPermissionStates
-import li.songe.gkd.shizuku.currentUserId
-import li.songe.gkd.shizuku.shizukuContextFlow
+import li.songe.gkd.priv.currentUserId
 import java.io.File
 
 fun File.autoMk(): File {
@@ -100,12 +99,6 @@ fun buildLogFile(): File {
     }.toMutableList()
     tempDir.resolve("apps.json").also {
         it.writeText(json.encodeToString(AppJsonData()))
-        files.add(it)
-    }
-    tempDir.resolve("shizuku.txt").also {
-        it.writeText(shizukuContextFlow.value.states.joinToString("\n") { state ->
-            state.first + ": " + state.second.toString()
-        })
         files.add(it)
     }
     tempDir.resolve("permission.txt").also {

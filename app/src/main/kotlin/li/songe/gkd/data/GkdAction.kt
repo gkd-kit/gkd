@@ -7,11 +7,12 @@ import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import li.songe.gkd.a11y.A11yRuleEngine
+import li.songe.gkd.priv.privilegeContextFlow
+import li.songe.gkd.priv.toHidden
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.TrackService
-import li.songe.gkd.shizuku.casted
-import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.util.ScreenUtils
+import kotlin.time.Duration.Companion.milliseconds
 
 @Serializable
 data class GkdAction(
@@ -54,7 +55,7 @@ sealed class ActionPerformer(val action: String) {
             node: AccessibilityNodeInfo,
             locationProps: RawSubscription.LocationProps,
         ): ActionResult {
-            val rect = node.casted.boundsInScreen
+            val rect = node.toHidden.boundsInScreen
             val p = locationProps.position?.calc(rect)
             val x = p?.first ?: ((rect.right + rect.left) / 2f)
             val y = p?.second ?: ((rect.bottom + rect.top) / 2f)
@@ -68,7 +69,11 @@ sealed class ActionPerformer(val action: String) {
             TrackService.addXyPosition(x, y)
             return ActionResult(
                 action = action,
-                result = if (shizukuContextFlow.value.tap(x, y)) {
+                result = if (
+                    privilegeContextFlow.value?.run {
+                        inputManager.tap(x, y)
+                    } == true
+                ) {
                     true
                 } else {
                     val gestureDescription = GestureDescription.Builder()
@@ -113,7 +118,7 @@ sealed class ActionPerformer(val action: String) {
                 action = action,
                 result = node.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK).apply {
                     if (this) {
-                        delay(LongClickCenter.LONG_DURATION)
+                        delay(LongClickCenter.LONG_DURATION.milliseconds)
                     }
                 }
             )
@@ -126,7 +131,7 @@ sealed class ActionPerformer(val action: String) {
             node: AccessibilityNodeInfo,
             locationProps: RawSubscription.LocationProps,
         ): ActionResult {
-            val rect = node.casted.boundsInScreen
+            val rect = node.toHidden.boundsInScreen
             val p = locationProps.position?.calc(rect)
             val x = p?.first ?: ((rect.right + rect.left) / 2f)
             val y = p?.second ?: ((rect.bottom + rect.top) / 2f)
@@ -141,7 +146,11 @@ sealed class ActionPerformer(val action: String) {
             TrackService.addXyPosition(x, y)
             return ActionResult(
                 action = action,
-                result = if (shizukuContextFlow.value.tap(x, y, LONG_DURATION)) {
+                result = if (
+                    privilegeContextFlow.value?.run {
+                        inputManager.tap(x, y, LONG_DURATION)
+                    } == true
+                ) {
                     true
                 } else {
                     val gestureDescription = GestureDescription.Builder()
@@ -156,7 +165,7 @@ sealed class ActionPerformer(val action: String) {
                         gestureDescription.build(), null, null
                     ) != null).apply {
                         if (this) {
-                            delay(LONG_DURATION)
+                            delay(LONG_DURATION.milliseconds)
                         }
                     }
                 },
@@ -209,7 +218,7 @@ sealed class ActionPerformer(val action: String) {
             node: AccessibilityNodeInfo,
             locationProps: RawSubscription.LocationProps,
         ): ActionResult {
-            val rect = node.casted.boundsInScreen
+            val rect = node.toHidden.boundsInScreen
             val swipeArg = locationProps.swipeArg ?: return ActionResult(
                 action = action,
                 result = false,
@@ -234,13 +243,16 @@ sealed class ActionPerformer(val action: String) {
                 )
             }
             TrackService.addSwipePosition(startX, startY, endX, endY, swipeArg.duration)
-            return if (shizukuContextFlow.value.swipe(
-                    startX,
-                    startY,
-                    endX,
-                    endY,
-                    swipeArg.duration
-                )
+            return if (
+                privilegeContextFlow.value?.run {
+                    inputManager.swipe(
+                        startX,
+                        startY,
+                        endX,
+                        endY,
+                        swipeArg.duration
+                    )
+                } == true
             ) {
                 ActionResult(
                     action = action,
@@ -264,7 +276,7 @@ sealed class ActionPerformer(val action: String) {
                         gestureDescription.build(), null, null
                     ) != null).apply {
                         if (this) {
-                            delay(swipeArg.duration)
+                            delay(swipeArg.duration.milliseconds)
                         }
                     },
                     position = endX to endY,

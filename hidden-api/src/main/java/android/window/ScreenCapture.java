@@ -2,6 +2,7 @@ package android.window;
 
 import android.graphics.Bitmap;
 import android.graphics.Rect;
+import android.hardware.HardwareBuffer;
 import android.os.Build;
 
 import androidx.annotation.RequiresApi;
@@ -29,6 +30,10 @@ public class ScreenCapture {
 
     public static class ScreenshotHardwareBuffer {
         public Bitmap asBitmap() {
+            throw new RuntimeException();
+        }
+
+        public HardwareBuffer getHardwareBuffer() {
             throw new RuntimeException();
         }
     }

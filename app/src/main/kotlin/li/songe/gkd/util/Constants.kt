@@ -20,19 +20,14 @@ const val EMPTY_RULE_TIP = "暂无规则"
 object ShortUrlSet {
     const val URL1 = "https://gkd.li?r=1"
     const val URL2 = "https://gkd.li?r=2"
-    const val URL3 = "https://gkd.li?r=3"
-    const val URL4 = "https://gkd.li?r=4"
     const val URL5 = "https://gkd.li?r=5"
     const val URL6 = "https://gkd.li?r=6"
     const val URL10 = "https://gkd.li?r=10"
     const val URL11 = "https://gkd.li?r=11"
     const val URL12 = "https://gkd.li?r=12"
     const val URL13 = "https://gkd.li?r=13"
-    const val URL14 = "https://gkd.li?r=14"
     const val URL15 = "https://gkd.li?r=15"
 }
-
-const val shizukuAppId = "moe.shizuku.privileged.api"
 
 const val PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=li.songe.gkd"
 

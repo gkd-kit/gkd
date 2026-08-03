@@ -7,9 +7,9 @@ import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import kotlinx.serialization.Serializable
 import li.songe.gkd.app
-import li.songe.gkd.shizuku.casted
-import li.songe.gkd.shizuku.currentUserId
-import li.songe.gkd.shizuku.shizukuContextFlow
+import li.songe.gkd.priv.currentUserId
+import li.songe.gkd.priv.privilegeContextFlow
+import li.songe.gkd.priv.toHidden
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.pkgIcon
 
@@ -76,10 +76,9 @@ private fun PackageInfo.getEnabled(userId: Int): Boolean {
         if (userId == currentUserId) {
             app.packageManager.getApplicationEnabledSetting(packageName)
         } else {
-            shizukuContextFlow.value.packageManager?.getApplicationEnabledSetting(
-                packageName,
-                currentUserId
-            )
+            privilegeContextFlow.value?.run {
+                packageManager.value.getApplicationEnabledSetting(packageName)
+            }
         }
     } catch (_: IllegalArgumentException) {
         null
@@ -108,7 +107,7 @@ fun PackageInfo.toAppInfo(
         mtime = lastUpdateTime,
         isSystem = isSystem,
         name = applicationInfo?.run { loadLabel(app.packageManager).toString() } ?: packageName,
-        hidden = hidden ?: (isSystem && (casted.overlayTarget != null || !checkHasActivity(
+        hidden = hidden ?: (isSystem && (toHidden.overlayTarget != null || !checkHasActivity(
             packageName
         ))),
         enabled = getEnabled(userId),

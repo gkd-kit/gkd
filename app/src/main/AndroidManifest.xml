@@ -128,7 +128,7 @@
 
             <meta-data
                 android:name="android.accessibilityservice"
-                android:resource="@xml/ab_desc" />
+                android:resource="@xml/a11y_info" />
         </service>
 
         <service

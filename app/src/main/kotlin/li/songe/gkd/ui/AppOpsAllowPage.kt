@@ -38,7 +38,6 @@ import li.songe.gkd.permission.appOpsRestrictStateList
 import li.songe.gkd.permission.appOpsRestrictedFlow
 import li.songe.gkd.ui.component.AuthButtonGroup
 import li.songe.gkd.ui.component.EmptyText
-import li.songe.gkd.ui.component.ManualAuthDialog
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
@@ -47,10 +46,8 @@ import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.util.getShareApkFile
-import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.saveFileToDownloads
-import li.songe.gkd.util.toast
 
 @Serializable
 data object AppOpsAllowRoute : NavKey
@@ -59,7 +56,7 @@ data object AppOpsAllowRoute : NavKey
 fun AppOpsAllowPage() {
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
-    val vm = viewModel<AppOpsAllowVm>()
+    viewModel<AppOpsAllowVm>()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val appOpsRestricted by appOpsRestrictedFlow.collectAsState()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
@@ -98,12 +95,8 @@ fun AppOpsAllowPage() {
                     AuthButtonGroup(
                         modifier = Modifier.fillMaxWidth(),
                         buttons = listOf(
-                            "Shizuku 授权" to vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                                mainVm.guardShizukuContext()
-                                toast("授权成功")
-                            },
-                            "命令授权" to {
-                                vm.showCopyDlgFlow.value = true
+                            "高级授权" to {
+                                mainVm.navigatePage(PrivilegePageRoute)
                             },
                             "卸载重装" to {
                                 mainVm.dialogFlow.updateDialogOptions(
@@ -130,14 +123,6 @@ fun AppOpsAllowPage() {
         }
     }
 
-    val showCopyDlg by vm.showCopyDlgFlow.collectAsState()
-    ManualAuthDialog(
-        commandText = gkdStartCommandText,
-        show = showCopyDlg,
-        onUpdateShow = {
-            vm.showCopyDlgFlow.value = it
-        }
-    )
 }
 
 @Composable

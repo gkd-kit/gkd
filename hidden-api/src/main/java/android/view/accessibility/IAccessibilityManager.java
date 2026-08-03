@@ -5,11 +5,12 @@ import android.accessibilityservice.IAccessibilityServiceClient;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.IInterface;
 
 import androidx.annotation.DeprecatedSinceApi;
 import androidx.annotation.RequiresApi;
 
-public interface IAccessibilityManager {
+public interface IAccessibilityManager extends IInterface {
     abstract class Stub extends Binder implements IAccessibilityManager {
         public static IAccessibilityManager asInterface(IBinder obj) {
             throw new RuntimeException();

@@ -1,6 +1,5 @@
 package li.songe.gkd
 
-import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.webkit.URLUtil
@@ -9,7 +8,9 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
@@ -24,16 +25,16 @@ import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.permission.AuthReason
-import li.songe.gkd.permission.shizukuGrantedState
+import li.songe.gkd.priv.AutomationService
+import li.songe.gkd.priv.privilegeContextFlow
+import li.songe.gkd.priv.uiAutomationFlow
 import li.songe.gkd.service.A11yService
-import li.songe.gkd.shizuku.shizukuContextFlow
-import li.songe.gkd.shizuku.uiAutomationFlow
-import li.songe.gkd.shizuku.updateBinderMutex
 import li.songe.gkd.store.createTextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.AdvancedPageRoute
 import li.songe.gkd.ui.AppOpsAllowRoute
 import li.songe.gkd.ui.CrashReportRoute
+import li.songe.gkd.ui.PrivilegePageRoute
 import li.songe.gkd.ui.SnapshotPageRoute
 import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.component.AlertDialogOptions
@@ -62,14 +63,12 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.openWeChatScaner
 import li.songe.gkd.util.runMainPost
-import li.songe.gkd.util.stopCoroutine
 import li.songe.gkd.util.subsFolder
 import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateSubsMutex
 import li.songe.gkd.util.updateSubscription
 import li.songe.loc.Loc
-import rikka.shizuku.Shizuku
 import java.nio.file.Files
 import kotlin.reflect.jvm.jvmName
 import kotlin.time.Duration.Companion.days
@@ -129,8 +128,6 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
     val authReasonFlow = MutableStateFlow<AuthReason?>(null)
 
     val updateStatus = if (META.updateEnabled) UpdateStatus(viewModelScope) else null
-
-    val shizukuErrorFlow = MutableStateFlow<Throwable?>(null)
 
     val uploadOptions = UploadOptions(this)
 
@@ -237,6 +234,7 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
                 "/1" -> navigatePage(AdvancedPageRoute)
                 "/2" -> navigatePage(SnapshotPageRoute)
                 "/3" -> navigatePage(AppOpsAllowRoute)
+                "/4" -> navigatePage(PrivilegePageRoute)
                 else -> notFoundToast()
             }
 
@@ -288,40 +286,6 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
         )
     }
 
-    fun switchEnableShizuku(value: Boolean) {
-        if (updateBinderMutex.mutex.isLocked) {
-            toast("正在连接中，请稍后")
-            return
-        }
-        storeFlow.update { s -> s.copy(enableShizuku = value) }
-    }
-
-    fun requestShizuku() {
-        if (shizukuContextFlow.value.ok) return
-        if (updateBinderMutex.mutex.isLocked) {
-            toast("正在连接中，请稍后")
-            return
-        }
-        try {
-            Shizuku.requestPermission(Activity.RESULT_OK)
-        } catch (e: Throwable) {
-            shizukuErrorFlow.value = e
-        }
-    }
-
-    suspend fun guardShizukuContext() {
-        if (shizukuContextFlow.value.ok) return
-        if (!storeFlow.value.enableShizuku) {
-            storeFlow.update { it.copy(enableShizuku = true) }
-        }
-        if (!shizukuGrantedState.updateAndGet()) {
-            requestShizuku()
-            stopCoroutine()
-        }
-        if (shizukuContextFlow.value.ok) return
-        stopCoroutine()
-    }
-
     private val a11yServicesFlow = useEnabledA11yServicesFlow()
     val a11yServiceEnabledFlow = useA11yServiceEnabledFlow(a11yServicesFlow)
 
@@ -329,11 +293,42 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
         AutomatorModeOption.objects.findOption(it.automatorMode)
     }
 
-    fun updateAutomatorMode(option: AutomatorModeOption) {
-        if (automatorModeFlow.value == option) return
+    private var updateAutomatorModeJob: Job? = null
+
+    private fun applyAutomatorMode(option: AutomatorModeOption) {
         storeFlow.update { it.copy(automatorMode = option.value, enableAutomator = false) }
         A11yService.instance?.shutdown()
         uiAutomationFlow.value?.shutdown()
+    }
+
+    fun updateAutomatorMode(option: AutomatorModeOption) {
+        updateAutomatorModeJob?.cancel()
+        if (automatorModeFlow.value == option) return
+        if (
+            option != AutomatorModeOption.AutomationMode ||
+            privilegeContextFlow.value == null
+        ) {
+            applyAutomatorMode(option)
+            return
+        }
+        updateAutomatorModeJob = viewModelScope.launch {
+            val occupied = try {
+                withContext(Dispatchers.IO) {
+                    AutomationService.isOtherUiAutomationRunning()
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                toast("自动化状态检测失败：${e.message}")
+                LogUtils.d("detect automation state failed", e)
+                return@launch
+            }
+            if (occupied) {
+                AutomationService.showOccupiedWarning()
+                return@launch
+            }
+            applyAutomatorMode(option)
+        }
     }
 
     val showShareLogDlgFlow = MutableStateFlow(false)

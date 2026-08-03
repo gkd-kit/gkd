@@ -37,26 +37,26 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.Dispatchers
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.permission.appOpsRestrictedFlow
 import li.songe.gkd.permission.writeSecureSettingsState
+import li.songe.gkd.priv.privilegeContextFlow
+import li.songe.gkd.priv.uiAutomationFlow
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ActivityService
 import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.a11yPartDisabledFlow
 import li.songe.gkd.service.switchAutomatorService
 import li.songe.gkd.service.topAppIdFlow
-import li.songe.gkd.shizuku.shizukuContextFlow
-import li.songe.gkd.shizuku.uiAutomationFlow
 import li.songe.gkd.store.actualA11yScopeAppList
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.ActionLogRoute
 import li.songe.gkd.ui.ActivityLogRoute
 import li.songe.gkd.ui.AppConfigRoute
 import li.songe.gkd.ui.AuthA11yRoute
+import li.songe.gkd.ui.PrivilegePageRoute
 import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.component.GroupNameText
 import li.songe.gkd.ui.component.PerfIcon
@@ -180,12 +180,14 @@ fun useControlPage(): ScaffoldExt {
                     },
                 )
             } else {
+                val automation by uiAutomationFlow.collectAsState()
+                val privilegeContext by privilegeContextFlow.collectAsState()
                 PageSwitchItemCard(
                     imageVector = PerfIcon.Memory,
                     title = "服务状态",
-                    subtitle = if (uiAutomationFlow.collectAsState().value != null) {
+                    subtitle = if (automation != null) {
                         "自动化正在运行"
-                    } else if (!shizukuContextFlow.collectAsState().value.ok) {
+                    } else if (privilegeContext == null) {
                         "自动化未授权"
                     } else {
                         if (store.enableAutomator && a11yPartDisabledFlow.collectAsState().value) {
@@ -194,12 +196,13 @@ fun useControlPage(): ScaffoldExt {
                             "自动化已关闭"
                         }
                     },
-                    checked = uiAutomationFlow.collectAsState().value != null,
-                    onCheckedChange = vm.viewModelScope.launchAsFn(Dispatchers.IO) { newEnabled ->
-                        if (newEnabled) {
-                            mainVm.guardShizukuContext()
+                    checked = automation != null,
+                    onCheckedChange = { newEnabled ->
+                        if (newEnabled && privilegeContext == null) {
+                            mainVm.navigatePage(PrivilegePageRoute)
+                        } else {
+                            switchAutomatorService()
                         }
-                        switchAutomatorService()
                     },
                 )
             }

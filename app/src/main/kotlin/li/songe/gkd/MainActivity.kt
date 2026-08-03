@@ -11,22 +11,8 @@ import androidx.activity.viewModels
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -36,13 +22,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsAnimationCompat
@@ -69,12 +50,12 @@ import li.songe.gkd.a11y.updateSystemDefaultAppId
 import li.songe.gkd.a11y.updateTopActivity
 import li.songe.gkd.permission.AuthDialog
 import li.songe.gkd.permission.updatePermissionState
+import li.songe.gkd.priv.privilegeContextFlow
+import li.songe.gkd.priv.uiAutomationOccupiedFlow
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.fixRestartAutomatorService
 import li.songe.gkd.service.updateTopTaskAppId
-import li.songe.gkd.shizuku.automationRegisteredExceptionFlow
-import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.A11YScopeAppListRoute
 import li.songe.gkd.ui.A11yEventLogPage
@@ -102,6 +83,8 @@ import li.songe.gkd.ui.EditBlockAppListPage
 import li.songe.gkd.ui.EditBlockAppListRoute
 import li.songe.gkd.ui.ImagePreviewPage
 import li.songe.gkd.ui.ImagePreviewRoute
+import li.songe.gkd.ui.PrivilegePage
+import li.songe.gkd.ui.PrivilegePageRoute
 import li.songe.gkd.ui.SlowGroupPage
 import li.songe.gkd.ui.SlowGroupRoute
 import li.songe.gkd.ui.SnapshotPage
@@ -123,7 +106,6 @@ import li.songe.gkd.ui.UpsertRuleGroupRoute
 import li.songe.gkd.ui.WebViewPage
 import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.component.BuildDialog
-import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.ShareLogDlg
 import li.songe.gkd.ui.component.SubsSheet
 import li.songe.gkd.ui.component.TermsAcceptDialog
@@ -139,16 +121,10 @@ import li.songe.gkd.util.EditGithubCookieDlg
 import li.songe.gkd.util.KeyboardUtils
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.ShortUrlSet
-import li.songe.gkd.util.appInfoMapFlow
 import li.songe.gkd.util.componentName
-import li.songe.gkd.util.copyText
 import li.songe.gkd.util.fixSomeProblems
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mapState
-import li.songe.gkd.util.openApp
-import li.songe.gkd.util.openUri
-import li.songe.gkd.util.shizukuAppId
-import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import kotlin.concurrent.Volatile
 import kotlin.reflect.jvm.jvmName
@@ -278,6 +254,7 @@ class MainActivity : ComponentActivity() {
                             entry<AboutRoute> { AboutPage() }
                             entry<BlockA11yAppListRoute> { BlockA11yAppListPage() }
                             entry<AdvancedPageRoute> { AdvancedPage() }
+                            entry<PrivilegePageRoute> { PrivilegePage() }
                             entry<SnapshotPageRoute> { SnapshotPage() }
                             entry<AppOpsAllowRoute> { AppOpsAllowPage() }
                             entry<A11YScopeAppListRoute> { A11yScopeAppListPage() }
@@ -316,7 +293,6 @@ class MainActivity : ComponentActivity() {
                     } else {
                         UiAutomationAlreadyRegisteredDlg()
                         AccessRestrictedSettingsDlg()
-                        ShizukuErrorDialog(mainVm.shizukuErrorFlow)
                         AuthDialog(mainVm.authReasonFlow)
                         BuildDialog(mainVm.dialogFlow)
                         mainVm.uploadOptions.ShowDialog()
@@ -401,92 +377,12 @@ fun syncFixState() {
         }
         syncStateMutex.withLock {
             updateSystemDefaultAppId()
-            shizukuContextFlow.value.grantSelf()
+            privilegeContextFlow.value?.grantSelf()
             updatePermissionState()
             fixRestartAutomatorService()
         }
     }
 }
-
-@Composable
-private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Throwable?>) {
-    val state = stateFlow.collectAsState().value
-    if (state != null) {
-        val errorText = remember { state.stackTraceToString() }
-        val appInfoCache = appInfoMapFlow.collectAsState().value
-        val installed = appInfoCache.contains(shizukuAppId)
-        AlertDialog(
-            onDismissRequest = { stateFlow.value = null },
-            title = { Text(text = "授权错误") },
-            text = {
-                Column {
-                    Text(
-                        text = if (installed) {
-                            "Shizuku 授权失败，请检查是否运行"
-                        } else {
-                            "Shizuku 授权失败，检测到 Shizuku 未安装，请先下载后安装，如果你是通过其它方式授权，请忽略此提示自行查找原因"
-                        }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        SelectionContainer(
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .fillMaxWidth()
-                        ) {
-                            Text(
-                                text = errorText,
-                                modifier = Modifier
-                                    .clip(MaterialTheme.shapes.extraSmall)
-                                    .background(MaterialTheme.colorScheme.secondaryContainer)
-                                    .padding(8.dp)
-                                    .heightIn(max = 400.dp)
-                                    .verticalScroll(rememberScrollState()),
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                        PerfIcon(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .clickable(onClick = throttle {
-                                    copyText(errorText)
-                                })
-                                .padding(4.dp)
-                                .size(20.dp),
-                            imageVector = PerfIcon.ContentCopy,
-                            tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.75f),
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                if (installed) {
-                    TextButton(onClick = {
-                        stateFlow.value = null
-                        openApp(shizukuAppId)
-                    }) {
-                        Text(text = "打开 Shizuku")
-                    }
-                } else {
-                    TextButton(onClick = {
-                        stateFlow.value = null
-                        openUri(ShortUrlSet.URL4)
-                    }) {
-                        Text(text = "去下载")
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { stateFlow.value = null }) {
-                    Text(text = "我知道了")
-                }
-            }
-        )
-    }
-}
-
 
 val accessRestrictedSettingsShowFlow = MutableStateFlow(false)
 
@@ -539,10 +435,10 @@ fun AccessRestrictedSettingsDlg() {
 
 @Composable
 fun UiAutomationAlreadyRegisteredDlg() {
-    if (automationRegisteredExceptionFlow.collectAsState().value != null) {
+    if (uiAutomationOccupiedFlow.collectAsState().value) {
         AlertDialog(
             onDismissRequest = {
-                automationRegisteredExceptionFlow.value = null
+                uiAutomationOccupiedFlow.value = false
             },
             title = { Text(text = "启动失败") },
             text = {
@@ -550,7 +446,7 @@ fun UiAutomationAlreadyRegisteredDlg() {
             },
             confirmButton = {
                 TextButton(onClick = {
-                    automationRegisteredExceptionFlow.value = null
+                    uiAutomationOccupiedFlow.value = false
                 }) {
                     Text(text = "我知道了")
                 }

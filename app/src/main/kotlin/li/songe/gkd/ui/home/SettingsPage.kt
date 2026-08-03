@@ -63,14 +63,15 @@ import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.ignoreBatteryOptimizationsState
 import li.songe.gkd.permission.notificationState
 import li.songe.gkd.permission.requiredPermission
+import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.TrackService
 import li.songe.gkd.service.fixRestartAutomatorService
-import li.songe.gkd.shizuku.shizukuContextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.AboutRoute
 import li.songe.gkd.ui.AdvancedPageRoute
 import li.songe.gkd.ui.BlockA11yAppListRoute
+import li.songe.gkd.ui.PrivilegePageRoute
 import li.songe.gkd.ui.component.CustomOutlinedTextField
 import li.songe.gkd.ui.component.FullscreenDialog
 import li.songe.gkd.ui.component.PerfCustomIconButton
@@ -487,12 +488,15 @@ fun useSettingsPage(): ScaffoldExt {
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
+            val privilegeContext by privilegeContextFlow.collectAsState()
             TextSwitch(
                 title = "局部关闭",
                 subtitle = "白名单内关闭服务",
-                checked = store.enableBlockA11yAppList && shizukuContextFlow.collectAsState().value.ok,
-                onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
-                    if (it) {
+                checked = store.enableBlockA11yAppList && privilegeContext != null,
+                onCheckedChange = {
+                    if (it && privilegeContext == null) {
+                        mainVm.navigatePage(PrivilegePageRoute)
+                    } else if (it) {
                         showA11yBlockDlg = true
                     } else {
                         storeFlow.value = store.copy(enableBlockA11yAppList = false)
@@ -558,7 +562,7 @@ fun useSettingsPage(): ScaffoldExt {
 private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onDismissRequest) {
     val mainVm = LocalMainViewModel.current
     val statusRunning by StatusService.isRunning.collectAsState()
-    val shizukuContext by shizukuContextFlow.collectAsState()
+    val privilegeContext by privilegeContextFlow.collectAsState()
     val ignoreBatteryOptimizations by ignoreBatteryOptimizationsState.stateFlow.collectAsState()
     val context = LocalActivity.current as MainActivity
     Scaffold(
@@ -580,7 +584,7 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
             BottomAppBar {
                 Spacer(modifier = Modifier.weight(1f))
                 TextButton(
-                    enabled = shizukuContext.ok && statusRunning && ignoreBatteryOptimizations,
+                    enabled = privilegeContext != null && statusRunning && ignoreBatteryOptimizations,
                     onClick = mainVm.viewModelScope.launchAsFn {
                         onDismissRequest()
                         delay(200)
@@ -617,11 +621,11 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     RequiredTextItem(
-                        text = "Shizuku 授权",
-                        enabled = !shizukuContext.ok,
-                        imageVector = if (shizukuContext.ok) PerfIcon.Check else PerfIcon.ArrowForward,
-                        onClick = mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                            mainVm.guardShizukuContext()
+                        text = "高级授权",
+                        enabled = privilegeContext == null,
+                        imageVector = if (privilegeContext != null) PerfIcon.Check else PerfIcon.ArrowForward,
+                        onClick = {
+                            mainVm.navigatePage(PrivilegePageRoute)
                         },
                     )
                     RequiredTextItem(
@@ -656,11 +660,11 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                         imageVector = PerfIcon.OpenInNew,
                         onClickLabel = "打开应用详情页面",
                         onClick = {
-                            val m = shizukuContextFlow.value.inputManager
-                            if (m != null) {
-                                m.key(KeyEvent.KEYCODE_APP_SWITCH)
+                            val inputManager = privilegeContextFlow.value?.inputManager
+                            if (inputManager == null) {
+                                mainVm.navigatePage(PrivilegePageRoute)
                             } else {
-                                toast("请先授权 Shizuku")
+                                inputManager.keyevent(KeyEvent.KEYCODE_APP_SWITCH)
                             }
                         },
                     )

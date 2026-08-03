@@ -34,6 +34,6 @@ public interface IWindowManager extends IInterface {
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     void captureDisplay(int displayId, ScreenCapture.CaptureArgs captureArgs, ScreenCapture.ScreenCaptureListener listener);
 
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @RequiresApi(Build.VERSION_CODES.BAKLAVA)
     void captureDisplay(int displayId, ScreenCaptureInternal.CaptureArgs captureArgs, ScreenCaptureInternal.ScreenCaptureListener listener);
 }

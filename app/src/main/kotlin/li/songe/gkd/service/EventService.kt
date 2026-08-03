@@ -49,7 +49,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.eventNotif
 import li.songe.gkd.permission.canDrawOverlaysState
-import li.songe.gkd.shizuku.uiAutomationFlow
+import li.songe.gkd.priv.uiAutomationFlow
 import li.songe.gkd.ui.EventLogCard
 import li.songe.gkd.ui.component.LocalNumberCharWidth
 import li.songe.gkd.ui.component.PerfIcon

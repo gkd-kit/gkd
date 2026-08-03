@@ -20,9 +20,9 @@ import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.isActivityVisible
 import li.songe.gkd.permission.writeSecureSettingsState
-import li.songe.gkd.shizuku.AutomationService
-import li.songe.gkd.shizuku.shizukuContextFlow
-import li.songe.gkd.shizuku.uiAutomationFlow
+import li.songe.gkd.priv.AutomationService
+import li.songe.gkd.priv.privilegeContextFlow
+import li.songe.gkd.priv.uiAutomationFlow
 import li.songe.gkd.store.actualA11yScopeAppList
 import li.songe.gkd.store.actualBlockA11yAppList
 import li.songe.gkd.store.storeFlow
@@ -85,7 +85,7 @@ private suspend fun switchA11yService() {
 private fun switchAutomationService() {
     val newEnabled = uiAutomationFlow.value == null
     uiAutomationFlow.value?.shutdown()
-    if (newEnabled && shizukuContextFlow.value.ok) {
+    if (newEnabled && privilegeContextFlow.value != null) {
         AutomationService.tryConnect()
     }
 }
@@ -103,7 +103,7 @@ private fun skipBlockApp(): Boolean {
         val topAppId = if (isActivityVisible || app.justStarted) {
             META.appId
         } else {
-            shizukuContextFlow.value.topCpn()?.packageName
+            privilegeContextFlow.value?.run { topCpn()?.packageName }
         }
         if (topAppId != null && topAppId in actualBlockA11yAppList) {
             return true
@@ -136,7 +136,7 @@ private suspend fun fixA11yService() {
 }
 
 private fun fixAutomationService() {
-    if (uiAutomationFlow.value == null && shizukuContextFlow.value.ok) {
+    if (uiAutomationFlow.value == null && privilegeContextFlow.value != null) {
         if (skipBlockApp()) return
         if (currentAppUseA11y) return
         AutomationService.tryConnect(true)
