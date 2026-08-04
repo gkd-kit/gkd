@@ -159,7 +159,7 @@ class AutomationService private constructor(
                     }
                     if (
                         privilegeContextFlow.value !== privilegeContext ||
-                        !privilegeContext.isCurrentServerAlive()
+                        !privilegeContext.serverLifecycleBinder.pingBinder()
                     ) {
                         instance.shutdown(true)
                     }

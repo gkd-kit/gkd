@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Process
-import android.os.RemoteException
 import li.songe.gkd.META
 import li.songe.gkd.app
 import li.songe.gkd.permission.Manifest_permission_GET_APP_OPS_STATS
@@ -16,7 +15,6 @@ import li.songe.gkd.util.AndroidTarget
 import priv.kit.core.Privilege
 import priv.kit.core.PrivilegeServerInfo
 import priv.kit.core.PrivilegeUserServiceConnection
-import priv.kit.core.binder.PrivilegeServerUnavailableException
 
 class PrivilegeContext private constructor(
     val serverInfo: PrivilegeServerInfo,
@@ -47,17 +45,6 @@ class PrivilegeContext private constructor(
             }
         } finally {
             userServiceConnection.unbind()
-        }
-    }
-
-    fun isCurrentServerAlive(): Boolean {
-        if (!serverLifecycleBinder.pingBinder()) return false
-        return try {
-            Privilege.getServerLifecycleBinder() == serverLifecycleBinder
-        } catch (_: PrivilegeServerUnavailableException) {
-            false
-        } catch (_: RemoteException) {
-            false
         }
     }
 
