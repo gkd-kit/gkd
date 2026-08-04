@@ -6,7 +6,7 @@ import androidx.annotation.Keep
 import priv.kit.core.PrivilegeExternalStartupHost
 import kotlin.system.exitProcess
 
-internal class PrivilegeShizukuStartService @Keep constructor() :
+class PrivilegeShizukuStartService @Keep constructor() :
     IPrivilegeShizukuStartService.Stub() {
     private val host = PrivilegeExternalStartupHost()
 

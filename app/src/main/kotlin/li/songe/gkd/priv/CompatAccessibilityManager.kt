@@ -45,11 +45,11 @@ private val legacyUserStateDumpRegex = Regex("""User state\[attributes:\{([\s\S]
 private val legacyCurrentUserRegex = Regex("""\bcurrentUser\s*=\s*true\b""")
 private val legacyUiAutomationDumpRegex = Regex("""\bService\[""")
 
-internal fun containsModernUiAutomation(dump: String): Boolean {
+fun containsModernUiAutomation(dump: String): Boolean {
     return uiAutomationDumpRegex.containsMatchIn(dump)
 }
 
-internal fun containsLegacyUiAutomation(dump: String): Boolean {
+fun containsLegacyUiAutomation(dump: String): Boolean {
     return legacyUserStateDumpRegex.findAll(dump).any { result ->
         val attributes = result.groupValues[1]
         legacyCurrentUserRegex.containsMatchIn(attributes) &&

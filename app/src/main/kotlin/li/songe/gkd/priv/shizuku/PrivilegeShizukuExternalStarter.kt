@@ -16,7 +16,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.milliseconds
 
-internal class PrivilegeShizukuExternalStarter(
+class PrivilegeShizukuExternalStarter(
     context: Context,
 ) : Closeable {
     private val applicationContext = context.applicationContext
@@ -146,7 +146,7 @@ internal class PrivilegeShizukuExternalStarter(
         applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
 
     companion object {
-        internal const val SHIZUKU_USER_SERVICE_MIN_VERSION = 10
+        const val SHIZUKU_USER_SERVICE_MIN_VERSION = 10
         private const val SHIZUKU_BIND_TIMEOUT_MILLIS = 10_000L
         private const val SHIZUKU_START_TAG = "priv-kit-external-start"
         private const val SHIZUKU_START_PROCESS_SUFFIX = "priv-kit-shizuku-start"

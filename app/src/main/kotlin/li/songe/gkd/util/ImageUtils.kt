@@ -16,7 +16,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
 
-internal val webpLossyCompressFormat = if (AndroidTarget.R) {
+val webpLossyCompressFormat = if (AndroidTarget.R) {
     Bitmap.CompressFormat.WEBP_LOSSY
 } else {
     @Suppress("DEPRECATION")

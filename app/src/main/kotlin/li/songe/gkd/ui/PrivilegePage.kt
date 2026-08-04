@@ -62,7 +62,7 @@ fun PrivilegePage() {
     )
 }
 
-internal class GkdPrivilegeUiViewModel(
+private class GkdPrivilegeUiViewModel(
     application: Application,
     private val backAction: () -> Unit,
 ) : PrivilegeUiViewModel(

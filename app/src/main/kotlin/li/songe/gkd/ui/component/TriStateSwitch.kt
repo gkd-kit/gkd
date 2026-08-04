@@ -563,7 +563,7 @@ class TriStateSwitchColors(
     )
 
     @Stable
-    internal fun thumbColor(enabled: Boolean, checked: Boolean?): Color =
+    fun thumbColor(enabled: Boolean, checked: Boolean?): Color =
         if (enabled) when (checked) {
             true -> checkedThumbColor
             false -> uncheckedThumbColor
@@ -575,7 +575,7 @@ class TriStateSwitchColors(
         }
 
     @Stable
-    internal fun trackColor(enabled: Boolean, checked: Boolean?): Color =
+    fun trackColor(enabled: Boolean, checked: Boolean?): Color =
         if (enabled) when (checked) {
             true -> checkedTrackColor
             false -> uncheckedTrackColor
@@ -587,7 +587,7 @@ class TriStateSwitchColors(
         }
 
     @Stable
-    internal fun borderColor(enabled: Boolean, checked: Boolean?): Color =
+    fun borderColor(enabled: Boolean, checked: Boolean?): Color =
         if (enabled) when (checked) {
             true -> checkedBorderColor
             false -> uncheckedBorderColor
@@ -599,7 +599,7 @@ class TriStateSwitchColors(
         }
 
     @Stable
-    internal fun iconColor(enabled: Boolean, checked: Boolean?): Color =
+    fun iconColor(enabled: Boolean, checked: Boolean?): Color =
         if (enabled) when (checked) {
             true -> checkedIconColor
             false -> uncheckedIconColor

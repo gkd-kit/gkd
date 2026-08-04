@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
 
-internal object GkdShizukuExternalStartProvider :
+object GkdShizukuExternalStartProvider :
     PrivilegeUiStreamingExternalStartProvider {
     override val id: String = "shizuku"
     override val label: CharSequence = "Shizuku"

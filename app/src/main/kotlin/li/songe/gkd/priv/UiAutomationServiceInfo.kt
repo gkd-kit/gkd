@@ -8,7 +8,7 @@ import li.songe.gkd.app
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.util.AndroidTarget
 
-internal fun createUiAutomationServiceInfo(): AccessibilityServiceInfo {
+fun createUiAutomationServiceInfo(): AccessibilityServiceInfo {
     val resolveInfo = ResolveInfo().apply {
         serviceInfo = app.packageManager.getServiceInfo(
             A11yService.a11yCn,
