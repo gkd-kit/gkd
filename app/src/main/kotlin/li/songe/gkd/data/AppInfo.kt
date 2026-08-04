@@ -8,7 +8,6 @@ import android.graphics.drawable.Drawable
 import kotlinx.serialization.Serializable
 import li.songe.gkd.app
 import li.songe.gkd.priv.currentUserId
-import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.priv.toHidden
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.pkgIcon
@@ -22,7 +21,6 @@ data class AppInfo(
     val isSystem: Boolean,
     val mtime: Long,
     val hidden: Boolean,
-    val enabled: Boolean,
     val userId: Int,
 ) {
     override fun equals(other: Any?): Boolean {
@@ -68,31 +66,6 @@ private fun checkHasActivity(packageName: String): Boolean {
     }
 }
 
-private fun PackageInfo.getEnabled(userId: Int): Boolean {
-    val enabled = applicationInfo?.enabled ?: true
-    if (enabled) return true
-    val state = try {
-        // https://github.com/gkd-kit/gkd/issues/1169#issuecomment-3489260246
-        if (userId == currentUserId) {
-            app.packageManager.getApplicationEnabledSetting(packageName)
-        } else {
-            privilegeContextFlow.value?.run {
-                packageManager.value.getApplicationEnabledSetting(packageName)
-            }
-        }
-    } catch (_: IllegalArgumentException) {
-        null
-    }
-    return when (state) {
-        null,
-        PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-        PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER,
-        PackageManager.COMPONENT_ENABLED_STATE_DISABLED_UNTIL_USED -> false
-
-        else -> true
-    }
-}
-
 // all->433 isOverlay->354 checkAppHasActivity->271
 fun PackageInfo.toAppInfo(
     userId: Int = currentUserId,
@@ -110,7 +83,6 @@ fun PackageInfo.toAppInfo(
         hidden = hidden ?: (isSystem && (toHidden.overlayTarget != null || !checkHasActivity(
             packageName
         ))),
-        enabled = getEnabled(userId),
     )
 }
 

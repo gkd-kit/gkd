@@ -9,7 +9,4 @@ public class ApplicationPackageManager {
         throw new RuntimeException();
     }
 
-    public int getApplicationEnabledSetting(String packageName) {
-        throw new RuntimeException();
-    }
 }

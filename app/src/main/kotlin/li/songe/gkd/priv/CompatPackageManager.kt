@@ -8,7 +8,11 @@ import priv.kit.core.binder.PrivilegeBinderWrapper
 
 class CompatPackageManager {
 
-    val value: ApplicationPackageManager = ApplicationPackageManager::class.java
+    val iPackageManager: IPackageManager = IPackageManager.Stub.asInterface(
+        requireNotNull(PrivilegeBinderWrapper.fromSystemService("package")),
+    )
+
+    val appPackageManager: ApplicationPackageManager = ApplicationPackageManager::class.java
         .getDeclaredConstructor(
             @SuppressLint("PrivateApi") Class.forName("android.app.ContextImpl"),
             IPackageManager::class.java,
@@ -16,9 +20,7 @@ class CompatPackageManager {
         .apply { isAccessible = true }
         .newInstance(
             app.baseContext,
-            IPackageManager.Stub.asInterface(
-                requireNotNull(PrivilegeBinderWrapper.fromSystemService("package")),
-            ),
+            iPackageManager,
         )
 
 }

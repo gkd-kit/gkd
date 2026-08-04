@@ -134,7 +134,7 @@ private fun updateOtherUserAppInfo(userAppInfoMap: Map<String, AppInfo>? = null)
     }
     val otherUsers = userManager.getUsers().filter { it.id != currentUserId }.sortedBy { it.id }
     val userPackageInfoMap = otherUsers.associate { user ->
-        user.id to pkgManager.value.getInstalledPackagesAsUser(
+        user.id to pkgManager.appPackageManager.getInstalledPackagesAsUser(
             PKG_FLAGS,
             user.id
         ).filterNot { actualUserAppInfoMap.contains(it.packageName) }
@@ -211,7 +211,7 @@ fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO
             "mayAuthDenied=$mayAuthDenied, newAppMap.size=${newAppMap.size}"
         )
         val pkgList2 = privilegeContextFlow.value?.run {
-            packageManager.value.getInstalledPackagesAsUser(PKG_FLAGS, currentUserId)
+            packageManager.appPackageManager.getInstalledPackagesAsUser(PKG_FLAGS, currentUserId)
         }
         if (!pkgList2.isNullOrEmpty()) {
             pkgList2.forEach { pkgInfo ->
