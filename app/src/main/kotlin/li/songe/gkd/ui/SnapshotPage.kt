@@ -46,8 +46,8 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.permission.canWriteExternalStorage
-import li.songe.gkd.permission.requiredPermission
+import li.songe.gkd.permission.PermissionStates
+import li.songe.gkd.permission.ensurePermission
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.FixedTimeText
 import li.songe.gkd.ui.component.LocalNumberCharWidth
@@ -247,7 +247,14 @@ fun SnapshotPage() {
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                             toast("正在保存...")
                             selectedSnapshot = null
-                            requiredPermission(context, canWriteExternalStorage)
+                            if (
+                                !ensurePermission(
+                                    context,
+                                    PermissionStates.writeExternalStorage,
+                                )
+                            ) {
+                                return@launchAsFn
+                            }
                             ImageUtils.save2Album(BitmapFactory.decodeFile(snapshotVal.screenshotFile.absolutePath))
                             toast("保存成功")
                         }))

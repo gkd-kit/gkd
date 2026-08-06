@@ -17,8 +17,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import li.songe.gkd.MainActivity
-import li.songe.gkd.permission.canQueryPkgState
-import li.songe.gkd.permission.requiredPermission
+import li.songe.gkd.permission.PermissionStates
+import li.songe.gkd.permission.ensurePermission
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
@@ -49,7 +49,7 @@ fun QueryPkgAuthCard(
         TextButton(
             enabled = !updateAppMutex.state.collectAsState().value,
             onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
-                requiredPermission(context, canQueryPkgState)
+                ensurePermission(context, PermissionStates.queryPackages)
             })
         ) {
             Text(text = "申请权限")

@@ -42,7 +42,7 @@ import li.songe.gkd.a11y.topActivityFlow
 import li.songe.gkd.a11y.updateSystemDefaultAppId
 import li.songe.gkd.a11y.updateTopActivity
 import li.songe.gkd.permission.AuthDialog
-import li.songe.gkd.permission.updatePermissionState
+import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.priv.uiAutomationOccupiedFlow
 import li.songe.gkd.service.A11yService
@@ -276,7 +276,7 @@ fun syncFixState() {
         syncStateMutex.withLock {
             updateSystemDefaultAppId()
             privilegeContextFlow.value?.grantSelf()
-            updatePermissionState()
+            PermissionStates.refreshAll()
             fixRestartAutomatorService()
         }
     }

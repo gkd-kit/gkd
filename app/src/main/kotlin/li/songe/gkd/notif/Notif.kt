@@ -15,8 +15,7 @@ import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.app
-import li.songe.gkd.permission.foregroundServiceSpecialUseState
-import li.songe.gkd.permission.notificationState
+import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.service.ActivityService
 import li.songe.gkd.service.ButtonService
 import li.songe.gkd.service.EventService
@@ -74,16 +73,16 @@ data class Notif(
     }
 
     fun notifySelf() {
-        if (!notificationState.updateAndGet()) return
-        if (!foregroundServiceSpecialUseState.updateAndGet()) return
+        if (!PermissionStates.notification.updateAndGet()) return
+        if (!PermissionStates.foregroundServiceSpecialUse.updateAndGet()) return
         @SuppressLint("MissingPermission")
         NotificationManagerCompat.from(app).notify(id, toNotification())
     }
 
     context(service: Service)
     fun notifyService() {
-        if (!notificationState.updateAndGet()) return
-        if (!foregroundServiceSpecialUseState.updateAndGet()) return
+        if (!PermissionStates.notification.updateAndGet()) return
+        if (!PermissionStates.foregroundServiceSpecialUse.updateAndGet()) return
         ServiceCompat.startForeground(
             service,
             id,

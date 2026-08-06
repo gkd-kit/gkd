@@ -38,7 +38,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import li.songe.gkd.a11y.topActivityFlow
-import li.songe.gkd.permission.canDrawOverlaysState
+import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.store.createAnyFlow
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.icon.DragPan
@@ -54,6 +54,7 @@ import li.songe.gkd.util.runMainPost
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import kotlin.math.abs
+import kotlin.time.Duration.Companion.milliseconds
 
 private var tempShareContext: ShareContext? = null
 private fun OverlayWindowService.useShareContext(): ShareContext {
@@ -80,20 +81,20 @@ private class ShareContext {
 
     init {
         scope.launch {
-            var canDrawOverlays = canDrawOverlaysState.updateAndGet()
+            var canDrawOverlays = PermissionStates.drawOverlays.updateAndGet()
             topActivityFlow
                 .mapState(scope) { it.appId to it.activityId }
                 .collectLatest {
                     var i = 0
                     while (i < 6 && isActive) {
                         val oldV = canDrawOverlays
-                        val newV = canDrawOverlaysState.updateAndGet()
+                        val newV = PermissionStates.drawOverlays.updateAndGet()
                         canDrawOverlays = newV
                         if (!newV && oldV) {
                             toast("当前界面拒绝显示悬浮窗")
                             break
                         }
-                        delay(500)
+                        delay(500.milliseconds)
                         i++
                     }
                 }
@@ -195,7 +196,7 @@ abstract class OverlayWindowService(
             runMainPost(1000) { aliveSize-- }
         }
         lifecycleScope.launch {
-            positionFlow.drop(1).debounce(300).collect { pos ->
+            positionFlow.drop(1).debounce(300.milliseconds).collect { pos ->
                 shareContext.positionMapFlow.update {
                     it.toMutableMap().apply {
                         set(positionKey, pos)
@@ -260,7 +261,7 @@ abstract class OverlayWindowService(
             }
             lifecycleScope.launch {
                 view.viewTreeObserver.addOnGlobalLayoutListener { launch { resizeFlow.emit(Unit) } }
-                resizeFlow.debounce(100).collect { fixLimitXy() }
+                resizeFlow.debounce(100.milliseconds).collect { fixLimitXy() }
             }
             var downXy: Pair<Float, Float>? = null
             var longClickJob: kotlinx.coroutines.Job? = null
@@ -275,7 +276,7 @@ abstract class OverlayWindowService(
                         paramsXy = layoutParams.x to layoutParams.y
                         longClickJob = null
                         longClickJob = scope.launch {
-                            delay(500)
+                            delay(500.milliseconds)
                             longClickJob = null
                             if (downXy != null) {
                                 onLongClickView()

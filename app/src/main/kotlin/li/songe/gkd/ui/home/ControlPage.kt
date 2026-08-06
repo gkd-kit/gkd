@@ -42,8 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.permission.appOpsRestrictedFlow
-import li.songe.gkd.permission.writeSecureSettingsState
+import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.priv.uiAutomationFlow
 import li.songe.gkd.service.A11yService
@@ -130,7 +129,7 @@ fun useControlPage(): ScaffoldExt {
 
         val a11yRunning by A11yService.isRunning.collectAsState()
         val manageRunning by StatusService.isRunning.collectAsState()
-        val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
+        val writeSecureSettings by PermissionStates.writeSecureSettings.stateFlow.collectAsState()
 
         Column(
             modifier = Modifier
@@ -139,7 +138,7 @@ fun useControlPage(): ScaffoldExt {
                 .padding(horizontal = itemHorizontalPadding),
             verticalArrangement = Arrangement.spacedBy(itemHorizontalPadding / 2)
         ) {
-            if (appOpsRestrictedFlow.collectAsState().value) {
+            if (PermissionStates.appOpsRestrictedFlow.collectAsState().value) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -186,7 +185,7 @@ fun useControlPage(): ScaffoldExt {
                     },
                     checked = a11yRunning,
                     onCheckedChange = { newEnabled ->
-                        if (newEnabled && !writeSecureSettingsState.value) {
+                        if (newEnabled && !PermissionStates.writeSecureSettings.value) {
                             mainVm.navigatePage(AuthA11yRoute)
                         } else {
                             switchAutomatorService()

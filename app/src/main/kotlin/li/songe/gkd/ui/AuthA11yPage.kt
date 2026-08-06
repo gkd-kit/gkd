@@ -36,7 +36,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 import li.songe.gkd.META
-import li.songe.gkd.permission.writeSecureSettingsState
+import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.ui.component.AnimatedBooleanContent
@@ -62,7 +62,7 @@ data object AuthA11yRoute : NavKey
 fun AuthA11yPage() {
     val mainVm = LocalMainViewModel.current
     viewModel<AuthA11yVm>()
-    val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
+    val writeSecureSettings by PermissionStates.writeSecureSettings.stateFlow.collectAsState()
     val a11yRunning by A11yService.isRunning.collectAsState()
     val privilegeContext by privilegeContextFlow.collectAsState()
     val automatorMode by mainVm.automatorModeFlow.collectAsState()
@@ -203,7 +203,7 @@ fun AuthA11yPage() {
                         .padding(horizontal = cardHorizontalPadding),
                     onClick = throttle {
                         if (!writeSecureSettings) {
-                            toast("请先授予「${writeSecureSettingsState.name}」")
+                            toast("请先授予「${PermissionStates.writeSecureSettings.name}」")
                         }
                         mainVm.dialogFlow.updateDialogOptions(
                             title = "无感保活",

@@ -18,10 +18,8 @@ import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.app
 import li.songe.gkd.isActivityVisible
-import li.songe.gkd.permission.canWriteExternalStorage
-import li.songe.gkd.permission.foregroundServiceSpecialUseState
-import li.songe.gkd.permission.notificationState
-import li.songe.gkd.permission.requiredPermission
+import li.songe.gkd.permission.PermissionStates
+import li.songe.gkd.permission.ensurePermission
 import java.io.File
 import kotlin.reflect.KClass
 
@@ -58,7 +56,7 @@ suspend fun MainActivity.saveFileToDownloads(file: File) {
             }
         }
     } else {
-        requiredPermission(this, canWriteExternalStorage)
+        if (!ensurePermission(this, PermissionStates.writeExternalStorage)) return
         val targetFile = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
             file.name
@@ -120,24 +118,14 @@ fun openUri(uri: Uri) {
     app.tryStartActivity(intent)
 }
 
-fun openApp(appId: String) {
-    val intent = app.packageManager.getLaunchIntentForPackage(appId)
-    if (intent != null) {
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        app.tryStartActivity(intent)
-    } else {
-        toast("请检查此应用是否安装或禁用")
-    }
-}
-
 fun <T : Service> stopServiceByClass(clazz: KClass<T>) {
     val intent = Intent(app, clazz.java)
     app.stopService(intent)
 }
 
 fun <T : Service> startForegroundServiceByClass(clazz: KClass<T>) {
-    if (!notificationState.checkOrToast()) return
-    if (!foregroundServiceSpecialUseState.checkOrToast()) return
+    if (!PermissionStates.notification.checkOrToast()) return
+    if (!PermissionStates.foregroundServiceSpecialUse.checkOrToast()) return
     val intent = Intent(app, clazz.java)
     try {
         app.startForegroundService(intent)

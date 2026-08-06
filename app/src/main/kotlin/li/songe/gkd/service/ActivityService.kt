@@ -34,7 +34,7 @@ import li.songe.gkd.a11y.topActivityFlow
 import li.songe.gkd.a11y.updateTopActivity
 import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.recordNotif
-import li.songe.gkd.permission.canDrawOverlaysState
+import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.style.iconTextSize
@@ -128,7 +128,7 @@ class ActivityService : OverlayWindowService(
     companion object {
         val isRunning = MutableStateFlow(false)
         fun start() {
-            if (!canDrawOverlaysState.checkOrToast()) return
+            if (!PermissionStates.drawOverlays.checkOrToast()) return
             startForegroundServiceByClass(ActivityService::class)
         }
 

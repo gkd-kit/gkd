@@ -51,7 +51,7 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.data.AppInfo
-import li.songe.gkd.permission.canQueryPkgState
+import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.store.blockMatchAppListFlow
 import li.songe.gkd.ui.AppConfigRoute
 import li.songe.gkd.ui.EditBlockAppListRoute
@@ -111,7 +111,7 @@ fun useAppListPage(): ScaffoldExt {
     val (scrollBehavior, listState) = useListScrollState(scrollKey)
     LaunchedEffect(null) {
         listOf(
-            canQueryPkgState.stateFlow,
+            PermissionStates.queryPackages.stateFlow,
             vm.appInfosFlow,
         ).forEach {
             launch {
@@ -186,11 +186,11 @@ fun useAppListPage(): ScaffoldExt {
                     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
                         PerfIconButton(
                             imageVector = PerfIcon.WarningAmber,
-                            contentDescription = canQueryPkgState.name + "异常",
+                            contentDescription = PermissionStates.queryPackages.name + "异常",
                             onClick = throttle {
                                 mainVm.dialogFlow.updateDialogOptions(
                                     title = "权限异常",
-                                    text = "检测到已授予「${canQueryPkgState.name}」但实际获取应用数量稀少，已使用其它方式获取但可能不全，在应用列表下拉刷新可重新获取，若无法解决可尝试关闭权限后重新授予或重启设备"
+                                    text = "检测到已授予「${PermissionStates.queryPackages.name}」但实际获取应用数量稀少，已使用其它方式获取但可能不全，在应用列表下拉刷新可重新获取，若无法解决可尝试关闭权限后重新授予或重启设备"
                                 )
                             },
                         )
@@ -286,7 +286,7 @@ fun useAppListPage(): ScaffoldExt {
             )
         }
     ) { contentPadding ->
-        val canQueryPkg by canQueryPkgState.stateFlow.collectAsState()
+        val canQueryPkg by PermissionStates.queryPackages.stateFlow.collectAsState()
         PullToRefreshBox(
             modifier = Modifier.padding(contentPadding),
             state = pullToRefreshState,

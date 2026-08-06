@@ -48,7 +48,7 @@ import li.songe.gkd.data.toA11yEventLog
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.notif.eventNotif
-import li.songe.gkd.permission.canDrawOverlaysState
+import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.priv.uiAutomationFlow
 import li.songe.gkd.ui.EventLogCard
 import li.songe.gkd.ui.component.LocalNumberCharWidth
@@ -60,6 +60,7 @@ import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
+import kotlin.time.Duration.Companion.milliseconds
 
 class EventService : OverlayWindowService(positionKey = "event") {
 
@@ -159,7 +160,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
     val tempEventListFlow = MutableStateFlow(emptyList<A11yEventLog>()).apply {
         appScope.launch {
             while (scope.isActive) {
-                delay(1000)
+                delay(1000.milliseconds)
                 val list = getAndUpdate { emptyList() }
                 if (list.isNotEmpty()) {
                     DbSet.a11yEventLogDao.insert(list)
@@ -208,7 +209,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
 
         val isRunning = MutableStateFlow(false)
         fun start() {
-            if (!canDrawOverlaysState.checkOrToast()) return
+            if (!PermissionStates.drawOverlays.checkOrToast()) return
             startForegroundServiceByClass(EventService::class)
         }
 

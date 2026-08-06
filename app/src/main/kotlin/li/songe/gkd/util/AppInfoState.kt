@@ -27,7 +27,7 @@ import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.otherUserMapFlow
 import li.songe.gkd.data.toAppInfo
 import li.songe.gkd.data.toAppInfoAndIcon
-import li.songe.gkd.permission.canQueryPkgState
+import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.priv.currentUserId
 import li.songe.gkd.priv.privilegeContextFlow
 import kotlin.time.Duration.Companion.milliseconds
@@ -203,9 +203,9 @@ fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO
         }
     }
     val mayAuthDenied = newAppMap.count { !it.value.isSystem } <= 4
-    canQueryPkgState.updateAndGet()
-    appListAuthAbnormalFlow.value = canQueryPkgState.value && mayAuthDenied
-    if (!canQueryPkgState.value || mayAuthDenied) {
+    PermissionStates.queryPackages.updateAndGet()
+    appListAuthAbnormalFlow.value = PermissionStates.queryPackages.value && mayAuthDenied
+    if (!PermissionStates.queryPackages.value || mayAuthDenied) {
         LogUtils.d(
             "updateAllAppInfo",
             "mayAuthDenied=$mayAuthDenied, newAppMap.size=${newAppMap.size}"
@@ -251,7 +251,7 @@ fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO
     if (!app.justStarted) {
         toast("应用列表更新成功")
     }
-    if (canQueryPkgState.value && mayAuthDenied && app.justStarted) {
+    if (PermissionStates.queryPackages.value && mayAuthDenied && app.justStarted) {
         // 概率出现：即使有「读取应用列表权限」在刚启动时也只能获取到少量应用，延迟几秒再试一次
         appScope.launch {
             delay(App.START_WAIT_TIME.milliseconds)

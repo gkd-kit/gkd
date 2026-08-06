@@ -24,7 +24,7 @@ import com.hjq.toast.style.WhiteToastStyle
 import li.songe.gkd.app
 import li.songe.gkd.data.ResolvedRule
 import li.songe.gkd.isActivityVisible
-import li.songe.gkd.permission.canDrawOverlaysState
+import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.OverlayWindowService
 import li.songe.gkd.store.actionCountFlow
@@ -153,7 +153,7 @@ private fun showSystemToast(message: CharSequence) {
 // https://github.com/gkd-kit/gkd/issues/698
 private fun showA11yToast(message: CharSequence) {
     val wm = A11yService.instance?.wm
-        ?: if (canDrawOverlaysState.updateAndGet()) app.windowManager else null
+        ?: if (PermissionStates.drawOverlays.updateAndGet()) app.windowManager else null
     if (wm == null) {
         showSystemToast(message)
         return

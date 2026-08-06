@@ -14,12 +14,8 @@ import li.songe.gkd.MainActivity
 import li.songe.gkd.a11y.useA11yServiceEnabledFlow
 import li.songe.gkd.app
 import li.songe.gkd.notif.abNotif
-import li.songe.gkd.permission.appOpsRestrictedFlow
-import li.songe.gkd.permission.foregroundServiceSpecialUseState
-import li.songe.gkd.permission.notificationState
-import li.songe.gkd.permission.privilegeGrantedState
-import li.songe.gkd.permission.requiredPermission
-import li.songe.gkd.permission.writeSecureSettingsState
+import li.songe.gkd.permission.PermissionStates
+import li.songe.gkd.permission.ensurePermission
 import li.songe.gkd.priv.uiAutomationFlow
 import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.storeFlow
@@ -31,6 +27,7 @@ import li.songe.gkd.util.getSubsStatus
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
+import kotlin.time.Duration.Companion.milliseconds
 
 class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
     override fun onBind(intent: Intent?) = null
@@ -38,7 +35,7 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
     override fun onDestroy() = onDestroyed()
 
     val privilegeWarnFlow = combine(
-        privilegeGrantedState.stateFlow,
+        PermissionStates.privilegeGranted.stateFlow,
         storeFlow,
     ) { granted, store ->
         !granted && store.enableAutomator &&
@@ -59,7 +56,7 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         } else {
             META.appName
         }
-        return if (appOpsRestrictedFlow.value) {
+        return if (PermissionStates.appOpsRestrictedFlow.value) {
             Triple(title, "权限受限，请解除限制", "gkd://page/3")
         } else if (privilegeWarn) {
             Triple(title, "特权服务未连接，请完成授权", "gkd://page/4")
@@ -67,7 +64,7 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
             if (currentAppUseA11y) {
                 val text = if (a11yServiceEnabledFlow.value) {
                     "无障碍发生故障"
-                } else if (writeSecureSettingsState.updateAndGet()) {
+                } else if (PermissionStates.writeSecureSettings.updateAndGet()) {
                     if (store.enableAutomator && store.enableBlockA11yAppList && a11yPartDisabledFlow.value) {
                         val name =
                             appInfoMapFlow.value[topAppIdFlow.value]?.name ?: topAppIdFlow.value
@@ -119,10 +116,10 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
                     ruleSummaryFlow,
                     privilegeWarnFlow,
                     a11yServiceEnabledFlow,
-                    writeSecureSettingsState.stateFlow,
-                    appOpsRestrictedFlow,
+                    PermissionStates.writeSecureSettings.stateFlow,
+                    PermissionStates.appOpsRestrictedFlow,
                     topAppIdFlow,
-                    actionCountFlow.debounce(1000L),
+                    actionCountFlow.debounce(1000L.milliseconds),
                 ) {
                     statusTriple()
                 }
@@ -147,14 +144,21 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         val needRestart
             get() = storeFlow.value.enableStatusService
                     && !isRunning.value
-                    && notificationState.updateAndGet()
-                    && foregroundServiceSpecialUseState.updateAndGet()
+                    && PermissionStates.notification.updateAndGet()
+                    && PermissionStates.foregroundServiceSpecialUse.updateAndGet()
 
         fun start() = startForegroundServiceByClass(StatusService::class)
         fun stop() = stopServiceByClass(StatusService::class)
         suspend fun requestStart(context: MainActivity) {
-            requiredPermission(context, foregroundServiceSpecialUseState)
-            requiredPermission(context, notificationState)
+            if (
+                !ensurePermission(
+                    context,
+                    PermissionStates.foregroundServiceSpecialUse,
+                    PermissionStates.notification,
+                )
+            ) {
+                return
+            }
             start()
             storeFlow.update { it.copy(enableStatusService = true) }
         }

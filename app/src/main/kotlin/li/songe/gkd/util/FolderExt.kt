@@ -9,7 +9,7 @@ import li.songe.gkd.app
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.UserInfo
 import li.songe.gkd.data.otherUserMapFlow
-import li.songe.gkd.permission.allPermissionStates
+import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.priv.currentUserId
 import java.io.File
 
@@ -102,12 +102,12 @@ fun buildLogFile(): File {
         files.add(it)
     }
     tempDir.resolve("permission.txt").also {
-        val p1 = allPermissionStates.filter { s -> s.value }
+        val p1 = PermissionStates.all.filter { s -> s.value }
         if (p1.isNotEmpty()) {
             it.appendText("已授权\n" + p1.joinToString("\n") { s -> s.name })
             it.appendText("\n\n")
         }
-        val p2 = allPermissionStates.filter { s -> !s.value }
+        val p2 = PermissionStates.all.filter { s -> !s.value }
         if (p2.isNotEmpty()) {
             it.appendText("未授权\n" + p2.joinToString("\n") { s -> s.name })
             it.appendText("\n\n")

@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import li.songe.gkd.app
 import li.songe.gkd.appScope
-import li.songe.gkd.permission.updatePermissionState
+import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.service.ExposeService
 import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.currentAppBlocked
@@ -67,7 +67,7 @@ private suspend fun updatePrivilegeContext(serverInfo: PrivilegeServerInfo?) =
             ) {
                 AutomationService.tryConnect(true)
             }
-            updatePermissionState()
+            PermissionStates.refreshAll()
             if (StatusService.needRestart) {
                 privilegeContext.startForegroundService(
                     ExposeService.exposeIntent(expose = -1),
@@ -77,7 +77,7 @@ private suspend fun updatePrivilegeContext(serverInfo: PrivilegeServerInfo?) =
             toast("特权服务连接成功", delayMillis = delayMillis)
         } else if (oldContext != null) {
             clearPrivilegeContext(oldContext)
-            updatePermissionState()
+            PermissionStates.refreshAll()
             toast("特权服务已断开")
         }
     }

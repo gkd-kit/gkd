@@ -9,7 +9,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import androidx.core.net.toUri
 import li.songe.gkd.app
-import li.songe.gkd.permission.canWriteExternalStorage
+import li.songe.gkd.permission.PermissionStates
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -38,7 +38,7 @@ object ImageUtils {
         }
         val fileName = System.currentTimeMillis().toString() + "_" + quality + "." + suffix
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            if (!canWriteExternalStorage.updateAndGet()) {
+            if (!PermissionStates.writeExternalStorage.updateAndGet()) {
                 return false
             }
             val picDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
@@ -70,10 +70,7 @@ object ImageUtils {
                 Environment.DIRECTORY_DCIM + "/" + safeDirName
             )
             contentValues.put(MediaStore.MediaColumns.IS_PENDING, 1)
-            val uri: Uri? = app.contentResolver.insert(contentUri, contentValues)
-            if (uri == null) {
-                return false
-            }
+            val uri: Uri = app.contentResolver.insert(contentUri, contentValues) ?: return false
             var os: OutputStream? = null
             try {
                 os = app.contentResolver.openOutputStream(uri)

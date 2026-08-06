@@ -19,7 +19,7 @@ import li.songe.gkd.accessRestrictedSettingsShowFlow
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.isActivityVisible
-import li.songe.gkd.permission.writeSecureSettingsState
+import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.priv.AutomationService
 import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.priv.uiAutomationFlow
@@ -30,6 +30,7 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mapState
 import li.songe.gkd.util.runMainPost
 import li.songe.gkd.util.toast
+import kotlin.time.Duration.Companion.milliseconds
 
 class GkdTileService : BaseTileService() {
     override val activeFlow = combine(A11yService.isRunning, uiAutomationFlow) { a11y, automator ->
@@ -57,8 +58,8 @@ private suspend fun switchA11yService() {
     if (A11yService.isRunning.value) {
         A11yService.instance?.disableSelf()
     } else {
-        if (!writeSecureSettingsState.updateAndGet()) {
-            if (!writeSecureSettingsState.value) {
+        if (!PermissionStates.writeSecureSettings.updateAndGet()) {
+            if (!PermissionStates.writeSecureSettings.value) {
                 toast("请先授予「写入安全设置权限」")
                 return
             }
@@ -68,11 +69,11 @@ private suspend fun switchA11yService() {
         if (names.contains(A11yService.a11yCn)) { // 当前无障碍异常, 重启服务
             names.remove(A11yService.a11yCn)
             app.putSecureA11yServices(names)
-            delay(A11Y_AWAIT_FIX_TIME)
+            delay(A11Y_AWAIT_FIX_TIME.milliseconds)
         }
         names.add(A11yService.a11yCn)
         app.putSecureA11yServices(names)
-        delay(A11Y_AWAIT_START_TIME)
+        delay(A11Y_AWAIT_START_TIME.milliseconds)
         // https://github.com/orgs/gkd-kit/discussions/799
         if (!A11yService.isRunning.value) {
             toast("开启无障碍失败")
@@ -113,7 +114,7 @@ private fun skipBlockApp(): Boolean {
 }
 
 private suspend fun fixA11yService() {
-    if (!A11yService.isRunning.value && writeSecureSettingsState.updateAndGet()) {
+    if (!A11yService.isRunning.value && PermissionStates.writeSecureSettings.updateAndGet()) {
         if (skipBlockApp()) return
         val names = app.getSecureA11yServices()
         val a11yBroken = names.contains(A11yService.a11yCn)
@@ -122,12 +123,12 @@ private suspend fun fixA11yService() {
             names.remove(A11yService.a11yCn)
             app.putSecureA11yServices(names)
             // 必须等待一段时间, 否则概率不会触发系统重启无障碍
-            delay(A11Y_AWAIT_FIX_TIME)
+            delay(A11Y_AWAIT_FIX_TIME.milliseconds)
             if (!currentAppUseA11y) return
         }
         names.add(A11yService.a11yCn)
         app.putSecureA11yServices(names)
-        delay(A11Y_AWAIT_START_TIME)
+        delay(A11Y_AWAIT_START_TIME.milliseconds)
         if (currentAppUseA11y && !A11yService.isRunning.value) {
             toast("重启无障碍失败")
             accessRestrictedSettingsShowFlow.value = true
@@ -172,7 +173,7 @@ private fun innerForcedUpdateA11yService(disabled: Boolean) {
         if (A11yService.isRunning.value) {
             return
         }
-        if (!writeSecureSettingsState.stateFlow.value) {
+        if (!PermissionStates.writeSecureSettings.stateFlow.value) {
             return
         }
         val names = app.getSecureA11yServices()
@@ -226,7 +227,7 @@ fun initA11yWhiteAppList() {
         }
     }
     appScope.launch(Dispatchers.Main) {
-        actualFlow.debounce(A11Y_WHITE_APP_AWAIT_TIME).collect {
+        actualFlow.debounce(A11Y_WHITE_APP_AWAIT_TIME.milliseconds).collect {
             if (currentAppBlocked) {
                 forcedUpdateA11yService(true)
             }

@@ -58,11 +58,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
-import li.songe.gkd.permission.canDrawOverlaysState
-import li.songe.gkd.permission.foregroundServiceSpecialUseState
-import li.songe.gkd.permission.ignoreBatteryOptimizationsState
-import li.songe.gkd.permission.notificationState
-import li.songe.gkd.permission.requiredPermission
+import li.songe.gkd.permission.PermissionStates
+import li.songe.gkd.permission.ensurePermission
 import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.service.StatusService
 import li.songe.gkd.service.TrackService
@@ -103,6 +100,7 @@ import li.songe.gkd.util.saveFileToDownloads
 import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun useSettingsPage(): ScaffoldExt {
@@ -427,9 +425,16 @@ fun useSettingsPage(): ScaffoldExt {
                                     text = "开启「轨迹提示」后点击或滑动后会在屏幕上使用悬浮窗绘制轨迹(一段时间后消失)，如果新触摸事件恰好在悬浮窗区域内，可能会被目标应用拒绝，从而导致点击或滑动无响应",
                                     confirmText = "继续",
                                 )
-                                requiredPermission(context, foregroundServiceSpecialUseState)
-                                requiredPermission(context, notificationState)
-                                requiredPermission(context, canDrawOverlaysState)
+                                if (
+                                    !ensurePermission(
+                                        context,
+                                        PermissionStates.foregroundServiceSpecialUse,
+                                        PermissionStates.notification,
+                                        PermissionStates.drawOverlays,
+                                    )
+                                ) {
+                                    return@launchAsFn
+                                }
                                 TrackService.start()
                             } else {
                                 TrackService.stop()
@@ -475,7 +480,7 @@ fun useSettingsPage(): ScaffoldExt {
 
             val scope = rememberCoroutineScope()
             val lazyOn = remember {
-                storeFlow.mapState(scope) { it.enableBlockA11yAppList }.debounce(300)
+                storeFlow.mapState(scope) { it.enableBlockA11yAppList }.debounce(300.milliseconds)
                     .stateIn(scope, SharingStarted.Eagerly, store.enableBlockA11yAppList)
             }.collectAsState()
             AnimatedVisibility(visible = lazyOn.value) {
@@ -563,7 +568,7 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
     val mainVm = LocalMainViewModel.current
     val statusRunning by StatusService.isRunning.collectAsState()
     val privilegeContext by privilegeContextFlow.collectAsState()
-    val ignoreBatteryOptimizations by ignoreBatteryOptimizationsState.stateFlow.collectAsState()
+    val ignoreBatteryOptimizations by PermissionStates.ignoreBatteryOptimizations.stateFlow.collectAsState()
     val context = LocalActivity.current as MainActivity
     Scaffold(
         topBar = {
@@ -587,7 +592,7 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                     enabled = privilegeContext != null && statusRunning && ignoreBatteryOptimizations,
                     onClick = mainVm.viewModelScope.launchAsFn {
                         onDismissRequest()
-                        delay(200)
+                        delay(200.milliseconds)
                         storeFlow.update { it.copy(enableBlockA11yAppList = true) }
                     }
                 ) {
@@ -642,7 +647,7 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                         imageVector = if (ignoreBatteryOptimizations) PerfIcon.Check else PerfIcon.ArrowForward,
                         onClickLabel = "打开忽略电池优化设置页面",
                         onClick = mainVm.viewModelScope.launchAsFn {
-                            requiredPermission(context, ignoreBatteryOptimizationsState)
+                            ensurePermission(context, PermissionStates.ignoreBatteryOptimizations)
                         },
                     )
                     RequiredTextItem(

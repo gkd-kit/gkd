@@ -4,13 +4,12 @@ import android.Manifest
 import android.app.AppOpsManager
 import android.app.AppOpsManagerHidden
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Process
+import com.hjq.permissions.permission.dangerous.GetInstalledAppsPermission
 import li.songe.gkd.META
 import li.songe.gkd.app
-import li.songe.gkd.permission.Manifest_permission_GET_APP_OPS_STATS
-import li.songe.gkd.permission.canQueryPkgState
+import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.util.AndroidTarget
 import priv.kit.core.Privilege
 import priv.kit.core.PrivilegeServerInfo
@@ -110,10 +109,10 @@ class PrivilegeContext private constructor(
     }
 
     private fun allowAllSelfPermission() {
-        if (canUseGetInstalledApps && !canQueryPkgState.value) {
-            grantSelfPermission("com.android.permission.GET_INSTALLED_APPS")
+        if (!PermissionStates.queryPackages.value) {
+            grantSelfPermission(GetInstalledAppsPermission.PERMISSION_NAME)
         }
-        grantSelfPermission(Manifest_permission_GET_APP_OPS_STATS)
+        grantSelfPermission(PermissionStates.Manifest_permission_GET_APP_OPS_STATS)
         grantSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS)
         if (AndroidTarget.TIRAMISU) {
             grantSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
@@ -141,18 +140,6 @@ class PrivilegeContext private constructor(
                     e.addSuppressed(cleanupError)
                 }
                 throw e
-            }
-        }
-
-        private val canUseGetInstalledApps by lazy {
-            try {
-                app.packageManager.getPermissionInfo(
-                    "com.android.permission.GET_INSTALLED_APPS",
-                    0,
-                )
-                true
-            } catch (_: PackageManager.NameNotFoundException) {
-                false
             }
         }
     }

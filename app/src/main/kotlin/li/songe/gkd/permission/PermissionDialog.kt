@@ -9,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.MainActivity
-import li.songe.gkd.util.stopCoroutine
 
 data class AuthReason(
     val text: () -> String,
@@ -51,19 +50,25 @@ sealed class PermissionResult {
     data class Denied(val doNotAskAgain: Boolean) : PermissionResult()
 }
 
-suspend fun requiredPermission(
+suspend fun ensurePermission(
     context: MainActivity,
-    permissionState: PermissionState
-) {
-    if (permissionState.updateAndGet()) return
-    val result = permissionState.request?.invoke(context)
-    if (result == null) {
-        context.mainVm.authReasonFlow.value = permissionState.reason
-        stopCoroutine()
-    } else if (result is PermissionResult.Denied) {
-        if (result.doNotAskAgain) {
-            context.mainVm.authReasonFlow.value = permissionState.reason
+    vararg permissionStates: PermissionState,
+): Boolean {
+    for (permissionState in permissionStates) {
+        if (permissionState.updateAndGet()) continue
+        when (val result = permissionState.request?.invoke(context)) {
+            PermissionResult.Granted -> Unit
+            null -> {
+                context.mainVm.authReasonFlow.value = permissionState.reason
+                return false
+            }
+            is PermissionResult.Denied -> {
+                if (result.doNotAskAgain) {
+                    context.mainVm.authReasonFlow.value = permissionState.reason
+                }
+                return false
+            }
         }
-        stopCoroutine()
     }
+    return true
 }
