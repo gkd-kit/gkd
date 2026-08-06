@@ -278,29 +278,13 @@ fun AdvancedPage() {
                 .verticalScroll(rememberScrollState())
                 .padding(contentPadding),
         ) {
-            Text(
-                text = "特权服务",
-                modifier = Modifier.titleItemPadding(showTop = false),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            SettingItem(
-                title = "特权服务",
-                subtitle = "管理授权与启动方式",
-                imageVector = PerfIcon.ArrowForward,
-                onClickLabel = "打开高级授权页面",
-                onClick = {
-                    mainVm.navigatePage(PrivilegePageRoute)
-                },
-            )
-
             val server by HttpService.httpServerFlow.collectAsState()
             val httpServerRunning = server != null
             val localNetworkIps by HttpService.localNetworkIpsFlow.collectAsState()
 
             Text(
                 text = "HTTP",
-                modifier = Modifier.titleItemPadding(),
+                modifier = Modifier.titleItemPadding(showTop = false),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )

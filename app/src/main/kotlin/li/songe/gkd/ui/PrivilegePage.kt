@@ -14,7 +14,6 @@ import li.songe.gkd.priv.gkdPrivilegeUiConfig
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.icon.GitHub
 import li.songe.gkd.ui.share.LocalMainViewModel
 import priv.kit.ui.PrivilegeScaffold
 import priv.kit.ui.PrivilegeUiViewModel
@@ -22,8 +21,6 @@ import priv.kit.ui.R as PrivilegeUiR
 
 @Serializable
 data object PrivilegePageRoute : NavKey
-
-private const val PRIV_KIT_REPOSITORY_URL = "https://github.com/priv-kit/priv-kit"
 
 @Composable
 fun PrivilegePage() {
@@ -47,15 +44,6 @@ fun PrivilegePage() {
                 },
                 title = {
                     Text(text = stringResource(PrivilegeUiR.string.priv_ui_title))
-                },
-                actions = {
-                    PerfIconButton(
-                        imageVector = GitHub,
-                        contentDescription = "GitHub",
-                        onClick = {
-                            mainVm.openUrl(PRIV_KIT_REPOSITORY_URL)
-                        },
-                    )
                 },
             )
         },

@@ -13,7 +13,6 @@ import li.songe.gkd.util.EMPTY_RULE_TIP
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.getSubsStatus
 import li.songe.gkd.util.ruleSummaryFlow
-import li.songe.gkd.util.usedSubsEntriesFlow
 
 class HomeVm : BaseViewModel() {
 
@@ -22,8 +21,6 @@ class HomeVm : BaseViewModel() {
             getSubsStatus(ruleSummary, count)
         }.stateInit(EMPTY_RULE_TIP)
     }
-
-    val usedSubsItemCountFlow = usedSubsEntriesFlow.mapNew { it.size }
 
     val sortTypeFlow = storeFlow.asMutableStateFlow(
         getter = { AppSortOption.objects.findOption(it.appSort) },
