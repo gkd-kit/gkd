@@ -32,8 +32,8 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.a11y.ActivityScene
 import li.songe.gkd.a11y.topActivityFlow
 import li.songe.gkd.a11y.updateTopActivity
+import li.songe.gkd.notif.NotificationCatalog
 import li.songe.gkd.notif.StopServiceReceiver
-import li.songe.gkd.notif.recordNotif
 import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.ui.component.PerfIcon
@@ -102,11 +102,13 @@ class ActivityService : OverlayWindowService(
         useAliveFlow(isRunning)
         useAliveToast("记录服务")
         StopServiceReceiver.autoRegister()
-        onCreated { recordNotif.notifyService() }
+        onCreated {
+            NotificationCatalog.activity().startForeground()
+        }
         onCreated {
             lifecycleScope.launch {
                 topActivityFlow.collect {
-                    recordNotif.copy(text = it.format()).notifyService()
+                    NotificationCatalog.activity(text = it.format()).startForeground()
                 }
             }
             if (!A11yService.isRunning.value) {

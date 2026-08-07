@@ -46,8 +46,8 @@ import li.songe.gkd.appScope
 import li.songe.gkd.data.A11yEventLog
 import li.songe.gkd.data.toA11yEventLog
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.notif.NotificationCatalog
 import li.songe.gkd.notif.StopServiceReceiver
-import li.songe.gkd.notif.eventNotif
 import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.priv.uiAutomationFlow
 import li.songe.gkd.ui.EventLogCard
@@ -184,7 +184,9 @@ class EventService : OverlayWindowService(positionKey = "event") {
         useAliveFlow(isRunning)
         useAliveToast("事件服务")
         StopServiceReceiver.autoRegister()
-        onCreated { eventNotif.notifyService() }
+        onCreated {
+            NotificationCatalog.event().startForeground()
+        }
     }
 
     companion object {

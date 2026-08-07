@@ -19,12 +19,13 @@ import li.songe.gkd.data.ComplexSnapshot
 import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.info2nodeList
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.notif.snapshotNotif
+import li.songe.gkd.notif.NotificationCatalog
 import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.store.storeFlow
 import java.io.File
 import kotlin.math.min
+import kotlin.time.Duration.Companion.milliseconds
 
 object SnapshotExt {
 
@@ -225,7 +226,7 @@ object SnapshotExt {
                         var topActivity = topActivityFlow.value
                         var i = 0L
                         while (topActivity.appId != appId) {
-                            delay(100)
+                            delay(100.milliseconds)
                             topActivity = topActivityFlow.value
                             i += 100
                             if (i >= 2000) {
@@ -296,7 +297,7 @@ object SnapshotExt {
             }
             toast(tip, forced = true)
             val desc = snapshot.appInfo?.name ?: snapshot.appId
-            snapshotNotif.copy(text = "快照「$desc」已保存至记录").notifySelf()
+            NotificationCatalog.snapshotSaved("快照「$desc」已保存至记录").post()
             return snapshot
         } finally {
             captureLoading.value = false

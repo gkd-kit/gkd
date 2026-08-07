@@ -31,8 +31,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import li.songe.gkd.app
+import li.songe.gkd.notif.NotificationCatalog
 import li.songe.gkd.notif.StopServiceReceiver
-import li.songe.gkd.notif.trackNotif
 import li.songe.gkd.priv.toHidden
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.DefaultSimpleLifeImpl
@@ -312,7 +312,9 @@ class TrackService : LifecycleService(), SavedStateRegistryOwner,
         useAliveFlow(isRunning)
         useAliveToast("轨迹提示")
         StopServiceReceiver.autoRegister()
-        onCreated { trackNotif.notifyService() }
+        onCreated {
+            NotificationCatalog.track().startForeground()
+        }
     }
 
     companion object {

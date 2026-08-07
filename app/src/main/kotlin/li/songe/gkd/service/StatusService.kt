@@ -13,7 +13,7 @@ import li.songe.gkd.META
 import li.songe.gkd.MainActivity
 import li.songe.gkd.a11y.useA11yServiceEnabledFlow
 import li.songe.gkd.app
-import li.songe.gkd.notif.abNotif
+import li.songe.gkd.notif.NotificationCatalog
 import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.permission.ensurePermission
 import li.songe.gkd.priv.uiAutomationFlow
@@ -75,7 +75,7 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
                 } else {
                     "无障碍未授权"
                 }
-                Triple(title, text, abNotif.uri)
+                Triple(title, text, defaultStatusNotification.uri)
             } else {
                 val text =
                     if (store.enableAutomator && store.enableBlockA11yAppList && a11yPartDisabledFlow.value) {
@@ -85,7 +85,7 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
                     } else {
                         "自动化已关闭"
                     }
-                Triple(title, text, abNotif.uri)
+                Triple(title, text, defaultStatusNotification.uri)
             }
         } else if (!store.enableMatch) {
             Triple(title, "暂停规则匹配", "gkd://page?tab=1")
@@ -93,10 +93,10 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
             Triple(
                 title,
                 store.customNotifText.replaceTemplate(ruleSummary, count),
-                abNotif.uri
+                defaultStatusNotification.uri
             )
         } else {
-            Triple(title, getSubsStatus(ruleSummary, count), abNotif.uri)
+            Triple(title, getSubsStatus(ruleSummary, count), defaultStatusNotification.uri)
         }
     }
 
@@ -107,7 +107,7 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
             delayMillis = if (app.justStarted) 1000 else 0,
         )
         onCreated {
-            abNotif.notifyService()
+            defaultStatusNotification.startForeground()
             scope.launch {
                 combine(
                     A11yService.isRunning,
@@ -126,14 +126,18 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
                     .stateIn(
                         scope,
                         SharingStarted.Eagerly,
-                        Triple(abNotif.title, abNotif.text, abNotif.uri)
+                        Triple(
+                            defaultStatusNotification.title,
+                            defaultStatusNotification.text,
+                            defaultStatusNotification.uri,
+                        )
                     )
                     .collect {
-                        abNotif.copy(
+                        NotificationCatalog.status(
                             title = it.first,
                             text = it.second,
                             uri = it.third,
-                        ).notifyService()
+                        ).startForeground()
                     }
             }
         }
@@ -175,6 +179,8 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         }
     }
 }
+
+private val defaultStatusNotification by lazy { NotificationCatalog.status() }
 
 private fun String.replaceTemplate(ruleSummary: RuleSummary, count: Long): String {
     return replace($$"${i}", ruleSummary.globalGroups.size.toString())

@@ -9,8 +9,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.appScope
+import li.songe.gkd.notif.NotificationCatalog
 import li.songe.gkd.notif.StopServiceReceiver
-import li.songe.gkd.notif.buttonNotif
 import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.util.SnapshotExt
@@ -43,7 +43,9 @@ class ButtonService : OverlayWindowService(
     init {
         useAliveFlow(isRunning)
         useAliveToast("快照按钮服务")
-        onCreated { buttonNotif.notifyService() }
+        onCreated {
+            NotificationCatalog.button().startForeground()
+        }
         StopServiceReceiver.autoRegister()
     }
 

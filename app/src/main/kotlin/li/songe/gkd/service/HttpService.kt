@@ -44,8 +44,8 @@ import li.songe.gkd.data.RpcError
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.notif.NotificationCatalog
 import li.songe.gkd.notif.StopServiceReceiver
-import li.songe.gkd.notif.httpNotif
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.DefaultSimpleLifeImpl
 import li.songe.gkd.util.LOCAL_HTTP_SUBS_ID
@@ -93,7 +93,7 @@ class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
             httpServerFlow.value = null
         }
         onCreated {
-            httpNotif.notifyService()
+            NotificationCatalog.http().startForeground()
             scope.launchTry(Dispatchers.IO) {
                 httpServerPortFlow.collect { port ->
                     val isReboot = httpServerFlow.value != null

@@ -31,7 +31,7 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.a11y.initA11yFeat
 import li.songe.gkd.data.CrashData
 import li.songe.gkd.data.selfAppInfo
-import li.songe.gkd.notif.initChannel
+import li.songe.gkd.notif.NotificationChannels
 import li.songe.gkd.priv.gkdPrivilegeUiConfig
 import li.songe.gkd.priv.initPrivilege
 import li.songe.gkd.service.clearHttpSubs
@@ -247,7 +247,7 @@ class App : Application() {
         }
         initToast()
         initStore()
-        initChannel()
+        NotificationChannels.initialize()
         initAppState()
         initA11yFeat()
         initPrivilege()

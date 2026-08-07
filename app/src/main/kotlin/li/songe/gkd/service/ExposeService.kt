@@ -5,7 +5,7 @@ import android.content.Intent
 import android.os.Binder
 import li.songe.gkd.app
 import li.songe.gkd.appScope
-import li.songe.gkd.notif.exposeNotif
+import li.songe.gkd.notif.NotificationCatalog
 import li.songe.gkd.syncFixState
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.SnapshotExt
@@ -48,7 +48,7 @@ class ExposeService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        exposeNotif.notifyService()
+        NotificationCatalog.expose().startForeground()
     }
 
     companion object {

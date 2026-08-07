@@ -6,14 +6,15 @@ import coil3.Bitmap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.app
+import li.songe.gkd.notif.NotificationCatalog
 import li.songe.gkd.notif.StopServiceReceiver
-import li.songe.gkd.notif.screenshotNotif
 import li.songe.gkd.util.DefaultSimpleLifeImpl
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.ScreenshotUtil
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.stopServiceByClass
+import kotlin.time.Duration.Companion.milliseconds
 
 class ScreenshotService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
     override fun onBind(intent: Intent?) = null
@@ -39,7 +40,9 @@ class ScreenshotService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         useAliveFlow(isRunning)
         useAliveToast("截屏服务")
         StopServiceReceiver.autoRegister()
-        onCreated { screenshotNotif.notifyService() }
+        onCreated {
+            NotificationCatalog.screenshot().startForeground()
+        }
         onCreated { instance = this }
         onDestroyed {
             screenshotUtil?.destroy()
@@ -52,7 +55,7 @@ class ScreenshotService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         val isRunning = MutableStateFlow(false)
         suspend fun screenshot(): Bitmap? {
             if (!isRunning.value) return null
-            return withTimeoutOrNull(5_000) {
+            return withTimeoutOrNull(5000.milliseconds) {
                 instance?.screenshotUtil?.execute()
             }
         }
