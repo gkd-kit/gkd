@@ -88,23 +88,25 @@ android {
         resValues = true
     }
 
-    val gkdSigningConfig = if (project.hasProperty("GKD_STORE_FILE")) {
+    val gkdStoreFile = providers.gradleProperty("GKD_STORE_FILE").orNull
+    val gkdSigningConfig = if (gkdStoreFile != null) {
         signingConfigs.create("gkd") {
-            storeFile = file(project.properties["GKD_STORE_FILE"] as String)
-            storePassword = project.findProperty("GKD_STORE_PASSWORD")?.toString()
-            keyAlias = project.findProperty("GKD_KEY_ALIAS")?.toString()
-            keyPassword = project.findProperty("GKD_KEY_PASSWORD")?.toString()
+            storeFile = file(gkdStoreFile)
+            storePassword = providers.gradleProperty("GKD_STORE_PASSWORD").orNull
+            keyAlias = providers.gradleProperty("GKD_KEY_ALIAS").orNull
+            keyPassword = providers.gradleProperty("GKD_KEY_PASSWORD").orNull
         }
     } else {
         signingConfigs.getByName("debug")
     }
 
-    val playSigningConfig = if (project.hasProperty("PLAY_STORE_FILE")) {
+    val playStoreFile = providers.gradleProperty("PLAY_STORE_FILE").orNull
+    val playSigningConfig = if (playStoreFile != null) {
         signingConfigs.create("play") {
-            storeFile = file(project.properties["PLAY_STORE_FILE"].toString())
-            storePassword = project.properties["PLAY_STORE_PASSWORD"].toString()
-            keyAlias = project.properties["PLAY_KEY_ALIAS"].toString()
-            keyPassword = project.properties["PLAY_KEY_PASSWORD"].toString()
+            storeFile = file(playStoreFile)
+            storePassword = providers.gradleProperty("PLAY_STORE_PASSWORD").orNull
+            keyAlias = providers.gradleProperty("PLAY_KEY_ALIAS").orNull
+            keyPassword = providers.gradleProperty("PLAY_KEY_PASSWORD").orNull
         }
     } else {
         gkdSigningConfig
@@ -162,7 +164,7 @@ android {
     )
 }
 
-if (project.hasProperty("GKD_RENAME_APK_FLAG")) {
+if (providers.gradleProperty("GKD_RENAME_APK_FLAG").isPresent) {
     androidComponents.onVariants { variant ->
         variant.outputs.onEach { output ->
             output as VariantOutputImpl

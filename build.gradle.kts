@@ -41,6 +41,7 @@ object Cfg {
         "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
         "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
         "-XXLanguage:+MultiDollarInterpolation",
+        "-XXLanguage:+ExplicitBackingFields",
     )
 }
 
