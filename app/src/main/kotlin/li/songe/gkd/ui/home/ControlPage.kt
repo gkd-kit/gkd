@@ -56,8 +56,8 @@ import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.ActionLogRoute
 import li.songe.gkd.ui.ActivityLogRoute
 import li.songe.gkd.ui.AppConfigRoute
-import li.songe.gkd.ui.AuthA11yRoute
-import li.songe.gkd.ui.PrivilegePageRoute
+import li.songe.gkd.ui.PrivilegeServiceRoute
+import li.songe.gkd.ui.WorkModeRoute
 import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.component.GroupNameText
 import li.songe.gkd.ui.component.PerfIcon
@@ -73,7 +73,6 @@ import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
 import li.songe.gkd.util.AutomatorModeOption
 import li.songe.gkd.util.HOME_PAGE_URL
-import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.latestRecordDescFlow
 import li.songe.gkd.util.latestRecordFlow
 import li.songe.gkd.util.launchAsFn
@@ -120,7 +119,7 @@ fun useControlPage(): ScaffoldExt {
                         },
                     ),
                     onClick = throttle {
-                        mainVm.navigatePage(PrivilegePageRoute)
+                        mainVm.navigatePage(PrivilegeServiceRoute)
                     },
                 )
             })
@@ -143,12 +142,12 @@ fun useControlPage(): ScaffoldExt {
                     modifier = Modifier
                         .fillMaxWidth()
                         .semantics(mergeDescendants = true) {
-                            this.onClick(label = "前往解除限制页面", action = null)
+                            this.onClick(label = "前往特权服务页面", action = null)
                         },
                     shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                     onClick = throttle {
-                        mainVm.navigateWebPage(ShortUrlSet.URL2)
+                        mainVm.navigatePage(PrivilegeServiceRoute)
                     },
                 ) {
                     Row(
@@ -161,7 +160,7 @@ fun useControlPage(): ScaffoldExt {
                         PerfIcon(imageVector = PerfIcon.WarningAmber)
                         Text(
                             modifier = Modifier.weight(1f),
-                            text = "检测到权限受限制，请前往解除",
+                            text = "检测到权限受限，请前往特权服务",
                             style = MaterialTheme.typography.bodyLarge,
                         )
                         PerfIcon(imageVector = PerfIcon.KeyboardArrowRight)
@@ -186,14 +185,14 @@ fun useControlPage(): ScaffoldExt {
                     checked = a11yRunning,
                     onCheckedChange = { newEnabled ->
                         if (newEnabled && !PermissionStates.writeSecureSettings.value) {
-                            mainVm.navigatePage(AuthA11yRoute)
+                            mainVm.navigatePage(WorkModeRoute)
                         } else {
                             switchAutomatorService()
                         }
                     },
                     mode = automatorMode.label,
                     onModeClick = {
-                        mainVm.navigatePage(AuthA11yRoute)
+                        mainVm.navigatePage(WorkModeRoute)
                     },
                 )
             } else {
@@ -213,14 +212,14 @@ fun useControlPage(): ScaffoldExt {
                     checked = automation != null,
                     onCheckedChange = { newEnabled ->
                         if (newEnabled && privilegeContext == null) {
-                            mainVm.navigatePage(PrivilegePageRoute)
+                            mainVm.navigatePage(PrivilegeServiceRoute)
                         } else {
                             switchAutomatorService()
                         }
                     },
                     mode = automatorMode.label,
                     onModeClick = {
-                        mainVm.navigatePage(AuthA11yRoute)
+                        mainVm.navigatePage(WorkModeRoute)
                     },
                 )
             }

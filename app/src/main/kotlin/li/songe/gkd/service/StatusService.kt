@@ -57,7 +57,7 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
             META.appName
         }
         return if (PermissionStates.appOpsRestrictedFlow.value) {
-            Triple(title, "权限受限，请解除限制", "gkd://page/3")
+            Triple(title, "权限受限，请重新授权", "gkd://page/3")
         } else if (privilegeWarn) {
             Triple(title, "特权服务未连接，请完成授权", "gkd://page/4")
         } else if (!automationRunning && !abRunning) {
@@ -107,7 +107,7 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
             delayMillis = if (app.justStarted) 1000 else 0,
         )
         onCreated {
-            defaultStatusNotification.startForeground()
+            if (!defaultStatusNotification.startForeground()) return@onCreated
             scope.launch {
                 combine(
                     A11yService.isRunning,

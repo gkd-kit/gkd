@@ -56,12 +56,12 @@ import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
 @Serializable
-data object AuthA11yRoute : NavKey
+data object WorkModeRoute : NavKey
 
 @Composable
-fun AuthA11yPage() {
+fun WorkModePage() {
     val mainVm = LocalMainViewModel.current
-    viewModel<AuthA11yVm>()
+    viewModel<WorkModeVm>()
     val writeSecureSettings by PermissionStates.writeSecureSettings.stateFlow.collectAsState()
     val a11yRunning by A11yService.isRunning.collectAsState()
     val privilegeContext by privilegeContextFlow.collectAsState()
@@ -225,7 +225,7 @@ fun AuthA11yPage() {
                     .fillMaxWidth(),
                 onClick = throttle {
                     if (privilegeContext == null) {
-                        mainVm.navigatePage(PrivilegePageRoute)
+                        mainVm.navigatePage(PrivilegeServiceRoute)
                         return@throttle
                     }
                     mainVm.updateAutomatorMode(AutomatorModeOption.AutomationMode)
@@ -304,7 +304,7 @@ private fun PrivilegeAuthButton(
     TextButton(
         modifier = modifier,
         onClick = throttle {
-            mainVm.navigatePage(PrivilegePageRoute)
+            mainVm.navigatePage(PrivilegeServiceRoute)
         },
     ) {
         Text(

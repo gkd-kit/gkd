@@ -22,10 +22,6 @@ import li.songe.gkd.ui.AdvancedPage
 import li.songe.gkd.ui.AdvancedPageRoute
 import li.songe.gkd.ui.AppConfigPage
 import li.songe.gkd.ui.AppConfigRoute
-import li.songe.gkd.ui.AppOpsAllowPage
-import li.songe.gkd.ui.AppOpsAllowRoute
-import li.songe.gkd.ui.AuthA11yPage
-import li.songe.gkd.ui.AuthA11yRoute
 import li.songe.gkd.ui.BlockA11yAppListPage
 import li.songe.gkd.ui.BlockA11yAppListRoute
 import li.songe.gkd.ui.CrashReportPage
@@ -34,8 +30,8 @@ import li.songe.gkd.ui.EditBlockAppListPage
 import li.songe.gkd.ui.EditBlockAppListRoute
 import li.songe.gkd.ui.ImagePreviewPage
 import li.songe.gkd.ui.ImagePreviewRoute
-import li.songe.gkd.ui.PrivilegePage
-import li.songe.gkd.ui.PrivilegePageRoute
+import li.songe.gkd.ui.PrivilegeServicePage
+import li.songe.gkd.ui.PrivilegeServiceRoute
 import li.songe.gkd.ui.SlowGroupPage
 import li.songe.gkd.ui.SlowGroupRoute
 import li.songe.gkd.ui.SnapshotPage
@@ -56,18 +52,19 @@ import li.songe.gkd.ui.UpsertRuleGroupPage
 import li.songe.gkd.ui.UpsertRuleGroupRoute
 import li.songe.gkd.ui.WebViewPage
 import li.songe.gkd.ui.WebViewRoute
+import li.songe.gkd.ui.WorkModePage
+import li.songe.gkd.ui.WorkModeRoute
 import li.songe.gkd.ui.home.HomePage
 import li.songe.gkd.ui.home.HomeRoute
 
 private val mainRouteEntryProvider = entryProvider {
     entry<HomeRoute> { HomePage() }
-    entry<AuthA11yRoute> { AuthA11yPage() }
+    entry<WorkModeRoute> { WorkModePage() }
     entry<AboutRoute> { AboutPage() }
     entry<BlockA11yAppListRoute> { BlockA11yAppListPage() }
     entry<AdvancedPageRoute> { AdvancedPage() }
-    entry<PrivilegePageRoute> { PrivilegePage() }
+    entry<PrivilegeServiceRoute> { PrivilegeServicePage() }
     entry<SnapshotPageRoute> { SnapshotPage() }
-    entry<AppOpsAllowRoute> { AppOpsAllowPage() }
     entry<A11YScopeAppListRoute> { A11yScopeAppListPage() }
     entry<ActivityLogRoute> { ActivityLogPage() }
     entry<A11yEventLogRoute> { A11yEventLogPage() }

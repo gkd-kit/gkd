@@ -60,9 +60,7 @@ data class ForegroundNotification(
     override val autoCancel = false
 
     context(service: Service)
-    fun startForeground() {
-        NotificationDispatcher.startForeground(service, this)
-    }
+    fun startForeground() = NotificationDispatcher.startForeground(service, this)
 }
 
 data class PostedNotification(

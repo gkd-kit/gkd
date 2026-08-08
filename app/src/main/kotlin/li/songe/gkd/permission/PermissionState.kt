@@ -20,7 +20,7 @@ import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.priv.CompatAppOpsService
 import li.songe.gkd.priv.privilegeContextFlow
-import li.songe.gkd.ui.AppOpsAllowRoute
+import li.songe.gkd.ui.PrivilegeServiceRoute
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateAllAppInfo
@@ -110,86 +110,65 @@ object PermissionStates {
                 }
             },
             reason = AuthReason(
-                text = { "当前操作权限「特殊用途的前台服务」已被限制, 请先解除限制" },
+                text = { "当前操作权限「特殊用途的前台服务」已被限制，请前往特权服务重新授权" },
                 confirm = {
-                    MainViewModel.instance.navigatePage(AppOpsAllowRoute)
+                    MainViewModel.instance.navigatePage(PrivilegeServiceRoute)
                 },
             ),
         )
     }
 
     // https://github.com/orgs/gkd-kit/discussions/1234
-    val accessA11y by lazy {
-        PermissionState(
-            name = "访问无障碍",
-            check = {
-                if (AndroidTarget.Q) {
-                    checkAllowedOp(AppOpsManagerHidden.OPSTR_ACCESS_ACCESSIBILITY)
-                } else {
-                    true
-                }
-            },
-        )
+    private fun checkAccessA11y(): Boolean {
+        return !AndroidTarget.Q ||
+                checkAllowedOp(AppOpsManagerHidden.OPSTR_ACCESS_ACCESSIBILITY)
     }
 
-    val createA11yOverlay by lazy {
-        PermissionState(
-            name = "创建无障碍悬浮窗",
-            check = {
-                if (CompatAppOpsService.supportA11yOverlay) {
-                    checkAllowedOp(AppOpsManagerHidden.OPSTR_CREATE_ACCESSIBILITY_OVERLAY)
-                } else {
-                    true
-                }
-            },
-        )
+    private fun checkCreateA11yOverlay(): Boolean {
+        return !CompatAppOpsService.supportA11yOverlay ||
+                checkAllowedOp(AppOpsManagerHidden.OPSTR_CREATE_ACCESSIBILITY_OVERLAY)
     }
 
     val Manifest_permission_GET_APP_OPS_STATS get() = "android.permission.GET_APP_OPS_STATS"
-    val getAppOpsStats by lazy {
-        PermissionState(
-            name = "获取应用权限状态",
-            check = {
-                app.checkGrantedPermission(Manifest_permission_GET_APP_OPS_STATS)
-            },
-        )
-    }
 
     private var canRestrictsRead = true
-    val accessRestrictedSettings by lazy {
-        PermissionState(
-            name = "访问受限设置",
-            check = {
-                if (canRestrictsRead && AndroidTarget.UPSIDE_DOWN_CAKE && getAppOpsStats.updateAndGet()) {
-                    try {
-                        // https://cs.android.com/android/platform/superproject/+/android-14.0.0_r55:frameworks/base/services/core/java/com/android/server/appop/AppOpsService.java;l=4237
-                        checkAllowedOp(AppOpsManagerHidden.OPSTR_ACCESS_RESTRICTED_SETTINGS)
-                    } catch (_: SecurityException) {
-                        // https://cs.android.com/android/platform/superproject/+/android-14.0.0_r54:frameworks/base/services/core/java/com/android/server/appop/AppOpsService.java;l=4227
-                        canRestrictsRead = false
-                        true
-                    }
-                } else {
-                    true
-                }
-            },
-        )
+    private fun checkAccessRestrictedSettings(): Boolean {
+        return if (
+            canRestrictsRead &&
+            AndroidTarget.UPSIDE_DOWN_CAKE &&
+            app.checkGrantedPermission(Manifest_permission_GET_APP_OPS_STATS)
+        ) {
+            try {
+                // https://cs.android.com/android/platform/superproject/+/android-14.0.0_r55:frameworks/base/services/core/java/com/android/server/appop/AppOpsService.java;l=4237
+                checkAllowedOp(AppOpsManagerHidden.OPSTR_ACCESS_RESTRICTED_SETTINGS)
+            } catch (_: SecurityException) {
+                // https://cs.android.com/android/platform/superproject/+/android-14.0.0_r54:frameworks/base/services/core/java/com/android/server/appop/AppOpsService.java;l=4227
+                canRestrictsRead = false
+                true
+            }
+        } else {
+            true
+        }
     }
 
-    val appOpsRestricted by lazy {
-        arrayOf(
-            accessA11y,
-            createA11yOverlay,
-            accessRestrictedSettings,
-            foregroundServiceSpecialUse,
+    private val appOpsAllowed by lazy {
+        PermissionState(
+            name = "启动相关操作权限",
+            check = {
+                val accessA11yAllowed = checkAccessA11y()
+                val createA11yOverlayAllowed = checkCreateA11yOverlay()
+                val accessRestrictedSettingsAllowed = checkAccessRestrictedSettings()
+                accessA11yAllowed && createA11yOverlayAllowed && accessRestrictedSettingsAllowed
+            },
         )
     }
 
     val appOpsRestrictedFlow by lazy {
         combine(
-            *appOpsRestricted.map { it.stateFlow }.toTypedArray(),
-        ) { list ->
-            list.any { !it }
+            appOpsAllowed.stateFlow,
+            foregroundServiceSpecialUse.stateFlow,
+        ) { appOpsAllowed, foregroundServiceSpecialUseAllowed ->
+            !appOpsAllowed || !foregroundServiceSpecialUseAllowed
         }.stateIn(appScope, SharingStarted.Eagerly, false)
     }
 
@@ -326,10 +305,7 @@ object PermissionStates {
         listOf(
             notification,
             foregroundServiceSpecialUse,
-            accessA11y,
-            createA11yOverlay,
-            getAppOpsStats,
-            accessRestrictedSettings,
+            appOpsAllowed,
             drawOverlays,
             writeExternalStorage,
             ignoreBatteryOptimizations,

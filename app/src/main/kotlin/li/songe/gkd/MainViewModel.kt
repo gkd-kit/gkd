@@ -32,9 +32,8 @@ import li.songe.gkd.service.A11yService
 import li.songe.gkd.store.createTextFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.AdvancedPageRoute
-import li.songe.gkd.ui.AppOpsAllowRoute
 import li.songe.gkd.ui.CrashReportRoute
-import li.songe.gkd.ui.PrivilegePageRoute
+import li.songe.gkd.ui.PrivilegeServiceRoute
 import li.songe.gkd.ui.SnapshotPageRoute
 import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.component.AlertDialogOptions
@@ -233,8 +232,7 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
 
                 "/1" -> navigatePage(AdvancedPageRoute)
                 "/2" -> navigatePage(SnapshotPageRoute)
-                "/3" -> navigatePage(AppOpsAllowRoute)
-                "/4" -> navigatePage(PrivilegePageRoute)
+                "/3", "/4" -> navigatePage(PrivilegeServiceRoute)
                 else -> notFoundToast()
             }
 

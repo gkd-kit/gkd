@@ -68,7 +68,7 @@ import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.AboutRoute
 import li.songe.gkd.ui.AdvancedPageRoute
 import li.songe.gkd.ui.BlockA11yAppListRoute
-import li.songe.gkd.ui.PrivilegePageRoute
+import li.songe.gkd.ui.PrivilegeServiceRoute
 import li.songe.gkd.ui.component.CustomOutlinedTextField
 import li.songe.gkd.ui.component.FullscreenDialog
 import li.songe.gkd.ui.component.PerfCustomIconButton
@@ -500,7 +500,7 @@ fun useSettingsPage(): ScaffoldExt {
                 checked = store.enableBlockA11yAppList && privilegeContext != null,
                 onCheckedChange = {
                     if (it && privilegeContext == null) {
-                        mainVm.navigatePage(PrivilegePageRoute)
+                        mainVm.navigatePage(PrivilegeServiceRoute)
                     } else if (it) {
                         showA11yBlockDlg = true
                     } else {
@@ -630,7 +630,7 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                         enabled = privilegeContext == null,
                         imageVector = if (privilegeContext != null) PerfIcon.Check else PerfIcon.ArrowForward,
                         onClick = {
-                            mainVm.navigatePage(PrivilegePageRoute)
+                            mainVm.navigatePage(PrivilegeServiceRoute)
                         },
                     )
                     RequiredTextItem(
@@ -667,7 +667,7 @@ private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onD
                         onClick = {
                             val inputManager = privilegeContextFlow.value?.inputManager
                             if (inputManager == null) {
-                                mainVm.navigatePage(PrivilegePageRoute)
+                                mainVm.navigatePage(PrivilegeServiceRoute)
                             } else {
                                 inputManager.keyevent(KeyEvent.KEYCODE_APP_SWITCH)
                             }
