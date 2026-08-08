@@ -14,7 +14,7 @@ coil = "3.5.0"
 telephoto = "0.19.0"
 remap = "0.1.4"
 shizuku = "13.1.5"
-priv-kit = "0.3.3"
+priv-kit = "0.3.4"
 loc = "0.7.1"
 
 [libraries]

@@ -16,6 +16,8 @@ import li.songe.gkd.app
 import li.songe.gkd.notif.NotificationCatalog
 import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.permission.ensurePermission
+import li.songe.gkd.priv.PrivilegeServiceStatus
+import li.songe.gkd.priv.privilegeServiceStatusFlow
 import li.songe.gkd.priv.uiAutomationFlow
 import li.songe.gkd.store.actionCountFlow
 import li.songe.gkd.store.storeFlow
@@ -34,14 +36,6 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
     override fun onCreate() = onCreated()
     override fun onDestroy() = onDestroyed()
 
-    val privilegeWarnFlow = combine(
-        PermissionStates.privilegeGranted.stateFlow,
-        storeFlow,
-    ) { granted, store ->
-        !granted && store.enableAutomator &&
-                (store.useAutomation || store.enableBlockA11yAppList)
-    }.stateIn(scope, SharingStarted.Eagerly, false)
-
     val a11yServiceEnabledFlow = useA11yServiceEnabledFlow()
 
     fun statusTriple(): Triple<String, String, String?> {
@@ -50,7 +44,7 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         val store = storeFlow.value
         val ruleSummary = ruleSummaryFlow.value
         val count = actionCountFlow.value
-        val privilegeWarn = privilegeWarnFlow.value
+        val privilegeServiceStatus = privilegeServiceStatusFlow.value
         val title = if (store.useCustomNotifText) {
             store.customNotifTitle.replaceTemplate(ruleSummary, count)
         } else {
@@ -58,8 +52,8 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         }
         return if (PermissionStates.appOpsRestrictedFlow.value) {
             Triple(title, "权限受限，请重新授权", "gkd://page/3")
-        } else if (privilegeWarn) {
-            Triple(title, "特权服务未连接，请完成授权", "gkd://page/4")
+        } else if (privilegeServiceStatus == PrivilegeServiceStatus.DisconnectedDesired) {
+            Triple(title, "特权服务连接已中断，请检查", "gkd://page/4")
         } else if (!automationRunning && !abRunning) {
             if (currentAppUseA11y) {
                 val text = if (a11yServiceEnabledFlow.value) {
@@ -114,7 +108,7 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
                     uiAutomationFlow,
                     storeFlow,
                     ruleSummaryFlow,
-                    privilegeWarnFlow,
+                    privilegeServiceStatusFlow,
                     a11yServiceEnabledFlow,
                     PermissionStates.writeSecureSettings.stateFlow,
                     PermissionStates.appOpsRestrictedFlow,

@@ -43,7 +43,9 @@ import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.permission.PermissionStates
+import li.songe.gkd.priv.PrivilegeServiceStatus
 import li.songe.gkd.priv.privilegeContextFlow
+import li.songe.gkd.priv.privilegeServiceStatusFlow
 import li.songe.gkd.priv.uiAutomationFlow
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.service.ActivityService
@@ -57,8 +59,8 @@ import li.songe.gkd.ui.ActionLogRoute
 import li.songe.gkd.ui.ActivityLogRoute
 import li.songe.gkd.ui.AppConfigRoute
 import li.songe.gkd.ui.PrivilegeServiceRoute
-import li.songe.gkd.ui.WorkModeRoute
 import li.songe.gkd.ui.WebViewRoute
+import li.songe.gkd.ui.WorkModeRoute
 import li.songe.gkd.ui.component.GroupNameText
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
@@ -71,7 +73,6 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.itemVerticalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
-import li.songe.gkd.util.AutomatorModeOption
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.latestRecordDescFlow
 import li.songe.gkd.util.latestRecordFlow
@@ -84,6 +85,7 @@ fun useControlPage(): ScaffoldExt {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<HomeVm>()
     val privilegeContext by privilegeContextFlow.collectAsState()
+    val privilegeServiceStatus by privilegeServiceStatusFlow.collectAsState()
     val automatorMode by mainVm.automatorModeFlow.collectAsState()
     val scrollKey = rememberSaveable { mutableIntStateOf(0) }
     val (scrollBehavior, scrollState) = useScrollBehaviorState(scrollKey)
@@ -103,20 +105,17 @@ fun useControlPage(): ScaffoldExt {
                     text = stringResource(R.string.app_name)
                 )
             }, actions = {
+                val (contentDescription, contentColor) = when (privilegeServiceStatus) {
+                    PrivilegeServiceStatus.Connected -> "特权服务，已连接" to MaterialTheme.colorScheme.primary
+                    PrivilegeServiceStatus.Disconnected -> "特权服务，未连接" to MaterialTheme.colorScheme.onSurfaceVariant
+                    PrivilegeServiceStatus.DisconnectedDesired -> "特权服务，连接已中断" to MaterialTheme.colorScheme.error
+                }
                 PerfIconButton(
                     imageVector = PerfIcon.RocketLaunch,
                     onClickLabel = "前往特权服务页面",
-                    contentDescription = if (privilegeContext == null) {
-                        "特权服务，未连接"
-                    } else {
-                        "特权服务，已连接"
-                    },
+                    contentDescription = contentDescription,
                     colors = IconButtonDefaults.iconButtonColors(
-                        contentColor = when {
-                            privilegeContext != null -> MaterialTheme.colorScheme.primary
-                            automatorMode == AutomatorModeOption.AutomationMode -> MaterialTheme.colorScheme.error
-                            else -> MaterialTheme.colorScheme.onSurfaceVariant
-                        },
+                        contentColor = contentColor,
                     ),
                     onClick = throttle {
                         mainVm.navigatePage(PrivilegeServiceRoute)
