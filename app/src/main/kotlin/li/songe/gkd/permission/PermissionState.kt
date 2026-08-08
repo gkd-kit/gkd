@@ -1,20 +1,17 @@
 package li.songe.gkd.permission
 
 import android.Manifest
-import android.app.Activity
 import android.app.AppOpsManager
 import android.app.AppOpsManagerHidden
 import android.provider.Settings
 import com.hjq.permissions.XXPermissions
 import com.hjq.permissions.permission.PermissionLists
 import com.hjq.permissions.permission.base.IPermission
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.updateAndGet
-import li.songe.gkd.MainActivity
 import li.songe.gkd.MainViewModel
 import li.songe.gkd.app
 import li.songe.gkd.appScope
@@ -30,11 +27,9 @@ import priv.kit.core.Privilege
 class PermissionState(
     val name: String,
     private val check: () -> Boolean,
-    val request: (suspend (context: MainActivity) -> PermissionResult)? = null,
-    /**
-     * show it when user doNotAskAgain
-     */
-    val reason: AuthReason? = null,
+    val permission: IPermission? = null,
+    val purpose: String? = null,
+    val resolution: PermissionResolution? = null,
     private val onChanged: (() -> Unit)? = null,
 ) {
     val stateFlow = MutableStateFlow(false)
@@ -44,48 +39,46 @@ class PermissionState(
         return stateFlow.updateAndGet { check() }
     }
 
-    fun refresh() {
-        if (value != updateAndGet()) {
+    fun refresh(): Boolean {
+        val oldValue = value
+        val newValue = updateAndGet()
+        if (oldValue != newValue) {
             onChanged?.invoke()
         }
+        return newValue
     }
 
-    fun checkOrToast(): Boolean = if (!updateAndGet()) {
-        val r = updateAndGet()
-        if (!r) {
-            reason?.text?.let { toast(it()) }
+    fun checkOrToast(): Boolean {
+        val granted = refresh()
+        if (!granted) {
+            toast("请先授予「$name」")
         }
-        r
-    } else {
-        true
+        return granted
     }
 }
 
-private suspend fun asyncRequestPermission(
-    context: Activity,
+data class PermissionResolution(
+    val message: String,
+    val confirmText: String = "去设置",
+    val confirm: (() -> Unit)? = null,
+)
+
+private fun requestablePermissionState(
+    name: String,
+    purpose: String,
     permission: IPermission,
-): PermissionResult {
-    if (XXPermissions.isGrantedPermission(context, permission)) {
-        return PermissionResult.Granted
-    }
-    val deferred = CompletableDeferred<PermissionResult>()
-    XXPermissions.with(context)
-        .unchecked()
-        .permission(permission)
-        .request { grantedList, _ ->
-            if (grantedList.contains(permission)) {
-                PermissionResult.Granted
-            } else {
-                PermissionResult.Denied(
-                    XXPermissions.isDoNotAskAgainPermissions(
-                        context,
-                        arrayOf(permission)
-                    )
-                )
-            }.let { deferred.complete(it) }
-        }
-    return deferred.await()
-}
+    check: () -> Boolean = { XXPermissions.isGrantedPermission(app, permission) },
+    onChanged: (() -> Unit)? = null,
+) = PermissionState(
+    name = name,
+    check = check,
+    permission = permission,
+    purpose = purpose,
+    resolution = PermissionResolution(
+        message = "未授予「$name」\n请前往系统权限设置开启",
+    ),
+    onChanged = onChanged,
+)
 
 private fun checkAllowedOp(op: String): Boolean = app.appOpsManager.checkOpNoThrow(
     op,
@@ -109,8 +102,9 @@ object PermissionStates {
                     true
                 }
             },
-            reason = AuthReason(
-                text = { "当前操作权限「特殊用途的前台服务」已被限制，请前往特权服务重新授权" },
+            resolution = PermissionResolution(
+                message = "「特殊用途的前台服务」已被限制，请前往特权服务重新授权",
+                confirmText = "去授权",
                 confirm = {
                     MainViewModel.instance.navigatePage(PrivilegeServiceRoute)
                 },
@@ -173,38 +167,18 @@ object PermissionStates {
     }
 
     val notification by lazy {
-        val permission = PermissionLists.getNotificationServicePermission()
-        PermissionState(
+        requestablePermissionState(
             name = "通知权限",
-            check = {
-                XXPermissions.isGrantedPermission(app, permission)
-            },
-            request = { asyncRequestPermission(it, permission) },
-            reason = AuthReason(
-                text = { "当前操作需要「通知权限」\n请先前往权限页面授权" },
-                confirm = {
-                    XXPermissions.startPermissionActivity(app, permission)
-                }
-            ),
+            purpose = "用于显示后台服务运行状态与必要通知",
+            permission = PermissionLists.getPostNotificationsPermission(),
         )
     }
 
     val queryPackages by lazy {
-        val permission = PermissionLists.getGetInstalledAppsPermission()
-        PermissionState(
+        requestablePermissionState(
             name = "读取应用列表权限",
-            check = {
-                XXPermissions.isGrantedPermission(app, permission)
-            },
-            request = {
-                asyncRequestPermission(it, permission)
-            },
-            reason = AuthReason(
-                text = { "当前操作需要「读取应用列表权限」\n请先前往权限页面授权" },
-                confirm = {
-                    XXPermissions.startPermissionActivity(app, permission)
-                }
-            ),
+            purpose = "用于展示设备应用并匹配应用规则",
+            permission = PermissionLists.getGetInstalledAppsPermission(),
             onChanged = {
                 if (!updateAppMutex.mutex.isLocked) {
                     updateAllAppInfo()
@@ -214,29 +188,22 @@ object PermissionStates {
     }
 
     val drawOverlays by lazy {
-        PermissionState(
+        requestablePermissionState(
             name = "悬浮窗权限",
+            purpose = "用于显示快照按钮、界面信息和事件提示等悬浮内容",
+            permission = PermissionLists.getSystemAlertWindowPermission(),
             check = {
                 // https://developer.android.com/security/fraud-prevention/activities?hl=zh-cn#hide_overlay_windows
                 Settings.canDrawOverlays(app)
             },
-            reason = AuthReason(
-                text = {
-                    "当前操作需要「悬浮窗权限」\n请先前往权限页面授权"
-                },
-                confirm = {
-                    XXPermissions.startPermissionActivity(
-                        app,
-                        PermissionLists.getSystemAlertWindowPermission()
-                    )
-                }
-            ),
         )
     }
 
     val writeExternalStorage by lazy {
-        PermissionState(
+        requestablePermissionState(
             name = "写入外部存储权限",
+            purpose = "用于在 Android 9 及以下保存截图或文件到公共存储",
+            permission = PermissionLists.getWriteExternalStoragePermission(),
             check = {
                 if (AndroidTarget.Q) {
                     true
@@ -244,44 +211,17 @@ object PermissionStates {
                     app.checkGrantedPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 }
             },
-            request = {
-                if (AndroidTarget.Q) {
-                    PermissionResult.Granted
-                } else {
-                    asyncRequestPermission(it, PermissionLists.getWriteExternalStoragePermission())
-                }
-            },
-            reason = AuthReason(
-                text = { "当前操作需要「写入外部存储权限」\n请先前往权限页面授权" },
-                confirm = {
-                    XXPermissions.startPermissionActivity(
-                        app,
-                        PermissionLists.getWriteExternalStoragePermission()
-                    )
-                }
-            ),
         )
     }
 
     val ignoreBatteryOptimizations by lazy {
-        val permission = PermissionLists.getRequestIgnoreBatteryOptimizationsPermission()
-        PermissionState(
+        requestablePermissionState(
             name = "忽略电池优化权限",
+            purpose = "用于降低后台服务被系统休眠或终止的概率",
+            permission = PermissionLists.getRequestIgnoreBatteryOptimizationsPermission(),
             check = {
                 app.powerManager.isIgnoringBatteryOptimizations(app.packageName)
             },
-            request = {
-                asyncRequestPermission(it, permission)
-            },
-            reason = AuthReason(
-                text = { "当前操作需要「忽略电池优化权限」\n请先前往权限页面授权" },
-                confirm = {
-                    XXPermissions.startPermissionActivity(
-                        app,
-                        permission
-                    )
-                }
-            ),
         )
     }
 

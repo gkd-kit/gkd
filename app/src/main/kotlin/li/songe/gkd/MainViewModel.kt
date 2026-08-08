@@ -24,7 +24,6 @@ import li.songe.gkd.data.CrashData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
 import li.songe.gkd.db.DbSet
-import li.songe.gkd.permission.AuthReason
 import li.songe.gkd.priv.AutomationService
 import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.priv.uiAutomationFlow
@@ -124,7 +123,6 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
     fun navigateWebPage(url: String) = navigatePage(WebViewRoute(url))
 
     val dialogFlow = MutableStateFlow<AlertDialogOptions?>(null)
-    val authReasonFlow = MutableStateFlow<AuthReason?>(null)
 
     val updateStatus = if (META.updateEnabled) UpdateStatus(viewModelScope) else null
 
