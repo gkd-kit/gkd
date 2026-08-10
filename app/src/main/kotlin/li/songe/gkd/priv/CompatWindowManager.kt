@@ -37,12 +37,12 @@ class CompatWindowManager {
     fun freezeRotation(rotation: Int, caller: String) = when (freezeRotationType) {
         ROTATION_WITHOUT_CALLER -> value.freezeRotation(rotation)
         ROTATION_WITH_CALLER -> value.freezeRotation(rotation, caller)
-        else -> throw NoSuchMethodException("IWindowManager#freezeRotation")
+        else -> throw NoSuchMethodException("IWindowManager.freezeRotation")
     }
 
     fun thawRotation(caller: String) = when (thawRotationType) {
         ROTATION_WITHOUT_CALLER -> value.thawRotation()
         ROTATION_WITH_CALLER -> value.thawRotation(caller)
-        else -> throw NoSuchMethodException("IWindowManager#thawRotation")
+        else -> throw NoSuchMethodException("IWindowManager.thawRotation")
     }
 }

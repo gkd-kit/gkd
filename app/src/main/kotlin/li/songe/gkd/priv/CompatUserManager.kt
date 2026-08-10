@@ -43,7 +43,7 @@ class CompatUserManager {
                 excludePreCreated,
             )
 
-            else -> value.getUsers(excludeDying)
+            else -> throw NoSuchMethodException("IUserManager.getUsers")
         }.map { UserInfo(id = it.id, name = it.name) }
     }
 }
