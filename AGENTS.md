@@ -7,6 +7,25 @@
 ## Kotlin 可见性
 
 - `app` 模块内禁止使用 `internal` 关键字；由于没有其他模块会引用 `app` 模块，对外可见的声明应省略可见性修饰符（使用 Kotlin 默认的 `public`），仅在需要收窄作用域时使用 `private`。
+- 与公开属性直接一一对应、仅用于收窄可见性或可变性的 `_xxx` backing property，必须改用 Explicit Backing Fields；不禁止不存在这种直接对应关系的普通私有字段、缓存或生成代码风格命名。未使用的 Lambda 参数占位符 `_` 不受此限制。
+
+## Compose 与状态边界
+
+- 除悬浮窗 Compose 外，应用 Compose 树中的 Composable 都可以通过 `LocalMainViewModel` 获取 `mainVm`，无需逐层转发导航、全局弹窗、打开 URL 等应用级操作。
+- 路由页面及其私有 Composable 可以直接获取页面 ViewModel，并处理权限和 Activity Result 等平台 UI 行为。可复用组件不得获取页面 ViewModel，只接收所需的状态和事件回调。
+- 应用级只读 Flow 由实际消费它的 Composable 直接收集，不要复制进页面 `UiState` 或 ViewModel。普通 Flow 使用 `collectAsStateWithLifecycle`，Paging 使用专用 API，高频状态放在最小消费子树。
+- Service 启停、持久化和其他业务副作用必须由明确事件触发，并交给 ViewModel、Repository 或 Store 完成；Composable 不得通过状态监听执行写入。
+- `XxxUiState` 和 `XxxUiActions` 只在复用、独立预览或复杂页面契约确有需要时使用。`UiState` 只能表示不可变页面快照，不得包含 Flow、Paging 或高频状态；相同映射存在多个构造路径时再提取私有构建函数。
+- ViewModel 的可变状态必须为 `private`，只暴露不可变状态和明确的业务方法。只读 `StateFlow` 使用 Explicit Backing Fields，禁止 `_xxxFlow`/`xxxFlow` 双属性和 `.asStateFlow()`。
+- 滚动、焦点、菜单、动画、拖拽和多选等纯 UI 状态留在 Compose；可复用交互逻辑可以封装为 `rememberXxxState`，但不得访问 ViewModel、数据库、Store、Service 或导航。需要原子一致性的多个字段必须由事实源提供同一个不可变快照，业务状态不得通过 `CompositionLocal` 传递。
+- Composable 需要根据条件决定是否输出后续 UI 时，禁止使用提前 `return`，必须将 UI 包裹在对应的条件区块中；事件或协程 Lambda 的标记返回不受此限制。
+
+## 状态与副作用
+
+- Room 可观察查询应保持为冷 `Flow`，先在 ViewModel 内按页面一致性边界完成聚合，再将最终页面快照转换为 `StateFlow<Loadable<XxxUiState>>`；`Loading` 表示尚未收到完整首发，`Ready(emptyList())` 表示已加载但结果为空。禁止用空集合伪装初始值，也禁止用计数器、`attachLoad` 等旁路状态推断多个查询是否加载完成。
+- `combine`、`map`、`stateIn` 等产生的派生展示状态只能用于渲染和临时 UI 同步，禁止通过 `collect`、`onEach` 或状态 watch 驱动数据库、文件、网络写入以及 Service 启停。
+- 持久化和业务副作用必须由明确的用户事件、系统事件或领域方法触发，并在 Repository/Store 中按业务一致性边界完成。允许将单一权威状态同步到幂等外部投影，但同步回调不得再读取其他状态拼装写入。
+- `debounce`、`conflate`、`collectLatest` 和互斥锁只能控制调度或并发，不能替代多状态源的原子更新；需要一致读取的状态应聚合为同一个不可变状态对象。
 
 ## 构建与测试
 

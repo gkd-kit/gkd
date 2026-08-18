@@ -9,7 +9,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowInsetsControllerCompat
@@ -19,7 +18,7 @@ import li.songe.gkd.ui.share.LocalDarkTheme
 fun FullscreenDialog(
     onDismissRequest: () -> Unit,
     content: @Composable () -> Unit,
-) = Dialog(
+) = AppDialog(
     onDismissRequest = onDismissRequest,
     properties = DialogProperties(
         dismissOnClickOutside = false,

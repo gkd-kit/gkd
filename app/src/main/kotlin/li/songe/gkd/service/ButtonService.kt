@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.MutableStateFlow
+import li.songe.gkd.MainViewModel
 import li.songe.gkd.appScope
 import li.songe.gkd.notif.NotificationCatalog
 import li.songe.gkd.notif.StopServiceReceiver
@@ -57,5 +58,19 @@ class ButtonService : OverlayWindowService(
         }
 
         fun stop() = stopServiceByClass(ButtonService::class)
+
+        suspend fun setEnabled(mainVm: MainViewModel, enabled: Boolean) {
+            if (!enabled) {
+                stop()
+                return
+            }
+            if (!mainVm.permissionRequests.ensurePermissions(
+                    PermissionStates.foregroundServiceSpecialUse,
+                    PermissionStates.notification,
+                    PermissionStates.drawOverlays,
+                )
+            ) return
+            start()
+        }
     }
 }

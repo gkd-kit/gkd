@@ -1,8 +1,6 @@
 package li.songe.gkd.util
 
-import android.app.Activity
 import android.app.Activity.RESULT_OK
-import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
@@ -11,18 +9,17 @@ import android.hardware.display.VirtualDisplay
 import android.media.Image
 import android.media.ImageReader
 import android.media.projection.MediaProjection
-import android.media.projection.MediaProjectionManager
 import android.os.Handler
 import android.os.Looper
 import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.suspendCancellableCoroutine
+import li.songe.gkd.app
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 // https://github.com/npes87184/ScreenShareTile/blob/master/app/src/main/java/com/npes87184/screenshottile/ScreenshotService.kt
 
 class ScreenshotUtil(
-    private val context: Context,
     private val screenshotIntent: Intent
 ) {
 
@@ -31,12 +28,6 @@ class ScreenshotUtil(
     private var imageReader: ImageReader? = null
     private var mediaProjection: MediaProjection? = null
 
-
-    private val mediaProjectionManager by lazy {
-        context.getSystemService(
-            Activity.MEDIA_PROJECTION_SERVICE
-        ) as MediaProjectionManager
-    }
 
     private val width: Int
         get() = ScreenUtils.getScreenWidth()
@@ -59,7 +50,7 @@ class ScreenshotUtil(
             PixelFormat.RGBA_8888, 2
         )
         if (mediaProjection == null) {
-            mediaProjection = mediaProjectionManager.getMediaProjection(
+            mediaProjection = app.mediaProjectionManager.getMediaProjection(
                 RESULT_OK,
                 screenshotIntent
             )

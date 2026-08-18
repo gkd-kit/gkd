@@ -17,23 +17,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
-import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.Serializable
-import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.ui.component.BatchActionButtonGroup
 import li.songe.gkd.ui.component.EmptyText
@@ -41,23 +36,22 @@ import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.RuleGroupCard
+import li.songe.gkd.ui.component.SubscriptionPageContent
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.animateListItem
-import li.songe.gkd.ui.component.toGroupState
-import li.songe.gkd.ui.component.useListScrollState
-import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.component.rememberMultiSelectionState
+import li.songe.gkd.ui.component.rememberListScrollState
 import li.songe.gkd.ui.icon.BackCloseIcon
 import li.songe.gkd.ui.share.ListPlaceholder
+import li.songe.gkd.ui.share.Loadable
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.getUpDownTransform
-import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.switchItem
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
-import li.songe.gkd.util.updateSubscription
 
 
 @Serializable
@@ -70,212 +64,225 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
 
     val mainVm = LocalMainViewModel.current
     val vm = viewModel { SubsGlobalGroupListVm(route) }
-    val subs = vm.subsRawFlow.collectAsState().value
-    val subsConfigs by vm.subsConfigsFlow.collectAsState()
+    val scope = vm.scope
+    val focusGroup = vm.focusGroupFlow?.collectAsStateWithLifecycle()?.value
 
-    val editable = subsItemId < 0
-    val globalGroups = subs.globalGroups
+    SubscriptionPageContent(vm.uiState) { state ->
+        val subs = state.subscription
+        val subsConfigs = state.subsConfigs.value.orEmpty()
+        val switchEnabled = state.subsConfigs is Loadable.Ready
+        val editable = subsItemId < 0
+        val globalGroups = subs.globalGroups
 
-    val isSelectedMode = vm.isSelectedModeFlow.collectAsState().value
-    val selectedDataSet = vm.selectedDataSetFlow.collectAsState().value
-    LaunchedEffect(key1 = isSelectedMode) {
-        if (!isSelectedMode) {
-            vm.selectedDataSetFlow.value = emptySet()
+        val selectionState = rememberMultiSelectionState<Int>()
+        val selectedKeys = selectionState.selectedKeys
+        val isSelectedMode = selectionState.active
+        LaunchedEffect(globalGroups) {
+            selectionState.retain(globalGroups.mapTo(mutableSetOf()) { it.key })
         }
-    }
-    LaunchedEffect(key1 = selectedDataSet.isEmpty()) {
-        if (selectedDataSet.isEmpty()) {
-            vm.isSelectedModeFlow.value = false
+        BackHandler(isSelectedMode) {
+            selectionState.clear()
         }
-    }
-    BackHandler(isSelectedMode) {
-        vm.isSelectedModeFlow.value = false
-    }
 
-    val resetKey = rememberSaveable { mutableIntStateOf(0) }
-    val (scrollBehavior, listState) = useListScrollState(resetKey, globalGroups.isEmpty())
-    if (focusGroupKey != null) {
-        LaunchedEffect(null) {
-            if (vm.focusGroupFlow?.value != null) {
-                val i = globalGroups.indexOfFirst { it.key == focusGroupKey }
-                if (i >= 0) {
-                    listState.scrollToItem(i)
+        val updateSelected: (Boolean?) -> Unit = { enabled ->
+            scope.launchTry {
+                val action = when (enabled) {
+                    false -> "关闭"
+                    true -> "启用"
+                    null -> "重置开关至默认值"
+                }
+                if (!mainVm.dialogRequests.confirm(
+                    title = "操作提示",
+                    text = "是否将所选规则全部${action}?\n\n注: 也可在「订阅-规则类别」操作",
+                )) return@launchTry
+                val changedSize = vm.updateSelectedEnabled(selectedKeys, enabled)
+                if (changedSize > 0) {
+                    val result = if (enabled == null) "重置" else if (enabled) "已启用" else "已关闭"
+                    toast("$result $changedSize 规则")
+                } else {
+                    toast(if (enabled == null) "无可重置规则" else "无规则被改变")
                 }
             }
         }
-    }
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
-                IconButton(onClick = throttle {
-                    if (isSelectedMode) {
-                        vm.isSelectedModeFlow.value = false
-                    } else {
-                        mainVm.popPage()
+
+        val pageScrollState = rememberListScrollState()
+        val scrollBehavior = pageScrollState.scrollBehavior
+        val listState = pageScrollState.listState
+        pageScrollState.ResetOnChange(globalGroups.isEmpty())
+        if (focusGroupKey != null) {
+            LaunchedEffect(null) {
+                if (focusGroup != null) {
+                    val i = globalGroups.indexOfFirst { it.key == focusGroupKey }
+                    if (i >= 0) {
+                        listState.scrollToItem(i)
                     }
-                }) {
-                    BackCloseIcon(backOrClose = !isSelectedMode)
                 }
-            }, title = {
-                val titleModifier = Modifier.noRippleClickable { resetKey.intValue++ }
-                if (isSelectedMode) {
-                    Text(
-                        modifier = titleModifier,
-                        text = selectedDataSet.size.toString(),
-                    )
-                } else {
-                    TowLineText(
-                        modifier = titleModifier,
-                        title = subs.name,
-                        subtitle = "全局规则"
-                    )
-                }
-            }, actions = {
-                var expanded by remember { mutableStateOf(false) }
-                AnimatedContent(
-                    targetState = isSelectedMode,
-                    transitionSpec = { getUpDownTransform() },
-                    contentAlignment = Alignment.TopEnd,
-                ) {
-                    if (it) {
-                        Row {
-                            BatchActionButtonGroup(vm, selectedDataSet)
-                            if (editable) {
-                                PerfIconButton(
-                                    imageVector = PerfIcon.Delete,
-                                    onClick = throttle(
-                                        vm.viewModelScope.launchAsFn(
-                                            Dispatchers.Default
-                                        ) {
-                                            mainVm.dialogFlow.waitResult(
-                                                title = "删除规则",
-                                                text = "删除当前所选规则?",
-                                                error = true,
-                                            )
-                                            val keys = selectedDataSet.mapNotNull { g ->
-                                                g.groupKey
+            }
+        }
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
+                    IconButton(onClick = throttle {
+                        if (isSelectedMode) {
+                            selectionState.clear()
+                        } else {
+                            mainVm.popPage()
+                        }
+                    }) {
+                        BackCloseIcon(backOrClose = !isSelectedMode)
+                    }
+                }, title = {
+                    val titleModifier = Modifier.noRippleClickable(onClick = pageScrollState::resetScroll)
+                    if (isSelectedMode) {
+                        Text(
+                            modifier = titleModifier,
+                            text = selectedKeys.size.toString(),
+                        )
+                    } else {
+                        TowLineText(
+                            modifier = titleModifier,
+                            title = subs.name,
+                            subtitle = "全局规则"
+                        )
+                    }
+                }, actions = {
+                    var expanded by remember { mutableStateOf(false) }
+                    AnimatedContent(
+                        targetState = isSelectedMode,
+                        transitionSpec = { getUpDownTransform() },
+                        contentAlignment = Alignment.TopEnd,
+                    ) {
+                        if (it) {
+                            Row {
+                                BatchActionButtonGroup(
+                                    onDisable = { updateSelected(false) },
+                                    onEnable = { updateSelected(true) },
+                                    onReset = { updateSelected(null) },
+                                )
+                                if (editable) {
+                                    PerfIconButton(
+                                        imageVector = PerfIcon.Delete,
+                                        onClick = throttle {
+                                            scope.launchTry {
+                                                if (!mainVm.dialogRequests.confirm(
+                                                    title = "删除规则",
+                                                    text = "删除当前所选规则?",
+                                                    error = true,
+                                                )) return@launchTry
+                                                val keysToDelete = selectedKeys
+                                                selectionState.clear()
+                                                vm.deleteSelectedGroups(keysToDelete)
+                                                toast("删除成功")
                                             }
-                                            vm.isSelectedModeFlow.value = false
-                                            updateSubscription(
-                                                subs.copy(
-                                                    globalGroups = globalGroups.filterNot { g ->
-                                                        keys.contains(g.key)
-                                                    }
-                                                )
-                                            )
-                                            DbSet.subsConfigDao.batchDeleteGlobalGroupConfig(
-                                                subsItemId,
-                                                keys
-                                            )
-                                            toast("删除成功")
-                                        })
+                                        },
+                                    )
+                                }
+                                PerfIconButton(
+                                    imageVector = PerfIcon.MoreVert,
+                                    onClick = {
+                                        expanded = true
+                                    })
+                            }
+                        }
+                    }
+                    if (isSelectedMode) {
+                        Box(
+                            modifier = Modifier
+                                .wrapContentSize(Alignment.TopStart)
+                        ) {
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(text = "全选")
+                                    },
+                                    onClick = {
+                                        expanded = false
+                                        selectionState.selectAll(globalGroups.map { it.key })
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(text = "反选")
+                                    },
+                                    onClick = {
+                                        expanded = false
+                                        selectionState.invert(globalGroups.map { it.key })
+                                    }
                                 )
                             }
-                            PerfIconButton(
-                                imageVector = PerfIcon.MoreVert,
-                                onClick = {
-                                    expanded = true
-                                })
                         }
                     }
-                }
-                if (isSelectedMode) {
-                    Box(
-                        modifier = Modifier
-                            .wrapContentSize(Alignment.TopStart)
-                    ) {
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = {
-                                    Text(text = "全选")
-                                },
-                                onClick = {
-                                    expanded = false
-                                    vm.selectedDataSetFlow.value = globalGroups.map {
-                                        it.toGroupState(
-                                            subsId = subsItemId,
-                                        )
-                                    }.toSet()
-                                }
+                })
+            },
+            floatingActionButton = {
+                if (editable) {
+                    AnimationFloatingActionButton(
+                        visible = !isSelectedMode,
+                        onClick = {
+                            mainVm.navigatePage(
+                                UpsertRuleGroupRoute(
+                                    subsId = subsItemId,
+                                    groupKey = null,
+                                    appId = null,
+                                )
                             )
-                            DropdownMenuItem(
-                                text = {
-                                    Text(text = "反选")
-                                },
-                                onClick = {
-                                    expanded = false
-                                    val newSelectedIds = globalGroups.map {
-                                        it.toGroupState(
-                                            subsId = subsItemId,
-                                        )
-                                    }.toSet() - selectedDataSet
-                                    vm.selectedDataSetFlow.value = newSelectedIds
-                                }
-                            )
-                        }
-                    }
+                        },
+                        imageVector = PerfIcon.Add,
+                        contentDescription = "添加规则"
+                    )
                 }
-            })
-        },
-        floatingActionButton = {
-            if (editable) {
-                AnimationFloatingActionButton(
-                    visible = !isSelectedMode,
-                    onClick = {
-                        mainVm.navigatePage(
-                            UpsertRuleGroupRoute(
-                                subsId = subsItemId,
-                                groupKey = null,
+            },
+        ) { paddingValues ->
+            LazyColumn(
+                modifier = Modifier.scaffoldPadding(paddingValues),
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                items(globalGroups, { g -> g.key }) { group ->
+                    val subsConfig = subsConfigs.find { it.groupKey == group.key }
+                    RuleGroupCard(
+                        modifier = Modifier.animateListItem(),
+                        subs = subs,
+                        appId = null,
+                        group = group,
+                        focusGroup = focusGroup,
+                        onFocusHandled = vm::consumeFocusGroup,
+                        subsConfig = subsConfig,
+                        categoryConfig = null,
+                        switchEnabled = switchEnabled,
+                        onOpen = {
+                            mainVm.showRuleGroup(
+                                subscriptionId = subs.id,
                                 appId = null,
+                                group = group,
                             )
-                        )
-                    },
-                    imageVector = PerfIcon.Add,
-                    contentDescription = "添加规则"
-                )
-            }
-        },
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier.scaffoldPadding(paddingValues),
-            state = listState,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            items(globalGroups, { g -> g.key }) { group ->
-                val subsConfig = subsConfigs.find { it.groupKey == group.key }
-                RuleGroupCard(
-                    modifier = Modifier.animateListItem(),
-                    subs = subs,
-                    appId = null,
-                    group = group,
-                    focusGroupFlow = vm.focusGroupFlow,
-                    subsConfig = subsConfig,
-                    categoryConfig = null,
-                    isSelectedMode = isSelectedMode,
-                    isSelected = selectedDataSet.any { it.groupKey == group.key },
-                    onLongClick = {
-                        if (globalGroups.size > 1) {
-                            vm.isSelectedModeFlow.value = true
-                            vm.selectedDataSetFlow.value = setOf(
-                                group.toGroupState(subsId = subsItemId)
-                            )
+                        },
+                        onCheckedChange = { enabled ->
+                            scope.launchTry {
+                                vm.setGroupEnabled(group, subsConfig, enabled)
+                            }
+                        },
+                        isSelectedMode = isSelectedMode,
+                        isSelected = group.key in selectedKeys,
+                        onLongClick = {
+                            if (globalGroups.size > 1) {
+                                selectionState.selectOnly(group.key)
+                            }
+                        },
+                        onSelectedChange = {
+                            selectionState.toggle(group.key)
                         }
-                    },
-                    onSelectedChange = {
-                        vm.selectedDataSetFlow.value = selectedDataSet.switchItem(
-                            group.toGroupState(subsId = subsItemId)
-                        )
+                    )
+                }
+                item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
+                    Spacer(modifier = Modifier.height(EmptyHeight))
+                    if (globalGroups.isEmpty()) {
+                        EmptyText(text = "暂无规则")
                     }
-                )
-            }
-            item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                Spacer(modifier = Modifier.height(EmptyHeight))
-                if (globalGroups.isEmpty()) {
-                    EmptyText(text = "暂无规则")
                 }
             }
         }

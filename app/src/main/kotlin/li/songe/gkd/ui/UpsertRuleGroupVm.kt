@@ -1,19 +1,24 @@
 package li.songe.gkd.ui
 
-import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import li.songe.gkd.data.RawSubscription
+import li.songe.gkd.ui.share.BaseViewModel
 import li.songe.gkd.ui.style.clearJson5TransformationCache
 import li.songe.gkd.util.LogUtils
-import li.songe.gkd.util.subsMapFlow
 import li.songe.gkd.util.toast
-import li.songe.gkd.util.updateSubscription
 import li.songe.json5.Json5
 
-class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
+data class UpsertRuleGroupUiState(
+    val initialGroup: RawSubscription.RawGroupProps?,
+    val initialText: String,
+)
+
+class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : BaseViewModel() {
     val groupKey = route.groupKey
     val appId = route.appId
 
@@ -21,40 +26,65 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
     val isApp = appId != null
     val isAddAnyApp = appId == ""
 
-    private val initialGroup: RawSubscription.RawGroupProps? = run {
-        val subs = subsMapFlow.value[route.subsId]
-        subs ?: return@run null
-        if (groupKey != null) {
-            if (appId != null) {
-                subs.getAppGroups(appId)
+    private val requiredSubscription = requiredSubscription(route.subsId)
+    val uiState = requiredSubscription.buildUiState(
+        initialValue = ::buildUiState,
+    ) { subscription ->
+        flowOf(buildUiState(subscription))
+    }
+
+    val textFlow: StateFlow<String?>
+        field = MutableStateFlow(null)
+    private var editBaseGroup: RawSubscription.RawGroupProps? = null
+
+    private fun buildUiState(subscription: RawSubscription): UpsertRuleGroupUiState {
+        val initialGroup = if (groupKey != null) {
+            val groups = if (appId != null) {
+                subscription.getAppGroups(appId)
             } else {
-                subs.globalGroups
-            }.find { it.key == route.groupKey }
+                subscription.globalGroups
+            }
+            groups.find { it.key == groupKey }
+                ?: error("订阅规则不存在: $groupKey")
         } else {
             null
         }
+        return UpsertRuleGroupUiState(
+            initialGroup = initialGroup,
+            initialText = initialGroup?.cacheStr.orEmpty(),
+        )
     }
 
-    private val initText = initialGroup?.cacheStr ?: ""
-    val textFlow = MutableStateFlow(initText)
+    fun setText(text: String) {
+        if (textFlow.value == null) {
+            editBaseGroup = uiState.value.value?.initialGroup
+        }
+        textFlow.value = text
+    }
+
+    private fun requireUiState(): UpsertRuleGroupUiState =
+        uiState.value.value ?: error("订阅尚未加载: ${route.subsId}")
 
     fun hasTextChanged(): Boolean {
-        val text = textFlow.value
+        val state = uiState.value.value ?: return false
+        val text = textFlow.value ?: state.initialText
         if (!isEdit) return !text.isBlank()
-        if (initText == text) return false
-        return initialGroup?.cacheJsonObject != runCatching { Json5.parseToJson5Element(text) }.getOrNull()
+        if (state.initialText == text) return false
+        return state.initialGroup?.cacheJsonObject !=
+            runCatching { Json5.parseToJson5Element(text) }.getOrNull()
     }
 
 
     var addAppId: String? = null
 
-    fun saveRule() {
-        val subs = subsMapFlow.value[route.subsId] ?: error("订阅不存在")
-        val text = textFlow.value
+    suspend fun saveRule() {
+        val state = requireUiState()
+        val initialGroup = state.initialGroup
+        val text = textFlow.value ?: state.initialText
         if (text.isBlank()) {
             error("规则不能为空")
         }
-        if (text == initText) {
+        if (text == state.initialText) {
             toast("规则无变动")
             return
         }
@@ -123,30 +153,49 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
                 toast("规则无变动")
                 return
             }
-            val newSubs = if (appId != null) {
-                newGroup as RawSubscription.RawAppGroup
-                val app = subs.apps.find { a -> a.id == appId } ?: error("应用不存在")
-                subs.copy(apps = subs.apps.toMutableList().apply {
-                    set(
-                        indexOfFirst { a -> a.id == appId },
-                        app.copy(groups = app.groups.toMutableList().apply {
+            val originalGroup = requireNotNull(editBaseGroup ?: initialGroup)
+            requiredSubscription.update { subscription ->
+                if (appId != null) {
+                    newGroup as RawSubscription.RawAppGroup
+                    val appIndex = subscription.apps.indexOfFirst { it.id == appId }
+                    if (appIndex < 0) error("应用不存在")
+                    val app = subscription.apps[appIndex]
+                    val groupIndex = app.groups.indexOfFirst { it.key == groupKey }
+                    if (groupIndex < 0) error("规则已不存在")
+                    if (app.groups[groupIndex] != originalGroup) {
+                        error("规则已发生变化，请重新编辑")
+                    }
+                    subscription.copy(
+                        apps = subscription.apps.toMutableList().apply {
                             set(
-                                indexOfFirst { g -> g.key == newGroup.key },
-                                newGroup
+                                appIndex,
+                                app.copy(
+                                    groups = app.groups.toMutableList().apply {
+                                        set(groupIndex, newGroup)
+                                    },
+                                ),
                             )
-                        })
+                        },
                     )
-                })
-            } else {
-                newGroup as RawSubscription.RawGlobalGroup
-                subs.copy(globalGroups = subs.globalGroups.toMutableList().apply {
-                    set(indexOfFirst { g -> g.key == newGroup.key }, newGroup)
-                })
+                } else {
+                    newGroup as RawSubscription.RawGlobalGroup
+                    val groupIndex = subscription.globalGroups.indexOfFirst {
+                        it.key == groupKey
+                    }
+                    if (groupIndex < 0) error("规则已不存在")
+                    if (subscription.globalGroups[groupIndex] != originalGroup) {
+                        error("规则已发生变化，请重新编辑")
+                    }
+                    subscription.copy(
+                        globalGroups = subscription.globalGroups.toMutableList().apply {
+                            set(groupIndex, newGroup)
+                        },
+                    )
+                }
             }
-            updateSubscription(newSubs)
         } else {
             if (isAddAnyApp) {
-                var newApp = try {
+                val newApp = try {
                     RawSubscription.parseApp(jsonObject).apply {
                         if (groups.isEmpty()) {
                             error("至少输入一个规则")
@@ -156,39 +205,35 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
                     LogUtils.d(e)
                     error("非法规则\n${e.message}")
                 }
-                val oldApp = subs.apps.find { it.id == newApp.id }
-                if (oldApp != null) {
-                    newApp.groups.forEach { g ->
-                        checkGroupKeyName(oldApp.groups, g)
-                    }
-                    // 自动修正 key 与原来不重复
-                    val usedKeys = oldApp.groups.map { it.key }.toHashSet()
-                    newApp = newApp.copy(groups = newApp.groups.map { g ->
-                        if (g.key in usedKeys) {
-                            g.copy(key = usedKeys.max() + 1).also {
-                                usedKeys.add(it.key)
-                            }
-                        } else {
-                            g
-                        }
-                    })
-                }
-                val newSubs = subs.copy(apps = subs.apps.toMutableList().apply {
-                    val i = indexOfFirst { a -> a.id == newApp.id }
-                    if (i >= 0) {
-                        set(
-                            i,
-                            get(i).copy(groups = get(i).groups + newApp.groups),
-                        )
+                requiredSubscription.update { subscription ->
+                    val appIndex = subscription.apps.indexOfFirst { it.id == newApp.id }
+                    if (appIndex < 0) {
+                        subscription.copy(apps = subscription.apps + newApp)
                     } else {
-                        add(newApp)
+                        val oldApp = subscription.apps[appIndex]
+                        newApp.groups.forEach { group ->
+                            checkGroupKeyName(oldApp.groups, group)
+                        }
+                        val usedKeys = oldApp.groups.mapTo(mutableSetOf()) { it.key }
+                        val newGroups = newApp.groups.map { group ->
+                            if (group.key in usedKeys) {
+                                val newKey = requireNotNull(usedKeys.maxOrNull()) + 1
+                                group.copy(key = newKey).also { usedKeys.add(newKey) }
+                            } else {
+                                group.also { usedKeys.add(it.key) }
+                            }
+                        }
+                        subscription.copy(
+                            apps = subscription.apps.toMutableList().apply {
+                                set(appIndex, oldApp.copy(groups = oldApp.groups + newGroups))
+                            },
+                        )
                     }
-                })
+                }
                 addAppId = newApp.id
-                updateSubscription(newSubs)
             } else if (appId != null) {
                 // add specified app group
-                var newGroups = try {
+                val newGroups = try {
                     if (jsonObject["groups"] is JsonArray) {
                         val id = jsonObject["id"] ?: error("缺少id")
                         if (!(id is JsonPrimitive && id.isString && id.content == appId)) {
@@ -206,52 +251,57 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
                     LogUtils.d(e)
                     error("非法规则\n${e.message}")
                 }
-                val oldApp = subs.getApp(appId)
                 newGroups.forEach { g ->
-                    checkGroupKeyName(oldApp.groups, g)
                     g.errorDesc?.let { error(it) }
                 }
-                // 自动修正 key 与原来不重复
-                val usedKeys = oldApp.groups.map { it.key }.toHashSet()
-                newGroups = newGroups.map { g ->
-                    if (g.key in usedKeys) {
-                        g.copy(key = usedKeys.max() + 1).also {
-                            usedKeys.add(it.key)
+                requiredSubscription.update { subscription ->
+                    val appIndex = subscription.apps.indexOfFirst { it.id == appId }
+                    if (appIndex < 0) error("应用不存在")
+                    val oldApp = subscription.apps[appIndex]
+                    newGroups.forEach { group ->
+                        checkGroupKeyName(oldApp.groups, group)
+                    }
+                    val usedKeys = oldApp.groups.mapTo(mutableSetOf()) { it.key }
+                    val normalizedGroups = newGroups.map { group ->
+                        if (group.key in usedKeys) {
+                            val newKey = requireNotNull(usedKeys.maxOrNull()) + 1
+                            group.copy(key = newKey).also { usedKeys.add(newKey) }
+                        } else {
+                            group.also { usedKeys.add(it.key) }
                         }
-                    } else {
-                        g
                     }
+                    subscription.copy(
+                        apps = subscription.apps.toMutableList().apply {
+                            set(
+                                appIndex,
+                                oldApp.copy(groups = oldApp.groups + normalizedGroups),
+                            )
+                        },
+                    )
                 }
-                val newSubs = subs.copy(apps = subs.apps.toMutableList().apply {
-                    val newApp = oldApp.copy(groups = oldApp.groups + newGroups)
-                    val i = indexOfFirst { a -> a.id == newApp.id }
-                    if (i >= 0) {
-                        set(
-                            i,
-                            newApp
-                        )
-                    } else {
-                        add(newApp)
-                    }
-                })
-                updateSubscription(newSubs)
             } else {
                 // add global group
-                var newGroup = try {
+                val newGroup = try {
                     RawSubscription.parseGlobalGroup(jsonObject)
                 } catch (e: Exception) {
                     LogUtils.d(e)
                     error("非法规则\n${e.message}")
                 }
-                checkGroupKeyName(subs.globalGroups, newGroup)
-                if (subs.globalGroups.any { it.key == newGroup.key }) {
-                    newGroup = newGroup.copy(key = subs.globalGroups.maxOf { it.key } + 1)
-                }
-                updateSubscription(
-                    subs.copy(
-                        globalGroups = subs.globalGroups + newGroup
+                requiredSubscription.update { subscription ->
+                    checkGroupKeyName(subscription.globalGroups, newGroup)
+                    val normalizedGroup = if (
+                        subscription.globalGroups.any { it.key == newGroup.key }
+                    ) {
+                        newGroup.copy(
+                            key = subscription.globalGroups.maxOf { it.key } + 1,
+                        )
+                    } else {
+                        newGroup
+                    }
+                    subscription.copy(
+                        globalGroups = subscription.globalGroups + normalizedGroup,
                     )
-                )
+                }
             }
         }
         if (isEdit) {

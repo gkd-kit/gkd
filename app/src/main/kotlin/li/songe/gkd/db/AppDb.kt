@@ -6,6 +6,7 @@ import androidx.room.DeleteColumn
 import androidx.room.RenameColumn
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.withTransaction
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.migration.AutoMigrationSpec
@@ -125,4 +126,6 @@ object DbSet {
     val appConfigDao get() = db.appConfigDao()
     val appVisitLogDao get() = db.appVisitLogDao()
     val a11yEventLogDao get() = db.a11yEventLogDao()
+
+    suspend fun <T> withTransaction(block: suspend () -> T): T = db.withTransaction(block)
 }

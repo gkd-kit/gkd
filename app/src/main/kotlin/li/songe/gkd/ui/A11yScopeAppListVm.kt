@@ -1,64 +1,90 @@
 package li.songe.gkd.ui
 
-import androidx.compose.runtime.mutableIntStateOf
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
+import li.songe.gkd.MainViewModel
 import li.songe.gkd.store.a11yScopeAppListFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.ui.share.asMutableStateFlow
 import li.songe.gkd.ui.share.useAppFilter
 import li.songe.gkd.util.AppListString
 import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.findOption
+import li.songe.gkd.util.toast
 
-class A11yScopeAppListVm : BaseViewModel() {
-    val sortTypeFlow = storeFlow.asMutableStateFlow(
-        getter = { AppSortOption.objects.findOption(it.a11yScopeAppSort) },
-        setter = {
-            storeFlow.value.copy(a11yScopeAppSort = it.value)
-        }
-    )
-    val appGroupTypeFlow = storeFlow.asMutableStateFlow(
-        getter = { it.a11yScopeAppGroupType },
-        setter = {
-            storeFlow.value.copy(a11yScopeAppGroupType = it)
-        }
-    )
+class A11yScopeAppListVm(mainVm: MainViewModel) : BaseViewModel() {
     val appFilter = useAppFilter(
-        appGroupTypeFlow = appGroupTypeFlow,
-        sortTypeFlow = sortTypeFlow,
+        mainVm = mainVm,
+        appGroupType = { it.a11yScopeAppGroupType },
+        sortType = { AppSortOption.objects.findOption(it.a11yScopeAppSort) },
     )
-    val searchStrFlow = appFilter.searchStrFlow
+    val searchStrFlow: StateFlow<String>
+        field = appFilter.searchStrFlow
 
-    val showSearchBarFlow = MutableStateFlow(false)
+    val showSearchBarFlow: StateFlow<Boolean>
+        field = MutableStateFlow(false)
     val appInfosFlow = appFilter.appListFlow
 
-    val resetKey = mutableIntStateOf(0)
-    val editableFlow = MutableStateFlow(false)
+    val editableFlow: StateFlow<Boolean>
+        field = MutableStateFlow(false)
 
-    val textFlow = MutableStateFlow("")
+    val textFlow: StateFlow<String>
+        field = MutableStateFlow("")
     val textChanged get() = a11yScopeAppListFlow.value != AppListString.decode(textFlow.value)
 
     val indicatorSizeFlow = textFlow.debounce(500).map {
         AppListString.decode(it).size
-    }.stateInit(0)
+    }.stateInit(AppListString.decode(textFlow.value).size)
 
-    init {
-        showSearchBarFlow.launchCollect {
-            if (!it) {
-                searchStrFlow.value = ""
-            }
+    fun setSortType(value: AppSortOption) {
+        storeFlow.update { it.copy(a11yScopeAppSort = value.value) }
+    }
+
+    fun setAppGroupType(value: Int) {
+        storeFlow.update { it.copy(a11yScopeAppGroupType = value) }
+    }
+
+    fun setSearchStr(value: String) {
+        searchStrFlow.value = value.trim()
+    }
+
+    fun setSearchBarVisible(visible: Boolean) {
+        showSearchBarFlow.value = visible
+        if (!visible) searchStrFlow.value = ""
+    }
+
+    fun toggleSearchBar() {
+        if (!showSearchBarFlow.value) {
+            showSearchBarFlow.value = true
+        } else if (searchStrFlow.value.isEmpty()) {
+            setSearchBarVisible(false)
+        } else {
+            searchStrFlow.value = ""
         }
-        editableFlow.launchOnChange {
-            if (it) {
-                showSearchBarFlow.value = false
-                textFlow.value = AppListString.encode(a11yScopeAppListFlow.value, append = true)
-            }
+    }
+
+    fun setEditable(editable: Boolean) {
+        if (editable && !editableFlow.value) {
+            setSearchBarVisible(false)
+            textFlow.value = AppListString.encode(a11yScopeAppListFlow.value, append = true)
         }
-        appInfosFlow.launchOnChange {
-            resetKey.intValue++
+        editableFlow.value = editable
+    }
+
+    fun setText(value: String) {
+        textFlow.value = value
+    }
+
+    fun saveText() {
+        if (textChanged) {
+            a11yScopeAppListFlow.value = AppListString.decode(textFlow.value)
+            toast("更新成功")
+        } else {
+            toast("未修改")
         }
+        editableFlow.value = false
     }
 }

@@ -12,19 +12,26 @@ import androidx.compose.material3.TopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.Stable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.util.mapState
 import li.songe.gkd.util.subsMapFlow
@@ -32,7 +39,7 @@ import li.songe.gkd.util.subsMapFlow
 @Composable
 fun useSubs(subsId: Long?): RawSubscription? {
     val scope = rememberCoroutineScope()
-    return remember(subsId) { subsMapFlow.mapState(scope) { it[subsId] } }.collectAsState().value
+    return remember(subsId) { subsMapFlow.mapState(scope) { it[subsId] } }.collectAsStateWithLifecycle().value
 }
 
 @Composable
@@ -66,59 +73,118 @@ fun Modifier.autoFocus(immediateFocus: Boolean = false): Modifier {
     return focusRequester(focusRequester)
 }
 
-@Composable
-private fun getCompatStateValue(v: Any?): Any? = when (v) {
-    is StateFlow<*> -> v.collectAsState().value
-    is androidx.compose.runtime.State<*> -> v.value
-    else -> v
+private fun TopAppBarScrollBehavior.resetScroll() {
+    state.heightOffset = 0f
+    state.contentOffset = 0f
+}
+
+@Stable
+class ListScrollState(
+    val scrollBehavior: TopAppBarScrollBehavior,
+    val listState: LazyListState,
+    private val coroutineScope: CoroutineScope,
+) {
+    private var resetJob: Job? = null
+
+    private suspend fun performScrollReset() {
+        scrollBehavior.resetScroll()
+        listState.scrollToItem(0)
+    }
+
+    fun resetScroll() {
+        resetJob?.cancel()
+        resetJob = coroutineScope.launch {
+            performScrollReset()
+        }
+    }
+
+    suspend fun resetScrollAndAwait() {
+        resetJob?.cancelAndJoin()
+        performScrollReset()
+    }
+
+    @Composable
+    fun ResetOnChange(vararg keys: Any?) {
+        val currentKeys = rememberUpdatedState(keys.toList())
+        LaunchedEffect(this) {
+            snapshotFlow { currentKeys.value }
+                .drop(1)
+                .collect { resetScroll() }
+        }
+    }
+}
+
+@Stable
+class ColumnScrollState(
+    val scrollBehavior: TopAppBarScrollBehavior,
+    val scrollState: ScrollState,
+    private val coroutineScope: CoroutineScope,
+) {
+    private var resetJob: Job? = null
+
+    private suspend fun performScrollReset() {
+        scrollBehavior.resetScroll()
+        scrollState.scrollTo(0)
+    }
+
+    fun resetScroll() {
+        resetJob?.cancel()
+        resetJob = coroutineScope.launch {
+            performScrollReset()
+        }
+    }
+
+    suspend fun resetScrollAndAwait() {
+        resetJob?.cancelAndJoin()
+        performScrollReset()
+    }
 }
 
 @Composable
-fun useListScrollState(
-    v1: Any?,
-    v2: Any? = null,
-    v3: Any? = null,
+fun rememberListScrollState(
     canScroll: () -> Boolean = { true },
-): Pair<TopAppBarScrollBehavior, LazyListState> {
-    val x1 = getCompatStateValue(v1)
-    val x2 = getCompatStateValue(v2)
-    val x3 = getCompatStateValue(v3)
+): ListScrollState {
+    val coroutineScope = rememberCoroutineScope()
+    val currentCanScroll = rememberUpdatedState(canScroll)
+    val stableCanScroll = remember { { currentCanScroll.value() } }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
-        state = rememberSaveable(x1, x2, x3, saver = TopAppBarState.Saver) {
+        state = rememberSaveable(saver = TopAppBarState.Saver) {
             TopAppBarState(-Float.MAX_VALUE, 0f, 0f)
         },
-        canScroll = canScroll
+        canScroll = stableCanScroll,
     )
-    val scrollState = rememberSaveable(x1, x2, x3, saver = LazyListState.Saver) {
-        LazyListState(0, 0)
+    val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState(0, 0) }
+    return remember(scrollBehavior, listState, coroutineScope) {
+        ListScrollState(scrollBehavior, listState, coroutineScope)
     }
-    return scrollBehavior to scrollState
 }
 
 @Composable
-fun usePinnedScrollBehaviorState(v1: Any?): Pair<TopAppBarScrollBehavior, LazyListState> {
-    val x1 = getCompatStateValue(v1)
+fun rememberPinnedListScrollState(): ListScrollState {
+    val coroutineScope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(
-        state = rememberSaveable(x1, saver = TopAppBarState.Saver) {
+        state = rememberSaveable(saver = TopAppBarState.Saver) {
             TopAppBarState(-Float.MAX_VALUE, 0f, 0f)
         },
     )
-    val scrollState = rememberSaveable(x1, saver = LazyListState.Saver) {
-        LazyListState(0, 0)
+    val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState(0, 0) }
+    return remember(scrollBehavior, listState, coroutineScope) {
+        ListScrollState(scrollBehavior, listState, coroutineScope)
     }
-    return scrollBehavior to scrollState
 }
 
 @Composable
-fun useScrollBehaviorState(v1: Any?): Pair<TopAppBarScrollBehavior, ScrollState> {
-    val x1 = getCompatStateValue(v1)
+fun rememberColumnScrollState(): ColumnScrollState {
+    val coroutineScope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
-        state = rememberSaveable(x1, saver = TopAppBarState.Saver) {
+        state = rememberSaveable(saver = TopAppBarState.Saver) {
             TopAppBarState(-Float.MAX_VALUE, 0f, 0f)
         },
     )
-    val scrollState = rememberSaveable(x1, saver = ScrollState.Saver) { ScrollState(initial = 0) }
-    return scrollBehavior to scrollState
+    val scrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(initial = 0) }
+    return remember(scrollBehavior, scrollState, coroutineScope) {
+        ColumnScrollState(scrollBehavior, scrollState, coroutineScope)
+    }
 }
 
 @Composable

@@ -10,12 +10,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import li.songe.gkd.META
-import li.songe.gkd.MainActivity
+import li.songe.gkd.MainViewModel
 import li.songe.gkd.a11y.useA11yServiceEnabledFlow
 import li.songe.gkd.app
 import li.songe.gkd.notif.NotificationCatalog
 import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.permission.ensurePermission
 import li.songe.gkd.priv.PrivilegeServiceStatus
 import li.songe.gkd.priv.privilegeServiceStatusFlow
 import li.songe.gkd.priv.uiAutomationFlow
@@ -147,10 +146,9 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
 
         fun start() = startForegroundServiceByClass(StatusService::class)
         fun stop() = stopServiceByClass(StatusService::class)
-        suspend fun requestStart(context: MainActivity) {
+        suspend fun requestStart(mainVm: MainViewModel) {
             if (
-                !ensurePermission(
-                    context,
+                !mainVm.permissionRequests.ensurePermissions(
                     PermissionStates.foregroundServiceSpecialUse,
                     PermissionStates.notification,
                 )

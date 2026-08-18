@@ -197,6 +197,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.service)
 
     implementation(libs.compose.ui)
@@ -251,8 +252,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     // https://github.com/Kotlin/kotlinx-atomicfu/issues/145
     implementation(libs.kotlinx.atomicfu)
-
-    implementation(libs.activityResultLauncher)
 
     implementation(libs.reorderable)
 

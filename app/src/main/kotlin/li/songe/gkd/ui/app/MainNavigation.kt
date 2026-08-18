@@ -1,4 +1,4 @@
-package li.songe.gkd
+package li.songe.gkd.ui.app
 
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -54,6 +54,7 @@ import li.songe.gkd.ui.WebViewPage
 import li.songe.gkd.ui.WebViewRoute
 import li.songe.gkd.ui.WorkModePage
 import li.songe.gkd.ui.WorkModeRoute
+import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.home.HomePage
 import li.songe.gkd.ui.home.HomeRoute
 
@@ -85,7 +86,8 @@ private val mainRouteEntryProvider = entryProvider {
 }
 
 @Composable
-fun MainNavigation(mainVm: MainViewModel) {
+fun MainNavigation() {
+    val mainVm = LocalMainViewModel.current
     NavDisplay(
         entryDecorators = listOf(
             rememberSaveableStateHolderNavEntryDecorator(),

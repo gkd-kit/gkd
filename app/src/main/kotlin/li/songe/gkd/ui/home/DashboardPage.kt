@@ -23,11 +23,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,7 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
@@ -67,7 +63,7 @@ import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfSwitch
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.textSize
-import li.songe.gkd.ui.component.useScrollBehaviorState
+import li.songe.gkd.ui.component.rememberColumnScrollState
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemHorizontalPadding
@@ -76,28 +72,25 @@ import li.songe.gkd.ui.style.surfaceCardColors
 import li.songe.gkd.util.HOME_PAGE_URL
 import li.songe.gkd.util.latestRecordDescFlow
 import li.songe.gkd.util.latestRecordFlow
-import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.throttle
 
 @Composable
-fun useControlPage(): ScaffoldExt {
+fun useDashboardPage(): ScaffoldExt {
     val context = LocalActivity.current as MainActivity
     val mainVm = LocalMainViewModel.current
-    val vm = viewModel<HomeVm>()
-    val privilegeContext by privilegeContextFlow.collectAsState()
-    val privilegeServiceStatus by privilegeServiceStatusFlow.collectAsState()
-    val automatorMode by mainVm.automatorModeFlow.collectAsState()
-    val scrollKey = rememberSaveable { mutableIntStateOf(0) }
-    val (scrollBehavior, scrollState) = useScrollBehaviorState(scrollKey)
-    LaunchedEffect(null) {
-        mainVm.resetPageScrollEvent.collect {
-            if (it == BottomNavItem.Control) {
-                scrollKey.intValue++
-            }
-        }
-    }
+    val vm = viewModel<DashboardVm>()
+    val subsStatus by vm.subsStatusFlow.collectAsStateWithLifecycle()
+    val store by storeFlow.collectAsStateWithLifecycle()
+    val privilegeContext by privilegeContextFlow.collectAsStateWithLifecycle()
+    val privilegeServiceStatus by privilegeServiceStatusFlow.collectAsStateWithLifecycle()
+    val automatorMode by mainVm.automatorModeFlow.collectAsStateWithLifecycle()
+    val pageScrollState = rememberColumnScrollState()
+    val scrollBehavior = pageScrollState.scrollBehavior
+    val scrollState = pageScrollState.scrollState
+    ResetPageScrollOnRequest(BottomNavItem.Dashboard, pageScrollState::resetScrollAndAwait)
     return ScaffoldExt(
-        navItem = BottomNavItem.Control,
+        navItem = BottomNavItem.Dashboard,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             PerfTopAppBar(scrollBehavior = scrollBehavior, title = {
@@ -123,11 +116,9 @@ fun useControlPage(): ScaffoldExt {
                 )
             })
         }) { contentPadding ->
-        val store by storeFlow.collectAsState()
-
-        val a11yRunning by A11yService.isRunning.collectAsState()
-        val manageRunning by StatusService.isRunning.collectAsState()
-        val writeSecureSettings by PermissionStates.writeSecureSettings.stateFlow.collectAsState()
+        val a11yRunning by A11yService.isRunning.collectAsStateWithLifecycle()
+        val manageRunning by StatusService.isRunning.collectAsStateWithLifecycle()
+        val writeSecureSettings by PermissionStates.writeSecureSettings.stateFlow.collectAsStateWithLifecycle()
 
         Column(
             modifier = Modifier
@@ -136,7 +127,7 @@ fun useControlPage(): ScaffoldExt {
                 .padding(horizontal = itemHorizontalPadding),
             verticalArrangement = Arrangement.spacedBy(itemHorizontalPadding / 2)
         ) {
-            if (PermissionStates.appOpsRestrictedFlow.collectAsState().value) {
+            if (PermissionStates.appOpsRestrictedFlow.collectAsStateWithLifecycle().value) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -166,14 +157,14 @@ fun useControlPage(): ScaffoldExt {
                     }
                 }
             }
-            if (store.useA11y || actualA11yScopeAppList.contains(topAppIdFlow.collectAsState().value)) {
+            if (store.useA11y || actualA11yScopeAppList.contains(topAppIdFlow.collectAsStateWithLifecycle().value)) {
                 ServiceStatusCard(
                     subtitle = if (a11yRunning) {
                         "无障碍正在运行"
-                    } else if (mainVm.a11yServiceEnabledFlow.collectAsState().value) {
+                    } else if (mainVm.a11yServiceEnabledFlow.collectAsStateWithLifecycle().value) {
                         "无障碍发生故障"
                     } else if (writeSecureSettings) {
-                        if (store.enableAutomator && a11yPartDisabledFlow.collectAsState().value) {
+                        if (store.enableAutomator && a11yPartDisabledFlow.collectAsStateWithLifecycle().value) {
                             "无障碍局部关闭"
                         } else {
                             "无障碍已关闭"
@@ -195,14 +186,14 @@ fun useControlPage(): ScaffoldExt {
                     },
                 )
             } else {
-                val automation by uiAutomationFlow.collectAsState()
+                val automation by uiAutomationFlow.collectAsStateWithLifecycle()
                 ServiceStatusCard(
                     subtitle = if (automation != null) {
                         "自动化正在运行"
                     } else if (privilegeContext == null) {
                         "自动化未授权"
                     } else {
-                        if (store.enableAutomator && a11yPartDisabledFlow.collectAsState().value) {
+                        if (store.enableAutomator && a11yPartDisabledFlow.collectAsStateWithLifecycle().value) {
                             "自动化局部关闭"
                         } else {
                             "自动化已关闭"
@@ -228,21 +219,32 @@ fun useControlPage(): ScaffoldExt {
                 title = "常驻通知",
                 subtitle = "显示运行状态及统计数据",
                 checked = manageRunning && store.enableStatusService,
-                onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
+                onCheckedChange = {
                     if (it) {
-                        StatusService.requestStart(context)
+                        vm.scope.launchTry {
+                            StatusService.requestStart(mainVm)
+                        }
                     } else {
-                        StatusService.stop()
-                        storeFlow.value = store.copy(
-                            enableStatusService = false
-                        )
+                        vm.stopStatusService()
                     }
                 },
             )
 
-            TriggerOverviewCard()
+            val latestRecord by latestRecordFlow.collectAsStateWithLifecycle()
+            val latestRecordDesc by latestRecordDescFlow.collectAsStateWithLifecycle()
+            TriggerOverviewCard(
+                subsStatus = subsStatus,
+                latestRecordDesc = latestRecordDesc,
+                latestRecordIsGlobal = latestRecord?.groupType == SubsConfig.GlobalGroupType,
+                onOpenActionLog = { mainVm.navigatePage(ActionLogRoute()) },
+                onOpenLatestRecord = {
+                    latestRecord?.let {
+                        mainVm.navigatePage(AppConfigRoute(appId = it.appId, focusLog = it))
+                    }
+                },
+            )
 
-            if (ActivityService.isRunning.collectAsState().value) {
+            if (ActivityService.isRunning.collectAsStateWithLifecycle().value) {
                 PageItemCard(
                     title = "界面日志",
                     subtitle = "记录打开的应用及界面",
@@ -471,12 +473,13 @@ private fun IconTextCard(
 }
 
 @Composable
-private fun TriggerOverviewCard() {
-    val mainVm = LocalMainViewModel.current
-    val vm = viewModel<HomeVm>()
-    val openActionLog = throttle {
-        mainVm.navigatePage(ActionLogRoute())
-    }
+private fun TriggerOverviewCard(
+    subsStatus: String,
+    latestRecordDesc: String?,
+    latestRecordIsGlobal: Boolean,
+    onOpenActionLog: () -> Unit,
+    onOpenLatestRecord: () -> Unit,
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -488,7 +491,7 @@ private fun TriggerOverviewCard() {
                 .semantics(mergeDescendants = true) {}
                 .clickable(
                     onClickLabel = "打开触发记录页面",
-                    onClick = openActionLog,
+                    onClick = throttle(onOpenActionLog),
                 )
                 .padding(
                     start = itemVerticalPadding,
@@ -531,7 +534,6 @@ private fun TriggerOverviewCard() {
                 .fillMaxWidth()
                 .padding(horizontal = itemVerticalPadding)
         ) {
-            val subsStatus by vm.subsStatusFlow.collectAsState()
             AnimatedVisibility(subsStatus.isNotEmpty()) {
                 Text(
                     modifier = Modifier.padding(horizontal = 8.dp),
@@ -541,21 +543,15 @@ private fun TriggerOverviewCard() {
                 )
             }
 
-            val latestRecordDesc by latestRecordDescFlow.collectAsState()
             if (latestRecordDesc != null) {
                 Row(
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
                         .clip(MaterialTheme.shapes.extraSmall)
-                        .clickable(onClickLabel = "前往应用的规则汇总页面", onClick = throttle {
-                            latestRecordFlow.value?.let {
-                                mainVm.navigatePage(
-                                    AppConfigRoute(
-                                        appId = it.appId, focusLog = it
-                                    )
-                                )
-                            }
-                        })
+                        .clickable(
+                            onClickLabel = "前往应用的规则汇总页面",
+                            onClick = throttle(onOpenLatestRecord),
+                        )
                         .fillMaxWidth()
                         .padding(horizontal = 4.dp)
                 ) {
@@ -565,8 +561,8 @@ private fun TriggerOverviewCard() {
                         GroupNameText(
                             modifier = Modifier.fillMaxWidth(),
                             preText = "最近触发: ",
-                            isGlobal = latestRecordFlow.collectAsState().value?.groupType == SubsConfig.GlobalGroupType,
-                            text = latestRecordDesc ?: "",
+                            isGlobal = latestRecordIsGlobal,
+                            text = latestRecordDesc,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
                         )

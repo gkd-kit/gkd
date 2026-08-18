@@ -34,6 +34,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
+import li.songe.gkd.MainViewModel
 import li.songe.gkd.a11y.A11yRuleEngine
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppInfo
@@ -46,6 +47,7 @@ import li.songe.gkd.data.selfAppInfo
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.notif.NotificationCatalog
 import li.songe.gkd.notif.StopServiceReceiver
+import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.DefaultSimpleLifeImpl
 import li.songe.gkd.util.LOCAL_HTTP_SUBS_ID
@@ -54,7 +56,7 @@ import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.SERVER_SCRIPT_URL
 import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.SnapshotExt.getMinSnapshot
-import li.songe.gkd.util.deleteSubscription
+import li.songe.gkd.util.SubscriptionStore
 import li.songe.gkd.util.getIpAddressInLocalNetwork
 import li.songe.gkd.util.isPortAvailable
 import li.songe.gkd.util.keepNullJson
@@ -62,9 +64,7 @@ import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mapState
 import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
-import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
-import li.songe.gkd.util.updateSubscription
 
 
 class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
@@ -88,7 +88,9 @@ class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         }
         onDestroyed {
             if (storeFlow.value.autoClearMemorySubs) {
-                deleteSubscription(LOCAL_HTTP_SUBS_ID)
+                appScope.launchTry(Dispatchers.IO) {
+                    SubscriptionStore.delete(LOCAL_HTTP_SUBS_ID)
+                }
             }
             httpServerFlow.value = null
         }
@@ -129,6 +131,19 @@ class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         val localNetworkIpsFlow = MutableStateFlow(emptyList<String>())
         fun stop() = stopServiceByClass(HttpService::class)
         fun start() = startForegroundServiceByClass(HttpService::class)
+
+        suspend fun setEnabled(mainVm: MainViewModel, enabled: Boolean) {
+            if (!enabled) {
+                stop()
+                return
+            }
+            if (!mainVm.permissionRequests.ensurePermissions(
+                    PermissionStates.foregroundServiceSpecialUse,
+                    PermissionStates.notification,
+                )
+            ) return
+            start()
+        }
     }
 }
 
@@ -157,7 +172,7 @@ fun clearHttpSubs() {
     appScope.launchTry {
         delay(1000)
         if (storeFlow.value.autoClearMemorySubs) {
-            deleteSubscription(LOCAL_HTTP_SUBS_ID)
+            SubscriptionStore.delete(LOCAL_HTTP_SUBS_ID)
         }
     }
 }
@@ -226,9 +241,7 @@ private fun CoroutineScope.createServer(port: Int) = embeddedServer(CIO, port) {
                             version = 0,
                             author = "@gkd-kit/inspect"
                         )
-                updateSubscription(subscription)
-                DbSet.subsItemDao.insert((subsItemsFlow.value.find { s -> s.id == httpSubsItem.id }
-                    ?: httpSubsItem).copy(mtime = System.currentTimeMillis()))
+                SubscriptionStore.saveWithItem(subscription, httpSubsItem)
                 call.respond(RpcOk())
             }
             post("/execSelector") {

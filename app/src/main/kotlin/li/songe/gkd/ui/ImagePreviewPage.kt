@@ -29,7 +29,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -351,7 +351,7 @@ private fun UriImage(
     val imageLoader = context.imageLoader
     val isNetworkImage = remember(uri) { URLUtil.isNetworkUrl(uri) }
     val phaseTextFlow = remember(uri) { MutableStateFlow<String?>(null) }
-    val phaseText by phaseTextFlow.collectAsState()
+    val phaseText by phaseTextFlow.collectAsStateWithLifecycle()
 
     // 手势层切至 Telephoto，loading / error 还是使用 AsyncImagePainter.State 统一驱动。
     val model = remember(uri) {
@@ -397,7 +397,7 @@ private fun UriImage(
         model = model,
         imageLoader = imageLoader,
     )
-    val state by painter.state.collectAsState()
+    val state by painter.state.collectAsStateWithLifecycle()
 
     Box(
         modifier = Modifier.fillMaxSize(),

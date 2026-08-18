@@ -5,10 +5,12 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
@@ -20,7 +22,7 @@ sealed class BottomNavItem(
     val label: String,
     val icon: ImageVector,
 ) {
-    object Control : BottomNavItem(
+    object Dashboard : BottomNavItem(
         key = 0,
         label = "首页",
         icon = PerfIcon.Home,
@@ -45,7 +47,7 @@ sealed class BottomNavItem(
     )
 
     companion object {
-        val allSubObjects by lazy { arrayOf(Control, SubsManage, AppList, Settings) }
+        val allSubObjects by lazy { arrayOf(Dashboard, SubsManage, AppList, Settings) }
     }
 }
 
@@ -53,36 +55,62 @@ sealed class BottomNavItem(
 data object HomeRoute : NavKey
 
 @Composable
+fun ResetPageScrollOnRequest(
+    navItem: BottomNavItem,
+    resetScroll: suspend () -> Unit,
+) {
+    val mainVm = LocalMainViewModel.current
+    val request by mainVm.pageScrollResetRequestFlow.collectAsStateWithLifecycle()
+    val currentRequest = request
+    LaunchedEffect(currentRequest) {
+        if (currentRequest?.navItem == navItem) {
+            resetScroll()
+            mainVm.consumePageScrollResetRequest(currentRequest)
+        }
+    }
+}
+
+@Composable
 fun HomePage() {
     val mainVm = LocalMainViewModel.current
-    viewModel<HomeVm>() // init state
-    val tab by mainVm.tabFlow.collectAsState()
-    val pages = arrayOf(useControlPage(), useSubsManagePage(), useAppListPage(), useSettingsPage())
-    val page = pages.find { p -> p.navItem.key == tab } ?: pages.first()
+    viewModel<SubsManageVm>()
+    val tab by mainVm.tabFlow.collectAsStateWithLifecycle()
+    val selectedTab = BottomNavItem.allSubObjects.find { it.key == tab }
+        ?: BottomNavItem.Dashboard
+    val saveableStateHolder = rememberSaveableStateHolder()
 
-    Scaffold(
-        modifier = page.modifier,
-        topBar = page.topBar,
-        floatingActionButton = page.floatingActionButton,
-        bottomBar = {
-            NavigationBar {
-                pages.forEach { page ->
-                    NavigationBarItem(
-                        selected = page.navItem.key == tab,
-                        modifier = Modifier,
-                        onClick = { mainVm.handleClickTab(page.navItem) },
-                        icon = {
-                            PerfIcon(
-                                imageVector = page.navItem.icon,
-                                contentDescription = null,
-                            )
-                        },
-                        label = {
-                            Text(text = page.navItem.label)
-                        })
+    saveableStateHolder.SaveableStateProvider(selectedTab.key) {
+        val page = when (selectedTab) {
+            BottomNavItem.Dashboard -> useDashboardPage()
+            BottomNavItem.SubsManage -> useSubsManagePage()
+            BottomNavItem.AppList -> useAppListPage()
+            BottomNavItem.Settings -> useSettingsPage()
+        }
+        Scaffold(
+            modifier = page.modifier,
+            topBar = page.topBar,
+            floatingActionButton = page.floatingActionButton,
+            bottomBar = {
+                NavigationBar {
+                    BottomNavItem.allSubObjects.forEach { navItem ->
+                        NavigationBarItem(
+                            selected = navItem == selectedTab,
+                            modifier = Modifier,
+                            onClick = { mainVm.handleClickTab(navItem) },
+                            icon = {
+                                PerfIcon(
+                                    imageVector = navItem.icon,
+                                    contentDescription = null,
+                                )
+                            },
+                            label = {
+                                Text(text = navItem.label)
+                            },
+                        )
+                    }
                 }
-            }
-        },
-        content = page.content
-    )
+            },
+            content = page.content,
+        )
+    }
 }

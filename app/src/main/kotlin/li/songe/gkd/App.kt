@@ -15,6 +15,7 @@ import android.content.pm.PackageManager
 import android.database.ContentObserver
 import android.hardware.display.DisplayManager
 import android.hardware.input.InputManager
+import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
@@ -42,7 +43,7 @@ import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.PKG_FLAGS
 import li.songe.gkd.util.deviceInfoDesc
 import li.songe.gkd.util.initAppState
-import li.songe.gkd.util.initSubsState
+import li.songe.gkd.util.SubscriptionStore
 import li.songe.gkd.util.initToast
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.toast
@@ -200,6 +201,7 @@ class App : Application() {
     val appOpsManager by lazy { app.getSystemService(APP_OPS_SERVICE) as AppOpsManager }
     val inputMethodManager by lazy { app.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager }
     val inputManager by lazy { app.getSystemService(INPUT_SERVICE) as InputManager }
+    val mediaProjectionManager by lazy { getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager }
     val windowManager by lazy { app.getSystemService(WINDOW_SERVICE) as WindowManager }
     val displayManager by lazy { app.getSystemService(DISPLAY_SERVICE) as DisplayManager }
     val keyguardManager by lazy { app.getSystemService(KEYGUARD_SERVICE) as KeyguardManager }
@@ -254,7 +256,9 @@ class App : Application() {
         appScope.launchTry(Dispatchers.IO) {
             PrivilegeUi.startSilently(gkdPrivilegeUiConfig)
         }
-        initSubsState()
+        appScope.launchTry(Dispatchers.IO) {
+            SubscriptionStore.initialize()
+        }
         initA11yWhiteAppList()
         clearHttpSubs()
         syncFixState()

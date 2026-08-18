@@ -10,7 +10,9 @@ import li.songe.gkd.MainViewModel
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.store.SettingsStore
 import li.songe.gkd.store.blockMatchAppListFlow
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.AppGroupOption
 import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.appInfoMapFlow
@@ -23,181 +25,224 @@ class AppFilter(
     val showAllAppFlow: StateFlow<Boolean>,
 )
 
+fun BaseViewModel.subsAppActionOrderMapState(
+    subsId: Long,
+): StateFlow<Loadable<Map<String, Int>>> =
+    DbSet.actionLogDao.queryLatestUniqueAppIds(subsId).map { appIds ->
+        appIds.mapIndexed { index, appId -> appId to index }.toMap()
+    }.stateLoadable()
+
+fun BaseViewModel.globalGroupAppOrderListState(
+    subsId: Long,
+    groupKey: Int,
+): StateFlow<Loadable<List<String>>> =
+    DbSet.actionLogDao.queryLatestUniqueAppIds(subsId, groupKey).stateLoadable()
+
 fun BaseViewModel.useAppFilter(
-    appGroupTypeFlow: StateFlow<Int>,
-    sortTypeFlow: StateFlow<AppSortOption>,
-    appOrderListFlow: StateFlow<List<String>> = MainViewModel.instance.appOrderListFlow,
-    showBlockAppFlow: StateFlow<Boolean>? = null,
+    mainVm: MainViewModel,
+    appGroupType: (SettingsStore) -> Int,
+    sortType: (SettingsStore) -> AppSortOption,
+    showBlockApps: ((SettingsStore) -> Boolean)? = null,
+    appOrderListState: StateFlow<Loadable<List<String>>> = mainVm.appOrderListState,
     blockAppListFlow: StateFlow<Set<String>> = blockMatchAppListFlow,
 ): AppFilter {
-
-    var tempListFlow: Flow<List<AppInfo>> = visibleAppInfosFlow
-
-    if (showBlockAppFlow != null) {
-        tempListFlow = combine(
-            tempListFlow,
-            showBlockAppFlow,
-            blockAppListFlow,
-        ) { appInfos, showBlockApp, blockAppList ->
-            if (showBlockApp) {
-                appInfos
-            } else {
-                appInfos.filterNot { it.id in blockAppList }
-            }
-        }
-    }
-
-    tempListFlow = combine(
-        tempListFlow,
-        appGroupTypeFlow,
-    ) { list, type ->
-        if (type == 0) {
-            return@combine emptyList()
-        }
-        if (AppGroupOption.normalObjects.all { it.include(type) }) {
-            return@combine list
-        }
-        var resultList = list
-        if (!AppGroupOption.SystemGroup.include(type)) {
-            resultList = resultList.filterNot { it.isSystem }
-        }
-        if (!AppGroupOption.UserGroup.include(type)) {
-            resultList = resultList.filterNot { !it.isSystem }
-        }
-        resultList
-    }
-
-    val showAllAppFlow = combine(
-        tempListFlow,
-        visibleAppInfosFlow,
-    ) { a, b ->
-        a.size == b.size
-    }.stateInit(true)
-
     val searchStrFlow = MutableStateFlow("")
     val debounceSearchStrFlow = searchStrFlow.debounce(200)
         .stateInit(searchStrFlow.value)
-    val appActionOrderMapFlow = appOrderListFlow.map {
-        it.mapIndexed { i, appId -> appId to i }.toMap()
-    }
-    tempListFlow = combine(
-        tempListFlow,
-        sortTypeFlow,
-        appActionOrderMapFlow,
-        MainViewModel.instance.appVisitOrderMapFlow,
-    ) { apps, sortType, appActionOrderMap, appVisitOrderMap ->
-        when (sortType) {
-            AppSortOption.ByActionTime -> {
-                apps.sortedBy { a -> appActionOrderMap[a.id] ?: Int.MAX_VALUE }
-            }
-
-            AppSortOption.ByAppName -> {
-                apps
-            }
-
-            AppSortOption.ByUsedTime -> {
-                apps.sortedBy { a -> appVisitOrderMap[a.id] ?: Int.MAX_VALUE }
-            }
-        }
-    }
-    tempListFlow = tempListFlow.combine(debounceSearchStrFlow) { apps, str ->
-        if (str.isBlank()) {
-            apps
-        } else {
-            (apps.filter { a -> a.name.contains(str, true) } + apps.filter { a ->
-                a.id.contains(
-                    str,
-                    true
-                )
-            }).distinct()
-        }
-    }.stateInit(emptyList())
+    val resultFlow = combine(
+        visibleAppInfosFlow,
+        storeFlow,
+        appOrderListState,
+        mainVm.appVisitOrderMapState,
+        blockAppListFlow,
+    ) { visibleApps, settings, appOrderList, appVisitOrderMap, blockAppList ->
+        AppFilterInputs(
+            visibleApps = visibleApps,
+            settings = settings,
+            appOrderList = appOrderList.value.orEmpty(),
+            appVisitOrderMap = appVisitOrderMap.value.orEmpty(),
+            blockAppList = blockAppList,
+        )
+    }.combine(debounceSearchStrFlow) { inputs, searchStr ->
+        buildAppFilterResult(
+            inputs = inputs,
+            searchStr = searchStr,
+            appGroupType = appGroupType,
+            sortType = sortType,
+            showBlockApps = showBlockApps,
+        )
+    }.stateInit(
+        buildAppFilterResult(
+            inputs = AppFilterInputs(
+                visibleApps = visibleAppInfosFlow.value,
+                settings = storeFlow.value,
+                appOrderList = appOrderListState.value.value.orEmpty(),
+                appVisitOrderMap = mainVm.appVisitOrderMapState.value.value.orEmpty(),
+                blockAppList = blockAppListFlow.value,
+            ),
+            searchStr = searchStrFlow.value,
+            appGroupType = appGroupType,
+            sortType = sortType,
+            showBlockApps = showBlockApps,
+        )
+    )
     return AppFilter(
         searchStrFlow = searchStrFlow,
-        appListFlow = tempListFlow,
-        showAllAppFlow = showAllAppFlow,
+        appListFlow = resultFlow.mapNew { it.apps },
+        showAllAppFlow = resultFlow.mapNew { it.showAllApps },
+    )
+}
+
+private data class AppFilterInputs(
+    val visibleApps: List<AppInfo>,
+    val settings: SettingsStore,
+    val appOrderList: List<String>,
+    val appVisitOrderMap: Map<String, Int>,
+    val blockAppList: Set<String>,
+)
+
+private data class AppFilterResult(
+    val apps: List<AppInfo>,
+    val showAllApps: Boolean,
+)
+
+private fun buildAppFilterResult(
+    inputs: AppFilterInputs,
+    searchStr: String,
+    appGroupType: (SettingsStore) -> Int,
+    sortType: (SettingsStore) -> AppSortOption,
+    showBlockApps: ((SettingsStore) -> Boolean)?,
+): AppFilterResult {
+    var apps = if (showBlockApps == null || showBlockApps(inputs.settings)) {
+        inputs.visibleApps
+    } else {
+        inputs.visibleApps.filterNot { it.id in inputs.blockAppList }
+    }
+    val type = appGroupType(inputs.settings)
+    apps = when {
+        type == 0 -> emptyList()
+        AppGroupOption.normalObjects.all { it.include(type) } -> apps
+        else -> apps.filter { app ->
+            if (app.isSystem) {
+                AppGroupOption.SystemGroup.include(type)
+            } else {
+                AppGroupOption.UserGroup.include(type)
+            }
+        }
+    }
+    val showAllApps = apps.size == inputs.visibleApps.size
+    val actionOrderMap = inputs.appOrderList.mapIndexed { index, appId ->
+        appId to index
+    }.toMap()
+    apps = when (sortType(inputs.settings)) {
+        AppSortOption.ByActionTime -> apps.sortedBy { actionOrderMap[it.id] ?: Int.MAX_VALUE }
+        AppSortOption.ByAppName -> apps
+        AppSortOption.ByUsedTime -> apps.sortedBy {
+            inputs.appVisitOrderMap[it.id] ?: Int.MAX_VALUE
+        }
+    }
+    if (searchStr.isNotBlank()) {
+        apps = (apps.filter { it.name.contains(searchStr, true) } + apps.filter {
+            it.id.contains(searchStr, true)
+        }).distinct()
+    }
+    return AppFilterResult(
+        apps = apps,
+        showAllApps = showAllApps,
     )
 }
 
 fun BaseViewModel.useSubsAppFilter(
-    subsId: Long,
-    appsFlow: StateFlow<List<RawSubscription.RawApp>>,
-    sortTypeFlow: StateFlow<AppSortOption>,
-    appGroupTypeFlow: StateFlow<Int>,
-    showBlockAppFlow: StateFlow<Boolean>,
-): StateFlow<List<RawSubscription.RawApp>> {
-    var tempListFlow: Flow<List<RawSubscription.RawApp>> = appsFlow
-    tempListFlow = combine(
-        tempListFlow,
+    mainVm: MainViewModel,
+    appsFlow: Flow<List<RawSubscription.RawApp>>,
+    appGroupType: (SettingsStore) -> Int,
+    sortType: (SettingsStore) -> AppSortOption,
+    showBlockApps: (SettingsStore) -> Boolean,
+    appActionOrderMapState: StateFlow<Loadable<Map<String, Int>>>,
+): Flow<List<RawSubscription.RawApp>> {
+    val filterInputsFlow = combine(
         appInfoMapFlow,
-    ) { apps, appMap ->
-        apps.sortedWith { a, b ->
-            // 默认顺序: 已安装(有名字->无名字)->未安装(有名字(来自订阅)->无名字)
-            val x = appMap[a.id]?.name ?: a.name?.let { "\uFFFF" + it }
-            ?: ("\uFFFF\uFFFF" + a.id)
-            val y = appMap[b.id]?.name ?: b.name?.let { "\uFFFF" + it }
-            ?: ("\uFFFF\uFFFF" + b.id)
-            collator.compare(x, y)
-        }
+        storeFlow,
+        appActionOrderMapState,
+        mainVm.appVisitOrderMapState,
+        blockMatchAppListFlow,
+    ) { appMap, settings, appActionOrderMap, appVisitOrderMap, blockSet ->
+        SubsAppFilterInputs(
+            appMap = appMap,
+            settings = settings,
+            appActionOrderMap = appActionOrderMap.value.orEmpty(),
+            appVisitOrderMap = appVisitOrderMap.value.orEmpty(),
+            blockSet = blockSet,
+        )
     }
-    val appActionOrderMapFlow = DbSet.actionLogDao
-        .queryLatestUniqueAppIds(subsId)
-        .map {
-            it.mapIndexed { i, appId -> appId to i }.toMap()
-        }
-    tempListFlow = combine(
-        tempListFlow,
-        sortTypeFlow,
-        appActionOrderMapFlow,
-        MainViewModel.instance.appVisitOrderMapFlow,
-    ) { apps, sortType, appIdToOrder, appVisitOrderMap ->
-        when (sortType) {
-            AppSortOption.ByActionTime -> {
-                apps.sortedBy { a -> appIdToOrder[a.id] ?: Int.MAX_VALUE }
-            }
+    return combine(appsFlow, filterInputsFlow) { apps, inputs ->
+        filterSubsApps(
+            apps = apps,
+            appMap = inputs.appMap,
+            settings = inputs.settings,
+            appActionOrderMap = inputs.appActionOrderMap,
+            appVisitOrderMap = inputs.appVisitOrderMap,
+            blockSet = inputs.blockSet,
+            appGroupType = appGroupType,
+            sortType = sortType,
+            showBlockApps = showBlockApps,
+        )
+    }
+}
 
-            AppSortOption.ByAppName -> {
-                apps
-            }
+private data class SubsAppFilterInputs(
+    val appMap: Map<String, AppInfo>,
+    val settings: SettingsStore,
+    val appActionOrderMap: Map<String, Int>,
+    val appVisitOrderMap: Map<String, Int>,
+    val blockSet: Set<String>,
+)
 
-            AppSortOption.ByUsedTime -> {
-                apps.sortedBy { a -> appVisitOrderMap[a.id] ?: Int.MAX_VALUE }
+fun filterSubsApps(
+    apps: List<RawSubscription.RawApp>,
+    appMap: Map<String, AppInfo>,
+    settings: SettingsStore,
+    appActionOrderMap: Map<String, Int>,
+    appVisitOrderMap: Map<String, Int>,
+    blockSet: Set<String>,
+    appGroupType: (SettingsStore) -> Int,
+    sortType: (SettingsStore) -> AppSortOption,
+    showBlockApps: (SettingsStore) -> Boolean,
+): List<RawSubscription.RawApp> {
+    var result = apps.sortedWith { a, b ->
+        // 默认顺序: 已安装(有名字->无名字)->未安装(有名字(来自订阅)->无名字)
+        val x = appMap[a.id]?.name ?: a.name?.let { "\uFFFF" + it }
+        ?: ("\uFFFF\uFFFF" + a.id)
+        val y = appMap[b.id]?.name ?: b.name?.let { "\uFFFF" + it }
+        ?: ("\uFFFF\uFFFF" + b.id)
+        collator.compare(x, y)
+    }
+    result = when (sortType(settings)) {
+        AppSortOption.ByActionTime -> {
+            result.sortedBy { appActionOrderMap[it.id] ?: Int.MAX_VALUE }
+        }
+
+        AppSortOption.ByAppName -> result
+
+        AppSortOption.ByUsedTime -> {
+            result.sortedBy { appVisitOrderMap[it.id] ?: Int.MAX_VALUE }
+        }
+    }
+    val groupType = appGroupType(settings)
+    result = when {
+        groupType == 0 -> emptyList()
+        AppGroupOption.allObjects.all { it.include(groupType) } -> result
+        else -> result.filter { app ->
+            val appInfo = appMap[app.id]
+            when {
+                appInfo == null -> AppGroupOption.UnInstalledGroup.include(groupType)
+                appInfo.isSystem -> AppGroupOption.SystemGroup.include(groupType)
+                else -> AppGroupOption.UserGroup.include(groupType)
             }
         }
     }
-    tempListFlow = combine(
-        tempListFlow,
-        appGroupTypeFlow,
-        appInfoMapFlow,
-    ) { apps, appGroupType, appMap ->
-        if (appGroupType == 0) {
-            emptyList()
-        } else if (AppGroupOption.allObjects.all { it.include(appGroupType) }) {
-            apps
-        } else {
-            var tempList = apps
-            if (!AppGroupOption.SystemGroup.include(appGroupType)) {
-                tempList = tempList.filterNot { appMap[it.id]?.isSystem == true }
-            }
-            if (!AppGroupOption.UserGroup.include(appGroupType)) {
-                tempList = tempList.filterNot { appMap[it.id]?.isSystem == false }
-            }
-            if (!AppGroupOption.UnInstalledGroup.include(appGroupType)) {
-                tempList = tempList.filterNot { appMap[it.id] == null }
-            }
-            tempList
-        }
+    if (!showBlockApps(settings)) {
+        result = result.filterNot { it.id in blockSet }
     }
-    tempListFlow = combine(
-        tempListFlow,
-        showBlockAppFlow,
-        blockMatchAppListFlow
-    ) { apps, showBlock, blockSet ->
-        if (showBlock) {
-            apps
-        } else {
-            apps.filterNot { it.id in blockSet }
-        }
-    }
-    return tempListFlow.stateInit(appsFlow.value)
+    return result
 }

@@ -3,19 +3,13 @@ package li.songe.gkd.ui.component
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.MainViewModel
 import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.ExcludeData
@@ -26,20 +20,18 @@ import li.songe.gkd.ui.SubsGlobalGroupExcludeRoute
 import li.songe.gkd.ui.UpsertRuleGroupRoute
 import li.songe.gkd.ui.getGlobalGroupChecked
 import li.songe.gkd.ui.style.scaffoldPadding
+import li.songe.gkd.util.SubscriptionStore
 import li.songe.gkd.util.getGroupEnable
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.subsMapFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
-import li.songe.gkd.util.updateSubscription
 
 data class ShowGroupState(
     val subsId: Long,
     val appId: String? = null,
     val groupKey: Int? = null,
     val pageAppId: String? = null,
-    val addAppRule: Boolean = false,
 ) {
     val groupType: Int
         get() = if (appId != null) {
@@ -48,19 +40,11 @@ data class ShowGroupState(
             SubsConfig.GlobalGroupType
         }
 
-    suspend fun querySubsConfig(): SubsConfig? {
-        groupKey ?: error("require groupKey")
-        return if (groupType == SubsConfig.AppGroupType) {
-            appId ?: error("require appId")
-            DbSet.subsConfigDao.queryAppGroupTypeConfig(subsId, appId, groupKey).first()
-        } else {
-            DbSet.subsConfigDao.queryGlobalGroupTypeConfig(subsId, groupKey).first()
-        }
-    }
+    suspend fun querySubsConfig(): SubsConfig? = querySubsConfigFlow().first()
 
     suspend fun queryCategoryConfig(): CategoryConfig? {
         groupKey ?: error("require groupKey")
-        val subs = subsMapFlow.value[subsId] ?: error("require subs")
+        val subs = SubscriptionStore.awaitSubscription(subsId)
         val group = if (groupType == SubsConfig.AppGroupType) {
             subs.apps.find { it.id == appId }?.groups
         } else {
@@ -70,6 +54,21 @@ data class ShowGroupState(
         return DbSet.categoryConfigDao.queryCategoryConfig(subsId, category.key).first()
     }
 }
+
+private fun ShowGroupState.querySubsConfigFlow(): Flow<SubsConfig?> {
+    val groupKey = groupKey ?: error("require groupKey")
+    return if (groupType == SubsConfig.AppGroupType) {
+        val appId = appId ?: error("require appId")
+        DbSet.subsConfigDao.queryAppGroupTypeConfig(subsId, appId, groupKey)
+    } else {
+        DbSet.subsConfigDao.queryGlobalGroupTypeConfig(subsId, groupKey)
+    }
+}
+
+private data class ExcludeEditSession(
+    val groupState: ShowGroupState,
+    val originalConfig: SubsConfig?,
+)
 
 fun RawSubscription.RawGroupProps.toGroupState(
     subsId: Long,
@@ -89,13 +88,61 @@ fun RawSubscription.RawGroupProps.toGroupState(
     )
 }
 
+suspend fun updateRuleGroupEnable(
+    subscription: RawSubscription,
+    appId: String?,
+    group: RawSubscription.RawGroupProps,
+    subsConfig: SubsConfig?,
+    enabled: Boolean,
+) {
+    val newConfig = when {
+        appId != null && group is RawSubscription.RawGlobalGroup -> {
+            val excludeData = ExcludeData.parse(subsConfig?.exclude)
+            (subsConfig ?: SubsConfig(
+                type = SubsConfig.GlobalGroupType,
+                subsId = subscription.id,
+                groupKey = group.key,
+            )).copy(
+                exclude = excludeData.copy(
+                    appIds = excludeData.appIds.toMutableMap().apply {
+                        set(appId, !enabled)
+                    },
+                ).stringify(),
+            )
+        }
+
+        appId != null -> {
+            subsConfig?.copy(enable = enabled) ?: SubsConfig(
+                type = SubsConfig.AppGroupType,
+                subsId = subscription.id,
+                appId = appId,
+                groupKey = group.key,
+                enable = enabled,
+            )
+        }
+
+        else -> {
+            group as RawSubscription.RawGlobalGroup
+            subsConfig?.copy(enable = enabled) ?: SubsConfig(
+                type = SubsConfig.GlobalGroupType,
+                subsId = subscription.id,
+                groupKey = group.key,
+                enable = enabled,
+            )
+        }
+    }
+    DbSet.subsConfigDao.insert(newConfig)
+}
+
 suspend fun batchUpdateGroupEnable(
     groups: Collection<ShowGroupState>,
     enable: Boolean?
 ): List<Pair<ShowGroupState, SubsConfig>> {
     val diffDataList = groups.map { g ->
         if (g.groupKey == null) return@map null
-        val subscription = subsMapFlow.value[g.subsId] ?: return@map null
+        val subscription = runCatching {
+            SubscriptionStore.awaitSubscription(g.subsId)
+        }.getOrNull() ?: return@map null
         val targetGroup = subscription.run {
             if (g.appId != null) {
                 apps.find { a -> a.id == g.appId }?.groups?.find { it.key == g.groupKey }
@@ -207,60 +254,123 @@ suspend fun batchUpdateGroupEnable(
 class RuleGroupState(
     private val mainVm: MainViewModel,
 ) {
-    fun getSubsConfigFlow(state: MutableStateFlow<ShowGroupState?>): StateFlow<SubsConfig?> {
-        return state.map {
-            if (it?.groupKey != null) {
-                if (it.appId != null) {
-                    DbSet.subsConfigDao.queryAppGroupTypeConfig(it.subsId, it.appId, it.groupKey)
-                } else {
-                    DbSet.subsConfigDao.queryGlobalGroupTypeConfig(it.subsId, it.groupKey)
-                }
-            } else {
-                flow { emit(null) }
-            }
-        }.flatMapLatest { it }.stateIn(mainVm.viewModelScope, SharingStarted.Eagerly, null)
-    }
-
-    val showGroupFlow = MutableStateFlow<ShowGroupState?>(null)
-    private val showSubsConfigFlow = getSubsConfigFlow(showGroupFlow)
+    private val showGroupFlow = MutableStateFlow<ShowGroupState?>(null)
     private val dismissGroupShow = { showGroupFlow.value = null }
 
-    val editExcludeGroupFlow = MutableStateFlow<ShowGroupState?>(null)
+    fun showGroup(state: ShowGroupState) {
+        showGroupFlow.value = state
+    }
+
+    private val excludeEditSessionFlow = MutableStateFlow<ExcludeEditSession?>(null)
     private val excludeTextFlow = MutableStateFlow("")
     private val dismissExcludeGroupShow = {
-        editExcludeGroupFlow.value = null
+        excludeEditSessionFlow.value = null
         excludeTextFlow.value = ""
     }
-    private val excludeSubsConfigFlow = getSubsConfigFlow(editExcludeGroupFlow).apply {
-        mainVm.run {
-            launchOnChange {
-                excludeTextFlow.value = value?.let { config ->
-                    ExcludeData.parse(config.exclude).stringify(config.appId)
-                } ?: ""
+    private fun getChangedExcludeData(session: ExcludeEditSession): ExcludeData? {
+        val oldValue = ExcludeData.parse(session.originalConfig?.exclude)
+        val newValue = ExcludeData.parse(
+            excludeTextFlow.value,
+            requireNotNull(session.groupState.appId),
+        )
+        return newValue.takeIf { it != oldValue }
+    }
+
+    private fun openExcludeEditor(state: ShowGroupState) {
+        dismissGroupShow()
+        if (state.appId == null) {
+            mainVm.navigatePage(
+                SubsGlobalGroupExcludeRoute(
+                    state.subsId,
+                    requireNotNull(state.groupKey),
+                ),
+            )
+            return
+        }
+        mainVm.scope.launchTry {
+            val originalConfig = state.querySubsConfig()
+            excludeTextFlow.value = ExcludeData.parse(originalConfig?.exclude)
+                .stringify(state.appId)
+            excludeEditSessionFlow.value = ExcludeEditSession(state, originalConfig)
+        }
+    }
+
+    private suspend fun resetGroupSwitch(
+        state: ShowGroupState,
+        group: RawSubscription.RawGroupProps,
+        subsConfig: SubsConfig,
+    ): String {
+        if (group is RawSubscription.RawGlobalGroup && state.pageAppId != null) {
+            val excludeData = ExcludeData.parse(subsConfig.exclude)
+            DbSet.subsConfigDao.update(
+                subsConfig.copy(
+                    exclude = excludeData.clear(appId = state.pageAppId).stringify(),
+                ),
+            )
+            return "已重置局部开关至默认值"
+        }
+        DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
+        return "已重置开关至默认值"
+    }
+
+    private suspend fun deleteGroup(
+        state: ShowGroupState,
+    ) {
+        val groupKey = requireNotNull(state.groupKey)
+        SubscriptionStore.update(state.subsId) { subscription ->
+            if (state.appId == null) {
+                if (subscription.globalGroups.none { it.key == groupKey }) {
+                    error("规则已不存在")
+                }
+                subscription.copy(
+                    globalGroups = subscription.globalGroups.filter { it.key != groupKey },
+                )
+            } else {
+                val appIndex = subscription.apps.indexOfFirst { it.id == state.appId }
+                if (appIndex < 0) error("应用规则已不存在")
+                val app = subscription.apps[appIndex]
+                if (app.groups.none { it.key == groupKey }) {
+                    error("规则已不存在")
+                }
+                subscription.copy(
+                    apps = subscription.apps.toMutableList().apply {
+                        set(
+                            appIndex,
+                            app.copy(groups = app.groups.filter { it.key != groupKey }),
+                        )
+                    },
+                )
             }
         }
     }
-    private val changedExcludeData: ExcludeData?
-        get() {
-            val oldValue =
-                ExcludeData.parse(excludeSubsConfigFlow.value?.exclude)
-            val newValue = ExcludeData.parse(
-                excludeTextFlow.value,
-                editExcludeGroupFlow.value?.appId!!
-            )
-            if (oldValue != newValue) {
-                return newValue
-            }
-            return null
-        }
+
+    private suspend fun saveChangedExclude(
+        session: ExcludeEditSession,
+        subscription: RawSubscription,
+        excludeData: ExcludeData,
+    ) {
+        val state = session.groupState
+        val appId = requireNotNull(state.appId)
+        val groupKey = requireNotNull(state.groupKey)
+        val newSubsConfig = (session.originalConfig ?: SubsConfig(
+            type = SubsConfig.AppGroupType,
+            subsId = subscription.id,
+            appId = appId,
+            groupKey = groupKey,
+        )).copy(exclude = excludeData.stringify())
+        DbSet.subsConfigDao.insert(newSubsConfig)
+    }
 
     @Composable
     fun Render() {
-        val showGroupState = showGroupFlow.collectAsState().value
+        val showGroupState = showGroupFlow.collectAsStateWithLifecycle().value
         val showSubs = useSubs(showGroupState?.subsId)
         val showGroup = useSubsGroup(showSubs, showGroupState?.groupKey, showGroupState?.appId)
         if (showGroupState?.groupKey != null && showSubs != null && showGroup != null) {
-            val subsConfig = showSubsConfigFlow.collectAsState().value
+            val subsConfigFlow = remember(showGroupState) {
+                showGroupState.querySubsConfigFlow()
+            }
+            val subsConfig = subsConfigFlow.collectAsStateWithLifecycle(null).value
             val excludeData = remember(subsConfig?.exclude) {
                 ExcludeData.parse(subsConfig?.exclude)
             }
@@ -280,111 +390,65 @@ class RuleGroupState(
                     )
                 },
                 onClickEditExclude = {
-                    dismissGroupShow()
-                    if (showGroupState.appId == null) {
-                        mainVm.navigatePage(
-                            SubsGlobalGroupExcludeRoute(
-                                showGroupState.subsId,
-                                showGroupState.groupKey
-                            )
-                        )
-                    } else {
-                        editExcludeGroupFlow.value = showGroupState
-                    }
+                    openExcludeEditor(showGroupState)
                 },
                 onClickResetSwitch = subsConfig?.let {
                     if (showGroup is RawSubscription.RawGlobalGroup) {
                         if (showGroupState.pageAppId != null) {
                             if (excludeData.appIds.contains(showGroupState.pageAppId)) {
-                                mainVm.viewModelScope.launchAsFn {
-                                    DbSet.subsConfigDao.update(
-                                        subsConfig.copy(
-                                            exclude = excludeData.clear(
-                                                appId = showGroupState.pageAppId
-                                            ).stringify()
-                                        )
-                                    )
-                                    toast("已重置局部开关至默认值")
+                                mainVm.scope.launchAsFn {
+                                    toast(resetGroupSwitch(showGroupState, showGroup, subsConfig))
                                 }
                             } else {
                                 null
                             }
                         } else {
                             subsConfig.enable?.let {
-                                mainVm.viewModelScope.launchAsFn {
-                                    DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
-                                    toast("已重置开关至默认值")
+                                mainVm.scope.launchAsFn {
+                                    toast(resetGroupSwitch(showGroupState, showGroup, subsConfig))
                                 }
                             }
                         }
                     } else {
                         subsConfig.enable?.let {
-                            mainVm.viewModelScope.launchAsFn {
-                                DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
-                                toast("已重置开关至默认值")
+                            mainVm.scope.launchAsFn {
+                                toast(resetGroupSwitch(showGroupState, showGroup, subsConfig))
                             }
                         }
                     }
                 },
-                onClickDelete = mainVm.viewModelScope.launchAsFn {
-                    dismissGroupShow()
-                    val r = mainVm.dialogFlow.getResult(
+                onClickDelete = mainVm.scope.launchAsFn {
+                    val r = mainVm.dialogRequests.confirm(
                         title = "删除规则",
                         text = "确定删除 ${showGroup.name} ?",
                         error = true,
                     )
                     if (!r) {
-                        showGroupFlow.value = showGroupState
                         return@launchAsFn
                     }
-                    if (showGroup is RawSubscription.RawGlobalGroup) {
-                        updateSubscription(
-                            showSubs.copy(
-                                globalGroups = showSubs.globalGroups.filter { g -> g.key != showGroup.key }
-                            )
-                        )
-                        DbSet.subsConfigDao.deleteGlobalGroupConfig(
-                            showGroupState.subsId,
-                            showGroupState.groupKey
-                        )
-                    } else if (showGroupState.appId != null) {
-                        updateSubscription(
-                            showSubs.copy(
-                                apps = showSubs.apps.map { a ->
-                                    if (a.id == showGroupState.appId) {
-                                        a.copy(groups = a.groups.filter { g -> g.key != showGroup.key })
-                                    } else {
-                                        a
-                                    }
-                                }
-                            )
-                        )
-                        DbSet.subsConfigDao.deleteAppGroupConfig(
-                            showGroupState.subsId,
-                            showGroupState.appId,
-                            showGroupState.groupKey
-                        )
-                    }
+                    deleteGroup(showGroupState)
+                    dismissGroupShow()
                     toast("删除成功")
                 }
             )
         }
 
-        val excludeGroupState = editExcludeGroupFlow.collectAsState().value
+        val excludeEditSession = excludeEditSessionFlow.collectAsStateWithLifecycle().value
+        val excludeGroupState = excludeEditSession?.groupState
         val excludeSubs = useSubs(excludeGroupState?.subsId)
         val excludeGroup =
             useSubsGroup(excludeSubs, excludeGroupState?.groupKey, excludeGroupState?.appId)
-        if (excludeGroupState?.groupKey != null && excludeGroupState.appId != null && excludeSubs != null && excludeGroup is RawSubscription.RawAppGroup) {
+        if (excludeEditSession != null && excludeGroupState?.groupKey != null && excludeGroupState.appId != null && excludeSubs != null && excludeGroup is RawSubscription.RawAppGroup) {
             FullscreenDialog(onDismissRequest = dismissExcludeGroupShow) {
                 val keyboardController = LocalSoftwareKeyboardController.current
-                val onBack = mainVm.viewModelScope.launchAsFn {
+                val onBack = mainVm.scope.launchAsFn {
                     keyboardController?.hide()
-                    val newValue = changedExcludeData
+                    val newValue = getChangedExcludeData(excludeEditSession)
                     if (newValue != null) {
-                        mainVm.dialogFlow.waitResult(
+                        if (!mainVm.dialogRequests.confirm(
                             title = "提示",
                             text = "当前内容未保存，是否放弃编辑？",
-                        )
+                        )) return@launchAsFn
                     }
                     dismissExcludeGroupShow()
                 }
@@ -406,23 +470,18 @@ class RuleGroupState(
                             },
                             actions = {
                                 PerfIconButton(imageVector = PerfIcon.Save, onClick = throttle {
-                                    val newValue = changedExcludeData
+                                    val newValue = getChangedExcludeData(excludeEditSession)
                                     if (newValue == null) {
                                         toast("无修改")
                                         dismissExcludeGroupShow()
                                     } else {
-                                        val newSubsConfig =
-                                            (excludeSubsConfigFlow.value ?: SubsConfig(
-                                                type = SubsConfig.AppGroupType,
-                                                subsId = excludeSubs.id,
-                                                appId = excludeGroupState.appId,
-                                                groupKey = excludeGroupState.groupKey,
-                                            )).copy(
-                                                exclude = newValue.stringify()
-                                            )
                                         dismissExcludeGroupShow()
-                                        mainVm.viewModelScope.launchTry {
-                                            DbSet.subsConfigDao.insert(newSubsConfig)
+                                        mainVm.scope.launchTry {
+                                            saveChangedExclude(
+                                                excludeEditSession,
+                                                excludeSubs,
+                                                newValue,
+                                            )
                                             toast("更新成功")
                                         }
                                     }

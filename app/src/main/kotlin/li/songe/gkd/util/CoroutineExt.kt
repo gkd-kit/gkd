@@ -4,10 +4,7 @@ import androidx.compose.runtime.Composable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 import li.songe.gkd.data.RpcError
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
@@ -65,11 +62,4 @@ fun <T> CoroutineScope.launchAsFn(
             toast(e.message ?: e.stackTraceToString(), loc = "")
         }
     }
-}
-
-suspend fun stopCoroutine(): Nothing {
-    currentCoroutineContext()[Job]?.cancel()
-    yield()
-    // the following code will not be run
-    throw CancellationException("Coroutine stopped")
 }

@@ -27,7 +27,7 @@ class ScreenshotService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         } finally {
             intent?.let {
                 screenshotUtil?.destroy()
-                screenshotUtil = ScreenshotUtil(this, intent)
+                screenshotUtil = ScreenshotUtil(intent)
                 LogUtils.d("screenshot restart")
             }
         }

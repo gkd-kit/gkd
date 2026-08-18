@@ -62,7 +62,6 @@ class TrackService : LifecycleService(), SavedStateRegistryOwner,
     override val savedStateRegistry = registryController.savedStateRegistry
     override val scope get() = lifecycleScope
 
-    private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private val resizeFlow = MutableSharedFlow<Unit>()
     override fun onConfigurationChanged(newConfig: Configuration) {
         lifecycleScope.launch { resizeFlow.emit(Unit) }
@@ -129,7 +128,7 @@ class TrackService : LifecycleService(), SavedStateRegistryOwner,
 
         fun removeView() {
             subScope.cancel()
-            windowManager.removeView(view)
+            app.windowManager.removeView(view)
             removed = true
         }
 
@@ -142,7 +141,7 @@ class TrackService : LifecycleService(), SavedStateRegistryOwner,
             if (!connected || removed) return
             if (layoutParams.alpha == alpha) return
             layoutParams.alpha = alpha
-            windowManager.updateViewLayout(view, layoutParams)
+            app.windowManager.updateViewLayout(view, layoutParams)
         }
 
         fun updateViewLayout(
@@ -163,10 +162,10 @@ class TrackService : LifecycleService(), SavedStateRegistryOwner,
             )
             if (!connected) {
                 connected = true
-                windowManager.addView(view, layoutParams)
+                app.windowManager.addView(view, layoutParams)
                 subScope.launch { resizeFlow.collect { syncRotation() } }
             } else {
-                windowManager.updateViewLayout(view, layoutParams)
+                app.windowManager.updateViewLayout(view, layoutParams)
                 recalcOverlappingAlpha()
             }
         }

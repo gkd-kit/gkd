@@ -15,19 +15,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowInsetsControllerCompat
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import li.songe.gkd.app
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.share.LocalDarkTheme
@@ -42,26 +39,19 @@ fun AppTheme(
     invertedTheme: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val scope = rememberCoroutineScope()
-    val enableDarkThemeFlow = remember {
-        storeFlow.map { it.enableDarkTheme }.debounce(300).stateIn(
-            scope, SharingStarted.Eagerly, storeFlow.value.enableDarkTheme
-        )
+    val appearanceFlow = remember {
+        storeFlow
+            .distinctUntilChangedBy { it.enableDarkTheme to it.enableDynamicColor }
+            .debounce(300)
     }
-    val enableDynamicColorFlow = remember {
-        storeFlow.map { it.enableDynamicColor }.debounce(300).stateIn(
-            scope, SharingStarted.Eagerly, storeFlow.value.enableDynamicColor
-        )
-    }
-    val enableDarkTheme by enableDarkThemeFlow.collectAsState()
-    val enableDynamicColor by enableDynamicColorFlow.collectAsState()
+    val store by appearanceFlow.collectAsStateWithLifecycle(storeFlow.value)
     val systemInDarkTheme = isSystemInDarkTheme()
-    val darkTheme = (enableDarkTheme ?: systemInDarkTheme).let {
+    val darkTheme = (store.enableDarkTheme ?: systemInDarkTheme).let {
         if (invertedTheme) !it else it
     }
     val colorScheme = when {
-        AndroidTarget.S && enableDynamicColor && darkTheme -> dynamicDarkColorScheme(app)
-        AndroidTarget.S && enableDynamicColor && !darkTheme -> dynamicLightColorScheme(app)
+        AndroidTarget.S && store.enableDynamicColor && darkTheme -> dynamicDarkColorScheme(app)
+        AndroidTarget.S && store.enableDynamicColor && !darkTheme -> dynamicLightColorScheme(app)
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }

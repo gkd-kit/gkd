@@ -13,8 +13,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
@@ -26,7 +24,7 @@ import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.useScrollBehaviorState
+import li.songe.gkd.ui.component.rememberColumnScrollState
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
@@ -42,9 +40,10 @@ data object CrashReportRoute : NavKey
 @Composable
 fun CrashReportPage() {
     val mainVm = LocalMainViewModel.current
-    val vm = viewModel<CrashReportVm>()
-    val scrollKey = rememberSaveable { mutableIntStateOf(0) }
-    val (scrollBehavior, scrollState) = useScrollBehaviorState(scrollKey)
+    val vm = viewModel { CrashReportVm(mainVm.takeCrashDataList()) }
+    val pageScrollState = rememberColumnScrollState()
+    val scrollBehavior = pageScrollState.scrollBehavior
+    val scrollState = pageScrollState.scrollState
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
@@ -59,7 +58,7 @@ fun CrashReportPage() {
                 title = {
                     Text(
                         text = "崩溃记录",
-                        modifier = Modifier.noRippleClickable(onClick = throttle { scrollKey.intValue++ })
+                        modifier = Modifier.noRippleClickable(onClick = throttle(pageScrollState::resetScroll))
                     )
                 },
             )
@@ -75,7 +74,7 @@ fun CrashReportPage() {
                     }
                     Spacer(modifier = Modifier.width(itemHorizontalPadding))
                     TextButton(
-                        onClick = { mainVm.showShareLogDlgFlow.value = true },
+                        onClick = { mainVm.shareLog.show() },
                     ) {
                         Text(text = "导出日志")
                     }

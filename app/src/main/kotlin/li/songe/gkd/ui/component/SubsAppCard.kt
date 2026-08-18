@@ -10,23 +10,28 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import li.songe.gkd.data.AppConfig
+import li.songe.gkd.data.AppInfo
+import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.store.blockMatchAppListFlow
-import li.songe.gkd.ui.SubsAppInfoItem
 import li.songe.gkd.ui.style.appItemPadding
 
 
 @Composable
 fun SubsAppCard(
-    data: SubsAppInfoItem,
+    rawApp: RawSubscription.RawApp,
+    appInfo: AppInfo?,
+    appConfig: AppConfig?,
+    enableSize: Int?,
+    switchEnabled: Boolean,
     onClick: (() -> Unit),
     onValueChange: ((Boolean) -> Unit),
 ) {
-    val rawApp = data.rawApp
     Row(
         modifier = Modifier
             .clickable(onClick = onClick)
@@ -34,18 +39,19 @@ fun SubsAppCard(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        AppIcon(appId = data.id)
+        AppIcon(appId = rawApp.id)
         Column(
             modifier = Modifier
                 .weight(1f),
             verticalArrangement = Arrangement.Center
         ) {
-            AppNameText(appInfo = data.appInfo, fallbackName = data.rawApp.name)
+            AppNameText(appInfo = appInfo, fallbackName = rawApp.name)
             if (rawApp.groups.isNotEmpty()) {
-                val enableDesc = when (data.enableSize) {
+                val enableDesc = when (enableSize) {
+                    null -> "${rawApp.groups.size}组规则"
                     0 -> "${rawApp.groups.size}组规则/${rawApp.groups.size}关闭"
                     rawApp.groups.size -> "${rawApp.groups.size}组规则"
-                    else -> "${rawApp.groups.size}组规则/${data.enableSize}启用/${rawApp.groups.size - data.enableSize}关闭"
+                    else -> "${rawApp.groups.size}组规则/${enableSize}启用/${rawApp.groups.size - enableSize}关闭"
                 }
                 Text(
                     text = enableDesc,
@@ -58,7 +64,7 @@ fun SubsAppCard(
                 )
             }
         }
-        if (blockMatchAppListFlow.collectAsState().value.contains(data.id)) {
+        if (blockMatchAppListFlow.collectAsStateWithLifecycle().value.contains(rawApp.id)) {
             PerfIcon(
                 modifier = Modifier
                     .padding(2.dp)
@@ -68,11 +74,14 @@ fun SubsAppCard(
             )
         }
         PerfSwitch(
-            key = data.id,
-            checked = data.appConfig?.enable ?: (data.appInfo != null),
+            key = rawApp.id,
+            checked = if (switchEnabled) {
+                appConfig?.enable ?: (appInfo != null)
+            } else {
+                true
+            },
             onCheckedChange = onValueChange,
+            enabled = switchEnabled,
         )
     }
 }
-
-

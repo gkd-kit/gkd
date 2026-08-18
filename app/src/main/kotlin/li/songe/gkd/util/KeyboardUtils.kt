@@ -26,7 +26,10 @@ object KeyboardUtils {
         return delta - sDecorViewDelta
     }
 
-    fun registerSoftInputChangedListener(window: Window, onSoftInputChanged: (Int) -> Unit) {
+    fun registerSoftInputChangedListener(
+        window: Window,
+        onSoftInputChanged: (Int) -> Unit,
+    ): () -> Unit {
         val flags = window.attributes.flags
         if ((flags and WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS) != 0) {
             window.clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
@@ -42,6 +45,15 @@ object KeyboardUtils {
         }
         contentView.getViewTreeObserver().addOnGlobalLayoutListener(onGlobalLayoutListener)
         contentView.setTag(TAG_ON_GLOBAL_LAYOUT_LISTENER, onGlobalLayoutListener)
+        return {
+            val viewTreeObserver = contentView.viewTreeObserver
+            if (viewTreeObserver.isAlive) {
+                viewTreeObserver.removeOnGlobalLayoutListener(onGlobalLayoutListener)
+            }
+            if (contentView.getTag(TAG_ON_GLOBAL_LAYOUT_LISTENER) === onGlobalLayoutListener) {
+                contentView.setTag(TAG_ON_GLOBAL_LAYOUT_LISTENER, null)
+            }
+        }
     }
 
 

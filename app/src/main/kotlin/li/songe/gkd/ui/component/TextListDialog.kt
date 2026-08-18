@@ -9,7 +9,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import li.songe.gkd.util.throttle
 
 @Composable
@@ -20,7 +19,7 @@ fun TextListDialog(
     val textModifier = Modifier
         .fillMaxWidth()
         .padding(16.dp)
-    Dialog(onDismissRequest = onDismiss) {
+    AppDialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()

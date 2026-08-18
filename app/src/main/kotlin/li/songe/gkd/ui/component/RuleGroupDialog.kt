@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,7 +50,40 @@ fun RuleGroupDialog(
     onClickDelete: () -> Unit = {}
 ) {
     val mainVm = LocalMainViewModel.current
-    AlertDialog(
+    val scrollState = rememberScrollState()
+    val textState = remember {
+        mutableStateOf(
+            group.cacheStr.run {
+                // 优化: 大字符串第一次显示卡顿
+                if (length > 1000) substring(0, 1000) else this
+            }
+        )
+    }
+    LaunchedEffect(group.cacheStr) {
+        delay(50)
+        if (group.cacheStr.length != textState.value.length) {
+            textState.value = group.cacheStr
+        }
+    }
+    val darkTheme = LocalDarkTheme.current
+    val annotatedText = remember(textState.value, darkTheme) {
+        getJson5AnnotatedString(textState.value, darkTheme)
+    }
+    val targetRoute = remember(subs.id, appId, group.key) {
+        if (group is RawSubscription.RawGlobalGroup) {
+            SubsGlobalGroupListRoute(
+                subsItemId = subs.id,
+                focusGroupKey = group.key
+            )
+        } else {
+            SubsAppGroupListRoute(
+                subsItemId = subs.id,
+                appId = appId.toString(),
+                focusGroupKey = group.key
+            )
+        }
+    }
+    AppAlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text(text = "规则详情") },
         text = {
@@ -66,34 +98,14 @@ fun RuleGroupDialog(
                         .heightIn(min = 100.dp, max = maxHeight)
                         .clip(MaterialTheme.shapes.extraSmall)
                         .background(MaterialTheme.colorScheme.secondaryContainer)
-                        .verticalScroll(rememberScrollState())
+                        .verticalScroll(scrollState)
                         .clearAndSetSemantics {
                             contentDescription = "规则内容"
                         }
                 ) {
                     SelectionContainer {
-                        val textState = remember {
-                            mutableStateOf(
-                                group.cacheStr.run {
-                                    // 优化: 大字符串第一次显示卡顿
-                                    if (length > 1000) substring(0, 1000) else this
-                                }
-                            )
-                        }
-                        LaunchedEffect(group.cacheStr) {
-                            delay(50)
-                            if (group.cacheStr.length != textState.value.length) {
-                                textState.value = group.cacheStr
-                            }
-                        }
-                        val darkTheme = LocalDarkTheme.current
                         Text(
-                            text = remember(textState.value, darkTheme) {
-                                getJson5AnnotatedString(
-                                    textState.value,
-                                    darkTheme
-                                )
-                            },
+                            text = annotatedText,
                             modifier = Modifier.padding(4.dp),
                             color = MaterialTheme.colorScheme.secondary,
                             style = MaterialTheme.typography.bodySmall,
@@ -127,20 +139,6 @@ fun RuleGroupDialog(
         confirmButton = {
             Row {
                 val currentRoute = mainVm.topRoute
-                val targetRoute = remember(subs.id, appId, group.key) {
-                    if (group is RawSubscription.RawGlobalGroup) {
-                        SubsGlobalGroupListRoute(
-                            subsItemId = subs.id,
-                            focusGroupKey = group.key
-                        )
-                    } else {
-                        SubsAppGroupListRoute(
-                            subsItemId = subs.id,
-                            appId = appId.toString(),
-                            focusGroupKey = group.key
-                        )
-                    }
-                }
                 if (targetRoute::class != currentRoute::class) {
                     PerfIconButton(imageVector = PerfIcon.ArrowForward, onClick = throttle {
                         onDismissRequest()

@@ -28,12 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,15 +41,15 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.store.blockMatchAppListFlow
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.AppConfigRoute
 import li.songe.gkd.ui.EditBlockAppListRoute
 import li.songe.gkd.ui.component.AnimatedIconButton
@@ -70,45 +67,43 @@ import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.QueryPkgAuthCard
 import li.songe.gkd.ui.component.autoFocus
-import li.songe.gkd.ui.component.updateDialogOptions
-import li.songe.gkd.ui.component.useListScrollState
+import li.songe.gkd.ui.component.rememberListScrollState
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.util.AppGroupOption
 import li.songe.gkd.util.AppSortOption
-import li.songe.gkd.util.appListAuthAbnormalFlow
+import li.songe.gkd.util.findOption
 import li.songe.gkd.util.getUpDownTransform
-import li.songe.gkd.util.ruleSummaryFlow
-import li.songe.gkd.util.switchItem
+import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
-import li.songe.gkd.util.updateAllAppInfo
-import li.songe.gkd.util.updateAppMutex
 
 @Composable
 fun useAppListPage(): ScaffoldExt {
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
 
-    val vm = viewModel<HomeVm>()
-    val appInfos by vm.appInfosFlow.collectAsState()
-    val searchStr by vm.searchStrFlow.collectAsState()
-    val ruleSummary by ruleSummaryFlow.collectAsState()
+    val vm = viewModel { AppListVm(mainVm) }
+    val state by vm.uiState.collectAsStateWithLifecycle()
+    val store by storeFlow.collectAsStateWithLifecycle()
+    val appInfos = state.appInfos
+    val searchStr = state.searchText
+    val ruleSummary = state.ruleSummary
 
     val globalDesc = if (ruleSummary.globalGroups.isNotEmpty()) {
         "${ruleSummary.globalGroups.size}全局"
     } else {
         null
     }
-    val showSearchBar by vm.showSearchBarFlow.collectAsState()
-    val refreshing by updateAppMutex.state.collectAsState()
+    val showSearchBar = state.showSearchBar
+    val refreshing = state.refreshing
     val pullToRefreshState = rememberPullToRefreshState()
-    val editWhiteListMode by vm.editWhiteListModeFlow.collectAsState()
-    val scrollKey = rememberSaveable { mutableIntStateOf(0) }
-    val (scrollBehavior, listState) = useListScrollState(scrollKey)
+    val editWhiteListMode = state.editWhiteListMode
+    val pageScrollState = rememberListScrollState()
+    val scrollBehavior = pageScrollState.scrollBehavior
+    val listState = pageScrollState.listState
     LaunchedEffect(null) {
         listOf(
             PermissionStates.queryPackages.stateFlow,
@@ -116,39 +111,32 @@ fun useAppListPage(): ScaffoldExt {
         ).forEach {
             launch {
                 it.drop(1).collect {
-                    scrollKey.intValue++
+                    pageScrollState.resetScroll()
                 }
             }
         }
-        mainVm.resetPageScrollEvent.collect {
-            if (it == BottomNavItem.AppList) {
-                scrollKey.intValue++
-            }
-        }
     }
+    ResetPageScrollOnRequest(BottomNavItem.AppList, pageScrollState::resetScrollAndAwait)
     return ScaffoldExt(
         navItem = BottomNavItem.AppList,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             DisposableEffect(null) {
                 onDispose {
-                    if (vm.searchStrFlow.value.isEmpty()) {
-                        vm.showSearchBarFlow.value = false
-                    }
-                    vm.editWhiteListModeFlow.value = false
+                    vm.onLeaveScreen()
                 }
             }
             PerfTopAppBar(scrollBehavior = scrollBehavior, title = {
                 val firstShowSearchBar = remember { showSearchBar }
                 if (showSearchBar) {
                     BackHandler {
-                        if (!context.justHideSoftInput()) {
-                            vm.showSearchBarFlow.value = false
+                        if (!context.imeController.requestHide()) {
+                            vm.closeSearch()
                         }
                     }
                     AppBarTextField(
                         value = searchStr,
-                        onValueChange = { newValue -> vm.searchStrFlow.value = newValue.trim() },
+                        onValueChange = vm::setSearchText,
                         hint = "请输入应用名称/ID",
                         modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                     )
@@ -156,13 +144,11 @@ fun useAppListPage(): ScaffoldExt {
                     val titleModifier = Modifier
                         .noRippleClickable(
                             onClick = throttle {
-                                scrollKey.intValue++
+                                pageScrollState.resetScroll()
                             }
                         )
                     if (editWhiteListMode) {
-                        BackHandler {
-                            vm.editWhiteListModeFlow.value = false
-                        }
+                        BackHandler(onBack = vm::closeEditWhiteListMode)
                     }
                     AnimatedContent(
                         targetState = editWhiteListMode,
@@ -182,17 +168,17 @@ fun useAppListPage(): ScaffoldExt {
                     }
                 }
             }, actions = {
-                if (appListAuthAbnormalFlow.collectAsState().value) {
+                if (state.queryPackagesAbnormal) {
                     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
                         PerfIconButton(
                             imageVector = PerfIcon.WarningAmber,
                             contentDescription = PermissionStates.queryPackages.name + "异常",
-                            onClick = throttle {
-                                mainVm.dialogFlow.updateDialogOptions(
+                            onClick = throttle(vm.scope.launchAsFn {
+                                mainVm.dialogRequests.showMessage(
                                     title = "权限异常",
                                     text = "检测到已授予「${PermissionStates.queryPackages.name}」但实际获取应用数量稀少，已使用其它方式获取但可能不全，在应用列表下拉刷新可重新获取，若无法解决可尝试关闭权限后重新授予或重启设备"
                                 )
-                            },
+                            }),
                         )
                     }
                 }
@@ -207,22 +193,10 @@ fun useAppListPage(): ScaffoldExt {
                             LocalContentColor.current
                         }
                     ),
-                    onClick = throttle {
-                        vm.editWhiteListModeFlow.update { !it }
-                    },
+                    onClick = throttle(vm::toggleEditWhiteListMode),
                 )
                 AnimatedIconButton(
-                    onClick = throttle {
-                        if (showSearchBar) {
-                            if (vm.searchStrFlow.value.isEmpty()) {
-                                vm.showSearchBarFlow.value = false
-                            } else {
-                                vm.searchStrFlow.value = ""
-                            }
-                        } else {
-                            vm.showSearchBarFlow.value = true
-                        }
-                    },
+                    onClick = throttle(vm::toggleSearch),
                     id = R.drawable.ic_anim_search_close,
                     atEnd = showSearchBar,
                     contentDescription = if (showSearchBar) "关闭搜索" else "搜索应用列表",
@@ -242,33 +216,34 @@ fun useAppListPage(): ScaffoldExt {
                     DropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
-                    ) {
+                        ) {
                         MenuGroupCard(inTop = true, title = "排序") {
-                            var sortType by vm.sortTypeFlow.asMutableState()
                             AppSortOption.objects.forEach { option ->
                                 MenuItemRadioButton(
                                     text = option.label,
-                                    selected = sortType == option,
-                                    onClick = { sortType = option },
+                                    selected = AppSortOption.objects.findOption(store.appSort) == option,
+                                    onClick = { vm.setSortType(option) },
                                 )
                             }
                         }
                         MenuGroupCard(title = "分组") {
-                            var appGroupType by vm.appGroupTypeFlow.asMutableState()
                             AppGroupOption.normalObjects.forEach { option ->
-                                val newValue = option.invert(appGroupType)
+                                val newValue = option.invert(store.appGroupType)
                                 MenuItemCheckbox(
                                     enabled = newValue != 0,
                                     text = option.label,
-                                    checked = option.include(appGroupType),
-                                    onClick = { appGroupType = newValue },
+                                    checked = option.include(store.appGroupType),
+                                    onClick = { vm.setAppGroupType(newValue) },
                                 )
                             }
                         }
                         MenuGroupCard(title = "筛选") {
                             MenuItemCheckbox(
                                 text = "白名单",
-                                stateFlow = vm.showBlockAppFlow,
+                                checked = store.showBlockApp,
+                                onClick = {
+                                    vm.setShowBlockApp(!store.showBlockApp)
+                                },
                             )
                         }
                     }
@@ -286,18 +261,17 @@ fun useAppListPage(): ScaffoldExt {
             )
         }
     ) { contentPadding ->
-        val canQueryPkg by PermissionStates.queryPackages.stateFlow.collectAsState()
         PullToRefreshBox(
             modifier = Modifier.padding(contentPadding),
             state = pullToRefreshState,
             isRefreshing = refreshing,
-            onRefresh = { updateAllAppInfo() }
+            onRefresh = vm::refresh,
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = listState
             ) {
-                if (!canQueryPkg) {
+                if (!state.canQueryPackages) {
                     item(key = 1, contentType = 1) {
                         QueryPkgAuthCard()
                     }
@@ -330,12 +304,22 @@ fun useAppListPage(): ScaffoldExt {
                     AppItemCard(
                         appInfo = appInfo,
                         desc = desc,
+                        editWhiteListMode = editWhiteListMode,
+                        inWhiteList = appInfo.id in state.whiteListAppIds,
+                        onClick = {
+                            if (editWhiteListMode) {
+                                vm.toggleWhiteList(appInfo.id)
+                            } else {
+                                context.imeController.requestHide()
+                                mainVm.navigatePage(AppConfigRoute(appInfo.id))
+                            }
+                        },
                     )
                 }
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsState().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
+                        EmptyText(text = if (state.showAllApps) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }
@@ -348,23 +332,13 @@ fun useAppListPage(): ScaffoldExt {
 private fun AppItemCard(
     appInfo: AppInfo,
     desc: String?,
+    editWhiteListMode: Boolean,
+    inWhiteList: Boolean,
+    onClick: () -> Unit,
 ) {
-    val mainVm = LocalMainViewModel.current
-    val context = LocalActivity.current as MainActivity
-    val vm = viewModel<HomeVm>()
-    val editWhiteListMode = vm.editWhiteListModeFlow.collectAsState().value
-    val inWhiteList = blockMatchAppListFlow.collectAsState().value.contains(appInfo.id)
     Row(
         modifier = Modifier
-            .clickable(
-                onClick = throttle {
-                    if (vm.editWhiteListModeFlow.value) {
-                        blockMatchAppListFlow.update { it.switchItem(appInfo.id) }
-                    } else {
-                        context.justHideSoftInput()
-                        mainVm.navigatePage(AppConfigRoute(appInfo.id))
-                    }
-                })
+            .clickable(onClick = throttle(onClick))
             .clearAndSetSemantics {
                 contentDescription = if (editWhiteListMode) {
                     appInfo.name

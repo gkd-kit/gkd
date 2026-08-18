@@ -8,7 +8,7 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,14 +36,14 @@ fun AppNameText(
     style: TextStyle = LocalTextStyle.current,
     color: Color = Color.Unspecified,
 ) {
-    val info = appInfo ?: appInfoMapFlow.collectAsState().value[appId]
+    val info = appInfo ?: appInfoMapFlow.collectAsStateWithLifecycle().value[appId]
     val showSystemIcon = info?.isSystem == true
     val appName = (info?.name ?: fallbackName ?: appId ?: error("appId is required"))
     val userName = info?.userId?.let { userId ->
         if (userId == currentUserId) {
             null
         } else {
-            val userInfo = otherUserMapFlow.collectAsState().value[userId]
+            val userInfo = otherUserMapFlow.collectAsStateWithLifecycle().value[userId]
             "「${userInfo?.name ?: userId}」"
         }
     }

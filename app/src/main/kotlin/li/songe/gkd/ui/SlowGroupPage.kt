@@ -13,7 +13,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,13 +25,13 @@ import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.appInfoMapFlow
+import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.ruleSummaryFlow
 import li.songe.gkd.util.throttle
 
@@ -41,8 +41,8 @@ data object SlowGroupRoute : NavKey
 @Composable
 fun SlowGroupPage() {
     val mainVm = LocalMainViewModel.current
-    val ruleSummary by ruleSummaryFlow.collectAsState()
-    val appInfoCache by appInfoMapFlow.collectAsState()
+    val ruleSummary by ruleSummaryFlow.collectAsStateWithLifecycle()
+    val appInfoCache by appInfoMapFlow.collectAsStateWithLifecycle()
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
@@ -57,16 +57,19 @@ fun SlowGroupPage() {
                 },
                 title = { Text(text = "缓慢查询") },
                 actions = {
-                    PerfIconButton(imageVector = PerfIcon.Info, onClick = throttle {
-                        mainVm.dialogFlow.updateDialogOptions(
-                            title = "缓慢查询",
-                            text = arrayOf(
-                                "任意单个规则同时满足以下 3 个条件即判定为缓慢查询",
-                                "1. 选择器右侧无法快速查询且不是主动查询, 或内部使用<<且无法快速查询\n2. preKeys 为空\n3. matchTime 为空或大于 10s",
-                                "缓慢查询可能导致触发缓慢或更多耗电, 一些可能优化的建议操作\n1. 降低选择器获取新节点次数\n2. 降低或限制规则查询时间或次数"
-                            ).joinToString("\n\n"),
-                        )
-                    })
+                    PerfIconButton(
+                        imageVector = PerfIcon.Info,
+                        onClick = throttle(mainVm.scope.launchAsFn {
+                            mainVm.dialogRequests.showMessage(
+                                title = "缓慢查询",
+                                text = arrayOf(
+                                    "任意单个规则同时满足以下 3 个条件即判定为缓慢查询",
+                                    "1. 选择器右侧无法快速查询且不是主动查询, 或内部使用<<且无法快速查询\n2. preKeys 为空\n3. matchTime 为空或大于 10s",
+                                    "缓慢查询可能导致触发缓慢或更多耗电, 一些可能优化的建议操作\n1. 降低选择器获取新节点次数\n2. 降低或限制规则查询时间或次数"
+                                ).joinToString("\n\n"),
+                            )
+                        }),
+                    )
                 }
             )
         }

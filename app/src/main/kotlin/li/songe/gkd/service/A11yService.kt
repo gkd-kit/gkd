@@ -2,7 +2,6 @@ package li.songe.gkd.service
 
 import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
-import android.content.Context.WINDOW_SERVICE
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.view.Display
@@ -165,7 +164,6 @@ abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLi
 private fun A11yService.useAliveOverlayView() {
     val context = this
     var aliveView: View? = null
-    val wm by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     fun removeA11View() {
         if (aliveView != null) {
             wm.removeView(aliveView)

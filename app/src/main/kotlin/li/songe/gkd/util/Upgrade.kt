@@ -5,12 +5,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -32,6 +31,7 @@ import li.songe.gkd.META
 import li.songe.gkd.app
 import li.songe.gkd.store.createAnyFlow
 import li.songe.gkd.store.storeFlow
+import li.songe.gkd.ui.component.AppAlertDialog
 import java.io.File
 import java.net.URI
 import kotlin.time.Duration.Companion.days
@@ -135,7 +135,7 @@ class UpdateStatus(val scope: CoroutineScope) {
 
     @Composable
     fun UpgradeDialog() {
-        newVersionFlow.collectAsState().value?.let { newVersionVal ->
+        newVersionFlow.collectAsStateWithLifecycle().value?.let { newVersionVal ->
             val text = remember {
                 val logs = newVersionVal.versionLogs.takeWhile { v ->
                     v.code > META.versionCode
@@ -150,7 +150,8 @@ class UpdateStatus(val scope: CoroutineScope) {
                     }
                 }".trimEnd()
             }
-            AlertDialog(
+            val scrollState = rememberScrollState()
+            AppAlertDialog(
                 title = {
                     Text(text = "新版本")
                 },
@@ -160,7 +161,7 @@ class UpdateStatus(val scope: CoroutineScope) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(max = 400.dp)
-                            .verticalScroll(rememberScrollState())
+                            .verticalScroll(scrollState)
                     )
                 },
                 onDismissRequest = { },
@@ -191,10 +192,10 @@ class UpdateStatus(val scope: CoroutineScope) {
             )
         }
 
-        downloadStatusFlow.collectAsState().value?.let { downloadStatusVal ->
+        downloadStatusFlow.collectAsStateWithLifecycle().value?.let { downloadStatusVal ->
             when (downloadStatusVal) {
                 is LoadStatus.Loading -> {
-                    AlertDialog(
+                    AppAlertDialog(
                         title = { Text(text = "下载中") },
                         text = {
                             LinearProgressIndicator(
@@ -215,7 +216,7 @@ class UpdateStatus(val scope: CoroutineScope) {
                 }
 
                 is LoadStatus.Failure -> {
-                    AlertDialog(
+                    AppAlertDialog(
                         title = { Text(text = "下载失败") },
                         text = {
                             Text(text = downloadStatusVal.exception.let {
@@ -234,7 +235,7 @@ class UpdateStatus(val scope: CoroutineScope) {
                 }
 
                 is LoadStatus.Success -> {
-                    AlertDialog(
+                    AppAlertDialog(
                         title = { Text(text = "下载完毕") },
                         text = {
                             Text(text = "可继续选择安装新版本")

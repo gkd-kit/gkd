@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import li.songe.gkd.a11y.topActivityFlow
+import li.songe.gkd.app
 import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.store.createAnyFlow
 import li.songe.gkd.ui.component.PerfIcon
@@ -134,8 +135,6 @@ abstract class OverlayWindowService(
         performRestore(null)
     }
     override val savedStateRegistry = registryController.savedStateRegistry
-
-    private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
 
     @Composable
     abstract fun ComposeContent()
@@ -246,7 +245,7 @@ abstract class OverlayWindowService(
                                 val fraction = animator.animatedValue as Float
                                 layoutParams.x = (startX + (x - startX) * fraction).toInt()
                                 layoutParams.y = (startY + (y - startY) * fraction).toInt()
-                                windowManager.updateViewLayout(view, layoutParams)
+                                app.windowManager.updateViewLayout(view, layoutParams)
                             } else {
                                 pause()
                             }
@@ -297,7 +296,7 @@ abstract class OverlayWindowService(
                                 screenHeight - view.height - marginY
                             )
                             positionFlow.value = listOf(layoutParams.x, layoutParams.y)
-                            windowManager.updateViewLayout(view, layoutParams)
+                            app.windowManager.updateViewLayout(view, layoutParams)
                             longClickJob?.let {
                                 val maxBreakLongOffset = 10
                                 if (abs(dx) > maxBreakLongOffset || abs(dy) > maxBreakLongOffset) {
@@ -322,8 +321,8 @@ abstract class OverlayWindowService(
                     else -> false
                 }
             }
-            windowManager.addView(view, layoutParams)
+            app.windowManager.addView(view, layoutParams)
         }
-        onDestroyed { windowManager.removeView(view) }
+        onDestroyed { app.windowManager.removeView(view) }
     }
 }

@@ -19,7 +19,6 @@ import li.songe.gkd.MainActivity
 import li.songe.gkd.app
 import li.songe.gkd.isActivityVisible
 import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.permission.ensurePermission
 import java.io.File
 import kotlin.reflect.KClass
 
@@ -56,7 +55,7 @@ suspend fun MainActivity.saveFileToDownloads(file: File) {
             }
         }
     } else {
-        if (!ensurePermission(this, PermissionStates.writeExternalStorage)) return
+        if (!mainVm.permissionRequests.ensurePermissions(PermissionStates.writeExternalStorage)) return
         val targetFile = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
             file.name

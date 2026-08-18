@@ -16,8 +16,9 @@ import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.ScreenUtils
 import li.songe.gkd.util.SnapshotExt
+import li.songe.gkd.util.SubscriptionResult
+import li.songe.gkd.util.SubscriptionStore
 import li.songe.gkd.util.UpdateTimeOption
-import li.songe.gkd.util.checkSubsUpdate
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mapState
 import li.songe.selector.MatchOption
@@ -109,13 +110,25 @@ private fun watchCaptureScreenshot() {
 }
 
 private var lastUpdateSubsTime = 0L
+private var autoRefreshPending = false
 private fun watchAutoUpdateSubs() {
-    val i = storeFlow.value.updateSubsInterval
-    if (i <= 0) return
-    val t = System.currentTimeMillis()
-    if (t - lastUpdateSubsTime > i.coerceAtLeast(UpdateTimeOption.Everyday.value)) {
-        lastUpdateSubsTime = t
-        checkSubsUpdate()
+    val interval = storeFlow.value.updateSubsInterval
+    if (interval <= 0 || autoRefreshPending) return
+    val currentTime = System.currentTimeMillis()
+    if (
+        currentTime - lastUpdateSubsTime <=
+        interval.coerceAtLeast(UpdateTimeOption.Everyday.value)
+    ) return
+    autoRefreshPending = true
+    appScope.launchTry {
+        try {
+            val result = SubscriptionStore.refresh()
+            if (result !is SubscriptionResult.Busy) {
+                lastUpdateSubsTime = currentTime
+            }
+        } finally {
+            autoRefreshPending = false
+        }
     }
 }
 

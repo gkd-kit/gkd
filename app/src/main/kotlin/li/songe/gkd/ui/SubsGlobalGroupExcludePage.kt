@@ -21,18 +21,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
@@ -41,9 +39,8 @@ import li.songe.gkd.R
 import li.songe.gkd.a11y.launcherAppId
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.db.DbSet
 import li.songe.gkd.store.blockMatchAppListFlow
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AnimatedBooleanContent
 import li.songe.gkd.ui.component.AnimatedIconButton
 import li.songe.gkd.ui.component.AnimationFloatingActionButton
@@ -60,23 +57,24 @@ import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfSwitch
 import li.songe.gkd.ui.component.PerfTopAppBar
+import li.songe.gkd.ui.component.SubscriptionPageContent
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.isFullVisible
-import li.songe.gkd.ui.component.useListScrollState
-import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.component.rememberListScrollState
 import li.songe.gkd.ui.icon.BackCloseIcon
 import li.songe.gkd.ui.icon.ResetSettings
 import li.songe.gkd.ui.share.ListPlaceholder
+import li.songe.gkd.ui.share.Loadable
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.itemPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.AppGroupOption
 import li.songe.gkd.util.AppSortOption
-import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.findOption
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.systemAppsFlow
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
@@ -89,284 +87,274 @@ data class SubsGlobalGroupExcludeRoute(
 
 @Composable
 fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
-    val subsItemId = route.subsItemId
-    val groupKey = route.groupKey
-
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
-    val vm = viewModel { SubsGlobalGroupExcludeVm(route) }
-    val subs = vm.subsFlow.collectAsState().value
-    val group = vm.groupFlow.collectAsState().value ?: return
-    val excludeData = vm.excludeDataFlow.collectAsState().value
-    val showAppInfos = vm.showAppInfosFlow.collectAsState().value
+    val vm = viewModel { SubsGlobalGroupExcludeVm(route, mainVm) }
+    val scope = vm.scope
+    SubscriptionPageContent(vm.uiState) { state ->
+        val subs = state.subscription
+        val group = state.group
+        val config = state.config.value
+        val excludeData = config?.excludeData ?: ExcludeData.parse(null)
+        val configReady = state.config is Loadable.Ready
+        val showAppInfos = state.showAppInfos
+        val searchStr by vm.searchStrFlow.collectAsStateWithLifecycle()
+        val editable by vm.editableFlow.collectAsStateWithLifecycle()
+        val excludeText by vm.excludeTextFlow.collectAsStateWithLifecycle()
+        val store by storeFlow.collectAsStateWithLifecycle()
+        val showAllApps = state.showAllApps
+        val blockMatchAppList by blockMatchAppListFlow.collectAsStateWithLifecycle()
+        val showSearchBar by vm.showSearchBarFlow.collectAsStateWithLifecycle()
+        LaunchedEffect(key1 = showSearchBar, block = {
+            if (!showSearchBar) {
+                vm.setSearchText("")
+            }
+        })
+        val pageScrollState = rememberListScrollState(canScroll = { !editable })
+        val scrollBehavior = pageScrollState.scrollBehavior
+        val listState = pageScrollState.listState
+        pageScrollState.ResetOnChange(showAppInfos)
 
-    var searchStr by vm.searchStrFlow.asMutableState()
-    var editable by vm.editableFlow.asMutableState()
+        BackHandler(editable, onBack = throttle {
+            scope.launchTry {
+                context.imeController.requestHide()
+                if (vm.hasUnsavedChanges) {
+                    if (!mainVm.dialogRequests.confirm(
+                        title = "提示",
+                        text = "当前内容未保存，是否放弃编辑？",
+                    )) return@launchTry
+                }
+                vm.setEditable(false)
+            }
+        })
 
-    var showSearchBar by rememberSaveable {
-        mutableStateOf(false)
-    }
-    LaunchedEffect(key1 = showSearchBar, block = {
-        if (!showSearchBar) {
-            searchStr = ""
-        }
-    })
-    val (scrollBehavior, listState) = useListScrollState(
-        vm.resetKey,
-        canScroll = { !editable }
-    )
-
-    BackHandler(editable, onBack = throttle(vm.viewModelScope.launchAsFn {
-        context.justHideSoftInput()
-        if (vm.changedValue != null) {
-            mainVm.dialogFlow.waitResult(
-                title = "提示",
-                text = "当前内容未保存，是否放弃编辑？",
-            )
-        }
-        editable = false
-    }))
-
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            PerfTopAppBar(
-                scrollBehavior = scrollBehavior,
-                canScroll = !editable,
-                navigationIcon = {
-                    IconButton(onClick = throttle(vm.viewModelScope.launchAsFn {
-                        if (vm.editableFlow.value) {
-                            editable = false
-                            context.justHideSoftInput()
-                        } else {
-                            context.hideSoftInput()
-                            mainVm.popPage()
-                        }
-                    })) {
-                        BackCloseIcon(backOrClose = !editable)
-                    }
-                },
-                title = {
-                    if (showSearchBar) {
-                        BackHandler {
-                            if (!context.justHideSoftInput()) {
-                                showSearchBar = false
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                PerfTopAppBar(
+                    scrollBehavior = scrollBehavior,
+                    canScroll = !editable,
+                    navigationIcon = {
+                        IconButton(onClick = throttle {
+                            scope.launchTry {
+                                if (editable) {
+                                    vm.setEditable(false)
+                                    context.imeController.requestHide()
+                                } else {
+                                    context.imeController.hideAndAwait()
+                                    mainVm.popPage()
+                                }
                             }
+                        }) {
+                            BackCloseIcon(backOrClose = !editable)
                         }
-                        AppBarTextField(
-                            value = searchStr,
-                            onValueChange = { newValue ->
-                                searchStr = newValue.trim()
-                            },
-                            hint = "请输入应用名称/ID",
-                            modifier = Modifier.autoFocus(),
-                        )
-                    } else {
-                        TowLineText(
-                            title = group.name,
-                            subtitle = "编辑禁用",
-                            modifier = Modifier.noRippleClickable { vm.resetKey.intValue++ }
-                        )
-                    }
-                },
-                actions = {
-                    AnimatedBooleanContent(
-                        targetState = editable,
-                        contentAlignment = Alignment.TopEnd,
-                        contentTrue = {
-                            PerfIconButton(
-                                imageVector = PerfIcon.Save,
-                                onClick = throttle(vm.viewModelScope.launchAsFn {
-                                    val newExclude = vm.changedValue
-                                    if (newExclude != null) {
-                                        val subsConfig = (vm.subsConfigFlow.value ?: SubsConfig(
-                                            type = SubsConfig.GlobalGroupType,
-                                            subsId = subsItemId,
-                                            groupKey = groupKey,
-                                        )).copy(
-                                            exclude = newExclude.stringify()
-                                        )
-                                        DbSet.subsConfigDao.insert(subsConfig)
-                                        toast("更新成功")
-                                    } else {
-                                        toast("未修改")
-                                    }
-                                    context.justHideSoftInput()
-                                    editable = false
-                                }),
+                    },
+                    title = {
+                        if (showSearchBar) {
+                            BackHandler {
+                                if (!context.imeController.requestHide()) {
+                                    vm.setSearchBarVisible(false)
+                                }
+                            }
+                            AppBarTextField(
+                                value = searchStr,
+                                onValueChange = { newValue ->
+                                    vm.setSearchText(newValue.trim())
+                                },
+                                hint = "请输入应用名称/ID",
+                                modifier = Modifier.autoFocus(),
                             )
-                        },
-                        contentFalse = {
-                            Row {
-                                AnimatedIconButton(
-                                    onClick = {
-                                        if (showSearchBar) {
-                                            if (searchStr.isEmpty()) {
-                                                showSearchBar = false
-                                            } else {
-                                                searchStr = ""
-                                            }
-                                        } else {
-                                            showSearchBar = true
-                                        }
-                                    },
-                                    id = R.drawable.ic_anim_search_close,
-                                    atEnd = showSearchBar,
-                                )
-                                var expanded by remember { mutableStateOf(false) }
+                        } else {
+                            TowLineText(
+                                title = group.name,
+                                subtitle = "编辑禁用",
+                                modifier = Modifier.noRippleClickable(onClick = pageScrollState::resetScroll)
+                            )
+                        }
+                    },
+                    actions = {
+                        AnimatedBooleanContent(
+                            targetState = editable,
+                            contentAlignment = Alignment.TopEnd,
+                            contentTrue = {
                                 PerfIconButton(
-                                    imageVector = PerfIcon.Sort,
-                                    onClick = {
-                                        expanded = true
+                                    imageVector = PerfIcon.Save,
+                                    onClick = throttle {
+                                        scope.launchTry {
+                                            if (vm.saveExcludeText()) {
+                                                toast("更新成功")
+                                            } else {
+                                                toast("未修改")
+                                            }
+                                            context.imeController.requestHide()
+                                            vm.setEditable(false)
+                                        }
                                     },
                                 )
-                                Box(
-                                    modifier = Modifier
-                                        .wrapContentSize(Alignment.TopStart)
-                                ) {
-                                    DropdownMenu(
-                                        expanded = expanded,
-                                        onDismissRequest = { expanded = false }
+                            },
+                            contentFalse = {
+                                Row {
+                                    AnimatedIconButton(
+                                        onClick = {
+                                            if (showSearchBar) {
+                                                if (searchStr.isEmpty()) {
+                                                    vm.setSearchBarVisible(false)
+                                                } else {
+                                                    vm.setSearchText("")
+                                                }
+                                            } else {
+                                                vm.setSearchBarVisible(true)
+                                            }
+                                        },
+                                        id = R.drawable.ic_anim_search_close,
+                                        atEnd = showSearchBar,
+                                    )
+                                    var expanded by remember { mutableStateOf(false) }
+                                    PerfIconButton(
+                                        imageVector = PerfIcon.Sort,
+                                        onClick = {
+                                            expanded = true
+                                        },
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .wrapContentSize(Alignment.TopStart)
                                     ) {
-                                        MenuGroupCard(inTop = true, title = "排序") {
-                                            var sortType by vm.sortTypeFlow.asMutableState()
-                                            AppSortOption.objects.forEach { option ->
-                                                MenuItemRadioButton(
-                                                    text = option.label,
-                                                    selected = sortType == option,
-                                                    onClick = { sortType = option }
-                                                )
+                                        DropdownMenu(
+                                            expanded = expanded,
+                                            onDismissRequest = { expanded = false }
+                                        ) {
+                                            MenuGroupCard(inTop = true, title = "排序") {
+                                                AppSortOption.objects.forEach { option ->
+                                                    MenuItemRadioButton(
+                                                        text = option.label,
+                                                        selected = AppSortOption.objects.findOption(store.subsExcludeSort) == option,
+                                                        onClick = { vm.setSortType(option) }
+                                                    )
+                                                }
                                             }
-                                        }
-                                        MenuGroupCard(title = "分组") {
-                                            var appGroupType by vm.appGroupTypeFlow.asMutableState()
-                                            AppGroupOption.normalObjects.forEach { option ->
-                                                val newValue = option.invert(appGroupType)
+                                            MenuGroupCard(title = "分组") {
+                                                AppGroupOption.normalObjects.forEach { option ->
+                                                    val newValue = option.invert(store.subsExcludeAppGroupType)
+                                                    MenuItemCheckbox(
+                                                        enabled = newValue != 0,
+                                                        text = option.label,
+                                                        checked = option.include(store.subsExcludeAppGroupType),
+                                                        onClick = { vm.setAppGroupType(newValue) },
+                                                    )
+                                                }
+                                            }
+                                            MenuGroupCard(title = "筛选") {
                                                 MenuItemCheckbox(
-                                                    enabled = newValue != 0,
-                                                    text = option.label,
-                                                    checked = option.include(appGroupType),
-                                                    onClick = { appGroupType = newValue },
+                                                    text = "内置禁用",
+                                                    checked = store.subsExcludeShowInnerDisabledApp,
+                                                    onClick = vm::toggleShowInnerDisabledApps,
+                                                )
+                                                MenuItemCheckbox(
+                                                    text = "白名单",
+                                                    checked = store.subsExcludeShowBlockApp,
+                                                    onClick = vm::toggleShowBlockApps,
                                                 )
                                             }
-                                        }
-                                        MenuGroupCard(title = "筛选") {
-                                            MenuItemCheckbox(
-                                                text = "内置禁用",
-                                                stateFlow = vm.showInnerDisabledAppFlow,
-                                            )
-                                            MenuItemCheckbox(
-                                                text = "白名单",
-                                                stateFlow = vm.showBlockAppFlow,
-                                            )
                                         }
                                     }
                                 }
-                            }
-                        },
-                    )
-                })
-        },
-        floatingActionButton = {
-            AnimationFloatingActionButton(
-                visible = !editable && scrollBehavior.isFullVisible,
-                onClick = {
-                    editable = !editable
-                },
-                imageVector = PerfIcon.Edit,
-                contentDescription = "编辑禁用名单"
-            )
-        }
-    ) { contentPadding ->
-        if (editable) {
-            MultiTextField(
-                modifier = Modifier.scaffoldPadding(contentPadding),
-                textFlow = vm.excludeTextFlow,
-                immediateFocus = true,
-                placeholderText = tipText,
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier.scaffoldPadding(contentPadding),
-                state = listState,
-            ) {
-                items(showAppInfos, { it.id }) { appInfo ->
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .itemPadding(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        AppIcon(appId = appInfo.id)
-                        Column(
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            AppNameText(appInfo = appInfo)
-                            Text(
-                                text = appInfo.id,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.fillMaxWidth(),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        val blockMatch =
-                            blockMatchAppListFlow.collectAsState().value.contains(appInfo.id)
-                        if (blockMatch) {
-                            PerfIcon(
-                                modifier = Modifier
-                                    .padding(2.dp)
-                                    .size(20.dp),
-                                imageVector = PerfIcon.Block,
-                                tint = MaterialTheme.colorScheme.secondary,
-                            )
-                        }
-                        val checked = getGlobalGroupChecked(
-                            subs,
-                            excludeData,
-                            group,
-                            appInfo.id
+                            },
                         )
-                        if (checked != null) {
-                            PerfSwitch(
-                                key = appInfo.id,
-                                checked = checked,
-                                onCheckedChange = vm.viewModelScope.launchAsFn { newChecked ->
-                                    val subsConfig = (vm.subsConfigFlow.value ?: SubsConfig(
-                                        type = SubsConfig.GlobalGroupType,
-                                        subsId = subsItemId,
-                                        groupKey = groupKey,
-                                    )).copy(
-                                        exclude = excludeData.copy(
-                                            appIds = excludeData.appIds.toMutableMap()
-                                                .apply {
-                                                    set(appInfo.id, !newChecked)
-                                                })
-                                            .stringify()
-                                    )
-                                    DbSet.subsConfigDao.insert(subsConfig)
-                                },
-                                thumbContent = if (excludeData.appIds.contains(appInfo.id)) ({
-                                    PerfIcon(
-                                        imageVector = ResetSettings,
-                                        modifier = Modifier.size(8.dp)
-                                    )
-                                }) else null,
+                    })
+            },
+            floatingActionButton = {
+                AnimationFloatingActionButton(
+                    visible = configReady && !editable && scrollBehavior.isFullVisible,
+                    onClick = {
+                        vm.setEditable(!editable)
+                    },
+                    imageVector = PerfIcon.Edit,
+                    contentDescription = "编辑禁用名单"
+                )
+            }
+        ) { contentPadding ->
+            if (editable) {
+                MultiTextField(
+                    modifier = Modifier.scaffoldPadding(contentPadding),
+                    text = excludeText,
+                    onTextChange = vm::setExcludeText,
+                    immediateFocus = true,
+                    placeholderText = tipText,
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.scaffoldPadding(contentPadding),
+                    state = listState,
+                ) {
+                    items(showAppInfos, { it.id }) { appInfo ->
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .itemPadding(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            AppIcon(appId = appInfo.id)
+                            Column(
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                AppNameText(appInfo = appInfo)
+                                Text(
+                                    text = appInfo.id,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            val blockMatch = blockMatchAppList.contains(appInfo.id)
+                            if (blockMatch) {
+                                PerfIcon(
+                                    modifier = Modifier
+                                        .padding(2.dp)
+                                        .size(20.dp),
+                                    imageVector = PerfIcon.Block,
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                )
+                            }
+                            val checked = getGlobalGroupChecked(
+                                subs,
+                                excludeData,
+                                group,
+                                appInfo.id
                             )
-                        } else {
-                            InnerDisableSwitch()
+                            if (checked != null) {
+                                PerfSwitch(
+                                    key = appInfo.id,
+                                    checked = checked,
+                                    enabled = configReady,
+                                    onCheckedChange = { newChecked ->
+                                        scope.launchTry {
+                                            vm.setAppChecked(appInfo.id, newChecked)
+                                        }
+                                    },
+                                    thumbContent = if (excludeData.appIds.contains(appInfo.id)) ({
+                                        PerfIcon(
+                                            imageVector = ResetSettings,
+                                            modifier = Modifier.size(8.dp)
+                                        )
+                                    }) else null,
+                                )
+                            } else {
+                                InnerDisableSwitch()
+                            }
                         }
                     }
-                }
-                item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                    Spacer(modifier = Modifier.height(EmptyHeight))
-                    if (showAppInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsState().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
-                        Spacer(modifier = Modifier.height(EmptyHeight / 2))
+                    item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
+                        Spacer(modifier = Modifier.height(EmptyHeight))
+                        if (showAppInfos.isEmpty() && searchStr.isNotEmpty()) {
+                            EmptyText(text = if (showAllApps) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
+                            Spacer(modifier = Modifier.height(EmptyHeight / 2))
+                        }
                     }
                 }
             }

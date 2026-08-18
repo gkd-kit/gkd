@@ -1,19 +1,15 @@
 package li.songe.gkd.ui
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.LocalContentColor
@@ -23,36 +19,30 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import kotlinx.serialization.Serializable
-import li.songe.gkd.MainActivity
 import li.songe.gkd.data.ActivityLog
-import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.FixedTimeText
-import li.songe.gkd.ui.component.LocalNumberCharWidth
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.measureNumberTextWidth
-import li.songe.gkd.ui.component.useListScrollState
-import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.component.rememberListScrollState
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.share.noRippleClickable
@@ -61,7 +51,7 @@ import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.appInfoMapFlow
-import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
@@ -70,16 +60,16 @@ data object ActivityLogRoute : NavKey
 
 @Composable
 fun ActivityLogPage() {
-    val context = LocalActivity.current as MainActivity
-    val mainVm = context.mainVm
+    val mainVm = LocalMainViewModel.current
     val vm = viewModel<ActivityLogVm>()
+    val scope = vm.scope
 
-    val logCount by vm.logCountFlow.collectAsState()
     val list = vm.pagingDataFlow.collectAsLazyPagingItems()
-    val resetKey = rememberSaveable { mutableIntStateOf(0) }
-    val (scrollBehavior, listState) = useListScrollState(resetKey, list.itemCount > 0)
-    val timeTextWidth = measureNumberTextWidth(MaterialTheme.typography.bodySmall)
-
+    val logCount = list.itemCount
+    val pageScrollState = rememberListScrollState()
+    val scrollBehavior = pageScrollState.scrollBehavior
+    val listState = pageScrollState.listState
+    pageScrollState.ResetOnChange(list.itemCount > 0)
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         PerfTopAppBar(
             scrollBehavior = scrollBehavior,
@@ -91,22 +81,24 @@ fun ActivityLogPage() {
             title = {
                 Text(
                     text = "界面日志",
-                    modifier = Modifier.noRippleClickable { resetKey.intValue++ },
+                    modifier = Modifier.noRippleClickable(onClick = pageScrollState::resetScroll),
                 )
             },
             actions = {
                 if (logCount > 0) {
                     PerfIconButton(
                         imageVector = PerfIcon.Delete,
-                        onClick = throttle(fn = vm.viewModelScope.launchAsFn {
-                            mainVm.dialogFlow.waitResult(
-                                title = "删除日志",
-                                text = "确定删除所有界面日志?",
-                                error = true,
-                            )
-                            DbSet.activityLogDao.deleteAll()
-                            toast("删除成功")
-                        })
+                        onClick = throttle {
+                            scope.launchTry {
+                                if (!mainVm.dialogRequests.confirm(
+                                    title = "删除日志",
+                                    text = "确定删除所有界面日志?",
+                                    error = true,
+                                )) return@launchTry
+                                vm.deleteAll()
+                                toast("删除成功")
+                            }
+                        }
                     )
                 }
             }
@@ -120,12 +112,26 @@ fun ActivityLogPage() {
                 count = list.itemCount,
                 key = list.itemKey { it.id }
             ) { i ->
-                val actionLog = list[i] ?: return@items
-                val lastActionLog = if (i > 0) list[i - 1] else null
-                CompositionLocalProvider(
-                    LocalNumberCharWidth provides timeTextWidth
-                ) {
-                    ActivityLogCard(i = i, activityLog = actionLog, lastActivityLog = lastActionLog)
+                val actionLog = list[i]
+                if (actionLog != null) {
+                    val lastActionLog = if (i > 0) list[i - 1] else null
+                    ActivityLogCard(
+                        i = i,
+                        activityLog = actionLog,
+                        lastActivityLog = lastActionLog,
+                        onOpenApp = {
+                            mainVm.navigatePage(AppConfigRoute(actionLog.appId))
+                        },
+                        onShowDetails = {
+                            mainVm.textDialog.showText(
+                                listOfNotNull(
+                                    appInfoMapFlow.value[actionLog.appId]?.name,
+                                    actionLog.appId,
+                                    actionLog.showActivityId,
+                                ).joinToString("\n"),
+                            )
+                        },
+                    )
                 }
             }
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
@@ -143,11 +149,13 @@ private fun ActivityLogCard(
     i: Int,
     activityLog: ActivityLog,
     lastActivityLog: ActivityLog?,
+    onOpenApp: () -> Unit,
+    onShowDetails: () -> Unit,
 ) {
-    val mainVm = LocalMainViewModel.current
     val isDiffApp = activityLog.appId != lastActivityLog?.appId
     val verticalPadding = if (i == 0) 0.dp else if (isDiffApp) 12.dp else 8.dp
     val showActivityId = activityLog.showActivityId
+    val indicatorColor = MaterialTheme.colorScheme.primaryContainer
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -162,13 +170,7 @@ private fun ActivityLogCard(
                 modifier = Modifier
                     .padding(start = itemHorizontalPadding / 4)
                     .clip(MaterialTheme.shapes.extraSmall)
-                    .clickable(onClick = throttle {
-                        mainVm.navigatePage(
-                            AppConfigRoute(
-                                appId = activityLog.appId,
-                            )
-                        )
-                    })
+                    .clickable(onClick = throttle(onOpenApp))
                     .fillMaxWidth()
                     .padding(start = 5.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -193,25 +195,18 @@ private fun ActivityLogCard(
         Row(
             modifier = Modifier
                 .padding(start = itemHorizontalPadding / 4)
-                .clickable(onClick = {
-                    mainVm.textFlow.value = listOfNotNull(
-                        appInfoMapFlow.value[activityLog.appId]?.name,
-                        activityLog.appId,
-                        activityLog.showActivityId,
-                    ).joinToString("\n")
-                })
+                .clickable(onClick = onShowDetails)
                 .fillMaxWidth()
-                .height(IntrinsicSize.Min)
                 .padding(start = itemHorizontalPadding / 4)
+                .drawBehind {
+                    drawRect(
+                        color = indicatorColor,
+                        topLeft = Offset(2.dp.toPx(), 0f),
+                        size = Size(2.dp.toPx(), size.height),
+                    )
+                }
+                .padding(start = 12.dp)
         ) {
-            Spacer(modifier = Modifier.width(2.dp))
-            Spacer(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(2.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-            )
-            Spacer(modifier = Modifier.width(8.dp))
             Column(
                 modifier = Modifier.weight(1f)
             ) {

@@ -39,7 +39,6 @@ import li.songe.gkd.data.Value
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.scaffoldPadding
@@ -47,6 +46,7 @@ import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.client
 import li.songe.gkd.util.copyText
+import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.throttle
 
@@ -87,12 +87,15 @@ fun WebViewPage(route: WebViewRoute) {
             },
             actions = {
                 if (chromeVersion in 1..<MINI_CHROME_VERSION) {
-                    PerfIconButton(imageVector = PerfIcon.WarningAmber, onClick = throttle {
-                        mainVm.dialogFlow.updateDialogOptions(
-                            title = "兼容性提示",
-                            text = "检测到您的系统内置浏览器版本($chromeVersion)过低, 可能无法正常浏览网页文档\n\n建议自行升级版本后重启 GKD 再查看文档, 或点击右上角后在外部浏览器打开查阅\n\n若能正常浏览文档请忽略此项提示"
-                        )
-                    })
+                    PerfIconButton(
+                        imageVector = PerfIcon.WarningAmber,
+                        onClick = throttle(mainVm.scope.launchAsFn {
+                            mainVm.dialogRequests.showMessage(
+                                title = "兼容性提示",
+                                text = "检测到您的系统内置浏览器版本($chromeVersion)过低, 可能无法正常浏览网页文档\n\n建议自行升级版本后重启 GKD 再查看文档, 或点击右上角后在外部浏览器打开查阅\n\n若能正常浏览文档请忽略此项提示",
+                            )
+                        }),
+                    )
                 }
                 var expanded by remember { mutableStateOf(false) }
                 PerfIconButton(imageVector = PerfIcon.MoreVert, onClick = { expanded = true })

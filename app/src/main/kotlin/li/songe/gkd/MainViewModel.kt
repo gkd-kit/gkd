@@ -2,17 +2,13 @@ package li.songe.gkd
 
 import android.content.Intent
 import android.net.Uri
-import android.webkit.URLUtil
-import androidx.lifecycle.viewModelScope
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import io.ktor.client.request.get
-import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -22,11 +18,13 @@ import li.songe.gkd.a11y.useA11yServiceEnabledFlow
 import li.songe.gkd.a11y.useEnabledA11yServicesFlow
 import li.songe.gkd.data.CrashData
 import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubsItem
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.entry.EntryActivity
+import li.songe.gkd.entry.OpenFileActivity
 import li.songe.gkd.priv.AutomationService
 import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.priv.uiAutomationFlow
+import li.songe.gkd.permission.PermissionRequests
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.store.createTextFlow
 import li.songe.gkd.store.storeFlow
@@ -35,61 +33,75 @@ import li.songe.gkd.ui.CrashReportRoute
 import li.songe.gkd.ui.PrivilegeServiceRoute
 import li.songe.gkd.ui.SnapshotPageRoute
 import li.songe.gkd.ui.WebViewRoute
-import li.songe.gkd.ui.component.AlertDialogOptions
-import li.songe.gkd.ui.component.InputSubsLinkOption
+import li.songe.gkd.ui.component.DialogRequests
+import li.songe.gkd.ui.component.GithubUploadState
 import li.songe.gkd.ui.component.RuleGroupState
-import li.songe.gkd.ui.component.UploadOptions
+import li.songe.gkd.ui.component.ShareLogState
+import li.songe.gkd.ui.component.ShowGroupState
+import li.songe.gkd.ui.component.SubsLinkDialogState
+import li.songe.gkd.ui.component.SubsSheetState
+import li.songe.gkd.ui.component.TextDialogState
 import li.songe.gkd.ui.home.BottomNavItem
 import li.songe.gkd.ui.home.HomeRoute
 import li.songe.gkd.ui.share.BaseViewModel
+import li.songe.gkd.ui.share.ActivityResultRequests
 import li.songe.gkd.util.AutomatorModeOption
 import li.songe.gkd.util.BackupUtils
 import li.songe.gkd.util.DefaultSimpleLifeImpl
-import li.songe.gkd.util.LOCAL_SUBS_ID
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.OnSimpleLife
+import li.songe.gkd.util.ShortUrlSet
 import li.songe.gkd.util.ThrottleTimer
 import li.songe.gkd.util.UpdateStatus
 import li.songe.gkd.util.appIconMapFlow
 import li.songe.gkd.util.clearCache
-import li.songe.gkd.util.client
 import li.songe.gkd.util.crashFolder
 import li.songe.gkd.util.crashTempFolder
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.json
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.openUri
 import li.songe.gkd.util.openWeChatScaner
 import li.songe.gkd.util.runMainPost
-import li.songe.gkd.util.subsFolder
-import li.songe.gkd.util.subsItemsFlow
 import li.songe.gkd.util.toast
-import li.songe.gkd.util.updateSubsMutex
-import li.songe.gkd.util.updateSubscription
 import li.songe.loc.Loc
 import java.nio.file.Files
 import kotlin.reflect.jvm.jvmName
 import kotlin.time.Duration.Companion.days
 
+data class PageScrollResetRequest(
+    val id: Long,
+    val navItem: BottomNavItem,
+)
+
 class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
     companion object {
-        private var _instance: MainViewModel? = null
-        val instance get() = _instance!!
         private var tempTermsAccepted = false
     }
 
     init {
         LogUtils.d("MainViewModel:init")
-        _instance = this
         addCloseable {
             LogUtils.d("MainViewModel:close")
-            if (_instance == this) { // 可能同时存在 2 个 MainViewModel 实例
-                _instance = null
-            }
         }
     }
 
-    override val scope get() = viewModelScope
+    val termsStepFlow: StateFlow<Int>
+        field = MutableStateFlow(0)
+
+    fun acceptTermsStep(lastStep: Int) {
+        if (termsStepFlow.value < lastStep) {
+            termsStepFlow.value++
+        } else {
+            termsAcceptedFlow.value = true
+        }
+    }
+
+    override val scope get() = super.scope
+
+    val activityResults = ActivityResultRequests()
+    val permissionRequests = PermissionRequests {
+        navigatePage(PrivilegeServiceRoute)
+    }
 
     val backStack: NavBackStack<NavKey> = NavBackStack(HomeRoute)
     val topRoute get() = backStack.last()
@@ -122,99 +134,84 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
 
     fun navigateWebPage(url: String) = navigatePage(WebViewRoute(url))
 
-    val dialogFlow = MutableStateFlow<AlertDialogOptions?>(null)
+    val dialogRequests = DialogRequests()
 
-    val updateStatus = if (META.updateEnabled) UpdateStatus(viewModelScope) else null
+    val updateStatus = if (META.updateEnabled) UpdateStatus(scope) else null
 
-    val uploadOptions = UploadOptions(this)
+    val githubUpload = GithubUploadState(
+        scope = scope,
+        onOpenCookieHelp = { navigateWebPage(ShortUrlSet.URL1) },
+    )
 
-    val showEditCookieDlgFlow = MutableStateFlow(false)
+    val shareLog = ShareLogState(
+        scope = scope,
+        githubUpload = githubUpload,
+    )
 
-    val inputSubsLinkOption = InputSubsLinkOption()
+    val subsLinkDialog = SubsLinkDialogState(
+        onOpenHelp = { navigateWebPage(ShortUrlSet.URL5) },
+    )
 
-    val sheetSubsIdFlow = MutableStateFlow<Long?>(null)
+    val subsSheet = SubsSheetState()
 
-    val appOrderListFlow = DbSet.actionLogDao.queryLatestUniqueAppIds().stateInit(emptyList())
-    val appVisitOrderMapFlow = DbSet.appVisitLogDao.query().map {
+    val appOrderListState = DbSet.actionLogDao.queryLatestUniqueAppIds().stateLoadable()
+    val appVisitOrderMapState = DbSet.appVisitLogDao.query().map {
         it.mapIndexed { i, appId -> appId to i }.toMap()
-    }.debounce(500).stateInit(emptyMap())
-
-    fun addOrModifySubs(
-        url: String,
-        oldItem: SubsItem? = null,
-    ) = viewModelScope.launchTry(Dispatchers.IO) {
-        if (updateSubsMutex.mutex.isLocked) return@launchTry
-        updateSubsMutex.withStateLock {
-            val subItems = subsItemsFlow.value
-            val text = try {
-                client.get(url).bodyAsText()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                LogUtils.d(e)
-                toast("下载订阅文件失败\n${e.message}".trimEnd())
-                return@launchTry
-            }
-            val newSubsRaw = try {
-                RawSubscription.parse(text)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                LogUtils.d(e)
-                toast("解析订阅文件失败\n${e.message}".trimEnd())
-                return@launchTry
-            }
-            if (oldItem == null) {
-                if (subItems.any { it.id == newSubsRaw.id }) {
-                    toast("订阅已存在")
-                    return@launchTry
-                }
-            } else {
-                if (oldItem.id != newSubsRaw.id) {
-                    toast("订阅id不对应")
-                    return@launchTry
-                }
-            }
-            if (newSubsRaw.id < 0) {
-                toast("订阅id不可为${newSubsRaw.id}\n负数id为内部使用")
-                return@launchTry
-            }
-            val newItem = oldItem?.copy(updateUrl = url) ?: SubsItem(
-                id = newSubsRaw.id,
-                updateUrl = url,
-                order = if (subItems.isEmpty()) 1 else (subItems.maxBy { it.order }.order + 1)
-            )
-            updateSubscription(newSubsRaw)
-            if (oldItem == null) {
-                DbSet.subsItemDao.insert(newItem)
-                toast("成功添加订阅")
-            } else {
-                DbSet.subsItemDao.update(newItem)
-                toast("成功修改订阅")
-            }
-        }
-    }
+    }.debounce(500).stateLoadable()
 
     val ruleGroupState = RuleGroupState(this)
 
-    val textFlow = MutableStateFlow<String?>(null)
-    fun openUrl(url: String) {
-        if (URLUtil.isNetworkUrl(url)) {
-            textFlow.value = url
-        } else {
-            openUri(url)
+    fun showRuleGroup(
+        subscriptionId: Long,
+        appId: String?,
+        group: RawSubscription.RawGroupProps,
+        pageAppId: String? = appId,
+    ) {
+        scope.launch(Dispatchers.Default) {
+            group.cacheStr
+            runMainPost {
+                ruleGroupState.showGroup(
+                    ShowGroupState(
+                        subsId = subscriptionId,
+                        appId = if (group is RawSubscription.RawAppGroup) appId else null,
+                        groupKey = group.key,
+                        pageAppId = pageAppId,
+                    ),
+                )
+            }
         }
     }
 
-    val tabFlow = MutableStateFlow(BottomNavItem.Control.key)
-    val resetPageScrollEvent = MutableSharedFlow<BottomNavItem>()
+    val textDialog = TextDialogState()
+
+    fun openUrl(url: String) {
+        textDialog.showUrl(url)
+    }
+
+    val tabFlow: StateFlow<Int>
+        field = MutableStateFlow(BottomNavItem.Dashboard.key)
+    val pageScrollResetRequestFlow: StateFlow<PageScrollResetRequest?>
+        field = MutableStateFlow(null)
+    private var nextPageScrollResetRequestId = 0L
     private var lastClickTabTime = 0L
     fun handleClickTab(navItem: BottomNavItem) {
         val t = System.currentTimeMillis()
+        if (navItem.key != tabFlow.value) {
+            pageScrollResetRequestFlow.value = null
+        }
         // double click
         if (navItem.key == tabFlow.value && t - lastClickTabTime < 500) {
-            viewModelScope.launch { resetPageScrollEvent.emit(navItem) }
+            pageScrollResetRequestFlow.value = PageScrollResetRequest(
+                id = ++nextPageScrollResetRequestId,
+                navItem = navItem,
+            )
         }
         tabFlow.value = navItem.key
         lastClickTabTime = t
+    }
+
+    fun consumePageScrollResetRequest(request: PageScrollResetRequest) {
+        pageScrollResetRequestFlow.compareAndSet(request, null)
     }
 
     fun handleGkdUri(uri: Uri) {
@@ -243,10 +240,10 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
         }
     }
 
-    fun handleIntent(intent: Intent) = viewModelScope.launchTry {
+    fun handleIntent(intent: Intent) = scope.launchTry {
         LogUtils.d(intent)
         val uri = intent.data?.normalizeScheme()
-        val source = intent.getStringExtra(activityNavSourceName)
+        val source = intent.getStringExtra(EntryActivity.activityNavSourceName)
         if (uri?.scheme == "gkd") {
             handleGkdUri(uri)
         } else if (source == OpenFileActivity::class.jvmName && uri != null) {
@@ -254,8 +251,8 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
         }
     }
 
-    val termsAcceptedFlow by lazy {
-        if (tempTermsAccepted) {
+    val termsAcceptedFlow: StateFlow<Boolean>
+        field: MutableStateFlow<Boolean> = if (tempTermsAccepted) {
             MutableStateFlow(true)
         } else {
             createTextFlow(
@@ -265,22 +262,11 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
                     tempTermsAccepted = it
                     it.toString()
                 },
-                scope = viewModelScope,
+                scope = scope,
             ).apply {
                 tempTermsAccepted = value
             }
         }
-    }
-
-    val githubCookieFlow by lazy {
-        createTextFlow(
-            key = "github_cookie",
-            decode = { it ?: "" },
-            encode = { it },
-            private = true,
-            scope = viewModelScope,
-        )
-    }
 
     private val a11yServicesFlow = useEnabledA11yServicesFlow()
     val a11yServiceEnabledFlow = useA11yServiceEnabledFlow(a11yServicesFlow)
@@ -307,7 +293,7 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
             applyAutomatorMode(option)
             return
         }
-        updateAutomatorModeJob = viewModelScope.launch {
+        updateAutomatorModeJob = scope.launch {
             val occupied = try {
                 withContext(Dispatchers.IO) {
                     AutomationService.isOtherUiAutomationRunning()
@@ -327,35 +313,16 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
         }
     }
 
-    val showShareLogDlgFlow = MutableStateFlow(false)
+    private var tempCrashDataList = emptyList<CrashData>()
 
-    var tempCrashDataList = emptyList<CrashData>()
+    fun takeCrashDataList(): List<CrashData> = tempCrashDataList.also {
+        tempCrashDataList = emptyList()
+    }
 
     init {
         // preload
         appIconMapFlow.value
-        viewModelScope.launchTry(Dispatchers.IO) {
-            val subsItems = DbSet.subsItemDao.queryAll()
-            if (!subsItems.any { s -> s.id == LOCAL_SUBS_ID }) {
-                if (!subsFolder.resolve("${LOCAL_SUBS_ID}.json").exists()) {
-                    updateSubscription(
-                        RawSubscription(
-                            id = LOCAL_SUBS_ID,
-                            name = "本地订阅",
-                            version = 0
-                        )
-                    )
-                }
-                DbSet.subsItemDao.insert(
-                    SubsItem(
-                        id = LOCAL_SUBS_ID,
-                        order = subsItems.minByOrNull { it.order }?.order ?: 0,
-                    )
-                )
-            }
-        }
-
-        viewModelScope.launchTry(Dispatchers.IO) {
+        scope.launchTry(Dispatchers.IO) {
             // 每次进入删除缓存
             clearCache()
         }
@@ -364,11 +331,7 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
             updateStatus.checkUpdate()
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
-            // preload
-            githubCookieFlow.value
-        }
-        viewModelScope.launchTry(Dispatchers.IO) {
+        scope.launchTry(Dispatchers.IO) {
             val list = (crashTempFolder.listFiles() ?: emptyArray()).mapNotNull {
                 try {
                     json.decodeFromString<CrashData>(it.readText())

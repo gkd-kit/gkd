@@ -1,14 +1,12 @@
-package li.songe.gkd
+package li.songe.gkd.entry
 
-import android.app.Activity
 import android.content.pm.PackageManager
-import android.os.Bundle
 import androidx.core.net.toUri
+import li.songe.gkd.app
 import li.songe.gkd.util.extraCptName
 
-class OpenTileActivity : Activity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+class OpenTileActivity : EntryActivity() {
+    override fun prepareIntent() {
         val qsTileCpt = intent?.extraCptName
         if (qsTileCpt != null && intent.data == null) {
             val serviceInfo =
@@ -18,6 +16,5 @@ class OpenTileActivity : Activity() {
                 intent.data = uriValue.toUri()
             }
         }
-        navToMainActivity()
     }
 }

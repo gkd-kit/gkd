@@ -15,7 +15,7 @@ import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.META
 import li.songe.gkd.a11y.systemRecentCn
 import li.songe.gkd.a11y.topActivityFlow
-import li.songe.gkd.accessRestrictedSettingsShowFlow
+import li.songe.gkd.ui.app.accessRestrictedSettingsShowFlow
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.isActivityVisible

@@ -14,7 +14,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,7 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.flow.update
@@ -46,46 +45,47 @@ import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.autoFocus
 import li.songe.gkd.ui.component.isFullVisible
-import li.songe.gkd.ui.component.useListScrollState
-import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.component.rememberListScrollState
 import li.songe.gkd.ui.icon.BackCloseIcon
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.AppGroupOption
-import li.songe.gkd.util.AppListString
 import li.songe.gkd.util.AppSortOption
+import li.songe.gkd.util.findOption
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.switchItem
 import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
 
 @Serializable
 data object A11YScopeAppListRoute : NavKey
 
 @Composable
 fun A11yScopeAppListPage() {
-    val store by storeFlow.collectAsState()
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
-    val vm = viewModel<A11yScopeAppListVm>()
-    val appInfos by vm.appInfosFlow.collectAsState()
-    val searchStr by vm.searchStrFlow.collectAsState()
-    var showSearchBar by vm.showSearchBarFlow.asMutableState()
-    var editable by vm.editableFlow.asMutableState()
-    val (scrollBehavior, listState) = useListScrollState(vm.resetKey, canScroll = { !editable })
-    BackHandler(editable, vm.viewModelScope.launchAsFn {
-        context.justHideSoftInput()
+    val vm = viewModel { A11yScopeAppListVm(mainVm) }
+    val store by storeFlow.collectAsStateWithLifecycle()
+    val appInfos by vm.appInfosFlow.collectAsStateWithLifecycle()
+    val searchStr by vm.searchStrFlow.collectAsStateWithLifecycle()
+    val showSearchBar by vm.showSearchBarFlow.collectAsStateWithLifecycle()
+    val editable by vm.editableFlow.collectAsStateWithLifecycle()
+    val editText by vm.textFlow.collectAsStateWithLifecycle()
+    val pageScrollState = rememberListScrollState(canScroll = { !editable })
+    val scrollBehavior = pageScrollState.scrollBehavior
+    val listState = pageScrollState.listState
+    pageScrollState.ResetOnChange(appInfos)
+    BackHandler(editable, vm.scope.launchAsFn {
+        context.imeController.requestHide()
         if (vm.textChanged) {
-            mainVm.dialogFlow.waitResult(
+            if (!mainVm.dialogRequests.confirm(
                 title = "提示",
                 text = "当前内容未保存，是否放弃编辑？",
-            )
+            )) return@launchAsFn
         }
-        editable = false
+        vm.setEditable(false)
     })
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -95,18 +95,18 @@ fun A11yScopeAppListPage() {
                 canScroll = !editable && !store.blockA11yAppListFollowMatch,
                 navigationIcon = {
                     IconButton(
-                        onClick = throttle(vm.viewModelScope.launchAsFn {
+                        onClick = throttle(vm.scope.launchAsFn {
                             if (editable) {
                                 if (vm.textChanged) {
-                                    context.justHideSoftInput()
-                                    mainVm.dialogFlow.waitResult(
+                                    context.imeController.requestHide()
+                                    if (!mainVm.dialogRequests.confirm(
                                         title = "提示",
                                         text = "当前内容未保存，是否放弃编辑？",
-                                    )
+                                    )) return@launchAsFn
                                 }
-                                editable = !editable
+                                vm.setEditable(false)
                             } else {
-                                context.hideSoftInput()
+                                context.imeController.hideAndAwait()
                                 mainVm.popPage()
                             }
                         })
@@ -118,15 +118,13 @@ fun A11yScopeAppListPage() {
                     val firstShowSearchBar = remember { showSearchBar }
                     if (showSearchBar) {
                         BackHandler {
-                            if (!context.justHideSoftInput()) {
-                                showSearchBar = false
+                            if (!context.imeController.requestHide()) {
+                                vm.setSearchBarVisible(false)
                             }
                         }
                         AppBarTextField(
                             value = searchStr,
-                            onValueChange = { newValue ->
-                                vm.searchStrFlow.value = newValue.trim()
-                            },
+                            onValueChange = vm::setSearchStr,
                             hint = "请输入应用名称/ID",
                             modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                         )
@@ -134,7 +132,7 @@ fun A11yScopeAppListPage() {
                         val titleModifier = Modifier
                             .noRippleClickable(
                                 onClick = throttle {
-                                    vm.resetKey.intValue++
+                                    pageScrollState.resetScroll()
                                 }
                             )
                         Text(
@@ -151,15 +149,8 @@ fun A11yScopeAppListPage() {
                             PerfIconButton(
                                 imageVector = PerfIcon.Save,
                                 onClick = throttle {
-                                    if (vm.textChanged) {
-                                        a11yScopeAppListFlow.value =
-                                            AppListString.decode(vm.textFlow.value)
-                                        toast("更新成功")
-                                    } else {
-                                        toast("未修改")
-                                    }
-                                    context.justHideSoftInput()
-                                    editable = false
+                                    vm.saveText()
+                                    context.imeController.requestHide()
                                 },
                             )
                         },
@@ -168,15 +159,7 @@ fun A11yScopeAppListPage() {
                                 var expanded by remember { mutableStateOf(false) }
                                 AnimatedIconButton(
                                     onClick = throttle {
-                                        if (showSearchBar) {
-                                            if (vm.searchStrFlow.value.isEmpty()) {
-                                                showSearchBar = false
-                                            } else {
-                                                vm.searchStrFlow.value = ""
-                                            }
-                                        } else {
-                                            showSearchBar = true
-                                        }
+                                        vm.toggleSearchBar()
                                     },
                                     id = R.drawable.ic_anim_search_close,
                                     atEnd = showSearchBar,
@@ -193,24 +176,22 @@ fun A11yScopeAppListPage() {
                                         onDismissRequest = { expanded = false }
                                     ) {
                                         MenuGroupCard(inTop = true, title = "排序") {
-                                            var sortType by vm.sortTypeFlow.asMutableState()
                                             AppSortOption.objects.forEach { option ->
                                                 MenuItemRadioButton(
                                                     text = option.label,
-                                                    selected = sortType == option,
-                                                    onClick = { sortType = option },
+                                                    selected = AppSortOption.objects.findOption(store.a11yScopeAppSort) == option,
+                                                    onClick = { vm.setSortType(option) },
                                                 )
                                             }
                                         }
                                         MenuGroupCard(inTop = true, title = "筛选") {
-                                            var appGroupType by vm.appGroupTypeFlow.asMutableState()
                                             AppGroupOption.normalObjects.forEach { option ->
-                                                val newValue = option.invert(appGroupType)
+                                                val newValue = option.invert(store.a11yScopeAppGroupType)
                                                 MenuItemCheckbox(
                                                     enabled = newValue != 0,
                                                     text = option.label,
-                                                    checked = option.include(appGroupType),
-                                                    onClick = { appGroupType = newValue },
+                                                    checked = option.include(store.a11yScopeAppGroupType),
+                                                    onClick = { vm.setAppGroupType(newValue) },
                                                 )
                                             }
                                         }
@@ -226,7 +207,7 @@ fun A11yScopeAppListPage() {
                 visible = !editable && scrollBehavior.isFullVisible,
                 onClickLabel = "进入文本编辑模式",
                 onClick = {
-                    editable = !editable
+                    vm.setEditable(true)
                 },
                 imageVector = PerfIcon.Edit,
                 contentDescription = "编辑文本"
@@ -236,13 +217,14 @@ fun A11yScopeAppListPage() {
         if (editable) {
             MultiTextField(
                 modifier = Modifier.scaffoldPadding(contentPadding),
-                textFlow = vm.textFlow,
+                text = editText,
+                onTextChange = vm::setText,
                 immediateFocus = true,
                 placeholderText = "请输入应用ID列表\n示例:\ncom.android.systemui\ncom.android.settings",
-                indicatorSize = vm.indicatorSizeFlow.collectAsState().value,
+                indicatorSize = vm.indicatorSizeFlow.collectAsStateWithLifecycle().value,
             )
         } else {
-            val a11yScopeAppList by a11yScopeAppListFlow.collectAsState()
+            val a11yScopeAppList by a11yScopeAppListFlow.collectAsStateWithLifecycle()
             LazyColumn(
                 modifier = Modifier.scaffoldPadding(contentPadding),
                 state = listState,

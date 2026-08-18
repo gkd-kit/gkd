@@ -16,14 +16,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -37,7 +34,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import androidx.paging.LoadState
@@ -49,17 +46,14 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.A11yEventLog
-import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AppNameText
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.FixedTimeText
-import li.songe.gkd.ui.component.LocalNumberCharWidth
+import li.songe.gkd.ui.component.AppAlertDialog
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.measureNumberTextWidth
-import li.songe.gkd.ui.component.useListScrollState
-import li.songe.gkd.ui.component.waitResult
+import li.songe.gkd.ui.component.rememberListScrollState
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.ui.share.LocalDarkTheme
 import li.songe.gkd.ui.share.noRippleClickable
@@ -69,7 +63,7 @@ import li.songe.gkd.ui.style.iconTextSize
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.format
-import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toJson5String
 import li.songe.gkd.util.toast
@@ -82,10 +76,15 @@ fun A11yEventLogPage() {
     val context = LocalActivity.current as MainActivity
     val mainVm = context.mainVm
     val vm = viewModel<A11yEventLogVm>()
+    val scope = vm.scope
 
-    val logCount by vm.logCountFlow.collectAsState()
+    val shownEventLog by vm.showEventLogFlow.collectAsStateWithLifecycle()
     val list = vm.pagingDataFlow.collectAsLazyPagingItems()
-    val (scrollBehavior, listState) = useListScrollState(vm.resetKey, list.itemCount > 0)
+    val logCount = list.itemCount
+    val pageScrollState = rememberListScrollState()
+    val scrollBehavior = pageScrollState.scrollBehavior
+    val listState = pageScrollState.listState
+    pageScrollState.ResetOnChange(list.itemCount > 0)
 
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         PerfTopAppBar(
@@ -98,61 +97,59 @@ fun A11yEventLogPage() {
             title = {
                 Text(
                     text = "事件日志",
-                    modifier = Modifier.noRippleClickable { vm.resetKey.intValue++ },
+                    modifier = Modifier.noRippleClickable(onClick = pageScrollState::resetScroll),
                 )
             },
             actions = {
                 if (logCount > 0) {
                     PerfIconButton(
                         imageVector = PerfIcon.Delete,
-                        onClick = throttle(fn = vm.viewModelScope.launchAsFn {
-                            mainVm.dialogFlow.waitResult(
-                                title = "删除日志",
-                                text = "确定删除所有事件日志?",
-                                error = true,
-                            )
-                            DbSet.a11yEventLogDao.deleteAll()
-                            toast("删除成功")
-                        })
+                        onClick = throttle {
+                            scope.launchTry {
+                                if (!mainVm.dialogRequests.confirm(
+                                    title = "删除日志",
+                                    text = "确定删除所有事件日志?",
+                                    error = true,
+                                )) return@launchTry
+                                vm.deleteAll()
+                                toast("删除成功")
+                            }
+                        }
                     )
                 }
             }
         )
     }) { contentPadding ->
-        CompositionLocalProvider(
-            LocalNumberCharWidth provides measureNumberTextWidth(),
+        LazyColumn(
+            modifier = Modifier.scaffoldPadding(contentPadding),
+            state = listState,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            LazyColumn(
-                modifier = Modifier.scaffoldPadding(contentPadding),
-                state = listState,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(
-                    count = list.itemCount,
-                    key = list.itemKey { it.id }
-                ) { i ->
-                    val eventLog = list[i] ?: return@items
+            items(
+                count = list.itemCount,
+                key = list.itemKey { it.id }
+            ) { i ->
+                val eventLog = list[i]
+                if (eventLog != null) {
                     EventLogCard(
                         eventLog = eventLog,
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
-                            .clickable(onClick = {
-                                vm.showEventLogFlow.value = eventLog
-                            })
+                            .clickable(onClick = { vm.showEventLog(eventLog) }),
                     )
                 }
-                item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                    Spacer(modifier = Modifier.height(EmptyHeight))
-                    if (logCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                        EmptyText(text = "暂无数据")
-                    }
+            }
+            item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
+                Spacer(modifier = Modifier.height(EmptyHeight))
+                if (logCount == 0 && list.loadState.refresh !is LoadState.Loading) {
+                    EmptyText(text = "暂无数据")
                 }
             }
         }
     }
 
-    vm.showEventLogFlow.collectAsState().value?.let { eventLog ->
-        val onDismissRequest = { vm.showEventLogFlow.value = null }
+    shownEventLog?.let { eventLog ->
+        val onDismissRequest = vm::dismissEventLog
         val dark = LocalDarkTheme.current
         val eventText = remember(dark) {
             getJson5AnnotatedString(
@@ -168,7 +165,7 @@ fun A11yEventLogPage() {
                 dark,
             )
         }
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = onDismissRequest,
             title = { Text(text = "事件详情") },
             text = {

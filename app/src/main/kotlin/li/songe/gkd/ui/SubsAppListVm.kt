@@ -1,147 +1,193 @@
 package li.songe.gkd.ui
 
-import androidx.compose.runtime.mutableIntStateOf
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
+import li.songe.gkd.MainViewModel
 import li.songe.gkd.data.AppConfig
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.store.blockMatchAppListFlow
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.ui.share.asMutableStateFlow
+import li.songe.gkd.ui.share.filterSubsApps
+import li.songe.gkd.ui.share.subsAppActionOrderMapState
 import li.songe.gkd.ui.share.useSubsAppFilter
 import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.appInfoMapFlow
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.getGroupEnable
 
-class SubsAppListVm(val route: SubsAppListRoute) : BaseViewModel() {
+data class SubsAppListUiState(
+    val apps: List<RawSubscription.RawApp>,
+    val showAllApps: Boolean,
+)
 
-    val subsFlow = mapSafeSubs(route.subsItemId)
+class SubsAppListVm(
+    val route: SubsAppListRoute,
+    private val mainVm: MainViewModel,
+) : BaseViewModel() {
+
+    private val subscription = requiredSubscription(route.subsItemId)
 
     private val appConfigsFlow = DbSet.appConfigDao.queryAppTypeConfig(route.subsItemId)
-        .attachLoad().stateInit(emptyList())
 
     private val groupSubsConfigsFlow =
         DbSet.subsConfigDao.querySubsGroupTypeConfig(route.subsItemId)
-            .attachLoad().stateInit(emptyList())
 
     private val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(route.subsItemId)
-        .attachLoad().stateInit(emptyList())
 
+    val searchStrFlow: StateFlow<String>
+        field = MutableStateFlow("")
+    val showSearchBarFlow: StateFlow<Boolean>
+        field = MutableStateFlow(false)
+    private val debounceSearchStr = searchStrFlow.debounce(200)
+    private val appActionOrderMapState = subsAppActionOrderMapState(route.subsItemId)
 
-    val sortTypeFlow = storeFlow.asMutableStateFlow(
-        getter = { AppSortOption.objects.findOption(it.subsAppSort) },
-        setter = {
-            storeFlow.value.copy(subsAppSort = it.value)
+    val appConfigMapState = appConfigsFlow.map { configs ->
+        configs.associateBy { it.appId }
+    }.stateLoadable()
+
+    val enableSizeMapState = subscription.buildUiState { rawSubscription ->
+        combine(
+            categoryConfigsFlow,
+            groupSubsConfigsFlow,
+        ) { categoryConfigs, groupSubsConfigs ->
+            val categoryConfigMap = categoryConfigs.associateBy { it.categoryKey }
+            val groupSubsConfigMap = groupSubsConfigs
+                .groupBy { it.appId }
+                .mapValues { entry -> entry.value.associateBy { it.groupKey } }
+            rawSubscription.apps.associate { rawApp ->
+                val enableSize = rawApp.groups.count { group ->
+                    val category = rawSubscription.getCategory(group.name)
+                    getGroupEnable(
+                        group,
+                        groupSubsConfigMap[rawApp.id]?.get(group.key),
+                        category,
+                        category?.key?.let(categoryConfigMap::get),
+                    )
+                }
+                rawApp.id to enableSize
+            }
         }
-    )
-    val appGroupTypeFlow = storeFlow.asMutableStateFlow(
-        getter = { it.subsAppGroupType },
-        setter = { storeFlow.value.copy(subsAppGroupType = it) },
-    )
-    val showBlockAppFlow = storeFlow.asMutableStateFlow(
-        getter = { it.subsAppShowBlock },
-        setter = { storeFlow.value.copy(subsAppShowBlock = it) },
-    )
+    }
 
-    private val temp1ListFlow = useSubsAppFilter(
-        subsId = route.subsItemId,
-        appsFlow = subsFlow.mapNew { it.apps },
-        sortTypeFlow = sortTypeFlow,
-        appGroupTypeFlow = appGroupTypeFlow,
-        showBlockAppFlow = showBlockAppFlow,
-    )
+    val uiState = subscription.buildUiState(
+        initialValue = ::buildCurrentUiState,
+    ) { rawSubscription ->
+        val sortedAppsFlow = useSubsAppFilter(
+            mainVm = mainVm,
+            appsFlow = flowOf(rawSubscription.apps),
+            appGroupType = { it.subsAppGroupType },
+            sortType = { AppSortOption.objects.findOption(it.subsAppSort) },
+            showBlockApps = { it.subsAppShowBlock },
+            appActionOrderMapState = appActionOrderMapState,
+        )
+        val filteredAppsFlow = combine(
+            sortedAppsFlow,
+            appInfoMapFlow,
+            debounceSearchStr,
+        ) { list, appMap, searchStr ->
+            buildUiState(rawSubscription, list, appMap, searchStr)
+        }
+        filteredAppsFlow
+    }
 
-    val showAllAppFlow = combine(subsFlow, temp1ListFlow) { subs, list ->
-        subs.apps.size == list.size
-    }.stateInit(false)
+    private fun buildCurrentUiState(rawSubscription: RawSubscription): SubsAppListUiState {
+        val settings = storeFlow.value
+        val apps = filterSubsApps(
+            apps = rawSubscription.apps,
+            appMap = appInfoMapFlow.value,
+            settings = settings,
+            appActionOrderMap = appActionOrderMapState.value.value.orEmpty(),
+            appVisitOrderMap = mainVm.appVisitOrderMapState.value.value.orEmpty(),
+            blockSet = blockMatchAppListFlow.value,
+            appGroupType = { it.subsAppGroupType },
+            sortType = { AppSortOption.objects.findOption(it.subsAppSort) },
+            showBlockApps = { it.subsAppShowBlock },
+        )
+        return buildUiState(
+            rawSubscription = rawSubscription,
+            apps = apps,
+            appMap = appInfoMapFlow.value,
+            searchStr = searchStrFlow.value,
+        )
+    }
 
-    val searchStrFlow = MutableStateFlow("")
-    private val debounceSearchStr = searchStrFlow.debounce(200).stateInit(searchStrFlow.value)
-    val temp3ListFlow = combine(
-        temp1ListFlow,
-        appInfoMapFlow,
-        debounceSearchStr,
-    ) { list, appMap, searchStr ->
-        val apps = list.map { it to appMap[it.id] }
-        if (searchStr.isBlank()) {
+    private fun buildUiState(
+        rawSubscription: RawSubscription,
+        apps: List<RawSubscription.RawApp>,
+        appMap: Map<String, AppInfo>,
+        searchStr: String,
+    ): SubsAppListUiState {
+        val filteredApps = if (searchStr.isBlank()) {
             apps
         } else {
-            val results = mutableListOf<Pair<RawSubscription.RawApp, AppInfo?>>()
-            val tempList = apps.toMutableList()
+            val results = mutableListOf<RawSubscription.RawApp>()
+            val remainingApps = apps.toMutableList()
             //1. 搜索已安装应用名称
-            tempList.toList().apply { tempList.clear() }.forEach { a ->
-                if (a.second?.name?.contains(searchStr, true) == true) {
-                    results.add(a)
+            remainingApps.toList().apply { remainingApps.clear() }.forEach { app ->
+                if (appMap[app.id]?.name?.contains(searchStr, true) == true) {
+                    results.add(app)
                 } else {
-                    tempList.add(a)
+                    remainingApps.add(app)
                 }
             }
             //2. 搜索未安装应用名称
-            tempList.toList().apply { tempList.clear() }.forEach { a ->
-                val name = a.first.name
-                if (a.second == null && name?.contains(searchStr, true) == true) {
-                    results.add(a)
+            remainingApps.toList().apply { remainingApps.clear() }.forEach { app ->
+                if (appMap[app.id] == null && app.name?.contains(searchStr, true) == true) {
+                    results.add(app)
                 } else {
-                    tempList.add(a)
+                    remainingApps.add(app)
                 }
             }
             //3. 搜索应用 id
-            tempList.toList().apply { tempList.clear() }.forEach { a ->
-                if (a.first.id.contains(searchStr, true)) {
-                    results.add(a)
-                } else {
-                    tempList.add(a)
+            remainingApps.forEach { app ->
+                if (app.id.contains(searchStr, true)) {
+                    results.add(app)
                 }
             }
             results
         }
-    }.stateInit(emptyList())
-
-    val appItemListFlow = combine(
-        subsFlow,
-        temp3ListFlow,
-        categoryConfigsFlow,
-        appConfigsFlow,
-        groupSubsConfigsFlow,
-    ) { subs, apps, categoryConfigs, appConfigs, groupSubsConfigs ->
-        apps.map {
-            val appGroupSubsConfigs = groupSubsConfigs.filter { s -> s.appId == it.first.id }
-            val enableSize = it.first.groups.count { g ->
-                val category = subs.getCategory(g.name)
-                getGroupEnable(
-                    g,
-                    appGroupSubsConfigs.find { c -> c.groupKey == g.key },
-                    category,
-                    categoryConfigs.find { c -> c.categoryKey == category?.key }
-                )
-            }
-            SubsAppInfoItem(
-                rawApp = it.first,
-                appInfo = it.second,
-                appConfig = appConfigs.find { s -> s.appId == it.first.id },
-                enableSize = enableSize,
-            )
-        }
-    }.stateInit(emptyList())
-
-    val resetKey = mutableIntStateOf(0)
-
-    init {
-        appItemListFlow.mapNew { it.map { a -> a.id } }.launchOnChange {
-            resetKey.intValue++
-        }
+        return SubsAppListUiState(
+            apps = filteredApps,
+            showAllApps = rawSubscription.apps.size == apps.size,
+        )
     }
-}
 
-data class SubsAppInfoItem(
-    val rawApp: RawSubscription.RawApp,
-    val appInfo: AppInfo?,
-    val appConfig: AppConfig?,
-    val enableSize: Int,
-) {
-    val id get() = rawApp.id
+    fun setSearchText(value: String) {
+        searchStrFlow.value = value
+    }
+
+    fun setSearchBarVisible(visible: Boolean) {
+        showSearchBarFlow.value = visible
+    }
+
+    fun setSortType(value: AppSortOption) {
+        storeFlow.update { it.copy(subsAppSort = value.value) }
+    }
+
+    fun setAppGroupType(value: Int) {
+        storeFlow.update { it.copy(subsAppGroupType = value) }
+    }
+
+    fun toggleShowBlockApps() {
+        storeFlow.update { it.copy(subsAppShowBlock = !it.subsAppShowBlock) }
+    }
+
+    suspend fun setAppEnabled(appId: String, enabled: Boolean) {
+        val currentConfig = appConfigsFlow.first().find { it.appId == appId }
+        val newConfig = currentConfig?.copy(enable = enabled) ?: AppConfig(
+            enable = enabled,
+            subsId = route.subsItemId,
+            appId = appId,
+        )
+        DbSet.appConfigDao.insert(newConfig)
+    }
 }

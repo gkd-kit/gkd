@@ -24,7 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import li.songe.gkd.META
+import li.songe.gkd.MainViewModel
 import li.songe.gkd.appScope
 import li.songe.gkd.data.A11yEventLog
 import li.songe.gkd.data.toA11yEventLog
@@ -51,11 +52,9 @@ import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.priv.uiAutomationFlow
 import li.songe.gkd.ui.EventLogCard
-import li.songe.gkd.ui.component.LocalNumberCharWidth
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.isAtBottom
-import li.songe.gkd.ui.component.measureNumberTextWidth
 import li.songe.gkd.ui.share.ListPlaceholder
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.startForegroundServiceByClass
@@ -95,13 +94,11 @@ class EventService : OverlayWindowService(positionKey = "event") {
                     .padding(4.dp)
             ) {
                 ClosableTitle(
-                    title = if (A11yService.isRunning.collectAsState().value || uiAutomationFlow.collectAsState().value != null) "事件服务" else "事件服务(无权限)"
+                    title = if (A11yService.isRunning.collectAsStateWithLifecycle().value || uiAutomationFlow.collectAsStateWithLifecycle().value != null) "事件服务" else "事件服务(无权限)"
                 )
                 val textStyle = MaterialTheme.typography.labelSmall
-                val numCharWidth = measureNumberTextWidth(textStyle)
                 CompositionLocalProvider(
                     LocalTextStyle provides textStyle,
-                    LocalNumberCharWidth provides numCharWidth,
                 ) {
                     Box(
                         modifier = Modifier
@@ -216,5 +213,19 @@ class EventService : OverlayWindowService(positionKey = "event") {
         }
 
         fun stop() = stopServiceByClass(EventService::class)
+
+        suspend fun setEnabled(mainVm: MainViewModel, enabled: Boolean) {
+            if (!enabled) {
+                stop()
+                return
+            }
+            if (!mainVm.permissionRequests.ensurePermissions(
+                    PermissionStates.foregroundServiceSpecialUse,
+                    PermissionStates.notification,
+                    PermissionStates.drawOverlays,
+                )
+            ) return
+            start()
+        }
     }
 }

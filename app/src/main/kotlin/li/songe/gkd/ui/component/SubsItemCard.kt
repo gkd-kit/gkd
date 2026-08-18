@@ -17,9 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,19 +30,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import li.songe.gkd.META
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsItem
-import li.songe.gkd.ui.home.HomeVm
-import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.util.formatTimeAgo
-import li.songe.gkd.util.mapState
-import li.songe.gkd.util.subsLoadErrorsFlow
-import li.songe.gkd.util.subsRefreshErrorsFlow
 import li.songe.gkd.util.throttle
-import li.songe.gkd.util.updateSubsMutex
 
 
 @Composable
@@ -56,25 +46,20 @@ fun SubsItemCard(
     index: Int,
     isSelectedMode: Boolean,
     isSelected: Boolean,
+    loadError: Exception?,
+    refreshError: Exception?,
+    refreshing: Boolean,
+    onOpen: () -> Unit,
     onCheckedChange: ((Boolean) -> Unit),
     onSelectedChange: (() -> Unit)? = null,
 ) {
-    val mainVm = LocalMainViewModel.current
-    val vm = viewModel<HomeVm>()
-    val subsLoadError by remember(subsItem.id) {
-        subsLoadErrorsFlow.mapState(vm.viewModelScope) { it[subsItem.id] }
-    }.collectAsState()
-    val subsRefreshError by remember(subsItem.id) {
-        subsRefreshErrorsFlow.mapState(vm.viewModelScope) { it[subsItem.id] }
-    }.collectAsState()
-    val subsRefreshing by updateSubsMutex.state.collectAsState()
     val dragged by interactionSource.collectIsDraggedAsState()
     val onClick = {
         if (!dragged) {
             if (isSelectedMode) {
                 onSelectedChange?.invoke()
-            } else if (!updateSubsMutex.mutex.isLocked) {
-                mainVm.sheetSubsIdFlow.value = subsItem.id
+            } else if (!refreshing) {
+                onOpen()
             }
         }
     }
@@ -178,21 +163,21 @@ fun SubsItemCard(
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.bodyMedium,
                     )
-                    val color = if (subsLoadError != null) {
+                    val color = if (loadError != null) {
                         MaterialTheme.colorScheme.error
                     } else {
                         Color.Unspecified
                     }
                     Text(
-                        text = subsLoadError?.message
-                            ?: if (subsRefreshing) "加载中..." else "文件不存在",
+                        text = loadError?.message
+                            ?: if (refreshing) "加载中..." else "文件不存在",
                         style = MaterialTheme.typography.bodyMedium,
                         color = color
                     )
                 }
-                if (subsRefreshError != null) {
+                if (refreshError != null) {
                     Text(
-                        text = "更新错误: ${subsRefreshError?.message}",
+                        text = "更新错误: ${refreshError.message}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -218,7 +203,6 @@ fun SubsItemCard(
         }
     }
 }
-
 
 
 

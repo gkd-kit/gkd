@@ -23,7 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,7 +43,6 @@ import li.songe.gkd.ui.component.AnimatedBooleanContent
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
 import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.updateDialogOptions
 import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.cardHorizontalPadding
@@ -51,6 +50,7 @@ import li.songe.gkd.ui.style.itemHorizontalPadding
 import li.songe.gkd.ui.style.surfaceCardColors
 import li.songe.gkd.util.AutomatorModeOption
 import li.songe.gkd.util.ShortUrlSet
+import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openA11ySettings
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
@@ -61,11 +61,11 @@ data object WorkModeRoute : NavKey
 @Composable
 fun WorkModePage() {
     val mainVm = LocalMainViewModel.current
-    viewModel<WorkModeVm>()
-    val writeSecureSettings by PermissionStates.writeSecureSettings.stateFlow.collectAsState()
-    val a11yRunning by A11yService.isRunning.collectAsState()
-    val privilegeContext by privilegeContextFlow.collectAsState()
-    val automatorMode by mainVm.automatorModeFlow.collectAsState()
+    val vm = viewModel<WorkModeVm>()
+    val writeSecureSettings by PermissionStates.writeSecureSettings.stateFlow.collectAsStateWithLifecycle()
+    val a11yRunning by A11yService.isRunning.collectAsStateWithLifecycle()
+    val privilegeContext by privilegeContextFlow.collectAsStateWithLifecycle()
+    val automatorMode by mainVm.automatorModeFlow.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
@@ -201,15 +201,15 @@ fun WorkModePage() {
                 TextButton(
                     modifier = Modifier
                         .padding(horizontal = cardHorizontalPadding),
-                    onClick = throttle {
+                    onClick = throttle(vm.scope.launchAsFn {
                         if (!writeSecureSettings) {
                             toast("请先授予「${PermissionStates.writeSecureSettings.name}」")
                         }
-                        mainVm.dialogFlow.updateDialogOptions(
+                        mainVm.dialogRequests.showMessage(
                             title = "无感保活",
                             text = "添加通知栏快捷开关\n\n1. 下拉通知栏至「快捷开关」标界面\n2. 找到名称为 ${META.appName} 的快捷开关\n3. 添加此开关到通知面板 \n\n只要此快捷开关在通知面板可见\n无论是系统杀后台还是自身崩溃\n简单下拉打开通知即可重启"
                         )
-                    }
+                    })
                 ) {
                     Text(
                         text = "无感保活",
@@ -308,7 +308,7 @@ private fun PrivilegeAuthButton(
         },
     ) {
         Text(
-            text = "高级授权",
+            text = "特权服务",
             style = MaterialTheme.typography.bodyLarge,
         )
     }

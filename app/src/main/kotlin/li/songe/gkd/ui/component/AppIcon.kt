@@ -3,7 +3,7 @@ package li.songe.gkd.ui.component
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
@@ -14,7 +14,7 @@ fun AppIcon(
     modifier: Modifier = Modifier,
     appId: String,
 ) {
-    val icon = appIconMapFlow.collectAsState().value[appId]
+    val icon = appIconMapFlow.collectAsStateWithLifecycle().value[appId]
     val iconModifier = modifier.size(32.dp)
     if (icon != null) {
         Image(

@@ -13,23 +13,20 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
 import li.songe.gkd.R
-import li.songe.gkd.data.AppConfig
-import li.songe.gkd.db.DbSet
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.AnimatedIconButton
 import li.songe.gkd.ui.component.AppBarTextField
 import li.songe.gkd.ui.component.EmptyText
@@ -42,18 +39,20 @@ import li.songe.gkd.ui.component.PerfTopAppBar
 import li.songe.gkd.ui.component.SubsAppCard
 import li.songe.gkd.ui.component.TowLineText
 import li.songe.gkd.ui.component.autoFocus
-import li.songe.gkd.ui.component.useListScrollState
+import li.songe.gkd.ui.component.rememberListScrollState
 import li.songe.gkd.ui.component.useSubs
 import li.songe.gkd.ui.share.ListPlaceholder
+import li.songe.gkd.ui.share.Loadable
 import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.asMutableState
 import li.songe.gkd.ui.share.noRippleClickable
 import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.scaffoldPadding
 import li.songe.gkd.util.AppGroupOption
 import li.songe.gkd.util.AppSortOption
 import li.songe.gkd.util.LOCAL_SUBS_IDS
-import li.songe.gkd.util.launchAsFn
+import li.songe.gkd.util.appInfoMapFlow
+import li.songe.gkd.util.findOption
+import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.throttle
 
 @Serializable
@@ -65,20 +64,35 @@ fun SubsAppListPage(route: SubsAppListRoute) {
 
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
-    val vm = viewModel { SubsAppListVm(route) }
+    val vm = viewModel { SubsAppListVm(route, mainVm) }
+    val scope = vm.scope
+    val subscription = useSubs(subsItemId)
 
-    val appTripleList by vm.appItemListFlow.collectAsState()
-    val searchStr by vm.searchStrFlow.collectAsState()
+    val loadableState by vm.uiState.collectAsStateWithLifecycle()
+    val appConfigMapState by vm.appConfigMapState.collectAsStateWithLifecycle()
+    val enableSizeMapState by vm.enableSizeMapState.collectAsStateWithLifecycle()
+    val appInfoMap by appInfoMapFlow.collectAsStateWithLifecycle()
+    val store by storeFlow.collectAsStateWithLifecycle()
+    val state = loadableState.value
+    val firstLoading = loadableState is Loadable.Loading
+    val loadError = (loadableState as? Loadable.Failure)?.cause
+    val apps = state?.apps.orEmpty()
+    val showAllApps = state?.showAllApps ?: true
+    val appConfigMap = appConfigMapState.value.orEmpty()
+    val enableSizeMap = enableSizeMapState.value.orEmpty()
+    val switchEnabled = appConfigMapState is Loadable.Ready
+    val searchStr by vm.searchStrFlow.collectAsStateWithLifecycle()
+    val showSearchBar by vm.showSearchBarFlow.collectAsStateWithLifecycle()
 
-    var showSearchBar by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(key1 = showSearchBar, block = {
         if (!showSearchBar) {
-            vm.searchStrFlow.value = ""
+            vm.setSearchText("")
         }
     })
-    val (scrollBehavior, listState) = useListScrollState(
-        vm.resetKey,
-    )
+    val pageScrollState = rememberListScrollState()
+    val scrollBehavior = pageScrollState.scrollBehavior
+    val listState = pageScrollState.listState
+    pageScrollState.ResetOnChange(apps.map { it.id })
     var expanded by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -87,31 +101,33 @@ fun SubsAppListPage(route: SubsAppListRoute) {
             PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
                 PerfIconButton(
                     imageVector = PerfIcon.ArrowBack,
-                    onClick = throttle(vm.viewModelScope.launchAsFn {
-                        context.hideSoftInput()
-                        mainVm.popPage()
-                    }),
+                    onClick = throttle {
+                        scope.launchTry {
+                            context.imeController.hideAndAwait()
+                            mainVm.popPage()
+                        }
+                    },
                 )
             }, title = {
                 val firstShowSearchBar = remember { showSearchBar }
                 if (showSearchBar) {
                     BackHandler {
-                        if (!context.justHideSoftInput()) {
-                            showSearchBar = false
+                        if (!context.imeController.requestHide()) {
+                            vm.setSearchBarVisible(false)
                         }
                     }
                     AppBarTextField(
                         value = searchStr,
-                        onValueChange = { newValue -> vm.searchStrFlow.value = newValue.trim() },
+                        onValueChange = { newValue -> vm.setSearchText(newValue.trim()) },
                         hint = "请输入应用名称/ID",
                         modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                     )
                 } else {
                     TowLineText(
-                        title = useSubs(subsItemId)?.name ?: subsItemId.toString(),
+                        title = subscription?.name ?: subsItemId.toString(),
                         subtitle = "应用规则",
                         modifier = Modifier.noRippleClickable {
-                            vm.resetKey.intValue++
+                            pageScrollState.resetScroll()
                         }
                     )
                 }
@@ -119,13 +135,13 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                 AnimatedIconButton(
                     onClick = {
                         if (showSearchBar) {
-                            if (vm.searchStrFlow.value.isEmpty()) {
-                                showSearchBar = false
+                            if (searchStr.isEmpty()) {
+                                vm.setSearchBarVisible(false)
                             } else {
-                                vm.searchStrFlow.value = ""
+                                vm.setSearchText("")
                             }
                         } else {
-                            showSearchBar = true
+                            vm.setSearchBarVisible(true)
                         }
                     },
                     id = R.drawable.ic_anim_search_close,
@@ -142,31 +158,30 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                 ) {
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         MenuGroupCard(inTop = true, title = "排序") {
-                            var sortType by vm.sortTypeFlow.asMutableState()
                             AppSortOption.objects.forEach { option ->
                                 MenuItemRadioButton(
                                     text = option.label,
-                                    selected = sortType == option,
-                                    onClick = { sortType = option },
+                                    selected = AppSortOption.objects.findOption(store.subsAppSort) == option,
+                                    onClick = { vm.setSortType(option) },
                                 )
                             }
                         }
                         MenuGroupCard(title = "分组") {
-                            var appGroupType by vm.appGroupTypeFlow.asMutableState()
                             AppGroupOption.allObjects.forEach { option ->
-                                val newValue = option.invert(appGroupType)
+                                val newValue = option.invert(store.subsAppGroupType)
                                 MenuItemCheckbox(
                                     enabled = newValue != 0,
                                     text = option.label,
-                                    checked = option.include(appGroupType),
-                                    onClick = { appGroupType = newValue },
+                                    checked = option.include(store.subsAppGroupType),
+                                    onClick = { vm.setAppGroupType(newValue) },
                                 )
                             }
                         }
                         MenuGroupCard(title = "筛选") {
                             MenuItemCheckbox(
                                 text = "白名单",
-                                stateFlow = vm.showBlockAppFlow,
+                                checked = store.subsAppShowBlock,
+                                onClick = vm::toggleShowBlockApps,
                             )
                         }
                     }
@@ -196,32 +211,32 @@ fun SubsAppListPage(route: SubsAppListRoute) {
             modifier = Modifier.scaffoldPadding(contentPadding),
             state = listState
         ) {
-            items(appTripleList, { it.id }) { a ->
+            items(apps, { it.id }) { app ->
                 SubsAppCard(
-                    data = a,
+                    rawApp = app,
+                    appInfo = appInfoMap[app.id],
+                    appConfig = appConfigMap[app.id],
+                    enableSize = enableSizeMap[app.id],
+                    switchEnabled = switchEnabled,
                     onClick = throttle {
-                        context.justHideSoftInput()
-                        mainVm.navigatePage(SubsAppGroupListRoute(subsItemId, a.id))
+                        context.imeController.requestHide()
+                        mainVm.navigatePage(SubsAppGroupListRoute(subsItemId, app.id))
                     },
-                    onValueChange = vm.viewModelScope.launchAsFn { enable ->
-                        val newItem = a.appConfig?.copy(
-                            enable = enable
-                        ) ?: AppConfig(
-                            enable = enable,
-                            subsId = subsItemId,
-                            appId = a.id,
-                        )
-                        DbSet.appConfigDao.insert(newItem)
+                    onValueChange = { enable ->
+                        scope.launchTry {
+                            vm.setAppEnabled(app.id, enable)
+                        }
                     },
                 )
             }
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
-                val firstLoading by vm.firstLoadingFlow.collectAsState()
-                if (appTripleList.isEmpty() && !firstLoading) {
+                if (apps.isEmpty() && !firstLoading) {
                     EmptyText(
-                        text = if (searchStr.isNotEmpty()) {
-                            if (vm.showAllAppFlow.collectAsState().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选"
+                        text = if (loadError != null) {
+                            loadError.message ?: "订阅加载失败"
+                        } else if (searchStr.isNotEmpty()) {
+                            if (showAllApps) "暂无搜索结果" else "暂无搜索结果，或修改筛选"
                         } else {
                             "暂无规则"
                         }

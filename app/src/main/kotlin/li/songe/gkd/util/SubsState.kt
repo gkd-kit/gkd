@@ -1,18 +1,11 @@
 package li.songe.gkd.util
 
-import io.ktor.client.request.get
-import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import li.songe.gkd.appScope
 import li.songe.gkd.data.AppRule
 import li.songe.gkd.data.CategoryConfig
@@ -22,9 +15,7 @@ import li.songe.gkd.data.ResolvedAppGroup
 import li.songe.gkd.data.ResolvedGlobalGroup
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.data.SubsItem
-import li.songe.gkd.data.SubsVersion
 import li.songe.gkd.db.DbSet
-import li.songe.json5.decodeFromJson5String
 import java.net.URI
 
 val subsItemsFlow by lazy {
@@ -61,9 +52,30 @@ data class UsedSubsEntry(
     override val subscription: RawSubscription,
 ) : SubsEntryType()
 
-val subsLoadErrorsFlow = MutableStateFlow<Map<Long, Exception>>(emptyMap())
-val subsRefreshErrorsFlow = MutableStateFlow<Map<Long, Exception>>(emptyMap())
-val subsMapFlow = MutableStateFlow<Map<Long, RawSubscription>>(emptyMap())
+val subsMapFlow by lazy {
+    SubscriptionStore.snapshotFlow.map { it.value?.subscriptions.orEmpty() }
+        .stateIn(
+            appScope,
+            SharingStarted.Eagerly,
+            SubscriptionStore.snapshotFlow.value.value?.subscriptions.orEmpty(),
+        )
+}
+val subsLoadErrorsFlow by lazy {
+    SubscriptionStore.snapshotFlow.map { it.value?.loadErrors.orEmpty() }
+        .stateIn(
+            appScope,
+            SharingStarted.Eagerly,
+            SubscriptionStore.snapshotFlow.value.value?.loadErrors.orEmpty(),
+        )
+}
+val subsRefreshErrorsFlow by lazy {
+    SubscriptionStore.snapshotFlow.map { it.value?.updateErrors.orEmpty() }
+        .stateIn(
+            appScope,
+            SharingStarted.Eagerly,
+            SubscriptionStore.snapshotFlow.value.value?.updateErrors.orEmpty(),
+        )
+}
 
 val latestRecordFlow by lazy {
     DbSet.actionLogDao.queryLatest().stateIn(appScope, SharingStarted.Eagerly, null)
@@ -99,87 +111,42 @@ val latestRecordDescFlow by lazy {
     }.stateIn(appScope, SharingStarted.Eagerly, null)
 }
 
+fun buildSubsEntries(
+    items: List<SubsItem>,
+    subscriptions: Map<Long, RawSubscription>,
+): List<SubsEntry> = items.map { item ->
+    SubsEntry(
+        subsItem = item,
+        subscription = subscriptions[item.id],
+    )
+}
+
+fun buildUsedSubsEntries(entries: List<SubsEntry>): List<UsedSubsEntry> =
+    entries.mapNotNull { entry ->
+        entry.subscription?.takeIf { entry.subsItem.enable && it.hasRule }?.let { subscription ->
+            UsedSubsEntry(entry.subsItem, subscription)
+        }
+    }
+
 val subsEntriesFlow by lazy {
     combine(
         subsItemsFlow,
         subsMapFlow,
     ) { subsItems, subsIdToRaw ->
-        subsItems.map { s ->
-            SubsEntry(
-                subsItem = s,
-                subscription = subsIdToRaw[s.id],
-            )
-        }
-    }.stateIn(appScope, SharingStarted.Eagerly, emptyList())
+        buildSubsEntries(subsItems, subsIdToRaw)
+    }.stateIn(
+        appScope,
+        SharingStarted.Eagerly,
+        buildSubsEntries(subsItemsFlow.value, subsMapFlow.value),
+    )
 }
 
 val usedSubsEntriesFlow by lazy {
-    subsEntriesFlow.map { list ->
-        list.filter { s -> s.subsItem.enable && s.subscription?.hasRule == true }
-            .map { UsedSubsEntry(it.subsItem, it.subscription!!) }
-    }.stateIn(appScope, SharingStarted.Eagerly, emptyList())
-}
-
-fun updateSubscription(subscription: RawSubscription) {
-    appScope.launchTry {
-        updateSubsMutex.withStateLock {
-            val subsId = subscription.id
-            val subsName = subscription.name
-            val newMap = subsMapFlow.value.toMutableMap()
-            val nextSubsRaw = if (subsId < 0 && newMap[subsId]?.version == subscription.version) {
-                subscription.run {
-                    copy(
-                        version = version + 1,
-                        apps = apps.filterIfNotAll { it.groups.isNotEmpty() }
-                            .distinctByIfAny { it.id },
-                    )
-                }
-            } else {
-                subscription
-            }
-            newMap[subsId] = nextSubsRaw
-            subsMapFlow.value = newMap
-            if (subsLoadErrorsFlow.value.contains(subsId)) {
-                subsLoadErrorsFlow.update {
-                    it.toMutableMap().apply {
-                        remove(subsId)
-                    }
-                }
-            }
-            withContext(Dispatchers.IO) {
-                cleanupSubsConfig(subsId, nextSubsRaw)
-                DbSet.subsItemDao.updateMtime(subsId, System.currentTimeMillis())
-                subsFolder.resolve("${subsId}.json")
-                    .writeText(json.encodeToString(nextSubsRaw))
-            }
-            LogUtils.d("更新订阅文件:id=${subsId},name=${subsName}")
-        }
-    }
-}
-
-fun deleteSubscription(vararg subsIds: Long) {
-    appScope.launchTry(Dispatchers.IO) {
-        updateSubsMutex.mutex.withLock {
-            val deleteSize = DbSet.subsItemDao.deleteById(*subsIds)
-            if (deleteSize > 0) {
-                DbSet.subsConfigDao.deleteBySubsId(*subsIds)
-                DbSet.actionLogDao.deleteBySubsId(*subsIds)
-                DbSet.categoryConfigDao.deleteBySubsId(*subsIds)
-                val newMap = subsMapFlow.value.toMutableMap()
-                subsIds.forEach { id ->
-                    newMap.remove(id)
-                    subsFolder.resolve("$id.json").apply {
-                        if (exists()) {
-                            delete()
-                        }
-                    }
-                }
-                subsMapFlow.value = newMap
-                toast("删除成功")
-                LogUtils.d("deleteSubscription", subsIds)
-            }
-        }
-    }
+    subsEntriesFlow.map(::buildUsedSubsEntries).stateIn(
+        appScope,
+        SharingStarted.Eagerly,
+        buildUsedSubsEntries(subsEntriesFlow.value),
+    )
 }
 
 fun getCategoryEnable(
@@ -372,185 +339,5 @@ fun getSubsStatus(ruleSummary: RuleSummary, count: Long): String {
         "${ruleSummary.numText}/${count}触发"
     } else {
         ruleSummary.numText
-    }
-}
-
-private fun loadSubs(id: Long): RawSubscription {
-    val file = subsFolder.resolve("${id}.json")
-    if (!file.exists()) {
-        // 某些设备出现这种情况
-        if (id == LOCAL_SUBS_ID) {
-            return RawSubscription(
-                id = LOCAL_SUBS_ID,
-                name = "本地订阅",
-                version = 0
-            )
-        }
-        if (id == LOCAL_HTTP_SUBS_ID) {
-            return RawSubscription(
-                id = LOCAL_HTTP_SUBS_ID,
-                name = "内存订阅",
-                version = 0
-            )
-        }
-        error("订阅文件不存在")
-    }
-    val subscription = try {
-        RawSubscription.parse(file.readText(), json5 = false)
-    } catch (e: Exception) {
-        throw Exception("订阅文件解析失败", e)
-    }
-    if (subscription.id != id) {
-        error("订阅文件id不一致")
-    }
-    return subscription
-}
-
-private fun refreshRawSubsList(items: List<SubsItem>): Boolean {
-    if (items.isEmpty()) return false
-    val subscriptions = subsMapFlow.value.toMutableMap()
-    val errors = subsLoadErrorsFlow.value.toMutableMap()
-    var changed = false
-    items.forEach { s ->
-        try {
-            subscriptions[s.id] = loadSubs(s.id)
-            errors.remove(s.id)
-            changed = true
-        } catch (e: Exception) {
-            errors[s.id] = e
-        }
-    }
-    subsMapFlow.value = subscriptions
-    subsLoadErrorsFlow.value = errors
-    return changed
-}
-
-fun initSubsState() {
-    subsItemsFlow.value
-    appScope.launchTry(Dispatchers.IO) {
-        updateSubsMutex.withStateLock {
-            val items = DbSet.subsItemDao.queryAll()
-            refreshRawSubsList(items)
-        }
-    }
-}
-
-private suspend fun cleanupSubsConfig(subsId: Long, subsRaw: RawSubscription): Int {
-    val globalGroupKeys = subsRaw.globalGroups.map { it.key }.toHashSet()
-    val appIdToGroupKeys = subsRaw.apps.associate { a ->
-        a.id to a.groups.map { g -> g.key }.toHashSet()
-    }
-    val configs = DbSet.subsConfigDao.querySubsItemConfig(listOf(subsId))
-    val deleteList = configs.filter { c ->
-        when (c.type) {
-            SubsConfig.AppGroupType -> {
-                val groupKeys = appIdToGroupKeys[c.appId]
-                groupKeys == null || !groupKeys.contains(c.groupKey)
-            }
-
-            SubsConfig.GlobalGroupType -> !globalGroupKeys.contains(c.groupKey)
-            else -> false
-        }
-    }
-    if (deleteList.isEmpty()) return 0
-    DbSet.subsConfigDao.delete(*deleteList.toTypedArray())
-    LogUtils.d("清理已移除规则配置", "subsId=$subsId, delete=${deleteList.size}")
-    return deleteList.size
-}
-
-val updateSubsMutex = MutexState()
-
-private suspend fun updateSubs(subsEntry: SubsEntry): RawSubscription? {
-    val subsItem = subsEntry.subsItem
-    val subsRaw = subsEntry.subscription
-    if (subsItem.updateUrl == null || subsItem.id < 0) return null
-    val checkUpdateUrl = subsEntry.checkUpdateUrl
-    if (checkUpdateUrl != null && subsRaw != null) {
-        try {
-            val subsVersion = json.decodeFromJson5String<SubsVersion>(
-                client.get(checkUpdateUrl).bodyAsText()
-            )
-            if (subsVersion.id == subsRaw.id && subsVersion.version <= subsRaw.version) {
-                return null
-            }
-        } catch (e: Exception) {
-            LogUtils.d("快速检测更新失败", subsItem, e.message)
-        }
-    }
-    val updateUrl = subsRaw?.updateUrl ?: subsItem.updateUrl
-    val text = try {
-        client.get(updateUrl).bodyAsText()
-    } catch (e: Exception) {
-        throw Exception("请求更新链接失败", e)
-    }
-    val newSubsRaw = try {
-        RawSubscription.parse(text)
-    } catch (e: Exception) {
-        throw Exception("解析文本失败", e)
-    }
-    if (newSubsRaw.id != subsItem.id) {
-        error("新id=${newSubsRaw.id}不匹配旧id=${subsItem.id}")
-    }
-    if (subsRaw != null && newSubsRaw.version <= subsRaw.version) {
-        LogUtils.d(
-            "版本号不满足条件:id=${subsItem.id}",
-            "${subsRaw.version} -> ${newSubsRaw.version}"
-        )
-        return null
-    }
-    return newSubsRaw
-}
-
-fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers.IO) {
-    if (updateSubsMutex.mutex.isLocked) {
-        return@launchTry
-    }
-    updateSubsMutex.withStateLock {
-        if (subsEntriesFlow.value.any { !it.subsItem.isLocal } && !NetworkUtils.isAvailable()) {
-            if (showToast) {
-                toast("网络不可用")
-            }
-            return@withStateLock
-        }
-        LogUtils.d("开始检测更新")
-        // 文件不存在, 重新加载
-        val changed = refreshRawSubsList(subsEntriesFlow.value.filter { it.subscription == null }
-            .map { it.subsItem })
-        if (changed) {
-            delay(500)
-        }
-        var successNum = 0
-        subsEntriesFlow.value.filter { !it.subsItem.isLocal }.forEach { subsEntry ->
-            try {
-                val newSubsRaw = updateSubs(subsEntry)
-                if (newSubsRaw != null) {
-                    updateSubscription(newSubsRaw)
-                    successNum++
-                }
-                if (subsRefreshErrorsFlow.value.contains(subsEntry.subsItem.id)) {
-                    subsRefreshErrorsFlow.update {
-                        it.toMutableMap().apply {
-                            remove(subsEntry.subsItem.id)
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                subsRefreshErrorsFlow.update {
-                    it.toMutableMap().apply {
-                        set(subsEntry.subsItem.id, e)
-                    }
-                }
-                LogUtils.d("检测更新失败", e.message)
-            }
-        }
-        if (showToast) {
-            if (successNum > 0) {
-                toast("更新 $successNum 条订阅")
-            } else {
-                toast("暂无更新")
-            }
-        }
-        LogUtils.d("结束检测更新")
-        delay(500)
     }
 }

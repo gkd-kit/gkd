@@ -12,12 +12,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.updateAndGet
-import li.songe.gkd.MainViewModel
 import li.songe.gkd.app
 import li.songe.gkd.appScope
 import li.songe.gkd.priv.CompatAppOpsService
 import li.songe.gkd.priv.privilegeContextFlow
-import li.songe.gkd.ui.PrivilegeServiceRoute
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.toast
 import li.songe.gkd.util.updateAllAppInfo
@@ -60,7 +58,7 @@ class PermissionState(
 data class PermissionResolution(
     val message: String,
     val confirmText: String = "去设置",
-    val confirm: (() -> Unit)? = null,
+    val navigateToPrivilegeService: Boolean = false,
 )
 
 private fun requestablePermissionState(
@@ -105,9 +103,7 @@ object PermissionStates {
             resolution = PermissionResolution(
                 message = "「特殊用途的前台服务」已被限制，请前往特权服务重新授权",
                 confirmText = "去授权",
-                confirm = {
-                    MainViewModel.instance.navigatePage(PrivilegeServiceRoute)
-                },
+                navigateToPrivilegeService = true,
             ),
         )
     }
