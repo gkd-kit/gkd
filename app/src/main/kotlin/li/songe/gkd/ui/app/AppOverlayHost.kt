@@ -21,12 +21,15 @@ fun AppOverlayHost() {
     if (!mainVm.termsAcceptedFlow.collectAsStateWithLifecycle().value) {
         TermsAcceptDialog()
     } else {
+        // Sheet
+        mainVm.subsSheet.Render()
+
+        // Dialog
         UiAutomationAlreadyRegisteredDlg()
         AccessRestrictedSettingsDlg()
         mainVm.dialogRequests.Render()
         mainVm.githubUpload.Render()
         mainVm.updateStatus?.UpgradeDialog()
-        mainVm.subsSheet.Render()
         mainVm.subsLinkDialog.Render()
         mainVm.ruleGroupState.Render()
         mainVm.textDialog.Render()

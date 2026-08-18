@@ -88,15 +88,13 @@ fun AppModalBottomSheet(
     sheetGesturesEnabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    DialogLayer {
-        ModalBottomSheet(
-            onDismissRequest = onDismissRequest,
-            modifier = modifier,
-            sheetState = sheetState,
-            sheetGesturesEnabled = sheetGesturesEnabled,
-            content = content,
-        )
-    }
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        modifier = modifier,
+        sheetState = sheetState,
+        sheetGesturesEnabled = sheetGesturesEnabled,
+        content = content,
+    )
 }
 
 @Composable
