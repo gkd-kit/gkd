@@ -97,6 +97,14 @@ fun buildLogFile(): File {
     val files = listOf(dbFolder, storeFolder, subsFolder, logFolder, crashFolder).filter {
         it.list()?.isNotEmpty() == true
     }.toMutableList()
+    tempDir.resolve("source-paths.txt").also { file ->
+        app.assets.open(file.name).use { input ->
+            file.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+        files.add(file)
+    }
     tempDir.resolve("apps.json").also {
         it.writeText(json.encodeToString(AppJsonData()))
         files.add(it)

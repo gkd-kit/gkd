@@ -1,32 +1,12 @@
 import com.android.build.api.variant.impl.VariantOutputImpl
+import li.songe.gradle.GenerateSourcePathsTask
+import li.songe.gradle.GitInfo
+import li.songe.gradle.readGitInfo
+import li.songe.gradle.registerSourcePathsTask
 import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.reflect.full.declaredMemberProperties
 
-fun String.runCommand(): String {
-    val process = ProcessBuilder(split(" "))
-        .redirectErrorStream(true)
-        .start()
-    val output = process.inputStream.bufferedReader().readText().trim()
-    val exitCode = process.waitFor()
-    if (exitCode != 0) {
-        error("Command failed with exit code $exitCode: $output")
-    }
-    return output
-}
-
-data class GitInfo(
-    val commitId: String,
-    val commitTime: String,
-    val tagName: String?,
-) {
-    val versionNameSuffix get() = if (tagName == null) ("-" + commitId.take(7)) else null
-}
-
-val gitInfo = GitInfo(
-    commitId = "git rev-parse HEAD".runCommand(),
-    commitTime = "git log -1 --format=%ct".runCommand() + "000",
-    tagName = runCatching { "git describe --tags --exact-match".runCommand() }.getOrNull(),
-)
+val gitInfo = project.readGitInfo()
 
 val debugSuffixPairList by lazy {
     DocumentBuilderFactory
@@ -161,6 +141,15 @@ android {
     packaging.resources.excludes += setOf(
         "META-INF/**",
         "DebugProbesKt.bin",
+    )
+}
+
+val generateSourcePaths = registerSourcePathsTask(gitInfo.commitId)
+
+androidComponents.onVariants { variant ->
+    variant.sources.assets?.addGeneratedSourceDirectory(
+        generateSourcePaths,
+        GenerateSourcePathsTask::outputDirectory,
     )
 }
 

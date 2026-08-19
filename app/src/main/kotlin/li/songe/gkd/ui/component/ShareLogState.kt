@@ -55,7 +55,10 @@ class ShareLogState(
 
     private fun upload() {
         dismiss()
-        githubUpload.startTask(getFile = { buildLogFile() })
+        githubUpload.startTask(
+            getFile = { buildLogFile() },
+            showHref = { "http://i.gkd.li/log/${it.id}" },
+        )
     }
 
     @Composable
