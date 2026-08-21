@@ -82,7 +82,7 @@ fun UpsertRuleGroupPage(route: UpsertRuleGroupRoute) {
         })
 
         val onClickSave = throttle(vm.scope.launchAsFn(Dispatchers.Main) {
-            withContext(Dispatchers.Default) { vm.saveRule() }
+            val addedAppId = withContext(Dispatchers.Default) { vm.saveRule() }
             context.imeController.hideAndAwait()
             if (forward) {
                 if (appId == null) {
@@ -94,7 +94,7 @@ fun UpsertRuleGroupPage(route: UpsertRuleGroupRoute) {
                     mainVm.navigatePage(
                         SubsAppGroupListRoute(
                             subsItemId = subsId,
-                            appId = vm.addAppId ?: appId,
+                            appId = addedAppId ?: appId,
                         ),
                         replaced = true,
                     )

@@ -8,6 +8,7 @@ import kotlinx.coroutines.withContext
 import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
+import li.songe.gkd.data.edit
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.batchUpdateGroupEnable
 import li.songe.gkd.ui.component.toGroupState
@@ -110,26 +111,11 @@ class SubsAppGroupListVm(val route: SubsAppGroupListRoute) : BaseViewModel() {
     suspend fun deleteSelectedGroups(selectedKeys: Set<Int>): Int {
         var deletedSize = 0
         subscription.update { current ->
-            val app = current.apps.find { it.id == route.appId }
-                ?: return@update current
-            val currentKeys = app.groups.mapTo(mutableSetOf()) { it.key }
-            val keysToDelete = selectedKeys intersect currentKeys
-            deletedSize = keysToDelete.size
-            if (keysToDelete.isEmpty()) {
-                current
-            } else if (keysToDelete == currentKeys) {
-                current.copy(
-                    apps = current.apps.filter { it.id != route.appId },
-                )
-            } else {
-                current.copy(
-                    apps = current.apps.toMutableList().apply {
-                        set(
-                            indexOfFirst { it.id == route.appId },
-                            app.copy(groups = app.groups.filterNot { it.key in keysToDelete }),
-                        )
-                    },
-                )
+            current.edit {
+                deletedSize = removeAppGroups(
+                    appId = route.appId,
+                    removeAppIfEmpty = true,
+                ) { it.key in selectedKeys }.size
             }
         }
         return deletedSize

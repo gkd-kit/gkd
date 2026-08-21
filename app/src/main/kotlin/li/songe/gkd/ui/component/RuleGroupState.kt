@@ -15,6 +15,7 @@ import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
+import li.songe.gkd.data.edit
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.SubsGlobalGroupExcludeRoute
 import li.songe.gkd.ui.UpsertRuleGroupRoute
@@ -319,27 +320,20 @@ class RuleGroupState(
         val groupKey = requireNotNull(state.groupKey)
         SubscriptionStore.update(state.subsId) { subscription ->
             if (state.appId == null) {
-                if (subscription.globalGroups.none { it.key == groupKey }) {
-                    error("规则已不存在")
+                subscription.edit {
+                    if (removeGlobalGroups { it.key == groupKey }.isEmpty()) {
+                        error("规则已不存在")
+                    }
                 }
-                subscription.copy(
-                    globalGroups = subscription.globalGroups.filter { it.key != groupKey },
-                )
             } else {
-                val appIndex = subscription.apps.indexOfFirst { it.id == state.appId }
-                if (appIndex < 0) error("应用规则已不存在")
-                val app = subscription.apps[appIndex]
-                if (app.groups.none { it.key == groupKey }) {
-                    error("规则已不存在")
+                subscription.edit {
+                    if (subscription.apps.none { it.id == state.appId }) {
+                        error("应用规则已不存在")
+                    }
+                    if (removeAppGroups(state.appId) { it.key == groupKey }.isEmpty()) {
+                        error("规则已不存在")
+                    }
                 }
-                subscription.copy(
-                    apps = subscription.apps.toMutableList().apply {
-                        set(
-                            appIndex,
-                            app.copy(groups = app.groups.filter { it.key != groupKey }),
-                        )
-                    },
-                )
             }
         }
     }

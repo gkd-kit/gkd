@@ -9,6 +9,7 @@ import li.songe.gkd.MainViewModel
 import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.RawSubscription
 import li.songe.gkd.data.SubsConfig
+import li.songe.gkd.data.edit
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.updateRuleGroupEnable
@@ -181,14 +182,12 @@ class SubsCategoryGroupVm(
             if (category.name == name && (category.desc ?: "") == description) {
                 current
             } else {
-                current.copy(
-                    categories = current.categories.toMutableList().apply {
-                    set(
-                        indexOfFirst { it.key == category.key },
-                        category.copy(name = name, desc = description),
-                    )
-                    },
-                )
+                current.edit {
+                    val updated = updateCategory(category.key) {
+                        copy(name = name, desc = description)
+                    }
+                    if (!updated) error("类别已不存在")
+                }
             }
         }
         return if (changed) "更新成功" else "未修改"
@@ -196,11 +195,7 @@ class SubsCategoryGroupVm(
 
     suspend fun deleteCategory() {
         subscription.update { current ->
-            current.copy(
-                categories = current.categories.filterNot {
-                    it.key == route.categoryKey
-                },
-            )
+            current.edit { removeCategory(route.categoryKey) }
         }
         DbSet.categoryConfigDao.deleteByCategoryKey(
             route.subsId,

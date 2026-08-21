@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import li.songe.gkd.data.CategoryConfig
 import li.songe.gkd.data.RawSubscription
+import li.songe.gkd.data.edit
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.share.BaseViewModel
 import li.songe.gkd.ui.share.Loadable
@@ -75,18 +76,16 @@ class SubsCategoryVm(val route: SubsCategoryRoute) : BaseViewModel() {
             if (current.categories.any { category -> category.name == name }) {
                 error("不可添加同名类别")
             }
-            current.copy(
-                categories = current.categories.toMutableList().apply {
-                    add(
-                        RawSubscription.RawCategory(
-                            key = (current.categories.maxOfOrNull { it.key } ?: -1) + 1,
-                            enable = null,
-                            name = name,
-                            desc = description,
-                        ),
-                    )
-                },
-            )
+            current.edit {
+                putCategory(
+                    RawSubscription.RawCategory(
+                        key = (current.categories.maxOfOrNull { it.key } ?: -1) + 1,
+                        enable = null,
+                        name = name,
+                        desc = description,
+                    ),
+                )
+            }
         }
         return "添加成功"
     }
