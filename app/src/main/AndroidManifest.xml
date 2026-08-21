@@ -34,6 +34,9 @@
             android:name="channel"
             android:value="${channel}" />
         <meta-data
+            android:name="buildKey"
+            android:value="${buildKey}" />
+        <meta-data
             android:name="commitId"
             android:value="${commitId}" />
         <meta-data

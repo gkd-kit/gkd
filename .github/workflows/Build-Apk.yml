@@ -27,18 +27,19 @@ jobs:
         with:
           cache-encryption-key: ${{ secrets.GRADLE_CACHE_ENCRYPTION_KEY }}
 
-      - name: write gkd secrets info
-        run: |
-          echo ${{ secrets.GKD_STORE_FILE_BASE64 }} | base64 --decode > ${{ github.workspace }}/gkd.jks
-          echo GKD_STORE_FILE='${{ github.workspace }}/gkd.jks' >> gradle.properties
-          echo GKD_STORE_PASSWORD='${{ secrets.GKD_STORE_PASSWORD }}' >> gradle.properties
-          echo GKD_KEY_ALIAS='${{ secrets.GKD_KEY_ALIAS }}' >> gradle.properties
-          echo GKD_KEY_PASSWORD='${{ secrets.GKD_KEY_PASSWORD }}' >> gradle.properties
-
-      - run: echo GKD_RENAME_APK_FLAG=1 >> gradle.properties
+      - name: write gkd keystore
+        run: echo ${{ secrets.GKD_STORE_FILE_BASE64 }} | base64 --decode > ${{ github.workspace }}/gkd.jks
 
       - run: chmod 777 ./gradlew
       - run: ./gradlew app:assembleGkdRelease
+        env:
+          GKD_GITHUB_COOKIE: ${{ secrets.GKD_GITHUB_COOKIE }}
+          GKD_API_AUTH_TOKEN: ${{ secrets.GKD_API_AUTH_TOKEN }}
+          GKD_STORE_FILE: ${{ github.workspace }}/gkd.jks
+          GKD_STORE_PASSWORD: ${{ secrets.GKD_STORE_PASSWORD }}
+          GKD_KEY_ALIAS: ${{ secrets.GKD_KEY_ALIAS }}
+          GKD_KEY_PASSWORD: ${{ secrets.GKD_KEY_PASSWORD }}
+          GKD_RENAME_APK_FLAG: "1"
 
       - uses: actions/upload-artifact@v7
         with:

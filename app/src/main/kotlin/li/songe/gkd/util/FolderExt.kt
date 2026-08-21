@@ -130,7 +130,7 @@ fun buildLogFile(): File {
     val formattedJson = Json(from = json) {
         prettyPrint = true
     }
-    tempDir.resolve("gkd-${META.versionCode}-v${META.versionName}.json").also {
+    tempDir.resolve("gkd.json").also {
         it.writeText(formattedJson.encodeToString(META))
         files.add(it)
     }

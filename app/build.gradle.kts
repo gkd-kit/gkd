@@ -1,31 +1,19 @@
+import com.android.build.api.artifact.SingleArtifact
+import com.android.build.api.variant.ApplicationAndroidComponentsExtension
+import com.android.build.api.variant.ApplicationVariant
 import com.android.build.api.variant.impl.VariantOutputImpl
+import li.songe.gradle.BuildAssetAdapter
+import li.songe.gradle.BuildAssetVariant
 import li.songe.gradle.GenerateSourcePathsTask
 import li.songe.gradle.GitInfo
-import li.songe.gradle.readGitInfo
-import li.songe.gradle.registerSourcePathsTask
-import javax.xml.parsers.DocumentBuilderFactory
+import li.songe.gradle.buildProperty
+import li.songe.gradle.configureBuildAssets
+import li.songe.gradle.gitInfo
+import li.songe.gradle.readDebugSuffixResources
 import kotlin.reflect.full.declaredMemberProperties
 
-val gitInfo = project.readGitInfo()
-
-val debugSuffixPairList by lazy {
-    DocumentBuilderFactory
-        .newInstance()
-        .newDocumentBuilder()
-        .parse(file("$projectDir/src/main/res/values/strings.xml"))
-        .documentElement.getElementsByTagName("string").run {
-            (0 until length).mapNotNull { i ->
-                val node = item(i)
-                if (node.attributes.getNamedItem("debug_suffix") != null) {
-                    val key = node.attributes.getNamedItem("name").nodeValue
-                    val value = node.textContent
-                    key to value
-                } else {
-                    null
-                }
-            }
-        }
-}
+val gitInfo = project.gitInfo
+val debugSuffixResources = project.readDebugSuffixResources()
 
 plugins {
     alias(libs.plugins.android.application)
@@ -68,25 +56,25 @@ android {
         resValues = true
     }
 
-    val gkdStoreFile = providers.gradleProperty("GKD_STORE_FILE").orNull
+    val gkdStoreFile = buildProperty("GKD_STORE_FILE").orNull
     val gkdSigningConfig = if (gkdStoreFile != null) {
         signingConfigs.create("gkd") {
             storeFile = file(gkdStoreFile)
-            storePassword = providers.gradleProperty("GKD_STORE_PASSWORD").orNull
-            keyAlias = providers.gradleProperty("GKD_KEY_ALIAS").orNull
-            keyPassword = providers.gradleProperty("GKD_KEY_PASSWORD").orNull
+            storePassword = buildProperty("GKD_STORE_PASSWORD").orNull
+            keyAlias = buildProperty("GKD_KEY_ALIAS").orNull
+            keyPassword = buildProperty("GKD_KEY_PASSWORD").orNull
         }
     } else {
         signingConfigs.getByName("debug")
     }
 
-    val playStoreFile = providers.gradleProperty("PLAY_STORE_FILE").orNull
+    val playStoreFile = buildProperty("PLAY_STORE_FILE").orNull
     val playSigningConfig = if (playStoreFile != null) {
         signingConfigs.create("play") {
             storeFile = file(playStoreFile)
-            storePassword = providers.gradleProperty("PLAY_STORE_PASSWORD").orNull
-            keyAlias = providers.gradleProperty("PLAY_KEY_ALIAS").orNull
-            keyPassword = providers.gradleProperty("PLAY_KEY_PASSWORD").orNull
+            storePassword = buildProperty("PLAY_STORE_PASSWORD").orNull
+            keyAlias = buildProperty("PLAY_KEY_ALIAS").orNull
+            keyPassword = buildProperty("PLAY_KEY_PASSWORD").orNull
         }
     } else {
         gkdSigningConfig
@@ -110,8 +98,8 @@ android {
             signingConfig = gkdSigningConfig
             applicationIdSuffix = ".debug"
             resValue("color", "better_black", "#FF5D92")
-            debugSuffixPairList.onEach { (key, value) ->
-                resValue("string", key, "$value-debug")
+            for ((name, value) in debugSuffixResources) {
+                resValue("string", name, value)
             }
         }
     }
@@ -129,6 +117,7 @@ android {
         all {
             dimension = flavorDimensions.first()
             manifestPlaceholders["channel"] = name
+            manifestPlaceholders["buildKey"] = gitInfo.buildKey(name)
         }
     }
     // https://github.com/LSPosed/AndroidHiddenApiBypass
@@ -144,16 +133,49 @@ android {
     )
 }
 
-val generateSourcePaths = registerSourcePathsTask(gitInfo.commitId)
-
-androidComponents.onVariants { variant ->
-    variant.sources.assets?.addGeneratedSourceDirectory(
-        generateSourcePaths,
-        GenerateSourcePathsTask::outputDirectory,
+val androidBuildAssetAdapter =
+    BuildAssetAdapter<ApplicationAndroidComponentsExtension, ApplicationVariant>(
+        onVariants = { components, buildType, action ->
+            val selector = if (buildType == null) {
+                components.selector().all()
+            } else {
+                components.selector().withBuildType(buildType)
+            }
+            components.onVariants(selector, action)
+        },
+        addGeneratedSourceDirectory = { variant, task ->
+            variant.sources.assets?.addGeneratedSourceDirectory(
+                task,
+                GenerateSourcePathsTask::outputDirectory,
+            )
+        },
+        describe = { variant ->
+            val flavorName = variant.productFlavors
+                .single { it.first == "channel" }
+                .second
+            val mainOutput = variant.outputs.single()
+            BuildAssetVariant(
+                name = variant.name,
+                flavor = flavorName,
+                buildType = requireNotNull(variant.buildType),
+                mappingFile = variant.artifacts.get(
+                    SingleArtifact.OBFUSCATION_MAPPING_FILE,
+                ),
+                versionCode = mainOutput.versionCode,
+                versionName = mainOutput.versionName,
+            )
+        },
+        computeTaskName = { variant, action, subject ->
+            variant.computeTaskName(action, subject)
+        },
     )
-}
 
-if (providers.gradleProperty("GKD_RENAME_APK_FLAG").isPresent) {
+configureBuildAssets(
+    androidComponents = androidComponents,
+    adapter = androidBuildAssetAdapter,
+)
+
+if (buildProperty("GKD_RENAME_APK_FLAG").isPresent) {
     androidComponents.onVariants { variant ->
         variant.outputs.onEach { output ->
             output as VariantOutputImpl

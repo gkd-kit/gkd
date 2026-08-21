@@ -35,10 +35,9 @@ abstract class GenerateSourcePathsTask : DefaultTask() {
 }
 
 fun Project.registerSourcePathsTask(commitId: String): TaskProvider<GenerateSourcePathsTask> {
-    val repositoryDirectory = rootProject.layout.projectDirectory.asFile.absolutePath
-    val trackedKotlinSourcePaths = providers.provider {
-        runGitCommandBytes(
-            repositoryDirectory,
+    val trackedKotlinSourcePaths = providers.of(GitOutputValueSource::class.java) {
+        parameters.repositoryDirectory.set(rootProject.layout.projectDirectory)
+        parameters.arguments.set(
             listOf(
                 "ls-tree",
                 "-r",
@@ -47,7 +46,8 @@ fun Project.registerSourcePathsTask(commitId: String): TaskProvider<GenerateSour
                 commitId,
             ),
         )
-            .toString(Charsets.UTF_8)
+    }.map { output ->
+        output
             .split('\u0000')
             .filter { it.endsWith(".kt") }
             .filterNot { path ->

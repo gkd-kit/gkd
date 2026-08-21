@@ -77,6 +77,7 @@ private const val ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR = ':'
 @Serializable
 data class AppMeta(
     val channel: String = getMetaString("channel"),
+    val buildKey: String = getMetaString("buildKey"),
     val commitId: String = getMetaString("commitId"),
     val commitTime: Long = getMetaString("commitTime").toLong(),
     val tagName: String? = getMetaString("tagName").takeIf { it.isNotEmpty() },

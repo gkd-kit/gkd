@@ -87,7 +87,7 @@ suspend fun uploadFileToGithub(
     // upload to s3
     val byteArray = file.readBytes()
     client.post(policiesResp.upload_url) {
-        setCommonHeaders(cookie)
+        // upload_url points to external storage, so GitHub credentials must not be sent.
         setBody(MultiPartFormDataContent(formData {
             policiesResp.form.forEach { (key, value) ->
                 append(key, value)
