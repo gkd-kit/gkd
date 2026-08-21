@@ -98,6 +98,10 @@ class AdvancedVm : BaseViewModel() {
         storeFlow.update { it.copy(hideSnapshotStatusBar = enabled) }
     }
 
+    fun setAutoSaveButtonSnapshot(enabled: Boolean) {
+        storeFlow.update { it.copy(autoSaveButtonSnapshot = enabled) }
+    }
+
     fun setShowSaveSnapshotToast(enabled: Boolean) {
         storeFlow.update { it.copy(showSaveSnapshotToast = enabled) }
     }

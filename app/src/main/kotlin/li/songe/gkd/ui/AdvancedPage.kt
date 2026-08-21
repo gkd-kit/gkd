@@ -282,6 +282,12 @@ private fun AdvancedContent() {
                 },
             )
             TextSwitch(
+                title = "自动下载",
+                subtitle = "快照按钮保存后自动下载 ZIP",
+                checked = store.autoSaveButtonSnapshot,
+                onCheckedChange = vm::setAutoSaveButtonSnapshot,
+            )
+            TextSwitch(
                 title = "音量快照",
                 subtitle = "音量变化时保存快照",
                 checked = store.captureVolumeChange,

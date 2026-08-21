@@ -13,6 +13,7 @@ import li.songe.gkd.appScope
 import li.songe.gkd.notif.NotificationCatalog
 import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.permission.PermissionStates
+import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.launchTry
@@ -25,12 +26,14 @@ class ButtonService : OverlayWindowService(
 ) {
     override fun onClickView() = appScope.launchTry {
         val snapshot = SnapshotExt.captureSnapshot()
-        val zipFile = SnapshotExt.snapshotZipFile(
-            snapshotId = snapshot.id,
-            appId = snapshot.appId,
-            activityId = snapshot.activityId,
-        )
-        this@ButtonService.saveFileToDownloads(zipFile)
+        if (storeFlow.value.autoSaveButtonSnapshot) {
+            val zipFile = SnapshotExt.snapshotZipFile(
+                snapshotId = snapshot.id,
+                appId = snapshot.appId,
+                activityId = snapshot.activityId,
+            )
+            this@ButtonService.saveFileToDownloads(zipFile)
+        }
     }.let { }
 
     override fun onLongClickView() = stopSelf()
