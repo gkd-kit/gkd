@@ -16,6 +16,7 @@ import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.util.SnapshotExt
 import li.songe.gkd.util.launchTry
+import li.songe.gkd.util.saveFileToDownloads
 import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
 
@@ -23,7 +24,13 @@ class ButtonService : OverlayWindowService(
     positionKey = "button"
 ) {
     override fun onClickView() = appScope.launchTry {
-        SnapshotExt.captureSnapshot()
+        val snapshot = SnapshotExt.captureSnapshot()
+        val zipFile = SnapshotExt.snapshotZipFile(
+            snapshotId = snapshot.id,
+            appId = snapshot.appId,
+            activityId = snapshot.activityId,
+        )
+        this@ButtonService.saveFileToDownloads(zipFile)
     }.let { }
 
     override fun onLongClickView() = stopSelf()
@@ -68,6 +75,7 @@ class ButtonService : OverlayWindowService(
                     PermissionStates.foregroundServiceSpecialUse,
                     PermissionStates.notification,
                     PermissionStates.drawOverlays,
+                    PermissionStates.writeExternalStorage,
                 )
             ) return
             start()
