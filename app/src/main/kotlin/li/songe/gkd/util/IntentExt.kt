@@ -40,7 +40,7 @@ fun MainActivity.shareFile(file: File, title: String) {
     )
 }
 
-suspend fun MainActivity.saveFileToDownloads(file: File) {
+suspend fun Context.saveFileToDownloads(file: File) {
     if (AndroidTarget.Q) {
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, file.name)
@@ -55,7 +55,12 @@ suspend fun MainActivity.saveFileToDownloads(file: File) {
             }
         }
     } else {
-        if (!mainVm.permissionRequests.ensurePermissions(PermissionStates.writeExternalStorage)) return
+        val hasPermission = if (this is MainActivity) {
+            mainVm.permissionRequests.ensurePermissions(PermissionStates.writeExternalStorage)
+        } else {
+            PermissionStates.writeExternalStorage.checkOrToast()
+        }
+        if (!hasPermission) return
         val targetFile = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
             file.name
