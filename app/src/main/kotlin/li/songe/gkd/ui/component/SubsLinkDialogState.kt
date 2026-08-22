@@ -21,6 +21,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import li.songe.gkd.db.DbSet
+import li.songe.gkd.util.isLocalNetworkUrl
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import kotlin.coroutines.resume
@@ -33,6 +34,7 @@ private data class SubsLinkDialogRequest(
 
 class SubsLinkDialogState(
     private val onOpenHelp: () -> Unit,
+    private val requestLocalNetworkPermission: suspend () -> Boolean,
 ) {
     private val requestFlow = MutableStateFlow<SubsLinkDialogRequest?>(null)
     private val requestMutex = Mutex()
@@ -80,7 +82,7 @@ class SubsLinkDialogState(
         val existingUrls = withContext(Dispatchers.IO) {
             DbSet.subsItemDao.queryAll().mapNotNullTo(mutableSetOf()) { it.updateUrl }
         }
-        return withContext(Dispatchers.Main.immediate) {
+        val value = withContext(Dispatchers.Main.immediate) {
             requestMutex.withLock {
                 try {
                     requestFlow.value = SubsLinkDialogRequest(
@@ -97,6 +99,10 @@ class SubsLinkDialogState(
                 }
             }
         }
+        if (value != null && isLocalNetworkUrl(value) && !requestLocalNetworkPermission()) {
+            return null
+        }
+        return value
     }
 
     @Composable

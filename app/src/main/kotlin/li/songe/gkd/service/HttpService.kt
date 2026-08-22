@@ -140,6 +140,7 @@ class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
             if (!mainVm.permissionRequests.ensurePermissions(
                     PermissionStates.foregroundServiceSpecialUse,
                     PermissionStates.notification,
+                    PermissionStates.localNetwork,
                 )
             ) return
             start()

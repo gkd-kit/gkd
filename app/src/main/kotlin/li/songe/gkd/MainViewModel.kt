@@ -25,6 +25,7 @@ import li.songe.gkd.priv.AutomationService
 import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.priv.uiAutomationFlow
 import li.songe.gkd.permission.PermissionRequests
+import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.service.A11yService
 import li.songe.gkd.store.createTextFlow
 import li.songe.gkd.store.storeFlow
@@ -150,6 +151,9 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
 
     val subsLinkDialog = SubsLinkDialogState(
         onOpenHelp = { navigateWebPage(ShortUrlSet.URL5) },
+        requestLocalNetworkPermission = {
+            permissionRequests.ensurePermissions(PermissionStates.localNetwork)
+        },
     )
 
     val subsSheet = SubsSheetState()

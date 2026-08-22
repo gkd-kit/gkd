@@ -114,8 +114,14 @@ class PrivilegeContext private constructor(
         }
         grantSelfPermission(PermissionStates.Manifest_permission_GET_APP_OPS_STATS)
         grantSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS)
+        if (!AndroidTarget.Q) {
+            grantSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        }
         if (AndroidTarget.TIRAMISU) {
             grantSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        if (AndroidTarget.CINNAMON_BUN) {
+            grantSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK)
         }
     }
 

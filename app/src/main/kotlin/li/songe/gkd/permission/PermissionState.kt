@@ -170,6 +170,14 @@ object PermissionStates {
         )
     }
 
+    val localNetwork by lazy {
+        requestablePermissionState(
+            name = "访问本地网络权限",
+            purpose = "用于通过无线调试连接特权服务及允许局域网设备访问 HTTP 服务",
+            permission = PermissionLists.getAccessLocalNetworkPermission(),
+        )
+    }
+
     val queryPackages by lazy {
         requestablePermissionState(
             name = "读取应用列表权限",
@@ -240,6 +248,7 @@ object PermissionStates {
     val all by lazy {
         listOf(
             notification,
+            localNetwork,
             foregroundServiceSpecialUse,
             appOpsAllowed,
             drawOverlays,
