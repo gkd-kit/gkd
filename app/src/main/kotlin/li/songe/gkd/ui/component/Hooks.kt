@@ -14,7 +14,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -186,22 +185,6 @@ fun rememberColumnScrollState(): ColumnScrollState {
         ColumnScrollState(scrollBehavior, scrollState, coroutineScope)
     }
 }
-
-@Composable
-fun LazyListState.isAtBottom(): androidx.compose.runtime.State<Boolean> = remember(this) {
-    derivedStateOf {
-        val visibleItemsInfo = layoutInfo.visibleItemsInfo
-        if (layoutInfo.totalItemsCount == 0) {
-            false
-        } else {
-            val lastVisibleItem = visibleItemsInfo.last()
-            val viewportHeight = layoutInfo.viewportEndOffset + layoutInfo.viewportStartOffset
-            (lastVisibleItem.index + 1 == layoutInfo.totalItemsCount &&
-                    lastVisibleItem.offset + lastVisibleItem.size <= viewportHeight)
-        }
-    }
-}
-
 
 val TopAppBarScrollBehavior.isFullVisible: Boolean
     @Composable

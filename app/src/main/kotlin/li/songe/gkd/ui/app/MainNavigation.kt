@@ -36,6 +36,8 @@ import li.songe.gkd.ui.SlowGroupPage
 import li.songe.gkd.ui.SlowGroupRoute
 import li.songe.gkd.ui.SnapshotPage
 import li.songe.gkd.ui.SnapshotPageRoute
+import li.songe.gkd.ui.SnapshotSettingsPage
+import li.songe.gkd.ui.SnapshotSettingsRoute
 import li.songe.gkd.ui.SubsAppGroupListPage
 import li.songe.gkd.ui.SubsAppGroupListRoute
 import li.songe.gkd.ui.SubsAppListPage
@@ -66,6 +68,7 @@ private val mainRouteEntryProvider = entryProvider {
     entry<AdvancedPageRoute> { AdvancedPage() }
     entry<PrivilegeServiceRoute> { PrivilegeServicePage() }
     entry<SnapshotPageRoute> { SnapshotPage() }
+    entry<SnapshotSettingsRoute> { SnapshotSettingsPage() }
     entry<A11YScopeAppListRoute> { A11yScopeAppListPage() }
     entry<ActivityLogRoute> { ActivityLogPage() }
     entry<A11yEventLogRoute> { A11yEventLogPage() }

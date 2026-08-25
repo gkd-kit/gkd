@@ -32,11 +32,7 @@ class CompatAccessibilityManager {
         check(serviceDump.isNotBlank()) {
             "AccessibilityManagerService dump is empty"
         }
-        return if (AndroidTarget.P) {
-            containsModernUiAutomation(serviceDump)
-        } else {
-            containsLegacyUiAutomation(serviceDump)
-        }
+        return containsUiAutomation(serviceDump)
     }
 }
 
@@ -45,11 +41,8 @@ private val legacyUserStateDumpRegex = Regex("""User state\[attributes:\{([\s\S]
 private val legacyCurrentUserRegex = Regex("""\bcurrentUser\s*=\s*true\b""")
 private val legacyUiAutomationDumpRegex = Regex("""\bService\[""")
 
-fun containsModernUiAutomation(dump: String): Boolean {
-    return uiAutomationDumpRegex.containsMatchIn(dump)
-}
-
-fun containsLegacyUiAutomation(dump: String): Boolean {
+fun containsUiAutomation(dump: String): Boolean {
+    if (uiAutomationDumpRegex.containsMatchIn(dump)) return true
     return legacyUserStateDumpRegex.findAll(dump).any { result ->
         val attributes = result.groupValues[1]
         legacyCurrentUserRegex.containsMatchIn(attributes) &&

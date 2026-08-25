@@ -9,6 +9,7 @@ import li.songe.gkd.service.EventService
 import li.songe.gkd.service.HttpService
 import li.songe.gkd.service.ScreenshotService
 import li.songe.gkd.service.TrackService
+import li.songe.gkd.snapshot.SnapshotScreenshotStatus
 import kotlin.reflect.KClass
 
 enum class ForegroundNotificationKey(
@@ -124,10 +125,19 @@ object NotificationCatalog {
         text = "任务完成后自动关闭",
     )
 
-    fun snapshotSaved(text: String) = PostedNotification(
+    fun snapshotSaved(
+        appName: String,
+        activityId: String?,
+        screenshotStatus: SnapshotScreenshotStatus,
+        savedToDownloads: Boolean,
+    ) = PostedNotification(
         key = PostedNotificationKey.SnapshotSaved,
-        title = "快照已保存",
-        text = text,
+        title = "快照已保存 · $appName",
+        text = buildList {
+            activityId?.let(::add)
+            screenshotStatus.detailText()?.let(::add)
+            if (savedToDownloads) add("已保存至下载")
+        }.joinToString(separator = " · ").takeIf { it.isNotEmpty() },
         uri = "gkd://page/2",
     )
 

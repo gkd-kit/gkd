@@ -19,8 +19,6 @@ import kotlinx.coroutines.withContext
 import li.songe.gkd.MainActivity
 import li.songe.gkd.util.buildLogFile
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.saveFileToDownloads
-import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.throttle
 
 class ShareLogState(

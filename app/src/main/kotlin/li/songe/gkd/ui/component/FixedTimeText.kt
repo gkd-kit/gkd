@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import li.songe.gkd.ui.style.TABULAR_NUMBERS_FONT_FEATURE
 
 @Composable
 fun FixedTimeText(
@@ -18,7 +19,7 @@ fun FixedTimeText(
         text = text,
         modifier = modifier,
         color = color,
-        style = style.copy(fontFeatureSettings = "tnum"),
+        style = style.copy(fontFeatureSettings = TABULAR_NUMBERS_FONT_FEATURE),
         softWrap = false,
         maxLines = 1,
     )

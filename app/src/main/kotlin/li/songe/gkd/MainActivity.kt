@@ -1,6 +1,8 @@
 package li.songe.gkd
 
+import android.content.Intent
 import android.os.Bundle
+import android.webkit.MimeTypeMap
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -14,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -36,9 +39,13 @@ import li.songe.gkd.ui.share.LocalMainViewModel
 import li.songe.gkd.ui.app.AppRoot
 import li.songe.gkd.util.BarUtils
 import li.songe.gkd.util.LogUtils
+import li.songe.gkd.util.SystemDownloads
 import li.songe.gkd.util.fixSomeProblems
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.mapState
+import li.songe.gkd.util.toast
+import li.songe.gkd.util.tryStartActivity
+import java.io.File
 import kotlin.concurrent.Volatile
 import kotlin.reflect.jvm.jvmName
 
@@ -50,6 +57,29 @@ class MainActivity : ComponentActivity() {
     private val permissionRequestHost = PermissionRequests.Host(this)
 
     var topBarWindowInsets by mutableStateOf(WindowInsets(top = BarUtils.getStatusBarHeight()))
+
+    fun shareFile(file: File, title: String) {
+        val uri = FileProvider.getUriForFile(
+            app,
+            "${app.packageName}.provider",
+            file,
+        )
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            putExtra(Intent.EXTRA_STREAM, uri)
+            type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.extension)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        tryStartActivity(Intent.createChooser(intent, title))
+    }
+
+    suspend fun saveFileToDownloads(file: File) {
+        if (!mainVm.permissionRequests.ensurePermissions(PermissionStates.writeExternalStorage)) {
+            return
+        }
+        if (!SystemDownloads.save(file)) return
+        toast("已保存 ${file.name} 到下载")
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()

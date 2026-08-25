@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -22,19 +21,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.getAndUpdate
@@ -54,8 +46,7 @@ import li.songe.gkd.priv.uiAutomationFlow
 import li.songe.gkd.ui.EventLogCard
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton
-import li.songe.gkd.ui.component.isAtBottom
-import li.songe.gkd.ui.share.ListPlaceholder
+import li.songe.gkd.ui.component.rememberLazyListAutoFollowState
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
@@ -64,8 +55,6 @@ import kotlin.time.Duration.Companion.milliseconds
 class EventService : OverlayWindowService(positionKey = "event") {
 
     val eventLogs = mutableStateListOf<A11yEventLog>()
-    private var tempEventId = 0
-    private var firstToBottom = false
 
     @Composable
     override fun ComposeContent() {
@@ -73,19 +62,11 @@ class EventService : OverlayWindowService(positionKey = "event") {
         CompositionLocalProvider(
             LocalContentColor provides contentColorFor(bgColor),
         ) {
-            val listState = rememberLazyListState()
-            LaunchedEffect(eventLogs.isEmpty()) { listState.scrollToItem(0) }
-            val isAtBottom by listState.isAtBottom()
-            val subScope = rememberCoroutineScope()
-            SideEffect {
-                val latestId = eventLogs.lastOrNull()?.id ?: 0
-                if (tempEventId != latestId) {
-                    tempEventId = latestId
-                    if (isAtBottom) {
-                        subScope.launch { listState.scrollToItem(eventLogs.lastIndex) }
-                    }
-                }
-            }
+            val latestEventId = eventLogs.lastOrNull()?.id ?: 0
+            val followState = rememberLazyListAutoFollowState(
+                itemCount = eventLogs.size,
+                latestItemKey = latestEventId,
+            )
             Column(
                 modifier = Modifier
                     .clip(MaterialTheme.shapes.small)
@@ -107,7 +88,8 @@ class EventService : OverlayWindowService(positionKey = "event") {
                     ) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            state = listState,
+                            state = followState.listState,
+                            contentPadding = PaddingValues(bottom = 6.dp),
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
                             items(eventLogs, { it.id }) {
@@ -116,19 +98,10 @@ class EventService : OverlayWindowService(positionKey = "event") {
                                     modifier = Modifier.padding(horizontal = 2.dp)
                                 )
                             }
-                            item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                                Spacer(modifier = Modifier.height(2.dp))
-                            }
                         }
-                        if (eventLogs.isNotEmpty() && !isAtBottom) {
-                            if (!firstToBottom) {
-                                firstToBottom = true
-                                SideEffect {
-                                    subScope.launch { listState.scrollToItem(eventLogs.lastIndex) }
-                                }
-                            }
-                            var count by remember { mutableIntStateOf(-1) }
-                            LaunchedEffect(eventLogs.last().id) { count++ }
+                        if (eventLogs.isNotEmpty() && !followState.isAutoFollowEnabled) {
+                            val count = (latestEventId - followState.pausedAtItemKey)
+                                .coerceAtLeast(0)
                             Column(
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
@@ -140,11 +113,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
                                 }
                                 PerfIconButton(
                                     imageVector = PerfIcon.ArrowDownward,
-                                    onClick = {
-                                        subScope.launch {
-                                            listState.scrollToItem(eventLogs.lastIndex)
-                                        }
-                                    },
+                                    onClick = followState::resume,
                                 )
                             }
                         }

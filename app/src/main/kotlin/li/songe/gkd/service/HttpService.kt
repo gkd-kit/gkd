@@ -54,8 +54,8 @@ import li.songe.gkd.util.LOCAL_HTTP_SUBS_ID
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.OnSimpleLife
 import li.songe.gkd.util.SERVER_SCRIPT_URL
-import li.songe.gkd.util.SnapshotExt
-import li.songe.gkd.util.SnapshotExt.getMinSnapshot
+import li.songe.gkd.snapshot.SnapshotCapture
+import li.songe.gkd.snapshot.SnapshotStore
 import li.songe.gkd.util.SubscriptionStore
 import li.songe.gkd.util.getIpAddressInLocalNetwork
 import li.songe.gkd.util.isPortAvailable
@@ -194,7 +194,7 @@ private fun CoroutineScope.createServer(port: Int) = embeddedServer(CIO, port) {
             post("/getServerInfo") { call.respond(ServerInfo()) }
             post("/getSnapshot") {
                 val data = call.receive<ReqId>()
-                val fp = SnapshotExt.snapshotFile(data.id)
+                val fp = SnapshotStore.snapshotFile(data.id)
                 if (!fp.exists()) {
                     throw RpcError("对应快照不存在")
                 }
@@ -202,19 +202,19 @@ private fun CoroutineScope.createServer(port: Int) = embeddedServer(CIO, port) {
             }
             post("/getScreenshot") {
                 val data = call.receive<ReqId>()
-                val fp = SnapshotExt.screenshotFile(data.id)
+                val fp = SnapshotStore.screenshotFile(data.id)
                 if (!fp.exists()) {
                     throw RpcError("对应截图不存在")
                 }
                 call.respondFile(fp)
             }
             post("/captureSnapshot") {
-                call.respond(SnapshotExt.captureSnapshot())
+                call.respond(SnapshotCapture.capture())
             }
             post("/getSnapshots") {
                 val list = DbSet.snapshotDao.query().first().mapNotNull {
                     try {
-                        getMinSnapshot(it.id)
+                        SnapshotStore.getMinSnapshot(it.id)
                     } catch (_: Throwable) {
                         null
                     }
@@ -226,8 +226,7 @@ private fun CoroutineScope.createServer(port: Int) = embeddedServer(CIO, port) {
                 val allSnapshots = DbSet.snapshotDao.query().first()
                 val snapshot = allSnapshots.find { it.id == data.id }
                 if (snapshot != null) {
-                    SnapshotExt.removeSnapshot(data.id)
-                    DbSet.snapshotDao.delete(snapshot)
+                    SnapshotStore.delete(snapshot)
                     call.respond(RpcOk("快照删除成功"))
                 } else {
                     throw RpcError("快照不存在或已被删除")

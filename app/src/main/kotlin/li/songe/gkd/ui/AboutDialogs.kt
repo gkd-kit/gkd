@@ -33,8 +33,6 @@ import li.songe.gkd.util.format
 import li.songe.gkd.util.getShareApkFile
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.openUri
-import li.songe.gkd.util.saveFileToDownloads
-import li.songe.gkd.util.shareFile
 
 @Composable
 fun AboutDialogs() {

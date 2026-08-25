@@ -81,8 +81,6 @@ import li.songe.gkd.util.DarkThemeOption
 import li.songe.gkd.util.findOption
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.openAppDetailsSettings
-import li.songe.gkd.util.saveFileToDownloads
-import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 import kotlin.time.Duration.Companion.milliseconds

@@ -15,16 +15,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.app
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.share.LocalDarkTheme
@@ -34,24 +39,32 @@ import li.songe.gkd.util.AndroidTarget
 private val LightColorScheme = lightColorScheme()
 private val DarkColorScheme = darkColorScheme()
 
+private fun createAppearanceFlow(scope: CoroutineScope) =
+    storeFlow
+        .map { it.enableDarkTheme to it.enableDynamicColor }
+        .distinctUntilChanged()
+        .debounce(300)
+        .stateIn(
+            scope,
+            SharingStarted.Eagerly,
+            storeFlow.value.let { it.enableDarkTheme to it.enableDynamicColor },
+        )
+
 @Composable
 fun AppTheme(
     invertedTheme: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val appearanceFlow = remember {
-        storeFlow
-            .distinctUntilChangedBy { it.enableDarkTheme to it.enableDynamicColor }
-            .debounce(300)
-    }
-    val store by appearanceFlow.collectAsStateWithLifecycle(storeFlow.value)
+    val scope = rememberCoroutineScope()
+    val appearanceFlow = remember(scope) { createAppearanceFlow(scope) }
+    val (enableDarkTheme, enableDynamicColor) = appearanceFlow.collectAsStateWithLifecycle().value
     val systemInDarkTheme = isSystemInDarkTheme()
-    val darkTheme = (store.enableDarkTheme ?: systemInDarkTheme).let {
+    val darkTheme = (enableDarkTheme ?: systemInDarkTheme).let {
         if (invertedTheme) !it else it
     }
     val colorScheme = when {
-        AndroidTarget.S && store.enableDynamicColor && darkTheme -> dynamicDarkColorScheme(app)
-        AndroidTarget.S && store.enableDynamicColor && !darkTheme -> dynamicLightColorScheme(app)
+        AndroidTarget.S && enableDynamicColor && darkTheme -> dynamicDarkColorScheme(app)
+        AndroidTarget.S && enableDynamicColor && !darkTheme -> dynamicLightColorScheme(app)
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }

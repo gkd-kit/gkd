@@ -6,12 +6,12 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 
-private const val HIGHLIGHT_JSON5_MAX_LENGTH = 10000
+const val JSON5_LARGE_TEXT_THRESHOLD = 10_000
 
 private class Json5VisualTransformation(val dark: Boolean) : VisualTransformation {
     val cache = LruCache<String, TransformedText>(0xF)
     override fun filter(text: AnnotatedString): TransformedText {
-        if (text.text.isBlank() || text.text.length > HIGHLIGHT_JSON5_MAX_LENGTH) {
+        if (text.text.isBlank() || text.text.length > JSON5_LARGE_TEXT_THRESHOLD) {
             return VisualTransformation.None.filter(text)
         }
         cache[text.text]?.let { return it }

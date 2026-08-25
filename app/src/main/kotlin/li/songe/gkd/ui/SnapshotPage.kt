@@ -38,6 +38,7 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.Snapshot
 import li.songe.gkd.permission.PermissionStates
+import li.songe.gkd.snapshot.SnapshotStore
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.FixedTimeText
 import li.songe.gkd.ui.component.AppDialog
@@ -58,8 +59,6 @@ import li.songe.gkd.util.IMPORT_SHORT_URL
 import li.songe.gkd.util.UriUtils
 import li.songe.gkd.util.copyText
 import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.saveFileToDownloads
-import li.songe.gkd.util.shareFile
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
 
@@ -192,7 +191,12 @@ fun SnapshotPage() {
                             actionScope.launchTry {
                                 selectedSnapshot = null
                                 toast("正在保存...")
-                                context.saveFileToDownloads(vm.buildShareArchive(snapshotVal))
+                                val archive = vm.buildShareArchive(snapshotVal)
+                                try {
+                                    context.saveFileToDownloads(archive)
+                                } finally {
+                                    SnapshotStore.deleteArchive(archive)
+                                }
                             }
                         })
                         .then(modifier)

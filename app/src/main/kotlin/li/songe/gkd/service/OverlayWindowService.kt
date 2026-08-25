@@ -10,13 +10,18 @@ import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.WindowManager
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.core.animation.doOnEnd
@@ -37,6 +42,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import li.songe.gkd.a11y.topActivityFlow
 import li.songe.gkd.app
 import li.songe.gkd.permission.PermissionStates
@@ -54,6 +60,7 @@ import li.songe.gkd.util.px
 import li.songe.gkd.util.runMainPost
 import li.songe.gkd.util.throttle
 import li.songe.gkd.util.toast
+import kotlin.coroutines.resume
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -73,6 +80,7 @@ private fun OverlayWindowService.useShareContext(): ShareContext {
 
 private class ShareContext {
     var count = 0
+    var overlayContentHidden by mutableStateOf(false)
     val scope = MainScope()
     val positionMapFlow = createAnyFlow<Map<String, List<Int>>>(
         key = "overlay_position",
@@ -168,11 +176,45 @@ abstract class OverlayWindowService(
             setViewTreeLifecycleOwner(this@OverlayWindowService)
             setContent {
                 AppTheme(invertedTheme = true) {
-                    ComposeContent()
+                    Box(
+                        modifier = Modifier.drawWithContent {
+                            if (!shareContext.overlayContentHidden) drawContent()
+                        },
+                    ) {
+                        ComposeContent()
+                    }
                 }
             }
         }
     }
+
+    protected val isOverlayContentHidden
+        get() = shareContext.overlayContentHidden
+
+    protected suspend fun <T> withAllOverlaysHidden(block: suspend () -> T): T {
+        shareContext.overlayContentHidden = true
+        return try {
+            awaitOverlayContentHidden()
+            block()
+        } finally {
+            shareContext.overlayContentHidden = false
+        }
+    }
+
+    private suspend fun awaitOverlayContentHidden() =
+        suspendCancellableCoroutine { continuation ->
+            val afterFrame = Runnable {
+                if (continuation.isActive) continuation.resume(Unit)
+            }
+            val onFrame = Runnable {
+                if (continuation.isActive) view.post(afterFrame)
+            }
+            continuation.invokeOnCancellation {
+                view.removeCallbacks(onFrame)
+                view.removeCallbacks(afterFrame)
+            }
+            view.postOnAnimation(onFrame)
+        }
 
     private val minMargin get() = 10.dp.px.toInt()
     private val defaultPosition get() = listOf(minMargin, BarUtils.getStatusBarHeight())

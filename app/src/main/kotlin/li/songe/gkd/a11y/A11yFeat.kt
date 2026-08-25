@@ -15,7 +15,7 @@ import li.songe.gkd.appScope
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.util.LogUtils
 import li.songe.gkd.util.ScreenUtils
-import li.songe.gkd.util.SnapshotExt
+import li.songe.gkd.snapshot.SnapshotCapture
 import li.songe.gkd.util.SubscriptionResult
 import li.songe.gkd.util.SubscriptionStore
 import li.songe.gkd.util.UpdateTimeOption
@@ -95,6 +95,7 @@ private val a11yEventTransform by lazy {
 context(event: AccessibilityEvent)
 private fun watchCaptureScreenshot() {
     if (!storeFlow.value.captureScreenshot) return
+    if (SnapshotCapture.isCapturing) return
     if (event.packageName != storeFlow.value.screenshotTargetAppId) return
     if (tempEventSelector.first != storeFlow.value.screenshotEventSelector) {
         tempEventSelector =
@@ -105,7 +106,7 @@ private fun watchCaptureScreenshot() {
         if (it == null) return
     }
     appScope.launchTry {
-        SnapshotExt.captureSnapshot()
+        SnapshotCapture.capture()
     }
 }
 
@@ -153,7 +154,7 @@ private fun createVolumeReceiver() = object : BroadcastReceiver() {
             if (t - lastVolumeTriggerTime > 3000 && !ScreenUtils.isScreenLock()) {
                 lastVolumeTriggerTime = t
                 appScope.launchTry {
-                    SnapshotExt.captureSnapshot()
+                    SnapshotCapture.capture()
                 }
             }
         }

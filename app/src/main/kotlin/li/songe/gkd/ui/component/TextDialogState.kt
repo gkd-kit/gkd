@@ -2,24 +2,22 @@ package li.songe.gkd.ui.component
 
 import android.webkit.URLUtil
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
-import li.songe.gkd.util.copyText
 import li.songe.gkd.util.openUri
 import li.songe.gkd.util.throttle
 
@@ -63,7 +61,7 @@ class TextDialogState {
         val request by requestFlow.collectAsStateWithLifecycle()
         val currentRequest = request
         if (currentRequest != null) {
-            val scrollState = rememberScrollState()
+            val text = remember(currentRequest.text) { AnnotatedString(currentRequest.text) }
             AppAlertDialog(
                 onDismissRequest = ::dismiss,
                 title = {
@@ -77,17 +75,12 @@ class TextDialogState {
                         shape = MaterialTheme.shapes.small,
                         color = MaterialTheme.colorScheme.surfaceVariant,
                     ) {
-                        SelectionContainer(
-                            modifier = Modifier
-                                .verticalScroll(scrollState)
-                                .padding(12.dp),
-                        ) {
-                            Text(
-                                text = currentRequest.text,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
+                        CopyableText(
+                            text = text,
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(12.dp),
+                            textStyle = MaterialTheme.typography.bodyMedium,
+                        )
                     }
                 },
                 confirmButton = {
@@ -95,11 +88,6 @@ class TextDialogState {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
                     ) {
-                        TextButton(
-                            onClick = throttle { copyText(currentRequest.text) },
-                        ) {
-                            Text(text = "复制")
-                        }
                         TextButton(onClick = throttle(::dismiss)) {
                             Text(text = "关闭")
                         }

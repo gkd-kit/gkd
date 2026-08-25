@@ -5,13 +5,12 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Entity
 import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
-import li.songe.gkd.util.SnapshotExt
+import li.songe.gkd.snapshot.SnapshotStore
 import li.songe.gkd.util.format
 
 @Entity(
@@ -34,7 +33,7 @@ data class Snapshot(
 
     val date by lazy { id.format("MM-dd HH:mm:ss") }
 
-    val screenshotFile by lazy { SnapshotExt.screenshotFile(id) }
+    val screenshotFile by lazy { SnapshotStore.screenshotFile(id) }
 
     @Dao
     interface SnapshotDao {
@@ -43,9 +42,6 @@ data class Snapshot(
 
         @Insert
         suspend fun insert(vararg users: Snapshot): List<Long>
-
-        @Insert(onConflict = OnConflictStrategy.IGNORE)
-        suspend fun insertOrIgnore(vararg users: Snapshot): List<Long>
 
         @Query("DELETE FROM snapshot")
         suspend fun deleteAll()
@@ -63,8 +59,6 @@ data class Snapshot(
         fun count(): Flow<Int>
     }
 }
-
-
 
 
 

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -47,6 +47,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import li.songe.gkd.MainActivity
 import li.songe.gkd.data.A11yEventLog
 import li.songe.gkd.ui.component.AppNameText
+import li.songe.gkd.ui.component.CopyableText
 import li.songe.gkd.ui.component.EmptyText
 import li.songe.gkd.ui.component.FixedTimeText
 import li.songe.gkd.ui.component.AppAlertDialog
@@ -191,23 +192,15 @@ fun A11yEventLogPage() {
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(text = "事件数据")
-                    Box(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        SelectionContainer(modifier = Modifier.fillMaxWidth()) {
-                            Text(
-                                text = eventText,
-                                modifier = textModifier.fillMaxWidth()
-                            )
-                        }
-                        CopyIcon(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(4.dp),
-                            onClick = {
-                                copyText(eventText.text)
-                            })
-                    }
+                    CopyableText(
+                        text = eventText,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(MaterialTheme.shapes.extraSmall)
+                            .background(MaterialTheme.colorScheme.tertiaryContainer),
+                        contentPadding = PaddingValues(horizontal = 4.dp),
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
                     if (eventLog.isStateChanged) {
                         Spacer(modifier = Modifier.height(12.dp))
                         val selectorText = remember(eventLog.id) {

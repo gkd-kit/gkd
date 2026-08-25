@@ -9,12 +9,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.MainViewModel
-import li.songe.gkd.appScope
 import li.songe.gkd.notif.NotificationCatalog
 import li.songe.gkd.notif.StopServiceReceiver
 import li.songe.gkd.permission.PermissionStates
 import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.util.SnapshotExt
+import li.songe.gkd.snapshot.SnapshotCapture
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.startForegroundServiceByClass
 import li.songe.gkd.util.stopServiceByClass
@@ -22,9 +21,14 @@ import li.songe.gkd.util.stopServiceByClass
 class ButtonService : OverlayWindowService(
     positionKey = "button"
 ) {
-    override fun onClickView() = appScope.launchTry {
-        SnapshotExt.captureSnapshot()
-    }.let { }
+    override fun onClickView() {
+        if (isOverlayContentHidden) return
+        scope.launchTry {
+            withAllOverlaysHidden {
+                SnapshotCapture.capture()
+            }
+        }
+    }
 
     override fun onLongClickView() = stopSelf()
 

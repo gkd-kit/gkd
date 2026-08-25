@@ -7,7 +7,7 @@ import kotlinx.coroutines.isActive
 import li.songe.gkd.a11y.A11yRuleEngine
 import li.songe.gkd.appScope
 import li.songe.gkd.util.LogUtils
-import li.songe.gkd.util.SnapshotExt
+import li.songe.gkd.snapshot.SnapshotCapture
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.toast
 
@@ -54,7 +54,7 @@ private fun execSnapshot() {
             } else if (latestAppId != oldAppId) {
                 ok = true
                 LogUtils.d("SnapshotTileService::eventExecutor.execute")
-                appScope.launchTry { SnapshotExt.captureSnapshot(forcedCropStatusBar = true) }
+                appScope.launchTry { SnapshotCapture.capture(forcedCropStatusBar = true) }
                 break
             } else {
                 A11yRuleEngine.performActionBack()

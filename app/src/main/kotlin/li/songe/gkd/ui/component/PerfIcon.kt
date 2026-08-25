@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Api
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.AutoMode
 import androidx.compose.material.icons.outlined.Check
@@ -198,7 +197,6 @@ object PerfIcon {
     val LightMode get() = Icons.Outlined.LightMode
     val DarkMode get() = Icons.Outlined.DarkMode
     val VerifiedUser get() = Icons.Outlined.VerifiedUser
-    val Api get() = Icons.Outlined.Api
     val Autorenew get() = Icons.Default.Autorenew
     val UnfoldMore get() = Icons.Default.UnfoldMore
     val Memory get() = Icons.Default.Memory

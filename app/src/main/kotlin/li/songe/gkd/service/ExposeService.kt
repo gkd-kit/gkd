@@ -8,7 +8,7 @@ import li.songe.gkd.appScope
 import li.songe.gkd.notif.NotificationCatalog
 import li.songe.gkd.syncFixState
 import li.songe.gkd.util.LogUtils
-import li.songe.gkd.util.SnapshotExt
+import li.songe.gkd.snapshot.SnapshotCapture
 import li.songe.gkd.util.componentName
 import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.runMainPost
@@ -34,7 +34,7 @@ class ExposeService : Service() {
         LogUtils.d("ExposeService::handleIntent", expose, data)
         when (expose) {
             -1 -> StatusService.autoStart()
-            0 -> SnapshotExt.captureSnapshot()
+            0 -> SnapshotCapture.capture()
             1 -> {
                 toast("执行成功", forced = true)
                 syncFixState()

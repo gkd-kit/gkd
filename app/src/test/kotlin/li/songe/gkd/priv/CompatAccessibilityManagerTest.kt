@@ -13,7 +13,7 @@ class CompatAccessibilityManagerTest {
                        services:{}
         """.trimIndent()
 
-        assertTrue(containsLegacyUiAutomation(dump))
+        assertTrue(containsUiAutomation(dump))
     }
 
     @Test
@@ -23,7 +23,7 @@ class CompatAccessibilityManagerTest {
                        services:{Service[label=TalkBack]}
         """.trimIndent()
 
-        assertFalse(containsLegacyUiAutomation(dump))
+        assertFalse(containsUiAutomation(dump))
     }
 
     @Test
@@ -35,7 +35,7 @@ class CompatAccessibilityManagerTest {
                        services:{}
         """.trimIndent()
 
-        assertFalse(containsLegacyUiAutomation(dump))
+        assertFalse(containsUiAutomation(dump))
     }
 
     @Test
@@ -47,7 +47,7 @@ class CompatAccessibilityManagerTest {
                        services:{}
         """.trimIndent()
 
-        assertTrue(containsLegacyUiAutomation(dump))
+        assertTrue(containsUiAutomation(dump))
     }
 
     @Test
@@ -57,7 +57,7 @@ class CompatAccessibilityManagerTest {
                        services:{}
         """.trimIndent()
 
-        assertTrue(containsModernUiAutomation(dump))
+        assertTrue(containsUiAutomation(dump))
     }
 
     @Test
@@ -67,21 +67,21 @@ class CompatAccessibilityManagerTest {
               Ui Automation[eventTypes=TYPES_ALL_MASK, notificationTimeout=0]
         """.trimIndent()
 
-        assertTrue(containsModernUiAutomation(dump))
+        assertTrue(containsUiAutomation(dump))
     }
 
     @Test
     fun uiAutomationMarkerDoesNotRequireLineBoundary() {
         val dump = "state=Ui Automation[eventTypes=TYPES_ALL_MASK]"
 
-        assertTrue(containsModernUiAutomation(dump))
+        assertTrue(containsUiAutomation(dump))
     }
 
     @Test
     fun emptyOrTruncatedDumpIsNotAutomation() {
-        assertFalse(containsLegacyUiAutomation(""))
+        assertFalse(containsUiAutomation(""))
         assertFalse(
-            containsLegacyUiAutomation(
+            containsUiAutomation(
                 "User state[attributes:{id=0, currentUser=true, Service[",
             ),
         )
