@@ -76,6 +76,17 @@ private data class UploadPolicy(
     val form: Map<String, String>,
 )
 
+private data class BuildAsset(
+    val assetId: Int,
+    val commitId: String?,
+    val tag: String?,
+)
+
+private data class BuildAssetGitMetadata(
+    val commitId: String,
+    val tag: String?,
+)
+
 private class BuildAssetApiClient(
     private val authToken: String,
 ) : Closeable {
@@ -89,7 +100,7 @@ private class BuildAssetApiClient(
         }
     }
 
-    suspend fun getAssetId(buildKey: String): Int? {
+    suspend fun get(buildKey: String): BuildAsset? {
         val response = client.get(BUILD_ASSET_GET_URL) {
             parameter("buildKey", buildKey)
         }
@@ -98,19 +109,32 @@ private class BuildAssetApiClient(
         val responseObject = result as? Map<*, *>
             ?: error("Build asset query did not return a JSON object or null")
         responseObject.requireApiSuccess("Build asset query")
-        return responseObject.requiredPositiveInt("assetId")
+        return BuildAsset(
+            assetId = responseObject.requiredPositiveInt("assetId"),
+            commitId = responseObject.requiredNullableString("commitId"),
+            tag = responseObject.requiredNullableString("tag"),
+        )
     }
 
-    suspend fun create(buildKey: String, assetId: Int) {
+    suspend fun create(
+        buildKey: String,
+        assetId: Int,
+        gitMetadata: BuildAssetGitMetadata?,
+    ) {
         val response = client.post(BUILD_ASSET_CREATE_URL) {
             header(HttpHeaders.Authorization, "Bearer $authToken")
             contentType(ContentType.Application.Json)
             setBody(
                 JsonOutput.toJson(
-                    linkedMapOf(
+                    linkedMapOf<String, Any?>(
                         "buildKey" to buildKey,
                         "assetId" to assetId,
-                    ),
+                    ).apply {
+                        if (gitMetadata != null) {
+                            this["commitId"] = gitMetadata.commitId
+                            this["tag"] = gitMetadata.tag
+                        }
+                    },
                 ),
             )
         }
@@ -124,6 +148,16 @@ private class BuildAssetApiClient(
         }
         require(result.requiredPositiveInt("assetId") == assetId) {
             "Build asset creation returned a different assetId"
+        }
+        if (gitMetadata != null) {
+            require(
+                result.requiredNullableString("commitId") == gitMetadata.commitId,
+            ) {
+                "Build asset creation returned a different commitId"
+            }
+            require(result.requiredNullableString("tag") == gitMetadata.tag) {
+                "Build asset creation returned a different tag"
+            }
         }
     }
 
@@ -334,6 +368,9 @@ abstract class UploadBuildAssetTask : DefaultTask() {
     abstract val tagName: Property<String>
 
     @get:Input
+    abstract val includeGitMetadata: Property<Boolean>
+
+    @get:Input
     abstract val versionCode: Property<Int>
 
     @get:Input
@@ -350,17 +387,48 @@ abstract class UploadBuildAssetTask : DefaultTask() {
         val cookie = githubCookie.get().trim()
         val authToken = apiAuthToken.get().trim()
         val resolvedBuildKey = buildKey.get()
+        val gitMetadata = if (includeGitMetadata.get()) {
+            BuildAssetGitMetadata(
+                commitId = commitId.get(),
+                tag = tagName.get().takeIf(String::isNotEmpty),
+            )
+        } else {
+            null
+        }
         require(cookie.isNotEmpty()) { "GitHub cookie must not be blank" }
         require(authToken.isNotEmpty()) { "GKD_API_AUTH_TOKEN must not be blank" }
 
-        val existingAssetId = runBlocking {
+        val existingBuildAsset = runBlocking {
             BuildAssetApiClient(authToken).use { apiClient ->
-                apiClient.getAssetId(resolvedBuildKey)
+                apiClient.get(resolvedBuildKey)
             }
         }
-        if (existingAssetId != null) {
+        if (existingBuildAsset != null) {
+            if (
+                gitMetadata != null &&
+                (
+                    existingBuildAsset.commitId != gitMetadata.commitId ||
+                        existingBuildAsset.tag != gitMetadata.tag
+                )
+            ) {
+                runBlocking {
+                    BuildAssetApiClient(authToken).use { apiClient ->
+                        apiClient.create(
+                            buildKey = resolvedBuildKey,
+                            assetId = existingBuildAsset.assetId,
+                            gitMetadata = gitMetadata,
+                        )
+                    }
+                }
+                logger.lifecycle(
+                    "Build asset Git metadata updated: $resolvedBuildKey -> " +
+                        "${existingBuildAsset.assetId}",
+                )
+                return
+            }
             logger.lifecycle(
-                "Build asset already exists: $resolvedBuildKey -> $existingAssetId",
+                "Build asset already exists: $resolvedBuildKey -> " +
+                    "${existingBuildAsset.assetId}",
             )
             return
         }
@@ -385,7 +453,11 @@ abstract class UploadBuildAssetTask : DefaultTask() {
                 uploader.upload(zipFile)
             }
             BuildAssetApiClient(authToken).use { apiClient ->
-                apiClient.create(resolvedBuildKey, uploadedAssetId)
+                apiClient.create(
+                    buildKey = resolvedBuildKey,
+                    assetId = uploadedAssetId,
+                    gitMetadata = gitMetadata,
+                )
             }
             uploadedAssetId
         }
@@ -515,6 +587,15 @@ private fun Map<*, *>.requiredObject(key: String): Map<*, *> {
 private fun Map<*, *>.requiredString(key: String): String {
     return this[key] as? String
         ?: error("Missing JSON string: $key")
+}
+
+private fun Map<*, *>.requiredNullableString(key: String): String? {
+    require(containsKey(key)) { "Missing JSON field: $key" }
+    val value = this[key]
+    require(value == null || value is String) {
+        "JSON field must be a string or null: $key"
+    }
+    return value
 }
 
 private fun Map<*, *>.requiredPositiveInt(key: String): Int {

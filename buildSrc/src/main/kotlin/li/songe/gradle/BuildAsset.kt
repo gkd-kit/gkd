@@ -100,6 +100,9 @@ private fun Project.registerBuildAssetUpload(
         commitId.set(buildGitInfo.commitId)
         commitTime.set(buildGitInfo.commitTime)
         tagName.set(buildGitInfo.tagName.orEmpty())
+        includeGitMetadata.set(
+            buildGitInfo.repositoryStateId == buildGitInfo.commitId,
+        )
         versionCode.set(variant.versionCode)
         versionName.set(variant.versionName)
         this.githubCookie.set(githubCookie)
