@@ -95,9 +95,6 @@ class PrivilegeContext private constructor(
         if (AndroidTarget.UPSIDE_DOWN_CAKE) {
             setAllowSelfMode(AppOpsManagerHidden.OP_FOREGROUND_SERVICE_SPECIAL_USE)
         }
-        if (CompatAppOpsService.supportA11yOverlay) {
-            setAllowSelfMode(AppOpsManagerHidden.OP_CREATE_ACCESSIBILITY_OVERLAY)
-        }
     }
 
     private fun grantSelfPermission(name: String) {

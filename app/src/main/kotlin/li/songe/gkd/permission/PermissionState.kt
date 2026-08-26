@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.updateAndGet
 import li.songe.gkd.app
 import li.songe.gkd.appScope
-import li.songe.gkd.priv.CompatAppOpsService
 import li.songe.gkd.priv.privilegeContextFlow
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.toast
@@ -114,11 +113,6 @@ object PermissionStates {
                 checkAllowedOp(AppOpsManagerHidden.OPSTR_ACCESS_ACCESSIBILITY)
     }
 
-    private fun checkCreateA11yOverlay(): Boolean {
-        return !CompatAppOpsService.supportA11yOverlay ||
-                checkAllowedOp(AppOpsManagerHidden.OPSTR_CREATE_ACCESSIBILITY_OVERLAY)
-    }
-
     val Manifest_permission_GET_APP_OPS_STATS get() = "android.permission.GET_APP_OPS_STATS"
 
     private var canRestrictsRead = true
@@ -146,9 +140,8 @@ object PermissionStates {
             name = "启动相关操作权限",
             check = {
                 val accessA11yAllowed = checkAccessA11y()
-                val createA11yOverlayAllowed = checkCreateA11yOverlay()
                 val accessRestrictedSettingsAllowed = checkAccessRestrictedSettings()
-                accessA11yAllowed && createA11yOverlayAllowed && accessRestrictedSettingsAllowed
+                accessA11yAllowed && accessRestrictedSettingsAllowed
             },
         )
     }
