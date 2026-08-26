@@ -216,7 +216,7 @@ loc {
 dependencies {
     implementation(libs.kotlin.stdlib)
 
-    implementation(project(":selector"))
+    implementation(project(":gkd-selector"))
 
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
@@ -247,7 +247,7 @@ dependencies {
     // AndroidTest shares this runtime dependency with the app and requires the newer version.
     implementation(libs.androidx.concurrent.futures)
 
-    remapApi(project(":hidden-api"))
+    remapApi(project(":gkd-hidden-api"))
     implementation(libs.rikka.shizuku.api)
     implementation(libs.rikka.shizuku.provider)
     implementation(libs.priv.kit.ui)

@@ -19,9 +19,9 @@ plugins {
 
 rootProject.name = "gkd"
 include(
-    ":app",
-    ":hidden-api",
-    ":selector",
+    ":gkd-app",
+    ":gkd-hidden-api",
+    ":gkd-selector",
 )
 
 dependencyResolutionManagement {

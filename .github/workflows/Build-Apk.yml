@@ -44,9 +44,9 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           archive: false
-          path: app/build/outputs/apk/gkd/release/*.apk
+          path: gkd-app/build/outputs/apk/gkd/release/*.apk
 
       - uses: actions/upload-artifact@v7
         with:
           name: outputs
-          path: app/build/outputs
+          path: gkd-app/build/outputs

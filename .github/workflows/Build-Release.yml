@@ -45,22 +45,22 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: release
-          path: app/build/outputs/apk/gkd/release
+          path: gkd-app/build/outputs/apk/gkd/release
 
       - uses: actions/upload-artifact@v7
         with:
           name: playRelease
-          path: app/build/outputs/bundle/playRelease
+          path: gkd-app/build/outputs/bundle/playRelease
 
       - uses: actions/upload-artifact@v7
         with:
           name: outputs
-          path: app/build/outputs
+          path: gkd-app/build/outputs
 
       - run: |
           cp outputs/apk/gkd/release/app-gkd-release.apk "${GITHUB_WORKSPACE}/gkd-${GITHUB_REF_NAME}.apk"
           zip -r "${GITHUB_WORKSPACE}/outputs-${GITHUB_REF_NAME}.zip" outputs
-        working-directory: app/build
+        working-directory: gkd-app/build
 
       - uses: softprops/action-gh-release@v3
         with:
