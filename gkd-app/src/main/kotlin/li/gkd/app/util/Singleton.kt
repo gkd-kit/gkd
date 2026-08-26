@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp

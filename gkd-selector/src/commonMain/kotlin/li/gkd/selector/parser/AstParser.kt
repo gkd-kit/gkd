@@ -1,9 +1,9 @@
-package li.songe.selector.parser
+package li.gkd.selector.parser
 
-import li.songe.selector.Selector
-import li.songe.selector.property.LogicalExpression
-import li.songe.selector.property.ValueExpression
-import li.songe.selector.unit.LogicalSelectorExpression
+import li.gkd.selector.Selector
+import li.gkd.selector.property.LogicalExpression
+import li.gkd.selector.property.ValueExpression
+import li.gkd.selector.unit.LogicalSelectorExpression
 
 private data class AstContext(
     val parent: AstContext? = null,

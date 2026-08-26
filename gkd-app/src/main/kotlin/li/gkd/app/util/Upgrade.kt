@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import android.content.Intent
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,11 +27,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import li.songe.gkd.META
-import li.songe.gkd.app
-import li.songe.gkd.store.createAnyFlow
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.component.AppAlertDialog
+import li.gkd.app.META
+import li.gkd.app.app
+import li.gkd.app.store.createAnyFlow
+import li.gkd.app.store.storeFlow
+import li.gkd.app.ui.component.AppAlertDialog
 import java.io.File
 import java.net.URI
 import kotlin.time.Duration.Companion.days

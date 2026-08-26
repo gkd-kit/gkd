@@ -1,7 +1,7 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import kotlinx.serialization.Serializable
-import li.songe.gkd.util.FILE_SHORT_URL
+import li.gkd.app.util.FILE_SHORT_URL
 
 @Serializable
 data class GithubPoliciesAsset(

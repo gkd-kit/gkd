@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
@@ -10,13 +10,13 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
-import li.songe.gkd.data.ActionLog
-import li.songe.gkd.data.ExcludeData
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.db.DbSet
-import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.util.subsMapFlow
+import li.gkd.app.data.ActionLog
+import li.gkd.app.data.ExcludeData
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.data.SubsConfig
+import li.gkd.app.db.DbSet
+import li.gkd.app.ui.share.BaseViewModel
+import li.gkd.app.util.subsMapFlow
 
 data class ActionLogListItem(
     val actionLog: ActionLog,

@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -30,11 +30,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import li.songe.gkd.META
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubsItem
-import li.songe.gkd.util.formatTimeAgo
-import li.songe.gkd.util.throttle
+import li.gkd.app.META
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.data.SubsItem
+import li.gkd.app.util.formatTimeAgo
+import li.gkd.app.util.throttle
 
 
 @Composable

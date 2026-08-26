@@ -1,4 +1,4 @@
-package li.songe.gkd
+package li.gkd.app
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

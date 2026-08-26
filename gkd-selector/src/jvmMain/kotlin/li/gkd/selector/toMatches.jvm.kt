@@ -1,4 +1,4 @@
-package li.songe.selector
+package li.gkd.selector
 
 actual fun String.toMatches(): (input: CharSequence) -> Boolean {
     val regex = Regex(this)

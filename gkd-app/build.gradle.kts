@@ -2,14 +2,14 @@ import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.api.variant.ApplicationVariant
 import com.android.build.api.variant.impl.VariantOutputImpl
-import li.songe.gradle.BuildAssetAdapter
-import li.songe.gradle.BuildAssetVariant
-import li.songe.gradle.GenerateSourcePathsTask
-import li.songe.gradle.buildProperty
-import li.songe.gradle.configureBuildAssets
-import li.songe.gradle.gitInfo
-import li.songe.gradle.readDebugSuffixResources
-import li.songe.gradle.releaseBuildKey
+import li.gkd.gradle.BuildAssetAdapter
+import li.gkd.gradle.BuildAssetVariant
+import li.gkd.gradle.GenerateSourcePathsTask
+import li.gkd.gradle.buildProperty
+import li.gkd.gradle.configureBuildAssets
+import li.gkd.gradle.gitInfo
+import li.gkd.gradle.readDebugSuffixResources
+import li.gkd.gradle.releaseBuildKey
 
 val gitInfo = project.gitInfo
 val debugSuffixResources = project.readDebugSuffixResources()
@@ -27,7 +27,7 @@ plugins {
 }
 
 android {
-    namespace = "li.songe.gkd"
+    namespace = "li.gkd.app"
     defaultConfig {
         applicationId = "li.songe.gkd"
         versionCode = 92

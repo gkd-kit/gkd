@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
@@ -12,17 +12,17 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
-import li.songe.gkd.MainActivity
-import li.songe.gkd.store.blockMatchAppListFlow
-import li.songe.gkd.ui.component.MultiTextField
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.component.PerfIconButton
-import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.style.scaffoldPadding
-import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
+import li.gkd.app.MainActivity
+import li.gkd.app.store.blockMatchAppListFlow
+import li.gkd.app.ui.component.MultiTextField
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.component.PerfIconButton
+import li.gkd.app.ui.component.PerfTopAppBar
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.ui.style.scaffoldPadding
+import li.gkd.app.util.launchAsFn
+import li.gkd.app.util.throttle
+import li.gkd.app.util.toast
 
 @Serializable
 data object EditBlockAppListRoute : NavKey

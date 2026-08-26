@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
@@ -34,29 +34,29 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
-import li.songe.gkd.R
-import li.songe.gkd.service.ActivityService
-import li.songe.gkd.service.ButtonService
-import li.songe.gkd.service.EventService
-import li.songe.gkd.service.HttpService
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.component.AppAlertDialog
-import li.songe.gkd.ui.component.PerfCustomIconButton
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.component.PerfIconButton
-import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.SettingItem
-import li.songe.gkd.ui.component.SettingsDialog
-import li.songe.gkd.ui.component.TextSwitch
-import li.songe.gkd.ui.component.autoFocus
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.TABULAR_NUMBERS_FONT_FEATURE
-import li.songe.gkd.ui.style.itemHorizontalPadding
-import li.songe.gkd.ui.style.itemVerticalPadding
-import li.songe.gkd.ui.style.titleItemPadding
-import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.throttle
+import li.gkd.app.R
+import li.gkd.app.service.ActivityService
+import li.gkd.app.service.ButtonService
+import li.gkd.app.service.EventService
+import li.gkd.app.service.HttpService
+import li.gkd.app.store.storeFlow
+import li.gkd.app.ui.component.AppAlertDialog
+import li.gkd.app.ui.component.PerfCustomIconButton
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.component.PerfIconButton
+import li.gkd.app.ui.component.PerfTopAppBar
+import li.gkd.app.ui.component.SettingItem
+import li.gkd.app.ui.component.SettingsDialog
+import li.gkd.app.ui.component.TextSwitch
+import li.gkd.app.ui.component.autoFocus
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.ui.style.EmptyHeight
+import li.gkd.app.ui.style.TABULAR_NUMBERS_FONT_FEATURE
+import li.gkd.app.ui.style.itemHorizontalPadding
+import li.gkd.app.ui.style.itemVerticalPadding
+import li.gkd.app.ui.style.titleItemPadding
+import li.gkd.app.util.launchAsFn
+import li.gkd.app.util.throttle
 
 @Serializable
 data object AdvancedPageRoute : NavKey

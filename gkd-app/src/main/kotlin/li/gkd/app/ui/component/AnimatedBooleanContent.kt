@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -6,7 +6,7 @@ import androidx.compose.animation.ContentTransform
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import li.songe.gkd.util.getUpDownTransform
+import li.gkd.app.util.getUpDownTransform
 
 @Composable
 fun AnimatedBooleanContent(

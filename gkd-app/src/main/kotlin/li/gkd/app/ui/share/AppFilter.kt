@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.share
+package li.gkd.app.ui.share
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -6,18 +6,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
-import li.songe.gkd.MainViewModel
-import li.songe.gkd.data.AppInfo
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.db.DbSet
-import li.songe.gkd.store.SettingsStore
-import li.songe.gkd.store.blockMatchAppListFlow
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.util.AppGroupOption
-import li.songe.gkd.util.AppSortOption
-import li.songe.gkd.util.appInfoMapFlow
-import li.songe.gkd.util.collator
-import li.songe.gkd.util.visibleAppInfosFlow
+import li.gkd.app.MainViewModel
+import li.gkd.app.data.AppInfo
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.db.DbSet
+import li.gkd.app.store.SettingsStore
+import li.gkd.app.store.blockMatchAppListFlow
+import li.gkd.app.store.storeFlow
+import li.gkd.app.util.AppGroupOption
+import li.gkd.app.util.AppSortOption
+import li.gkd.app.util.appInfoMapFlow
+import li.gkd.app.util.collator
+import li.gkd.app.util.visibleAppInfosFlow
 
 class AppFilter(
     val searchStrFlow: MutableStateFlow<String>,

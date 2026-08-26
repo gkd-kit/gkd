@@ -1,11 +1,11 @@
-package li.songe.gkd.priv
+package li.gkd.app.priv
 
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.accessibilityservice.IAccessibilityServiceClient
 import android.content.Context
 import android.os.IBinder
 import android.view.accessibility.IAccessibilityManager
-import li.songe.gkd.util.AndroidTarget
+import li.gkd.app.util.AndroidTarget
 import priv.kit.core.binder.PrivilegeBinderWrapper
 
 class CompatAccessibilityManager {

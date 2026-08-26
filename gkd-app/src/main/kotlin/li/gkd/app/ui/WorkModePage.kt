@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,25 +35,25 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
-import li.songe.gkd.META
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.priv.privilegeContextFlow
-import li.songe.gkd.service.A11yService
-import li.songe.gkd.ui.component.AnimatedBooleanContent
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.component.PerfIconButton
-import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.cardHorizontalPadding
-import li.songe.gkd.ui.style.itemHorizontalPadding
-import li.songe.gkd.ui.style.surfaceCardColors
-import li.songe.gkd.util.AutomatorModeOption
-import li.songe.gkd.util.ShortUrlSet
-import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.openA11ySettings
-import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
+import li.gkd.app.META
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.priv.privilegeContextFlow
+import li.gkd.app.service.A11yService
+import li.gkd.app.ui.component.AnimatedBooleanContent
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.component.PerfIconButton
+import li.gkd.app.ui.component.PerfTopAppBar
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.ui.style.EmptyHeight
+import li.gkd.app.ui.style.cardHorizontalPadding
+import li.gkd.app.ui.style.itemHorizontalPadding
+import li.gkd.app.ui.style.surfaceCardColors
+import li.gkd.app.util.AutomatorModeOption
+import li.gkd.app.util.ShortUrlSet
+import li.gkd.app.util.launchAsFn
+import li.gkd.app.util.openA11ySettings
+import li.gkd.app.util.throttle
+import li.gkd.app.util.toast
 
 @Serializable
 data object WorkModeRoute : NavKey

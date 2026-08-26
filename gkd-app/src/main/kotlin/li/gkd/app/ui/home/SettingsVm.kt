@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.home
+package li.gkd.app.ui.home
 
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
@@ -7,14 +7,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
-import li.songe.gkd.service.TrackService
-import li.songe.gkd.service.fixRestartAutomatorService
-import li.songe.gkd.store.actionCountFlow
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.util.BackupUtils
-import li.songe.gkd.util.getSubsStatus
-import li.songe.gkd.util.ruleSummaryFlow
+import li.gkd.app.service.TrackService
+import li.gkd.app.service.fixRestartAutomatorService
+import li.gkd.app.store.actionCountFlow
+import li.gkd.app.store.storeFlow
+import li.gkd.app.ui.share.BaseViewModel
+import li.gkd.app.util.BackupUtils
+import li.gkd.app.util.getSubsStatus
+import li.gkd.app.util.ruleSummaryFlow
 import java.io.File
 
 class SettingsVm : BaseViewModel() {

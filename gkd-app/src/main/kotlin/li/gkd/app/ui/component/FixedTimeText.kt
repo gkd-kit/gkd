@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import li.songe.gkd.ui.style.TABULAR_NUMBERS_FONT_FEATURE
+import li.gkd.app.ui.style.TABULAR_NUMBERS_FONT_FEATURE
 
 @Composable
 fun FixedTimeText(

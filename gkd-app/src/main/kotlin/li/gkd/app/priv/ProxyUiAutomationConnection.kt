@@ -1,4 +1,4 @@
-package li.songe.gkd.priv
+package li.gkd.app.priv
 
 import android.accessibilityservice.IAccessibilityServiceClient
 import android.app.IUiAutomationConnection

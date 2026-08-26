@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.share
+package li.gkd.app.ui.share
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.MainThread
@@ -12,8 +12,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.KeyboardUtils
+import li.gkd.app.util.AndroidTarget
+import li.gkd.app.util.KeyboardUtils
 
 class ActivityImeController(
     private val activity: ComponentActivity,

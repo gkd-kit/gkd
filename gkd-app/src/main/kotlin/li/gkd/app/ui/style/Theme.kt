@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.style
+package li.gkd.app.ui.style
 
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.compose.LocalActivity
@@ -30,11 +30,11 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import li.songe.gkd.app
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.share.LocalDarkTheme
-import li.songe.gkd.ui.share.LocalIsTalkbackEnabled
-import li.songe.gkd.util.AndroidTarget
+import li.gkd.app.app
+import li.gkd.app.store.storeFlow
+import li.gkd.app.ui.share.LocalDarkTheme
+import li.gkd.app.ui.share.LocalIsTalkbackEnabled
+import li.gkd.app.util.AndroidTarget
 
 private val LightColorScheme = lightColorScheme()
 private val DarkColorScheme = darkColorScheme()

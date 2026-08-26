@@ -1,19 +1,19 @@
-package li.songe.gkd.service
+package li.gkd.app.service
 
 import android.app.Service
 import android.content.Intent
 import android.os.Binder
-import li.songe.gkd.app
-import li.songe.gkd.appScope
-import li.songe.gkd.notif.NotificationCatalog
-import li.songe.gkd.syncFixState
-import li.songe.gkd.util.LogUtils
-import li.songe.gkd.snapshot.SnapshotCapture
-import li.songe.gkd.util.componentName
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.runMainPost
-import li.songe.gkd.util.shFolder
-import li.songe.gkd.util.toast
+import li.gkd.app.app
+import li.gkd.app.appScope
+import li.gkd.app.notif.NotificationCatalog
+import li.gkd.app.syncFixState
+import li.gkd.app.util.LogUtils
+import li.gkd.app.snapshot.SnapshotCapture
+import li.gkd.app.util.componentName
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.runMainPost
+import li.gkd.app.util.shFolder
+import li.gkd.app.util.toast
 
 class ExposeService : Service() {
     override fun onBind(intent: Intent?): Binder? = null

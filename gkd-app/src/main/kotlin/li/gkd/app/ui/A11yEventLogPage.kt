@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
@@ -44,30 +44,30 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import li.songe.gkd.MainActivity
-import li.songe.gkd.data.A11yEventLog
-import li.songe.gkd.ui.component.AppNameText
-import li.songe.gkd.ui.component.CopyableText
-import li.songe.gkd.ui.component.EmptyText
-import li.songe.gkd.ui.component.FixedTimeText
-import li.songe.gkd.ui.component.AppAlertDialog
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.component.PerfIconButton
-import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.rememberListScrollState
-import li.songe.gkd.ui.share.ListPlaceholder
-import li.songe.gkd.ui.share.LocalDarkTheme
-import li.songe.gkd.ui.share.noRippleClickable
-import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.getJson5AnnotatedString
-import li.songe.gkd.ui.style.iconTextSize
-import li.songe.gkd.ui.style.scaffoldPadding
-import li.songe.gkd.util.copyText
-import li.songe.gkd.util.format
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toJson5String
-import li.songe.gkd.util.toast
+import li.gkd.app.MainActivity
+import li.gkd.app.data.A11yEventLog
+import li.gkd.app.ui.component.AppNameText
+import li.gkd.app.ui.component.CopyableText
+import li.gkd.app.ui.component.EmptyText
+import li.gkd.app.ui.component.FixedTimeText
+import li.gkd.app.ui.component.AppAlertDialog
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.component.PerfIconButton
+import li.gkd.app.ui.component.PerfTopAppBar
+import li.gkd.app.ui.component.rememberListScrollState
+import li.gkd.app.ui.share.ListPlaceholder
+import li.gkd.app.ui.share.LocalDarkTheme
+import li.gkd.app.ui.share.noRippleClickable
+import li.gkd.app.ui.style.EmptyHeight
+import li.gkd.app.ui.style.getJson5AnnotatedString
+import li.gkd.app.ui.style.iconTextSize
+import li.gkd.app.ui.style.scaffoldPadding
+import li.gkd.app.util.copyText
+import li.gkd.app.util.format
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.throttle
+import li.gkd.app.util.toJson5String
+import li.gkd.app.util.toast
 
 @Serializable
 data object A11yEventLogRoute : NavKey

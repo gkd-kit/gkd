@@ -1,11 +1,11 @@
-package li.songe.gkd.entry
+package li.gkd.app.entry
 
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import li.songe.gkd.META
-import li.songe.gkd.MainActivity
-import li.songe.gkd.util.componentName
+import li.gkd.app.META
+import li.gkd.app.MainActivity
+import li.gkd.app.util.componentName
 import kotlin.reflect.jvm.jvmName
 
 abstract class EntryActivity : Activity() {

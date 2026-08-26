@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.clickable
@@ -16,10 +16,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
-import li.songe.gkd.MainActivity
-import li.songe.gkd.util.buildLogFile
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.throttle
+import li.gkd.app.MainActivity
+import li.gkd.app.util.buildLogFile
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.throttle
 
 class ShareLogState(
     private val scope: CoroutineScope,

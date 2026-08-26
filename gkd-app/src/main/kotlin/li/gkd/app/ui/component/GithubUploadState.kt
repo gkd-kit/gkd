@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Arrangement
@@ -21,14 +21,14 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import li.songe.gkd.data.GithubPoliciesAsset
-import li.songe.gkd.store.createTextFlow
-import li.songe.gkd.util.GithubCookieException
-import li.songe.gkd.util.LoadStatus
-import li.songe.gkd.util.LogUtils
-import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
-import li.songe.gkd.util.uploadFileToGithub
+import li.gkd.app.data.GithubPoliciesAsset
+import li.gkd.app.store.createTextFlow
+import li.gkd.app.util.GithubCookieException
+import li.gkd.app.util.LoadStatus
+import li.gkd.app.util.LogUtils
+import li.gkd.app.util.throttle
+import li.gkd.app.util.toast
+import li.gkd.app.util.uploadFileToGithub
 import java.io.File
 
 private class GithubUploadRequest(

@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -28,15 +28,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import li.songe.gkd.data.CategoryConfig
-import li.songe.gkd.data.ExcludeData
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.ui.getGlobalGroupChecked
-import li.songe.gkd.ui.icon.ResetSettings
-import li.songe.gkd.ui.share.noRippleClickable
-import li.songe.gkd.util.getGroupEnable
-import li.songe.gkd.util.throttle
+import li.gkd.app.data.CategoryConfig
+import li.gkd.app.data.ExcludeData
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.data.SubsConfig
+import li.gkd.app.ui.getGlobalGroupChecked
+import li.gkd.app.ui.icon.ResetSettings
+import li.gkd.app.ui.share.noRippleClickable
+import li.gkd.app.util.getGroupEnable
+import li.gkd.app.util.throttle
 import java.util.Objects
 
 

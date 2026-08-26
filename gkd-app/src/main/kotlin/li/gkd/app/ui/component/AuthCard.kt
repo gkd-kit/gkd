@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,8 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import li.songe.gkd.ui.style.itemPadding
-import li.songe.gkd.util.throttle
+import li.gkd.app.ui.style.itemPadding
+import li.gkd.app.util.throttle
 
 @Composable
 fun AuthCard(

@@ -1,4 +1,4 @@
-package li.songe.gkd.service
+package li.gkd.app.service
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.size
@@ -8,15 +8,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.MutableStateFlow
-import li.songe.gkd.MainViewModel
-import li.songe.gkd.notif.NotificationCatalog
-import li.songe.gkd.notif.StopServiceReceiver
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.snapshot.SnapshotCapture
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.startForegroundServiceByClass
-import li.songe.gkd.util.stopServiceByClass
+import li.gkd.app.MainViewModel
+import li.gkd.app.notif.NotificationCatalog
+import li.gkd.app.notif.StopServiceReceiver
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.snapshot.SnapshotCapture
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.startForegroundServiceByClass
+import li.gkd.app.util.stopServiceByClass
 
 class ButtonService : OverlayWindowService(
     positionKey = "button"

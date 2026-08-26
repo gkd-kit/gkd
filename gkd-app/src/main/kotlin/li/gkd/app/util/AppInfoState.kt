@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -20,16 +20,16 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import li.songe.gkd.App
-import li.songe.gkd.app
-import li.songe.gkd.appScope
-import li.songe.gkd.data.AppInfo
-import li.songe.gkd.data.otherUserMapFlow
-import li.songe.gkd.data.toAppInfo
-import li.songe.gkd.data.toAppInfoAndIcon
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.priv.currentUserId
-import li.songe.gkd.priv.privilegeContextFlow
+import li.gkd.app.App
+import li.gkd.app.app
+import li.gkd.app.appScope
+import li.gkd.app.data.AppInfo
+import li.gkd.app.data.otherUserMapFlow
+import li.gkd.app.data.toAppInfo
+import li.gkd.app.data.toAppInfoAndIcon
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.priv.currentUserId
+import li.gkd.app.priv.privilegeContextFlow
 import kotlin.time.Duration.Companion.milliseconds
 
 val userAppInfoMapFlow = MutableStateFlow(emptyMap<String, AppInfo>())

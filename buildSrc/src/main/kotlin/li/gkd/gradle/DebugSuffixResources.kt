@@ -1,4 +1,4 @@
-package li.songe.gradle
+package li.gkd.gradle
 
 import org.gradle.api.Project
 import javax.xml.parsers.DocumentBuilderFactory

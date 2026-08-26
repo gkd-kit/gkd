@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.Switch
@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import li.songe.gkd.util.throttle
+import li.gkd.app.util.throttle
 
 @Composable
 fun PerfSwitch(

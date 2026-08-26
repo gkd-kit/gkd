@@ -1,4 +1,4 @@
-package li.songe.gkd
+package li.gkd.app
 
 import org.junit.Test
 

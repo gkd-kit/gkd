@@ -1,4 +1,4 @@
-package li.songe.gkd.priv
+package li.gkd.app.priv
 
 import android.annotation.SuppressLint
 import android.app.UiAutomation
@@ -13,13 +13,13 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
-import li.songe.gkd.a11y.A11yCommonImpl
-import li.songe.gkd.a11y.A11yRuleEngine
-import li.songe.gkd.store.updateEnableAutomator
-import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.AutomatorModeOption
-import li.songe.gkd.util.LogUtils
-import li.songe.gkd.util.toast
+import li.gkd.app.a11y.A11yCommonImpl
+import li.gkd.app.a11y.A11yRuleEngine
+import li.gkd.app.store.updateEnableAutomator
+import li.gkd.app.util.AndroidTarget
+import li.gkd.app.util.AutomatorModeOption
+import li.gkd.app.util.LogUtils
+import li.gkd.app.util.toast
 
 class AutomationService private constructor(
     private val privilegeContext: PrivilegeContext,

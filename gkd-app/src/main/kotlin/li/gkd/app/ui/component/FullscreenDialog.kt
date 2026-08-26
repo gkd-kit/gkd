@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import android.view.View
 import android.view.WindowManager
@@ -12,7 +12,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowInsetsControllerCompat
-import li.songe.gkd.ui.share.LocalDarkTheme
+import li.gkd.app.ui.share.LocalDarkTheme
 
 @Composable
 fun FullscreenDialog(

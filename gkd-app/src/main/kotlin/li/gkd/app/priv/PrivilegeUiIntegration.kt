@@ -1,10 +1,10 @@
-package li.songe.gkd.priv
+package li.gkd.app.priv
 
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import li.songe.gkd.appScope
-import li.songe.gkd.priv.shizuku.GkdShizukuExternalStartProvider
+import li.gkd.app.appScope
+import li.gkd.app.priv.shizuku.GkdShizukuExternalStartProvider
 import priv.kit.core.Privilege
 import priv.kit.ui.PrivilegeUi
 import priv.kit.ui.PrivilegeUiConfig

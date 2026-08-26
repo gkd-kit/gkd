@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -17,7 +17,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import li.songe.gkd.util.throttle
+import li.gkd.app.util.throttle
 import kotlin.coroutines.resume
 
 private const val DEFAULT_MESSAGE_CONFIRM_TEXT = "我知道了"

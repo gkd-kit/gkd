@@ -1,16 +1,16 @@
-package li.songe.selector.parser
+package li.gkd.selector.parser
 
-import li.songe.selector.property.BinaryExpression
-import li.songe.selector.property.CompareOperator
-import li.songe.selector.property.Expression
-import li.songe.selector.property.ExpressionToken
-import li.songe.selector.property.LogicalExpression
-import li.songe.selector.property.LogicalOperator
-import li.songe.selector.property.NotExpression
-import li.songe.selector.property.PropertySegment
-import li.songe.selector.property.PropertyUnit
-import li.songe.selector.property.ValueExpression
-import li.songe.selector.toMatches
+import li.gkd.selector.property.BinaryExpression
+import li.gkd.selector.property.CompareOperator
+import li.gkd.selector.property.Expression
+import li.gkd.selector.property.ExpressionToken
+import li.gkd.selector.property.LogicalExpression
+import li.gkd.selector.property.LogicalOperator
+import li.gkd.selector.property.NotExpression
+import li.gkd.selector.property.PropertySegment
+import li.gkd.selector.property.PropertyUnit
+import li.gkd.selector.property.ValueExpression
+import li.gkd.selector.toMatches
 
 internal sealed interface PropertyParser : BaseParser {
 

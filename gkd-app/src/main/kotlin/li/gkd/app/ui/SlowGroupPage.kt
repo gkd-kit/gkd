@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,19 +21,19 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
-import li.songe.gkd.ui.component.EmptyText
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.component.PerfIconButton
-import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.share.ListPlaceholder
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.itemPadding
-import li.songe.gkd.ui.style.scaffoldPadding
-import li.songe.gkd.util.appInfoMapFlow
-import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.ruleSummaryFlow
-import li.songe.gkd.util.throttle
+import li.gkd.app.ui.component.EmptyText
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.component.PerfIconButton
+import li.gkd.app.ui.component.PerfTopAppBar
+import li.gkd.app.ui.share.ListPlaceholder
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.ui.style.EmptyHeight
+import li.gkd.app.ui.style.itemPadding
+import li.gkd.app.ui.style.scaffoldPadding
+import li.gkd.app.util.appInfoMapFlow
+import li.gkd.app.util.launchAsFn
+import li.gkd.app.util.ruleSummaryFlow
+import li.gkd.app.util.throttle
 
 @Serializable
 data object SlowGroupRoute : NavKey

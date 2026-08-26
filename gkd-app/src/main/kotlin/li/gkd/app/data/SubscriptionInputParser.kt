@@ -1,4 +1,4 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement

@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

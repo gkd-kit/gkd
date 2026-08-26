@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect

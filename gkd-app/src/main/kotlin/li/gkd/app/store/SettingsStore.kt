@@ -1,13 +1,13 @@
-package li.songe.gkd.store
+package li.gkd.app.store
 
 import kotlinx.serialization.Serializable
-import li.songe.gkd.META
-import li.songe.gkd.util.AppGroupOption
-import li.songe.gkd.util.AppSortOption
-import li.songe.gkd.util.AutomatorModeOption
-import li.songe.gkd.util.RuleSortOption
-import li.songe.gkd.util.UpdateChannelOption
-import li.songe.gkd.util.UpdateTimeOption
+import li.gkd.app.META
+import li.gkd.app.util.AppGroupOption
+import li.gkd.app.util.AppSortOption
+import li.gkd.app.util.AutomatorModeOption
+import li.gkd.app.util.RuleSortOption
+import li.gkd.app.util.UpdateChannelOption
+import li.gkd.app.util.UpdateTimeOption
 
 @Serializable
 data class SettingsStore(

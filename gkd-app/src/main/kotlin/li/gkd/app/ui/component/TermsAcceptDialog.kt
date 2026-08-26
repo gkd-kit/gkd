@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,10 +16,10 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withLink
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import li.songe.gkd.MainActivity
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.util.ShortUrlSet
-import li.songe.gkd.util.throttle
+import li.gkd.app.MainActivity
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.util.ShortUrlSet
+import li.gkd.app.util.throttle
 
 
 @Composable

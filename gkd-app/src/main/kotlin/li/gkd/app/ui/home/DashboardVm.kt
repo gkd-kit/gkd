@@ -1,13 +1,13 @@
-package li.songe.gkd.ui.home
+package li.gkd.app.ui.home
 
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.service.StatusService
-import li.songe.gkd.store.actionCountFlow
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.util.getSubsStatus
-import li.songe.gkd.util.ruleSummaryFlow
+import li.gkd.app.service.StatusService
+import li.gkd.app.store.actionCountFlow
+import li.gkd.app.store.storeFlow
+import li.gkd.app.ui.share.BaseViewModel
+import li.gkd.app.util.getSubsStatus
+import li.gkd.app.util.ruleSummaryFlow
 
 class DashboardVm : BaseViewModel() {
 

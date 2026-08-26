@@ -1,4 +1,4 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
@@ -6,12 +6,12 @@ import android.view.ViewConfiguration
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
-import li.songe.gkd.a11y.A11yRuleEngine
-import li.songe.gkd.priv.privilegeContextFlow
-import li.songe.gkd.priv.toHidden
-import li.songe.gkd.service.A11yService
-import li.songe.gkd.service.TrackService
-import li.songe.gkd.util.ScreenUtils
+import li.gkd.app.a11y.A11yRuleEngine
+import li.gkd.app.priv.privilegeContextFlow
+import li.gkd.app.priv.toHidden
+import li.gkd.app.service.A11yService
+import li.gkd.app.service.TrackService
+import li.gkd.app.util.ScreenUtils
 import kotlin.time.Duration.Companion.milliseconds
 
 @Serializable

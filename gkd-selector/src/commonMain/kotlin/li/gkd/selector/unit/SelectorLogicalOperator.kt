@@ -1,10 +1,10 @@
-package li.songe.selector.unit
+package li.gkd.selector.unit
 
-import li.songe.selector.MatchOption
-import li.songe.selector.QueryContext
-import li.songe.selector.QueryResult
-import li.songe.selector.Stringify
-import li.songe.selector.Transform
+import li.gkd.selector.MatchOption
+import li.gkd.selector.QueryContext
+import li.gkd.selector.QueryResult
+import li.gkd.selector.Stringify
+import li.gkd.selector.Transform
 import kotlin.js.JsExport
 
 @JsExport

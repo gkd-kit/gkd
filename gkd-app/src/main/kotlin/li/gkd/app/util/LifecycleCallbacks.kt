@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 
 import kotlinx.coroutines.CoroutineScope

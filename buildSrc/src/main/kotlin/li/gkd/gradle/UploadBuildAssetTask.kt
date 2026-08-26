@@ -1,4 +1,4 @@
-package li.songe.gradle
+package li.gkd.gradle
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper

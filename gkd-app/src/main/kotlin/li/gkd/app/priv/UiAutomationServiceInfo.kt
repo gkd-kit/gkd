@@ -1,12 +1,12 @@
-package li.songe.gkd.priv
+package li.gkd.app.priv
 
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.accessibilityservice.AccessibilityServiceInfoHidden
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
-import li.songe.gkd.app
-import li.songe.gkd.service.A11yService
-import li.songe.gkd.util.AndroidTarget
+import li.gkd.app.app
+import li.gkd.app.service.A11yService
+import li.gkd.app.util.AndroidTarget
 
 fun createUiAutomationServiceInfo(): AccessibilityServiceInfo {
     val resolveInfo = ResolveInfo().apply {

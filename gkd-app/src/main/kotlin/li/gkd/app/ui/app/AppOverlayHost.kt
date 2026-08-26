@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.app
+package li.gkd.app.ui.app
 
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -7,13 +7,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
-import li.songe.gkd.priv.uiAutomationOccupiedFlow
-import li.songe.gkd.service.A11yService
-import li.songe.gkd.ui.PrivilegeServiceRoute
-import li.songe.gkd.ui.component.AppAlertDialog
-import li.songe.gkd.ui.component.TermsAcceptDialog
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.util.toast
+import li.gkd.app.priv.uiAutomationOccupiedFlow
+import li.gkd.app.service.A11yService
+import li.gkd.app.ui.PrivilegeServiceRoute
+import li.gkd.app.ui.component.AppAlertDialog
+import li.gkd.app.ui.component.TermsAcceptDialog
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.util.toast
 
 @Composable
 fun AppOverlayHost() {

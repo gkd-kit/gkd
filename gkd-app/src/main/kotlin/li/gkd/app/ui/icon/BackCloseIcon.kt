@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.icon
+package li.gkd.app.ui.icon
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
@@ -24,7 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import li.songe.gkd.ui.component.TooltipIconButtonBox
+import li.gkd.app.ui.component.TooltipIconButtonBox
 
 private fun Animatable<Float, AnimationVector1D>.calc(start: Float, end: Float): Float {
     return start + (end - start) * value

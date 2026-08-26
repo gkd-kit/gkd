@@ -1,12 +1,12 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
-import li.songe.gkd.store.blockMatchAppListFlow
-import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.util.AppListString
+import li.gkd.app.store.blockMatchAppListFlow
+import li.gkd.app.ui.share.BaseViewModel
+import li.gkd.app.util.AppListString
 
 class EditBlockAppListVm : BaseViewModel() {
 

@@ -1,4 +1,4 @@
-package li.songe.gkd.service
+package li.gkd.app.service
 
 import android.app.Activity.RESULT_OK
 import android.content.Intent
@@ -14,10 +14,10 @@ import android.os.HandlerThread
 import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
-import li.songe.gkd.app
-import li.songe.gkd.util.LogUtils
-import li.songe.gkd.util.ScreenUtils
-import li.songe.gkd.util.isFullTransparent
+import li.gkd.app.app
+import li.gkd.app.util.LogUtils
+import li.gkd.app.util.ScreenUtils
+import li.gkd.app.util.isFullTransparent
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 

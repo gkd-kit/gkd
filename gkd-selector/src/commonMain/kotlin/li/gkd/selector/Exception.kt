@@ -1,7 +1,7 @@
-package li.songe.selector
+package li.gkd.selector
 
-import li.songe.selector.property.BinaryExpression
-import li.songe.selector.property.ValueExpression
+import li.gkd.selector.property.BinaryExpression
+import li.gkd.selector.property.ValueExpression
 import kotlin.js.JsExport
 
 @JsExport

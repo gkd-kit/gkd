@@ -1,11 +1,11 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.util.appInfoMapFlow
-import li.songe.gkd.util.toast
-import li.songe.selector.Selector
+import li.gkd.app.store.storeFlow
+import li.gkd.app.ui.share.BaseViewModel
+import li.gkd.app.util.appInfoMapFlow
+import li.gkd.app.util.toast
+import li.gkd.selector.Selector
 
 class SnapshotSettingsVm : BaseViewModel() {
     fun saveCaptureScreenshotConfig(

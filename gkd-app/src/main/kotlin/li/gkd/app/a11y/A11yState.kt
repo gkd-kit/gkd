@@ -1,4 +1,4 @@
-package li.songe.gkd.a11y
+package li.gkd.app.a11y
 
 import android.content.ComponentName
 import android.content.Intent
@@ -10,28 +10,28 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import li.songe.gkd.META
-import li.songe.gkd.app
-import li.songe.gkd.appScope
-import li.songe.gkd.data.ActionLog
-import li.songe.gkd.data.ActionResult
-import li.songe.gkd.data.ActivityLog
-import li.songe.gkd.data.AttrInfo
-import li.songe.gkd.data.ResetMatchType
-import li.songe.gkd.data.ResolvedRule
-import li.songe.gkd.data.RuleStatus
-import li.songe.gkd.data.isSystem
-import li.songe.gkd.db.DbSet
-import li.songe.gkd.service.updateTopTaskAppId
-import li.songe.gkd.store.actionCountFlow
-import li.songe.gkd.store.checkAppBlockMatch
-import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.LogUtils
-import li.songe.gkd.util.PKG_FLAGS
-import li.songe.gkd.util.RuleSummary
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.ruleSummaryFlow
-import li.songe.gkd.util.systemUiAppId
+import li.gkd.app.META
+import li.gkd.app.app
+import li.gkd.app.appScope
+import li.gkd.app.data.ActionLog
+import li.gkd.app.data.ActionResult
+import li.gkd.app.data.ActivityLog
+import li.gkd.app.data.AttrInfo
+import li.gkd.app.data.ResetMatchType
+import li.gkd.app.data.ResolvedRule
+import li.gkd.app.data.RuleStatus
+import li.gkd.app.data.isSystem
+import li.gkd.app.db.DbSet
+import li.gkd.app.service.updateTopTaskAppId
+import li.gkd.app.store.actionCountFlow
+import li.gkd.app.store.checkAppBlockMatch
+import li.gkd.app.util.AndroidTarget
+import li.gkd.app.util.LogUtils
+import li.gkd.app.util.PKG_FLAGS
+import li.gkd.app.util.RuleSummary
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.ruleSummaryFlow
+import li.gkd.app.util.systemUiAppId
 import li.songe.loc.Loc
 
 data class TopActivity(

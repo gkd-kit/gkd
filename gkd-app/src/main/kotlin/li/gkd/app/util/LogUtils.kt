@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import android.content.Intent
 import android.os.Bundle
@@ -6,8 +6,8 @@ import android.util.Log
 import com.hjq.device.compat.DeviceBrand
 import com.hjq.device.compat.DeviceMarketName
 import com.hjq.device.compat.DeviceOs
-import li.songe.gkd.META
-import li.songe.gkd.app
+import li.gkd.app.META
+import li.gkd.app.app
 import li.songe.loc.Loc
 import java.util.concurrent.Executors
 import kotlin.time.Duration.Companion.days
@@ -20,7 +20,7 @@ object LogUtils {
         tag: String = fileName.substringBeforeLast('.'),
     ) {
         val name = Thread.currentThread().name
-        val actualLoc = loc.substring("li.songe.gkd.".length)
+        val actualLoc = loc.substring("li.gkd.app.".length)
         val texts = args.map { stringify(it) }
         if (META.debuggable) {
             val msg = buildString {

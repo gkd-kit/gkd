@@ -1,10 +1,10 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.Point
 import androidx.compose.ui.unit.IntSize
-import li.songe.gkd.app
+import li.gkd.app.app
 
 
 object ScreenUtils {

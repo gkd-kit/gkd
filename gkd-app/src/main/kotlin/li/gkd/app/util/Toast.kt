@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import android.content.ClipData
 import android.content.Context
@@ -21,14 +21,14 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import com.hjq.toast.Toaster
 import com.hjq.toast.style.WhiteToastStyle
-import li.songe.gkd.app
-import li.songe.gkd.data.ResolvedRule
-import li.songe.gkd.isActivityVisible
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.service.A11yService
-import li.songe.gkd.service.OverlayWindowService
-import li.songe.gkd.store.actionCountFlow
-import li.songe.gkd.store.storeFlow
+import li.gkd.app.app
+import li.gkd.app.data.ResolvedRule
+import li.gkd.app.isActivityVisible
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.service.A11yService
+import li.gkd.app.service.OverlayWindowService
+import li.gkd.app.store.actionCountFlow
+import li.gkd.app.store.storeFlow
 import li.songe.loc.Loc
 
 fun toast(

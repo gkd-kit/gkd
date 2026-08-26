@@ -1,8 +1,8 @@
-package li.songe.gkd.priv
+package li.gkd.app.priv
 
 import android.content.Context
 import android.os.IUserManager
-import li.songe.gkd.data.UserInfo
+import li.gkd.app.data.UserInfo
 import priv.kit.core.binder.PrivilegeBinderWrapper
 
 class CompatUserManager {

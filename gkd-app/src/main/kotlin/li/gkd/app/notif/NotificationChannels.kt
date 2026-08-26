@@ -1,10 +1,10 @@
-package li.songe.gkd.notif
+package li.gkd.app.notif
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import androidx.core.app.NotificationManagerCompat
-import li.songe.gkd.META
-import li.songe.gkd.app
+import li.gkd.app.META
+import li.gkd.app.app
 
 enum class AppNotificationChannel(
     val id: String,

@@ -1,9 +1,9 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import android.util.TypedValue
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
-import li.songe.gkd.app
+import li.gkd.app.app
 
 /**
  * px -> dp

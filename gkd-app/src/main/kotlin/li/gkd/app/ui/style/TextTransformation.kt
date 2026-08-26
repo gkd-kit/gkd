@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.style
+package li.gkd.app.ui.style
 
 import androidx.collection.LruCache
 import androidx.compose.ui.text.AnnotatedString

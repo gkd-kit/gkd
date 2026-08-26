@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,9 +15,9 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import li.songe.gkd.data.AppInfo
-import li.songe.gkd.ui.style.appItemPadding
-import li.songe.gkd.util.throttle
+import li.gkd.app.data.AppInfo
+import li.gkd.app.ui.style.appItemPadding
+import li.gkd.app.util.throttle
 
 @Composable
 fun AppCheckBoxCard(

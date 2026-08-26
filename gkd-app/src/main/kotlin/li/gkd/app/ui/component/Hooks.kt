@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.animation.core.AnimationConstants.DefaultDurationMillis
 import androidx.compose.foundation.ScrollState
@@ -31,9 +31,9 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.util.mapState
-import li.songe.gkd.util.subsMapFlow
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.util.mapState
+import li.gkd.app.util.subsMapFlow
 
 @Composable
 fun useSubs(subsId: Long?): RawSubscription? {

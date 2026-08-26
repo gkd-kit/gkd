@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
@@ -6,16 +6,16 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import li.songe.gkd.appScope
-import li.songe.gkd.data.AppRule
-import li.songe.gkd.data.CategoryConfig
-import li.songe.gkd.data.GlobalRule
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.ResolvedAppGroup
-import li.songe.gkd.data.ResolvedGlobalGroup
-import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.SubsItem
-import li.songe.gkd.db.DbSet
+import li.gkd.app.appScope
+import li.gkd.app.data.AppRule
+import li.gkd.app.data.CategoryConfig
+import li.gkd.app.data.GlobalRule
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.data.ResolvedAppGroup
+import li.gkd.app.data.ResolvedGlobalGroup
+import li.gkd.app.data.SubsConfig
+import li.gkd.app.data.SubsItem
+import li.gkd.app.db.DbSet
 import java.net.URI
 
 val subsItemsFlow by lazy {

@@ -1,4 +1,4 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao
@@ -12,8 +12,8 @@ import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
-import li.songe.gkd.util.LOCAL_SUBS_IDS
-import li.songe.gkd.util.format
+import li.gkd.app.util.LOCAL_SUBS_IDS
+import li.gkd.app.util.format
 
 @Serializable
 @Entity(

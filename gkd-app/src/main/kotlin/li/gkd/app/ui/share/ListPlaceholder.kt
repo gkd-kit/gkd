@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.share
+package li.gkd.app.ui.share
 
 import kotlin.math.E
 import kotlin.math.PI

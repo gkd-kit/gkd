@@ -1,4 +1,4 @@
-package li.songe.gkd.service
+package li.gkd.app.service
 
 import android.provider.Settings
 import kotlinx.coroutines.Dispatchers
@@ -12,24 +12,24 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import li.songe.gkd.META
-import li.songe.gkd.a11y.systemRecentCn
-import li.songe.gkd.a11y.topActivityFlow
-import li.songe.gkd.ui.app.accessRestrictedSettingsShowFlow
-import li.songe.gkd.app
-import li.songe.gkd.appScope
-import li.songe.gkd.isActivityVisible
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.priv.AutomationService
-import li.songe.gkd.priv.privilegeContextFlow
-import li.songe.gkd.priv.uiAutomationFlow
-import li.songe.gkd.store.actualA11yScopeAppList
-import li.songe.gkd.store.actualBlockA11yAppList
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.mapState
-import li.songe.gkd.util.runMainPost
-import li.songe.gkd.util.toast
+import li.gkd.app.META
+import li.gkd.app.a11y.systemRecentCn
+import li.gkd.app.a11y.topActivityFlow
+import li.gkd.app.ui.app.accessRestrictedSettingsShowFlow
+import li.gkd.app.app
+import li.gkd.app.appScope
+import li.gkd.app.isActivityVisible
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.priv.AutomationService
+import li.gkd.app.priv.privilegeContextFlow
+import li.gkd.app.priv.uiAutomationFlow
+import li.gkd.app.store.actualA11yScopeAppList
+import li.gkd.app.store.actualBlockA11yAppList
+import li.gkd.app.store.storeFlow
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.mapState
+import li.gkd.app.util.runMainPost
+import li.gkd.app.util.toast
 import kotlin.time.Duration.Companion.milliseconds
 
 class GkdTileService : BaseTileService() {

@@ -1,7 +1,7 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import androidx.compose.ui.graphics.vector.ImageVector
-import li.songe.gkd.ui.component.PerfIcon
+import li.gkd.app.ui.component.PerfIcon
 
 sealed interface Option<T> {
     val value: T

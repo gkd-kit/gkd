@@ -1,22 +1,22 @@
-package li.songe.gkd.a11y
+package li.gkd.app.a11y
 
 import android.util.Log
 import android.util.LruCache
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.atomicfu.atomic
-import li.songe.gkd.META
-import li.songe.gkd.data.ResolvedRule
-import li.songe.gkd.priv.toHidden
-import li.songe.gkd.util.InterruptRuleMatchException
-import li.songe.selector.FastQuery
-import li.songe.selector.MatchOption
-import li.songe.selector.QueryContext
-import li.songe.selector.Selector
-import li.songe.selector.Transform
-import li.songe.selector.getBooleanInvoke
-import li.songe.selector.getCharSequenceAttr
-import li.songe.selector.getCharSequenceInvoke
-import li.songe.selector.getIntInvoke
+import li.gkd.app.META
+import li.gkd.app.data.ResolvedRule
+import li.gkd.app.priv.toHidden
+import li.gkd.app.util.InterruptRuleMatchException
+import li.gkd.selector.FastQuery
+import li.gkd.selector.MatchOption
+import li.gkd.selector.QueryContext
+import li.gkd.selector.Selector
+import li.gkd.selector.Transform
+import li.gkd.selector.getBooleanInvoke
+import li.gkd.selector.getCharSequenceAttr
+import li.gkd.selector.getCharSequenceInvoke
+import li.gkd.selector.getIntInvoke
 
 
 private operator fun <K, V> LruCache<K, V>.set(child: K, value: V): V {

@@ -1,20 +1,20 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.MainViewModel
-import li.songe.gkd.service.fixRestartAutomatorService
-import li.songe.gkd.store.blockA11yAppListFlow
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.ui.share.useAppFilter
-import li.songe.gkd.util.AppListString
-import li.songe.gkd.util.AppSortOption
-import li.songe.gkd.util.findOption
-import li.songe.gkd.util.toast
+import li.gkd.app.MainViewModel
+import li.gkd.app.service.fixRestartAutomatorService
+import li.gkd.app.store.blockA11yAppListFlow
+import li.gkd.app.store.storeFlow
+import li.gkd.app.ui.share.BaseViewModel
+import li.gkd.app.ui.share.useAppFilter
+import li.gkd.app.util.AppListString
+import li.gkd.app.util.AppSortOption
+import li.gkd.app.util.findOption
+import li.gkd.app.util.toast
 
 class BlockA11yAppListVm(mainVm: MainViewModel) : BaseViewModel() {
     val appFilter = useAppFilter(

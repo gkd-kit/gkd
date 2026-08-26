@@ -1,4 +1,4 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 class AppRule(
     rule: RawSubscription.RawAppRule,

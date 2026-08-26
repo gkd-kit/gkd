@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import android.content.ContentValues
 import android.os.Build
@@ -8,8 +8,8 @@ import android.webkit.MimeTypeMap
 import androidx.annotation.RequiresApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import li.songe.gkd.app
-import li.songe.gkd.permission.PermissionStates
+import li.gkd.app.app
+import li.gkd.app.permission.PermissionStates
 import java.io.File
 
 object SystemDownloads {

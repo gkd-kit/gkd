@@ -1,9 +1,9 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.serialization.Serializable
-import li.songe.gkd.a11y.compatChecked
-import li.songe.gkd.priv.toHidden
+import li.gkd.app.a11y.compatChecked
+import li.gkd.app.priv.toHidden
 
 @Serializable
 data class AttrInfo(

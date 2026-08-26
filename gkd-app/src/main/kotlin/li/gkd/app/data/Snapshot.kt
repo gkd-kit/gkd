@@ -1,4 +1,4 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao
@@ -10,8 +10,8 @@ import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
-import li.songe.gkd.snapshot.SnapshotStore
-import li.songe.gkd.util.format
+import li.gkd.app.snapshot.SnapshotStore
+import li.gkd.app.util.format
 
 @Entity(
     tableName = "snapshot",

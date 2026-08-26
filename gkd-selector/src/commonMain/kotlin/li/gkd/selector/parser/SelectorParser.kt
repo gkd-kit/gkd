@@ -1,17 +1,17 @@
-package li.songe.selector.parser
+package li.gkd.selector.parser
 
-import li.songe.selector.Selector
-import li.songe.selector.connect.ConnectSegment
-import li.songe.selector.connect.ConnectWrapper
-import li.songe.selector.connect.PolynomialExpression
-import li.songe.selector.property.PropertySegment
-import li.songe.selector.property.PropertyWrapper
-import li.songe.selector.unit.LogicalSelectorExpression
-import li.songe.selector.unit.NotSelectorExpression
-import li.songe.selector.unit.SelectorExpression
-import li.songe.selector.unit.SelectorExpressionToken
-import li.songe.selector.unit.SelectorLogicalOperator
-import li.songe.selector.unit.UnitSelectorExpression
+import li.gkd.selector.Selector
+import li.gkd.selector.connect.ConnectSegment
+import li.gkd.selector.connect.ConnectWrapper
+import li.gkd.selector.connect.PolynomialExpression
+import li.gkd.selector.property.PropertySegment
+import li.gkd.selector.property.PropertyWrapper
+import li.gkd.selector.unit.LogicalSelectorExpression
+import li.gkd.selector.unit.NotSelectorExpression
+import li.gkd.selector.unit.SelectorExpression
+import li.gkd.selector.unit.SelectorExpressionToken
+import li.gkd.selector.unit.SelectorLogicalOperator
+import li.gkd.selector.unit.UnitSelectorExpression
 
 internal open class SelectorParser(
     override val source: CharSequence,

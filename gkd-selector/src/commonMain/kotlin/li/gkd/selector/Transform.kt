@@ -1,6 +1,6 @@
-package li.songe.selector
+package li.gkd.selector
 
-import li.songe.selector.connect.ConnectExpression
+import li.gkd.selector.connect.ConnectExpression
 import kotlin.js.JsExport
 import kotlin.sequences.forEach
 

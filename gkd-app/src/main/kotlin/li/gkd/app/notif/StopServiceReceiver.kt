@@ -1,4 +1,4 @@
-package li.songe.gkd.notif
+package li.gkd.app.notif
 
 import android.app.Service
 import android.content.BroadcastReceiver
@@ -6,8 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import androidx.core.content.ContextCompat
-import li.songe.gkd.META
-import li.songe.gkd.util.OnSimpleLife
+import li.gkd.app.META
+import li.gkd.app.util.OnSimpleLife
 import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
 

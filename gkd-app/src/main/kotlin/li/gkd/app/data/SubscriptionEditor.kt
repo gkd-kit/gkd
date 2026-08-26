@@ -1,4 +1,4 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 class SubscriptionEditor(subscription: RawSubscription) {
     private val subscriptionId = subscription.id

@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 const val FILE_SHORT_URL = "https://f.gkd.li/"
 const val IMPORT_SHORT_URL = "https://i.gkd.li/i/"

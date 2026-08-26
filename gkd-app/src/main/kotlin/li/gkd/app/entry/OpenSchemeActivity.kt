@@ -1,3 +1,3 @@
-package li.songe.gkd.entry
+package li.gkd.app.entry
 
 class OpenSchemeActivity : EntryActivity()

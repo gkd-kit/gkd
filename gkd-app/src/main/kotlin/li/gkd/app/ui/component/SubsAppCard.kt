@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,11 +15,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import li.songe.gkd.data.AppConfig
-import li.songe.gkd.data.AppInfo
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.store.blockMatchAppListFlow
-import li.songe.gkd.ui.style.appItemPadding
+import li.gkd.app.data.AppConfig
+import li.gkd.app.data.AppInfo
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.store.blockMatchAppListFlow
+import li.gkd.app.ui.style.appItemPadding
 
 
 @Composable

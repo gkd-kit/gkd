@@ -1,4 +1,4 @@
-package li.songe.gkd.priv.shizuku
+package li.gkd.app.priv.shizuku
 
 import android.content.Context
 import android.content.pm.PackageManager

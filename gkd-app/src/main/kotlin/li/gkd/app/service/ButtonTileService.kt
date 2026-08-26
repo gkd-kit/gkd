@@ -1,4 +1,4 @@
-package li.songe.gkd.service
+package li.gkd.app.service
 
 class ButtonTileService : BaseTileService() {
     override val activeFlow = ButtonService.isRunning

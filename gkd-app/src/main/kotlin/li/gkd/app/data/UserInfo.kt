@@ -1,4 +1,4 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable

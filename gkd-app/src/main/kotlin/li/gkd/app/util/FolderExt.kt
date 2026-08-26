@@ -1,16 +1,16 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import android.text.format.DateUtils
 import androidx.annotation.WorkerThread
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import li.songe.gkd.META
-import li.songe.gkd.app
-import li.songe.gkd.data.AppInfo
-import li.songe.gkd.data.UserInfo
-import li.songe.gkd.data.otherUserMapFlow
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.priv.currentUserId
+import li.gkd.app.META
+import li.gkd.app.app
+import li.gkd.app.data.AppInfo
+import li.gkd.app.data.UserInfo
+import li.gkd.app.data.otherUserMapFlow
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.priv.currentUserId
 import java.io.File
 
 fun File.autoMk(): File {

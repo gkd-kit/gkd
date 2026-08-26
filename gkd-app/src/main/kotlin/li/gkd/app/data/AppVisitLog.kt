@@ -1,4 +1,4 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao
@@ -9,9 +9,9 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
-import li.songe.gkd.META
-import li.songe.gkd.a11y.launcherAppId
-import li.songe.gkd.util.systemUiAppId
+import li.gkd.app.META
+import li.gkd.app.a11y.launcherAppId
+import li.gkd.app.util.systemUiAppId
 
 @Entity(
     tableName = "app_visit_log",

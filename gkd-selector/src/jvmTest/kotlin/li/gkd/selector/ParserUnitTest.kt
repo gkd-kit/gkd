@@ -1,12 +1,12 @@
-package li.songe.selector
+package li.gkd.selector
 
 import junit.framework.TestCase.assertTrue
-import li.songe.selector.connect.ConnectOperator
-import li.songe.selector.connect.ConnectSegment
-import li.songe.selector.connect.PolynomialExpression
-import li.songe.selector.connect.TupleExpression
-import li.songe.selector.parser.SelectorParser
-import li.songe.selector.property.CompareOperator
+import li.gkd.selector.connect.ConnectOperator
+import li.gkd.selector.connect.ConnectSegment
+import li.gkd.selector.connect.PolynomialExpression
+import li.gkd.selector.connect.TupleExpression
+import li.gkd.selector.parser.SelectorParser
+import li.gkd.selector.property.CompareOperator
 import kotlin.test.Test
 
 class ParserUnitTest {

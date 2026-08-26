@@ -1,6 +1,6 @@
-package li.songe.selector.parser
+package li.gkd.selector.parser
 
-import li.songe.selector.SyntaxException
+import li.gkd.selector.SyntaxException
 
 internal const val WHITESPACE_CHAR = "\u0020\t\r\n"
 internal const val POSITIVE_DIGIT_CHAR = "123456789"

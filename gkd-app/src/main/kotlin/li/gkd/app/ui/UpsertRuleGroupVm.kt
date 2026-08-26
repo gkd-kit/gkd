@@ -1,14 +1,14 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubscriptionInputParser
-import li.songe.gkd.data.edit
-import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.ui.style.clearJson5TransformationCache
-import li.songe.gkd.util.toast
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.data.SubscriptionInputParser
+import li.gkd.app.data.edit
+import li.gkd.app.ui.share.BaseViewModel
+import li.gkd.app.ui.style.clearJson5TransformationCache
+import li.gkd.app.util.toast
 
 data class UpsertRuleGroupUiState(
     val initialGroup: RawSubscription.RawGroupProps?,

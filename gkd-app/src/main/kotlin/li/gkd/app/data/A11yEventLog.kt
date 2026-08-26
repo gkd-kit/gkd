@@ -1,4 +1,4 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import android.view.accessibility.AccessibilityEvent
 import androidx.paging.PagingSource
@@ -10,7 +10,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
-import li.songe.gkd.a11y.STATE_CHANGED
+import li.gkd.app.a11y.STATE_CHANGED
 
 @Serializable
 @Entity(tableName = "a11y_event_log")

@@ -1,4 +1,4 @@
-package li.songe.gkd.service
+package li.gkd.app.service
 
 import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
@@ -14,20 +14,20 @@ import android.view.accessibility.AccessibilityWindowInfo
 import com.google.android.accessibility.selecttospeak.SelectToSpeakService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
-import li.songe.gkd.a11y.A11yCommonImpl
-import li.songe.gkd.a11y.A11yRuleEngine
-import li.songe.gkd.a11y.topActivityFlow
-import li.songe.gkd.a11y.updateTopActivity
-import li.songe.gkd.priv.privilegeContextFlow
-import li.songe.gkd.store.updateEnableAutomator
-import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.AutomatorModeOption
-import li.songe.gkd.util.DefaultA11yLifeImpl
-import li.songe.gkd.util.LogUtils
-import li.songe.gkd.util.OnA11yLife
-import li.songe.gkd.util.componentName
-import li.songe.gkd.util.runMainPost
-import li.songe.gkd.util.toast
+import li.gkd.app.a11y.A11yCommonImpl
+import li.gkd.app.a11y.A11yRuleEngine
+import li.gkd.app.a11y.topActivityFlow
+import li.gkd.app.a11y.updateTopActivity
+import li.gkd.app.priv.privilegeContextFlow
+import li.gkd.app.store.updateEnableAutomator
+import li.gkd.app.util.AndroidTarget
+import li.gkd.app.util.AutomatorModeOption
+import li.gkd.app.util.DefaultA11yLifeImpl
+import li.gkd.app.util.LogUtils
+import li.gkd.app.util.OnA11yLife
+import li.gkd.app.util.componentName
+import li.gkd.app.util.runMainPost
+import li.gkd.app.util.toast
 import kotlin.coroutines.resume
 
 @SuppressLint("AccessibilityPolicy")

@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.share
+package li.gkd.app.ui.share
 
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.ui.unit.Density

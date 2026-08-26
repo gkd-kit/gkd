@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
@@ -42,29 +42,29 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.Serializable
-import li.songe.gkd.META
-import li.songe.gkd.R
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.component.PerfIconButton
-import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.RotatingLoadingIcon
-import li.songe.gkd.ui.component.SettingItem
-import li.songe.gkd.ui.component.TextMenu
-import li.songe.gkd.ui.share.LocalDarkTheme
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.itemPadding
-import li.songe.gkd.ui.style.titleItemPadding
-import li.songe.gkd.util.ISSUES_URL
-import li.songe.gkd.util.REPOSITORY_URL
-import li.songe.gkd.util.ShortUrlSet
-import li.songe.gkd.util.UpdateChannelOption
-import li.songe.gkd.util.findOption
-import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
+import li.gkd.app.META
+import li.gkd.app.R
+import li.gkd.app.store.storeFlow
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.component.PerfIconButton
+import li.gkd.app.ui.component.PerfTopAppBar
+import li.gkd.app.ui.component.RotatingLoadingIcon
+import li.gkd.app.ui.component.SettingItem
+import li.gkd.app.ui.component.TextMenu
+import li.gkd.app.ui.share.LocalDarkTheme
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.ui.style.EmptyHeight
+import li.gkd.app.ui.style.itemPadding
+import li.gkd.app.ui.style.titleItemPadding
+import li.gkd.app.util.ISSUES_URL
+import li.gkd.app.util.REPOSITORY_URL
+import li.gkd.app.util.ShortUrlSet
+import li.gkd.app.util.UpdateChannelOption
+import li.gkd.app.util.findOption
+import li.gkd.app.util.launchAsFn
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.throttle
+import li.gkd.app.util.toast
 
 @Serializable
 data object AboutRoute : NavKey

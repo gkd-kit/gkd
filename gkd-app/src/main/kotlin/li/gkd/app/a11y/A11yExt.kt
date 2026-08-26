@@ -1,4 +1,4 @@
-package li.songe.gkd.a11y
+package li.gkd.app.a11y
 
 import android.content.ComponentName
 import android.provider.Settings
@@ -6,13 +6,13 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import li.songe.gkd.app
-import li.songe.gkd.contentObserver
-import li.songe.gkd.service.A11yService
-import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.OnSimpleLife
-import li.songe.gkd.util.mapState
-import li.songe.selector.initDefaultTypeInfo
+import li.gkd.app.app
+import li.gkd.app.contentObserver
+import li.gkd.app.service.A11yService
+import li.gkd.app.util.AndroidTarget
+import li.gkd.app.util.OnSimpleLife
+import li.gkd.app.util.mapState
+import li.gkd.selector.initDefaultTypeInfo
 import kotlin.contracts.contract
 
 context(context: OnSimpleLife)

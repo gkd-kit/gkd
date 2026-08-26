@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
@@ -7,7 +7,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
-import li.songe.gkd.util.appIconMapFlow
+import li.gkd.app.util.appIconMapFlow
 
 @Composable
 fun AppIcon(

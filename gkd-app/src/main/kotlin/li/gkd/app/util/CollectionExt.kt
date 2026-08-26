@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 fun <T> Set<T>.switchItem(t: T): Set<T> {
     return if (contains(t)) {

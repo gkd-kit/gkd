@@ -1,4 +1,4 @@
-package li.songe.gkd.service
+package li.gkd.app.service
 
 import android.app.Service
 import android.content.Intent
@@ -9,25 +9,25 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import li.songe.gkd.META
-import li.songe.gkd.MainViewModel
-import li.songe.gkd.a11y.useA11yServiceEnabledFlow
-import li.songe.gkd.app
-import li.songe.gkd.notif.NotificationCatalog
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.priv.PrivilegeServiceStatus
-import li.songe.gkd.priv.privilegeServiceStatusFlow
-import li.songe.gkd.priv.uiAutomationFlow
-import li.songe.gkd.store.actionCountFlow
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.util.DefaultSimpleLifeImpl
-import li.songe.gkd.util.OnSimpleLife
-import li.songe.gkd.util.RuleSummary
-import li.songe.gkd.util.appInfoMapFlow
-import li.songe.gkd.util.getSubsStatus
-import li.songe.gkd.util.ruleSummaryFlow
-import li.songe.gkd.util.startForegroundServiceByClass
-import li.songe.gkd.util.stopServiceByClass
+import li.gkd.app.META
+import li.gkd.app.MainViewModel
+import li.gkd.app.a11y.useA11yServiceEnabledFlow
+import li.gkd.app.app
+import li.gkd.app.notif.NotificationCatalog
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.priv.PrivilegeServiceStatus
+import li.gkd.app.priv.privilegeServiceStatusFlow
+import li.gkd.app.priv.uiAutomationFlow
+import li.gkd.app.store.actionCountFlow
+import li.gkd.app.store.storeFlow
+import li.gkd.app.util.DefaultSimpleLifeImpl
+import li.gkd.app.util.OnSimpleLife
+import li.gkd.app.util.RuleSummary
+import li.gkd.app.util.appInfoMapFlow
+import li.gkd.app.util.getSubsStatus
+import li.gkd.app.util.ruleSummaryFlow
+import li.gkd.app.util.startForegroundServiceByClass
+import li.gkd.app.util.stopServiceByClass
 import kotlin.time.Duration.Companion.milliseconds
 
 class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {

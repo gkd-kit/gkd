@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import io.ktor.client.call.body
 import io.ktor.client.plugins.onUpload
@@ -18,7 +18,7 @@ import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
-import li.songe.gkd.data.GithubPoliciesAsset
+import li.gkd.app.data.GithubPoliciesAsset
 import li.songe.json5.Json5
 import java.io.File
 

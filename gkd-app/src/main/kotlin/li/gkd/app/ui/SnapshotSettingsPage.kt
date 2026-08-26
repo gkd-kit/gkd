@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import android.app.Activity
 import androidx.compose.foundation.layout.Arrangement
@@ -31,27 +31,27 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
-import li.songe.gkd.R
-import li.songe.gkd.app
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.service.ScreenshotService
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.component.AppAlertDialog
-import li.songe.gkd.ui.component.CustomOutlinedTextField
-import li.songe.gkd.ui.component.PerfCustomIconButton
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.component.PerfIconButton
-import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.TextSwitch
-import li.songe.gkd.ui.component.autoFocus
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.titleItemPadding
-import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.ShortUrlSet
-import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.throttle
+import li.gkd.app.R
+import li.gkd.app.app
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.service.ScreenshotService
+import li.gkd.app.store.storeFlow
+import li.gkd.app.ui.component.AppAlertDialog
+import li.gkd.app.ui.component.CustomOutlinedTextField
+import li.gkd.app.ui.component.PerfCustomIconButton
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.component.PerfIconButton
+import li.gkd.app.ui.component.PerfTopAppBar
+import li.gkd.app.ui.component.TextSwitch
+import li.gkd.app.ui.component.autoFocus
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.ui.style.EmptyHeight
+import li.gkd.app.ui.style.titleItemPadding
+import li.gkd.app.util.AndroidTarget
+import li.gkd.app.util.ShortUrlSet
+import li.gkd.app.util.launchAsFn
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.throttle
 
 @Serializable
 data object SnapshotSettingsRoute : NavKey

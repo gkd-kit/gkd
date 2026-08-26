@@ -1,7 +1,7 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
-import li.songe.gkd.a11y.launcherAppId
-import li.songe.gkd.util.systemAppsFlow
+import li.gkd.app.a11y.launcherAppId
+import li.gkd.app.util.systemAppsFlow
 
 data class GlobalApp(
     val id: String,

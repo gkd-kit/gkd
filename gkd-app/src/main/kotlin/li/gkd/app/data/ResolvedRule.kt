@@ -1,16 +1,16 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.updateAndGet
-import li.songe.gkd.a11y.appChangeTime
-import li.songe.gkd.a11y.lastTriggerRule
-import li.songe.gkd.a11y.lastTriggerTime
-import li.songe.gkd.store.actionCountFlow
-import li.songe.selector.MatchOption
-import li.songe.selector.Selector
+import li.gkd.app.a11y.appChangeTime
+import li.gkd.app.a11y.lastTriggerRule
+import li.gkd.app.a11y.lastTriggerTime
+import li.gkd.app.store.actionCountFlow
+import li.gkd.selector.MatchOption
+import li.gkd.selector.Selector
 
 sealed class ResolvedRule(
     val rule: RawSubscription.RawRuleProps,

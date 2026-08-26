@@ -1,4 +1,4 @@
-package li.songe.gkd.priv
+package li.gkd.app.priv
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

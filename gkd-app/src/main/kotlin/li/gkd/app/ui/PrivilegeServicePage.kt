@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
@@ -24,13 +24,13 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.Serializable
-import li.songe.gkd.priv.gkdPrivilegeUiConfig
-import li.songe.gkd.ui.component.AppAlertDialog
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.component.PerfIconButton
-import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.util.throttle
+import li.gkd.app.priv.gkdPrivilegeUiConfig
+import li.gkd.app.ui.component.AppAlertDialog
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.component.PerfIconButton
+import li.gkd.app.ui.component.PerfTopAppBar
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.util.throttle
 import priv.kit.ui.PrivilegeScaffold
 import priv.kit.ui.PrivilegeUiViewModel
 

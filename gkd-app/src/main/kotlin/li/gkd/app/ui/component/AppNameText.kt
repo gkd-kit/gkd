@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.text.InlineTextContent
@@ -22,10 +22,10 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
-import li.songe.gkd.data.AppInfo
-import li.songe.gkd.data.otherUserMapFlow
-import li.songe.gkd.priv.currentUserId
-import li.songe.gkd.util.appInfoMapFlow
+import li.gkd.app.data.AppInfo
+import li.gkd.app.data.otherUserMapFlow
+import li.gkd.app.priv.currentUserId
+import li.gkd.app.util.appInfoMapFlow
 
 @Composable
 fun AppNameText(

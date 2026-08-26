@@ -1,9 +1,9 @@
-package li.songe.gkd.entry
+package li.gkd.app.entry
 
 import android.content.pm.PackageManager
 import androidx.core.net.toUri
-import li.songe.gkd.app
-import li.songe.gkd.util.extraCptName
+import li.gkd.app.app
+import li.gkd.app.util.extraCptName
 
 class OpenTileActivity : EntryActivity() {
     override fun prepareIntent() {

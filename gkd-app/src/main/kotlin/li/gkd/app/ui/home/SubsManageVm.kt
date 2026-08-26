@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.home
+package li.gkd.app.ui.home
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,17 +11,17 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubsItem
-import li.songe.gkd.db.DbSet
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.ui.share.Loadable
-import li.songe.gkd.util.SubscriptionResult
-import li.songe.gkd.util.SubscriptionSnapshot
-import li.songe.gkd.util.SubscriptionStore
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.toast
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.data.SubsItem
+import li.gkd.app.db.DbSet
+import li.gkd.app.store.storeFlow
+import li.gkd.app.ui.share.BaseViewModel
+import li.gkd.app.ui.share.Loadable
+import li.gkd.app.util.SubscriptionResult
+import li.gkd.app.util.SubscriptionSnapshot
+import li.gkd.app.util.SubscriptionStore
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.toast
 
 data class SubsManageUiState(
     val subItems: List<SubsItem>,

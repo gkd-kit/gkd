@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import android.util.AtomicFile
 import io.ktor.client.request.get
@@ -8,12 +8,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.SubsItem
-import li.songe.gkd.data.SubsVersion
-import li.songe.gkd.db.DbSet
-import li.songe.gkd.ui.share.Loadable
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.data.SubsConfig
+import li.gkd.app.data.SubsItem
+import li.gkd.app.data.SubsVersion
+import li.gkd.app.db.DbSet
+import li.gkd.app.ui.share.Loadable
 import li.songe.json5.decodeFromJson5String
 import java.io.File
 import java.io.FileOutputStream

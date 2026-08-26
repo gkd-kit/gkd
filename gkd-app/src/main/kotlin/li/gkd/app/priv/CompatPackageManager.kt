@@ -1,9 +1,9 @@
-package li.songe.gkd.priv
+package li.gkd.app.priv
 
 import android.annotation.SuppressLint
 import android.app.ApplicationPackageManager
 import android.content.pm.IPackageManager
-import li.songe.gkd.app
+import li.gkd.app.app
 import priv.kit.core.binder.PrivilegeBinderWrapper
 
 class CompatPackageManager {

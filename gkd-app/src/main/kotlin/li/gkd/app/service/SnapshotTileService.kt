@@ -1,15 +1,15 @@
-package li.songe.gkd.service
+package li.gkd.app.service
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
-import li.songe.gkd.a11y.A11yRuleEngine
-import li.songe.gkd.appScope
-import li.songe.gkd.util.LogUtils
-import li.songe.gkd.snapshot.SnapshotCapture
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.toast
+import li.gkd.app.a11y.A11yRuleEngine
+import li.gkd.app.appScope
+import li.gkd.app.util.LogUtils
+import li.gkd.app.snapshot.SnapshotCapture
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.toast
 
 class SnapshotTileService() : BaseTileService() {
     override val activeFlow = MutableStateFlow(false)

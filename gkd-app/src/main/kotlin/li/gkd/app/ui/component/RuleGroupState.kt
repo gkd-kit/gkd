@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.Scaffold
@@ -10,23 +10,23 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import li.songe.gkd.MainViewModel
-import li.songe.gkd.data.CategoryConfig
-import li.songe.gkd.data.ExcludeData
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.edit
-import li.songe.gkd.db.DbSet
-import li.songe.gkd.ui.SubsGlobalGroupExcludeRoute
-import li.songe.gkd.ui.UpsertRuleGroupRoute
-import li.songe.gkd.ui.getGlobalGroupChecked
-import li.songe.gkd.ui.style.scaffoldPadding
-import li.songe.gkd.util.SubscriptionStore
-import li.songe.gkd.util.getGroupEnable
-import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
+import li.gkd.app.MainViewModel
+import li.gkd.app.data.CategoryConfig
+import li.gkd.app.data.ExcludeData
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.data.SubsConfig
+import li.gkd.app.data.edit
+import li.gkd.app.db.DbSet
+import li.gkd.app.ui.SubsGlobalGroupExcludeRoute
+import li.gkd.app.ui.UpsertRuleGroupRoute
+import li.gkd.app.ui.getGlobalGroupChecked
+import li.gkd.app.ui.style.scaffoldPadding
+import li.gkd.app.util.SubscriptionStore
+import li.gkd.app.util.getGroupEnable
+import li.gkd.app.util.launchAsFn
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.throttle
+import li.gkd.app.util.toast
 
 data class ShowGroupState(
     val subsId: Long,

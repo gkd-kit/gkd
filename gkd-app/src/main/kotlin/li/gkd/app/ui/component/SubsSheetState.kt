@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,22 +35,22 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import li.songe.gkd.META
-import li.songe.gkd.ui.ActionLogRoute
-import li.songe.gkd.ui.SubsAppListRoute
-import li.songe.gkd.ui.SubsCategoryRoute
-import li.songe.gkd.ui.SubsGlobalGroupListRoute
-import li.songe.gkd.ui.SubsSheetVm
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.itemHorizontalPadding
-import li.songe.gkd.util.LOCAL_SUBS_ID
-import li.songe.gkd.util.SubscriptionResult
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.subsItemsFlow
-import li.songe.gkd.util.subsMapFlow
-import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
+import li.gkd.app.META
+import li.gkd.app.ui.ActionLogRoute
+import li.gkd.app.ui.SubsAppListRoute
+import li.gkd.app.ui.SubsCategoryRoute
+import li.gkd.app.ui.SubsGlobalGroupListRoute
+import li.gkd.app.ui.SubsSheetVm
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.ui.style.EmptyHeight
+import li.gkd.app.ui.style.itemHorizontalPadding
+import li.gkd.app.util.LOCAL_SUBS_ID
+import li.gkd.app.util.SubscriptionResult
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.subsItemsFlow
+import li.gkd.app.util.subsMapFlow
+import li.gkd.app.util.throttle
+import li.gkd.app.util.toast
 
 class SubsSheetState {
     private val subsIdFlow = MutableStateFlow<Long?>(null)

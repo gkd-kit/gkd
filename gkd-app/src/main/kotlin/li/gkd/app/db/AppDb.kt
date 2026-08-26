@@ -1,4 +1,4 @@
-package li.songe.gkd.db
+package li.gkd.app.db
 
 import androidx.room.AutoMigration
 import androidx.room.Database
@@ -10,18 +10,18 @@ import androidx.room.withTransaction
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.migration.AutoMigrationSpec
-import li.songe.gkd.app
-import li.songe.gkd.data.A11yEventLog
-import li.songe.gkd.data.ActionLog
-import li.songe.gkd.data.ActivityLog
-import li.songe.gkd.data.AppConfig
-import li.songe.gkd.data.AppVisitLog
-import li.songe.gkd.data.CategoryConfig
-import li.songe.gkd.data.Snapshot
-import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.SubsItem
-import li.songe.gkd.util.dbFolder
-import li.songe.gkd.util.json
+import li.gkd.app.app
+import li.gkd.app.data.A11yEventLog
+import li.gkd.app.data.ActionLog
+import li.gkd.app.data.ActivityLog
+import li.gkd.app.data.AppConfig
+import li.gkd.app.data.AppVisitLog
+import li.gkd.app.data.CategoryConfig
+import li.gkd.app.data.Snapshot
+import li.gkd.app.data.SubsConfig
+import li.gkd.app.data.SubsItem
+import li.gkd.app.util.dbFolder
+import li.gkd.app.util.json
 
 @Database(
     version = 14,

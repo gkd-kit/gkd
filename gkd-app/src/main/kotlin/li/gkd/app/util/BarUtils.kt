@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import android.annotation.SuppressLint
 import android.content.res.Resources
@@ -6,8 +6,8 @@ import android.graphics.Rect
 import android.view.WindowInsets
 import android.view.accessibility.AccessibilityWindowInfo
 import androidx.annotation.WorkerThread
-import li.songe.gkd.a11y.A11yRuleEngine
-import li.songe.gkd.app
+import li.gkd.app.a11y.A11yRuleEngine
+import li.gkd.app.app
 
 @SuppressLint("DiscouragedApi", "InternalInsetResource")
 object BarUtils {

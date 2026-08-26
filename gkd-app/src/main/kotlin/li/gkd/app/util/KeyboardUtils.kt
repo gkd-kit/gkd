@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import android.app.Activity
 import android.graphics.Rect
@@ -8,7 +8,7 @@ import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import android.view.Window
 import android.view.WindowManager
 import android.widget.EditText
-import li.songe.gkd.app
+import li.gkd.app.app
 import kotlin.math.abs
 
 object KeyboardUtils {

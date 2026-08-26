@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.LocalTextStyle

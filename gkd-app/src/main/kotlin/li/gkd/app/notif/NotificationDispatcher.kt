@@ -1,4 +1,4 @@
-package li.songe.gkd.notif
+package li.gkd.app.notif
 
 import android.annotation.SuppressLint
 import android.app.Notification
@@ -12,12 +12,12 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.net.toUri
-import li.songe.gkd.MainActivity
-import li.songe.gkd.app
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.LogUtils
-import li.songe.gkd.util.componentName
+import li.gkd.app.MainActivity
+import li.gkd.app.app
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.util.AndroidTarget
+import li.gkd.app.util.LogUtils
+import li.gkd.app.util.componentName
 
 object NotificationDispatcher {
     private val pendingIntentFlags get() = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE

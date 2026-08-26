@@ -1,6 +1,6 @@
 @file:Suppress("CAST_NEVER_SUCCEEDS")
 
-package li.songe.gkd.priv
+package li.gkd.app.priv
 
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.accessibilityservice.AccessibilityServiceInfoHidden

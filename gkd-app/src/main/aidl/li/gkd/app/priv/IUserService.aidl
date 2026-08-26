@@ -1,4 +1,4 @@
-package li.songe.gkd.priv;
+package li.gkd.app.priv;
 
 import android.graphics.Bitmap;
 import android.graphics.Rect;

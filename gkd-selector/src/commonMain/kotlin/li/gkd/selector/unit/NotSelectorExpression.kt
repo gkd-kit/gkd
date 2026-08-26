@@ -1,13 +1,13 @@
-package li.songe.selector.unit
+package li.gkd.selector.unit
 
-import li.songe.selector.FastQuery
-import li.songe.selector.MatchOption
-import li.songe.selector.QueryContext
-import li.songe.selector.QueryResult
-import li.songe.selector.Transform
-import li.songe.selector.TypeInfo
-import li.songe.selector.connect.ConnectSegment
-import li.songe.selector.property.BinaryExpression
+import li.gkd.selector.FastQuery
+import li.gkd.selector.MatchOption
+import li.gkd.selector.QueryContext
+import li.gkd.selector.QueryResult
+import li.gkd.selector.Transform
+import li.gkd.selector.TypeInfo
+import li.gkd.selector.connect.ConnectSegment
+import li.gkd.selector.property.BinaryExpression
 import kotlin.js.JsExport
 
 @JsExport

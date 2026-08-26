@@ -1,4 +1,4 @@
-package li.songe.gkd.store
+package li.gkd.app.store
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -9,10 +9,10 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import li.songe.gkd.appScope
-import li.songe.gkd.util.json
-import li.songe.gkd.util.privateStoreFolder
-import li.songe.gkd.util.storeFolder
+import li.gkd.app.appScope
+import li.gkd.app.util.json
+import li.gkd.app.util.privateStoreFolder
+import li.gkd.app.util.storeFolder
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption

@@ -1,4 +1,4 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 sealed class ResolvedGroup(
     open val group: RawSubscription.RawGroupProps,

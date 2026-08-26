@@ -1,15 +1,15 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import android.graphics.BitmapFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.withContext
-import li.songe.gkd.data.Snapshot
-import li.songe.gkd.db.DbSet
-import li.songe.gkd.snapshot.SnapshotStore
-import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.util.ImageUtils
-import li.songe.gkd.util.appInfoMapFlow
+import li.gkd.app.data.Snapshot
+import li.gkd.app.db.DbSet
+import li.gkd.app.snapshot.SnapshotStore
+import li.gkd.app.ui.share.BaseViewModel
+import li.gkd.app.util.ImageUtils
+import li.gkd.app.util.appInfoMapFlow
 import java.io.File
 
 data class SnapshotUiState(

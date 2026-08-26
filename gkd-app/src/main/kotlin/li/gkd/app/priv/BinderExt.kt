@@ -1,4 +1,4 @@
-package li.songe.gkd.priv
+package li.gkd.app.priv
 
 import android.os.IBinder
 import android.os.ParcelFileDescriptor

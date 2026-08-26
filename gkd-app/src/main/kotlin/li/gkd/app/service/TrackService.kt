@@ -1,4 +1,4 @@
-package li.songe.gkd.service
+package li.gkd.app.service
 
 import android.animation.ValueAnimator
 import android.content.res.Configuration
@@ -30,16 +30,16 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import li.songe.gkd.app
-import li.songe.gkd.notif.NotificationCatalog
-import li.songe.gkd.notif.StopServiceReceiver
-import li.songe.gkd.priv.toHidden
-import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.DefaultSimpleLifeImpl
-import li.songe.gkd.util.OnSimpleLife
-import li.songe.gkd.util.ScreenUtils
-import li.songe.gkd.util.startForegroundServiceByClass
-import li.songe.gkd.util.stopServiceByClass
+import li.gkd.app.app
+import li.gkd.app.notif.NotificationCatalog
+import li.gkd.app.notif.StopServiceReceiver
+import li.gkd.app.priv.toHidden
+import li.gkd.app.util.AndroidTarget
+import li.gkd.app.util.DefaultSimpleLifeImpl
+import li.gkd.app.util.OnSimpleLife
+import li.gkd.app.util.ScreenUtils
+import li.gkd.app.util.startForegroundServiceByClass
+import li.gkd.app.util.stopServiceByClass
 import kotlin.math.min
 import kotlin.math.pow
 

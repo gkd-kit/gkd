@@ -1,4 +1,4 @@
-package li.songe.gkd.service
+package li.gkd.app.service
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,19 +29,19 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import li.songe.gkd.MainViewModel
-import li.songe.gkd.a11y.ActivityScene
-import li.songe.gkd.a11y.topActivityFlow
-import li.songe.gkd.a11y.updateTopActivity
-import li.songe.gkd.notif.NotificationCatalog
-import li.songe.gkd.notif.StopServiceReceiver
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.priv.privilegeContextFlow
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.style.iconTextSize
-import li.songe.gkd.util.copyText
-import li.songe.gkd.util.startForegroundServiceByClass
-import li.songe.gkd.util.stopServiceByClass
+import li.gkd.app.MainViewModel
+import li.gkd.app.a11y.ActivityScene
+import li.gkd.app.a11y.topActivityFlow
+import li.gkd.app.a11y.updateTopActivity
+import li.gkd.app.notif.NotificationCatalog
+import li.gkd.app.notif.StopServiceReceiver
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.priv.privilegeContextFlow
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.style.iconTextSize
+import li.gkd.app.util.copyText
+import li.gkd.app.util.startForegroundServiceByClass
+import li.gkd.app.util.stopServiceByClass
 
 
 class ActivityService : OverlayWindowService(

@@ -1,4 +1,4 @@
-package li.songe.gkd.permission
+package li.gkd.app.permission
 
 import android.app.Activity
 import androidx.activity.ComponentActivity
@@ -61,7 +61,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import li.songe.gkd.ui.component.AppAlertDialog
+import li.gkd.app.ui.component.AppAlertDialog
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException

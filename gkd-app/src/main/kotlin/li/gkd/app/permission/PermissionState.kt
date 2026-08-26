@@ -1,4 +1,4 @@
-package li.songe.gkd.permission
+package li.gkd.app.permission
 
 import android.Manifest
 import android.app.AppOpsManager
@@ -12,13 +12,13 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.updateAndGet
-import li.songe.gkd.app
-import li.songe.gkd.appScope
-import li.songe.gkd.priv.privilegeContextFlow
-import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.toast
-import li.songe.gkd.util.updateAllAppInfo
-import li.songe.gkd.util.updateAppMutex
+import li.gkd.app.app
+import li.gkd.app.appScope
+import li.gkd.app.priv.privilegeContextFlow
+import li.gkd.app.util.AndroidTarget
+import li.gkd.app.util.toast
+import li.gkd.app.util.updateAllAppInfo
+import li.gkd.app.util.updateAppMutex
 import priv.kit.core.Privilege
 
 class PermissionState(

@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.graphics.res.animatedVectorResource
@@ -10,7 +10,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import li.songe.gkd.R
+import li.gkd.app.R
 
 @Composable
 private fun AnimatedIcon(

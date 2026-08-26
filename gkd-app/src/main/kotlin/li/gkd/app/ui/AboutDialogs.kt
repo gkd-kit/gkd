@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.clickable
@@ -22,17 +22,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
-import li.songe.gkd.META
-import li.songe.gkd.MainActivity
-import li.songe.gkd.ui.component.AppAlertDialog
-import li.songe.gkd.ui.component.TextListDialog
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.util.PLAY_STORE_URL
-import li.songe.gkd.util.ShortUrlSet
-import li.songe.gkd.util.format
-import li.songe.gkd.util.getShareApkFile
-import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.openUri
+import li.gkd.app.META
+import li.gkd.app.MainActivity
+import li.gkd.app.ui.component.AppAlertDialog
+import li.gkd.app.ui.component.TextListDialog
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.util.PLAY_STORE_URL
+import li.gkd.app.util.ShortUrlSet
+import li.gkd.app.util.format
+import li.gkd.app.util.getShareApkFile
+import li.gkd.app.util.launchAsFn
+import li.gkd.app.util.openUri
 
 @Composable
 fun AboutDialogs() {

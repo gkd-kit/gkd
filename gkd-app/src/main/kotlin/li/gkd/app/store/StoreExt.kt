@@ -1,12 +1,12 @@
-package li.songe.gkd.store
+package li.gkd.app.store
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.appScope
-import li.songe.gkd.service.ExposeService
-import li.songe.gkd.util.AppListString
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.toast
+import li.gkd.app.appScope
+import li.gkd.app.service.ExposeService
+import li.gkd.app.util.AppListString
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.toast
 
 val storeFlow by lazy {
     createAnyFlow(

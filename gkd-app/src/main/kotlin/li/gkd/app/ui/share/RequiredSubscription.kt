@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.share
+package li.gkd.app.ui.share
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -12,10 +12,10 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.util.LoadedSubscription
-import li.songe.gkd.util.SubscriptionSnapshot
-import li.songe.gkd.util.SubscriptionStore
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.util.LoadedSubscription
+import li.gkd.app.util.SubscriptionSnapshot
+import li.gkd.app.util.SubscriptionStore
 
 class RequiredSubscription(
     private val id: Long,

@@ -1,10 +1,10 @@
-package li.songe.selector.parser
+package li.gkd.selector.parser
 
-import li.songe.selector.connect.ConnectExpression
-import li.songe.selector.connect.ConnectOperator
-import li.songe.selector.connect.ConnectSegment
-import li.songe.selector.connect.PolynomialExpression
-import li.songe.selector.connect.TupleExpression
+import li.gkd.selector.connect.ConnectExpression
+import li.gkd.selector.connect.ConnectOperator
+import li.gkd.selector.connect.ConnectSegment
+import li.gkd.selector.connect.PolynomialExpression
+import li.gkd.selector.connect.TupleExpression
 
 internal sealed interface ConnectParser : BaseParser {
 

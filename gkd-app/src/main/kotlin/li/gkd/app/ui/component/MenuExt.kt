@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Checkbox
@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.util.throttle
+import li.gkd.app.util.throttle
 
 @Composable
 inline fun MenuGroupCard(inTop: Boolean = false, title: String, content: @Composable () -> Unit) {

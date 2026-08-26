@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -16,17 +16,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.ui.ImagePreviewItem
-import li.songe.gkd.ui.ImagePreviewRoute
-import li.songe.gkd.ui.SubsAppGroupListRoute
-import li.songe.gkd.ui.SubsGlobalGroupListRoute
-import li.songe.gkd.ui.icon.ResetSettings
-import li.songe.gkd.ui.share.LocalDarkTheme
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.style.JSON5_LARGE_TEXT_THRESHOLD
-import li.songe.gkd.ui.style.getJson5AnnotatedString
-import li.songe.gkd.util.throttle
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.ui.ImagePreviewItem
+import li.gkd.app.ui.ImagePreviewRoute
+import li.gkd.app.ui.SubsAppGroupListRoute
+import li.gkd.app.ui.SubsGlobalGroupListRoute
+import li.gkd.app.ui.icon.ResetSettings
+import li.gkd.app.ui.share.LocalDarkTheme
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.ui.style.JSON5_LARGE_TEXT_THRESHOLD
+import li.gkd.app.ui.style.getJson5AnnotatedString
+import li.gkd.app.util.throttle
 
 @Composable
 fun RuleGroupDialog(

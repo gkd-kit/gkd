@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,27 +14,27 @@ import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
-import li.songe.gkd.data.ActionLog
-import li.songe.gkd.data.CategoryConfig
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.db.DbSet
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.component.ShowGroupState
-import li.songe.gkd.ui.component.batchUpdateGroupEnable
-import li.songe.gkd.ui.component.getActualGroupChecked
-import li.songe.gkd.ui.component.updateRuleGroupEnable
-import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.ui.share.Loadable
-import li.songe.gkd.util.RuleSortOption
-import li.songe.gkd.util.SubscriptionStore
-import li.songe.gkd.util.UsedSubsEntry
-import li.songe.gkd.util.appInfoMapFlow
-import li.songe.gkd.util.buildSubsEntries
-import li.songe.gkd.util.buildUsedSubsEntries
-import li.songe.gkd.util.collator
-import li.songe.gkd.util.findOption
-import li.songe.gkd.util.toJson5String
+import li.gkd.app.data.ActionLog
+import li.gkd.app.data.CategoryConfig
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.data.SubsConfig
+import li.gkd.app.db.DbSet
+import li.gkd.app.store.storeFlow
+import li.gkd.app.ui.component.ShowGroupState
+import li.gkd.app.ui.component.batchUpdateGroupEnable
+import li.gkd.app.ui.component.getActualGroupChecked
+import li.gkd.app.ui.component.updateRuleGroupEnable
+import li.gkd.app.ui.share.BaseViewModel
+import li.gkd.app.ui.share.Loadable
+import li.gkd.app.util.RuleSortOption
+import li.gkd.app.util.SubscriptionStore
+import li.gkd.app.util.UsedSubsEntry
+import li.gkd.app.util.appInfoMapFlow
+import li.gkd.app.util.buildSubsEntries
+import li.gkd.app.util.buildUsedSubsEntries
+import li.gkd.app.util.collator
+import li.gkd.app.util.findOption
+import li.gkd.app.util.toJson5String
 
 data class AppConfigUiState(
     val globalSubsConfigs: List<SubsConfig>,

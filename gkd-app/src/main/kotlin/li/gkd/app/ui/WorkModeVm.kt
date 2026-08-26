@@ -1,11 +1,11 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.ui.share.BaseViewModel
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.ui.share.BaseViewModel
 import kotlin.time.Duration.Companion.milliseconds
 
 class WorkModeVm : BaseViewModel() {

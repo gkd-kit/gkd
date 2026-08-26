@@ -1,6 +1,6 @@
-package li.songe.selector
+package li.gkd.selector
 
-import li.songe.selector.property.CompareOperator
+import li.gkd.selector.property.CompareOperator
 import kotlin.js.JsExport
 
 @JsExport

@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import android.content.ContentValues
 import android.content.Intent
@@ -8,8 +8,8 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.core.net.toUri
-import li.songe.gkd.app
-import li.songe.gkd.permission.PermissionStates
+import li.gkd.app.app
+import li.gkd.app.permission.PermissionStates
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream

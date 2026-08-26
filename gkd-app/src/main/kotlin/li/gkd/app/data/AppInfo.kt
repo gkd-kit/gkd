@@ -1,4 +1,4 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import android.content.Intent
 import android.content.pm.ApplicationInfo
@@ -6,11 +6,11 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import kotlinx.serialization.Serializable
-import li.songe.gkd.app
-import li.songe.gkd.priv.currentUserId
-import li.songe.gkd.priv.toHidden
-import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.pkgIcon
+import li.gkd.app.app
+import li.gkd.app.priv.currentUserId
+import li.gkd.app.priv.toHidden
+import li.gkd.app.util.AndroidTarget
+import li.gkd.app.util.pkgIcon
 
 @Serializable
 data class AppInfo(

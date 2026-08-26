@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -9,9 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.throttle
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.util.launchAsFn
+import li.gkd.app.util.throttle
 
 @Composable
 fun InnerDisableSwitch(

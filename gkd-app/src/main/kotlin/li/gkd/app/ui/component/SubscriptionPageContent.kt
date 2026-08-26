@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,9 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.StateFlow
-import li.songe.gkd.ui.share.Loadable
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.style.scaffoldPadding
+import li.gkd.app.ui.share.Loadable
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.ui.style.scaffoldPadding
 
 @Composable
 fun <T : Any> SubscriptionPageContent(

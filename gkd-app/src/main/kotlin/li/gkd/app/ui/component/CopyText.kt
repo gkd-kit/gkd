@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -32,8 +32,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import li.songe.gkd.util.copyText
-import li.songe.gkd.util.throttle
+import li.gkd.app.util.copyText
+import li.gkd.app.util.throttle
 
 @Composable
 fun CopyableText(

@@ -1,11 +1,11 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.serialization.Serializable
-import li.songe.gkd.a11y.MAX_CHILD_SIZE
-import li.songe.gkd.a11y.topActivityFlow
-import li.songe.gkd.util.LogUtils
-import li.songe.gkd.util.toast
+import li.gkd.app.a11y.MAX_CHILD_SIZE
+import li.gkd.app.a11y.topActivityFlow
+import li.gkd.app.util.LogUtils
+import li.gkd.app.util.toast
 import kotlin.system.measureTimeMillis
 
 @Serializable

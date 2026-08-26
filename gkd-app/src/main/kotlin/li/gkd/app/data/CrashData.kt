@@ -1,10 +1,10 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import kotlinx.serialization.Serializable
-import li.songe.gkd.util.crashFolder
-import li.songe.gkd.util.crashTempFolder
-import li.songe.gkd.util.format
-import li.songe.gkd.util.json
+import li.gkd.app.util.crashFolder
+import li.gkd.app.util.crashTempFolder
+import li.gkd.app.util.format
+import li.gkd.app.util.json
 
 @Serializable
 data class CrashData(

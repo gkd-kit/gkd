@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -29,29 +29,29 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
-import li.songe.gkd.ui.component.AnimationFloatingActionButton
-import li.songe.gkd.ui.component.BatchActionButtonGroup
-import li.songe.gkd.ui.component.EmptyText
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.component.PerfIconButton
-import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.RuleGroupCard
-import li.songe.gkd.ui.component.SubscriptionPageContent
-import li.songe.gkd.ui.component.TowLineText
-import li.songe.gkd.ui.component.animateListItem
-import li.songe.gkd.ui.component.rememberMultiSelectionState
-import li.songe.gkd.ui.component.rememberListScrollState
-import li.songe.gkd.ui.icon.BackCloseIcon
-import li.songe.gkd.ui.share.ListPlaceholder
-import li.songe.gkd.ui.share.Loadable
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.noRippleClickable
-import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.scaffoldPadding
-import li.songe.gkd.util.getUpDownTransform
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
+import li.gkd.app.ui.component.AnimationFloatingActionButton
+import li.gkd.app.ui.component.BatchActionButtonGroup
+import li.gkd.app.ui.component.EmptyText
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.component.PerfIconButton
+import li.gkd.app.ui.component.PerfTopAppBar
+import li.gkd.app.ui.component.RuleGroupCard
+import li.gkd.app.ui.component.SubscriptionPageContent
+import li.gkd.app.ui.component.TowLineText
+import li.gkd.app.ui.component.animateListItem
+import li.gkd.app.ui.component.rememberMultiSelectionState
+import li.gkd.app.ui.component.rememberListScrollState
+import li.gkd.app.ui.icon.BackCloseIcon
+import li.gkd.app.ui.share.ListPlaceholder
+import li.gkd.app.ui.share.Loadable
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.ui.share.noRippleClickable
+import li.gkd.app.ui.style.EmptyHeight
+import li.gkd.app.ui.style.scaffoldPadding
+import li.gkd.app.util.getUpDownTransform
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.throttle
+import li.gkd.app.util.toast
 
 
 @Serializable

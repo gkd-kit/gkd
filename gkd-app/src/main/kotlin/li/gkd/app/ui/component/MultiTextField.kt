@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
@@ -23,7 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.MutableStateFlow
-import li.songe.gkd.MainActivity
+import li.gkd.app.MainActivity
 
 @Composable
 fun MultiTextField(

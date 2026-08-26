@@ -1,7 +1,7 @@
-package li.songe.gkd.ui.share
+package li.gkd.app.ui.share
 
 import androidx.compose.runtime.staticCompositionLocalOf
-import li.songe.gkd.MainViewModel
+import li.gkd.app.MainViewModel
 
 val LocalMainViewModel = staticCompositionLocalOf<MainViewModel> {
     error("not found MainViewModel")

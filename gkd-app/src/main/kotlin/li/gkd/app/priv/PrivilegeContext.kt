@@ -1,4 +1,4 @@
-package li.songe.gkd.priv
+package li.gkd.app.priv
 
 import android.Manifest
 import android.app.AppOpsManager
@@ -7,10 +7,10 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Process
 import com.hjq.permissions.permission.dangerous.GetInstalledAppsPermission
-import li.songe.gkd.META
-import li.songe.gkd.app
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.util.AndroidTarget
+import li.gkd.app.META
+import li.gkd.app.app
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.util.AndroidTarget
 import priv.kit.core.Privilege
 import priv.kit.core.PrivilegeServerInfo
 import priv.kit.core.PrivilegeUserServiceConnection

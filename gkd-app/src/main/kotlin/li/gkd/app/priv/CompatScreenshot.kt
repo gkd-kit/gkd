@@ -1,4 +1,4 @@
-package li.songe.gkd.priv
+package li.gkd.app.priv
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -15,7 +15,7 @@ import android.window.ScreenCapture
 import android.window.ScreenCaptureInternal
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.RequiresApi
-import li.songe.gkd.util.AndroidTarget
+import li.gkd.app.util.AndroidTarget
 import androidx.core.graphics.createBitmap
 
 object CompatScreenshot {

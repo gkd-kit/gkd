@@ -1,4 +1,4 @@
-package li.songe.gkd.service
+package li.gkd.app.service
 
 import android.app.Service
 import android.content.Intent
@@ -6,15 +6,15 @@ import coil3.Bitmap
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withTimeoutOrNull
-import li.songe.gkd.app
-import li.songe.gkd.notif.NotificationCatalog
-import li.songe.gkd.notif.StopServiceReceiver
-import li.songe.gkd.util.DefaultSimpleLifeImpl
-import li.songe.gkd.util.LogUtils
-import li.songe.gkd.util.OnSimpleLife
-import li.songe.gkd.util.componentName
-import li.songe.gkd.util.runMainPost
-import li.songe.gkd.util.stopServiceByClass
+import li.gkd.app.app
+import li.gkd.app.notif.NotificationCatalog
+import li.gkd.app.notif.StopServiceReceiver
+import li.gkd.app.util.DefaultSimpleLifeImpl
+import li.gkd.app.util.LogUtils
+import li.gkd.app.util.OnSimpleLife
+import li.gkd.app.util.componentName
+import li.gkd.app.util.runMainPost
+import li.gkd.app.util.stopServiceByClass
 import kotlin.time.Duration.Companion.milliseconds
 
 class ScreenshotService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {

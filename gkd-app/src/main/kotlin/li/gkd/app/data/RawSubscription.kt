@@ -1,4 +1,4 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import android.graphics.Rect
 import kotlinx.serialization.Serializable
@@ -14,18 +14,18 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
-import li.songe.gkd.a11y.typeInfo
-import li.songe.gkd.util.LOCAL_SUBS_IDS
-import li.songe.gkd.util.LogUtils
-import li.songe.gkd.util.ScreenUtils
-import li.songe.gkd.util.appInfoMapFlow
-import li.songe.gkd.util.distinctByIfAny
-import li.songe.gkd.util.filterIfNotAll
-import li.songe.gkd.util.json
-import li.songe.gkd.util.toJson5String
-import li.songe.gkd.util.toast
+import li.gkd.app.a11y.typeInfo
+import li.gkd.app.util.LOCAL_SUBS_IDS
+import li.gkd.app.util.LogUtils
+import li.gkd.app.util.ScreenUtils
+import li.gkd.app.util.appInfoMapFlow
+import li.gkd.app.util.distinctByIfAny
+import li.gkd.app.util.filterIfNotAll
+import li.gkd.app.util.json
+import li.gkd.app.util.toJson5String
+import li.gkd.app.util.toast
 import li.songe.json5.Json5
-import li.songe.selector.Selector
+import li.gkd.selector.Selector
 import net.objecthunter.exp4j.Expression
 import net.objecthunter.exp4j.ExpressionBuilder
 import java.util.Objects

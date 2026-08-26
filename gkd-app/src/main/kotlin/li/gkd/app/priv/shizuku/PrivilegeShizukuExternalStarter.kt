@@ -1,4 +1,4 @@
-package li.songe.gkd.priv.shizuku
+package li.gkd.app.priv.shizuku
 
 import android.content.ComponentName
 import android.content.Context
@@ -152,6 +152,6 @@ class PrivilegeShizukuExternalStarter(
         private const val SHIZUKU_START_PROCESS_SUFFIX = "priv-kit-shizuku-start"
 
         // Bump whenever the UserService implementation or its AIDL contract changes.
-        private const val SHIZUKU_START_SERVICE_VERSION = 5
+        private const val SHIZUKU_START_SERVICE_VERSION = 6
     }
 }

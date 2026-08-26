@@ -1,6 +1,6 @@
-package li.songe.selector.connect
+package li.gkd.selector.connect
 
-import li.songe.selector.Stringify
+import li.gkd.selector.Stringify
 import kotlin.js.JsExport
 
 @JsExport

@@ -1,4 +1,4 @@
-package li.songe.gkd.snapshot
+package li.gkd.app.snapshot
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -10,18 +10,18 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import li.songe.gkd.data.ComplexSnapshot
-import li.songe.gkd.data.Snapshot
-import li.songe.gkd.db.DbSet
-import li.songe.gkd.util.LogUtils
-import li.songe.gkd.util.ZipUtils
-import li.songe.gkd.util.appInfoMapFlow
-import li.songe.gkd.util.clearCache
-import li.songe.gkd.util.json
-import li.songe.gkd.util.keepNullJson
-import li.songe.gkd.util.sharedDir
-import li.songe.gkd.util.snapshotFolder
-import li.songe.gkd.util.webpLossyCompressFormat
+import li.gkd.app.data.ComplexSnapshot
+import li.gkd.app.data.Snapshot
+import li.gkd.app.db.DbSet
+import li.gkd.app.util.LogUtils
+import li.gkd.app.util.ZipUtils
+import li.gkd.app.util.appInfoMapFlow
+import li.gkd.app.util.clearCache
+import li.gkd.app.util.json
+import li.gkd.app.util.keepNullJson
+import li.gkd.app.util.sharedDir
+import li.gkd.app.util.snapshotFolder
+import li.gkd.app.util.webpLossyCompressFormat
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException

@@ -1,4 +1,4 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows

@@ -1,14 +1,14 @@
-package li.songe.gkd.priv
+package li.gkd.app.priv
 
 import android.app.ActivityManager
 import android.app.ITaskStackListener
 import android.content.ComponentName
 import android.os.Parcel
 import android.view.Display
-import li.songe.gkd.a11y.ActivityScene
-import li.songe.gkd.a11y.topActivityFlow
-import li.songe.gkd.a11y.updateTopActivity
-import li.songe.gkd.util.AndroidTarget
+import li.gkd.app.a11y.ActivityScene
+import li.gkd.app.a11y.topActivityFlow
+import li.gkd.app.a11y.updateTopActivity
+import li.gkd.app.util.AndroidTarget
 
 object CompatTaskStackListener : ITaskStackListener.Stub() {
 

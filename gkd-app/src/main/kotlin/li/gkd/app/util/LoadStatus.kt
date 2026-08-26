@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 sealed class LoadStatus<out T> {
     data class Loading(val progress: Float = 0f) : LoadStatus<Nothing>()

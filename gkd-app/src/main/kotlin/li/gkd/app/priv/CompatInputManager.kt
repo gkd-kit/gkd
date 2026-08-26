@@ -1,4 +1,4 @@
-package li.songe.gkd.priv
+package li.gkd.app.priv
 
 import android.content.Context
 import android.hardware.input.IInputManager
@@ -10,7 +10,7 @@ import android.view.InputEvent
 import android.view.KeyCharacterMap
 import android.view.KeyEvent
 import android.view.MotionEvent
-import li.songe.gkd.util.AndroidTarget
+import li.gkd.app.util.AndroidTarget
 import priv.kit.core.binder.PrivilegeBinderWrapper
 
 class CompatInputManager {

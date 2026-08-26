@@ -1,4 +1,4 @@
-package li.songe.gkd.a11y
+package li.gkd.app.a11y
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -10,25 +10,25 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
-import li.songe.gkd.app
-import li.songe.gkd.appScope
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.util.LogUtils
-import li.songe.gkd.util.ScreenUtils
-import li.songe.gkd.snapshot.SnapshotCapture
-import li.songe.gkd.util.SubscriptionResult
-import li.songe.gkd.util.SubscriptionStore
-import li.songe.gkd.util.UpdateTimeOption
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.mapState
-import li.songe.selector.MatchOption
-import li.songe.selector.QueryContext
-import li.songe.selector.Selector
-import li.songe.selector.Transform
-import li.songe.selector.getBooleanInvoke
-import li.songe.selector.getCharSequenceAttr
-import li.songe.selector.getCharSequenceInvoke
-import li.songe.selector.getIntInvoke
+import li.gkd.app.app
+import li.gkd.app.appScope
+import li.gkd.app.store.storeFlow
+import li.gkd.app.util.LogUtils
+import li.gkd.app.util.ScreenUtils
+import li.gkd.app.snapshot.SnapshotCapture
+import li.gkd.app.util.SubscriptionResult
+import li.gkd.app.util.SubscriptionStore
+import li.gkd.app.util.UpdateTimeOption
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.mapState
+import li.gkd.selector.MatchOption
+import li.gkd.selector.QueryContext
+import li.gkd.selector.Selector
+import li.gkd.selector.Transform
+import li.gkd.selector.getBooleanInvoke
+import li.gkd.selector.getCharSequenceAttr
+import li.gkd.selector.getCharSequenceInvoke
+import li.gkd.selector.getIntInvoke
 
 
 fun onA11yFeatEvent(event: AccessibilityEvent) = event.run {

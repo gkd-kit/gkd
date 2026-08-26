@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
@@ -29,18 +29,18 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import li.songe.gkd.MainActivity
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.component.PerfIconButton
-import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.SubscriptionPageContent
-import li.songe.gkd.ui.component.autoFocus
-import li.songe.gkd.ui.share.LocalDarkTheme
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.style.getJson5Transformation
-import li.songe.gkd.ui.style.scaffoldPadding
-import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.throttle
+import li.gkd.app.MainActivity
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.component.PerfIconButton
+import li.gkd.app.ui.component.PerfTopAppBar
+import li.gkd.app.ui.component.SubscriptionPageContent
+import li.gkd.app.ui.component.autoFocus
+import li.gkd.app.ui.share.LocalDarkTheme
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.ui.style.getJson5Transformation
+import li.gkd.app.ui.style.scaffoldPadding
+import li.gkd.app.util.launchAsFn
+import li.gkd.app.util.throttle
 
 @Serializable
 data class UpsertRuleGroupRoute(

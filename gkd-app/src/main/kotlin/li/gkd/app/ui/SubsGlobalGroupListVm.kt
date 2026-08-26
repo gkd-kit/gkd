@@ -1,17 +1,17 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.edit
-import li.songe.gkd.db.DbSet
-import li.songe.gkd.ui.component.batchUpdateGroupEnable
-import li.songe.gkd.ui.component.toGroupState
-import li.songe.gkd.ui.component.updateRuleGroupEnable
-import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.ui.share.Loadable
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.data.SubsConfig
+import li.gkd.app.data.edit
+import li.gkd.app.db.DbSet
+import li.gkd.app.ui.component.batchUpdateGroupEnable
+import li.gkd.app.ui.component.toGroupState
+import li.gkd.app.ui.component.updateRuleGroupEnable
+import li.gkd.app.ui.share.BaseViewModel
+import li.gkd.app.ui.share.Loadable
 
 data class SubsGlobalGroupListUiState(
     val subscription: RawSubscription,

@@ -1,11 +1,11 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import androidx.compose.runtime.Composable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
-import li.songe.gkd.data.RpcError
+import li.gkd.app.data.RpcError
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 

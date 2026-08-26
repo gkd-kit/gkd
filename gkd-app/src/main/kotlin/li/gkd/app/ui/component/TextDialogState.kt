@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import android.webkit.URLUtil
 import androidx.compose.foundation.layout.Arrangement
@@ -18,8 +18,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
-import li.songe.gkd.util.openUri
-import li.songe.gkd.util.throttle
+import li.gkd.app.util.openUri
+import li.gkd.app.util.throttle
 
 private data class TextDialogRequest(
     val text: String,

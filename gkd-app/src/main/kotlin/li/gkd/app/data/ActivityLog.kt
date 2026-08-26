@@ -1,4 +1,4 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import androidx.paging.PagingSource
 import androidx.room.ColumnInfo
@@ -10,8 +10,8 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.migration.AutoMigrationSpec
 import kotlinx.coroutines.flow.Flow
-import li.songe.gkd.util.format
-import li.songe.gkd.util.getShowActivityId
+import li.gkd.app.util.format
+import li.gkd.app.util.getShowActivityId
 
 @Entity(
     tableName = "activity_log_v2",

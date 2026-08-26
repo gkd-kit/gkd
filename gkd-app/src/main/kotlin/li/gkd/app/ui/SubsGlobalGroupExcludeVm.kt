@@ -1,23 +1,23 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.MainViewModel
-import li.songe.gkd.data.AppInfo
-import li.songe.gkd.data.ExcludeData
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.db.DbSet
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.ui.share.Loadable
-import li.songe.gkd.ui.share.globalGroupAppOrderListState
-import li.songe.gkd.ui.share.useAppFilter
-import li.songe.gkd.util.AppSortOption
-import li.songe.gkd.util.findOption
+import li.gkd.app.MainViewModel
+import li.gkd.app.data.AppInfo
+import li.gkd.app.data.ExcludeData
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.data.SubsConfig
+import li.gkd.app.db.DbSet
+import li.gkd.app.store.storeFlow
+import li.gkd.app.ui.share.BaseViewModel
+import li.gkd.app.ui.share.Loadable
+import li.gkd.app.ui.share.globalGroupAppOrderListState
+import li.gkd.app.ui.share.useAppFilter
+import li.gkd.app.util.AppSortOption
+import li.gkd.app.util.findOption
 
 data class SubsGlobalGroupExcludeConfig(
     val subsConfig: SubsConfig?,

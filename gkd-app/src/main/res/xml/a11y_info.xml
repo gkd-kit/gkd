@@ -10,5 +10,5 @@
     android:isAccessibilityTool="@bool/is_accessibility_tool"
     android:description="@string/a11y_desc"
     android:notificationTimeout="100"
-    android:settingsActivity="li.songe.gkd.MainActivity"
+    android:settingsActivity="li.gkd.app.MainActivity"
     tools:ignore="UnusedAttribute" />

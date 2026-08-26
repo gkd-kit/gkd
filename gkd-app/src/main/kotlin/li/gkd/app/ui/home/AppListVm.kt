@@ -1,24 +1,24 @@
-package li.songe.gkd.ui.home
+package li.gkd.app.ui.home
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import li.songe.gkd.MainViewModel
-import li.songe.gkd.data.AppInfo
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.store.blockMatchAppListFlow
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.ui.share.useAppFilter
-import li.songe.gkd.util.AppSortOption
-import li.songe.gkd.util.RuleSummary
-import li.songe.gkd.util.appListAuthAbnormalFlow
-import li.songe.gkd.util.findOption
-import li.songe.gkd.util.ruleSummaryFlow
-import li.songe.gkd.util.switchItem
-import li.songe.gkd.util.updateAllAppInfo
-import li.songe.gkd.util.updateAppMutex
+import li.gkd.app.MainViewModel
+import li.gkd.app.data.AppInfo
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.store.blockMatchAppListFlow
+import li.gkd.app.store.storeFlow
+import li.gkd.app.ui.share.BaseViewModel
+import li.gkd.app.ui.share.useAppFilter
+import li.gkd.app.util.AppSortOption
+import li.gkd.app.util.RuleSummary
+import li.gkd.app.util.appListAuthAbnormalFlow
+import li.gkd.app.util.findOption
+import li.gkd.app.util.ruleSummaryFlow
+import li.gkd.app.util.switchItem
+import li.gkd.app.util.updateAllAppInfo
+import li.gkd.app.util.updateAppMutex
 
 data class AppListUiState(
     val appInfos: List<AppInfo>,

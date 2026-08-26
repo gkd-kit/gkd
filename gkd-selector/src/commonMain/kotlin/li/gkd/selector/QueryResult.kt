@@ -1,10 +1,10 @@
-package li.songe.selector
+package li.gkd.selector
 
-import li.songe.selector.connect.PolynomialExpression
-import li.songe.selector.unit.LogicalSelectorExpression
-import li.songe.selector.unit.NotSelectorExpression
-import li.songe.selector.unit.SelectorExpression
-import li.songe.selector.unit.UnitSelectorExpression
+import li.gkd.selector.connect.PolynomialExpression
+import li.gkd.selector.unit.LogicalSelectorExpression
+import li.gkd.selector.unit.NotSelectorExpression
+import li.gkd.selector.unit.SelectorExpression
+import li.gkd.selector.unit.UnitSelectorExpression
 import kotlin.js.JsExport
 
 @Suppress("unused")

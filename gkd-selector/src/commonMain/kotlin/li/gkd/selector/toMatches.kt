@@ -1,4 +1,4 @@
-package li.songe.selector
+package li.gkd.selector
 
 import kotlin.js.JsExport
 

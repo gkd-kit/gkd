@@ -1,4 +1,4 @@
-package li.songe.gkd.service
+package li.gkd.app.service
 
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
@@ -6,8 +6,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import li.songe.gkd.util.DefaultTileLifeImpl
-import li.songe.gkd.util.OnTileLife
+import li.gkd.app.util.DefaultTileLifeImpl
+import li.gkd.app.util.OnTileLife
 
 abstract class BaseTileService : TileService(), OnTileLife by DefaultTileLifeImpl() {
     override fun onCreate() = onCreated()

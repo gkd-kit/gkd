@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,19 +19,19 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
-import li.songe.gkd.ui.component.CopyTextCard
-import li.songe.gkd.ui.component.EmptyText
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.component.PerfIconButton
-import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.rememberColumnScrollState
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.noRippleClickable
-import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.itemHorizontalPadding
-import li.songe.gkd.ui.style.itemVerticalPadding
-import li.songe.gkd.util.ISSUES_URL
-import li.songe.gkd.util.throttle
+import li.gkd.app.ui.component.CopyTextCard
+import li.gkd.app.ui.component.EmptyText
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.component.PerfIconButton
+import li.gkd.app.ui.component.PerfTopAppBar
+import li.gkd.app.ui.component.rememberColumnScrollState
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.ui.share.noRippleClickable
+import li.gkd.app.ui.style.EmptyHeight
+import li.gkd.app.ui.style.itemHorizontalPadding
+import li.gkd.app.ui.style.itemVerticalPadding
+import li.gkd.app.util.ISSUES_URL
+import li.gkd.app.util.throttle
 
 
 @Serializable

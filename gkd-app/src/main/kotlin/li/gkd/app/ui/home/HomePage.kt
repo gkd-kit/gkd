@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.home
+package li.gkd.app.ui.home
 
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -14,8 +14,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.share.LocalMainViewModel
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.share.LocalMainViewModel
 
 sealed class BottomNavItem(
     val key: Int,

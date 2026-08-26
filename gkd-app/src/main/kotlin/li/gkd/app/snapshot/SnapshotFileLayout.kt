@@ -1,4 +1,4 @@
-package li.songe.gkd.snapshot
+package li.gkd.app.snapshot
 
 import java.io.File
 

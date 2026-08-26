@@ -1,8 +1,8 @@
-package li.songe.gkd.service
+package li.gkd.app.service
 
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.store.switchStoreEnableMatch
-import li.songe.gkd.util.mapState
+import li.gkd.app.store.storeFlow
+import li.gkd.app.store.switchStoreEnableMatch
+import li.gkd.app.util.mapState
 
 class MatchTileService : BaseTileService() {
     override val activeFlow = storeFlow.mapState(scope) { it.enableMatch }

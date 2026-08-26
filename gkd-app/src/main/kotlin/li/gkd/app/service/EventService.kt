@@ -1,4 +1,4 @@
-package li.songe.gkd.service
+package li.gkd.app.service
 
 import android.view.accessibility.AccessibilityEvent
 import androidx.compose.foundation.background
@@ -33,23 +33,23 @@ import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import li.songe.gkd.META
-import li.songe.gkd.MainViewModel
-import li.songe.gkd.appScope
-import li.songe.gkd.data.A11yEventLog
-import li.songe.gkd.data.toA11yEventLog
-import li.songe.gkd.db.DbSet
-import li.songe.gkd.notif.NotificationCatalog
-import li.songe.gkd.notif.StopServiceReceiver
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.priv.uiAutomationFlow
-import li.songe.gkd.ui.EventLogCard
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.component.PerfIconButton
-import li.songe.gkd.ui.component.rememberLazyListAutoFollowState
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.startForegroundServiceByClass
-import li.songe.gkd.util.stopServiceByClass
+import li.gkd.app.META
+import li.gkd.app.MainViewModel
+import li.gkd.app.appScope
+import li.gkd.app.data.A11yEventLog
+import li.gkd.app.data.toA11yEventLog
+import li.gkd.app.db.DbSet
+import li.gkd.app.notif.NotificationCatalog
+import li.gkd.app.notif.StopServiceReceiver
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.priv.uiAutomationFlow
+import li.gkd.app.ui.EventLogCard
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.component.PerfIconButton
+import li.gkd.app.ui.component.rememberLazyListAutoFollowState
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.startForegroundServiceByClass
+import li.gkd.app.util.stopServiceByClass
 import kotlin.time.Duration.Companion.milliseconds
 
 class EventService : OverlayWindowService(positionKey = "event") {

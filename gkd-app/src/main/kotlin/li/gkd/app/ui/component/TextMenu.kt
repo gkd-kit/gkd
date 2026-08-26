@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,10 +16,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import li.songe.gkd.ui.style.itemPadding
-import li.songe.gkd.util.Option
-import li.songe.gkd.util.OptionIcon
-import li.songe.gkd.util.OptionMenuLabel
+import li.gkd.app.ui.style.itemPadding
+import li.gkd.app.util.Option
+import li.gkd.app.util.OptionIcon
+import li.gkd.app.util.OptionMenuLabel
 
 @Composable
 fun <T> TextMenu(

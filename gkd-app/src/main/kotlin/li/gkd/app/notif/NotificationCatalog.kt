@@ -1,15 +1,15 @@
-package li.songe.gkd.notif
+package li.gkd.app.notif
 
 import android.app.Service
-import li.songe.gkd.META
-import li.songe.gkd.R
-import li.songe.gkd.service.ActivityService
-import li.songe.gkd.service.ButtonService
-import li.songe.gkd.service.EventService
-import li.songe.gkd.service.HttpService
-import li.songe.gkd.service.ScreenshotService
-import li.songe.gkd.service.TrackService
-import li.songe.gkd.snapshot.SnapshotScreenshotStatus
+import li.gkd.app.META
+import li.gkd.app.R
+import li.gkd.app.service.ActivityService
+import li.gkd.app.service.ButtonService
+import li.gkd.app.service.EventService
+import li.gkd.app.service.HttpService
+import li.gkd.app.service.ScreenshotService
+import li.gkd.app.service.TrackService
+import li.gkd.app.snapshot.SnapshotScreenshotStatus
 import kotlin.reflect.KClass
 
 enum class ForegroundNotificationKey(

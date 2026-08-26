@@ -1,9 +1,9 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
-import li.songe.gkd.data.SubsItem
-import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.util.SubscriptionResult
-import li.songe.gkd.util.SubscriptionStore
+import li.gkd.app.data.SubsItem
+import li.gkd.app.ui.share.BaseViewModel
+import li.gkd.app.util.SubscriptionResult
+import li.gkd.app.util.SubscriptionStore
 
 class SubsSheetVm : BaseViewModel() {
     val updating = SubscriptionStore.updating

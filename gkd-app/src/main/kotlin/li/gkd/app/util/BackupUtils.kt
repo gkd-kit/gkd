@@ -1,21 +1,21 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import li.songe.gkd.data.AppConfig
-import li.songe.gkd.data.CategoryConfig
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.SubsItem
-import li.songe.gkd.db.DbSet
-import li.songe.gkd.store.a11yScopeAppListFlow
-import li.songe.gkd.store.actionCountFlow
-import li.songe.gkd.store.blockA11yAppListFlow
-import li.songe.gkd.store.blockMatchAppListFlow
-import li.songe.gkd.store.storeFlow
+import li.gkd.app.data.AppConfig
+import li.gkd.app.data.CategoryConfig
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.data.SubsConfig
+import li.gkd.app.data.SubsItem
+import li.gkd.app.db.DbSet
+import li.gkd.app.store.a11yScopeAppListFlow
+import li.gkd.app.store.actionCountFlow
+import li.gkd.app.store.blockA11yAppListFlow
+import li.gkd.app.store.blockMatchAppListFlow
+import li.gkd.app.store.storeFlow
 import java.io.File
 
 @Serializable

@@ -1,6 +1,6 @@
-package li.songe.gkd.priv
+package li.gkd.app.priv
 
-import li.songe.gkd.util.LogUtils
+import li.gkd.app.util.LogUtils
 import java.lang.reflect.Method
 import kotlin.reflect.KClass
 

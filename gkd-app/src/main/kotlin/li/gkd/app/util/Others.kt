@@ -1,4 +1,4 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import android.app.Activity
 import android.content.ComponentName
@@ -20,9 +20,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import kotlinx.serialization.json.JsonElement
-import li.songe.gkd.META
-import li.songe.gkd.MainActivity
-import li.songe.gkd.app
+import li.gkd.app.META
+import li.gkd.app.MainActivity
+import li.gkd.app.app
 import li.songe.json5.Json5
 import li.songe.json5.Json5EncoderConfig
 import li.songe.json5.encodeToJson5String

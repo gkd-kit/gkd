@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -14,11 +14,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.throttle
-import li.songe.gkd.util.updateAppMutex
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.util.launchAsFn
+import li.gkd.app.util.throttle
+import li.gkd.app.util.updateAppMutex
 
 @Composable
 fun QueryPkgAuthCard(

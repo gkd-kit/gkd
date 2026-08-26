@@ -1,28 +1,28 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.MainViewModel
-import li.songe.gkd.data.CategoryConfig
-import li.songe.gkd.data.RawSubscription
-import li.songe.gkd.data.SubsConfig
-import li.songe.gkd.data.edit
-import li.songe.gkd.db.DbSet
-import li.songe.gkd.store.storeFlow
-import li.songe.gkd.ui.component.updateRuleGroupEnable
-import li.songe.gkd.ui.share.BaseViewModel
-import li.songe.gkd.ui.share.Loadable
-import li.songe.gkd.ui.share.filterSubsApps
-import li.songe.gkd.ui.share.subsAppActionOrderMapState
-import li.songe.gkd.ui.share.useSubsAppFilter
-import li.songe.gkd.util.AppSortOption
-import li.songe.gkd.util.EnableGroupOption
-import li.songe.gkd.util.appInfoMapFlow
-import li.songe.gkd.util.findOption
-import li.songe.gkd.store.blockMatchAppListFlow
+import li.gkd.app.MainViewModel
+import li.gkd.app.data.CategoryConfig
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.data.SubsConfig
+import li.gkd.app.data.edit
+import li.gkd.app.db.DbSet
+import li.gkd.app.store.storeFlow
+import li.gkd.app.ui.component.updateRuleGroupEnable
+import li.gkd.app.ui.share.BaseViewModel
+import li.gkd.app.ui.share.Loadable
+import li.gkd.app.ui.share.filterSubsApps
+import li.gkd.app.ui.share.subsAppActionOrderMapState
+import li.gkd.app.ui.share.useSubsAppFilter
+import li.gkd.app.util.AppSortOption
+import li.gkd.app.util.EnableGroupOption
+import li.gkd.app.util.appInfoMapFlow
+import li.gkd.app.util.findOption
+import li.gkd.app.store.blockMatchAppListFlow
 
 data class SubsCategoryGroupConfigs(
     val subsConfigs: List<SubsConfig>,
@@ -136,7 +136,7 @@ class SubsCategoryGroupVm(
         val category = state.category
         val configs = state.configs.value ?: error("类别配置尚未加载")
         val categoryConfig = configs.categoryConfig
-        val newValue = when (li.songe.gkd.util.getCategoryEnable(category, categoryConfig)) {
+        val newValue = when (li.gkd.app.util.getCategoryEnable(category, categoryConfig)) {
             false -> null
             null -> true
             true -> false

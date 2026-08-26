@@ -1,4 +1,4 @@
-package li.songe.gkd.service
+package li.gkd.app.service
 
 
 import android.animation.ValueAnimator
@@ -43,23 +43,23 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import li.songe.gkd.a11y.topActivityFlow
-import li.songe.gkd.app
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.store.createAnyFlow
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.icon.DragPan
-import li.songe.gkd.ui.style.AppTheme
-import li.songe.gkd.ui.style.iconTextSize
-import li.songe.gkd.util.BarUtils
-import li.songe.gkd.util.DefaultSimpleLifeImpl
-import li.songe.gkd.util.OnSimpleLife
-import li.songe.gkd.util.ScreenUtils
-import li.songe.gkd.util.mapState
-import li.songe.gkd.util.px
-import li.songe.gkd.util.runMainPost
-import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
+import li.gkd.app.a11y.topActivityFlow
+import li.gkd.app.app
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.store.createAnyFlow
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.icon.DragPan
+import li.gkd.app.ui.style.AppTheme
+import li.gkd.app.ui.style.iconTextSize
+import li.gkd.app.util.BarUtils
+import li.gkd.app.util.DefaultSimpleLifeImpl
+import li.gkd.app.util.OnSimpleLife
+import li.gkd.app.util.ScreenUtils
+import li.gkd.app.util.mapState
+import li.gkd.app.util.px
+import li.gkd.app.util.runMainPost
+import li.gkd.app.util.throttle
+import li.gkd.app.util.toast
 import kotlin.coroutines.resume
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds

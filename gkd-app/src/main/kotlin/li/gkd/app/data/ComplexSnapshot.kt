@@ -1,7 +1,7 @@
-package li.songe.gkd.data
+package li.gkd.app.data
 
 import kotlinx.serialization.Serializable
-import li.songe.gkd.util.appInfoMapFlow
+import li.gkd.app.util.appInfoMapFlow
 
 @Serializable
 data class ComplexSnapshot(

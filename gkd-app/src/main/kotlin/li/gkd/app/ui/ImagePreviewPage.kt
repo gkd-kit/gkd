@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import android.webkit.URLUtil
 import androidx.activity.compose.LocalActivity
@@ -72,15 +72,15 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
-import li.songe.gkd.MainActivity
-import li.songe.gkd.app
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.component.PerfIconButton
-import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.util.AndroidTarget
-import li.songe.gkd.util.coilCacheDir
-import li.songe.gkd.util.throttle
+import li.gkd.app.MainActivity
+import li.gkd.app.app
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.component.PerfIconButton
+import li.gkd.app.ui.component.PerfTopAppBar
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.util.AndroidTarget
+import li.gkd.app.util.coilCacheDir
+import li.gkd.app.util.throttle
 import me.saket.telephoto.zoomable.ZoomableContentLocation
 import me.saket.telephoto.zoomable.rememberZoomableState
 import me.saket.telephoto.zoomable.zoomable

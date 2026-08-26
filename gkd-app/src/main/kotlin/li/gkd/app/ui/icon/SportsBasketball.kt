@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.icon
+package li.gkd.app.ui.icon
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathFillType

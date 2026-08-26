@@ -1,7 +1,7 @@
-package li.songe.gkd.util
+package li.gkd.app.util
 
 import android.net.Uri
-import li.songe.gkd.app
+import li.gkd.app.app
 
 object UriUtils {
     fun uri2Bytes(uri: Uri): ByteArray {

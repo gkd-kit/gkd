@@ -1,9 +1,9 @@
-package li.songe.selector.property
+package li.gkd.selector.property
 
-import li.songe.selector.QueryContext
-import li.songe.selector.Stringify
-import li.songe.selector.Transform
-import li.songe.selector.comparePrimitiveValue
+import li.gkd.selector.QueryContext
+import li.gkd.selector.Stringify
+import li.gkd.selector.Transform
+import li.gkd.selector.comparePrimitiveValue
 import kotlin.js.JsExport
 
 

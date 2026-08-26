@@ -1,4 +1,4 @@
-package li.songe.gkd.snapshot
+package li.gkd.app.snapshot
 
 import org.junit.Assert.assertEquals
 import org.junit.Rule

@@ -1,4 +1,4 @@
-package li.songe.selector
+package li.gkd.selector
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient

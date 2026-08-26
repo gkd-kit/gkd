@@ -1,4 +1,4 @@
-package li.songe.gkd.ui
+package li.gkd.app.ui
 
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.clickable
@@ -35,32 +35,32 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import li.songe.gkd.MainActivity
-import li.songe.gkd.data.Snapshot
-import li.songe.gkd.permission.PermissionStates
-import li.songe.gkd.snapshot.SnapshotStore
-import li.songe.gkd.ui.component.EmptyText
-import li.songe.gkd.ui.component.FixedTimeText
-import li.songe.gkd.ui.component.AppDialog
-import li.songe.gkd.ui.component.PerfIcon
-import li.songe.gkd.ui.component.PerfIconButton
-import li.songe.gkd.ui.component.PerfTopAppBar
-import li.songe.gkd.ui.component.animateListItem
-import li.songe.gkd.ui.component.rememberListScrollState
-import li.songe.gkd.ui.share.ListPlaceholder
-import li.songe.gkd.ui.share.Loadable
-import li.songe.gkd.ui.share.LocalMainViewModel
-import li.songe.gkd.ui.share.noRippleClickable
-import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.itemHorizontalPadding
-import li.songe.gkd.ui.style.itemVerticalPadding
-import li.songe.gkd.ui.style.scaffoldPadding
-import li.songe.gkd.util.IMPORT_SHORT_URL
-import li.songe.gkd.util.UriUtils
-import li.songe.gkd.util.copyText
-import li.songe.gkd.util.launchTry
-import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
+import li.gkd.app.MainActivity
+import li.gkd.app.data.Snapshot
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.snapshot.SnapshotStore
+import li.gkd.app.ui.component.EmptyText
+import li.gkd.app.ui.component.FixedTimeText
+import li.gkd.app.ui.component.AppDialog
+import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.ui.component.PerfIconButton
+import li.gkd.app.ui.component.PerfTopAppBar
+import li.gkd.app.ui.component.animateListItem
+import li.gkd.app.ui.component.rememberListScrollState
+import li.gkd.app.ui.share.ListPlaceholder
+import li.gkd.app.ui.share.Loadable
+import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.ui.share.noRippleClickable
+import li.gkd.app.ui.style.EmptyHeight
+import li.gkd.app.ui.style.itemHorizontalPadding
+import li.gkd.app.ui.style.itemVerticalPadding
+import li.gkd.app.ui.style.scaffoldPadding
+import li.gkd.app.util.IMPORT_SHORT_URL
+import li.gkd.app.util.UriUtils
+import li.gkd.app.util.copyText
+import li.gkd.app.util.launchTry
+import li.gkd.app.util.throttle
+import li.gkd.app.util.toast
 
 @Serializable
 data object SnapshotPageRoute : NavKey

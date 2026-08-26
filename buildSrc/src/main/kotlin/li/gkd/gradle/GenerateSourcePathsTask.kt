@@ -1,4 +1,4 @@
-package li.songe.gradle
+package li.gkd.gradle
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project

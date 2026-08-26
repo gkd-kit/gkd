@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.RowScope
@@ -12,7 +12,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
-import li.songe.gkd.MainActivity
+import li.gkd.app.MainActivity
 
 @Composable
 fun PerfTopAppBar(

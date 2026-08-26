@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.component
+package li.gkd.app.ui.component
 
 import android.webkit.URLUtil
 import androidx.compose.foundation.layout.Arrangement
@@ -20,10 +20,10 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import li.songe.gkd.db.DbSet
-import li.songe.gkd.util.isLocalNetworkUrl
-import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
+import li.gkd.app.db.DbSet
+import li.gkd.app.util.isLocalNetworkUrl
+import li.gkd.app.util.throttle
+import li.gkd.app.util.toast
 import kotlin.coroutines.resume
 
 private data class SubsLinkDialogRequest(

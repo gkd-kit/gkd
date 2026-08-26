@@ -1,4 +1,4 @@
-package li.songe.gkd.ui.style
+package li.gkd.app.ui.style
 
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults

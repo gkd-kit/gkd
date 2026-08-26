@@ -1,7 +1,7 @@
-package li.songe.selector
+package li.gkd.selector
 
-import li.songe.selector.connect.ConnectWrapper
-import li.songe.selector.property.PropertyWrapper
+import li.gkd.selector.connect.ConnectWrapper
+import li.gkd.selector.property.PropertyWrapper
 import kotlin.js.JsExport
 
 @Suppress("unused")
