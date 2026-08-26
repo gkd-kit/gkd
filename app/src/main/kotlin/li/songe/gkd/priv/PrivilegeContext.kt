@@ -19,7 +19,7 @@ class PrivilegeContext private constructor(
     val serverInfo: PrivilegeServerInfo,
     private val userServiceConnection: PrivilegeUserServiceConnection,
 ) {
-    val serverLifecycleBinder = Privilege.getServerLifecycleBinder()
+    val serverLifecycleBinder = serverInfo.lifecycleBinder
     val packageManager = CompatPackageManager()
     val userManager = CompatUserManager()
     val activityManager = CompatActivityManager()

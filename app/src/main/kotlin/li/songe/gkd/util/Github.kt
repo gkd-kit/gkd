@@ -33,7 +33,7 @@ private fun HttpMessageBuilder.setCommonHeaders(cookie: String) {
 }
 
 private fun String.json5ToJsonString(): String {
-    return json.encodeToString(Json5.parseToJson5Element(this))
+    return json.encodeToString(Json5.parseToJsonElement(this))
 }
 
 @Suppress("PropertyName")

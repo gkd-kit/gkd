@@ -79,7 +79,7 @@ class SubscriptionInputParser private constructor(
             defaultGroupKey: Int = 0,
         ): SubscriptionInputParser {
             val element = try {
-                Json5.parseToJson5Element(source)
+                Json5.parseToJsonElement(source)
             } catch (e: Exception) {
                 error("非法格式\n${e.message}")
             }

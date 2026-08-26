@@ -1079,7 +1079,7 @@ data class RawSubscription(
 
         fun parse(source: String, json5: Boolean = true): RawSubscription {
             val element = if (json5) {
-                Json5.parseToJson5Element(source)
+                Json5.parseToJsonElement(source)
             } else {
                 json.parseToJsonElement(source)
             }
