@@ -5,12 +5,11 @@ import com.android.build.api.variant.impl.VariantOutputImpl
 import li.songe.gradle.BuildAssetAdapter
 import li.songe.gradle.BuildAssetVariant
 import li.songe.gradle.GenerateSourcePathsTask
-import li.songe.gradle.GitInfo
 import li.songe.gradle.buildProperty
 import li.songe.gradle.configureBuildAssets
 import li.songe.gradle.gitInfo
 import li.songe.gradle.readDebugSuffixResources
-import kotlin.reflect.full.declaredMemberProperties
+import li.songe.gradle.releaseBuildKey
 
 val gitInfo = project.gitInfo
 val debugSuffixResources = project.readDebugSuffixResources()
@@ -45,9 +44,10 @@ android {
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
 
-        GitInfo::class.declaredMemberProperties.onEach {
-            manifestPlaceholders[it.name] = it.get(gitInfo) ?: ""
-        }
+        manifestPlaceholders["buildKey"] = ""
+        manifestPlaceholders["commitId"] = gitInfo.commitId
+        manifestPlaceholders["commitTime"] = gitInfo.commitTime
+        manifestPlaceholders["tagName"] = gitInfo.tagName.orEmpty()
     }
 
     buildFeatures {
@@ -117,7 +117,6 @@ android {
         all {
             dimension = flavorDimensions.first()
             manifestPlaceholders["channel"] = name
-            manifestPlaceholders["buildKey"] = gitInfo.buildKey(name)
         }
     }
     // https://github.com/LSPosed/AndroidHiddenApiBypass
@@ -175,6 +174,18 @@ configureBuildAssets(
     adapter = androidBuildAssetAdapter,
 )
 
+androidComponents.onVariants(
+    androidComponents.selector().withBuildType("release"),
+) { variant ->
+    val flavorName = variant.productFlavors
+        .single { it.first == "channel" }
+        .second
+    variant.manifestPlaceholders.put(
+        "buildKey",
+        project.releaseBuildKey(flavorName, gitInfo.commitId),
+    )
+}
+
 if (buildProperty("GKD_RENAME_APK_FLAG").isPresent) {
     androidComponents.onVariants { variant ->
         variant.outputs.onEach { output ->
@@ -190,7 +201,9 @@ room {
 }
 
 composeCompiler {
-    reportsDestination = layout.buildDirectory.dir("compose_compiler")
+    if (providers.gradleProperty("composeReports").isPresent) {
+        reportsDestination = layout.buildDirectory.dir("compose_compiler")
+    }
     stabilityConfigurationFiles.addAll(
         rootProject.layout.projectDirectory.file("stability_config.conf"),
     )
@@ -234,7 +247,7 @@ dependencies {
     // AndroidTest shares this runtime dependency with the app and requires the newer version.
     implementation(libs.androidx.concurrent.futures)
 
-    compileOnly(project(":hidden-api"))
+    remapApi(project(":hidden-api"))
     implementation(libs.rikka.shizuku.api)
     implementation(libs.rikka.shizuku.provider)
     implementation(libs.priv.kit.ui)

@@ -14,5 +14,7 @@
 
 *.jks
 *.keystore
+*.apk
+*.zip
 local.properties
 libs.versions.updates.toml

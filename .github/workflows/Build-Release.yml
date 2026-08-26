@@ -7,16 +7,18 @@ on:
 
 jobs:
   build:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '21'
 
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
         with:
           cache-encryption-key: ${{ secrets.GRADLE_CACHE_ENCRYPTION_KEY }}
 
@@ -55,57 +57,18 @@ jobs:
           name: outputs
           path: app/build/outputs
 
-      - uses: actions/upload-artifact@v7
-        with:
-          name: CHANGELOG.md
-          path: CHANGELOG.md
+      - run: |
+          cp outputs/apk/gkd/release/app-gkd-release.apk "${GITHUB_WORKSPACE}/gkd-${GITHUB_REF_NAME}.apk"
+          zip -r "${GITHUB_WORKSPACE}/outputs-${GITHUB_REF_NAME}.zip" outputs
+        working-directory: app/build
 
-  release:
-    needs: build
-    permissions: write-all
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v8
-        with:
-          name: outputs
-          path: outputs
-
-      - uses: actions/download-artifact@v8
-        with:
-          name: release
-          path: release
-
-      - uses: actions/download-artifact@v8
-        with:
-          name: CHANGELOG.md
-
-      - run: ls -R
-
-      - id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           body_path: ./CHANGELOG.md
           prerelease: ${{ contains(github.ref_name, 'beta') }}
-
-      - uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: release/app-gkd-release.apk
-          asset_name: gkd-${{ github.ref_name }}.apk
-          asset_content_type: application/vnd.android.package-archive
-
-      - run: zip -r outputs.zip outputs
-      - uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: outputs.zip
-          asset_name: outputs-${{ github.ref_name }}.zip
-          asset_content_type: application/zip
+          fail_on_unmatched_files: true
+          files: |
+            gkd-*.apk
+            outputs-*.zip

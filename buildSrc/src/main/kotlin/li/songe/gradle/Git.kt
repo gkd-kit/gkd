@@ -4,6 +4,7 @@ import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ValueSource
 import org.gradle.api.provider.ValueSourceParameters
 import org.gradle.api.services.BuildService
@@ -42,11 +43,8 @@ data class GitInfo(
     val commitId: String,
     val commitTime: String,
     val tagName: String?,
-    val repositoryStateId: String,
 ) : Serializable {
     val versionNameSuffix get() = if (tagName == null) ("-" + commitId.take(7)) else null
-
-    fun buildKey(flavor: String) = "$flavor-${repositoryStateId.take(16)}"
 }
 
 abstract class GitInfoValueSource : ValueSource<GitInfo, GitInfoValueSource.Parameters> {
@@ -95,6 +93,33 @@ val Project.gitInfo: GitInfo
         )
     }.get().gitInfo
 
+fun Project.releaseBuildKey(
+    flavor: String,
+    commitId: String,
+): Provider<String> =
+    providers.of(GitBuildKeyValueSource::class.java) {
+        parameters.repositoryDirectory.set(rootProject.layout.projectDirectory)
+        parameters.flavor.set(flavor)
+        parameters.commitId.set(commitId)
+    }
+
+abstract class GitBuildKeyValueSource :
+    ValueSource<String, GitBuildKeyValueSource.Parameters> {
+    interface Parameters : ValueSourceParameters {
+        val repositoryDirectory: DirectoryProperty
+        val flavor: Property<String>
+        val commitId: Property<String>
+    }
+
+    override fun obtain(): String {
+        val repositoryStateId = readRepositoryStateId(
+            parameters.repositoryDirectory.get().asFile.absolutePath,
+            parameters.commitId.get(),
+        )
+        return "${parameters.flavor.get()}-${repositoryStateId.take(16)}"
+    }
+}
+
 private fun readGitInfo(repositoryDirectory: String): GitInfo {
     val commitId = runGitCommand(repositoryDirectory, listOf("rev-parse", "HEAD"))
     return GitInfo(
@@ -103,7 +128,6 @@ private fun readGitInfo(repositoryDirectory: String): GitInfo {
         tagName = runCatching {
             runGitCommand(repositoryDirectory, listOf("describe", "--tags", "--exact-match"))
         }.getOrNull(),
-        repositoryStateId = readRepositoryStateId(repositoryDirectory, commitId),
     )
 }
 

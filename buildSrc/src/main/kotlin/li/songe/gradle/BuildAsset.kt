@@ -37,7 +37,7 @@ fun <AndroidComponentsT, VariantT : Any> Project.configureBuildAssets(
     androidComponents: AndroidComponentsT,
     adapter: BuildAssetAdapter<AndroidComponentsT, VariantT>,
 ) {
-    val generateSourcePaths = registerSourcePathsTask(gitInfo.commitId)
+    val generateSourcePaths = registerSourcePathsTask(this.gitInfo.commitId)
     adapter.onVariants(
         androidComponents,
         null,
@@ -81,7 +81,9 @@ private fun Project.registerBuildAssetUpload(
     githubCookie: Provider<String>,
     apiAuthToken: Provider<String>,
 ) {
-    val buildGitInfo = gitInfo
+    val buildGitInfo = this.gitInfo
+    val variantBuildKey = releaseBuildKey(variant.flavor, buildGitInfo.commitId)
+    val cleanBuildKey = "${variant.flavor}-${buildGitInfo.commitId.take(16)}"
     val uploadBuildAsset = tasks.register(
         uploadTaskName,
         UploadBuildAssetTask::class.java,
@@ -93,7 +95,7 @@ private fun Project.registerBuildAssetUpload(
                 it.outputDirectory.file("source-paths.txt")
             },
         )
-        buildKey.set(buildGitInfo.buildKey(variant.flavor))
+        buildKey.set(variantBuildKey)
         variantName.set(variant.name)
         flavor.set(variant.flavor)
         buildType.set(variant.buildType)
@@ -101,7 +103,7 @@ private fun Project.registerBuildAssetUpload(
         commitTime.set(buildGitInfo.commitTime)
         tagName.set(buildGitInfo.tagName.orEmpty())
         includeGitMetadata.set(
-            buildGitInfo.repositoryStateId == buildGitInfo.commitId,
+            variantBuildKey.map { it == cleanBuildKey },
         )
         versionCode.set(variant.versionCode)
         versionName.set(variant.versionName)
