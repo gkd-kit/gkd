@@ -9,8 +9,11 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
+import androidx.room.immediateTransaction
 import androidx.room.migration.AutoMigrationSpec
-import androidx.room.withTransaction
+import androidx.room.useWriterConnection
+import androidx.sqlite.driver.AndroidSQLiteDriver
+import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
 
 @Database(
@@ -116,7 +119,10 @@ object Db {
                 applicationContext,
                 AppDb::class.java,
                 databasePath,
-            ).build()
+            )
+                .setDriver(AndroidSQLiteDriver())
+                .setQueryCoroutineContext(Dispatchers.IO)
+                .build()
         }
     }
 
@@ -135,5 +141,9 @@ object Db {
     val a11yEventLogDao get() = database.a11yEventLogDao()
 
     suspend fun <T> withTransaction(block: suspend () -> T): T =
-        database.withTransaction(block)
+        database.useWriterConnection { connection ->
+            connection.immediateTransaction {
+                block()
+            }
+        }
 }

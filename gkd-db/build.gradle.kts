@@ -7,6 +7,9 @@ plugins {
 
 android {
     namespace = "li.gkd.db"
+    defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
 }
 
 room {
@@ -20,7 +23,12 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     api(libs.androidx.room.paging)
     ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.sqlite.framework)
 
     api(libs.kotlinx.serialization.core)
     implementation(libs.kotlinx.serialization.json)
+
+    androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.runner)
 }

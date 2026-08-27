@@ -6,6 +6,7 @@ agp = "9.3.2"
 compose = "1.12.0"
 nav3 = "1.1.6"
 room = "2.8.4"
+sqlite = "2.7.0"
 paging = "3.5.1"
 lifecycle = "2.11.0"
 ktor = "3.5.2"
@@ -50,12 +51,15 @@ androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecy
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3" }
 androidx-junit = "androidx.test.ext:junit:1.3.0"
+androidx-test-runner = "androidx.test:runner:1.7.0"
 androidx-annotation = "androidx.annotation:annotation:1.10.0"
 androidx-espresso = "androidx.test.espresso:espresso-core:3.7.0"
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
+androidx-room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
+androidx-sqlite-framework = { module = "androidx.sqlite:sqlite-framework", version.ref = "sqlite" }
 androidx-splashscreen = "androidx.core:core-splashscreen:1.2.0"
 androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.ref = "paging" }
 androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
