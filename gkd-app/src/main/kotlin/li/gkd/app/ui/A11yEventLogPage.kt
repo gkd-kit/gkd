@@ -45,7 +45,8 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import li.gkd.app.MainActivity
-import li.gkd.app.data.A11yEventLog
+import li.gkd.app.data.fixedName
+import li.gkd.app.data.isStateChanged
 import li.gkd.app.ui.component.AppNameText
 import li.gkd.app.ui.component.CopyableText
 import li.gkd.app.ui.component.EmptyText
@@ -68,6 +69,7 @@ import li.gkd.app.util.launchTry
 import li.gkd.app.util.throttle
 import li.gkd.app.util.toJson5String
 import li.gkd.app.util.toast
+import li.gkd.db.A11yEventLog
 
 @Serializable
 data object A11yEventLogRoute : NavKey
@@ -285,7 +287,8 @@ fun EventLogCard(eventLog: A11yEventLog, modifier: Modifier = Modifier) {
                 softWrap = false,
                 overflow = TextOverflow.MiddleEllipsis,
             )
-            if (eventLog.desc != null) {
+            val desc = eventLog.desc
+            if (desc != null) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -297,7 +300,7 @@ fun EventLogCard(eventLog: A11yEventLog, modifier: Modifier = Modifier) {
                         ),
                     )
                     Text(
-                        text = eventLog.desc,
+                        text = desc,
                         modifier = Modifier
                             .background(
                                 color = MaterialTheme.colorScheme.secondaryContainer,

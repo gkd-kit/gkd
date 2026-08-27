@@ -31,7 +31,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
-import li.gkd.app.data.CategoryConfig
+import li.gkd.db.CategoryConfig
 import li.gkd.app.data.RawSubscription
 import li.gkd.app.ui.component.EmptyText
 import li.gkd.app.ui.component.FullscreenDialog

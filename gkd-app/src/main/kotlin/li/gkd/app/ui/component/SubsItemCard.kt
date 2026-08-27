@@ -32,7 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import li.gkd.app.META
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.data.SubsItem
+import li.gkd.db.SubsItem
 import li.gkd.app.util.formatTimeAgo
 import li.gkd.app.util.throttle
 

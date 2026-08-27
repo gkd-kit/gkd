@@ -1,4 +1,4 @@
-package li.gkd.app.data
+package li.gkd.db
 
 import androidx.paging.PagingSource
 import androidx.room.ColumnInfo
@@ -11,8 +11,6 @@ import androidx.room.Query
 import androidx.room.migration.AutoMigrationSpec
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
-import li.gkd.app.util.format
-import li.gkd.app.util.getShowActivityId
 
 @Serializable
 @Entity(
@@ -30,11 +28,6 @@ data class ActionLog(
     @ColumnInfo(name = "rule_index") val ruleIndex: Int,
     @ColumnInfo(name = "rule_key") val ruleKey: Int? = null,
 ) {
-
-    val showActivityId by lazy { getShowActivityId(appId, activityId) }
-
-    val date by lazy { ctime.format("MM-dd HH:mm:ss SSS") }
-
     @DeleteTable.Entries(
         DeleteTable(tableName = "click_log")
     )

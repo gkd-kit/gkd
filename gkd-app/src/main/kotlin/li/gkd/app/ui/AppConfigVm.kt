@@ -14,11 +14,11 @@ import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
-import li.gkd.app.data.ActionLog
-import li.gkd.app.data.CategoryConfig
+import li.gkd.db.ActionLog
+import li.gkd.db.CategoryConfig
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.data.SubsConfig
-import li.gkd.app.db.DbSet
+import li.gkd.db.SubsConfig
+import li.gkd.db.Db
 import li.gkd.app.store.storeFlow
 import li.gkd.app.ui.component.ShowGroupState
 import li.gkd.app.ui.component.batchUpdateGroupEnable
@@ -76,8 +76,8 @@ class AppConfigVm(val route: AppConfigRoute) : BaseViewModel() {
             Loadable.Loading -> flowOf(Loadable.Loading)
             is Loadable.Failure -> flowOf(snapshotState)
             is Loadable.Ready -> combine(
-                DbSet.subsItemDao.query(),
-                DbSet.appConfigDao.queryAppUsedList(route.appId),
+                Db.subsItemDao.query(),
+                Db.appConfigDao.queryAppUsedList(route.appId),
             ) { items, appConfigs ->
                 val usedSubsIds = items.filter { it.enable }.map { it.id }.sorted()
                 val appUsedSubsIds = usedSubsIds.filter { id ->
@@ -89,9 +89,9 @@ class AppConfigVm(val route: AppConfigRoute) : BaseViewModel() {
                 appUsedSubsIds to entries
             }.distinctUntilChanged().flatMapLatest { (usedSubsIds, entries) ->
                 combine(
-                    DbSet.subsConfigDao.queryUsedGlobalConfig(),
-                    DbSet.subsConfigDao.queryAppConfig(usedSubsIds, route.appId),
-                    DbSet.categoryConfigDao.queryBySubsIds(usedSubsIds),
+                    Db.subsConfigDao.queryUsedGlobalConfig(),
+                    Db.subsConfigDao.queryAppConfig(usedSubsIds, route.appId),
+                    Db.categoryConfigDao.queryBySubsIds(usedSubsIds),
                 ) { globalConfigs, appConfigs, categoryConfigs ->
                     val subsPairs = entries.map { entry ->
                         val globalGroups = entry.subscription.globalGroups.filter { group ->
@@ -190,7 +190,7 @@ class AppConfigVm(val route: AppConfigRoute) : BaseViewModel() {
     private val sortStateFlow = storeFlow.flatMapLatest { store ->
         val option = RuleSortOption.objects.findOption(store.appRuleSort)
         val logsFlow = if (option == RuleSortOption.ByActionTime) {
-            DbSet.actionLogDao.queryLatestByAppId(route.appId)
+            Db.actionLogDao.queryLatestByAppId(route.appId)
         } else {
             flowOf(emptyList())
         }

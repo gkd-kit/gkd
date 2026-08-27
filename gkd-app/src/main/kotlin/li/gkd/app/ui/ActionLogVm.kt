@@ -10,11 +10,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
-import li.gkd.app.data.ActionLog
+import li.gkd.db.ActionLog
 import li.gkd.app.data.ExcludeData
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.data.SubsConfig
-import li.gkd.app.db.DbSet
+import li.gkd.db.SubsConfig
+import li.gkd.db.Db
 import li.gkd.app.ui.share.BaseViewModel
 import li.gkd.app.util.subsMapFlow
 
@@ -36,9 +36,9 @@ class ActionLogVm(val route: ActionLogRoute) : BaseViewModel() {
 
     val pagingDataFlow = Pager(PagingConfig(pageSize = 100)) {
         when {
-            route.subsId != null -> DbSet.actionLogDao.pagingSubsSource(subsId = route.subsId)
-            route.appId != null -> DbSet.actionLogDao.pagingAppSource(appId = route.appId)
-            else -> DbSet.actionLogDao.pagingSource()
+            route.subsId != null -> Db.actionLogDao.pagingSubsSource(subsId = route.subsId)
+            route.appId != null -> Db.actionLogDao.pagingAppSource(appId = route.appId)
+            else -> Db.actionLogDao.pagingSource()
         }
     }
         .flow
@@ -72,13 +72,13 @@ class ActionLogVm(val route: ActionLogRoute) : BaseViewModel() {
             flowOf(null)
         } else {
             val configFlow = if (actionLog.groupType == SubsConfig.AppGroupType) {
-                DbSet.subsConfigDao.queryAppGroupTypeConfig(
+                Db.subsConfigDao.queryAppGroupTypeConfig(
                     actionLog.subsId,
                     actionLog.appId,
                     actionLog.groupKey,
                 )
             } else {
-                DbSet.subsConfigDao.queryGlobalGroupTypeConfig(
+                Db.subsConfigDao.queryGlobalGroupTypeConfig(
                     actionLog.subsId,
                     actionLog.groupKey,
                 )
@@ -121,9 +121,9 @@ class ActionLogVm(val route: ActionLogRoute) : BaseViewModel() {
 
     suspend fun deleteLogs() {
         when {
-            route.subsId != null -> DbSet.actionLogDao.deleteSubsAll(route.subsId)
-            route.appId != null -> DbSet.actionLogDao.deleteAppAll(route.appId)
-            else -> DbSet.actionLogDao.deleteAll()
+            route.subsId != null -> Db.actionLogDao.deleteSubsAll(route.subsId)
+            route.appId != null -> Db.actionLogDao.deleteAppAll(route.appId)
+            else -> Db.actionLogDao.deleteAll()
         }
     }
 
@@ -137,7 +137,7 @@ class ActionLogVm(val route: ActionLogRoute) : BaseViewModel() {
             groupKey = actionLog.groupKey,
         )
         val oldExclude = ExcludeData.parse(subsConfig.exclude)
-        DbSet.subsConfigDao.insert(
+        Db.subsConfigDao.insert(
             subsConfig.copy(
                 exclude = oldExclude.copy(
                     appIds = oldExclude.appIds.toMutableMap().apply {
@@ -167,7 +167,7 @@ class ActionLogVm(val route: ActionLogRoute) : BaseViewModel() {
             )
         }
         val oldExclude = ExcludeData.parse(subsConfig.exclude)
-        DbSet.subsConfigDao.insert(
+        Db.subsConfigDao.insert(
             subsConfig.copy(
                 exclude = oldExclude.switch(actionLog.appId, activityId).stringify(),
             ),

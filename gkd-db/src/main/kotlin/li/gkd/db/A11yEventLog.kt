@@ -1,6 +1,5 @@
-package li.gkd.app.data
+package li.gkd.db
 
-import android.view.accessibility.AccessibilityEvent
 import androidx.paging.PagingSource
 import androidx.room.ColumnInfo
 import androidx.room.Dao
@@ -10,7 +9,6 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
-import li.gkd.app.a11y.STATE_CHANGED
 
 @Serializable
 @Entity(tableName = "a11y_event_log")
@@ -31,24 +29,6 @@ class A11yEventLog(
     override fun hashCode(): Int {
         return id
     }
-
-    val isStateChanged: Boolean
-        get() = type == STATE_CHANGED
-
-    val fixedName: String
-        get() {
-            if (isStateChanged && name.startsWith(appId)) {
-                return name.substring(appId.length)
-            }
-            if (name.contains("View") || name.contains("Layout") || viewSuffixes.any {
-                    name.startsWith(
-                        it
-                    )
-                }) {
-                return name.substring(name.lastIndexOf('.') + 1)
-            }
-            return name
-        }
 
     @Dao
     interface A11yEventLogDao {
@@ -88,19 +68,3 @@ class A11yEventLog(
     }
 
 }
-
-private val viewSuffixes = listOf(
-    "android.widget.",
-    "android.view.",
-    "android.support.",
-)
-
-fun AccessibilityEvent.toA11yEventLog(id: Int) = A11yEventLog(
-    id = id,
-    ctime = System.currentTimeMillis(),
-    type = eventType,
-    appId = packageName.toString(),
-    name = className.toString(),
-    desc = contentDescription?.toString(),
-    text = text.map { it.toString() }
-)

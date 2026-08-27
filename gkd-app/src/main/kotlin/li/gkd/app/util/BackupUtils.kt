@@ -5,12 +5,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import li.gkd.app.data.AppConfig
-import li.gkd.app.data.CategoryConfig
+import li.gkd.db.AppConfig
+import li.gkd.db.CategoryConfig
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.data.SubsConfig
-import li.gkd.app.data.SubsItem
-import li.gkd.app.db.DbSet
+import li.gkd.db.SubsConfig
+import li.gkd.db.SubsItem
+import li.gkd.db.Db
 import li.gkd.app.store.a11yScopeAppListFlow
 import li.gkd.app.store.actionCountFlow
 import li.gkd.app.store.blockA11yAppListFlow
@@ -53,10 +53,10 @@ object BackupUtils {
         tempDir.resolve("db.json").writeText(
             json.encodeToString(
                 DbData(
-                    subsItems = DbSet.subsItemDao.queryAll(),
-                    subsConfigs = DbSet.subsConfigDao.queryAll(),
-                    categoryConfigs = DbSet.categoryConfigDao.queryAll(),
-                    appConfigs = DbSet.appConfigDao.queryAll(),
+                    subsItems = Db.subsItemDao.queryAll(),
+                    subsConfigs = Db.subsConfigDao.queryAll(),
+                    categoryConfigs = Db.categoryConfigDao.queryAll(),
+                    appConfigs = Db.appConfigDao.queryAll(),
                 )
             )
         )
@@ -90,18 +90,18 @@ object BackupUtils {
 
             val prepared = prepareBackup(unzipDir)
             prepared.dbData?.let { dbData ->
-                DbSet.withTransaction {
+                Db.withTransaction {
                     if (!dbData.subsItems.isNullOrEmpty()) {
-                        DbSet.subsItemDao.insertOrIgnore(*dbData.subsItems.toTypedArray())
+                        Db.subsItemDao.insertOrIgnore(*dbData.subsItems.toTypedArray())
                     }
                     if (!dbData.subsConfigs.isNullOrEmpty()) {
-                        DbSet.subsConfigDao.insertOrIgnore(*dbData.subsConfigs.toTypedArray())
+                        Db.subsConfigDao.insertOrIgnore(*dbData.subsConfigs.toTypedArray())
                     }
                     if (!dbData.categoryConfigs.isNullOrEmpty()) {
-                        DbSet.categoryConfigDao.insertOrIgnore(*dbData.categoryConfigs.toTypedArray())
+                        Db.categoryConfigDao.insertOrIgnore(*dbData.categoryConfigs.toTypedArray())
                     }
                     if (!dbData.appConfigs.isNullOrEmpty()) {
-                        DbSet.appConfigDao.insertOrIgnore(*dbData.appConfigs.toTypedArray())
+                        Db.appConfigDao.insertOrIgnore(*dbData.appConfigs.toTypedArray())
                     }
                 }
             }

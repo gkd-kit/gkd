@@ -3,10 +3,10 @@ package li.gkd.app.ui
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import li.gkd.app.data.CategoryConfig
+import li.gkd.db.CategoryConfig
 import li.gkd.app.data.RawSubscription
 import li.gkd.app.data.edit
-import li.gkd.app.db.DbSet
+import li.gkd.db.Db
 import li.gkd.app.ui.share.BaseViewModel
 import li.gkd.app.ui.share.Loadable
 import li.gkd.app.util.EnableGroupOption
@@ -22,7 +22,7 @@ class SubsCategoryVm(val route: SubsCategoryRoute) : BaseViewModel() {
         field = MutableStateFlow(false)
 
     private val subscription = requiredSubscription(route.subsItemId)
-    private val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(route.subsItemId)
+    private val categoryConfigsFlow = Db.categoryConfigDao.queryConfig(route.subsItemId)
 
     val uiState = subscription.buildUiState(
         initialValue = { rawSubscription ->
@@ -61,7 +61,7 @@ class SubsCategoryVm(val route: SubsCategoryRoute) : BaseViewModel() {
         val categoryConfigMap = state.categoryConfigMap.value
             ?: error("类别配置尚未加载")
         val oldConfig = categoryConfigMap[category.key]
-        DbSet.categoryConfigDao.insert(
+        Db.categoryConfigDao.insert(
             (oldConfig ?: CategoryConfig(
                 enable = option.value,
                 subsId = rawSubscription.id,

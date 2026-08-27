@@ -1,4 +1,4 @@
-package li.gkd.app.data
+package li.gkd.db
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao
@@ -12,22 +12,6 @@ import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
-import li.gkd.app.util.isValidActivityId
-import li.gkd.app.util.isValidAppId
-
-
-private var lastId = 0L
-
-@Synchronized
-private fun buildUniqueTimeMillisId(): Long {
-    val id = System.currentTimeMillis()
-    if (id > lastId) {
-        lastId = id
-    } else {
-        lastId += 1
-    }
-    return lastId
-}
 
 @Serializable
 @Entity(
@@ -134,113 +118,6 @@ data class SubsConfig(
         @Query("UPDATE subs_config SET enable = null WHERE type=${AppGroupType} AND subs_id=:subsItemId AND app_id=:appId AND group_key=:groupKey AND enable IS NOT NULL")
         suspend fun resetAppGroupTypeEnable(subsItemId: Long, appId: String, groupKey: Int): Int
 
-        @Transaction
-        suspend fun batchResetAppGroupEnable(
-            subsItemId: Long,
-            list: List<Pair<RawSubscription.RawAppGroup, RawSubscription.RawApp>>
-        ): List<Pair<RawSubscription.RawAppGroup, RawSubscription.RawApp>> {
-            return list.filter { (g, a) ->
-                resetAppGroupTypeEnable(subsItemId, a.id, g.key) > 0
-            }
-        }
     }
 
-}
-
-data class ExcludeData(
-    val appIds: Map<String, Boolean>,
-    val activityIds: Set<Pair<String, String>>,
-) {
-    val excludeAppIds = appIds.entries.filter { e -> e.value }.map { e -> e.key }.toHashSet()
-    val includeAppIds = appIds.entries.filter { e -> !e.value }.map { e -> e.key }.toHashSet()
-
-    fun stringify(appId: String? = null): String {
-        return if (appId != null) {
-            activityIds.filter { e -> e.first == appId }.map { e -> e.second }.sorted()
-                .joinToString("\n\n")
-        } else {
-            (appIds.entries.map { e ->
-                if (e.value) {
-                    e.key
-                } else {
-                    "!${e.key}"
-                }
-            } + activityIds.map { e -> "${e.first}/${e.second}" }).sorted().joinToString("\n\n")
-        }
-    }
-
-    fun clear(appId: String): ExcludeData {
-        return copy(
-            appIds = appIds.toMutableMap().apply {
-                remove(appId)
-            },
-        )
-    }
-
-    fun switch(appId: String, activityId: String? = null): ExcludeData {
-        return if (activityId == null) {
-            copy(
-                appIds = appIds.toMutableMap().apply {
-                    if (get(appId) != false) {
-                        set(appId, false)
-                    } else {
-                        set(appId, true)
-                    }
-                },
-            )
-        } else {
-            copy(activityIds = activityIds.toMutableSet().apply {
-                val e = appId to activityId
-                if (contains(e)) {
-                    remove(e)
-                } else {
-                    add(e)
-                }
-            })
-        }
-    }
-
-    companion object {
-        private val empty = ExcludeData(emptyMap(), emptySet())
-
-        fun parse(exclude: String?): ExcludeData {
-            if (exclude.isNullOrBlank()) {
-                return empty
-            }
-            val appIds = HashMap<String, Boolean>()
-            val activityIds = HashSet<Pair<String, String>>()
-            exclude.split('\n')
-                .filter { it.isNotBlank() }
-                .forEach { s ->
-                    if (s[0] == '!') {
-                        val appId = s.substring(1)
-                        if (appId.isValidAppId()) {
-                            appIds[appId] = false
-                        }
-                    } else {
-                        val a = s.split('/', limit = 2)
-                        val appId = a[0]
-                        if (appId.isValidAppId()) {
-                            val activityId = a.getOrNull(1)
-                            if (activityId != null) {
-                                if (activityId.isValidActivityId()) {
-                                    activityIds.add(appId to activityId)
-                                }
-                            } else {
-                                appIds[appId] = true
-                            }
-                        }
-                    }
-                }
-            return ExcludeData(
-                appIds = appIds,
-                activityIds = activityIds,
-            )
-        }
-
-        fun parse(exclude: String?, appId: String): ExcludeData {
-            if (exclude.isNullOrBlank()) return empty
-            return parse(exclude.split('\n').joinToString("\n") { "$appId/$it" })
-        }
-    }
 }

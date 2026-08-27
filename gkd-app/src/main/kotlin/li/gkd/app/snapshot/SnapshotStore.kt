@@ -11,8 +11,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import li.gkd.app.data.ComplexSnapshot
-import li.gkd.app.data.Snapshot
-import li.gkd.app.db.DbSet
+import li.gkd.db.Snapshot
+import li.gkd.db.Db
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ZipUtils
 import li.gkd.app.util.appInfoMapFlow
@@ -64,7 +64,7 @@ object SnapshotStore {
         mutationMutex.withLock {
             withContext(Dispatchers.IO) {
                 fileLayout.committed(snapshot.id).directory.deleteRecursivelyOrThrow()
-                DbSet.snapshotDao.delete(snapshot)
+                Db.snapshotDao.delete(snapshot)
             }
         }
     }
@@ -74,7 +74,7 @@ object SnapshotStore {
             snapshotFolder.listFiles()?.forEach { file ->
                 file.deleteRecursivelyOrThrow()
             }
-            DbSet.snapshotDao.deleteAll()
+            Db.snapshotDao.deleteAll()
         }
     }
 
@@ -111,7 +111,7 @@ object SnapshotStore {
                         LogUtils.d("无法删除旧快照截图", files.legacyPngFile.absolutePath)
                     }
                     if (snapshot.githubAssetId != null) {
-                        DbSet.snapshotDao.deleteGithubAssetId(snapshot.id)
+                        Db.snapshotDao.deleteGithubAssetId(snapshot.id)
                     }
                     true
                 } finally {
@@ -201,7 +201,7 @@ object SnapshotStore {
                     )
                 },
                 publish = {
-                    DbSet.snapshotDao.insert(snapshot.toSnapshot())
+                    Db.snapshotDao.insert(snapshot.toSnapshot())
                 },
             )
         }

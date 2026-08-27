@@ -1,4 +1,4 @@
-package li.gkd.app.data
+package li.gkd.db
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao
@@ -12,8 +12,10 @@ import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
-import li.gkd.app.util.LOCAL_SUBS_IDS
-import li.gkd.app.util.format
+
+const val LOCAL_SUBS_ID = -2L
+const val LOCAL_HTTP_SUBS_ID = -1L
+val LOCAL_SUBS_IDS = arrayOf(LOCAL_SUBS_ID, LOCAL_HTTP_SUBS_ID)
 
 @Serializable
 @Entity(
@@ -33,8 +35,6 @@ data class SubsItem(
 
     val isLocal: Boolean
         get() = LOCAL_SUBS_IDS.contains(id)
-
-    val mtimeStr by lazy { mtime.format("yyyy-MM-dd HH:mm:ss") }
 
     @Dao
     interface SubsItemDao {

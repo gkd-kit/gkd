@@ -20,7 +20,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import li.gkd.app.db.DbSet
+import li.gkd.db.Db
 import li.gkd.app.util.isLocalNetworkUrl
 import li.gkd.app.util.throttle
 import li.gkd.app.util.toast
@@ -80,7 +80,7 @@ class SubsLinkDialogState(
 
     suspend fun request(initialValue: String = ""): String? {
         val existingUrls = withContext(Dispatchers.IO) {
-            DbSet.subsItemDao.queryAll().mapNotNullTo(mutableSetOf()) { it.updateUrl }
+            Db.subsItemDao.queryAll().mapNotNullTo(mutableSetOf()) { it.updateUrl }
         }
         val value = withContext(Dispatchers.Main.immediate) {
             requestMutex.withLock {

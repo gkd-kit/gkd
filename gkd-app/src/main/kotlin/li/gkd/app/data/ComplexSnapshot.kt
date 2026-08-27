@@ -2,6 +2,8 @@ package li.gkd.app.data
 
 import kotlinx.serialization.Serializable
 import li.gkd.app.util.appInfoMapFlow
+import li.gkd.db.BaseSnapshot
+import li.gkd.db.Snapshot
 
 @Serializable
 data class ComplexSnapshot(

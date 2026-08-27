@@ -1,27 +1,17 @@
-package li.gkd.app.db
+package li.gkd.db
 
+import android.content.Context
 import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.DeleteColumn
 import androidx.room.RenameColumn
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.withTransaction
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.migration.AutoMigrationSpec
-import li.gkd.app.app
-import li.gkd.app.data.A11yEventLog
-import li.gkd.app.data.ActionLog
-import li.gkd.app.data.ActivityLog
-import li.gkd.app.data.AppConfig
-import li.gkd.app.data.AppVisitLog
-import li.gkd.app.data.CategoryConfig
-import li.gkd.app.data.Snapshot
-import li.gkd.app.data.SubsConfig
-import li.gkd.app.data.SubsItem
-import li.gkd.app.util.dbFolder
-import li.gkd.app.util.json
+import androidx.room.withTransaction
+import kotlinx.serialization.json.Json
 
 @Database(
     version = 14,
@@ -93,6 +83,12 @@ class Migration10To11Spec : AutoMigrationSpec
 
 @Suppress("unused")
 class DbConverters {
+    private val json = Json {
+        ignoreUnknownKeys = true
+        explicitNulls = false
+        encodeDefaults = true
+    }
+
     @TypeConverter
     fun fromListStringToString(list: List<String>): String {
         return json.encodeToString(list)
@@ -109,23 +105,35 @@ class DbConverters {
     }
 }
 
-object DbSet {
-    private val db by lazy {
-        Room.databaseBuilder(
-            app,
-            AppDb::class.java,
-            dbFolder.resolve("gkd.db").absolutePath
-        ).fallbackToDestructiveMigration(false).build()
-    }
-    val subsItemDao get() = db.subsItemDao()
-    val subsConfigDao get() = db.subsConfigDao()
-    val snapshotDao get() = db.snapshotDao()
-    val actionLogDao get() = db.actionLogDao()
-    val categoryConfigDao get() = db.categoryConfigDao()
-    val activityLogDao get() = db.activityLogDao()
-    val appConfigDao get() = db.appConfigDao()
-    val appVisitLogDao get() = db.appVisitLogDao()
-    val a11yEventLogDao get() = db.a11yEventLogDao()
+object Db {
+    private var createDatabase: (() -> AppDb)? = null
 
-    suspend fun <T> withTransaction(block: suspend () -> T): T = db.withTransaction(block)
+    fun initialize(context: Context, databasePath: String) {
+        check(createDatabase == null) { "Db is already initialized" }
+        val applicationContext = context.applicationContext
+        createDatabase = {
+            Room.databaseBuilder(
+                applicationContext,
+                AppDb::class.java,
+                databasePath,
+            ).build()
+        }
+    }
+
+    private val database by lazy {
+        checkNotNull(createDatabase) { "Db is not initialized" }.invoke()
+    }
+
+    val subsItemDao get() = database.subsItemDao()
+    val subsConfigDao get() = database.subsConfigDao()
+    val snapshotDao get() = database.snapshotDao()
+    val actionLogDao get() = database.actionLogDao()
+    val categoryConfigDao get() = database.categoryConfigDao()
+    val activityLogDao get() = database.activityLogDao()
+    val appConfigDao get() = database.appConfigDao()
+    val appVisitLogDao get() = database.appVisitLogDao()
+    val a11yEventLogDao get() = database.a11yEventLogDao()
+
+    suspend fun <T> withTransaction(block: suspend () -> T): T =
+        database.withTransaction(block)
 }

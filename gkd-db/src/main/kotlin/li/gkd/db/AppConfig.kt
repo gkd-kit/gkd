@@ -1,4 +1,4 @@
-package li.gkd.app.data
+package li.gkd.db
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao
@@ -16,7 +16,7 @@ import kotlinx.serialization.Serializable
     tableName = "app_config",
 )
 data class AppConfig(
-    @PrimaryKey @ColumnInfo(name = "id") val id: Long = System.currentTimeMillis(),
+    @PrimaryKey @ColumnInfo(name = "id") val id: Long = buildUniqueTimeMillisId(),
     @ColumnInfo(name = "enable") val enable: Boolean,
     @ColumnInfo(name = "subs_id") val subsId: Long,
     @ColumnInfo(name = "app_id") val appId: String,

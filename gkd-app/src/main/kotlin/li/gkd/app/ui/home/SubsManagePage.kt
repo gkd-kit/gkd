@@ -62,7 +62,7 @@ import li.gkd.app.ui.share.ListPlaceholder
 import li.gkd.app.ui.share.Loadable
 import li.gkd.app.ui.share.LocalMainViewModel
 import li.gkd.app.ui.style.EmptyHeight
-import li.gkd.app.util.LOCAL_SUBS_ID
+import li.gkd.db.LOCAL_SUBS_ID
 import li.gkd.app.util.ShortUrlSet
 import li.gkd.app.util.SubscriptionResult
 import li.gkd.app.util.UpdateTimeOption

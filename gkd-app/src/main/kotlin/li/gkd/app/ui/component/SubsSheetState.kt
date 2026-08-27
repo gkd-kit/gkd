@@ -36,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.gkd.app.META
+import li.gkd.app.data.mtimeStr
 import li.gkd.app.ui.ActionLogRoute
 import li.gkd.app.ui.SubsAppListRoute
 import li.gkd.app.ui.SubsCategoryRoute
@@ -44,7 +45,7 @@ import li.gkd.app.ui.SubsSheetVm
 import li.gkd.app.ui.share.LocalMainViewModel
 import li.gkd.app.ui.style.EmptyHeight
 import li.gkd.app.ui.style.itemHorizontalPadding
-import li.gkd.app.util.LOCAL_SUBS_ID
+import li.gkd.db.LOCAL_SUBS_ID
 import li.gkd.app.util.SubscriptionResult
 import li.gkd.app.util.launchTry
 import li.gkd.app.util.subsItemsFlow
@@ -312,7 +313,8 @@ class SubsSheetState {
                                 )
                             }
                         }
-                        if (!subsItem.isLocal && subsItem.updateUrl != null) {
+                        val updateUrl = subsItem.updateUrl
+                        if (!subsItem.isLocal && updateUrl != null) {
                             Row(
                                 modifier = Modifier
                                     .clickable(onClickLabel = "编辑订阅链接", onClick = throttle {
@@ -321,8 +323,9 @@ class SubsSheetState {
                                             return@throttle
                                         }
                                         scope.launchTry {
-                                            val url =
-                                                mainVm.subsLinkDialog.request(initialValue = subsItem.updateUrl)
+                                            val url = mainVm.subsLinkDialog.request(
+                                                initialValue = updateUrl,
+                                            )
                                                     ?: return@launchTry
                                             vm.addOrModifySubscription(url, subsItem).message?.let {
                                                 toast(it)
@@ -340,7 +343,7 @@ class SubsSheetState {
                                         style = MaterialTheme.typography.labelLarge,
                                     )
                                     Text(
-                                        text = subsItem.updateUrl,
+                                        text = updateUrl,
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.secondary,
                                         softWrap = false,
@@ -348,7 +351,7 @@ class SubsSheetState {
                                         modifier = Modifier
                                             .clearAndSetSemantics {}
                                             .clickable(onClickLabel = "查看订阅链接", onClick = {
-                                                mainVm.openUrl(subsItem.updateUrl)
+                                                mainVm.openUrl(updateUrl)
                                             })
                                     )
                                 }

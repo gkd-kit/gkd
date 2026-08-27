@@ -6,11 +6,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import li.gkd.app.MainViewModel
-import li.gkd.app.data.CategoryConfig
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.data.SubsConfig
+import li.gkd.app.data.batchResetAppGroupEnable
 import li.gkd.app.data.edit
-import li.gkd.app.db.DbSet
+import li.gkd.db.Db
 import li.gkd.app.store.storeFlow
 import li.gkd.app.ui.component.updateRuleGroupEnable
 import li.gkd.app.ui.share.BaseViewModel
@@ -23,6 +22,8 @@ import li.gkd.app.util.EnableGroupOption
 import li.gkd.app.util.appInfoMapFlow
 import li.gkd.app.util.findOption
 import li.gkd.app.store.blockMatchAppListFlow
+import li.gkd.db.CategoryConfig
+import li.gkd.db.SubsConfig
 
 data class SubsCategoryGroupConfigs(
     val subsConfigs: List<SubsConfig>,
@@ -45,9 +46,9 @@ class SubsCategoryGroupVm(
         field = MutableStateFlow(false)
 
     private val subscription = requiredSubscription(route.subsId)
-    private val subsConfigsFlow = DbSet.subsConfigDao.querySubsGroupTypeConfig(route.subsId)
+    private val subsConfigsFlow = Db.subsConfigDao.querySubsGroupTypeConfig(route.subsId)
     private val categoryConfigFlow =
-        DbSet.categoryConfigDao.queryCategoryConfig(route.subsId, route.categoryKey)
+        Db.categoryConfigDao.queryCategoryConfig(route.subsId, route.categoryKey)
     private val appActionOrderMapState = subsAppActionOrderMapState(route.subsId)
 
     val uiState = subscription.buildUiState(
@@ -142,7 +143,7 @@ class SubsCategoryGroupVm(
             true -> false
         }
         val option = EnableGroupOption.objects.findOption(newValue)
-        DbSet.categoryConfigDao.insert(
+        Db.categoryConfigDao.insert(
             (categoryConfig ?: CategoryConfig(
                 enable = option.value,
                 subsId = rawSubscription.id,
@@ -155,7 +156,7 @@ class SubsCategoryGroupVm(
     suspend fun resetAllRuleSwitches(): Int {
         val state = uiState.value.value ?: error("订阅尚未加载")
         val rawSubscription = subscription.requireValue()
-        return DbSet.subsConfigDao.batchResetAppGroupEnable(
+        return Db.subsConfigDao.batchResetAppGroupEnable(
             rawSubscription.id,
             state.apps.flatMap { app -> app.groups }.map { group ->
                 group to rawSubscription.getAppByGroup(group)
@@ -197,7 +198,7 @@ class SubsCategoryGroupVm(
         subscription.update { current ->
             current.edit { removeCategory(route.categoryKey) }
         }
-        DbSet.categoryConfigDao.deleteByCategoryKey(
+        Db.categoryConfigDao.deleteByCategoryKey(
             route.subsId,
             route.categoryKey,
         )

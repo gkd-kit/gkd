@@ -37,7 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import li.gkd.app.MainActivity
 import li.gkd.app.R
-import li.gkd.app.data.SubsConfig
+import li.gkd.db.SubsConfig
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.PrivilegeServiceStatus
 import li.gkd.app.priv.privilegeContextFlow

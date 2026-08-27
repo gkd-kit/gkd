@@ -1,4 +1,4 @@
-package li.gkd.app.data
+package li.gkd.db
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao
@@ -10,8 +10,6 @@ import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
-import li.gkd.app.snapshot.SnapshotStore
-import li.gkd.app.util.format
 
 @Entity(
     tableName = "snapshot",
@@ -30,11 +28,6 @@ data class Snapshot(
     @ColumnInfo(name = "github_asset_id") val githubAssetId: Int? = null,
 
     ) : BaseSnapshot {
-
-    val date by lazy { id.format("MM-dd HH:mm:ss") }
-
-    val screenshotFile by lazy { SnapshotStore.screenshotFile(id) }
-
     @Dao
     interface SnapshotDao {
         @Update
@@ -59,6 +52,4 @@ data class Snapshot(
         fun count(): Flow<Int>
     }
 }
-
-
 

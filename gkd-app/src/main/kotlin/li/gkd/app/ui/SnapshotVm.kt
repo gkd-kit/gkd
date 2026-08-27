@@ -4,12 +4,13 @@ import android.graphics.BitmapFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.withContext
-import li.gkd.app.data.Snapshot
-import li.gkd.app.db.DbSet
+import li.gkd.app.data.screenshotFile
 import li.gkd.app.snapshot.SnapshotStore
 import li.gkd.app.ui.share.BaseViewModel
 import li.gkd.app.util.ImageUtils
 import li.gkd.app.util.appInfoMapFlow
+import li.gkd.db.Db
+import li.gkd.db.Snapshot
 import java.io.File
 
 data class SnapshotUiState(
@@ -18,7 +19,7 @@ data class SnapshotUiState(
 )
 
 class SnapshotVm : BaseViewModel() {
-    private val snapshotsFlow = DbSet.snapshotDao.query()
+    private val snapshotsFlow = Db.snapshotDao.query()
 
     val uiState = combine(
         snapshotsFlow,
@@ -47,7 +48,7 @@ class SnapshotVm : BaseViewModel() {
 
     suspend fun markUploaded(snapshot: Snapshot, githubAssetId: Int) =
         withContext(Dispatchers.IO) {
-            DbSet.snapshotDao.update(snapshot.copy(githubAssetId = githubAssetId))
+            Db.snapshotDao.update(snapshot.copy(githubAssetId = githubAssetId))
         }
 
     suspend fun replaceScreenshot(snapshot: Snapshot, newBytes: ByteArray): Boolean {

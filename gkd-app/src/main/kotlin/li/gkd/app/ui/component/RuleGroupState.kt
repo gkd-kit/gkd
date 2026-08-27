@@ -11,12 +11,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import li.gkd.app.MainViewModel
-import li.gkd.app.data.CategoryConfig
+import li.gkd.db.CategoryConfig
 import li.gkd.app.data.ExcludeData
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.data.SubsConfig
+import li.gkd.db.SubsConfig
 import li.gkd.app.data.edit
-import li.gkd.app.db.DbSet
+import li.gkd.db.Db
 import li.gkd.app.ui.SubsGlobalGroupExcludeRoute
 import li.gkd.app.ui.UpsertRuleGroupRoute
 import li.gkd.app.ui.getGlobalGroupChecked
@@ -52,7 +52,7 @@ data class ShowGroupState(
             subs.globalGroups
         }?.find { it.key == groupKey } ?: error("require group")
         val category = subs.getCategory(group.name) ?: return null
-        return DbSet.categoryConfigDao.queryCategoryConfig(subsId, category.key).first()
+        return Db.categoryConfigDao.queryCategoryConfig(subsId, category.key).first()
     }
 }
 
@@ -60,9 +60,9 @@ private fun ShowGroupState.querySubsConfigFlow(): Flow<SubsConfig?> {
     val groupKey = groupKey ?: error("require groupKey")
     return if (groupType == SubsConfig.AppGroupType) {
         val appId = appId ?: error("require appId")
-        DbSet.subsConfigDao.queryAppGroupTypeConfig(subsId, appId, groupKey)
+        Db.subsConfigDao.queryAppGroupTypeConfig(subsId, appId, groupKey)
     } else {
-        DbSet.subsConfigDao.queryGlobalGroupTypeConfig(subsId, groupKey)
+        Db.subsConfigDao.queryGlobalGroupTypeConfig(subsId, groupKey)
     }
 }
 
@@ -132,7 +132,7 @@ suspend fun updateRuleGroupEnable(
             )
         }
     }
-    DbSet.subsConfigDao.insert(newConfig)
+    Db.subsConfigDao.insert(newConfig)
 }
 
 suspend fun batchUpdateGroupEnable(
@@ -245,7 +245,7 @@ suspend fun batchUpdateGroupEnable(
     val canDeleteList = newSubsConfigs.filter {
         it.type == SubsConfig.AppGroupType && it.enable == null && it.exclude.isEmpty()
     }
-    DbSet.subsConfigDao.insertAndDelete(
+    Db.subsConfigDao.insertAndDelete(
         newSubsConfigs.filterNot { canDeleteList.contains(it) },
         canDeleteList
     )
@@ -303,14 +303,14 @@ class RuleGroupState(
     ): String {
         if (group is RawSubscription.RawGlobalGroup && state.pageAppId != null) {
             val excludeData = ExcludeData.parse(subsConfig.exclude)
-            DbSet.subsConfigDao.update(
+            Db.subsConfigDao.update(
                 subsConfig.copy(
                     exclude = excludeData.clear(appId = state.pageAppId).stringify(),
                 ),
             )
             return "已重置局部开关至默认值"
         }
-        DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
+        Db.subsConfigDao.update(subsConfig.copy(enable = null))
         return "已重置开关至默认值"
     }
 
@@ -352,7 +352,7 @@ class RuleGroupState(
             appId = appId,
             groupKey = groupKey,
         )).copy(exclude = excludeData.stringify())
-        DbSet.subsConfigDao.insert(newSubsConfig)
+        Db.subsConfigDao.insert(newSubsConfig)
     }
 
     @Composable

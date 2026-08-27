@@ -35,7 +35,8 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import kotlinx.serialization.Serializable
-import li.gkd.app.data.ActivityLog
+import li.gkd.app.data.date
+import li.gkd.app.data.showActivityId
 import li.gkd.app.ui.component.AppNameText
 import li.gkd.app.ui.component.EmptyText
 import li.gkd.app.ui.component.FixedTimeText
@@ -54,6 +55,7 @@ import li.gkd.app.util.appInfoMapFlow
 import li.gkd.app.util.launchTry
 import li.gkd.app.util.throttle
 import li.gkd.app.util.toast
+import li.gkd.db.ActivityLog
 
 @Serializable
 data object ActivityLogRoute : NavKey

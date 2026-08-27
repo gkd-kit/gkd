@@ -1,4 +1,4 @@
-package li.gkd.app.data
+package li.gkd.db
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao
@@ -7,11 +7,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
-import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
-import li.gkd.app.META
-import li.gkd.app.a11y.launcherAppId
-import li.gkd.app.util.systemUiAppId
 
 @Entity(
     tableName = "app_visit_log",
@@ -24,17 +20,6 @@ data class AppVisitLog(
     interface AppLogDao {
         @Insert(onConflict = OnConflictStrategy.REPLACE)
         suspend fun insert(vararg objects: AppVisitLog): List<Long>
-
-        @Transaction
-        suspend fun insert(oldAppId: String, newAppId: String, mtime: Long) {
-            insert(
-                AppVisitLog(oldAppId, fixAppVisitTime(oldAppId, mtime - 1)),
-                AppVisitLog(newAppId, fixAppVisitTime(newAppId, mtime)),
-            )
-            if (appLogCount++ % 100 == 0) {
-                deleteKeepLatest()
-            }
-        }
 
         @Query("SELECT DISTINCT id FROM app_visit_log ORDER BY mtime DESC")
         fun query(): Flow<List<String>>
@@ -57,11 +42,3 @@ data class AppVisitLog(
         suspend fun deleteKeepLatest(): Int
     }
 }
-
-private fun fixAppVisitTime(appId: String, t: Long): Long = when (appId) {
-    META.appId -> t - 120_000
-    launcherAppId, systemUiAppId -> t - 60_000
-    else -> t
-}
-
-private var appLogCount = 0

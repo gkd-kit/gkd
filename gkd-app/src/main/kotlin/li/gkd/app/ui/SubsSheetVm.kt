@@ -1,6 +1,6 @@
 package li.gkd.app.ui
 
-import li.gkd.app.data.SubsItem
+import li.gkd.db.SubsItem
 import li.gkd.app.ui.share.BaseViewModel
 import li.gkd.app.util.SubscriptionResult
 import li.gkd.app.util.SubscriptionStore

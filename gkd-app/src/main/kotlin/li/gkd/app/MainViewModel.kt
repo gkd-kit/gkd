@@ -18,7 +18,7 @@ import li.gkd.app.a11y.useA11yServiceEnabledFlow
 import li.gkd.app.a11y.useEnabledA11yServicesFlow
 import li.gkd.app.data.CrashData
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.db.DbSet
+import li.gkd.db.Db
 import li.gkd.app.entry.EntryActivity
 import li.gkd.app.entry.OpenFileActivity
 import li.gkd.app.priv.AutomationService
@@ -158,8 +158,8 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
 
     val subsSheet = SubsSheetState()
 
-    val appOrderListState = DbSet.actionLogDao.queryLatestUniqueAppIds().stateLoadable()
-    val appVisitOrderMapState = DbSet.appVisitLogDao.query().map {
+    val appOrderListState = Db.actionLogDao.queryLatestUniqueAppIds().stateLoadable()
+    val appVisitOrderMapState = Db.appVisitLogDao.query().map {
         it.mapIndexed { i, appId -> appId to i }.toMap()
     }.debounce(500).stateLoadable()
 

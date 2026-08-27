@@ -12,8 +12,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.data.SubsItem
-import li.gkd.app.db.DbSet
+import li.gkd.db.SubsItem
+import li.gkd.db.Db
 import li.gkd.app.store.storeFlow
 import li.gkd.app.ui.share.BaseViewModel
 import li.gkd.app.ui.share.Loadable
@@ -55,7 +55,7 @@ class SubsManageVm : BaseViewModel() {
                 Loadable.Loading -> flowOf(Loadable.Loading)
                 is Loadable.Failure -> flowOf(snapshotState)
                 is Loadable.Ready -> combine(
-                    DbSet.subsItemDao.query(),
+                    Db.subsItemDao.query(),
                     SubscriptionStore.updating,
                 ) { subItems, refreshing ->
                     buildSubsManageUiState(
@@ -95,7 +95,7 @@ class SubsManageVm : BaseViewModel() {
 
     fun updateOrder(items: List<SubsItem>) {
         scope.launchTry(Dispatchers.IO) {
-            DbSet.subsItemDao.batchUpdateOrder(items)
+            Db.subsItemDao.batchUpdateOrder(items)
         }
     }
 
@@ -131,7 +131,7 @@ class SubsManageVm : BaseViewModel() {
 
     private fun setSubscriptionEnabled(item: SubsItem, enabled: Boolean) {
         scope.launchTry(Dispatchers.IO) {
-            DbSet.subsItemDao.updateEnable(item.id, enabled)
+            Db.subsItemDao.updateEnable(item.id, enabled)
         }
     }
 

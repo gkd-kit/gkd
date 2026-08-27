@@ -28,10 +28,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import li.gkd.app.data.CategoryConfig
+import li.gkd.db.CategoryConfig
 import li.gkd.app.data.ExcludeData
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.data.SubsConfig
+import li.gkd.db.SubsConfig
 import li.gkd.app.ui.getGlobalGroupChecked
 import li.gkd.app.ui.icon.ResetSettings
 import li.gkd.app.ui.share.noRippleClickable

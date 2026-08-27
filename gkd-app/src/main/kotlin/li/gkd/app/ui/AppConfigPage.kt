@@ -37,7 +37,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.Serializable
-import li.gkd.app.data.ActionLog
+import li.gkd.db.ActionLog
 import li.gkd.app.data.RawSubscription
 import li.gkd.app.store.storeFlow
 import li.gkd.app.ui.component.AnimatedBooleanContent
@@ -65,7 +65,7 @@ import li.gkd.app.ui.share.noRippleClickable
 import li.gkd.app.ui.style.EmptyHeight
 import li.gkd.app.ui.style.iconTextSize
 import li.gkd.app.ui.style.scaffoldPadding
-import li.gkd.app.util.LOCAL_SUBS_ID
+import li.gkd.db.LOCAL_SUBS_ID
 import li.gkd.app.util.RuleSortOption
 import li.gkd.app.util.copyText
 import li.gkd.app.util.findOption

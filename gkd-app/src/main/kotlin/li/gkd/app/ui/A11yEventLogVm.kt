@@ -5,13 +5,13 @@ import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import li.gkd.app.data.A11yEventLog
-import li.gkd.app.db.DbSet
+import li.gkd.db.A11yEventLog
+import li.gkd.db.Db
 import li.gkd.app.ui.share.BaseViewModel
 
 class A11yEventLogVm : BaseViewModel() {
     val pagingDataFlow =
-        Pager(PagingConfig(pageSize = 100)) { DbSet.a11yEventLogDao.pagingSource() }
+        Pager(PagingConfig(pageSize = 100)) { Db.a11yEventLogDao.pagingSource() }
             .flow.cachedIn(scope)
 
     val showEventLogFlow: StateFlow<A11yEventLog?>
@@ -26,6 +26,6 @@ class A11yEventLogVm : BaseViewModel() {
     }
 
     suspend fun deleteAll() {
-        DbSet.a11yEventLogDao.deleteAll()
+        Db.a11yEventLogDao.deleteAll()
     }
 }

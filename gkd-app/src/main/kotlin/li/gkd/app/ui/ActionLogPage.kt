@@ -41,7 +41,8 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import kotlinx.serialization.Serializable
-import li.gkd.app.data.SubsConfig
+import li.gkd.app.data.date
+import li.gkd.app.data.showActivityId
 import li.gkd.app.ui.component.AppNameText
 import li.gkd.app.ui.component.EmptyText
 import li.gkd.app.ui.component.FixedTimeText
@@ -64,6 +65,7 @@ import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.util.throttle
 import li.gkd.app.util.launchTry
 import li.gkd.app.util.toast
+import li.gkd.db.SubsConfig
 
 @Serializable
 data class ActionLogRoute(

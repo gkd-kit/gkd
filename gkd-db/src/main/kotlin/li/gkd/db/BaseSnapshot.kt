@@ -1,4 +1,4 @@
-package li.gkd.app.data
+package li.gkd.db
 
 interface BaseSnapshot {
     val id: Long

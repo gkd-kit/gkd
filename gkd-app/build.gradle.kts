@@ -16,12 +16,10 @@ val debugSuffixResources = project.readDebugSuffixResources()
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.androidx.room)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlinx.atomicfu)
-    alias(libs.plugins.google.ksp)
     alias(libs.plugins.remap)
     alias(libs.plugins.loc)
 }
@@ -195,11 +193,6 @@ if (buildProperty("GKD_RENAME_APK_FLAG").isPresent) {
     }
 }
 
-// https://developer.android.com/jetpack/androidx/releases/room?hl=zh-cn#compiler-options
-room {
-    schemaDirectory("$projectDir/schemas")
-}
-
 composeCompiler {
     if (providers.gradleProperty("composeReports").isPresent) {
         reportsDestination = layout.buildDirectory.dir("compose_compiler")
@@ -216,6 +209,7 @@ loc {
 dependencies {
     implementation(libs.kotlin.stdlib)
 
+    implementation(project(":gkd-db"))
     implementation(project(":gkd-selector"))
 
     implementation(libs.androidx.appcompat)
@@ -252,11 +246,6 @@ dependencies {
     implementation(libs.rikka.shizuku.provider)
     implementation(libs.priv.kit.ui)
     implementation(libs.lsposed.hiddenapibypass)
-
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    implementation(libs.androidx.room.paging)
-    ksp(libs.androidx.room.compiler)
 
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)

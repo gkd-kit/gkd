@@ -13,15 +13,16 @@ import kotlinx.coroutines.sync.withLock
 import li.gkd.app.META
 import li.gkd.app.app
 import li.gkd.app.appScope
-import li.gkd.app.data.ActionLog
+import li.gkd.db.ActionLog
 import li.gkd.app.data.ActionResult
-import li.gkd.app.data.ActivityLog
+import li.gkd.db.ActivityLog
 import li.gkd.app.data.AttrInfo
 import li.gkd.app.data.ResetMatchType
 import li.gkd.app.data.ResolvedRule
 import li.gkd.app.data.RuleStatus
+import li.gkd.app.data.insert
 import li.gkd.app.data.isSystem
-import li.gkd.app.db.DbSet
+import li.gkd.db.Db
 import li.gkd.app.service.updateTopTaskAppId
 import li.gkd.app.store.actionCountFlow
 import li.gkd.app.store.checkAppBlockMatch
@@ -187,11 +188,11 @@ fun updateTopActivity(
         val logs = tempActivityLogList.toTypedArray()
         tempActivityLogList.clear()
         appScope.launchTry {
-            DbSet.activityLogDao.insert(*logs)
+            Db.activityLogDao.insert(*logs)
         }
     }
     if (activityLogCount++ % 100 == 0) {
-        appScope.launchTry { DbSet.activityLogDao.deleteKeepLatest() }
+        appScope.launchTry { Db.activityLogDao.deleteKeepLatest() }
     }
     val topActivity = topActivityFlow.value
     val ruleSummary = ruleSummaryFlow.value
@@ -206,7 +207,7 @@ fun updateTopActivity(
             val oldAppId = lastAppId
             lastAppId = appId
             appScope.launchTry {
-                DbSet.appVisitLogDao.insert(oldAppId, appId, t)
+                Db.appVisitLogDao.insert(oldAppId, appId, t)
             }
             appChangeTime = t
             ruleSummary.globalRules.forEach { it.resetState(t) }
@@ -297,9 +298,9 @@ fun addActionLog(
             ruleKey = rule.key,
             ctime = ctime,
         )
-        DbSet.actionLogDao.insert(actionLog)
+        Db.actionLogDao.insert(actionLog)
         if (actionCountFlow.value % 100 == 0L) {
-            DbSet.actionLogDao.deleteKeepLatest()
+            Db.actionLogDao.deleteKeepLatest()
         }
     }
     LogUtils.d(

@@ -1,5 +1,8 @@
 package li.gkd.app.data
 
+import li.gkd.db.SubsConfig
+import li.gkd.db.SubsItem
+
 sealed class ResolvedGroup(
     open val group: RawSubscription.RawGroupProps,
     val subscription: RawSubscription,

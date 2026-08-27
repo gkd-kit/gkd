@@ -5,11 +5,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.withContext
-import li.gkd.app.data.CategoryConfig
+import li.gkd.db.CategoryConfig
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.data.SubsConfig
+import li.gkd.db.SubsConfig
 import li.gkd.app.data.edit
-import li.gkd.app.db.DbSet
+import li.gkd.db.Db
 import li.gkd.app.ui.component.batchUpdateGroupEnable
 import li.gkd.app.ui.component.toGroupState
 import li.gkd.app.ui.component.updateRuleGroupEnable
@@ -33,9 +33,9 @@ class SubsAppGroupListVm(val route: SubsAppGroupListRoute) : BaseViewModel() {
     private val subscription = requiredSubscription(route.subsItemId)
 
     private val subsConfigsFlow =
-        DbSet.subsConfigDao.queryAppGroupTypeConfig(route.subsItemId, route.appId)
+        Db.subsConfigDao.queryAppGroupTypeConfig(route.subsItemId, route.appId)
 
-    private val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(route.subsItemId)
+    private val categoryConfigsFlow = Db.categoryConfigDao.queryConfig(route.subsItemId)
 
     val uiState = subscription.buildUiState(
         initialValue = { rawSubscription ->

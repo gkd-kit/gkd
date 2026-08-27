@@ -15,7 +15,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import li.gkd.app.a11y.typeInfo
-import li.gkd.app.util.LOCAL_SUBS_IDS
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ScreenUtils
 import li.gkd.app.util.appInfoMapFlow
@@ -24,6 +23,8 @@ import li.gkd.app.util.filterIfNotAll
 import li.gkd.app.util.json
 import li.gkd.app.util.toJson5String
 import li.gkd.app.util.toast
+import li.gkd.db.LOCAL_SUBS_IDS
+import li.gkd.db.SubsConfig
 import li.songe.json5.Json5
 import li.gkd.selector.Selector
 import net.objecthunter.exp4j.Expression

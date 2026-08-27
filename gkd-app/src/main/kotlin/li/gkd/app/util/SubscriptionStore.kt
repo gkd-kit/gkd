@@ -9,11 +9,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.data.SubsConfig
-import li.gkd.app.data.SubsItem
+import li.gkd.db.SubsConfig
+import li.gkd.db.SubsItem
 import li.gkd.app.data.SubsVersion
-import li.gkd.app.db.DbSet
+import li.gkd.db.Db
 import li.gkd.app.ui.share.Loadable
+import li.gkd.db.LOCAL_HTTP_SUBS_ID
+import li.gkd.db.LOCAL_SUBS_ID
 import li.songe.json5.decodeFromJson5String
 import java.io.File
 import java.io.FileOutputStream
@@ -59,7 +61,7 @@ object SubscriptionStore {
             snapshotFlow.value = Loadable.Loading
             try {
                 refreshRawSubscriptions(
-                    items = DbSet.subsItemDao.queryAll(),
+                    items = Db.subsItemDao.queryAll(),
                     previous = SubscriptionSnapshot(),
                 )
             } catch (e: Exception) {
@@ -73,7 +75,7 @@ object SubscriptionStore {
     private suspend fun ensureLocalSubscription() = withContext(Dispatchers.IO) {
         updateMutex.withStateLock {
             try {
-                val items = DbSet.subsItemDao.queryAll()
+                val items = Db.subsItemDao.queryAll()
                 if (snapshotFlow.value !is Loadable.Ready) {
                     refreshRawSubscriptions(
                         items = items,
@@ -87,7 +89,7 @@ object SubscriptionStore {
                 )
                 val file = subsFolder.resolve("$LOCAL_SUBS_ID.json")
                 if (file.exists()) {
-                    DbSet.subsItemDao.insert(item)
+                    Db.subsItemDao.insert(item)
                     refreshRawSubscriptions(listOf(item))
                 } else {
                     saveLocked(
@@ -142,7 +144,7 @@ object SubscriptionStore {
             "订阅与订阅项id不一致: ${subscription.id} != ${defaultItem.id}"
         }
         updateMutex.withStateLock {
-            val currentItem = DbSet.subsItemDao.queryAll().find { it.id == subscription.id }
+            val currentItem = Db.subsItemDao.queryAll().find { it.id == subscription.id }
             try {
                 saveLocked(
                     subscription = subscription,
@@ -185,12 +187,12 @@ object SubscriptionStore {
             var result: SubscriptionResult = SubscriptionResult.Busy
             updateMutex.withStateLock {
                 val deleteSize = try {
-                    DbSet.withTransaction {
-                        val size = DbSet.subsItemDao.deleteById(*subscriptionIds)
+                    Db.withTransaction {
+                        val size = Db.subsItemDao.deleteById(*subscriptionIds)
                         if (size > 0) {
-                            DbSet.subsConfigDao.deleteBySubsId(*subscriptionIds)
-                            DbSet.actionLogDao.deleteBySubsId(*subscriptionIds)
-                            DbSet.categoryConfigDao.deleteBySubsId(*subscriptionIds)
+                            Db.subsConfigDao.deleteBySubsId(*subscriptionIds)
+                            Db.actionLogDao.deleteBySubsId(*subscriptionIds)
+                            Db.categoryConfigDao.deleteBySubsId(*subscriptionIds)
                         }
                         size
                     }
@@ -251,7 +253,7 @@ object SubscriptionStore {
         if (updateMutex.mutex.isLocked) return@withContext SubscriptionResult.Busy
         var result: SubscriptionResult = SubscriptionResult.Busy
         updateMutex.withStateLock {
-            val items = DbSet.subsItemDao.queryAll()
+            val items = Db.subsItemDao.queryAll()
             if (items.any { it.updateUrl == url && it.id != oldItem?.id }) {
                 result = failure("已有相同链接订阅")
                 return@withStateLock
@@ -326,7 +328,7 @@ object SubscriptionStore {
         var result: SubscriptionResult = SubscriptionResult.Busy
         updateMutex.withStateLock {
             val items = try {
-                DbSet.subsItemDao.queryAll()
+                Db.subsItemDao.queryAll()
             } catch (e: Exception) {
                 if (snapshotFlow.value !is Loadable.Ready) {
                     snapshotFlow.value = Loadable.Failure(e)
@@ -380,7 +382,7 @@ object SubscriptionStore {
         val id = subscription.id
         val snapshot = snapshotFlow.value.value
             ?: refreshRawSubscriptions(
-                items = DbSet.subsItemDao.queryAll(),
+                items = Db.subsItemDao.queryAll(),
                 previous = SubscriptionSnapshot(),
             )
         val nextSubscription = if (
@@ -398,15 +400,15 @@ object SubscriptionStore {
         val previousBytes = file.takeIf { it.exists() }?.readBytes()
         writeAtomic(file, json.encodeToString(nextSubscription).encodeToByteArray())
         try {
-            DbSet.withTransaction {
+            Db.withTransaction {
                 if (newItem != null) {
                     if (insertItem) {
-                        DbSet.subsItemDao.insert(newItem)
+                        Db.subsItemDao.insert(newItem)
                     } else {
-                        DbSet.subsItemDao.update(newItem)
+                        Db.subsItemDao.update(newItem)
                     }
                 }
-                DbSet.subsItemDao.updateMtime(id, System.currentTimeMillis())
+                Db.subsItemDao.updateMtime(id, System.currentTimeMillis())
                 cleanupConfigs(id, nextSubscription)
             }
         } catch (e: Exception) {
@@ -510,7 +512,7 @@ object SubscriptionStore {
         val appKeys = subscription.apps.associate { app ->
             app.id to app.groups.map { it.key }.toHashSet()
         }
-        val configs = DbSet.subsConfigDao.querySubsItemConfig(listOf(id))
+        val configs = Db.subsConfigDao.querySubsItemConfig(listOf(id))
         val obsolete = configs.filter { config ->
             when (config.type) {
                 SubsConfig.AppGroupType -> appKeys[config.appId]?.contains(config.groupKey) != true
@@ -519,7 +521,7 @@ object SubscriptionStore {
             }
         }
         if (obsolete.isEmpty()) return 0
-        DbSet.subsConfigDao.delete(*obsolete.toTypedArray())
+        Db.subsConfigDao.delete(*obsolete.toTypedArray())
         LogUtils.d("清理已移除规则配置", "subsId=$id, delete=${obsolete.size}")
         return obsolete.size
     }
@@ -527,7 +529,8 @@ object SubscriptionStore {
     private suspend fun fetchUpdate(entry: SubsEntry): RawSubscription? {
         val item = entry.subsItem
         val current = entry.subscription
-        if (item.updateUrl == null || item.id < 0) return null
+        val itemUpdateUrl = item.updateUrl ?: return null
+        if (item.id < 0) return null
         val checkUrl = entry.checkUpdateUrl
         if (checkUrl != null && current != null) {
             try {
@@ -539,7 +542,7 @@ object SubscriptionStore {
                 LogUtils.d("快速检测更新失败", item, e.message)
             }
         }
-        val updateUrl = current?.updateUrl ?: item.updateUrl
+        val updateUrl = current?.updateUrl ?: itemUpdateUrl
         val text = try {
             client.get(updateUrl).bodyAsText()
         } catch (e: Exception) {

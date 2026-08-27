@@ -8,18 +8,18 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.gkd.app.appScope
 import li.gkd.app.data.AppRule
-import li.gkd.app.data.CategoryConfig
+import li.gkd.db.CategoryConfig
 import li.gkd.app.data.GlobalRule
 import li.gkd.app.data.RawSubscription
 import li.gkd.app.data.ResolvedAppGroup
 import li.gkd.app.data.ResolvedGlobalGroup
-import li.gkd.app.data.SubsConfig
-import li.gkd.app.data.SubsItem
-import li.gkd.app.db.DbSet
+import li.gkd.db.SubsConfig
+import li.gkd.db.SubsItem
+import li.gkd.db.Db
 import java.net.URI
 
 val subsItemsFlow by lazy {
-    DbSet.subsItemDao.query().stateIn(appScope, SharingStarted.Eagerly, emptyList())
+    Db.subsItemDao.query().stateIn(appScope, SharingStarted.Eagerly, emptyList())
 }
 
 private fun getCheckUpdateUrl(
@@ -78,7 +78,7 @@ val subsRefreshErrorsFlow by lazy {
 }
 
 val latestRecordFlow by lazy {
-    DbSet.actionLogDao.queryLatest().stateIn(appScope, SharingStarted.Eagerly, null)
+    Db.actionLogDao.queryLatest().stateIn(appScope, SharingStarted.Eagerly, null)
 }
 val latestRecordDescFlow by lazy {
     combine(
@@ -217,9 +217,9 @@ val ruleSummaryFlow by lazy {
     combine(
         usedSubsEntriesFlow,
         appInfoMapFlow,
-        DbSet.appConfigDao.queryUsedList(),
-        DbSet.subsConfigDao.queryUsedList(),
-        DbSet.categoryConfigDao.queryUsedList(),
+        Db.appConfigDao.queryUsedList(),
+        Db.subsConfigDao.queryUsedList(),
+        Db.categoryConfigDao.queryUsedList(),
     ) { subsEntries, appInfoCache, appConfigs, subsConfigs, categoryConfigs ->
         val globalSubsConfigs = subsConfigs.filter { c -> c.type == SubsConfig.GlobalGroupType }
         val groupSubsConfigs = subsConfigs.filter { c -> c.type == SubsConfig.AppGroupType }

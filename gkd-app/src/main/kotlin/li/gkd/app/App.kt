@@ -41,12 +41,14 @@ import li.gkd.app.store.initStore
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.PKG_FLAGS
+import li.gkd.app.util.dbFolder
 import li.gkd.app.util.deviceInfoDesc
 import li.gkd.app.util.initAppState
 import li.gkd.app.util.SubscriptionStore
 import li.gkd.app.util.initToast
 import li.gkd.app.util.launchTry
 import li.gkd.app.util.toast
+import li.gkd.db.Db
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import priv.kit.core.PrivilegeConfig
 import priv.kit.ui.PrivilegeUi
@@ -221,6 +223,7 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        Db.initialize(this, dbFolder.resolve("gkd.db").absolutePath)
         LogUtils.d()
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
             toast(e.message ?: e.toString())

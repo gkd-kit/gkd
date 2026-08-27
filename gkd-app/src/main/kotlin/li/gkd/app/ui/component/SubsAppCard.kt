@@ -15,7 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import li.gkd.app.data.AppConfig
+import li.gkd.db.AppConfig
 import li.gkd.app.data.AppInfo
 import li.gkd.app.data.RawSubscription
 import li.gkd.app.store.blockMatchAppListFlow

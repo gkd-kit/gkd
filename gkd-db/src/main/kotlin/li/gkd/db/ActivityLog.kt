@@ -1,4 +1,4 @@
-package li.gkd.app.data
+package li.gkd.db
 
 import androidx.paging.PagingSource
 import androidx.room.ColumnInfo
@@ -10,23 +10,16 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.migration.AutoMigrationSpec
 import kotlinx.coroutines.flow.Flow
-import li.gkd.app.util.format
-import li.gkd.app.util.getShowActivityId
 
 @Entity(
     tableName = "activity_log_v2",
 )
 data class ActivityLog(
-    // 不使用时间戳作为主键的原因
-    // https://github.com/gkd-kit/gkd/issues/704
     @PrimaryKey(autoGenerate = true) @ColumnInfo(name = "id") val id: Int = 0,
     @ColumnInfo(name = "ctime") val ctime: Long,
     @ColumnInfo(name = "app_id") val appId: String,
     @ColumnInfo(name = "activity_id") val activityId: String? = null,
 ) {
-    val showActivityId by lazy { getShowActivityId(appId, activityId) }
-    val date by lazy { ctime.format("HH:mm:ss SSS") }
-
     @Dao
     interface ActivityLogDao {
         @Insert

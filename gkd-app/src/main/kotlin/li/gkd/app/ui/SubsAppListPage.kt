@@ -49,11 +49,11 @@ import li.gkd.app.ui.style.EmptyHeight
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.util.AppGroupOption
 import li.gkd.app.util.AppSortOption
-import li.gkd.app.util.LOCAL_SUBS_IDS
 import li.gkd.app.util.appInfoMapFlow
 import li.gkd.app.util.findOption
 import li.gkd.app.util.launchTry
 import li.gkd.app.util.throttle
+import li.gkd.db.LOCAL_SUBS_IDS
 
 @Serializable
 data class SubsAppListRoute(val subsItemId: Long) : NavKey

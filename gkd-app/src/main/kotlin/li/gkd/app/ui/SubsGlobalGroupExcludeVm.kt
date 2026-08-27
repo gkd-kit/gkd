@@ -9,8 +9,8 @@ import li.gkd.app.MainViewModel
 import li.gkd.app.data.AppInfo
 import li.gkd.app.data.ExcludeData
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.data.SubsConfig
-import li.gkd.app.db.DbSet
+import li.gkd.db.SubsConfig
+import li.gkd.db.Db
 import li.gkd.app.store.storeFlow
 import li.gkd.app.ui.share.BaseViewModel
 import li.gkd.app.ui.share.Loadable
@@ -38,7 +38,7 @@ class SubsGlobalGroupExcludeVm(
 ) : BaseViewModel() {
 
     private val subscription = requiredSubscription(route.subsItemId)
-    private val subsConfigFlow = DbSet.subsConfigDao
+    private val subsConfigFlow = Db.subsConfigDao
         .queryGlobalGroupTypeConfig(route.subsItemId, route.groupKey)
 
     private val appFilter = useAppFilter(
@@ -208,7 +208,7 @@ class SubsGlobalGroupExcludeVm(
             subsId = route.subsItemId,
             groupKey = route.groupKey,
         )).copy(exclude = newExclude.stringify())
-        DbSet.subsConfigDao.insert(subsConfig)
+        Db.subsConfigDao.insert(subsConfig)
         return true
     }
 
@@ -227,7 +227,7 @@ class SubsGlobalGroupExcludeVm(
                 },
             ).stringify(),
         )
-        DbSet.subsConfigDao.insert(subsConfig)
+        Db.subsConfigDao.insert(subsConfig)
     }
 
 }

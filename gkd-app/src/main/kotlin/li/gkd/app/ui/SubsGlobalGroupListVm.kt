@@ -4,9 +4,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.data.SubsConfig
+import li.gkd.db.SubsConfig
 import li.gkd.app.data.edit
-import li.gkd.app.db.DbSet
+import li.gkd.db.Db
 import li.gkd.app.ui.component.batchUpdateGroupEnable
 import li.gkd.app.ui.component.toGroupState
 import li.gkd.app.ui.component.updateRuleGroupEnable
@@ -22,7 +22,7 @@ class SubsGlobalGroupListVm(val route: SubsGlobalGroupListRoute) : BaseViewModel
     private val subscription = requiredSubscription(route.subsItemId)
 
     private val subsConfigsFlow =
-        DbSet.subsConfigDao.queryGlobalGroupTypeConfig(route.subsItemId)
+        Db.subsConfigDao.queryGlobalGroupTypeConfig(route.subsItemId)
 
     val uiState = subscription.buildUiState(
         initialValue = { rawSubscription ->
@@ -79,6 +79,6 @@ class SubsGlobalGroupListVm(val route: SubsGlobalGroupListRoute) : BaseViewModel
         subscription.update { current ->
             current.edit { removeGlobalGroups { it.key in selectedKeys } }
         }
-        DbSet.subsConfigDao.batchDeleteGlobalGroupConfig(route.subsItemId, selectedKeys.toList())
+        Db.subsConfigDao.batchDeleteGlobalGroupConfig(route.subsItemId, selectedKeys.toList())
     }
 }

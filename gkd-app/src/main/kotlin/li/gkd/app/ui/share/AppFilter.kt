@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.map
 import li.gkd.app.MainViewModel
 import li.gkd.app.data.AppInfo
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.db.DbSet
+import li.gkd.db.Db
 import li.gkd.app.store.SettingsStore
 import li.gkd.app.store.blockMatchAppListFlow
 import li.gkd.app.store.storeFlow
@@ -28,7 +28,7 @@ class AppFilter(
 fun BaseViewModel.subsAppActionOrderMapState(
     subsId: Long,
 ): StateFlow<Loadable<Map<String, Int>>> =
-    DbSet.actionLogDao.queryLatestUniqueAppIds(subsId).map { appIds ->
+    Db.actionLogDao.queryLatestUniqueAppIds(subsId).map { appIds ->
         appIds.mapIndexed { index, appId -> appId to index }.toMap()
     }.stateLoadable()
 
@@ -36,7 +36,7 @@ fun BaseViewModel.globalGroupAppOrderListState(
     subsId: Long,
     groupKey: Int,
 ): StateFlow<Loadable<List<String>>> =
-    DbSet.actionLogDao.queryLatestUniqueAppIds(subsId, groupKey).stateLoadable()
+    Db.actionLogDao.queryLatestUniqueAppIds(subsId, groupKey).stateLoadable()
 
 fun BaseViewModel.useAppFilter(
     mainVm: MainViewModel,

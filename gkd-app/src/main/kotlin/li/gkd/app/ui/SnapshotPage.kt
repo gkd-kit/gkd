@@ -36,7 +36,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import li.gkd.app.MainActivity
-import li.gkd.app.data.Snapshot
+import li.gkd.app.data.date
+import li.gkd.app.data.screenshotFile
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.snapshot.SnapshotStore
 import li.gkd.app.ui.component.EmptyText
@@ -61,6 +62,7 @@ import li.gkd.app.util.copyText
 import li.gkd.app.util.launchTry
 import li.gkd.app.util.throttle
 import li.gkd.app.util.toast
+import li.gkd.db.Snapshot
 
 @Serializable
 data object SnapshotPageRoute : NavKey
@@ -330,11 +332,12 @@ private fun SnapshotCard(
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
-            val showActivityId = if (snapshot.activityId != null) {
-                if (snapshot.activityId.startsWith(snapshot.appId)) {
-                    snapshot.activityId.substring(snapshot.appId.length)
+            val activityId = snapshot.activityId
+            val showActivityId = if (activityId != null) {
+                if (activityId.startsWith(snapshot.appId)) {
+                    activityId.substring(snapshot.appId.length)
                 } else {
-                    snapshot.activityId
+                    activityId
                 }
             } else {
                 null

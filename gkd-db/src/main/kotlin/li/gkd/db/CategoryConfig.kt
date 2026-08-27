@@ -1,4 +1,4 @@
-package li.gkd.app.data
+package li.gkd.db
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao
@@ -17,7 +17,7 @@ import kotlinx.serialization.Serializable
     tableName = "category_config",
 )
 data class CategoryConfig(
-    @PrimaryKey @ColumnInfo(name = "id") val id: Long = System.currentTimeMillis(),
+    @PrimaryKey @ColumnInfo(name = "id") val id: Long = buildUniqueTimeMillisId(),
     @ColumnInfo(name = "enable") val enable: Boolean? = null,
     @ColumnInfo(name = "subs_id") val subsId: Long,
     @ColumnInfo(name = "category_key") val categoryKey: Int,

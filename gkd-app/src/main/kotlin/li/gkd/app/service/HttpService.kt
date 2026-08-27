@@ -42,15 +42,15 @@ import li.gkd.app.data.DeviceInfo
 import li.gkd.app.data.GkdAction
 import li.gkd.app.data.RawSubscription
 import li.gkd.app.data.RpcError
-import li.gkd.app.data.SubsItem
+import li.gkd.db.SubsItem
 import li.gkd.app.data.selfAppInfo
-import li.gkd.app.db.DbSet
+import li.gkd.db.Db
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.notif.StopServiceReceiver
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.store.storeFlow
 import li.gkd.app.util.DefaultSimpleLifeImpl
-import li.gkd.app.util.LOCAL_HTTP_SUBS_ID
+import li.gkd.db.LOCAL_HTTP_SUBS_ID
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.OnSimpleLife
 import li.gkd.app.util.SERVER_SCRIPT_URL
@@ -212,7 +212,7 @@ private fun CoroutineScope.createServer(port: Int) = embeddedServer(CIO, port) {
                 call.respond(SnapshotCapture.capture())
             }
             post("/getSnapshots") {
-                val list = DbSet.snapshotDao.query().first().mapNotNull {
+                val list = Db.snapshotDao.query().first().mapNotNull {
                     try {
                         SnapshotStore.getMinSnapshot(it.id)
                     } catch (_: Throwable) {
@@ -223,7 +223,7 @@ private fun CoroutineScope.createServer(port: Int) = embeddedServer(CIO, port) {
             }
             post("/deleteSnapshot") {
                 val data = call.receive<ReqId>()
-                val allSnapshots = DbSet.snapshotDao.query().first()
+                val allSnapshots = Db.snapshotDao.query().first()
                 val snapshot = allSnapshots.find { it.id == data.id }
                 if (snapshot != null) {
                     SnapshotStore.delete(snapshot)

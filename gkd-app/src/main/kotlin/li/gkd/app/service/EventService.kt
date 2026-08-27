@@ -36,9 +36,9 @@ import kotlinx.coroutines.launch
 import li.gkd.app.META
 import li.gkd.app.MainViewModel
 import li.gkd.app.appScope
-import li.gkd.app.data.A11yEventLog
+import li.gkd.db.A11yEventLog
 import li.gkd.app.data.toA11yEventLog
-import li.gkd.app.db.DbSet
+import li.gkd.db.Db
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.notif.StopServiceReceiver
 import li.gkd.app.permission.PermissionStates
@@ -129,7 +129,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
                 delay(1000.milliseconds)
                 val list = getAndUpdate { emptyList() }
                 if (list.isNotEmpty()) {
-                    DbSet.a11yEventLogDao.insert(list)
+                    Db.a11yEventLogDao.insert(list)
                 }
             }
         }
@@ -143,7 +143,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
             logAutoId = 0
         }
         scope.launch {
-            logAutoId = (DbSet.a11yEventLogDao.maxId() ?: 0).coerceAtLeast(1)
+            logAutoId = (Db.a11yEventLogDao.maxId() ?: 0).coerceAtLeast(1)
         }
 
         useLogLifecycle()
@@ -171,7 +171,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
                 service.eventLogs.removeRange(0, 64)
             }
             if (eventLog.id % 100 == 0) {
-                appScope.launchTry { DbSet.a11yEventLogDao.deleteKeepLatest() }
+                appScope.launchTry { Db.a11yEventLogDao.deleteKeepLatest() }
             }
         }
 

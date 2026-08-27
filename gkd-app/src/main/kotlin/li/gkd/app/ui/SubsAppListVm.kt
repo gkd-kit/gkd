@@ -9,10 +9,10 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import li.gkd.app.MainViewModel
-import li.gkd.app.data.AppConfig
+import li.gkd.db.AppConfig
 import li.gkd.app.data.AppInfo
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.db.DbSet
+import li.gkd.db.Db
 import li.gkd.app.store.blockMatchAppListFlow
 import li.gkd.app.store.storeFlow
 import li.gkd.app.ui.share.BaseViewModel
@@ -36,12 +36,12 @@ class SubsAppListVm(
 
     private val subscription = requiredSubscription(route.subsItemId)
 
-    private val appConfigsFlow = DbSet.appConfigDao.queryAppTypeConfig(route.subsItemId)
+    private val appConfigsFlow = Db.appConfigDao.queryAppTypeConfig(route.subsItemId)
 
     private val groupSubsConfigsFlow =
-        DbSet.subsConfigDao.querySubsGroupTypeConfig(route.subsItemId)
+        Db.subsConfigDao.querySubsGroupTypeConfig(route.subsItemId)
 
-    private val categoryConfigsFlow = DbSet.categoryConfigDao.queryConfig(route.subsItemId)
+    private val categoryConfigsFlow = Db.categoryConfigDao.queryConfig(route.subsItemId)
 
     val searchStrFlow: StateFlow<String>
         field = MutableStateFlow("")
@@ -188,6 +188,6 @@ class SubsAppListVm(
             subsId = route.subsItemId,
             appId = appId,
         )
-        DbSet.appConfigDao.insert(newConfig)
+        Db.appConfigDao.insert(newConfig)
     }
 }
