@@ -52,17 +52,17 @@ val androidKmpLibraryPluginId =
     libs.plugins.android.kotlin.multiplatform.library.get().pluginId
 
 subprojects {
+    tasks.withType<KotlinCompilationTask<*>>().configureEach {
+        compilerOptions {
+            freeCompilerArgs.addAll(Cfg.kotlinCompilerArgs)
+        }
+    }
     tasks.withType<KotlinJvmCompile>().configureEach {
         compilerOptions {
             jvmTarget.set(Cfg.kotlinTargetVersion)
         }
     }
     plugins.withType<AppPlugin> {
-        tasks.withType<KotlinCompilationTask<*>>().configureEach {
-            compilerOptions {
-                freeCompilerArgs.addAll(Cfg.kotlinCompilerArgs)
-            }
-        }
         extensions.getByType(ApplicationExtension::class.java).apply {
             compileSdk = Cfg.compileSdk
             buildToolsVersion = Cfg.buildToolsVersion
