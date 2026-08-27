@@ -1,14 +1,16 @@
 package li.gkd.db
 
 import androidx.paging.PagingSource
-import androidx.room.ColumnInfo
-import androidx.room.Dao
-import androidx.room.DeleteTable
-import androidx.room.Entity
-import androidx.room.Insert
-import androidx.room.PrimaryKey
-import androidx.room.Query
-import androidx.room.migration.AutoMigrationSpec
+import androidx.room3.ColumnInfo
+import androidx.room3.Dao
+import androidx.room3.DaoReturnTypeConverters
+import androidx.room3.DeleteTable
+import androidx.room3.Entity
+import androidx.room3.Insert
+import androidx.room3.PrimaryKey
+import androidx.room3.Query
+import androidx.room3.migration.AutoMigrationSpec
+import androidx.room3.paging.PagingSourceDaoReturnTypeConverter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 
@@ -35,6 +37,7 @@ data class ActionLog(
 
 
     @Dao
+    @DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
     interface ActionLogDao {
 
 

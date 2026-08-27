@@ -5,7 +5,7 @@ ksp = "2.3.11"
 agp = "9.3.2"
 compose = "1.12.0"
 nav3 = "1.1.6"
-room = "2.8.4"
+room = "3.0.1"
 sqlite = "2.7.0"
 paging = "3.5.1"
 lifecycle = "2.11.0"
@@ -51,15 +51,14 @@ androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecy
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3" }
 androidx-junit = "androidx.test.ext:junit:1.3.0"
-androidx-test-runner = "androidx.test:runner:1.7.0"
 androidx-annotation = "androidx.annotation:annotation:1.10.0"
 androidx-espresso = "androidx.test.espresso:espresso-core:3.7.0"
-androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
-androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
-androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
-androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
-androidx-room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
+androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room" }
+androidx-room-paging = { module = "androidx.room3:room3-paging", version.ref = "room" }
+androidx-room-testing = { module = "androidx.room3:room3-testing", version.ref = "room" }
 androidx-sqlite-framework = { module = "androidx.sqlite:sqlite-framework", version.ref = "sqlite" }
+androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 androidx-splashscreen = "androidx.core:core-splashscreen:1.2.0"
 androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.ref = "paging" }
 androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
@@ -91,8 +90,9 @@ kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref =
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinx-atomicfu = { id = "org.jetbrains.kotlinx.atomicfu", version.ref = "atomicfu" }
 android-library = { id = "com.android.library", version.ref = "agp" }
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
-androidx-room = { id = "androidx.room", version.ref = "room" }
+androidx-room = { id = "androidx.room3", version.ref = "room" }
 google-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 remap = { id = "li.songe.remap", version.ref = "remap" }
 loc = { id = "li.songe.loc", version.ref = "loc" }

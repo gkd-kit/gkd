@@ -49,6 +49,7 @@ import li.gkd.app.util.initToast
 import li.gkd.app.util.launchTry
 import li.gkd.app.util.toast
 import li.gkd.db.Db
+import li.gkd.db.initialize
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import priv.kit.core.PrivilegeConfig
 import priv.kit.ui.PrivilegeUi

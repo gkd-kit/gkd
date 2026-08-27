@@ -1,19 +1,15 @@
 package li.gkd.db
 
-import android.content.Context
-import androidx.room.AutoMigration
-import androidx.room.Database
-import androidx.room.DeleteColumn
-import androidx.room.RenameColumn
-import androidx.room.Room
-import androidx.room.RoomDatabase
-import androidx.room.TypeConverter
-import androidx.room.TypeConverters
-import androidx.room.immediateTransaction
-import androidx.room.migration.AutoMigrationSpec
-import androidx.room.useWriterConnection
-import androidx.sqlite.driver.AndroidSQLiteDriver
-import kotlinx.coroutines.Dispatchers
+import androidx.room3.AutoMigration
+import androidx.room3.ColumnTypeConverter
+import androidx.room3.ColumnTypeConverters
+import androidx.room3.ConstructedBy
+import androidx.room3.Database
+import androidx.room3.DeleteColumn
+import androidx.room3.RenameColumn
+import androidx.room3.RoomDatabase
+import androidx.room3.RoomDatabaseConstructor
+import androidx.room3.migration.AutoMigrationSpec
 import kotlinx.serialization.json.Json
 
 @Database(
@@ -45,7 +41,8 @@ import kotlinx.serialization.json.Json
         AutoMigration(from = 13, to = 14),
     ]
 )
-@TypeConverters(DbConverters::class)
+@ColumnTypeConverters(DbConverters::class)
+@ConstructedBy(AppDbConstructor::class)
 abstract class AppDb : RoomDatabase() {
     abstract fun subsItemDao(): SubsItem.SubsItemDao
     abstract fun snapshotDao(): Snapshot.SnapshotDao
@@ -56,6 +53,11 @@ abstract class AppDb : RoomDatabase() {
     abstract fun activityLogDao(): ActivityLog.ActivityLogDao
     abstract fun appVisitLogDao(): AppVisitLog.AppLogDao
     abstract fun a11yEventLogDao(): A11yEventLog.A11yEventLogDao
+}
+
+@Suppress("KotlinNoActualForExpect")
+internal expect object AppDbConstructor : RoomDatabaseConstructor<AppDb> {
+    override fun initialize(): AppDb
 }
 
 @RenameColumn(
@@ -92,12 +94,12 @@ class DbConverters {
         encodeDefaults = true
     }
 
-    @TypeConverter
+    @ColumnTypeConverter
     fun fromListStringToString(list: List<String>): String {
         return json.encodeToString(list)
     }
 
-    @TypeConverter
+    @ColumnTypeConverter
     fun fromStringToList(value: String): List<String> {
         if (value.isEmpty()) return emptyList()
         return try {
@@ -106,44 +108,4 @@ class DbConverters {
             emptyList()
         }
     }
-}
-
-object Db {
-    private var createDatabase: (() -> AppDb)? = null
-
-    fun initialize(context: Context, databasePath: String) {
-        check(createDatabase == null) { "Db is already initialized" }
-        val applicationContext = context.applicationContext
-        createDatabase = {
-            Room.databaseBuilder(
-                applicationContext,
-                AppDb::class.java,
-                databasePath,
-            )
-                .setDriver(AndroidSQLiteDriver())
-                .setQueryCoroutineContext(Dispatchers.IO)
-                .build()
-        }
-    }
-
-    private val database by lazy {
-        checkNotNull(createDatabase) { "Db is not initialized" }.invoke()
-    }
-
-    val subsItemDao get() = database.subsItemDao()
-    val subsConfigDao get() = database.subsConfigDao()
-    val snapshotDao get() = database.snapshotDao()
-    val actionLogDao get() = database.actionLogDao()
-    val categoryConfigDao get() = database.categoryConfigDao()
-    val activityLogDao get() = database.activityLogDao()
-    val appConfigDao get() = database.appConfigDao()
-    val appVisitLogDao get() = database.appVisitLogDao()
-    val a11yEventLogDao get() = database.a11yEventLogDao()
-
-    suspend fun <T> withTransaction(block: suspend () -> T): T =
-        database.useWriterConnection { connection ->
-            connection.immediateTransaction {
-                block()
-            }
-        }
 }

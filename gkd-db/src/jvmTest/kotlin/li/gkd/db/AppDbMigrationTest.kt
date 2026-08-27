@@ -1,45 +1,41 @@
 package li.gkd.db
 
-import androidx.room.Room
-import androidx.room.immediateTransaction
-import androidx.room.testing.MigrationTestHelper
-import androidx.room.useWriterConnection
+import androidx.paging.PagingSource
+import androidx.room3.Room
+import androidx.room3.testing.MigrationTestHelper
+import androidx.room3.withWriteTransaction
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
-import androidx.sqlite.driver.AndroidSQLiteDriver
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
+import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import java.nio.file.Path
+import kotlin.io.path.createTempDirectory
+import kotlin.test.AfterTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
 class AppDbMigrationTest {
-    private val instrumentation = InstrumentationRegistry.getInstrumentation()
-    private val context = instrumentation.targetContext
-    private val databaseNames = mutableSetOf<String>()
+    private val schemaDirectory =
+        Path.of(checkNotNull(System.getProperty("room.schemaDirectory")))
+    private val tempDirectory = createTempDirectory("app-db-migration-test")
+
+    private fun databasePath(databaseName: String): Path = tempDirectory.resolve(databaseName)
 
     private fun migrationHelper(databaseName: String): MigrationTestHelper {
-        databaseNames += databaseName
         return MigrationTestHelper(
-            instrumentation,
-            context.getDatabasePath(databaseName),
-            AndroidSQLiteDriver(),
-            AppDb::class,
+            schemaDirectoryPath = schemaDirectory,
+            databasePath = databasePath(databaseName),
+            driver = BundledSQLiteDriver(),
+            databaseClass = AppDb::class,
         )
     }
 
     private fun openDatabase(databaseName: String): AppDb =
-        Room.databaseBuilder(
-            context,
-            AppDb::class.java,
-            context.getDatabasePath(databaseName).absolutePath,
-        )
-            .setDriver(AndroidSQLiteDriver())
+        Room.databaseBuilder<AppDb>(name = databasePath(databaseName).toString())
+            .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
             .build()
 
@@ -55,9 +51,9 @@ class AppDbMigrationTest {
             statement.getText(0)
         }
 
-    @After
+    @AfterTest
     fun deleteDatabases() {
-        databaseNames.forEach(context::deleteDatabase)
+        tempDirectory.toFile().deleteRecursively()
     }
 
     @Test
@@ -138,8 +134,8 @@ class AppDbMigrationTest {
     }
 
     @Test
-    fun driverDatabaseOpensVersion14AndRollsBackFailedTransaction() = runBlocking {
-        val databaseName = "driver-version-14.db"
+    fun databaseOpensVersion14AndRollsBackFailedTransaction() = runBlocking {
+        val databaseName = "version-14.db"
         val helper = migrationHelper(databaseName)
         helper.createDatabase(14).apply {
             execSQL(
@@ -158,11 +154,9 @@ class AppDbMigrationTest {
 
             var failed = false
             try {
-                database.useWriterConnection { connection ->
-                    connection.immediateTransaction {
-                        database.subsItemDao().insert(SubsItem(id = 43, order = 1))
-                        error("rollback")
-                    }
+                database.withWriteTransaction {
+                    database.subsItemDao().insert(SubsItem(id = 43, order = 1))
+                    error("rollback")
                 }
             } catch (_: IllegalStateException) {
                 failed = true
@@ -170,6 +164,49 @@ class AppDbMigrationTest {
 
             assertTrue(failed)
             assertEquals(listOf(42L), database.subsItemDao().queryAll().map { it.id })
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
+    fun flowPagingAndListConverterWorkOnJvm() = runBlocking {
+        val databaseName = "room3-query-adapters.db"
+        val database = openDatabase(databaseName)
+        try {
+            val expectedText = listOf("first", "second")
+            database.a11yEventLogDao().insert(
+                listOf(
+                    A11yEventLog(
+                        id = 1,
+                        ctime = 2,
+                        type = 3,
+                        appId = "sample.app",
+                        name = "sample.Event",
+                        desc = null,
+                        text = expectedText,
+                    )
+                )
+            )
+
+            assertEquals(1, database.a11yEventLogDao().count().first())
+            when (
+                val result = database.a11yEventLogDao().pagingSource().load(
+                    PagingSource.LoadParams.Refresh(
+                        key = null,
+                        loadSize = 10,
+                        placeholdersEnabled = false,
+                    )
+                )
+            ) {
+                is PagingSource.LoadResult.Page -> {
+                    assertEquals(1, result.data.size)
+                    assertEquals(expectedText, result.data.single().text)
+                }
+
+                is PagingSource.LoadResult.Error -> throw result.throwable
+                is PagingSource.LoadResult.Invalid -> error("PagingSource became invalid before loading")
+            }
         } finally {
             database.close()
         }

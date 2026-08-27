@@ -1,12 +1,14 @@
 package li.gkd.db
 
 import androidx.paging.PagingSource
-import androidx.room.ColumnInfo
-import androidx.room.Dao
-import androidx.room.Entity
-import androidx.room.Insert
-import androidx.room.PrimaryKey
-import androidx.room.Query
+import androidx.room3.ColumnInfo
+import androidx.room3.Dao
+import androidx.room3.DaoReturnTypeConverters
+import androidx.room3.Entity
+import androidx.room3.Insert
+import androidx.room3.PrimaryKey
+import androidx.room3.Query
+import androidx.room3.paging.PagingSourceDaoReturnTypeConverter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 
@@ -31,6 +33,7 @@ class A11yEventLog(
     }
 
     @Dao
+    @DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
     interface A11yEventLogDao {
         @Insert
         suspend fun insert(objects: List<A11yEventLog>): List<Long>
