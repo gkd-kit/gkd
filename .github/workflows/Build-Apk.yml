@@ -31,7 +31,7 @@ jobs:
         run: echo ${{ secrets.GKD_STORE_FILE_BASE64 }} | base64 --decode > ${{ github.workspace }}/gkd.jks
 
       - run: chmod 777 ./gradlew
-      - run: ./gradlew app:assembleGkdRelease
+      - run: ./gradlew :gkd-app:assembleGkdRelease
         env:
           GKD_GITHUB_COOKIE: ${{ secrets.GKD_GITHUB_COOKIE }}
           GKD_API_AUTH_TOKEN: ${{ secrets.GKD_API_AUTH_TOKEN }}

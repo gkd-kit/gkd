@@ -29,7 +29,7 @@ jobs:
         run: echo ${{ secrets.PLAY_STORE_FILE_BASE64 }} | base64 --decode > ${{ github.workspace }}/play.jks
 
       - run: chmod 777 ./gradlew
-      - run: ./gradlew app:assembleGkdRelease app:bundlePlayRelease
+      - run: ./gradlew :gkd-app:assembleGkdRelease :gkd-app:bundlePlayRelease
         env:
           GKD_GITHUB_COOKIE: ${{ secrets.GKD_GITHUB_COOKIE }}
           GKD_API_AUTH_TOKEN: ${{ secrets.GKD_API_AUTH_TOKEN }}
