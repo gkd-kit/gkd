@@ -28,7 +28,6 @@ jobs:
       - name: write play keystore
         run: echo ${{ secrets.PLAY_STORE_FILE_BASE64 }} | base64 --decode > ${{ github.workspace }}/play.jks
 
-      - run: chmod 777 ./gradlew
       - run: ./gradlew :gkd-app:assembleGkdRelease :gkd-app:bundlePlayRelease
         env:
           GKD_GITHUB_COOKIE: ${{ secrets.GKD_GITHUB_COOKIE }}
