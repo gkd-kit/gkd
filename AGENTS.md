@@ -13,6 +13,10 @@
 - `gkd-app` 模块内禁止使用 `internal` 关键字；由于没有其他模块会引用 `gkd-app` 模块，对外可见的声明应省略可见性修饰符（使用 Kotlin 默认的 `public`），仅在需要收窄作用域时使用 `private`。
 - 与公开属性直接一一对应、仅用于收窄可见性或可变性的 `_xxx` backing property，必须改用 Explicit Backing Fields；不禁止不存在这种直接对应关系的普通私有字段、缓存或生成代码风格命名。未使用的 Lambda 参数占位符 `_` 不受此限制。
 
+## Kotlin 静态初始化
+
+- `companion object` 或 `object` 中由 `object`/`data object` 单例组成的列表、集合、映射及其排序结果必须使用 `by lazy` 初始化；禁止在静态初始化阶段直接构造这类集合，以避免 JVM、JS 和 Wasm 上的循环初始化。
+
 ## Compose 与状态边界
 
 - 除悬浮窗 Compose 外，应用 Compose 树中的 Composable 都可以通过 `LocalMainViewModel` 获取 `mainVm`，无需逐层转发导航、全局弹窗、打开 URL 等应用级操作。

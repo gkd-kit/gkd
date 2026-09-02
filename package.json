@@ -1,0 +1,24 @@
+{
+  "name": "gkd-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "fetch-selector-dist": "node ./gkd-selector/scripts/fetch-dist.ts"
+  },
+  "dependencies": {
+    "@types/node": "^26.4.0",
+    "typescript": "^7.0.2"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "26.6.0",
+      "onFail": "warn"
+    },
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.20.0",
+      "onFail": "error"
+    }
+  }
+}

@@ -1,28 +1,191 @@
 package li.gkd.selector.property
 
-import li.gkd.selector.QueryContext
-import li.gkd.selector.Stringify
-import li.gkd.selector.Transform
-import li.gkd.selector.comparePrimitiveValue
 import kotlin.js.JsExport
 
+@JsExport
+/** Comparison operators that can produce complete text fast-query candidate sets. */
+public sealed interface FastQueryOperator {
+    public val key: String
+}
+
+internal fun FastQueryOperator.compareFastQueryValue(candidate: Any?, value: String): Boolean =
+    when (this) {
+        CompareOperator.Equal -> CompareOperator.Equal.compareValue(candidate, value)
+        CompareOperator.Start -> CompareOperator.Start.compareValue(candidate, value)
+        CompareOperator.Include -> CompareOperator.Include.compareValue(candidate, value)
+        CompareOperator.End -> CompareOperator.End.compareValue(candidate, value)
+    }
 
 @JsExport
-sealed class CompareOperator(val key: String) : Stringify {
-    override fun stringify() = key
-
-    abstract fun <T> compare(
-        context: QueryContext<T>,
-        transform: Transform<T>,
-        leftExp: ValueExpression,
-        rightExp: ValueExpression,
+public sealed class CompareOperator(
+    public val key: String,
+    internal val expectedOperandDescription: String,
+) {
+    internal abstract fun allowType(
+        left: ValueExpression,
+        right: ValueExpression,
     ): Boolean
 
-    internal abstract fun allowType(left: ValueExpression, right: ValueExpression): Boolean
+    public sealed class ValueOperator(
+        key: String,
+        expectedOperandDescription: String,
+    ) : CompareOperator(key, expectedOperandDescription) {
+        internal abstract fun compareValue(
+            left: Any?,
+            right: Any?,
+        ): Boolean
+    }
 
-    companion object {
-        // https://stackoverflow.com/questions/47648689
-        val allSubClasses by lazy {
+    public sealed class RegexOperator(
+        key: String,
+        expectedOperandDescription: String,
+        internal val expectedMatch: Boolean,
+    ) : CompareOperator(key, expectedOperandDescription)
+
+    public data object Equal : ValueOperator("=", "compatible operands"), FastQueryOperator {
+        override fun allowType(
+            left: ValueExpression,
+            right: ValueExpression,
+        ): Boolean = true
+
+        override fun compareValue(left: Any?, right: Any?): Boolean =
+            comparePrimitiveValue(left, right)
+    }
+
+    public data object NotEqual : ValueOperator("!=", "compatible operands") {
+        override fun allowType(
+            left: ValueExpression,
+            right: ValueExpression,
+        ): Boolean = true
+
+        override fun compareValue(left: Any?, right: Any?): Boolean =
+            !comparePrimitiveValue(left, right)
+    }
+
+    public data object Start : ValueOperator("^=", "string operands"), FastQueryOperator {
+        override fun allowType(
+            left: ValueExpression,
+            right: ValueExpression,
+        ): Boolean = left.isStringOperand && right.isStringOperand
+
+        override fun compareValue(left: Any?, right: Any?): Boolean =
+            left is CharSequence && right is CharSequence && left.startsWith(right)
+    }
+
+    public data object NotStart : ValueOperator("!^=", "string operands") {
+        override fun allowType(
+            left: ValueExpression,
+            right: ValueExpression,
+        ): Boolean = left.isStringOperand && right.isStringOperand
+
+        override fun compareValue(left: Any?, right: Any?): Boolean =
+            left is CharSequence && right is CharSequence && !left.startsWith(right)
+    }
+
+    public data object Include : ValueOperator("*=", "string operands"), FastQueryOperator {
+        override fun allowType(
+            left: ValueExpression,
+            right: ValueExpression,
+        ): Boolean = left.isStringOperand && right.isStringOperand
+
+        override fun compareValue(left: Any?, right: Any?): Boolean =
+            left is CharSequence && right is CharSequence && left.contains(right)
+    }
+
+    public data object NotInclude : ValueOperator("!*=", "string operands") {
+        override fun allowType(
+            left: ValueExpression,
+            right: ValueExpression,
+        ): Boolean = left.isStringOperand && right.isStringOperand
+
+        override fun compareValue(left: Any?, right: Any?): Boolean =
+            left is CharSequence && right is CharSequence && !left.contains(right)
+    }
+
+    public data object End : ValueOperator("$=", "string operands"), FastQueryOperator {
+        override fun allowType(
+            left: ValueExpression,
+            right: ValueExpression,
+        ): Boolean = left.isStringOperand && right.isStringOperand
+
+        override fun compareValue(left: Any?, right: Any?): Boolean =
+            left is CharSequence && right is CharSequence && left.endsWith(right)
+    }
+
+    public data object NotEnd : ValueOperator("!$=", "string operands") {
+        override fun allowType(
+            left: ValueExpression,
+            right: ValueExpression,
+        ): Boolean = left.isStringOperand && right.isStringOperand
+
+        override fun compareValue(left: Any?, right: Any?): Boolean =
+            left is CharSequence && right is CharSequence && !left.endsWith(right)
+    }
+
+    public data object Less : ValueOperator("<", "int operands") {
+        override fun allowType(
+            left: ValueExpression,
+            right: ValueExpression,
+        ): Boolean = left.isIntOperand && right.isIntOperand
+
+        override fun compareValue(left: Any?, right: Any?): Boolean =
+            left is Int && right is Int && left < right
+    }
+
+    public data object LessEqual : ValueOperator("<=", "int operands") {
+        override fun allowType(
+            left: ValueExpression,
+            right: ValueExpression,
+        ): Boolean = left.isIntOperand && right.isIntOperand
+
+        override fun compareValue(left: Any?, right: Any?): Boolean =
+            left is Int && right is Int && left <= right
+    }
+
+    public data object More : ValueOperator(">", "int operands") {
+        override fun allowType(
+            left: ValueExpression,
+            right: ValueExpression,
+        ): Boolean = left.isIntOperand && right.isIntOperand
+
+        override fun compareValue(left: Any?, right: Any?): Boolean =
+            left is Int && right is Int && left > right
+    }
+
+    public data object MoreEqual : ValueOperator(">=", "int operands") {
+        override fun allowType(
+            left: ValueExpression,
+            right: ValueExpression,
+        ): Boolean = left.isIntOperand && right.isIntOperand
+
+        override fun compareValue(left: Any?, right: Any?): Boolean =
+            left is Int && right is Int && left >= right
+    }
+
+    public data object Matches : RegexOperator(
+        "~=",
+        "variable and regular expression string literal",
+        true,
+    ) {
+        override fun allowType(
+            left: ValueExpression,
+            right: ValueExpression,
+        ): Boolean = left is ValueExpression.Variable && right is ValueExpression.StringLiteral
+    }
+
+    public data object NotMatches : RegexOperator(
+        "!~=",
+        "variable and regular expression string literal",
+        false,
+    ) {
+        override fun allowType(
+            left: ValueExpression,
+            right: ValueExpression,
+        ): Boolean = left is ValueExpression.Variable && right is ValueExpression.StringLiteral
+    }
+
+    public companion object {
+        internal val parseOrder: List<CompareOperator> by lazy {
             listOf(
                 Equal,
                 NotEqual,
@@ -37,281 +200,18 @@ sealed class CompareOperator(val key: String) : Stringify {
                 More,
                 MoreEqual,
                 Matches,
-                NotMatches
-            ).sortedBy { -it.key.length }.toTypedArray()
-        }
-
-    }
-
-    data object Equal : CompareOperator("=") {
-        override fun <T> compare(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-            leftExp: ValueExpression,
-            rightExp: ValueExpression,
-        ): Boolean {
-            val left = leftExp.getAttr(context, transform)
-            val right = rightExp.getAttr(context, transform)
-            return comparePrimitiveValue(left, right)
-        }
-
-        override fun allowType(left: ValueExpression, right: ValueExpression) = true
-
-    }
-
-    data object NotEqual : CompareOperator("!=") {
-        override fun <T> compare(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-            leftExp: ValueExpression,
-            rightExp: ValueExpression,
-        ): Boolean {
-            return !Equal.compare(context, transform, leftExp, rightExp)
-        }
-
-        override fun allowType(left: ValueExpression, right: ValueExpression) = true
-    }
-
-    data object Start : CompareOperator("^=") {
-        override fun <T> compare(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-            leftExp: ValueExpression,
-            rightExp: ValueExpression,
-
-            ): Boolean {
-            val left = leftExp.getAttr(context, transform)
-            val right = rightExp.getAttr(context, transform)
-            return if (left is CharSequence && right is CharSequence) {
-                left.startsWith(right)
-            } else {
-                false
-            }
-        }
-
-        override fun allowType(left: ValueExpression, right: ValueExpression): Boolean {
-            return (left is ValueExpression.StringLiteral || left is ValueExpression.Variable) && (right is ValueExpression.StringLiteral || right is ValueExpression.Variable)
+                NotMatches,
+            ).sortedByDescending { it.key.length }
         }
     }
+}
 
-    data object NotStart : CompareOperator("!^=") {
-        override fun <T> compare(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-            leftExp: ValueExpression,
-            rightExp: ValueExpression,
-
-            ): Boolean {
-            val left = leftExp.getAttr(context, transform)
-            val right = rightExp.getAttr(context, transform)
-            return if (left is CharSequence && right is CharSequence) {
-                !left.startsWith(right)
-            } else {
-                false
-            }
-        }
-
-        override fun allowType(left: ValueExpression, right: ValueExpression) =
-            Start.allowType(left, right)
+internal fun comparePrimitiveValue(left: Any?, right: Any?): Boolean {
+    if (left !is CharSequence || right !is CharSequence) return left == right
+    if (left === right) return true
+    if (left.length != right.length) return false
+    for (index in left.indices.reversed()) {
+        if (left[index] != right[index]) return false
     }
-
-    data object Include : CompareOperator("*=") {
-        override fun <T> compare(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-            leftExp: ValueExpression,
-            rightExp: ValueExpression,
-
-            ): Boolean {
-            val left = leftExp.getAttr(context, transform)
-            val right = rightExp.getAttr(context, transform)
-            return if (left is CharSequence && right is CharSequence) {
-                left.contains(right)
-            } else {
-                false
-            }
-        }
-
-        override fun allowType(left: ValueExpression, right: ValueExpression) =
-            Start.allowType(left, right)
-    }
-
-    data object NotInclude : CompareOperator("!*=") {
-        override fun <T> compare(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-            leftExp: ValueExpression,
-            rightExp: ValueExpression,
-
-            ): Boolean {
-            val left = leftExp.getAttr(context, transform)
-            val right = rightExp.getAttr(context, transform)
-            return if (left is CharSequence && right is CharSequence) {
-                !left.contains(right)
-            } else {
-                false
-            }
-        }
-
-        override fun allowType(left: ValueExpression, right: ValueExpression) =
-            Start.allowType(left, right)
-    }
-
-    data object End : CompareOperator("$=") {
-        override fun <T> compare(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-            leftExp: ValueExpression,
-            rightExp: ValueExpression,
-
-            ): Boolean {
-            val left = leftExp.getAttr(context, transform)
-            val right = rightExp.getAttr(context, transform)
-            return if (left is CharSequence && right is CharSequence) {
-                left.endsWith(right)
-            } else {
-                false
-            }
-        }
-
-        override fun allowType(left: ValueExpression, right: ValueExpression) =
-            Start.allowType(left, right)
-    }
-
-    data object NotEnd : CompareOperator("!$=") {
-        override fun <T> compare(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-            leftExp: ValueExpression,
-            rightExp: ValueExpression,
-
-            ): Boolean {
-            val left = leftExp.getAttr(context, transform)
-            val right = rightExp.getAttr(context, transform)
-            return if (left is CharSequence && right is CharSequence) {
-                !left.endsWith(
-                    right
-                )
-            } else {
-                false
-            }
-        }
-
-        override fun allowType(left: ValueExpression, right: ValueExpression) =
-            Start.allowType(left, right)
-    }
-
-    data object Less : CompareOperator("<") {
-        override fun <T> compare(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-            leftExp: ValueExpression,
-            rightExp: ValueExpression,
-
-            ): Boolean {
-            val left = leftExp.getAttr(context, transform)
-            val right = rightExp.getAttr(context, transform)
-            return if (left is Int && right is Int) left < right else false
-        }
-
-
-        override fun allowType(left: ValueExpression, right: ValueExpression): Boolean {
-            return (left is ValueExpression.Variable || left is ValueExpression.IntLiteral) && (right is ValueExpression.IntLiteral || right is ValueExpression.Variable)
-        }
-    }
-
-    data object LessEqual : CompareOperator("<=") {
-        override fun <T> compare(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-            leftExp: ValueExpression,
-            rightExp: ValueExpression,
-
-            ): Boolean {
-            val left = leftExp.getAttr(context, transform)
-            val right = rightExp.getAttr(context, transform)
-            return if (left is Int && right is Int) left <= right else false
-        }
-
-        override fun allowType(left: ValueExpression, right: ValueExpression) =
-            Less.allowType(left, right)
-    }
-
-    data object More : CompareOperator(">") {
-        override fun <T> compare(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-            leftExp: ValueExpression,
-            rightExp: ValueExpression,
-
-            ): Boolean {
-            val left = leftExp.getAttr(context, transform)
-            val right = rightExp.getAttr(context, transform)
-            return if (left is Int && right is Int) left > right else false
-        }
-
-        override fun allowType(left: ValueExpression, right: ValueExpression) =
-            Less.allowType(left, right)
-    }
-
-    data object MoreEqual : CompareOperator(">=") {
-        override fun <T> compare(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-            leftExp: ValueExpression,
-            rightExp: ValueExpression,
-
-            ): Boolean {
-            val left = leftExp.getAttr(context, transform)
-            val right = rightExp.getAttr(context, transform)
-            return if (left is Int && right is Int) left >= right else false
-        }
-
-
-        override fun allowType(left: ValueExpression, right: ValueExpression) =
-            Less.allowType(left, right)
-    }
-
-    data object Matches : CompareOperator("~=") {
-        override fun <T> compare(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-            leftExp: ValueExpression,
-            rightExp: ValueExpression,
-
-            ): Boolean {
-            val left = leftExp.getAttr(context, transform)
-            return if (left is CharSequence && rightExp is ValueExpression.StringLiteral) {
-                rightExp.outMatches(left)
-            } else {
-                false
-            }
-        }
-
-        override fun allowType(left: ValueExpression, right: ValueExpression): Boolean {
-            return (left is ValueExpression.Variable) && (right is ValueExpression.StringLiteral && right.matches != null)
-        }
-    }
-
-    data object NotMatches : CompareOperator("!~=") {
-        override fun <T> compare(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-            leftExp: ValueExpression,
-            rightExp: ValueExpression,
-
-            ): Boolean {
-            val left = leftExp.getAttr(context, transform)
-            return if (left is CharSequence && rightExp is ValueExpression.StringLiteral) {
-                !rightExp.outMatches(left)
-            } else {
-                false
-            }
-        }
-
-        override fun allowType(left: ValueExpression, right: ValueExpression): Boolean {
-            return Matches.allowType(left, right)
-        }
-    }
-
+    return true
 }

@@ -12,7 +12,7 @@ import li.gkd.app.service.A11yService
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.OnSimpleLife
 import li.gkd.app.util.mapState
-import li.gkd.selector.initDefaultTypeInfo
+import li.gkd.selector.createDefaultSelectorTypeModel
 import kotlin.contracts.contract
 
 context(context: OnSimpleLife)
@@ -87,7 +87,7 @@ fun AccessibilityNodeInfo.isExpired(expiryMillis: Long): Boolean {
     return (System.currentTimeMillis() - generatedTime) > expiryMillis
 }
 
-val typeInfo by lazy { initDefaultTypeInfo().globalType }
+val selectorTypeModel by lazy { createDefaultSelectorTypeModel() }
 
 val AccessibilityNodeInfo.compatChecked: Boolean?
     get() = if (AndroidTarget.BAKLAVA) {

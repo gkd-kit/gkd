@@ -1,193 +1,93 @@
 package li.gkd.selector.property
 
-import li.gkd.selector.QueryContext
-import li.gkd.selector.Stringify
-import li.gkd.selector.Transform
-import li.gkd.selector.comparePrimitiveValue
-import li.gkd.selector.escapeString
-import li.gkd.selector.optimizeMatchString
-import li.gkd.selector.whenNull
-import kotlin.js.JsExport
+import li.gkd.selector.SelectorTypeKind
 
-@JsExport
-sealed class ValueExpression(open val value: Any?, open val type: String) : Stringify {
-    override fun stringify() = value.toString()
-    internal abstract fun <T> getAttr(
-        context: QueryContext<T>,
-        transform: Transform<T>,
-    ): Any?
+internal sealed class ValueExpression {
+    abstract val syntaxTypeName: String
 
-    abstract val properties: Array<String>
-    abstract val methods: Array<String>
+    open val isStringOperand: Boolean
+        get() = false
 
-    sealed class Variable(
-        override val value: String,
-    ) : ValueExpression(value, "var")
+    open val isIntOperand: Boolean
+        get() = false
 
-    data class Identifier(
-        val name: String,
-    ) : Variable(name) {
-        override fun <T> getAttr(context: QueryContext<T>, transform: Transform<T>): Any? {
-            return transform.getAttr(context, value)
-        }
+    sealed class Variable : ValueExpression() {
+        override val syntaxTypeName: String
+            get() = "variable"
 
-        override val properties: Array<String>
-            get() = arrayOf(value)
-        override val methods: Array<String>
-            get() = emptyArray()
+        override val isStringOperand: Boolean
+            get() = true
 
-        val isEqual = name == "equal"
-        val isNotEqual = name == "notEqual"
+        override val isIntOperand: Boolean
+            get() = true
     }
 
-    data class MemberExpression(
+    enum class IdentifierRole {
+        Other,
+        Previous,
+        Current,
+        NullTolerantFunction,
+    }
+
+    class Identifier(
+        val name: String,
+    ) : Variable() {
+        val role = when (name) {
+            "prev" -> IdentifierRole.Previous
+            "current" -> IdentifierRole.Current
+            "equal", "notEqual" -> IdentifierRole.NullTolerantFunction
+            else -> IdentifierRole.Other
+        }
+    }
+
+    class MemberExpression(
         val object0: Variable,
         val property: String,
-    ) : Variable(value = "${object0.stringify()}.$property") {
-        override fun <T> getAttr(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-        ): Any? {
-            return transform.getAttr(
-                object0.getAttr(context, transform).whenNull { return null },
-                property
-            )
-        }
+    ) : Variable()
 
-        override val properties: Array<String>
-            get() = arrayOf(*object0.properties, property)
-        override val methods: Array<String>
-            get() = object0.methods
-
-        val isPropertyOr = property == "or"
-        val isPropertyAnd = property == "and"
-        val isPropertyIfElse = property == "ifElse"
-    }
-
-    data class CallExpression(
+    class CallExpression(
         val callee: Variable,
         val arguments: List<ValueExpression>,
-    ) : Variable(
-        value = "${callee.stringify()}(${arguments.joinToString(",") { it.stringify() }})",
-    ) {
-
-        override fun <T> getAttr(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-        ): Any? {
-            return when (callee) {
-                is CallExpression -> {
-                    // not support
-                    null
-                }
-
-                is Identifier -> {
-                    when {
-                        callee.isEqual -> {
-                            comparePrimitiveValue(
-                                arguments[0].getAttr(context, transform),
-                                arguments[1].getAttr(context, transform)
-                            )
-                        }
-
-                        callee.isNotEqual -> {
-                            !comparePrimitiveValue(
-                                arguments[0].getAttr(context, transform),
-                                arguments[1].getAttr(context, transform)
-                            )
-                        }
-
-                        else -> {
-                            transform.getInvoke(
-                                context,
-                                callee.name,
-                                arguments.map {
-                                    it.getAttr(context, transform).whenNull { return null }
-                                }
-                            )
-                        }
-                    }
-                }
-
-                is MemberExpression -> {
-                    val objectValue =
-                        callee.object0.getAttr(context, transform).whenNull { return null }
-                    when {
-                        callee.isPropertyOr -> {
-                            (objectValue as Boolean) ||
-                                    (arguments[0].getAttr(context, transform)
-                                        .whenNull { return null } as Boolean)
-                        }
-
-                        callee.isPropertyAnd -> {
-                            (objectValue as Boolean) &&
-                                    (arguments[0].getAttr(context, transform)
-                                        .whenNull { return null } as Boolean)
-                        }
-
-                        callee.isPropertyIfElse -> {
-                            if (objectValue as Boolean) {
-                                arguments[0].getAttr(context, transform)
-                            } else {
-                                arguments[1].getAttr(context, transform)
-                            }
-                        }
-
-                        else -> transform.getInvoke(
-                            objectValue,
-                            callee.property,
-                            arguments.map {
-                                it.getAttr(context, transform).whenNull { return null }
-                            }
-                        )
-                    }
-
-                }
-            }
-        }
-
-        override val properties: Array<String>
-            get() = callee.properties.toMutableList()
-                .plus(arguments.flatMap { it.properties.toList() })
-                .toTypedArray()
-        override val methods: Array<String>
-            get() = when (callee) {
-                is CallExpression -> callee.methods
-                is Identifier -> arrayOf(callee.name)
-                is MemberExpression -> arrayOf(*callee.object0.methods, callee.property)
-            }.toMutableList().plus(arguments.flatMap { it.methods.toList() })
-                .toTypedArray()
-    }
+    ) : Variable()
 
     sealed class LiteralExpression(
-        override val value: Any?,
-        override val type: String,
-    ) : ValueExpression(value, type) {
-        override fun <T> getAttr(
-            context: QueryContext<T>,
-            transform: Transform<T>,
-        ) = value
+        open val value: Any?,
+    ) : ValueExpression() {
+        abstract val literalType: SelectorTypeKind?
 
-        override val properties: Array<String>
-            get() = emptyArray()
-        override val methods: Array<String>
-            get() = emptyArray()
+        override val syntaxTypeName: String
+            get() = literalType?.key ?: "null"
     }
 
-    data object NullLiteral : LiteralExpression(null, "null")
+    class NullLiteral : LiteralExpression(null) {
+        override val literalType: SelectorTypeKind?
+            get() = null
+    }
 
-    data class BooleanLiteral(override val value: Boolean) : LiteralExpression(value, "boolean")
+    class BooleanLiteral(
+        override val value: Boolean,
+    ) : LiteralExpression(value) {
+        override val literalType: SelectorTypeKind
+            get() = SelectorTypeKind.BooleanType
+    }
 
-    data class IntLiteral(override val value: Int) : LiteralExpression(value, "int")
+    class IntLiteral(
+        override val value: Int,
+    ) : LiteralExpression(value) {
+        override val literalType: SelectorTypeKind
+            get() = SelectorTypeKind.IntType
 
-    @ConsistentCopyVisibility
-    data class StringLiteral internal constructor(
+        override val isIntOperand: Boolean
+            get() = true
+    }
+
+    class StringLiteral(
         override val value: String,
-        internal val matches: ((CharSequence) -> Boolean)? = null
-    ) : LiteralExpression(value, "string") {
+    ) : LiteralExpression(value) {
+        override val literalType: SelectorTypeKind
+            get() = SelectorTypeKind.StringType
 
-        override fun stringify() = escapeString(value)
-
-        internal val outMatches = matches?.let { optimizeMatchString(value) ?: it } ?: { false }
+        override val isStringOperand: Boolean
+            get() = true
     }
 }

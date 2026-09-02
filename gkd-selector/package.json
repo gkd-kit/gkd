@@ -1,0 +1,52 @@
+{
+  "name": "@gkd-kit/selector",
+  "version": "0.6.0",
+  "description": "GKD selector parser and matcher",
+  "type": "module",
+  "main": "./dist/gkd-selector.mjs",
+  "types": "./dist/gkd-selector.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/gkd-selector.d.mts",
+      "import": "./dist/gkd-selector.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "src/commonMain",
+    "src/jsMain"
+  ],
+  "scripts": {
+    "build": "node ./scripts/build.ts",
+    "type-check": "tsc",
+    "test:kotlin": "node ./scripts/kotlin-test.ts",
+    "test:node": "node --test scripts/**/*.test.ts",
+    "test": "pnpm test:kotlin && pnpm build && pnpm type-check && pnpm test:node",
+    "prepack": "pnpm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gkd-kit/gkd.git",
+    "directory": "gkd-selector"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/",
+    "provenance": true
+  },
+  "author": "lisonge",
+  "license": "GPL-3.0-only",
+  "engines": {
+    "node": ">=22"
+  },
+  "engineStrict": true,
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "onFail": "error"
+    }
+  },
+  "dependencies": {
+    "regex-wasm": "^0.1.1"
+  }
+}

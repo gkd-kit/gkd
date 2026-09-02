@@ -40,8 +40,10 @@ import li.gkd.app.util.launchTry
 import li.gkd.app.util.runMainPost
 import li.gkd.app.util.showActionToast
 import li.gkd.app.util.systemUiAppId
-import li.gkd.selector.MatchOption
+import li.gkd.selector.MatchOptions
 import li.gkd.selector.Selector
+import li.gkd.selector.SelectorCompileResult
+import li.gkd.selector.SelectorTypeResult
 import java.util.concurrent.Executors
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
@@ -472,14 +474,17 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
         suspend fun screenshot(): Bitmap? = service?.screenshot()
 
         suspend fun execAction(gkdAction: GkdAction): ActionResult {
-            val selector = Selector.parseOrNull(gkdAction.selector) ?: throw RpcError("非法选择器")
-            runCatching { selector.checkType(typeInfo) }.exceptionOrNull()?.let {
-                throw RpcError("选择器类型错误:${it.message}")
+            val selectorResult = Selector.compile(gkdAction.selector)
+            val selector = (selectorResult as? SelectorCompileResult.Success)?.value
+                ?: throw RpcError("非法选择器")
+            val typeResult = selector.validateType(selectorTypeModel)
+            if (typeResult is SelectorTypeResult.Failure) {
+                throw RpcError("选择器类型错误:${typeResult.error.message}")
             }
             val s = instance ?: throw RpcError("服务未连接")
             val a = s.safeActiveWindow ?: throw RpcError("界面没有节点信息")
             val targetNode = A11yContext(s, interruptable = false).querySelfOrSelector(
-                a, selector, MatchOption(fastQuery = gkdAction.fastQuery)
+                a, selector, MatchOptions(fastQuery = gkdAction.fastQuery)
             ) ?: throw RpcError("没有查询到节点")
             return withContext(Dispatchers.IO) {
                 ActionPerformer

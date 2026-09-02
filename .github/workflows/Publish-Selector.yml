@@ -1,0 +1,39 @@
+name: Publish-Selector
+
+on:
+  push:
+    tags:
+      - '@gkd-kit/selector@*.*.*'
+
+concurrency:
+  group: publish-selector
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_CACHE_ENCRYPTION_KEY }}
+
+      - uses: pnpm/setup@v2
+
+      - name: Validate release tag
+        run: node ./gkd-selector/scripts/validate-release-tag.ts "$GITHUB_REF_NAME"
+
+      - name: Test, build, and publish
+        run: pnpm -F @gkd-kit/selector publish --no-git-checks --fail-if-no-match

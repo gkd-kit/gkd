@@ -1,49 +1,108 @@
 package li.gkd.selector
 
-import li.gkd.selector.parser.AstParser
-import li.gkd.selector.parser.SelectorParser
-import li.gkd.selector.unit.SelectorExpression
+import li.gkd.selector.engine.SelectorExpression
+import li.gkd.selector.engine.SelectorProgram
+import li.gkd.selector.syntax.PositionRecorder
+import li.gkd.selector.syntax.SelectorParser
+import li.gkd.selector.syntax.SelectorPrinter
+import li.gkd.selector.syntax.SelectorTokenizer
 import kotlin.js.JsExport
+import kotlin.js.JsStatic
 
 @JsExport
-class Selector(
-    val expression: SelectorExpression,
+public class Selector internal constructor(
+    private val expression: SelectorExpression,
+    private val sourceMap: SelectorSourceMap?,
 ) {
+    private val program = SelectorProgram.compile(expression, sourceMap)
+
     override fun toString(): String {
-        return expression.stringify()
+        return SelectorPrinter.render(expression)
     }
 
-    fun <T> matchContext(
+    @JsExport.Ignore
+    public fun <T : Any> matchWithTrace(
         node: T,
-        transform: Transform<T>,
-        option: MatchOption,
-    ): QueryResult<T> {
-        return expression.matchContext(QueryContext(node), transform, option)
+        adapter: NodeAdapter<T>,
+        options: MatchOptions = MatchOptions.default,
+    ): SelectorMatch<T>? {
+        return program.matchWithTrace(
+            context = MatchContext(node),
+            adapter = adapter,
+            options = options,
+        )
     }
 
-    fun <T> match(
+    @JsExport.Ignore
+    public fun <T : Any> match(
         node: T,
-        transform: Transform<T>,
-        option: MatchOption,
+        adapter: NodeAdapter<T>,
+        options: MatchOptions = MatchOptions.default,
     ): T? {
-        return expression.match(QueryContext(node), transform, option)
+        return program.match(MatchContext(node), adapter, options)
     }
 
-    val fastQueryList = expression.fastQueryList.distinct()
-    val isMatchRoot = expression.isMatchRoot
+    internal val fastQueryList: List<FastQuery>
+        get() = program.fastQueryList
 
-    fun isSlow(matchOption: MatchOption) = expression.isSlow(matchOption)
-    fun checkType(typeInfo: TypeInfo) = expression.checkType(typeInfo)
+    public val isMatchRoot: Boolean
+        get() = program.isMatchRoot
 
-    companion object {
-        fun parse(source: String) = SelectorParser(source).readSelector()
+    public fun isSlow(options: MatchOptions): Boolean = program.isSlow(options)
 
-        fun parseOrNull(source: String) = try {
-            SelectorParser(source).readSelector()
-        } catch (_: Exception) {
-            null
+    public fun validateType(typeModel: SelectorTypeModel): SelectorTypeResult {
+        val failure = program.validateType(typeModel.globalType)
+            ?: return SelectorTypeResult.Success(this)
+        return SelectorTypeResult.Failure(
+            failure.toException(sourceMap?.rangeOf(failure.positionValue)),
+        )
+    }
+
+    /** Collects every independent type error, retaining ranges when this selector was parsed. */
+    public fun getTypeErrors(typeModel: SelectorTypeModel): Array<out SelectorTypeException> =
+        program.collectTypeFailures(typeModel.globalType)
+            .mapIndexed { order, failure ->
+                order to failure.toException(sourceMap?.rangeOf(failure.positionValue))
+            }
+            .sortedWith(
+                compareBy<Pair<Int, SelectorTypeException>> { (_, error) ->
+                    error.index ?: Int.MAX_VALUE
+                }.thenBy { (order) -> order },
+            )
+            .map { (_, error) -> error }
+            .toTypedArray()
+
+    public companion object {
+        /** Strict semantic compilation for matching-only callers. */
+        @JsStatic
+        public fun compile(source: String): SelectorCompileResult = try {
+            SelectorCompileResult.Success(Selector(SelectorParser(source).readSelector(), null))
+        } catch (error: SelectorSyntaxException) {
+            SelectorCompileResult.Failure(error)
         }
 
-        fun parseAst(source: String) = AstParser(source).readAst()
+        /** Strict semantic parsing with source positions and highlight tokens. */
+        @JsStatic
+        public fun parse(source: String): SelectorParseResult {
+            val tokens = SelectorTokenizer.tokenize(source)
+            val recorder = PositionRecorder()
+            return try {
+                val parsed = SelectorParser(source, recorder).readSelector()
+                val recordedPositions = recorder.freeze()
+                val selector = Selector(parsed, recordedPositions.sourceMap)
+                SelectorParseResult.Success(
+                    value = selector,
+                    tokens = tokens,
+                    positions = recordedPositions.positions,
+                )
+            } catch (error: SelectorSyntaxException) {
+                SelectorParseResult.Failure(error, tokens, recorder.freezePositions())
+            }
+        }
+
+        /** Tolerant lexical scanning for editors and syntax highlighters. */
+        @JsStatic
+        public fun tokenize(source: String): Array<out SelectorToken> =
+            SelectorTokenizer.tokenize(source)
     }
 }

@@ -4,9 +4,11 @@
 .cache
 .kotlin
 
+node_modules
+kotlin-js-store
 /build
 /*/build
-/kotlin-js-store
+/*/dist
 
 .cxx
 .DS_Store

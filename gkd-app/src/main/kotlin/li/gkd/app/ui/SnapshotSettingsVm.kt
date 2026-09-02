@@ -6,6 +6,7 @@ import li.gkd.app.ui.share.BaseViewModel
 import li.gkd.app.util.appInfoMapFlow
 import li.gkd.app.util.toast
 import li.gkd.selector.Selector
+import li.gkd.selector.SelectorCompileResult
 
 class SnapshotSettingsVm : BaseViewModel() {
     fun saveCaptureScreenshotConfig(
@@ -23,7 +24,10 @@ class SnapshotSettingsVm : BaseViewModel() {
             toast("无效应用ID")
             return false
         }
-        if (eventSelector.isNotEmpty() && Selector.parseOrNull(eventSelector) == null) {
+        if (
+            eventSelector.isNotEmpty() &&
+            Selector.compile(eventSelector) is SelectorCompileResult.Failure
+        ) {
             toast("无效事件选择器")
             return false
         }
