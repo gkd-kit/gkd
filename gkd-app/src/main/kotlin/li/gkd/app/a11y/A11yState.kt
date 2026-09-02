@@ -33,7 +33,7 @@ import li.gkd.app.util.RuleSummary
 import li.gkd.app.util.launchTry
 import li.gkd.app.util.ruleSummaryFlow
 import li.gkd.app.util.systemUiAppId
-import li.songe.loc.Loc
+import li.songe.codeorigin.CallSite
 
 data class TopActivity(
     val appId: String = "",
@@ -145,7 +145,7 @@ fun updateTopActivity(
     appId: String,
     activityId: String?,
     scene: ActivityScene = ActivityScene.A11y,
-    @Loc loc: String = "",
+    @CallSite loc: String = "",
 ) {
     val t = System.currentTimeMillis()
     if (scene == ActivityScene.TaskStack) {

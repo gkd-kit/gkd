@@ -29,13 +29,13 @@ import li.gkd.app.service.A11yService
 import li.gkd.app.service.OverlayWindowService
 import li.gkd.app.store.actionCountFlow
 import li.gkd.app.store.storeFlow
-import li.songe.loc.Loc
+import li.songe.codeorigin.CallSite
 
 fun toast(
     text: CharSequence,
     forced: Boolean = false,
     delayMillis: Long = 0L,
-    @Loc loc: String = "",
+    @CallSite loc: String = "",
 ) {
     if (delayMillis > 0) {
         runMainPost(delayMillis) {

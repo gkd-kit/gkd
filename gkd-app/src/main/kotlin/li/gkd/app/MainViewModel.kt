@@ -64,7 +64,7 @@ import li.gkd.app.util.launchTry
 import li.gkd.app.util.openWeChatScaner
 import li.gkd.app.util.runMainPost
 import li.gkd.app.util.toast
-import li.songe.loc.Loc
+import li.songe.codeorigin.CallSite
 import java.nio.file.Files
 import kotlin.reflect.jvm.jvmName
 import kotlin.time.Duration.Companion.days
@@ -109,7 +109,7 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
 
     private val backThrottleTimer = ThrottleTimer()
 
-    fun popPage(@Loc loc: String = "") = runMainPost {
+    fun popPage(@CallSite loc: String = "") = runMainPost {
         if (backThrottleTimer.expired() && backStack.size > 1) {
             val old = backStack.last()
             backStack.removeAt(backStack.lastIndex)
@@ -120,7 +120,7 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
     fun navigatePage(
         navKey: NavKey,
         replaced: Boolean = false,
-        @Loc loc: String = "",
+        @CallSite loc: String = "",
     ) = runMainPost {
         if (navKey != backStack.last()) {
             val old = backStack.last()

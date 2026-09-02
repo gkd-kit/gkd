@@ -21,7 +21,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlinx.atomicfu)
     alias(libs.plugins.remap)
-    alias(libs.plugins.loc)
+    alias(libs.plugins.codeorigin)
 }
 
 android {
@@ -202,10 +202,6 @@ composeCompiler {
     )
 }
 
-loc {
-    template = "{packageName}.{methodName}({fileName}:{lineNumber})"
-}
-
 dependencies {
     implementation(libs.kotlin.stdlib)
 
@@ -282,7 +278,7 @@ dependencies {
     implementation(libs.device)
 
     implementation(libs.json5)
-    compileOnly(libs.loc.annotation)
+    compileOnly(libs.codeorigin)
 
     // compose-webview declares Material but does not use it.
     implementation(libs.kevinnzouWebview) {

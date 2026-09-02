@@ -8,15 +8,15 @@ import com.hjq.device.compat.DeviceMarketName
 import com.hjq.device.compat.DeviceOs
 import li.gkd.app.META
 import li.gkd.app.app
-import li.songe.loc.Loc
+import li.songe.codeorigin.CallSite
 import java.util.concurrent.Executors
 import kotlin.time.Duration.Companion.days
 
 object LogUtils {
     fun d(
         vararg args: Any?,
-        @Loc loc: String = "",
-        @Loc("{fileName}") fileName: String = "",
+        @CallSite loc: String = "",
+        @CallSite("{file}") fileName: String = "",
         tag: String = fileName.substringBeforeLast('.'),
     ) {
         val name = Thread.currentThread().name

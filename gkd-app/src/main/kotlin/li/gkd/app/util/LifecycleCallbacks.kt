@@ -8,7 +8,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import li.songe.loc.Loc
+import li.songe.codeorigin.CallSite
 
 typealias CbFn = () -> Unit
 
@@ -26,7 +26,7 @@ interface OnSimpleLife {
     fun onDestroyed(f: CbFn) = cbs<CbFn>(2).add(f)
     fun onDestroyed() = cbs<CbFn>(2).forEach { it() }
 
-    fun useLogLifecycle(@Loc loc: String = "") {
+    fun useLogLifecycle(@CallSite loc: String = "") {
         onCreated { LogUtils.d("onCreated -> " + this::class.simpleName, loc = loc) }
         onDestroyed { LogUtils.d("onDestroyed -> " + this::class.simpleName, loc = loc) }
         if (this is OnA11yLife) {
@@ -52,7 +52,7 @@ interface OnSimpleLife {
     fun useAliveToast(
         name: String,
         delayMillis: Long = 0L,
-        @Loc loc: String = "",
+        @CallSite loc: String = "",
     ) {
         onCreated {
             toast("${name}已启动", loc = loc, delayMillis = delayMillis)
