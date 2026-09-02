@@ -30,10 +30,23 @@ import li.gkd.selector.NodeAdapter
 fun onA11yFeatEvent(event: AccessibilityEvent) = event.run {
     if (event.eventType == STATE_CHANGED) {
         watchCaptureScreenshot()
-        if (event.packageName == launcherAppId) {
-            watchAutoUpdateSubs()
-        }
     }
+    if (isLauncherAutoUpdateEvent(event.eventType, event.packageName, launcherAppId)) {
+        watchAutoUpdateSubs()
+    }
+}
+
+fun isLauncherAutoUpdateEvent(
+    eventType: Int,
+    packageName: CharSequence?,
+    launcherAppId: String,
+): Boolean {
+    if (
+        eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
+        eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+    ) return false
+    return launcherAppId.isNotEmpty() &&
+            packageName?.contentEquals(launcherAppId) == true
 }
 
 private var tempEventSelector = "" to (null as Selector?)
