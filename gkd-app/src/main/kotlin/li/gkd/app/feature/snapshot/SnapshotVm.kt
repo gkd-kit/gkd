@@ -10,6 +10,8 @@ import li.gkd.app.ui.share.BaseViewModel
 import li.gkd.app.util.ImageUtils
 import li.gkd.app.data.appinfo.AppInfoRepository
 import li.gkd.db.Snapshot
+import li.gkd.app.util.MutexState
+import kotlinx.coroutines.flow.StateFlow
 import java.io.File
 
 data class SnapshotUiState(
@@ -30,9 +32,19 @@ class SnapshotVm : BaseViewModel() {
         )
     }.stateLoadable()
 
+    private val batchMutex = MutexState()
+    val batchBusyFlow: StateFlow<Boolean> get() = batchMutex.state
+
+    suspend fun runBatchAction(action: suspend () -> Unit) {
+        batchMutex.tryWithStateLock(action)
+    }
+
     suspend fun deleteAllSnapshots() = SnapshotRepository.deleteAll()
 
     suspend fun deleteSnapshot(snapshot: Snapshot) = SnapshotRepository.delete(snapshot)
+
+    suspend fun deleteSnapshots(snapshots: Collection<Snapshot>) =
+        SnapshotRepository.delete(snapshots)
 
     suspend fun buildShareArchive(snapshot: Snapshot): File {
         return SnapshotRepository.createArchive(snapshot.id, snapshot.appId, snapshot.activityId)

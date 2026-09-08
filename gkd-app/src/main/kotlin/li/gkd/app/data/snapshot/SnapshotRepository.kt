@@ -78,19 +78,38 @@ open class SnapshotStore(
         minSnapshot
     }
 
-    suspend fun delete(snapshot: Snapshot) {
+    suspend fun delete(snapshot: Snapshot) = delete(listOf(snapshot))
+
+    suspend fun delete(snapshots: Collection<Snapshot>) {
+        if (snapshots.isEmpty()) return
         mutationMutex.withLock {
             currentCoroutineContext().ensureActive()
             withContext(NonCancellable + Dispatchers.IO) {
-                val directory = fileLayout.committed(snapshot.id).directory
-                val staged = stageDeletion(directory)
+                val targets = snapshots.map { snapshot ->
+                    snapshot to fileLayout.committed(snapshot.id).directory
+                }
+                val stagedList = ArrayList<Pair<File, File?>>(targets.size)
                 try {
-                    snapshotDao.delete(snapshot)
+                    for ((_, directory) in targets) {
+                        stagedList.add(directory to stageDeletion(directory))
+                    }
                 } catch (e: Throwable) {
-                    rollbackDeletion(directory, staged, e)
+                    for ((directory, staged) in stagedList) {
+                        rollbackDeletion(directory, staged, e)
+                    }
                     throw e
                 }
-                finishDeletion(staged)
+                try {
+                    snapshotDao.delete(*snapshots.toTypedArray())
+                } catch (e: Throwable) {
+                    for ((directory, staged) in stagedList) {
+                        rollbackDeletion(directory, staged, e)
+                    }
+                    throw e
+                }
+                for ((_, staged) in stagedList) {
+                    finishDeletion(staged)
+                }
             }
         }
     }

@@ -47,8 +47,52 @@ class SnapshotRepositoryTest {
         }
     }
 
-    private fun snapshot() = Snapshot(
-        id = 1,
+    @Test
+    fun deleteBatchRemovesDirectoriesAfterDatabaseDeleteSucceeds() = runBlocking {
+        val root = Files.createTempDirectory("gkd-snapshot-batch-delete-success-test").toFile()
+        val snapshot1 = snapshot(1)
+        val snapshot2 = snapshot(2)
+        val dir1 = root.resolve(snapshot1.id.toString()).apply { mkdirs() }
+        val dir2 = root.resolve(snapshot2.id.toString()).apply { mkdirs() }
+        dir1.resolve("data1").writeText("v1")
+        dir2.resolve("data2").writeText("v2")
+        try {
+            val repository = SnapshotStore(FakeSnapshotDao(), root)
+
+            repository.delete(listOf(snapshot1, snapshot2))
+
+            assertFalse(dir1.exists())
+            assertFalse(dir2.exists())
+            assertTrue(root.listFiles().orEmpty().isEmpty())
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun deleteBatchRestoresDirectoriesWhenDatabaseDeleteFails() = runBlocking {
+        val root = Files.createTempDirectory("gkd-snapshot-batch-delete-fail-test").toFile()
+        val snapshot1 = snapshot(1)
+        val snapshot2 = snapshot(2)
+        val dir1 = root.resolve(snapshot1.id.toString()).apply { mkdirs() }
+        val dir2 = root.resolve(snapshot2.id.toString()).apply { mkdirs() }
+        dir1.resolve("data1").writeText("v1")
+        dir2.resolve("data2").writeText("v2")
+        try {
+            val repository = SnapshotStore(FakeSnapshotDao(deleteFailure = IOException("db error")), root)
+
+            val result = runCatching { repository.delete(listOf(snapshot1, snapshot2)) }
+
+            assertTrue(result.isFailure)
+            assertTrue(dir1.resolve("data1").isFile)
+            assertTrue(dir2.resolve("data2").isFile)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    private fun snapshot(id: Long = 1) = Snapshot(
+        id = id,
         appId = "app.id",
         activityId = null,
         screenHeight = 1,
