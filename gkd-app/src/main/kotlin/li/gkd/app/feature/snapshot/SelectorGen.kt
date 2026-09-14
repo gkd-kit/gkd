@@ -20,6 +20,7 @@ object SelectorGen {
         val node: NodeInfo,
         val parent: NodeInfo?,
         val siblings: List<NodeInfo>,
+        val ancestors: List<NodeInfo> = emptyList(),
     )
 
     data class Candidate(
@@ -27,17 +28,21 @@ object SelectorGen {
         val selector: String,
     )
 
-    /** 构建 id→上下文 索引; 返回 (contexts, 根节点id列表) */
+    /** 构建 id→上下文 索引(含祖先链, 供路径回退使用); 返回 (contexts, 根节点id列表) */
     fun buildContexts(nodes: List<NodeInfo>): Pair<Map<Int, NodeContext>, List<Int>> {
         val byId = nodes.associateBy { it.id }
         val byPid = nodes.groupBy { it.pid }
         val contexts = mutableMapOf<Int, NodeContext>()
         nodes.forEach { n ->
-            contexts[n.id] = NodeContext(
-                node = n,
-                parent = byId[n.pid],
-                siblings = byPid[n.pid]?.filter { it.id != n.id } ?: emptyList(),
-            )
+            val parent = byId[n.pid]
+            val siblings = byPid[n.pid]?.filter { it.id != n.id } ?: emptyList()
+            val ancestors = mutableListOf<NodeInfo>()
+            var p = parent
+            while (p != null) {
+                ancestors.add(p)
+                p = byId[p.pid]
+            }
+            contexts[n.id] = NodeContext(n, parent, siblings, ancestors)
         }
         val roots = nodes.filter { it.pid == -1 || it.pid !in byId.keys }.map { it.id }
         return contexts to roots
@@ -56,7 +61,7 @@ object SelectorGen {
         width > 8 && height > 8 && width < 120 && height < 120
 
     private fun isAppId(id: String?) =
-        id != null && !id.contains("android:id/") && !id.contains("com.android")
+        !id.isNullOrEmpty() && !id.contains("android:id/") && !id.contains("com.android")
 
     private fun shortName(name: String?): String =
         name?.substringAfterLast('.') ?: "View"
@@ -152,7 +157,44 @@ object SelectorGen {
             return "[text*=\"$prefix\"][text.length>=${text.length - 2}]" +
                 "[text.length<=${text.length + 2}][visibleToUser=true]"
         }
-        return ""
+        // ==== 无 id/vid/text/desc 特征的节点: 祖先路径回退 ====
+        // 向上找最近的有稳定 id/vid 的祖先作锚点, 用 <N 路径语法定位
+        // (GKD 语义: A <3 B = B 是 A 的父, 且 A 是 B 的第3个子节点)
+        return ancestorPathSelector(ctx) ?: ""
+    }
+
+    /**
+     * 祖先路径选择器(祖父搜索):
+     * 向上最多 5 层找稳定锚点(应用自定义 id / vid), 生成
+     * `@Target[childCount=0] < ParentName <2 [vid="anchor"]` 形式的路径。
+     * 找不到锚点返回 null。
+     */
+    private fun ancestorPathSelector(ctx: NodeContext): String? {
+        val ancestors = ctx.ancestors
+        if (ancestors.isEmpty()) return null
+        val anchorIdx = ancestors.take(5).indexOfFirst {
+            isAppId(it.attr.id) || (!it.attr.vid.isNullOrEmpty() && it.attr.vid.length > 2)
+        }
+        if (anchorIdx == -1) return null
+        val anchor = ancestors[anchorIdx]
+        val anchorSel = when {
+            isAppId(anchor.attr.id) -> "[id=\"${anchor.attr.id}\"]"
+            else -> "[vid=\"${anchor.attr.vid}\"]"
+        }
+        val leaf = ctx.node.attr.childCount == 0
+        val targetDesc = "@${shortName(ctx.node.attr.name)}" +
+            (if (leaf) "[childCount=0]" else "") +
+            "[visibleToUser=true]"
+        val parts = mutableListOf(targetDesc)
+        for (i in 0..anchorIdx) {
+            val upper = ancestors[i]
+            val lower = if (i == 0) ctx.node else ancestors[i - 1]
+            val childIdx = lower.attr.index + 1
+            val op = if (childIdx == 1) "<" else "<$childIdx"
+            val desc = if (i == anchorIdx) anchorSel else "@${shortName(upper.attr.name)}"
+            parts.add("$op $desc")
+        }
+        return parts.joinToString(" ")
     }
 
     // ==== 节点路径选择器 (getNodeSelectorText 移植) ====
