@@ -30,6 +30,58 @@ object SubscriptionRepository {
     val snapshotFlow: StateFlow<Loadable<SubscriptionSnapshot>>
         field = MutableStateFlow<Loadable<SubscriptionSnapshot>>(Loadable.Loading)
     val updating = updateMutex.state
+
+    /** 内置默认订阅: 首次启动注入, 幂等(insertOrIgnore 不覆盖已有) */
+    private val builtinSubscriptionSeeds = listOf(
+        666L to "https://registry.npmmirror.com/@aisouler/gkd_subscription/latest/files/dist/AIsouler_gkd.json5",
+        233L to "https://registry.npmmirror.com/@ganlinte/gkd-subscription/latest/files",
+        1L to "https://registry.npmmirror.com/gkd-subscription/latest/files",
+    )
+
+    private suspend fun seedBuiltinSubscriptions(): Boolean = withContext(Dispatchers.IO) {
+        val items = Db.subsItemDao.queryAll()
+        val existingIds = items.map { it.id }.toSet()
+        val maxOrder = items.maxOfOrNull { it.order } ?: 0
+        val newSeeds = builtinSubscriptionSeeds.filter { (id, _) -> id !in existingIds }
+        if (newSeeds.isEmpty()) return@withContext false
+        Db.subsItemDao.insertOrIgnore(
+            *newSeeds.mapIndexed { index, (id, url) ->
+                SubsItem(
+                    id = id,
+                    order = maxOrder + 1 + index,
+                    updateUrl = url,
+                    enable = true,
+                    enableUpdate = true,
+                )
+            }.toTypedArray()
+        )
+        LogUtils.d("内置订阅注入: ${newSeeds.map { it.first }}")
+        true
+    }
+
+    /** 快照审查页生成的规则组: 落盘本地订阅(-2), key 自动分配避免冲突, 返回分配的 key */
+    suspend fun saveRuleGroupToLocalStorage(
+        appId: String,
+        appName: String?,
+        group: RawSubscription.RawAppGroup,
+    ): Int = withContext(Dispatchers.IO) {
+        val current = runCatching { SubscriptionFileStore.load(LOCAL_SUBS_ID) }.getOrDefault(
+            RawSubscription(id = LOCAL_SUBS_ID, name = "本地订阅", version = 0),
+        )
+        val existing = current.apps.find { it.id == appId }
+        val nextKey = (existing?.groups?.maxOfOrNull { it.key } ?: 0) + 1
+        val finalGroup = group.copy(key = nextKey)
+        val newApps = if (existing != null) {
+            current.apps.map { if (it.id == appId) it.copy(groups = existing.groups + finalGroup) else it }
+        } else {
+            current.apps + RawSubscription.RawApp(id = appId, name = appName, groups = listOf(finalGroup))
+        }
+        saveWithItem(
+            subscription = current.copy(apps = newApps),
+            defaultItem = SubsItem(id = LOCAL_SUBS_ID, order = -2, enableUpdate = false),
+        )
+        nextKey
+    }
     val isBusy: Boolean
         get() = updating.value
 
@@ -52,6 +104,9 @@ object SubscriptionRepository {
             }
         }
         ensureLocalSubscription()
+        if (seedBuiltinSubscriptions()) {
+            refresh()
+        }
     }
 
     private suspend fun ensureLocalSubscription() = withContext(Dispatchers.IO) {

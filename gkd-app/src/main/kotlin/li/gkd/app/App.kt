@@ -276,6 +276,8 @@ class App : Application() {
         }
         appScope.launchLogged(Dispatchers.IO) {
             SubscriptionRepository.initialize()
+            runCatching { SubscriptionRepository.refresh() }
+                .onFailure { LogUtils.d("启动更新订阅失败", it) }
         }
         initA11yWhiteAppList()
         clearHttpSubs()

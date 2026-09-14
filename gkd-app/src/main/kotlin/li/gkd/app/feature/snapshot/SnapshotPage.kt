@@ -163,10 +163,7 @@ fun SnapshotPage() {
                         .clickable(onClick = throttle {
                             selectedSnapshot = null
                             mainVm.navigatePage(
-                                ImagePreviewRoute(
-                                    title = appNames[snapshotVal.appId] ?: snapshotVal.appId,
-                                    uri = snapshotVal.screenshotFile.absolutePath,
-                                )
+                                SnapshotInspectRoute(snapshotId = snapshotVal.id),
                             )
                         })
                         .then(modifier)

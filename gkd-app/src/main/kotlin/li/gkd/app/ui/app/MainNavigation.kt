@@ -38,6 +38,8 @@ import li.gkd.app.feature.snapshot.SnapshotPage
 import li.gkd.app.feature.snapshot.SnapshotPageRoute
 import li.gkd.app.feature.snapshot.SnapshotSettingsPage
 import li.gkd.app.feature.snapshot.SnapshotSettingsRoute
+import li.gkd.app.feature.snapshot.SnapshotInspectPage
+import li.gkd.app.feature.snapshot.SnapshotInspectRoute
 import li.gkd.app.feature.subscription.SubsAppGroupListPage
 import li.gkd.app.feature.subscription.SubsAppGroupListRoute
 import li.gkd.app.feature.subscription.SubsAppListPage
@@ -68,6 +70,7 @@ private val mainRouteEntryProvider = entryProvider {
     entry<AdvancedPageRoute> { AdvancedPage() }
     entry<PrivilegeServiceRoute> { PrivilegeServicePage() }
     entry<SnapshotPageRoute> { SnapshotPage() }
+    entry<SnapshotInspectRoute> { SnapshotInspectPage(it) }
     entry<SnapshotSettingsRoute> { SnapshotSettingsPage() }
     entry<A11YScopeAppListRoute> { A11yScopeAppListPage() }
     entry<ActivityLogRoute> { ActivityLogPage() }
