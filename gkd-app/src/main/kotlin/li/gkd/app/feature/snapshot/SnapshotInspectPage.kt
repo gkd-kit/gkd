@@ -1,5 +1,6 @@
 package li.gkd.app.feature.snapshot
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
@@ -25,8 +26,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -65,6 +68,7 @@ import kotlinx.serialization.decodeFromString
 import li.gkd.app.data.ComplexSnapshot
 import li.gkd.app.data.snapshot.SnapshotRepository
 import li.gkd.app.data.subscription.SubscriptionRepository
+import li.gkd.app.ui.component.AppDialog
 import li.gkd.app.ui.component.PerfIconButton
 import li.gkd.app.ui.component.PerfIcon
 import li.gkd.app.ui.component.PerfTopAppBar
@@ -91,6 +95,13 @@ private data class InspectState(
 fun SnapshotInspectPage(route: SnapshotInspectRoute) {
     val mainVm = LocalMainViewModel.current
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    var showNotice by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        // 首次进入审查页时弹窗: 说明本版本来源与功能
+        val prefs = context.getSharedPreferences("gkd_inspect", Context.MODE_PRIVATE)
+        showNotice = !prefs.getBoolean("third_party_notice_shown", false)
+    }
     var state by remember(route.snapshotId) { mutableStateOf<InspectState?>(null) }
     var loadError by remember(route.snapshotId) { mutableStateOf<String?>(null) }
     var selectedId by remember(route.snapshotId) { mutableStateOf<Int?>(null) }
@@ -442,6 +453,54 @@ fun SnapshotInspectPage(route: SnapshotInspectRoute) {
                             .padding(horizontal = 12.dp, vertical = 6.dp),
                     ) {
                         Text("一键保存 ${st.autoDetected.size} 条识别结果(跳过/关闭/知道了...)")
+                    }
+                }
+            }
+        }
+    }
+
+    // ===== 第三方版本说明弹窗(首次进入审查页弹出一次) =====
+    if (showNotice) {
+        AppDialog(onDismissRequest = { showNotice = false }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Column(Modifier.padding(20.dp)) {
+                    Text(
+                        text = "关于本版本",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        text = "本应用是基于开源项目 GKD(https://github.com/gkd-kit/gkd) 的第三方修改版, 在原版基础上新增/改动以下内容:",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "1. 快照审查器: 抓取快照后在记录菜单选择\"生成跳过广告规则\", 自动识别广告关闭按钮并生成规则, 一键保存到本地订阅, 立即生效\n\n2. 内置三条广告订阅(AIsouler/甘霖/梦念逍遥), 首次启动自动加载, 每次启动自动检查更新\n\n3. 原版\"查看\"拆分出\"生成跳过广告规则\"和\"查看截图\"两个入口",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = "使用方式:\n① 抓到快照后进入本页\n② 点击截图或下方节点树选中广告按钮(绿点=可点击)\n③ 点\"保存此节点为规则\"或底部\"一键保存识别结果\"",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    Button(
+                        onClick = {
+                            context.getSharedPreferences("gkd_inspect", Context.MODE_PRIVATE)
+                                .edit()
+                                .putBoolean("third_party_notice_shown", true)
+                                .apply()
+                            showNotice = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("我知道了")
                     }
                 }
             }

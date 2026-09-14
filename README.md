@@ -20,6 +20,21 @@
 
 **本项目遵循 [GPL-3.0-only](/LICENSE) 开源，项目仅供学习交流，禁止用于商业或非法用途**
 
+## 本分支说明 (GMD与GKD)
+
+> 本分支为 [gkd-kit/gkd](https://github.com/gkd-kit/gkd) 的第三方修改版（fork），在遵循原版 GPL-3.0 协议的前提下新增以下内容：
+
+1. **原生快照审查器（替代网页版审查工具）**：
+   - 快照记录 → 点任意一条 → 菜单选 **「生成跳过广告规则」**
+   - 自动识别广告关闭按钮（跳过/关闭/知道了/不感兴趣/青少年模式等关键词 + 小图标特征），在截图与节点树中高亮（绿点=可点击）
+   - 点选中广告节点 → 查看属性与自动生成的选择器 → 一键**保存到本地订阅**，立即生效，重启不丢
+   - 也可复制选择器/节点路径供手动编辑
+2. **内置三条广告订阅**（AIsouler / 甘霖 / 梦念逍遥），首次启动自动加载，每次启动自动检查更新（无新版不重复下载）
+3. **首次启动弹窗**说明本版本来源与功能（在 `gkd_inspect` 偏好中记住"已读"）
+
+> 使用流程：授权无障碍 → 遇到广告抓快照 → 快照记录 →「生成跳过广告规则」→ 选节点 → 保存 → 规则即时生效
+> 数据兼容：生成规则写入「本地订阅」，与官方版规则格式完全一致，可随时在订阅页管理/删除
+
 ## 安装
 
 <a href="https://gkd.li/guide/"><img src="https://e.gkd.li/f23b704d-d781-494b-9719-393f95683b89" alt="Download from GKD.LI" width="32%" /></a><a href="https://play.google.com/store/apps/details?id=li.songe.gkd"><img src="https://e.gkd.li/f63fabeb-0342-4961-a46d-cac61b0f8856" alt="Download from Google Play" width="32%" /></a><a href="https://github.com/gkd-kit/gkd/releases"><img src="https://e.gkd.li/c1ef2bb9-7472-46d5-9806-81b4c37e5b4d" alt="Download from GitHub releases" width="32%" /></a>

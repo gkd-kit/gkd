@@ -159,11 +159,26 @@ fun SnapshotPage() {
                     .fillMaxWidth()
                     .padding(16.dp)
                 Text(
-                    text = "查看", modifier = Modifier
+                    text = "生成跳过广告规则",
+                    modifier = Modifier
                         .clickable(onClick = throttle {
                             selectedSnapshot = null
                             mainVm.navigatePage(
                                 SnapshotInspectRoute(snapshotId = snapshotVal.id),
+                            )
+                        })
+                        .then(modifier)
+                )
+                HorizontalDivider()
+                Text(
+                    text = "查看截图", modifier = Modifier
+                        .clickable(onClick = throttle {
+                            selectedSnapshot = null
+                            mainVm.navigatePage(
+                                ImagePreviewRoute(
+                                    title = appNames[snapshotVal.appId] ?: snapshotVal.appId,
+                                    uri = snapshotVal.screenshotFile.absolutePath,
+                                )
                             )
                         })
                         .then(modifier)
