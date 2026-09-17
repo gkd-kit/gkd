@@ -38,15 +38,6 @@ fun KClass<*>.detectHiddenMethod(
     throw NoSuchMethodException("${targetClass.name}::${methodName} not match")
 }
 
-fun KClass<*>.detectHiddenField(fieldName: String): Boolean {
-    return try {
-        java.getField(fieldName)
-        true
-    } catch (_: NoSuchFieldException) {
-        false
-    }
-}
-
 private fun contentEquals(array: Array<Class<*>>, list: List<KClass<*>>): Boolean {
     if (array.size != list.size) return false
     repeat(array.size) { i ->

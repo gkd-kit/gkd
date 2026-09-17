@@ -37,7 +37,6 @@ import li.gkd.db.SubsAppGroupConfig
 import li.gkd.db.SubsCategoryConfig
 import li.gkd.db.Db
 import li.gkd.db.SubsGlobalGroupConfig
-import li.gkd.db.SubsGroupConfig
 import li.gkd.db.RuleGroupType
 
 data class AppConfigUiState(

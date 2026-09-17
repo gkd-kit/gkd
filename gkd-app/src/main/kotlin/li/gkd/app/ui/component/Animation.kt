@@ -13,21 +13,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 
-@Composable
-fun usePercentAnimatable(
-    visible: Boolean,
-): Animatable<Float, AnimationVector1D> {
-    val percent = remember { Animatable(if (visible) 1f else 0f) }
-    LaunchedEffect(visible) {
-        if (visible && percent.value != 1f) {
-            percent.animateTo(targetValue = 1f, animationSpec = tween())
-        } else if (!visible && percent.value != 0f) {
-            percent.animateTo(targetValue = 0f, animationSpec = tween())
-        }
-    }
-    return percent
-}
-
 context(scope: LazyItemScope, )
 fun Modifier.animateListItem(
     enabled: Boolean = true,

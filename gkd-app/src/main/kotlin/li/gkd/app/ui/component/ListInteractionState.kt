@@ -142,11 +142,6 @@ class ReorderSession<T, K>(
         return result
     }
 
-    fun cancelDragging() {
-        dragging = false
-        moved = false
-        items = sourceItems
-    }
 }
 
 @Composable

@@ -160,7 +160,7 @@ private fun useLoadedSubsManagePage(
         }
     }
 
-    powerWarningItem?.let { item ->
+    powerWarningItem?.let { _ ->
         AppAlertDialog(
             title = { Text(text = "耗电警告") },
             text = {

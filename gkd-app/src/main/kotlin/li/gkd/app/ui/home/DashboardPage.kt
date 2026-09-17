@@ -79,7 +79,7 @@ import li.gkd.db.RuleGroupType
 
 @Composable
 fun useDashboardPage(): ScaffoldExt {
-    val context = LocalActivity.current as MainActivity
+    LocalActivity.current as MainActivity
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<DashboardVm>()
     val ruleSummary by SubscriptionState.ruleSummaryFlow.collectAsStateWithLifecycle()

@@ -62,7 +62,6 @@ private val StateLayerSize = 40.dp
 private val ThumbPadding = (TrackHeight - ThumbDiameter) / 2
 
 ///** Icon size to use for [thumbContent] */
-val TriStateSwitchIconSize = 16.dp
 
 private val DefaultAnimationSpec: FiniteAnimationSpec<Float> =
     spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow)

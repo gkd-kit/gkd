@@ -33,9 +33,6 @@ public class ScreenCapture {
             throw new RuntimeException();
         }
 
-        public HardwareBuffer getHardwareBuffer() {
-            throw new RuntimeException();
-        }
     }
 
     public abstract static class SynchronousScreenCaptureListener extends ScreenCaptureListener {
