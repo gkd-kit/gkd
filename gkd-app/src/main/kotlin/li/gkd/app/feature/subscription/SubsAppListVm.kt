@@ -1,193 +1,48 @@
 package li.gkd.app.feature.subscription
 
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import li.gkd.app.MainViewModel
-import li.gkd.db.SubsAppConfig
-import li.gkd.app.data.AppInfo
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.domain.rule.RuleGroupPolicy
-import li.gkd.app.store.AppStore.blockMatchAppListFlow
-import li.gkd.app.store.AppStore.storeFlow
+import li.gkd.app.data.ruleconfig.RuleGroupConfigService
+import li.gkd.app.data.ruleconfig.RuleSwitchRequest
+import li.gkd.app.domain.rule.RuleSetting
+import li.gkd.app.domain.rule.RuleSwitchTarget
 import li.gkd.app.store.AppStore
 import li.gkd.app.ui.share.BaseViewModel
-import li.gkd.app.ui.share.filterSubsApps
-import li.gkd.app.ui.share.subsAppActionOrderMapState
-import li.gkd.app.ui.share.useSubsAppFilter
 import li.gkd.app.util.AppSortOption
-import li.gkd.app.data.appinfo.AppInfoRepository
-import li.gkd.app.util.findOption
+import li.gkd.app.util.MutexState
 import li.gkd.db.Db
+import li.gkd.db.SubscriptionConfigSnapshot
 
 data class SubsAppListUiState(
-    val apps: List<RawSubscription.RawApp>,
-    val showAllApps: Boolean,
+    val subscription: RawSubscription,
+    val configs: SubscriptionConfigSnapshot,
+    val appActionOrder: Map<String, Int>,
 )
 
-class SubsAppListVm(
-    val route: SubsAppListRoute,
-    private val mainVm: MainViewModel,
-) : BaseViewModel() {
+class SubsAppListVm(val route: SubsAppListRoute) : BaseViewModel() {
+    private val mutation = MutexState()
+    val busyFlow: StateFlow<Boolean> get() = mutation.state
+    suspend fun runAction(action: suspend () -> Unit) { mutation.tryWithStateLock(action) }
 
-    private val subscription = requiredSubscription(route.subsItemId)
-
-    private val appConfigsFlow = Db.subsAppConfigDao.queryAppTypeConfig(route.subsItemId)
-
-    private val groupSubsConfigsFlow =
-        Db.subsAppGroupConfigDao.queryBySubsId(route.subsItemId)
-
-    private val categoryConfigsFlow = Db.subsCategoryConfigDao.queryConfig(route.subsItemId)
-
-    val searchStrFlow: StateFlow<String>
-        field = MutableStateFlow("")
-    val showSearchBarFlow: StateFlow<Boolean>
-        field = MutableStateFlow(false)
-    private val debounceSearchStr = searchStrFlow.debounce(200)
-    private val appActionOrderMapState = subsAppActionOrderMapState(route.subsItemId)
-
-    val appConfigMapState = appConfigsFlow.map { configs ->
-        configs.associateBy { it.appId }
-    }.stateLoadable()
-
-    val enableSizeMapState = subscription.buildUiState { rawSubscription ->
-        combine(
-            categoryConfigsFlow,
-            groupSubsConfigsFlow,
-        ) { categoryConfigs, groupSubsConfigs ->
-            val categoryConfigMap = categoryConfigs.associateBy { it.categoryKey }
-            val groupSubsConfigMap = groupSubsConfigs
-                .groupBy { it.appId }
-                .mapValues { entry -> entry.value.associateBy { it.groupKey } }
-            rawSubscription.apps.associate { rawApp ->
-                val enableSize = rawApp.groups.count { group ->
-                    val category = rawSubscription.getCategory(group.name)
-                    RuleGroupPolicy.getGroupEnabled(
-                        group,
-                        groupSubsConfigMap[rawApp.id]?.get(group.key),
-                        category,
-                        category?.key?.let(categoryConfigMap::get),
-                    )
-                }
-                rawApp.id to enableSize
-            }
+    val uiState = requiredSubscription(route.subsItemId).buildUiState { subscription ->
+        combine(Db.subscriptionConfigStore.observe(), Db.actionLogDao.queryLatestUniqueAppIds(route.subsItemId)) { configs, ids ->
+            SubsAppListUiState(subscription, configs, ids.mapIndexed { i, id -> id to i }.toMap())
         }
-    }
-
-    val uiState = subscription.buildUiState(
-        initialValue = ::buildCurrentUiState,
-    ) { rawSubscription ->
-        val sortedAppsFlow = useSubsAppFilter(
-            mainVm = mainVm,
-            appsFlow = flowOf(rawSubscription.apps),
-            appGroupType = { it.subsAppGroupType },
-            sortType = { AppSortOption.objects.findOption(it.subsAppSort) },
-            showBlockApps = { it.subsAppShowBlock },
-            appActionOrderMapState = appActionOrderMapState,
-        )
-        val filteredAppsFlow = combine(
-            sortedAppsFlow,
-            AppInfoRepository.appInfoMapFlow,
-            debounceSearchStr,
-        ) { list, appMap, searchStr ->
-            buildUiState(rawSubscription, list, appMap, searchStr)
-        }
-        filteredAppsFlow
-    }
-
-    private fun buildCurrentUiState(rawSubscription: RawSubscription): SubsAppListUiState {
-        val settings = storeFlow.value
-        val apps = filterSubsApps(
-            apps = rawSubscription.apps,
-            appMap = AppInfoRepository.appInfoMapFlow.value,
-            settings = settings,
-            appActionOrderMap = appActionOrderMapState.value.value.orEmpty(),
-            appVisitOrderMap = mainVm.appVisitOrderMapState.value.value.orEmpty(),
-            blockSet = blockMatchAppListFlow.value,
-            appGroupType = { it.subsAppGroupType },
-            sortType = { AppSortOption.objects.findOption(it.subsAppSort) },
-            showBlockApps = { it.subsAppShowBlock },
-        )
-        return buildUiState(
-            rawSubscription = rawSubscription,
-            apps = apps,
-            appMap = AppInfoRepository.appInfoMapFlow.value,
-            searchStr = searchStrFlow.value,
-        )
-    }
-
-    private fun buildUiState(
-        rawSubscription: RawSubscription,
-        apps: List<RawSubscription.RawApp>,
-        appMap: Map<String, AppInfo>,
-        searchStr: String,
-    ): SubsAppListUiState {
-        val filteredApps = if (searchStr.isBlank()) {
-            apps
-        } else {
-            val results = mutableListOf<RawSubscription.RawApp>()
-            val remainingApps = apps.toMutableList()
-            //1. 搜索已安装应用名称
-            remainingApps.toList().apply { remainingApps.clear() }.forEach { app ->
-                if (appMap[app.id]?.name?.contains(searchStr, true) == true) {
-                    results.add(app)
-                } else {
-                    remainingApps.add(app)
-                }
-            }
-            //2. 搜索未安装应用名称
-            remainingApps.toList().apply { remainingApps.clear() }.forEach { app ->
-                if (appMap[app.id] == null && app.name?.contains(searchStr, true) == true) {
-                    results.add(app)
-                } else {
-                    remainingApps.add(app)
-                }
-            }
-            //3. 搜索应用 id
-            remainingApps.forEach { app ->
-                if (app.id.contains(searchStr, true)) {
-                    results.add(app)
-                }
-            }
-            results
-        }
-        return SubsAppListUiState(
-            apps = filteredApps,
-            showAllApps = rawSubscription.apps.size == apps.size,
-        )
-    }
-
-    fun setSearchText(value: String) {
-        searchStrFlow.value = value
-    }
-
-    fun setSearchBarVisible(visible: Boolean) {
-        showSearchBarFlow.value = visible
     }
 
     fun setSortType(value: AppSortOption) {
         AppStore.updateSettings { it.copy(subsAppSort = value.value) }
     }
-
     fun setAppGroupType(value: Int) {
         AppStore.updateSettings { it.copy(subsAppGroupType = value) }
     }
-
     fun toggleShowBlockApps() {
         AppStore.updateSettings { it.copy(subsAppShowBlock = !it.subsAppShowBlock) }
     }
+    fun prepareSwitches(state: SubsAppListUiState, appIds: Set<String>): RuleSwitchRequest =
+        RuleGroupConfigService.prepare(appIds.map { RuleSwitchTarget.App(route.subsItemId, it) },
+            listOf(state.subscription), state.configs)
 
-    suspend fun setAppEnabled(appId: String, enabled: Boolean) {
-        val currentConfig = appConfigsFlow.first().find { it.appId == appId }
-        val newConfig = currentConfig?.copy(enable = enabled) ?: SubsAppConfig(
-            enable = enabled,
-            subsId = route.subsItemId,
-            appId = appId,
-        )
-        Db.subsAppConfigDao.upsert(newConfig)
-    }
+    suspend fun applySwitches(request: RuleSwitchRequest, setting: RuleSetting) = RuleGroupConfigService.apply(request, setting)
 }

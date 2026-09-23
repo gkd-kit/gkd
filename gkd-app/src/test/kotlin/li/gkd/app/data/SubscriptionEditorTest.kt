@@ -211,6 +211,24 @@ class SubscriptionEditorTest {
         assertEquals("规则已发生变化，请重新编辑", error.message)
     }
 
+    @Test
+    fun addingRulesAfterDeletingAllGroupsRecreatesAppWithoutRestoringDeletedRules() {
+        val original = RawSubscription.RawApp("app.id", "App", listOf(createAppGroup(0, "Old")))
+        val other = RawSubscription.RawApp("other.app", "Other")
+        val deleted = createSubscription(apps = listOf(original, other)).edit {
+            removeAppGroups(original.id, removeAppIfEmpty = true) { true }
+        }
+        assertEquals(listOf(other), deleted.apps)
+
+        val newGroup = createAppGroup(1, "New")
+        val saved = deleted.edit {
+            appendAppGroups(RawSubscription.RawApp(original.id, original.name), listOf(newGroup))
+        }
+        assertEquals(listOf(newGroup), saved.apps.single { it.id == original.id }.groups)
+        assertEquals(original.name, saved.apps.single { it.id == original.id }.name)
+        assertSame(other, saved.apps.single { it.id == other.id })
+    }
+
     private fun createSubscription(
         apps: List<RawSubscription.RawApp> = emptyList(),
         categories: List<RawSubscription.RawCategory> = emptyList(),

@@ -1,5 +1,6 @@
 package li.gkd.app.util
 
+import li.gkd.app.text.UiStrings
 import li.gkd.app.util.ToastUtils.toast
 
 import android.content.ComponentName
@@ -16,7 +17,7 @@ fun Context.tryStartActivity(
     } catch (e: Exception) {
         e.printStackTrace()
         LogUtils.d("tryStartActivity", e, loc = loc)
-        toast("跳转失败\n" + (e.message ?: e.stackTraceToString()), loc = loc)
+        toast(UiStrings.intent_launch_failed_prefix + (e.message ?: e.stackTraceToString()), loc = loc)
     }
 }
 

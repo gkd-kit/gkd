@@ -1,5 +1,7 @@
 package li.gkd.app.data
 
+import li.gkd.app.text.UiStrings
+
 class SubscriptionEditor(subscription: RawSubscription) {
     private val subscriptionId = subscription.id
     private var current = subscription
@@ -163,21 +165,21 @@ class SubscriptionEditor(subscription: RawSubscription) {
         expectedGroup: RawSubscription.RawAppGroup,
         newGroup: RawSubscription.RawAppGroup,
     ) {
-        require(newGroup.key == groupKey) { "规则key与当前规则不一致" }
+        require(newGroup.key == groupKey) { UiStrings.rule_key_mismatch }
         val currentApp = current.apps.find { it.id == targetApp.id }
         if (currentApp == null) {
             putApp(targetApp.copy(groups = listOf(newGroup)))
             return
         }
         val updated = updateAppGroup(targetApp.id, groupKey) {
-            if (this != expectedGroup) error("规则已发生变化，请重新编辑")
+            if (this != expectedGroup) error(UiStrings.rule_edit_conflict)
             requireGroupNamesAvailable(
                 currentApp.groups.filterNot { it.key == groupKey },
                 listOf(newGroup),
             )
             newGroup
         }
-        if (!updated) error("规则已不存在")
+        if (!updated) error(UiStrings.rule_missing)
     }
 
     fun replaceGlobalGroup(
@@ -185,16 +187,16 @@ class SubscriptionEditor(subscription: RawSubscription) {
         expectedGroup: RawSubscription.RawGlobalGroup,
         newGroup: RawSubscription.RawGlobalGroup,
     ) {
-        require(newGroup.key == groupKey) { "规则key与当前规则不一致" }
+        require(newGroup.key == groupKey) { UiStrings.rule_key_mismatch }
         val updated = updateGlobalGroup(groupKey) {
-            if (this != expectedGroup) error("规则已发生变化，请重新编辑")
+            if (this != expectedGroup) error(UiStrings.rule_edit_conflict)
             requireGroupNamesAvailable(
                 current.globalGroups.filterNot { it.key == groupKey },
                 listOf(newGroup),
             )
             newGroup
         }
-        if (!updated) error("规则已不存在")
+        if (!updated) error(UiStrings.rule_missing)
     }
 
     fun removeAppGroups(
@@ -217,7 +219,7 @@ class SubscriptionEditor(subscription: RawSubscription) {
 
     private fun setCurrent(subscription: RawSubscription) {
         require(subscription.id == subscriptionId) {
-            "订阅id不可修改: $subscriptionId -> ${subscription.id}"
+            UiStrings.subscription_id_immutable(subscriptionId, subscription.id)
         }
         current = subscription
     }
@@ -229,7 +231,7 @@ class SubscriptionEditor(subscription: RawSubscription) {
         val usedNames = existingGroups.mapTo(mutableSetOf()) { it.name }
         newGroups.forEach { group ->
             if (!usedNames.add(group.name)) {
-                error("已存在同名「${group.name}」规则")
+                error(UiStrings.rule_name_duplicate(group.name))
             }
         }
     }

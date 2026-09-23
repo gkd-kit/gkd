@@ -1,5 +1,6 @@
 package li.gkd.app.util
 
+import li.gkd.app.text.UiStrings
 import li.gkd.app.util.ToastUtils.toast
 
 import java.net.Inet6Address
@@ -60,7 +61,7 @@ object NetworkUtils {
             NetworkInterface.getNetworkInterfaces().asSequence()
         } catch (e: Exception) {
             // android.system.ErrnoException: getifaddrs failed: EACCES (Permission denied)
-            toast("获取HOST失败:" + e.message)
+            toast(UiStrings.network_host_failed_prefix + e.message)
             return emptyList()
         }
         val localAddresses = networkInterfaces.flatMap {

@@ -10,7 +10,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,6 +19,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import li.gkd.app.text.UiStrings
 import li.gkd.app.platform.lifecycle.onCreated
 import li.gkd.app.platform.lifecycle.useMainActivityLifecycle
 import li.gkd.app.platform.lifecycle.useLogLifecycle
@@ -31,7 +31,6 @@ import li.gkd.app.store.AppStore.storeFlow
 import li.gkd.app.ui.share.ActivityImeController
 import li.gkd.app.ui.share.ActivityResultRequests
 import li.gkd.app.ui.share.FixedWindowInsets
-import li.gkd.app.ui.share.LocalMainViewModel
 import li.gkd.app.ui.app.AppRoot
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.BarUtils
@@ -82,8 +81,8 @@ class MainActivity : ComponentActivity() {
         if (!mainVm.permissionRequests.ensurePermissions(PermissionStates.writeExternalStorage)) {
             return
         }
-        if (!SystemDownloads.save(file)) return
-        toast("已保存 ${file.name} 到下载")
+        val savedName = SystemDownloads.save(file) ?: return
+        toast(UiStrings.file_saved_to_downloads(savedName))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -93,6 +92,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         activityResultHost.bind(mainVm.activityResults)
         permissionRequestHost.bind(mainVm.permissionRequests)
+        mainVm.registerCurrent()
         addOnNewIntentListener {
             mainVm.handleIntent(it)
             intent = null
@@ -102,20 +102,16 @@ class MainActivity : ComponentActivity() {
             updateTopTaskAppId(META.appId)
         }
         setContent {
-            CompositionLocalProvider(
-                LocalMainViewModel provides mainVm,
-            ) {
-                val latestInsets = TopAppBarDefaults.windowInsets
-                val density = LocalDensity.current
-                if (latestInsets.getTop(density) > topBarWindowInsets.getTop(density)) {
-                    topBarWindowInsets = FixedWindowInsets(latestInsets)
-                }
-                AppRoot()
-                LaunchedEffect(null) {
-                    intent?.let {
-                        mainVm.handleIntent(it)
-                        intent = null
-                    }
+            val latestInsets = TopAppBarDefaults.windowInsets
+            val density = LocalDensity.current
+            if (latestInsets.getTop(density) > topBarWindowInsets.getTop(density)) {
+                topBarWindowInsets = FixedWindowInsets(latestInsets)
+            }
+            AppRoot()
+            LaunchedEffect(null) {
+                intent?.let {
+                    mainVm.handleIntent(it)
+                    intent = null
                 }
             }
         }

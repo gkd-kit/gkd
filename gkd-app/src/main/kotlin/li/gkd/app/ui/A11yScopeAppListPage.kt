@@ -1,10 +1,13 @@
 package li.gkd.app.ui
 
+import li.gkd.app.ui.component.GkPageBottomSpaceDefaults
+import li.gkd.app.ui.component.GkPageBottomSpace
+import li.gkd.app.MainViewModel
+
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,48 +28,48 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
+import li.gkd.app.text.UiStrings
 import li.gkd.app.MainActivity
-import li.gkd.app.R
 import li.gkd.app.store.AppStore.a11yScopeAppListFlow
 import li.gkd.app.store.AppStore.storeFlow
-import li.gkd.app.ui.component.AnimatedBooleanContent
-import li.gkd.app.ui.component.AnimatedIconButton
-import li.gkd.app.ui.component.AnimationFloatingActionButton
-import li.gkd.app.ui.component.AppBarTextField
-import li.gkd.app.ui.component.AppCheckBoxCard
-import li.gkd.app.ui.component.EmptyText
-import li.gkd.app.ui.component.MenuGroupCard
-import li.gkd.app.ui.component.MenuItemCheckbox
-import li.gkd.app.ui.component.MenuItemRadioButton
-import li.gkd.app.ui.component.MultiTextField
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.PerfTopAppBar
-import li.gkd.app.ui.component.autoFocus
-import li.gkd.app.ui.component.isFullVisible
-import li.gkd.app.ui.component.rememberListScrollState
-import li.gkd.app.ui.icon.BackCloseIcon
+import li.gkd.app.ui.icon.GkBackCloseIcon
 import li.gkd.app.ui.share.ListPlaceholder
-import li.gkd.app.ui.share.LocalMainViewModel
 import li.gkd.app.ui.share.noRippleClickable
-import li.gkd.app.ui.style.EmptyHeight
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.util.AppGroupOption
 import li.gkd.app.util.AppSortOption
 import li.gkd.app.util.findOption
 import li.gkd.app.ui.share.launchUiAction
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
+import li.gkd.app.ui.component.GkAnimatedBooleanContent
+import li.gkd.app.ui.component.GkAnimatedFloatingActionButton
+import li.gkd.app.ui.icon.GkSearchCloseIconButton
+import li.gkd.app.ui.component.GkAppBarTextField
+import li.gkd.app.ui.component.GkAppCheckboxCard
+import li.gkd.app.ui.component.GkEmptyState
+import li.gkd.app.ui.component.GkIconButton
+import li.gkd.app.ui.component.GkFilterIconButton
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkMenuGroupCard
+import li.gkd.app.ui.component.GkMenuItemCheckbox
+import li.gkd.app.ui.component.GkMenuItemRadioButton
+import li.gkd.app.ui.component.GkMultiTextField
+import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.component.autoFocus
+import li.gkd.app.ui.component.isFullVisible
+import li.gkd.app.ui.component.rememberListScrollState
 
 @Serializable
 data object A11YScopeAppListRoute : NavKey
 
 @Composable
 fun A11yScopeAppListPage() {
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     val context = LocalActivity.current as MainActivity
     val vm = viewModel { A11yScopeAppListVm(mainVm) }
     val store by storeFlow.collectAsStateWithLifecycle()
     val appInfos by vm.appInfosFlow.collectAsStateWithLifecycle()
+    val showAllApps by vm.appFilter.showAllAppFlow.collectAsStateWithLifecycle()
     val searchStr by vm.searchStrFlow.collectAsStateWithLifecycle()
     val showSearchBar by vm.showSearchBarFlow.collectAsStateWithLifecycle()
     val editable by vm.editableFlow.collectAsStateWithLifecycle()
@@ -79,8 +82,8 @@ fun A11yScopeAppListPage() {
         context.imeController.requestHide()
         if (vm.textChanged) {
             if (!mainVm.dialogRequests.confirm(
-                title = "提示",
-                text = "当前内容未保存，是否放弃编辑？",
+                title = UiStrings.notice_title,
+                text = UiStrings.edit_discard_confirmation,
             )) return@launchUiAction
         }
         vm.setEditable(false)
@@ -88,7 +91,7 @@ fun A11yScopeAppListPage() {
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            PerfTopAppBar(
+            GkTopAppBar(
                 scrollBehavior = scrollBehavior,
                 canScroll = !editable && !store.blockA11yAppListFollowMatch,
                 navigationIcon = {
@@ -98,8 +101,8 @@ fun A11yScopeAppListPage() {
                                 if (vm.textChanged) {
                                     context.imeController.requestHide()
                                     if (!mainVm.dialogRequests.confirm(
-                                        title = "提示",
-                                        text = "当前内容未保存，是否放弃编辑？",
+                                        title = UiStrings.notice_title,
+                                        text = UiStrings.edit_discard_confirmation,
                                     )) return@launchUiAction
                                 }
                                 vm.setEditable(false)
@@ -109,7 +112,7 @@ fun A11yScopeAppListPage() {
                             }
                         })
                     ) {
-                        BackCloseIcon(backOrClose = !editable)
+                        GkBackCloseIcon(backOrClose = !editable)
                     }
                 },
                 title = {
@@ -120,10 +123,10 @@ fun A11yScopeAppListPage() {
                                 vm.setSearchBarVisible(false)
                             }
                         }
-                        AppBarTextField(
+                        GkAppBarTextField(
                             value = searchStr,
                             onValueChange = vm::setSearchStr,
-                            hint = "请输入应用名称/ID",
+                            hint = UiStrings.app_name_id_input_hint,
                             modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                         )
                     } else {
@@ -135,17 +138,18 @@ fun A11yScopeAppListPage() {
                             )
                         Text(
                             modifier = titleModifier,
-                            text = "局部无障碍",
+                            text = UiStrings.a11y_scoped,
                         )
                     }
                 },
                 actions = {
-                    AnimatedBooleanContent(
+                    GkAnimatedBooleanContent(
                         targetState = editable,
                         contentAlignment = Alignment.TopEnd,
                         contentTrue = {
-                            PerfIconButton(
-                                imageVector = PerfIcon.Save,
+                            GkIconButton(
+                                imageVector = GkIcons.Check,
+                                contentDescription = UiStrings.action_save,
                                 onClick = throttle {
                                     vm.saveText()
                                     context.imeController.requestHide()
@@ -155,14 +159,13 @@ fun A11yScopeAppListPage() {
                         contentFalse = {
                             Row {
                                 var expanded by remember { mutableStateOf(false) }
-                                AnimatedIconButton(
+                                GkSearchCloseIconButton(
                                     onClick = throttle {
                                         vm.toggleSearchBar()
                                     },
-                                    id = R.drawable.ic_anim_search_close,
-                                    atEnd = showSearchBar,
+                                    isSearchOpen = showSearchBar,
                                 )
-                                PerfIconButton(imageVector = PerfIcon.Sort, onClick = {
+                                GkFilterIconButton(filtered = !showAllApps, onClick = {
                                     expanded = true
                                 })
                                 Box(
@@ -173,19 +176,19 @@ fun A11yScopeAppListPage() {
                                         expanded = expanded,
                                         onDismissRequest = { expanded = false }
                                     ) {
-                                        MenuGroupCard(inTop = true, title = "排序") {
+                                        GkMenuGroupCard(inTop = true, title = UiStrings.sort_title) {
                                             AppSortOption.objects.forEach { option ->
-                                                MenuItemRadioButton(
+                                                GkMenuItemRadioButton(
                                                     text = option.label,
                                                     selected = AppSortOption.objects.findOption(store.a11yScopeAppSort) == option,
                                                     onClick = { vm.setSortType(option) },
                                                 )
                                             }
                                         }
-                                        MenuGroupCard(inTop = true, title = "筛选") {
+                                        GkMenuGroupCard(inTop = true, title = UiStrings.filter_title) {
                                             AppGroupOption.normalObjects.forEach { option ->
                                                 val newValue = option.invert(store.a11yScopeAppGroupType)
-                                                MenuItemCheckbox(
+                                                GkMenuItemCheckbox(
                                                     enabled = newValue != 0,
                                                     text = option.label,
                                                     checked = option.include(store.a11yScopeAppGroupType),
@@ -198,27 +201,39 @@ fun A11yScopeAppListPage() {
                             }
                         },
                     )
+                    GkIconButton(
+                        imageVector = GkIcons.HelpOutline,
+                        contentDescription = UiStrings.scoped_a11y_help,
+                        onClick = vm.scope.launchUiAction {
+                            mainVm.dialogRequests.showMessage(
+                                title = UiStrings.a11y_scoped,
+                                text = UiStrings.scoped_a11y_help_problem +
+                                        UiStrings.scoped_a11y_help_behavior +
+                                        UiStrings.scoped_a11y_help_scope,
+                            )
+                        },
+                    )
                 })
         },
         floatingActionButton = {
-            AnimationFloatingActionButton(
+            GkAnimatedFloatingActionButton(
                 visible = !editable && scrollBehavior.isFullVisible,
-                onClickLabel = "进入文本编辑模式",
+                onClickLabel = UiStrings.text_edit_mode_enter,
                 onClick = {
                     vm.setEditable(true)
                 },
-                imageVector = PerfIcon.Edit,
-                contentDescription = "编辑文本"
+                imageVector = GkIcons.Edit,
+                contentDescription = UiStrings.text_edit
             )
         },
     ) { contentPadding ->
         if (editable) {
-            MultiTextField(
+            GkMultiTextField(
                 modifier = Modifier.scaffoldPadding(contentPadding),
                 text = editText,
                 onTextChange = vm::setText,
                 immediateFocus = true,
-                placeholderText = "请输入应用ID列表\n示例:\ncom.android.systemui\ncom.android.settings",
+                placeholderText = UiStrings.app_ids_input_hint,
                 indicatorSize = vm.indicatorSizeFlow.collectAsStateWithLifecycle().value,
             )
         } else {
@@ -229,17 +244,18 @@ fun A11yScopeAppListPage() {
             ) {
                 items(appInfos, { it.id }) { appInfo ->
                     val checked = a11yScopeAppList.contains(appInfo.id)
-                    AppCheckBoxCard(
+                    GkAppCheckboxCard(
                         appInfo = appInfo,
                         checked = checked,
                         onCheckedChange = { vm.toggleApp(appInfo.id) },
                     )
                 }
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                    Spacer(modifier = Modifier.height(EmptyHeight))
                     if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = "暂无搜索结果")
-                        Spacer(modifier = Modifier.height(EmptyHeight / 2))
+                        GkEmptyState(text = UiStrings.search_no_results)
+                        GkPageBottomSpace(height = GkPageBottomSpaceDefaults.CompactHeight)
+                    } else {
+                        GkPageBottomSpace()
                     }
                 }
             }

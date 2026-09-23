@@ -9,11 +9,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import li.gkd.app.data.RawSubscription
+import li.gkd.app.text.UiStrings
 import li.gkd.app.core.state.Loadable
-import li.gkd.db.SubsItem
+import li.gkd.app.data.RawSubscription
 import li.gkd.app.data.SubsVersion
-import li.gkd.db.Db
+import li.gkd.app.data.edit
+import li.gkd.app.domain.rule.CategoryPolicy
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.MutexState
 import li.gkd.app.util.NetworkUtils
@@ -21,7 +22,9 @@ import li.gkd.app.util.client
 import li.gkd.app.util.distinctByIfAny
 import li.gkd.app.util.filterIfNotAll
 import li.gkd.app.util.json
+import li.gkd.db.Db
 import li.gkd.db.LOCAL_SUBS_ID
+import li.gkd.db.SubsItem
 import li.songe.json5.decodeFromJson5String
 
 object SubscriptionRepository {
@@ -76,7 +79,7 @@ object SubscriptionRepository {
                     saveLocked(
                         subscription = RawSubscription(
                             id = LOCAL_SUBS_ID,
-                            name = "本地订阅",
+                            name = UiStrings.subscription_local,
                             version = 0,
                         ),
                         newItem = item,
@@ -96,7 +99,7 @@ object SubscriptionRepository {
 
     suspend fun awaitSnapshot(): SubscriptionSnapshot {
         return when (val state = snapshotFlow.first { it !is Loadable.Loading }) {
-            Loadable.Loading -> error("订阅尚未加载")
+            Loadable.Loading -> error(UiStrings.subscription_not_loaded)
             is Loadable.Failure -> throw state.cause
             is Loadable.Ready -> state.value
         }
@@ -141,7 +144,7 @@ object SubscriptionRepository {
         defaultItem: SubsItem,
     ) = withContext(Dispatchers.IO) {
         require(subscription.id == defaultItem.id) {
-            "订阅与订阅项id不一致: ${subscription.id} != ${defaultItem.id}"
+            UiStrings.subscription_item_id_mismatch(subscription.id, defaultItem.id)
         }
         updateMutex.withStateLock {
             val currentItem = Db.subsItemDao.queryAll().find { it.id == subscription.id }
@@ -160,6 +163,49 @@ object SubscriptionRepository {
         }
     }
 
+    // Configuration commands share the subscription lock so an update cannot change
+    // category membership between validating the displayed snapshot and writing.
+    suspend fun <T> withSubscriptionSnapshot(
+        expected: RawSubscription,
+        action: suspend (RawSubscription) -> T,
+    ): T = withSubscriptionSnapshots(listOf(expected)) { action(expected) }
+
+    suspend fun <T> withSubscriptionSnapshots(
+        expected: Collection<RawSubscription>,
+        action: suspend () -> T,
+    ): T = updateMutex.withStateLock {
+        expected.forEach { subscription ->
+            val current = requireSnapshot(subscription.id).subscriptions[subscription.id]
+                ?: error(UiStrings.subscription_missing)
+            check(current == subscription) { UiStrings.subscription_content_conflict }
+        }
+        action()
+    }
+
+    suspend fun saveCategory(
+        expected: RawSubscription,
+        categoryKey: Int?,
+        name: String,
+        description: String,
+    ): Boolean = update(expected.id) { current ->
+        check(current == expected) { UiStrings.subscription_preview_conflict }
+        CategoryPolicy.previewEdit(current, categoryKey, name, description)
+    }
+
+    suspend fun deleteCategory(expected: RawSubscription, categoryKey: Int): Boolean =
+        deleteCategories(expected, setOf(categoryKey))
+
+    suspend fun deleteCategories(expected: RawSubscription, categoryKeys: Set<Int>): Boolean =
+        update(expected.id) { current ->
+            require(current.isLocal) { UiStrings.remote_category_delete_unsupported }
+            check(current == expected) { UiStrings.subscription_content_conflict }
+            current.edit {
+                categoryKeys.forEach { categoryKey ->
+                    check(removeCategory(categoryKey) != null) { UiStrings.category_missing }
+                }
+            }
+        }
+
     suspend fun update(
         id: Long,
         transform: (RawSubscription) -> RawSubscription,
@@ -168,9 +214,9 @@ object SubscriptionRepository {
         updateMutex.withStateLock {
             val snapshot = requireSnapshot(id)
             val current = snapshot.subscriptions[id]
-                ?: throw (snapshot.loadErrors[id] ?: IllegalStateException("订阅不存在: $id"))
+                ?: throw (snapshot.loadErrors[id] ?: IllegalStateException(UiStrings.subscription_missing_id(id)))
             val next = transform(current)
-            require(next.id == id) { "订阅id不可修改: $id -> ${next.id}" }
+            require(next.id == id) { UiStrings.subscription_id_immutable(id, next.id) }
             if (next == current) return@withStateLock
             try {
                 saveLocked(next)
@@ -466,7 +512,7 @@ object SubscriptionRepository {
 
     private fun requireSnapshot(id: Long): SubscriptionSnapshot {
         return when (val state = snapshotFlow.value) {
-            Loadable.Loading -> error("订阅尚未加载: $id")
+            Loadable.Loading -> error(UiStrings.subscription_not_loaded_id(id))
             is Loadable.Failure -> throw state.cause
             is Loadable.Ready -> state.value
         }
@@ -496,19 +542,19 @@ object SubscriptionRepository {
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            throw Exception("请求更新链接失败", e)
+            throw Exception(UiStrings.subscription_update_url_request_failed, e)
         }
         val subscription = try {
             RawSubscription.parse(text)
         } catch (e: Exception) {
-            throw Exception("解析文本失败", e)
+            throw Exception(UiStrings.text_parse_failed, e)
         }
         if (subscription.id != item.id) {
-            error("新id=${subscription.id}不匹配旧id=${item.id}")
+            error(UiStrings.subscription_updated_id_mismatch(subscription.id, item.id))
         }
         if (current != null && subscription.version <= current.version) {
             LogUtils.d(
-                "版本号不满足条件:id=${item.id}",
+                UiStrings.subscription_version_mismatch(item.id),
                 "${current.version} -> ${subscription.version}",
             )
             return null

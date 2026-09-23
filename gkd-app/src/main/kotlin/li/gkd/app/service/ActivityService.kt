@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import li.gkd.app.text.UiStrings
 import li.gkd.app.a11y.A11yState
 import li.gkd.app.a11y.ActivityScene
 import li.gkd.app.a11y.topActivityFlow
@@ -38,10 +39,11 @@ import li.gkd.app.a11y.updateTopActivity
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.privilegeContextFlow
-import li.gkd.app.ui.component.PerfIcon
 import li.gkd.app.ui.style.iconTextSize
 import li.gkd.app.util.ToastUtils.copyText
 import li.gkd.app.util.IntentUtils
+import li.gkd.app.ui.component.GkIcon
+import li.gkd.app.ui.component.GkIcons
 
 
 class ActivityService : OverlayWindowService(
@@ -67,7 +69,7 @@ class ActivityService : OverlayWindowService(
                 val topActivity by topActivityFlow.collectAsStateWithLifecycle(initialValue = currentTopActivity)
                 val hasAuth by activityOkFlow.collectAsStateWithLifecycle()
                 ClosableTitle(
-                    title = if (hasAuth) "记录服务" else "记录服务(无权限)"
+                    title = if (hasAuth) UiStrings.activity_record_service else UiStrings.activity_record_service_no_permission
                 )
                 if (hasAuth) {
                     Box {
@@ -102,7 +104,7 @@ class ActivityService : OverlayWindowService(
         useLogLifecycle()
         useServicePresence(
             stateFlow = isRunning,
-            name = "记录服务",
+            name = UiStrings.activity_record_service,
         )
         onCreated {
             NotificationCatalog.activity().startForeground()
@@ -146,8 +148,8 @@ private fun RowText(text: String?, color: Color = Color.Unspecified) {
         Text(text = text ?: "null", color = color, modifier = Modifier.weight(1f, false))
         if (text != null) {
             Spacer(modifier = Modifier.width(4.dp))
-            PerfIcon(
-                imageVector = PerfIcon.ContentCopy,
+            GkIcon(
+                imageVector = GkIcons.ContentCopy,
                 modifier = Modifier
                     .clip(MaterialTheme.shapes.extraSmall)
                     .clickable(onClick = {

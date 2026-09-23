@@ -1,5 +1,7 @@
 package li.gkd.app.ui
 
+import li.gkd.app.MainViewModel
+
 import android.webkit.URLUtil
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
@@ -72,15 +74,12 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
+import li.gkd.app.text.UiStrings
 import li.gkd.app.MainActivity
 import li.gkd.app.app
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.PerfTopAppBar
-import li.gkd.app.ui.share.LocalMainViewModel
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.FolderUtils
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
 import me.saket.telephoto.zoomable.ZoomableContentLocation
 import me.saket.telephoto.zoomable.rememberZoomableState
 import me.saket.telephoto.zoomable.zoomable
@@ -88,6 +87,9 @@ import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
+import li.gkd.app.ui.component.GkIconButton
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkTopAppBar
 
 @Serializable
 data class ImagePreviewItem(
@@ -134,7 +136,7 @@ private val imageLoader by lazy {
 
 @Composable
 fun ImagePreviewPage(route: ImagePreviewRoute) {
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     val context = LocalActivity.current as MainActivity
     var showBars by remember { mutableStateOf(true) }
 
@@ -234,11 +236,11 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                 val currentPreviewItem =
                     singleItem ?: previewItems.getOrNull(pagerState.currentPage)
                 val currentUri = currentPreviewItem?.uri
-                PerfTopAppBar(
+                GkTopAppBar(
                     modifier = Modifier.background(Color.Black.copy(alpha = 0.5f)),
                     navigationIcon = {
-                        PerfIconButton(
-                            imageVector = PerfIcon.ArrowBack,
+                        GkIconButton(
+                            imageVector = GkIcons.ArrowBack,
                             onClick = { mainVm.popPage() },
                             colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White)
                         )
@@ -303,8 +305,8 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                     },
                     actions = {
                         if (currentUri != null && URLUtil.isNetworkUrl(currentUri)) {
-                            PerfIconButton(
-                                imageVector = PerfIcon.OpenInNew,
+                            GkIconButton(
+                                imageVector = GkIcons.OpenInNew,
                                 onClick = throttle(fn = { mainVm.openUrl(currentUri) }),
                                 colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White)
                             )
@@ -326,7 +328,7 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "${pagerState.currentPage + 1} / ${previewItems.size}",
+                            text = UiStrings.progress_fraction(pagerState.currentPage + 1, previewItems.size),
                             modifier = Modifier
                                 .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                                 .padding(horizontal = 12.dp, vertical = 4.dp),
@@ -360,7 +362,7 @@ private fun UriImage(
             uri = uri,
             listener = object : EventListener() {
                 override fun onStart(request: ImageRequest) {
-                    phaseTextFlow.value = "请求中"
+                    phaseTextFlow.value = UiStrings.image_requesting
                 }
 
                 override fun fetchStart(
@@ -368,7 +370,7 @@ private fun UriImage(
                     fetcher: Fetcher,
                     options: Options,
                 ) {
-                    phaseTextFlow.value = if (isNetworkImage) "下载中" else "读取中"
+                    phaseTextFlow.value = if (isNetworkImage) UiStrings.image_downloading else UiStrings.image_reading
                 }
 
                 override fun decodeStart(
@@ -376,7 +378,7 @@ private fun UriImage(
                     decoder: Decoder,
                     options: Options,
                 ) {
-                    phaseTextFlow.value = "解码中"
+                    phaseTextFlow.value = UiStrings.image_decoding
                 }
 
                 override fun onSuccess(request: ImageRequest, result: SuccessResult) {
@@ -451,7 +453,7 @@ private fun UriImage(
                         modifier = Modifier.pointerInput(uri) {
                             detectTapGestures(onTap = { reload() })
                         },
-                        text = "加载失败, 点击重试",
+                        text = UiStrings.image_load_failed_retry,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium
                     )

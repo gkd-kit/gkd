@@ -1,13 +1,14 @@
 package li.gkd.app.feature.settings
 
+import li.gkd.app.ui.component.GkPageBottomSpace
+import li.gkd.app.MainViewModel
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -35,7 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
-import li.gkd.app.R
+import li.gkd.app.text.UiStrings
 import li.gkd.app.feature.log.A11yEventLogRoute
 import li.gkd.app.feature.log.ActivityLogRoute
 import li.gkd.app.feature.snapshot.SnapshotPageRoute
@@ -46,25 +47,25 @@ import li.gkd.app.platform.service.ServiceController
 import li.gkd.app.service.ActivityService
 import li.gkd.app.service.ButtonService
 import li.gkd.app.service.EventService
+import li.gkd.app.service.TrackService
+import li.gkd.app.ui.share.launchUi
 import li.gkd.app.service.HttpService
 import li.gkd.app.store.AppStore.storeFlow
-import li.gkd.app.ui.component.AppAlertDialog
-import li.gkd.app.ui.component.PerfCustomIconButton
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.PerfTopAppBar
-import li.gkd.app.ui.component.SettingItem
-import li.gkd.app.ui.component.SettingsDialog
-import li.gkd.app.ui.component.TextSwitch
-import li.gkd.app.ui.component.autoFocus
-import li.gkd.app.ui.share.LocalMainViewModel
-import li.gkd.app.ui.style.EmptyHeight
 import li.gkd.app.ui.style.TABULAR_NUMBERS_FONT_FEATURE
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.itemVerticalPadding
 import li.gkd.app.ui.style.titleItemPadding
 import li.gkd.app.ui.share.launchUiAction
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
+import li.gkd.app.ui.component.GkAlertDialog
+import li.gkd.app.ui.component.GkIconButton
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkSettingItem
+import li.gkd.app.ui.component.GkSettingsDialog
+import li.gkd.app.ui.component.GkSizedIconButton
+import li.gkd.app.ui.component.GkTextSwitch
+import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.component.autoFocus
 
 @Serializable
 data object AdvancedPageRoute : NavKey
@@ -76,7 +77,7 @@ fun AdvancedPage() {
 
 @Composable
 private fun AdvancedContent() {
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel<AdvancedVm>()
     val scope = vm.scope
     var showEditPortDialog by rememberSaveable { mutableStateOf(false) }
@@ -87,24 +88,25 @@ private fun AdvancedContent() {
     val buttonServiceRunning by ButtonService.isRunning.collectAsStateWithLifecycle()
     val activityServiceRunning by ActivityService.isRunning.collectAsStateWithLifecycle()
     val eventServiceRunning by EventService.isRunning.collectAsStateWithLifecycle()
+    val trackServiceRunning by TrackService.isRunning.collectAsStateWithLifecycle()
 
     if (showHttpSettingsDialog) {
-        SettingsDialog(
-            title = "HTTP 设置",
+        GkSettingsDialog(
+            title = UiStrings.http_settings_title,
             onDismissRequest = { showHttpSettingsDialog = false },
         ) {
-            SettingItem(
-                title = "服务端口",
+            GkSettingItem(
+                title = UiStrings.http_port,
                 subtitle = store.httpServerPort.toString(),
-                imageVector = PerfIcon.Edit,
-                onClickLabel = "编辑服务端口",
+                imageVector = GkIcons.Edit,
+                onClickLabel = UiStrings.http_port_edit,
                 onClick = {
                     showEditPortDialog = true
                 },
             )
-            TextSwitch(
-                title = "清除订阅",
-                subtitle = "关闭服务时删除内存订阅",
+            GkTextSwitch(
+                title = UiStrings.http_clear_subscription,
+                subtitle = UiStrings.http_clear_subscription_description,
                 checked = store.autoClearMemorySubs,
                 onCheckedChange = vm::setAutoClearMemorySubs,
             )
@@ -127,15 +129,15 @@ private fun AdvancedContent() {
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            PerfTopAppBar(
+            GkTopAppBar(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    PerfIconButton(
-                        imageVector = PerfIcon.ArrowBack,
+                    GkIconButton(
+                        imageVector = GkIcons.ArrowBack,
                         onClick = mainVm::popPage,
                     )
                 },
-                title = { Text(text = "高级设置") },
+                title = { Text(text = UiStrings.advanced_settings) },
             )
         },
     ) { contentPadding ->
@@ -145,12 +147,34 @@ private fun AdvancedContent() {
                 .verticalScroll(rememberScrollState())
                 .padding(contentPadding),
         ) {
-            Text(
-                text = "HTTP",
-                modifier = Modifier.titleItemPadding(showTop = false),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
+            AdvancedSectionTitle(UiStrings.advanced_snapshot_capture, showTop = false)
+            GkSettingItem(
+                title = UiStrings.snapshot_records,
+                subtitle = UiStrings.snapshot_records_description,
+                onClick = { mainVm.navigatePage(SnapshotPageRoute) },
             )
+            GkTextSwitch(
+                title = UiStrings.snapshot_button_label,
+                subtitle = UiStrings.snapshot_button_description,
+                checked = buttonServiceRunning,
+                onCheckedChange = scope.launchUiAction { enabled ->
+                    if (!enabled || mainVm.permissionRequests.ensurePermissions(
+                            PermissionStates.foregroundServiceSpecialUse,
+                            PermissionStates.notification,
+                            PermissionStates.drawOverlays,
+                        )
+                    ) {
+                        ServiceController.setSnapshotButtonEnabled(enabled)
+                    }
+                },
+            )
+            GkSettingItem(
+                title = UiStrings.snapshot_settings,
+                subtitle = UiStrings.snapshot_settings_description,
+                onClick = { mainVm.navigatePage(SnapshotSettingsRoute) },
+            )
+
+            AdvancedSectionTitle(UiStrings.advanced_live_debug)
             HttpServiceItem(
                 running = httpServer != null,
                 settingsSelected = showHttpSettingsDialog,
@@ -169,68 +193,9 @@ private fun AdvancedContent() {
                 }),
                 onAddressClick = mainVm::openUrl,
             )
-            Text(
-                text = "快照",
-                modifier = Modifier.titleItemPadding(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            SettingItem(
-                title = "快照记录",
-                subtitle = "应用界面节点信息及截图",
-                onClick = { mainVm.navigatePage(SnapshotPageRoute) },
-            )
-            TextSwitch(
-                title = "快照按钮",
-                subtitle = "显示按钮点击保存快照",
-                checked = buttonServiceRunning,
-                onCheckedChange = scope.launchUiAction { enabled ->
-                    if (!enabled || mainVm.permissionRequests.ensurePermissions(
-                            PermissionStates.foregroundServiceSpecialUse,
-                            PermissionStates.notification,
-                            PermissionStates.drawOverlays,
-                        )
-                    ) {
-                        ServiceController.setSnapshotButtonEnabled(enabled)
-                    }
-                },
-            )
-            SettingItem(
-                title = "快照设置",
-                subtitle = "触发方式、截图处理与导出",
-                onClick = { mainVm.navigatePage(SnapshotSettingsRoute) },
-            )
-
-            Text(
-                text = "上传",
-                modifier = Modifier.titleItemPadding(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            SettingItem(
-                title = "GitHub Cookie",
-                subtitle = "生成快照/日志链接",
-                suffix = "获取教程",
-                suffixUnderline = true,
-                onSuffixClick = mainVm.githubUpload::openCookieHelp,
-                imageVector = PerfIcon.Edit,
-                onClick = mainVm.githubUpload::editCookie,
-            )
-
-            Text(
-                text = "日志",
-                modifier = Modifier.titleItemPadding(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            SettingItem(
-                title = "界面日志",
-                subtitle = "界面切换日志",
-                onClick = { mainVm.navigatePage(ActivityLogRoute) },
-            )
-            TextSwitch(
-                title = "界面服务",
-                subtitle = "显示当前界面信息",
+            GkTextSwitch(
+                title = UiStrings.activity_service_label,
+                subtitle = UiStrings.activity_service_description,
                 checked = activityServiceRunning,
                 onCheckedChange = scope.launchUiAction { enabled ->
                     if (!enabled || mainVm.permissionRequests.ensurePermissions(
@@ -243,14 +208,9 @@ private fun AdvancedContent() {
                     }
                 },
             )
-            SettingItem(
-                title = "事件日志",
-                subtitle = "无障碍事件日志",
-                onClick = { mainVm.navigatePage(A11yEventLogRoute) },
-            )
-            TextSwitch(
-                title = "事件服务",
-                subtitle = "显示无障碍事件",
+            GkTextSwitch(
+                title = UiStrings.event_service_label,
+                subtitle = UiStrings.event_service_description,
                 checked = eventServiceRunning,
                 onCheckedChange = scope.launchUiAction { enabled ->
                     if (!enabled || mainVm.permissionRequests.ensurePermissions(
@@ -263,14 +223,73 @@ private fun AdvancedContent() {
                     }
                 },
             )
-            SettingItem(
-                title = "崩溃记录",
-                subtitle = "应用异常退出记录",
+            GkTextSwitch(
+                title = UiStrings.track_overlay,
+                subtitle = UiStrings.track_overlay_description,
+                checked = trackServiceRunning,
+                onCheckedChange = { enabled ->
+                    scope.launchUi {
+                        if (enabled) {
+                            if (!mainVm.dialogRequests.confirm(
+                                title = UiStrings.usage_notice,
+                                text = UiStrings.track_overlay_usage_description,
+                                confirmText = UiStrings.action_continue,
+                            )) return@launchUi
+                            if (
+                                !mainVm.permissionRequests.ensurePermissions(
+                                    PermissionStates.foregroundServiceSpecialUse,
+                                    PermissionStates.notification,
+                                    PermissionStates.drawOverlays,
+                                )
+                            ) {
+                                return@launchUi
+                            }
+                        }
+                        vm.setTrackServiceEnabled(enabled)
+                    }
+                },
+            )
+
+            AdvancedSectionTitle(UiStrings.advanced_logs_diagnostics)
+            GkSettingItem(
+                title = UiStrings.activity_log_title,
+                subtitle = UiStrings.activity_switch_logs,
+                onClick = { mainVm.navigatePage(ActivityLogRoute) },
+            )
+            GkSettingItem(
+                title = UiStrings.event_log_title,
+                subtitle = UiStrings.a11y_event_logs,
+                onClick = { mainVm.navigatePage(A11yEventLogRoute) },
+            )
+            GkSettingItem(
+                title = UiStrings.crash_reports,
+                subtitle = UiStrings.crash_reports_description,
                 onClick = { mainVm.navigatePage(CrashReportRoute) },
             )
-            Spacer(modifier = Modifier.height(EmptyHeight))
+
+            AdvancedSectionTitle(UiStrings.advanced_upload_share)
+            GkSettingItem(
+                title = UiStrings.github_cookie_label,
+                subtitle = UiStrings.upload_links_description,
+                suffix = UiStrings.tutorial_view,
+                suffixUnderline = true,
+                onSuffixClick = mainVm.githubUpload::openCookieHelp,
+                imageVector = GkIcons.Edit,
+                onClick = mainVm.githubUpload::editCookie,
+            )
+            GkPageBottomSpace()
         }
     }
+}
+
+@Composable
+private fun AdvancedSectionTitle(title: String, showTop: Boolean = true) {
+    Text(
+        text = title,
+        modifier = Modifier.titleItemPadding(showTop = showTop),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+    )
 }
 
 @Composable
@@ -288,13 +307,13 @@ private fun HttpServiceItem(
     )
     val addressItem: @Composable (String, String) -> Unit = { host, type ->
         Text(
-            text = "${host}:${port} · $type",
+            text = UiStrings.http_address_description(host, port, type),
             style = addressStyle,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(
-                    onClickLabel = "查看${type}访问地址",
+                    onClickLabel = UiStrings.http_view_addresses(type),
                     onClick = throttle { onAddressClick("http://${host}:${port}") },
                 )
                 .padding(vertical = 2.dp),
@@ -310,7 +329,7 @@ private fun HttpServiceItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(
-                    onClickLabel = "切换HTTP 服务状态",
+                    onClickLabel = UiStrings.http_toggle_service,
                     onClick = { onRunningChange(!running) },
                 )
                 .padding(
@@ -320,19 +339,19 @@ private fun HttpServiceItem(
                     bottom = 4.dp,
                 ),
         ) {
-            TextSwitch(
+            GkTextSwitch(
                 modifier = Modifier.fillMaxWidth(),
                 paddingDisabled = true,
-                title = "HTTP 服务",
-                subtitle = "通过浏览器连接调试",
+                title = UiStrings.http_service_label,
+                subtitle = UiStrings.http_service_description,
                 suffixIcon = {
-                    PerfCustomIconButton(
+                    GkSizedIconButton(
                         size = 32.dp,
                         iconSize = 20.dp,
-                        onClickLabel = "打开HTTP设置弹窗",
+                        onClickLabel = UiStrings.http_settings_open,
                         onClick = onSettingsClick,
-                        id = R.drawable.ic_page_info,
-                        contentDescription = "HTTP设置",
+                        imageVector = GkIcons.PageInfo,
+                        contentDescription = UiStrings.http_settings_button,
                         tint = if (settingsSelected) {
                             MaterialTheme.colorScheme.primary
                         } else {
@@ -354,9 +373,9 @@ private fun HttpServiceItem(
                     bottom = 4.dp,
                 ),
             ) {
-                addressItem("127.0.0.1", "本机")
+                addressItem("127.0.0.1", UiStrings.network_local_device)
                 localNetworkIps.forEach { host ->
-                    addressItem(host, "局域网")
+                    addressItem(host, UiStrings.network_lan)
                 }
             }
         }
@@ -370,13 +389,13 @@ private fun EditHttpPortDialog(
     onConfirm: (String) -> Unit,
 ) {
     var value by remember { mutableStateOf(currentPort.toString()) }
-    AppAlertDialog(
+    GkAlertDialog(
         properties = DialogProperties(dismissOnClickOutside = false),
-        title = { Text(text = "服务端口") },
+        title = { Text(text = UiStrings.http_port) },
         text = {
             OutlinedTextField(
                 value = value,
-                placeholder = { Text(text = "请输入 1000-65535 的整数") },
+                placeholder = { Text(text = UiStrings.http_port_input_hint) },
                 onValueChange = { value = it.filter(Char::isDigit).take(5) },
                 singleLine = true,
                 modifier = Modifier
@@ -385,7 +404,7 @@ private fun EditHttpPortDialog(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 supportingText = {
                     Text(
-                        text = "${value.length} / 5",
+                        text = UiStrings.port_input_length(value.length),
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.End,
                     )
@@ -398,12 +417,12 @@ private fun EditHttpPortDialog(
                 enabled = value.isNotEmpty(),
                 onClick = { onConfirm(value) },
             ) {
-                Text(text = "确认")
+                Text(text = UiStrings.action_confirm)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismissRequest) {
-                Text(text = "取消")
+                Text(text = UiStrings.action_cancel)
             }
         },
     )

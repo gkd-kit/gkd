@@ -1,5 +1,7 @@
 package li.gkd.app.snapshot
 
+import li.gkd.app.text.UiStrings
+
 enum class SnapshotScreenshotStatus {
     Captured,
     Unavailable,
@@ -8,7 +10,7 @@ enum class SnapshotScreenshotStatus {
 
     fun detailText(): String? = when (this) {
         Captured -> null
-        Unavailable -> "未获取到屏幕画面"
-        LikelyProtected -> "当前界面可能受截图保护"
+        Unavailable -> UiStrings.screenshot_frame_missing
+        LikelyProtected -> UiStrings.screenshot_may_be_protected
     }
 }

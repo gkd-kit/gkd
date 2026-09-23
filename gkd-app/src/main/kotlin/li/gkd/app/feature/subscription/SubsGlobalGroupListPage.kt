@@ -1,17 +1,20 @@
 package li.gkd.app.feature.subscription
 
+import li.gkd.app.ui.component.GkPageBottomSpace
+import li.gkd.app.MainViewModel
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
@@ -19,26 +22,29 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
-import li.gkd.app.core.state.Loadable
-import li.gkd.app.ui.component.AnimationFloatingActionButton
-import li.gkd.app.ui.component.BatchActionMenuItem
-import li.gkd.app.ui.component.EmptyText
-import li.gkd.app.ui.component.MultiSelectionActions
-import li.gkd.app.ui.component.MultiSelectionTopAppBar
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.RuleBatchMenuItems
-import li.gkd.app.ui.component.RuleGroupCard
-import li.gkd.app.ui.component.SubscriptionPageContent
-import li.gkd.app.ui.component.TowLineText
+import li.gkd.app.text.UiStrings
+import li.gkd.app.domain.rule.RuleConfigIndex
+import li.gkd.app.domain.rule.RuleSetting
+import li.gkd.app.ui.share.ListPlaceholder
+import li.gkd.app.ui.share.launchUi
+import li.gkd.app.ui.style.scaffoldPadding
+import li.gkd.app.util.ToastUtils.toast
+import li.gkd.app.ui.component.GkAnimatedFloatingActionButton
+import li.gkd.app.ui.component.GkBatchActionMenuItem
+import li.gkd.app.ui.component.GkEmptyState
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkMultiSelectionActions
+import li.gkd.app.ui.component.GkMultiSelectionTopAppBar
+import li.gkd.app.ui.component.GkRuleBatchMenuItems
+import li.gkd.app.ui.component.GkRuleFocusNotice
+import li.gkd.app.ui.component.GkRuleGroupCard
+import li.gkd.app.ui.component.GkSubscriptionPageContent
+import li.gkd.app.ui.component.GkTwoLineText
 import li.gkd.app.ui.component.animateListItem
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.component.rememberMultiSelectionState
-import li.gkd.app.ui.share.ListPlaceholder
-import li.gkd.app.ui.share.LocalMainViewModel
-import li.gkd.app.ui.share.launchUi
-import li.gkd.app.ui.style.EmptyHeight
-import li.gkd.app.ui.style.scaffoldPadding
-import li.gkd.app.util.ToastUtils.toast
+import li.gkd.app.ui.component.rememberRuleControlEnvironment
+import li.gkd.app.ui.component.rememberRuleListFocus
 
 
 @Serializable
@@ -49,47 +55,49 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
     val subsItemId = route.subsItemId
     val focusGroupKey = route.focusGroupKey
 
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { SubsGlobalGroupListVm(route) }
     val scope = vm.scope
+    val environment = rememberRuleControlEnvironment()
     val batchBusy by vm.batchBusyFlow.collectAsStateWithLifecycle()
-    val focusGroup = vm.focusGroupFlow?.collectAsStateWithLifecycle()?.value
 
-    SubscriptionPageContent(vm.uiState) { state ->
+    GkSubscriptionPageContent(vm.uiState) { state ->
         val subs = state.subscription
-        val subsConfigs = state.subsConfigs.value.orEmpty()
-        val switchEnabled = state.subsConfigs is Loadable.Ready
+        val configIndex = remember(state.configs) { RuleConfigIndex(state.configs) }
         val editable = subsItemId < 0
+        val controls = remember(state, environment) { subs.globalGroups.associate { group ->
+            group.key to environment.resolve(subs, group, null, state.configs, configIndex)
+        } }
         val globalGroups = subs.globalGroups
 
         val selectionState = rememberMultiSelectionState<Int>()
-        val allKeys = remember(globalGroups) { globalGroups.mapTo(mutableSetOf()) { it.key } }
-        val selectedKeys = selectionState.selectedKeys intersect allKeys
+        val selectableKeys = remember(controls) { controls.filterValues { it.canEnable }.keys }
+        val selectedKeys = selectionState.selectedKeys intersect selectableKeys
         val isSelectedMode = selectionState.active
-        LaunchedEffect(allKeys) {
-            selectionState.retain(allKeys)
+        LaunchedEffect(selectableKeys) {
+            selectionState.retain(selectableKeys)
         }
         BackHandler(isSelectedMode) {
             selectionState.clear()
         }
 
-        val updateSelected: (Boolean?) -> Unit = { enabled ->
+        val updateSelected: (RuleSetting) -> Unit = { setting ->
+        val enabled = setting.value
             val keysToUpdate = selectedKeys
             if (keysToUpdate.isNotEmpty()) {
+                val request = vm.prepareSwitches(state, keysToUpdate)
                 scope.launchUi {
                     vm.runBatchAction {
                         val action = when (enabled) {
-                            false -> "关闭"
-                            true -> "启用"
-                            null -> "重置开关至默认值"
+                            false -> UiStrings.action_close
+                            true -> UiStrings.action_enable
+                            null -> UiStrings.setting_follow_default
                         }
                         if (!mainVm.dialogRequests.confirm(
-                            title = "操作提示",
-                            text = "是否将所选 ${keysToUpdate.size} 个规则组全部${action}?\n\n注: 也可在「订阅-规则类别」操作",
+                            title = UiStrings.action_notice,
+                            text = UiStrings.global_rule_batch_setting_confirmation(keysToUpdate.size, action),
                         )) return@runBatchAction
-                        val changedSize = vm.updateSelectedEnabled(keysToUpdate, enabled)
-                        val result = if (enabled == null) "已重置" else if (enabled) "已启用" else "已关闭"
-                        toast(if (changedSize > 0) "$result $changedSize 个规则组" else "无规则被改变，所选规则可能已变化")
+                        toast(vm.applySwitches(request, RuleSetting.from(enabled)).description)
                     }
                 }
             }
@@ -97,21 +105,18 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
         val pageScrollState = rememberListScrollState()
         val scrollBehavior = pageScrollState.scrollBehavior
         val listState = pageScrollState.listState
-        pageScrollState.ResetOnChange(globalGroups.isEmpty())
-        if (focusGroupKey != null) {
-            LaunchedEffect(null) {
-                if (focusGroup != null) {
-                    val i = globalGroups.indexOfFirst { it.key == focusGroupKey }
-                    if (i >= 0) {
-                        listState.scrollToItem(i)
-                    }
-                }
-            }
-        }
+        val itemKeys = remember(globalGroups) { globalGroups.map { it.key } }
+        val focus = rememberRuleListFocus(
+            requestKey = focusGroupKey,
+            scrollState = pageScrollState,
+            itemKeys = itemKeys,
+            targetExists = subs.globalGroups.any { it.key == focusGroupKey },
+        )
+        pageScrollState.ResetOnChange(globalGroups.isEmpty(), enabled = !focus.pending)
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
-                MultiSelectionTopAppBar(
+                GkMultiSelectionTopAppBar(
                     selectedMode = isSelectedMode,
                     selectedCount = selectedKeys.size,
                     onExitSelection = selectionState::clear,
@@ -119,41 +124,39 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                     onNavigateBack = { mainVm.popPage() },
                     onTitleClick = pageScrollState::resetScroll,
                     title = {
-                        TowLineText(
+                        GkTwoLineText(
                             title = subs.name,
-                            subtitle = "全局规则",
+                            subtitle = UiStrings.global_rules,
                         )
                     },
                     actions = { selectedMode ->
                         if (selectedMode) {
-                            MultiSelectionActions(
+                            GkMultiSelectionActions(
                                 selectionState = selectionState,
-                                keys = allKeys,
-                                enabled = isSelectedMode && !batchBusy,
+                                keys = selectableKeys,
+                                enabled = !batchBusy,
                             ) { dismiss ->
-                                RuleBatchMenuItems(
-                                    enabled = switchEnabled,
+                                GkRuleBatchMenuItems(
+                                    enabled = !batchBusy,
                                     onDismiss = dismiss,
                                     onUpdate = updateSelected,
                                 )
                                 if (editable) {
-                                    HorizontalDivider()
-                                    BatchActionMenuItem(
-                                        text = "删除规则",
+                                    GkBatchActionMenuItem(
+                                        text = UiStrings.action_delete,
                                         onDismiss = dismiss,
-                                        destructive = true,
                                         onClick = {
                                             val keysToDelete = selectedKeys
                                             scope.launchUi {
                                                 vm.runBatchAction {
                                                     if (!mainVm.dialogRequests.confirm(
-                                                        title = "删除规则",
-                                                        text = "确定删除所选 ${keysToDelete.size} 个规则组?",
+                                                        title = UiStrings.rule_delete,
+                                                        text = UiStrings.rule_groups_delete_confirmation(keysToDelete.size),
                                                         error = true,
                                                     )) return@runBatchAction
                                                     val deletedSize = vm.deleteSelectedGroups(keysToDelete)
                                                     selectionState.removeDeleted(keysToDelete)
-                                                    toast(if (deletedSize > 0) "已删除 $deletedSize 个规则组" else "所选规则已变化")
+                                                    toast(if (deletedSize > 0) UiStrings.rule_groups_deleted_count(deletedSize) else UiStrings.selected_rules_changed)
                                                 }
                                             }
                                         },
@@ -166,7 +169,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
             },
             floatingActionButton = {
                 if (editable) {
-                    AnimationFloatingActionButton(
+                    GkAnimatedFloatingActionButton(
                         visible = !isSelectedMode,
                         onClick = {
                             mainVm.navigatePage(
@@ -177,58 +180,56 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                                 )
                             )
                         },
-                        imageVector = PerfIcon.Add,
-                        contentDescription = "添加规则"
+                        imageVector = GkIcons.Add,
+                        contentDescription = UiStrings.rule_add
                     )
                 }
             },
         ) { paddingValues ->
-            LazyColumn(
-                modifier = Modifier.scaffoldPadding(paddingValues),
-                state = listState,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                items(globalGroups, { g -> g.key }) { group ->
-                    val subsConfig = subsConfigs.find { it.groupKey == group.key }
-                    RuleGroupCard(
-                        modifier = Modifier.animateListItem(),
-                        subs = subs,
-                        appId = null,
-                        group = group,
-                        focusGroup = focusGroup,
-                        onFocusHandled = vm::consumeFocusGroup,
-                        subsConfig = subsConfig,
-                        categoryConfig = null,
-                        switchEnabled = switchEnabled,
-                        onOpen = {
-                            mainVm.showRuleGroup(
-                                subscriptionId = subs.id,
-                                appId = null,
-                                group = group,
-                            )
-                        },
-                        onCheckedChange = { enabled ->
-                            scope.launchUi {
-                                vm.setGroupEnabled(group, enabled)
+            Column(Modifier.scaffoldPadding(paddingValues)) {
+                if (focus.missing) GkRuleFocusNotice()
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    state = listState,
+                ) {
+                    items(globalGroups, { g -> g.key }) { group ->
+                        GkRuleGroupCard(
+                            modifier = Modifier.animateListItem(),
+                            subs = subs,
+                            appId = null,
+                            group = group,
+                            highlighted = !isSelectedMode && focus.highlightedKey == group.key,
+                            control = controls.getValue(group.key),
+                            onOpen = {
+                                mainVm.showRuleGroup(
+                                    subscriptionId = subs.id,
+                                    appId = null,
+                                    group = group,
+                                )
+                            },
+                            onSettingChange = { setting ->
+                                val request = vm.prepareSwitches(state, setOf(group.key))
+                                scope.launchUi { vm.applySwitches(request, setting).failureMessage?.let { toast(it) } }
+                            },
+                            isSelectedMode = isSelectedMode,
+                            selectionEnabled = !batchBusy,
+                            isSelected = group.key in selectedKeys,
+                            onLongClick = {
+                                if (!batchBusy) {
+                                    selectionState.select(group.key)
+                                }
+                            },
+                            onSelectedChange = {
+                                selectionState.toggle(group.key)
                             }
-                        },
-                        isSelectedMode = isSelectedMode,
-                        selectionEnabled = !batchBusy,
-                        isSelected = group.key in selectedKeys,
-                        onLongClick = {
-                            if (!batchBusy) {
-                                selectionState.select(group.key)
-                            }
-                        },
-                        onSelectedChange = {
-                            selectionState.toggle(group.key)
+                        )
+                    }
+                    item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
+                        if (globalGroups.isEmpty()) {
+                            GkEmptyState(text = if (subs.globalGroups.isEmpty()) UiStrings.rules_empty else UiStrings.rules_no_filter_matches)
+                        } else {
+                            GkPageBottomSpace()
                         }
-                    )
-                }
-                item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                    Spacer(modifier = Modifier.height(EmptyHeight))
-                    if (globalGroups.isEmpty()) {
-                        EmptyText(text = "暂无规则")
                     }
                 }
             }

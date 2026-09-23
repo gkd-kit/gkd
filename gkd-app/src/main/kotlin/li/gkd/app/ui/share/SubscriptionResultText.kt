@@ -1,32 +1,33 @@
 package li.gkd.app.ui.share
 
+import li.gkd.app.text.UiStrings
 import li.gkd.app.data.subscription.SubscriptionResult
 
 val SubscriptionResult.message: String?
     get() = when (this) {
-        SubscriptionResult.Busy -> "正在处理订阅，请稍后重试"
+        SubscriptionResult.Busy -> UiStrings.subscription_busy_retry
         is SubscriptionResult.Success -> when (kind) {
             SubscriptionResult.SuccessKind.None -> null
-            SubscriptionResult.SuccessKind.Deleted -> "删除成功"
-            SubscriptionResult.SuccessKind.Added -> "成功添加订阅"
-            SubscriptionResult.SuccessKind.Modified -> "成功修改订阅"
+            SubscriptionResult.SuccessKind.Deleted -> UiStrings.delete_success
+            SubscriptionResult.SuccessKind.Added -> UiStrings.subscription_add_success
+            SubscriptionResult.SuccessKind.Modified -> UiStrings.subscription_edit_success
             SubscriptionResult.SuccessKind.Refreshed -> {
-                if (count > 0) "更新 $count 条订阅" else "暂无更新"
+                if (count > 0) UiStrings.subscriptions_updated_count(count) else UiStrings.updates_none
             }
         }
 
         is SubscriptionResult.Failure -> when (reason) {
-            SubscriptionResult.FailureReason.DeleteData -> detailMessage("删除订阅数据失败", detail)
+            SubscriptionResult.FailureReason.DeleteData -> detailMessage(UiStrings.subscription_data_delete_failed, detail)
             SubscriptionResult.FailureReason.DeleteFile ->
-                detailMessage("删除订阅文件失败，已取消删除", detail)
-            SubscriptionResult.FailureReason.DuplicateUrl -> "已有相同链接订阅"
-            SubscriptionResult.FailureReason.Download -> detailMessage("下载订阅文件失败", detail)
-            SubscriptionResult.FailureReason.Parse -> detailMessage("解析订阅文件失败", detail)
-            SubscriptionResult.FailureReason.AlreadyExists -> "订阅已存在"
-            SubscriptionResult.FailureReason.IdMismatch -> "订阅id不对应"
-            SubscriptionResult.FailureReason.InvalidId -> "订阅id不可为$detail\n负数id为内部使用"
-            SubscriptionResult.FailureReason.Save -> detailMessage("保存订阅文件失败", detail)
-            SubscriptionResult.FailureReason.NetworkUnavailable -> "网络不可用"
+                detailMessage(UiStrings.subscription_file_delete_cancelled, detail)
+            SubscriptionResult.FailureReason.DuplicateUrl -> UiStrings.subscription_duplicate_link
+            SubscriptionResult.FailureReason.Download -> detailMessage(UiStrings.subscription_file_download_failed, detail)
+            SubscriptionResult.FailureReason.Parse -> detailMessage(UiStrings.subscription_file_parsing_failed, detail)
+            SubscriptionResult.FailureReason.AlreadyExists -> UiStrings.subscription_exists
+            SubscriptionResult.FailureReason.IdMismatch -> UiStrings.subscription_id_mismatched
+            SubscriptionResult.FailureReason.InvalidId -> UiStrings.subscription_id_reserved(detail)
+            SubscriptionResult.FailureReason.Save -> detailMessage(UiStrings.subscription_file_save_failed, detail)
+            SubscriptionResult.FailureReason.NetworkUnavailable -> UiStrings.network_unavailable
         }
     }
 

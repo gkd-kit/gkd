@@ -1,6 +1,5 @@
 package li.gkd.app.feature.log
 
-import li.gkd.app.data.ruleconfig.RuleGroupConfigService
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
@@ -11,18 +10,22 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import li.gkd.app.text.UiStrings
 import li.gkd.app.data.ExcludeData
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.domain.rule.RuleGroupPolicy
-import li.gkd.app.domain.rule.RuleGroupTarget
-import li.gkd.app.ui.share.BaseViewModel
+import li.gkd.app.data.ruleconfig.RuleGroupConfigService
+import li.gkd.app.data.ruleconfig.RuleSwitchRequest
 import li.gkd.app.data.subscription.SubscriptionState
-import li.gkd.app.data.appinfo.AppInfoRepository
-import li.gkd.app.a11y.launcherAppId
+import li.gkd.app.domain.rule.RuleGroupTarget
+import li.gkd.app.domain.rule.RuleSetting
+import li.gkd.app.domain.rule.toRuleGroupTarget
+import li.gkd.app.domain.rule.toSwitchTarget
+import li.gkd.app.ui.share.BaseViewModel
 import li.gkd.db.ActionLog
 import li.gkd.db.Db
-import li.gkd.db.SubsGroupConfig
 import li.gkd.db.RuleGroupType
+import li.gkd.db.SubsGroupConfig
+import li.gkd.db.SubscriptionConfigSnapshot
 
 data class ActionLogListItem(
     val actionLog: ActionLog,
@@ -34,7 +37,9 @@ data class ActionLogListItem(
 data class ActionLogDialogState(
     val actionLog: ActionLog,
     val subsConfig: SubsGroupConfig?,
-    val globalAppChecked: Boolean?,
+    val subscription: RawSubscription?,
+    val group: RawSubscription.RawGroupProps?,
+    val configs: SubscriptionConfigSnapshot,
     val activityDisabled: Boolean,
 )
 
@@ -79,41 +84,20 @@ class ActionLogVm(
         if (actionLog == null) {
             flowOf(null)
         } else {
-            val configFlow = if (actionLog.groupType == RuleGroupType.App) {
-                Db.subsAppGroupConfigDao.queryConfig(
-                    actionLog.subsId,
-                    actionLog.appId,
-                    actionLog.groupKey,
-                )
-            } else {
-                Db.subsGlobalGroupConfigDao.queryConfig(
-                    actionLog.subsId,
-                    actionLog.groupKey,
-                )
-            }
-            combine(configFlow, SubscriptionState.subsMapFlow) { subsConfig, subsMap ->
+            combine(Db.subscriptionConfigStore.observe(), SubscriptionState.subsMapFlow) { configs, subsMap ->
                 val subscription = subsMap[actionLog.subsId]
+                val group = if (actionLog.groupType == RuleGroupType.App) subscription?.getAppGroups(actionLog.appId)?.find { it.key == actionLog.groupKey }
+                    else subscription?.globalGroups?.find { it.key == actionLog.groupKey }
+                val subsConfig = if (actionLog.groupType == RuleGroupType.App) configs.appGroupConfigs.find {
+                    it.subsId == actionLog.subsId && it.appId == actionLog.appId && it.groupKey == actionLog.groupKey
+                } else configs.globalGroupConfigs.find { it.subsId == actionLog.subsId && it.groupKey == actionLog.groupKey }
                 val exclude = ExcludeData.parse(subsConfig?.exclude)
-                val globalAppChecked = if (actionLog.groupType == RuleGroupType.Global) {
-                    subscription?.globalGroups
-                        ?.find { group -> group.key == actionLog.groupKey }
-                        ?.let { group ->
-                            RuleGroupPolicy.getGlobalGroupChecked(
-                                subscription,
-                                exclude,
-                                group,
-                                actionLog.appId,
-                                launcherAppId,
-                                AppInfoRepository.systemAppsFlow.value,
-                            )
-                        }
-                } else {
-                    null
-                }
                 ActionLogDialogState(
                     actionLog = actionLog,
                     subsConfig = subsConfig,
-                    globalAppChecked = globalAppChecked,
+                    subscription = subscription,
+                    group = group,
+                    configs = configs,
                     activityDisabled = actionLog.activityId?.let { activityId ->
                         exclude.activityIds.contains(actionLog.appId to activityId)
                     } ?: false,
@@ -142,24 +126,24 @@ class ActionLogVm(
         }
     }
 
-    suspend fun toggleGlobalAppExclusion() {
-        val state = dialogStateFlow.value ?: return
-        val checked = state.globalAppChecked ?: return
-        val actionLog = state.actionLog
-        RuleGroupConfigService.updateGroupEnabled(
-            RuleGroupTarget.Global(actionLog.subsId, actionLog.groupKey, actionLog.appId),
-            !checked,
-        )
+    fun prepareSwitch(state: ActionLogDialogState): RuleSwitchRequest {
+        val subscription = checkNotNull(state.subscription) { UiStrings.subscription_missing }
+        val group = checkNotNull(state.group) { UiStrings.rule_missing }
+        return RuleGroupConfigService.prepare(listOf(group.toRuleGroupTarget(subscription.id, state.actionLog.appId).toSwitchTarget()),
+            listOf(subscription), state.configs)
     }
 
-    suspend fun toggleActivityExclusion() {
-        val actionLog = dialogStateFlow.value?.actionLog ?: return
+    suspend fun applySwitch(request: RuleSwitchRequest, setting: RuleSetting) = RuleGroupConfigService.apply(request, setting)
+
+    suspend fun updateActivityExclusion(state: ActionLogDialogState) {
+        val actionLog = state.actionLog
         val activityId = actionLog.activityId ?: return
         val target = if (actionLog.groupType == RuleGroupType.App) {
             RuleGroupTarget.App(actionLog.subsId, actionLog.appId, actionLog.groupKey)
         } else {
             RuleGroupTarget.Global(actionLog.subsId, actionLog.groupKey)
         }
-        RuleGroupConfigService.toggleActivityExclusion(target, actionLog.appId, activityId)
+        RuleGroupConfigService.setActivityExclusion(checkNotNull(state.subscription) { UiStrings.subscription_missing },
+            target, actionLog.appId, activityId, state.activityDisabled, !state.activityDisabled)
     }
 }

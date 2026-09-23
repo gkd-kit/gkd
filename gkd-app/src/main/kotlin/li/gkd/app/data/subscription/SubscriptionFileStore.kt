@@ -1,6 +1,7 @@
 package li.gkd.app.data.subscription
 
 import android.util.AtomicFile
+import li.gkd.app.text.UiStrings
 import li.gkd.app.data.RawSubscription
 import li.gkd.app.util.FolderUtils
 import li.gkd.app.util.json
@@ -14,17 +15,17 @@ object SubscriptionFileStore {
         val file = file(id)
         if (!file.exists()) {
             return when (id) {
-                LOCAL_SUBS_ID -> RawSubscription(id = id, name = "本地订阅", version = 0)
-                LOCAL_HTTP_SUBS_ID -> RawSubscription(id = id, name = "内存订阅", version = 0)
-                else -> error("订阅文件不存在")
+                LOCAL_SUBS_ID -> RawSubscription(id = id, name = UiStrings.subscription_local, version = 0)
+                LOCAL_HTTP_SUBS_ID -> RawSubscription(id = id, name = UiStrings.subscription_memory, version = 0)
+                else -> error(UiStrings.subscription_file_missing)
             }
         }
         val subscription = try {
             RawSubscription.parse(file.readText(), json5 = false)
         } catch (e: Exception) {
-            throw Exception("订阅文件解析失败", e)
+            throw Exception(UiStrings.subscription_file_parse_failed, e)
         }
-        if (subscription.id != id) error("订阅文件id不一致")
+        if (subscription.id != id) error(UiStrings.subscription_file_id_mismatch)
         return subscription
     }
 
@@ -45,7 +46,7 @@ object SubscriptionFileStore {
     fun delete(id: Long) {
         val file = file(id)
         AtomicFile(file).delete()
-        if (file.exists()) error("无法删除 ${file.name}")
+        if (file.exists()) error(UiStrings.file_delete_failed(file.name))
     }
 
     private fun file(id: Long): File = FolderUtils.subsFolder.resolve("$id.json")

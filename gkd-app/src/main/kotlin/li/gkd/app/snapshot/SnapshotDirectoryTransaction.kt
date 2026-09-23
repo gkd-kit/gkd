@@ -1,5 +1,6 @@
 package li.gkd.app.snapshot
 
+import li.gkd.app.text.UiStrings
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -18,18 +19,18 @@ suspend fun commitSnapshotDirectory(
     val target = layout.committed(id)
     val staging = layout.staging(id)
     if (target.directory.exists()) {
-        throw IOException("目标目录已存在: ${target.directory.name}")
+        throw IOException(UiStrings.directory_target_exists(target.directory.name))
     }
     staging.directory.deleteIfExists()
     if (!staging.directory.mkdirs()) {
-        throw IOException("无法创建临时目录: ${staging.directory.name}")
+        throw IOException(UiStrings.directory_temp_create_failed(staging.directory.name))
     }
     try {
         write(staging)
         currentCoroutineContext().ensureActive()
         withContext(NonCancellable) {
             if (!staging.directory.renameTo(target.directory)) {
-                throw IOException("无法提交目录: ${target.directory.name}")
+                throw IOException(UiStrings.directory_commit_failed(target.directory.name))
             }
             try {
                 publish()
@@ -56,6 +57,6 @@ suspend fun commitSnapshotDirectory(
 
 private fun File.deleteIfExists() {
     if (exists() && !deleteRecursively()) {
-        throw IOException("无法删除目录: $name")
+        throw IOException(UiStrings.directory_delete_failed(name))
     }
 }

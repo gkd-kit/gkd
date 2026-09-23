@@ -1,222 +1,61 @@
 package li.gkd.app.feature.subscription
 
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
-import li.gkd.app.MainViewModel
-import li.gkd.app.data.AppInfo
+import li.gkd.app.text.UiStrings
 import li.gkd.app.data.ExcludeData
-import li.gkd.app.data.ruleconfig.RuleGroupConfigService
-import li.gkd.app.domain.rule.RuleGroupTarget
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.store.AppStore.storeFlow
+import li.gkd.app.data.ruleconfig.RuleGroupConfigService
+import li.gkd.app.data.ruleconfig.RuleSwitchRequest
+import li.gkd.app.domain.rule.RuleSetting
+import li.gkd.app.domain.rule.RuleSwitchTarget
 import li.gkd.app.store.AppStore
 import li.gkd.app.ui.share.BaseViewModel
-import li.gkd.app.core.state.Loadable
-import li.gkd.app.ui.share.globalGroupAppOrderListState
-import li.gkd.app.ui.share.useAppFilter
 import li.gkd.app.util.AppSortOption
-import li.gkd.app.util.findOption
+import li.gkd.app.util.MutexState
 import li.gkd.db.Db
-import li.gkd.db.SubsGlobalGroupConfig
-
-data class SubsGlobalGroupExcludeConfig(
-    val subsConfig: SubsGlobalGroupConfig?,
-    val excludeData: ExcludeData,
-)
+import li.gkd.db.SubscriptionConfigSnapshot
 
 data class SubsGlobalGroupExcludeUiState(
     val subscription: RawSubscription,
     val group: RawSubscription.RawGlobalGroup,
-    val config: Loadable<SubsGlobalGroupExcludeConfig>,
-    val showAppInfos: List<AppInfo>,
-    val showAllApps: Boolean,
-)
+    val configs: SubscriptionConfigSnapshot,
+    val appActionOrder: Map<String, Int>,
+) {
+    val excludeData: ExcludeData = ExcludeData.parse(configs.globalGroupConfigs.find {
+        it.subsId == subscription.id && it.groupKey == group.key
+    }?.exclude)
+    val declaredAppIds: Set<String> = (group.apps.orEmpty().map { it.id } +
+        group.rules.flatMap { it.apps.orEmpty().map { app -> app.id } } +
+        excludeData.appIds.keys + excludeData.activityIds.map { it.first }).toSet()
+}
 
-class SubsGlobalGroupExcludeVm(
-    val route: SubsGlobalGroupExcludeRoute,
-    mainVm: MainViewModel,
-) : BaseViewModel() {
+class SubsGlobalGroupExcludeVm(val route: SubsGlobalGroupExcludeRoute) : BaseViewModel() {
+    private val mutation = MutexState()
+    val busyFlow: StateFlow<Boolean> get() = mutation.state
+    suspend fun runAction(action: suspend () -> Unit) { mutation.tryWithStateLock(action) }
 
-    private val subscription = requiredSubscription(route.subsItemId)
-    private val subsConfigFlow = Db.subsGlobalGroupConfigDao
-        .queryConfig(route.subsItemId, route.groupKey)
-
-    private val appFilter = useAppFilter(
-        mainVm = mainVm,
-        appGroupType = { it.subsExcludeAppGroupType },
-        sortType = { AppSortOption.objects.findOption(it.subsExcludeSort) },
-        showBlockApps = { it.subsExcludeShowBlockApp },
-        appOrderListState = globalGroupAppOrderListState(
-            route.subsItemId,
-            route.groupKey,
-        ),
-    )
-    val searchStrFlow = appFilter.searchStrFlow
-    val showSearchBarFlow: StateFlow<Boolean>
-        field = MutableStateFlow(false)
-
-    val uiState = subscription.buildUiState(
-        initialValue = ::buildCurrentUiState,
-    ) { rawSubscription ->
-        val group = rawSubscription.globalGroups.find { it.key == route.groupKey }
-            ?: error("全局规则不存在: ${route.groupKey}")
-        val configState = subsConfigFlow.map { config ->
-            Loadable.Ready(
-                SubsGlobalGroupExcludeConfig(
-                    subsConfig = config,
-                    excludeData = ExcludeData.parse(config?.exclude),
-                ),
-            )
-        }
-        val showAppInfosFlow = combine(
-            appFilter.appListFlow,
-            storeFlow,
-        ) { apps, store ->
-            filterInnerDisabledApps(
-                rawSubscription = rawSubscription,
-                group = group,
-                apps = apps,
-                showInnerDisabledApps = store.subsExcludeShowInnerDisabledApp,
-            )
-        }
-        combine(
-            configState,
-            showAppInfosFlow,
-            appFilter.showAllAppFlow,
-        ) { config, showAppInfos, showAllApps ->
-            buildUiState(
-                rawSubscription = rawSubscription,
-                config = config,
-                showAppInfos = showAppInfos,
-                showAllApps = showAllApps,
-            )
+    val uiState = requiredSubscription(route.subsItemId).buildUiState { subscription ->
+        combine(Db.subscriptionConfigStore.observe(), Db.actionLogDao.queryLatestUniqueAppIds(route.subsItemId, route.groupKey)) { configs, ids ->
+            SubsGlobalGroupExcludeUiState(subscription,
+                subscription.globalGroups.find { it.key == route.groupKey } ?: error(UiStrings.global_rule_missing), configs, ids.mapIndexed { i, id -> id to i }.toMap())
         }
     }
 
-    private fun buildCurrentUiState(
-        rawSubscription: RawSubscription,
-    ): SubsGlobalGroupExcludeUiState {
-        val group = rawSubscription.globalGroups.find { it.key == route.groupKey }
-            ?: error("全局规则不存在: ${route.groupKey}")
-        return buildUiState(
-            rawSubscription = rawSubscription,
-            config = Loadable.Loading,
-            showAppInfos = filterInnerDisabledApps(
-                rawSubscription = rawSubscription,
-                group = group,
-                apps = appFilter.appListFlow.value,
-                showInnerDisabledApps = storeFlow.value.subsExcludeShowInnerDisabledApp,
-            ),
-            showAllApps = appFilter.showAllAppFlow.value,
-        )
+    fun setSortType(option: AppSortOption) {
+        AppStore.updateSettings { it.copy(subsExcludeSort = option.value) }
     }
-
-    private fun buildUiState(
-        rawSubscription: RawSubscription,
-        config: Loadable<SubsGlobalGroupExcludeConfig>,
-        showAppInfos: List<AppInfo>,
-        showAllApps: Boolean,
-    ) = SubsGlobalGroupExcludeUiState(
-        subscription = rawSubscription,
-        group = rawSubscription.globalGroups.find { it.key == route.groupKey }
-            ?: error("全局规则不存在: ${route.groupKey}"),
-        config = config,
-        showAppInfos = showAppInfos,
-        showAllApps = showAllApps,
-    )
-
-    private fun filterInnerDisabledApps(
-        rawSubscription: RawSubscription,
-        group: RawSubscription.RawGlobalGroup,
-        apps: List<AppInfo>,
-        showInnerDisabledApps: Boolean,
-    ): List<AppInfo> = if (showInnerDisabledApps) {
-        apps
-    } else {
-        apps.filterNot { appInfo ->
-            rawSubscription.getGlobalGroupInnerDisabled(group, appInfo.id)
-        }
-    }
-
-    val excludeTextFlow: StateFlow<String>
-        field = MutableStateFlow("")
-    val editableFlow: StateFlow<Boolean>
-        field = MutableStateFlow(false)
-
-    private var editBaseExclude: ExcludeData? = null
-
-    private val changedValue: ExcludeData?
-        get() {
-            val currentExclude = editBaseExclude ?: return null
-            val newExclude = ExcludeData.parse(excludeTextFlow.value)
-            return if (newExclude != currentExclude) {
-                newExclude
-            } else {
-                null
-            }
-        }
-
-    val hasUnsavedChanges: Boolean
-        get() = changedValue != null
-
-    fun setSearchText(value: String) {
-        appFilter.updateSearchStr(value)
-    }
-
-    fun setSearchBarVisible(visible: Boolean) {
-        showSearchBarFlow.value = visible
-    }
-
-    fun setEditable(value: Boolean) {
-        if (value && !editableFlow.value) {
-            val excludeData = uiState.value.value?.config?.value?.excludeData ?: return
-            editBaseExclude = excludeData
-            excludeTextFlow.value = excludeData.stringify()
-        }
-        editableFlow.value = value
-    }
-
-    fun setExcludeText(value: String) {
-        excludeTextFlow.value = value
-    }
-
-    fun setSortType(value: AppSortOption) {
-        AppStore.updateSettings { it.copy(subsExcludeSort = value.value) }
-    }
-
     fun setAppGroupType(value: Int) {
         AppStore.updateSettings { it.copy(subsExcludeAppGroupType = value) }
     }
-
-    fun toggleShowInnerDisabledApps() {
-        AppStore.updateSettings {
-            it.copy(subsExcludeShowInnerDisabledApp = !it.subsExcludeShowInnerDisabledApp)
-        }
-    }
-
     fun toggleShowBlockApps() {
-        AppStore.updateSettings {
-            it.copy(subsExcludeShowBlockApp = !it.subsExcludeShowBlockApp)
-        }
+        AppStore.updateSettings { it.copy(subsExcludeShowBlockApp = !it.subsExcludeShowBlockApp) }
     }
 
-    suspend fun saveExcludeText(): Boolean {
-        val newExclude = changedValue ?: return false
-        RuleGroupConfigService.replaceExclude(
-            target = RuleGroupTarget.Global(route.subsItemId, route.groupKey),
-            expected = checkNotNull(editBaseExclude),
-            value = newExclude,
-        )
-        editBaseExclude = newExclude
-        return true
-    }
+    fun prepareSwitches(state: SubsGlobalGroupExcludeUiState, appIds: Set<String>): RuleSwitchRequest =
+        RuleGroupConfigService.prepare(appIds.map { RuleSwitchTarget.GlobalApp(route.subsItemId, route.groupKey, it) },
+            listOf(state.subscription), state.configs)
 
-    suspend fun setAppChecked(appId: String, checked: Boolean) {
-        RuleGroupConfigService.updateGroupEnabled(
-            RuleGroupTarget.Global(route.subsItemId, route.groupKey, appId),
-            checked,
-        )
-    }
+    suspend fun applySwitches(request: RuleSwitchRequest, setting: RuleSetting) = RuleGroupConfigService.apply(request, setting)
+
 }

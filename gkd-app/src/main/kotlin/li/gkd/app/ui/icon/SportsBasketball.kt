@@ -9,10 +9,10 @@ import androidx.compose.ui.unit.dp
 
 val SportsBasketball: ImageVector
     get() {
-        if (_SportsBasketball != null) {
-            return _SportsBasketball!!
+        if (_sportsBasketball != null) {
+            return _sportsBasketball!!
         }
-        _SportsBasketball = ImageVector.Builder(
+        _sportsBasketball = ImageVector.Builder(
             name = "SportsBasketball",
             defaultWidth = 32.dp,
             defaultHeight = 32.dp,
@@ -73,9 +73,7 @@ val SportsBasketball: ImageVector
                 curveTo(-0.278f, 12.233f, 1.483f, 5.658f, 6.625f, 2.69f)
             }
         }.build()
-
-        return _SportsBasketball!!
+        return _sportsBasketball!!
     }
 
-@Suppress("ObjectPropertyName")
-private var _SportsBasketball: ImageVector? = null
+private var _sportsBasketball: ImageVector? = null

@@ -12,6 +12,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.net.toUri
+import li.gkd.app.text.UiStrings
 import li.gkd.app.MainActivity
 import li.gkd.app.app
 import li.gkd.app.permission.PermissionStates
@@ -51,7 +52,7 @@ object NotificationDispatcher {
             )
             builder
                 .setDeleteIntent(stopIntent)
-                .addAction(0, "停止", stopIntent)
+                .addAction(0, UiStrings.action_stop, stopIntent)
         }
         return builder.build()
     }

@@ -1,20 +1,26 @@
 package li.gkd.app.ui.home
 
+import li.gkd.app.ui.component.gkPageBottomSpace
+import li.gkd.app.MainViewModel
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -35,44 +41,44 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import li.gkd.app.R
+import li.gkd.app.text.UiStrings
 import li.gkd.app.core.state.Loadable
 import li.gkd.app.data.subscription.SubscriptionResult
 import li.gkd.app.feature.subscription.UpsertRuleGroupRoute
 import li.gkd.app.store.AppStore.storeFlow
-import li.gkd.app.data.subscription.SubscriptionState
-import li.gkd.app.ui.SlowGroupRoute
 import li.gkd.app.ui.WebViewRoute
-import li.gkd.app.ui.component.AnimationFloatingActionButton
-import li.gkd.app.ui.component.AppAlertDialog
-import li.gkd.app.ui.component.BatchActionMenuItem
-import li.gkd.app.ui.component.MultiSelectionActions
-import li.gkd.app.ui.component.MultiSelectionTopAppBar
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.SettingsDialog
-import li.gkd.app.ui.component.SubsItemCard
-import li.gkd.app.ui.component.TextMenu
-import li.gkd.app.ui.component.TextSwitch
-import li.gkd.app.ui.component.rememberMultiSelectionState
-import li.gkd.app.ui.component.rememberPinnedListScrollState
-import li.gkd.app.ui.component.rememberReorderSession
-import li.gkd.app.ui.share.ListPlaceholder
-import li.gkd.app.ui.share.LocalMainViewModel
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.share.message
-import li.gkd.app.ui.style.EmptyHeight
 import li.gkd.app.util.ShortUrlSet
 import li.gkd.app.util.ToastUtils.toast
 import li.gkd.app.util.UpdateTimeOption
 import li.gkd.app.util.findOption
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
 import li.gkd.db.LOCAL_SUBS_ID
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import li.gkd.app.ui.component.GkAlertDialog
+import li.gkd.app.ui.component.GkAnimatedFloatingActionButton
+import li.gkd.app.ui.component.GkBatchActionMenuItem
+import li.gkd.app.ui.component.GkIconButton
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkMultiSelectionActions
+import li.gkd.app.ui.component.GkMultiSelectionTopAppBar
+import li.gkd.app.ui.component.GkSettingsDialog
+import li.gkd.app.ui.component.GkSubsItemCard
+import li.gkd.app.ui.component.GkTextMenu
+import li.gkd.app.ui.component.GkTextSwitch
+import li.gkd.app.ui.component.rememberMultiSelectionState
+import li.gkd.app.ui.component.rememberPinnedListScrollState
+import li.gkd.app.ui.component.rememberReorderSession
 
 @Composable
 fun useSubsManagePage(): ScaffoldExt {
@@ -99,7 +105,7 @@ private fun subsManageStatePage(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = error?.message ?: if (error == null) "加载中..." else "数据加载失败",
+                text = error?.message ?: if (error == null) UiStrings.loading_progress else UiStrings.data_load_failed,
                 color = if (error == null) {
                     LocalContentColor.current
                 } else {
@@ -115,11 +121,10 @@ private fun useLoadedSubsManagePage(
     vm: SubsManageVm,
     state: SubsManageUiState,
 ): ScaffoldExt {
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     val settingsDialogVisible by vm.settingsDialogVisibleFlow.collectAsStateWithLifecycle()
     val powerWarningItem by vm.powerWarningItemFlow.collectAsStateWithLifecycle()
     val store by storeFlow.collectAsStateWithLifecycle()
-    val ruleSummary by SubscriptionState.ruleSummaryFlow.collectAsStateWithLifecycle()
     val subItems = state.subItems
     val subsIdToRaw = state.subscriptions
     val scope = vm.scope
@@ -142,18 +147,18 @@ private fun useLoadedSubsManagePage(
     }
 
     if (settingsDialogVisible) {
-        SettingsDialog(
+        GkSettingsDialog(
             onDismissRequest = { vm.setSettingsDialogVisible(false) },
-            title = "订阅设置",
+            title = UiStrings.subscription_settings,
         ) {
-            TextMenu(
-                title = "更新订阅",
+            GkTextMenu(
+                title = UiStrings.subscriptions_update,
                 option = UpdateTimeOption.objects.findOption(store.updateSubsInterval),
                 onOptionChange = { vm.setUpdateInterval(it.value) },
             )
-            TextSwitch(
-                title = "耗电警告",
-                subtitle = "启用多条订阅时弹窗确认",
+            GkTextSwitch(
+                title = UiStrings.subscription_battery_warning,
+                subtitle = UiStrings.subscription_battery_warning_setting,
                 checked = store.subsPowerWarn,
                 onCheckedChange = throttle(fn = vm::setPowerWarningEnabled),
             )
@@ -161,13 +166,13 @@ private fun useLoadedSubsManagePage(
     }
 
     powerWarningItem?.let { item ->
-        AppAlertDialog(
-            title = { Text(text = "耗电警告") },
+        GkAlertDialog(
+            title = { Text(text = UiStrings.subscription_battery_warning) },
             text = {
                 Column {
-                    Text(text = "启用多个远程订阅可能导致执行大量重复规则, 这可能造成规则执行卡顿以及多余耗电\n\n请认真考虑后再确认开启！！！\n")
+                    Text(text = UiStrings.subscription_multiple_enabled_warning)
                     Text(
-                        text = "查看耗电说明",
+                        text = UiStrings.subscription_battery_help,
                         modifier = Modifier.clickable(onClick = throttle {
                             vm.dismissPowerWarning()
                             mainVm.navigatePage(WebViewRoute(initUrl = ShortUrlSet.URL6))
@@ -185,12 +190,12 @@ private fun useLoadedSubsManagePage(
                         contentColor = MaterialTheme.colorScheme.error,
                     ),
                 ) {
-                    Text(text = "仍然启用")
+                    Text(text = UiStrings.enable_anyway)
                 }
             },
             dismissButton = {
                 TextButton(onClick = vm::dismissPowerWarning) {
-                    Text(text = "取消")
+                    Text(text = UiStrings.action_cancel)
                 }
             },
         )
@@ -204,7 +209,7 @@ private fun useLoadedSubsManagePage(
         navItem = BottomNavItem.SubsManage,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            MultiSelectionTopAppBar(
+            GkMultiSelectionTopAppBar(
                 selectedMode = isSelectedMode,
                 selectedCount = selectedIds.size,
                 onExitSelection = selectionState::clear,
@@ -214,32 +219,31 @@ private fun useLoadedSubsManagePage(
                 },
                 actions = { selectedMode ->
                     if (selectedMode) {
-                        MultiSelectionActions(
+                        GkMultiSelectionActions(
                             selectionState = selectionState,
                             keys = allIds,
-                            enabled = isSelectedMode && !batchBusy && !refreshing && !reorderSession.dragging,
+                            enabled = !batchBusy && !refreshing && !reorderSession.dragging,
                         ) { dismiss ->
                             val canDeleteIds = selectedIds - LOCAL_SUBS_ID
-                            BatchActionMenuItem(
-                                text = if (canDeleteIds.isEmpty()) "删除订阅（本地订阅不可删除）" else "删除订阅",
+                            GkBatchActionMenuItem(
+                                text = if (canDeleteIds.isEmpty()) UiStrings.subscription_delete_except_local else UiStrings.subscription_delete,
                                 enabled = canDeleteIds.isNotEmpty(),
-                                destructive = true,
                                 onDismiss = dismiss,
                                 onClick = {
                                     val idsToDelete = canDeleteIds
-                                    val text = "确定删除所选 ${idsToDelete.size} 个订阅?" +
-                                        if (LOCAL_SUBS_ID in selectedIds) "\n\n不包含本地订阅。" else ""
+                                    val text = UiStrings.subscriptions_delete_confirmation(idsToDelete.size) +
+                                        if (LOCAL_SUBS_ID in selectedIds) UiStrings.subscriptions_local_excluded_suffix else ""
                                     scope.launchUi {
                                         vm.runBatchAction {
                                             if (!mainVm.dialogRequests.confirm(
-                                                title = "删除订阅",
+                                                title = UiStrings.subscription_delete,
                                                 text = text,
                                                 error = true,
                                             )) return@runBatchAction
                                             val result = vm.deleteSubscriptions(idsToDelete)
                                             if (result is SubscriptionResult.Success) {
                                                 selectionState.removeDeleted(idsToDelete)
-                                                toast(if (result.count > 0) "已删除 ${result.count} 个订阅" else "所选订阅已变化")
+                                                toast(if (result.count > 0) UiStrings.subscriptions_deleted_count(result.count) else UiStrings.selected_subscriptions_changed)
                                             } else {
                                                 result.message?.let { toast(it) }
                                             }
@@ -250,23 +254,9 @@ private fun useLoadedSubsManagePage(
                         }
                     } else {
                         var expanded by remember { mutableStateOf(false) }
-                        AnimatedVisibility(
-                            visible = ruleSummary.slowGroupCount > 0,
-                            enter = scaleIn(),
-                            exit = scaleOut(),
-                        ) {
-                            PerfIconButton(
-                                enabled = !isSelectedMode,
-                                imageVector = PerfIcon.Eco,
-                                contentDescription = "缓慢查询规则列表",
-                                onClickLabel = "查看列表",
-                                onClick = throttle {
-                                    mainVm.navigatePage(SlowGroupRoute)
-                                })
-                        }
-                        PerfIconButton(
-                            enabled = !isSelectedMode,
-                            id = if (store.enableMatch) R.drawable.ic_flash_on else R.drawable.ic_flash_off,
+                        GkIconButton(
+                            imageVector = if (store.enableMatch) GkIcons.FlashOn else GkIcons.FlashOff,
+                            animateMorph = true,
                             colors = IconButtonDefaults.iconButtonColors(
                                 contentColor = if (!store.enableMatch) {
                                     CheckboxDefaults.colors().checkedBoxColor
@@ -274,37 +264,35 @@ private fun useLoadedSubsManagePage(
                                     LocalContentColor.current
                                 }
                             ),
-                            contentDescription = "规则匹配" + if (store.enableMatch) "已启用" else "已禁用",
-                            onClickLabel = "切换开关",
+                            contentDescription = UiStrings.rule_matching_label + if (store.enableMatch) UiStrings.enabled else UiStrings.disabled,
+                            onClickLabel = UiStrings.switch_toggle,
                             onClick = throttle(vm::toggleMatching),
                         )
-                        PerfIconButton(
-                            enabled = !isSelectedMode,
-                            id = R.drawable.ic_page_info,
-                            contentDescription = "订阅设置",
-                            onClickLabel = "打开设置弹窗",
+                        GkIconButton(
+                            imageVector = GkIcons.PageInfo,
+                            contentDescription = UiStrings.subscription_settings,
+                            onClickLabel = UiStrings.settings_dialog_open,
                             onClick = {
                                 vm.setSettingsDialogVisible(true)
                             })
                         Box {
-                            PerfIconButton(
-                                enabled = !isSelectedMode,
-                                imageVector = PerfIcon.MoreVert,
-                                contentDescription = "更多操作",
+                            GkIconButton(
+                                imageVector = GkIcons.MoreVert,
+                                contentDescription = UiStrings.more_actions,
                                 onClick = {
                                     if (refreshing) {
-                                        toast("正在刷新订阅，请稍后操作")
+                                        toast(UiStrings.subscription_refresh_wait)
                                     } else {
                                         expanded = true
                                     }
                                 },
                             )
                             DropdownMenu(
-                                expanded = expanded && !isSelectedMode,
+                                expanded = expanded,
                                 onDismissRequest = { expanded = false },
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text(text = "添加应用规则") },
+                                    text = { Text(text = UiStrings.app_rule_add) },
                                     onClick = throttle {
                                         expanded = false
                                         mainVm.navigatePage(
@@ -318,7 +306,7 @@ private fun useLoadedSubsManagePage(
                                     },
                                 )
                                 DropdownMenuItem(
-                                    text = { Text(text = "添加全局规则") },
+                                    text = { Text(text = UiStrings.global_rule_add) },
                                     onClick = throttle {
                                         expanded = false
                                         mainVm.navigatePage(
@@ -338,13 +326,13 @@ private fun useLoadedSubsManagePage(
             )
         },
         floatingActionButton = {
-            AnimationFloatingActionButton(
-                contentDescription = "添加订阅",
-                onClickLabel = "打开添加订阅弹窗",
+            GkAnimatedFloatingActionButton(
+                contentDescription = UiStrings.subscription_add,
+                onClickLabel = UiStrings.subscription_add_dialog_open,
                 visible = !isSelectedMode,
                 onClick = {
                     if (refreshing) {
-                        toast("正在刷新订阅,请稍后操作")
+                        toast(UiStrings.subscription_refresh_wait_compact)
                     } else {
                         scope.launchUi {
                             val url = mainVm.subsLinkDialog.request() ?: return@launchUi
@@ -352,7 +340,7 @@ private fun useLoadedSubsManagePage(
                         }
                     }
                 },
-                imageVector = PerfIcon.Add,
+                imageVector = GkIcons.Add,
             )
         },
     ) { contentPadding ->
@@ -360,79 +348,126 @@ private fun useLoadedSubsManagePage(
             rememberReorderableLazyListState(lazyListState) { from, to ->
                 reorderSession.move(from.index, to.index)
             }
-        PullToRefreshBox(
-            modifier = Modifier.padding(contentPadding),
-            state = pullToRefreshState,
-            isRefreshing = refreshing,
-            onRefresh = vm::refresh,
-        ) {
-            LazyColumn(
-                state = lazyListState,
-                modifier = Modifier.fillMaxSize(),
+        Column(modifier = Modifier.padding(contentPadding).fillMaxSize()) {
+            AnimatedVisibility(
+                visible = !store.enableMatch,
+                enter = expandVertically(expandFrom = Alignment.Top),
+                exit = shrinkVertically(shrinkTowards = Alignment.Top),
             ) {
-                itemsIndexed(orderSubItems, { _, subItem -> subItem.id }) { index, subItem ->
-                    // Keep the initial gesture alive after it enters selection mode.
-                    val canDrag = reorderSession.dragging ||
-                        (!refreshing && !batchBusy && !isSelectedMode && orderSubItems.size > 1)
-                    ReorderableItem(
-                        state = reorderableLazyColumnState,
-                        key = subItem.id,
-                        enabled = canDrag,
+                Card(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .fillMaxWidth(),
+                    shape = MaterialTheme.shapes.small,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .heightIn(min = 56.dp)
+                            .padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        val interactionSource = remember { MutableInteractionSource() }
-                        SubsItemCard(
-                            modifier = Modifier.longPressDraggableHandle(
-                                enabled = canDrag,
-                                interactionSource = interactionSource,
-                                onDragStarted = {
-                                    reorderSession.startDragging()
-                                    if (!isSelectedMode) {
-                                        selectionState.select(subItem.id)
-                                    }
-                                },
-                                onDragStopped = {
-                                    val result = reorderSession.finishDragging()
-                                    if (result.moved) {
-                                        selectionState.clear()
-                                    }
-                                    result.reorderedItems?.let { reorderedItems ->
-                                        val changedItems = reorderedItems.mapIndexedNotNull { index, item ->
-                                            item.copy(order = index).takeIf { it.order != item.order }
-                                        }
-                                        if (changedItems.isNotEmpty()) {
-                                            vm.updateOrder(changedItems)
-                                        }
-                                    }
-                                },
-                            ),
-                            interactionSource = interactionSource,
-                            subsItem = subItem,
-                            subscription = subsIdToRaw[subItem.id],
-                            index = index + 1,
-                            isSelectedMode = isSelectedMode,
-                            selectionEnabled = !batchBusy && !refreshing && !reorderSession.dragging,
-                            handlesLongPress = !canDrag,
-                            onSelect = {
-                                if (!batchBusy && !refreshing && !reorderSession.dragging) {
-                                    selectionState.select(subItem.id)
+                        Text(
+                            text = buildAnnotatedString {
+                                withStyle(SpanStyle(fontWeight = FontWeight.Medium)) {
+                                    append(UiStrings.rule_matching_paused)
+                                }
+                                withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) {
+                                    append(UiStrings.rule_matching_resume_suffix)
                                 }
                             },
-                            isSelected = selectedIds.contains(subItem.id),
-                            loadError = state.loadErrors[subItem.id],
-                            refreshError = state.refreshErrors[subItem.id],
-                            refreshing = refreshing,
-                            onOpen = {
-                                mainVm.subsSheet.show(subItem.id)
-                            },
-                            onCheckedChange = { checked ->
-                                vm.requestSubscriptionEnabled(subItem, checked)
-                            },
-                            onSelectedChange = { selectionState.toggle(subItem.id) },
+                            modifier = Modifier.weight(1f).padding(end = 8.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        GkIconButton(
+                            imageVector = GkIcons.FlashOn,
+                            contentDescription = UiStrings.rule_matching_enable,
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            ),
+                            onClickLabel = UiStrings.rule_matching_enable,
+                            onClick = vm::enableMatching,
                         )
                     }
                 }
-                item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                    Spacer(modifier = Modifier.height(EmptyHeight))
+            }
+            PullToRefreshBox(
+                modifier = Modifier.weight(1f),
+                state = pullToRefreshState,
+                isRefreshing = refreshing,
+                onRefresh = vm::refresh,
+            ) {
+                LazyColumn(
+                    state = lazyListState,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    itemsIndexed(orderSubItems, { _, subItem -> subItem.id }) { index, subItem ->
+                        // Keep the initial gesture alive after it enters selection mode.
+                        val canDrag = reorderSession.dragging ||
+                            (!refreshing && !batchBusy && !isSelectedMode && orderSubItems.size > 1)
+                        ReorderableItem(
+                            state = reorderableLazyColumnState,
+                            key = subItem.id,
+                            enabled = canDrag,
+                        ) {
+                            val interactionSource = remember { MutableInteractionSource() }
+                            GkSubsItemCard(
+                                modifier = Modifier.longPressDraggableHandle(
+                                    enabled = canDrag,
+                                    interactionSource = interactionSource,
+                                    onDragStarted = {
+                                        reorderSession.startDragging()
+                                        if (!isSelectedMode) {
+                                            selectionState.select(subItem.id)
+                                        }
+                                    },
+                                    onDragStopped = {
+                                        val result = reorderSession.finishDragging()
+                                        if (result.moved) {
+                                            selectionState.clear()
+                                        }
+                                        result.reorderedItems?.let { reorderedItems ->
+                                            val changedItems = reorderedItems.mapIndexedNotNull { index, item ->
+                                                item.copy(order = index).takeIf { it.order != item.order }
+                                            }
+                                            if (changedItems.isNotEmpty()) {
+                                                vm.updateOrder(changedItems)
+                                            }
+                                        }
+                                    },
+                                ),
+                                interactionSource = interactionSource,
+                                subsItem = subItem,
+                                matchingEnabled = store.enableMatch,
+                                subscription = subsIdToRaw[subItem.id],
+                                index = index + 1,
+                                isSelectedMode = isSelectedMode,
+                                selectionEnabled = !batchBusy && !refreshing && !reorderSession.dragging,
+                                handlesLongPress = !canDrag,
+                                onSelect = {
+                                    if (!batchBusy && !refreshing && !reorderSession.dragging) {
+                                        selectionState.select(subItem.id)
+                                    }
+                                },
+                                isSelected = selectedIds.contains(subItem.id),
+                                loadError = state.loadErrors[subItem.id],
+                                refreshError = state.refreshErrors[subItem.id],
+                                refreshing = refreshing,
+                                onOpen = {
+                                    mainVm.subsSheet.show(subItem.id)
+                                },
+                                onCheckedChange = { checked ->
+                                    vm.requestSubscriptionEnabled(subItem, checked)
+                                },
+                                onSelectedChange = { selectionState.toggle(subItem.id) },
+                            )
+                        }
+                    }
+                    gkPageBottomSpace()
                 }
             }
         }

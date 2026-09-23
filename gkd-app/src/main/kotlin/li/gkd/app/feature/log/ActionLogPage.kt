@@ -1,5 +1,8 @@
 package li.gkd.app.feature.log
 
+import li.gkd.app.ui.component.GkPageBottomSpace
+import li.gkd.app.MainViewModel
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,9 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -41,34 +43,38 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import kotlinx.serialization.Serializable
+import li.gkd.app.text.UiStrings
 import li.gkd.app.data.date
 import li.gkd.app.data.showActivityId
-import li.gkd.app.ui.component.AppNameText
-import li.gkd.app.ui.AppConfigRoute
+import li.gkd.app.domain.rule.RuleSetting
 import li.gkd.app.feature.subscription.SubsAppGroupListRoute
 import li.gkd.app.feature.subscription.SubsGlobalGroupListRoute
-import li.gkd.app.ui.component.EmptyText
-import li.gkd.app.ui.component.FixedTimeText
-import li.gkd.app.ui.component.GroupNameText
-import li.gkd.app.ui.component.AppDialog
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.PerfTopAppBar
-import li.gkd.app.ui.component.TowLineText
-import li.gkd.app.ui.component.animateListItem
-import li.gkd.app.ui.component.rememberListScrollState
-import li.gkd.app.ui.component.useSubs
+import li.gkd.app.ui.AppConfigRoute
 import li.gkd.app.ui.share.ListPlaceholder
-import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.share.noRippleClickable
-import li.gkd.app.ui.style.EmptyHeight
 import li.gkd.app.ui.style.iconTextSize
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.scaffoldPadding
-import li.gkd.app.util.throttle
-import li.gkd.app.ui.share.launchUi
 import li.gkd.app.util.ToastUtils.toast
+import li.gkd.app.util.TimeUtils.throttle
 import li.gkd.db.RuleGroupType
+import li.gkd.app.ui.component.GkAppNameText
+import li.gkd.app.ui.component.GkEmptyState
+import li.gkd.app.ui.component.GkFixedTimeText
+import li.gkd.app.ui.component.GkGroupNameText
+import li.gkd.app.ui.component.GkIcon
+import li.gkd.app.ui.component.GkIconButton
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.ui.component.GkRuleSettingsContent
+import li.gkd.app.ui.component.GkRuleSettingsSheet
+import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.component.GkTwoLineText
+import li.gkd.app.ui.component.animateListItem
+import li.gkd.app.ui.component.rememberListScrollState
+import li.gkd.app.ui.component.rememberRuleControlEnvironment
+import li.gkd.app.ui.component.useSubs
 
 @Serializable
 data class ActionLogRoute(
@@ -80,7 +86,7 @@ data class ActionLogRoute(
 fun ActionLogPage(route: ActionLogRoute) {
     val subsId = route.subsId
     val appId = route.appId
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { ActionLogVm(route) }
     val dialogState by vm.dialogStateFlow.collectAsStateWithLifecycle()
     val scope = vm.scope
@@ -90,29 +96,29 @@ fun ActionLogPage(route: ActionLogRoute) {
     val listState = pageScrollState.listState
     pageScrollState.ResetOnChange(list.itemCount > 0)
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        PerfTopAppBar(
+        GkTopAppBar(
             scrollBehavior = scrollBehavior,
             navigationIcon = {
-                PerfIconButton(
-                    imageVector = PerfIcon.ArrowBack,
+                GkIconButton(
+                    imageVector = GkIcons.ArrowBack,
                     onClick = {
                         mainVm.popPage()
                     },
                 )
             },
             title = {
-                val title = "触发记录"
+                val title = UiStrings.action_log_title
                 val titleModifier = Modifier.noRippleClickable {
                     pageScrollState.resetScroll()
                 }
                 if (subsId != null) {
-                    TowLineText(
-                        title = title,
-                        subtitle = useSubs(subsId)?.name ?: subsId.toString(),
+                    GkTwoLineText(
+                        title = useSubs(subsId)?.name ?: subsId.toString(),
+                        subtitle = title,
                         modifier = titleModifier,
                     )
                 } else if (appId != null) {
-                    TowLineText(
+                    GkTwoLineText(
                         title = title,
                         subtitle = appId,
                         showApp = true,
@@ -127,24 +133,24 @@ fun ActionLogPage(route: ActionLogRoute) {
             },
             actions = {
                 if (list.itemCount > 0) {
-                    PerfIconButton(
-                        imageVector = PerfIcon.Delete,
+                    GkIconButton(
+                        imageVector = GkIcons.Delete,
                         onClick = throttle {
+                            val text = if (subsId != null) {
+                                UiStrings.action_log_delete_subscription_confirmation
+                            } else if (appId != null) {
+                                UiStrings.action_log_delete_app_confirmation
+                            } else {
+                                UiStrings.action_log_delete_all_confirmation
+                            }
                             scope.launchUi {
-                                val text = if (subsId != null) {
-                                    "确定删除当前订阅所有触发记录?"
-                                } else if (appId != null) {
-                                    "确定删除当前应用所有触发记录?"
-                                } else {
-                                    "确定删除所有触发记录?"
-                                }
                                 if (!mainVm.dialogRequests.confirm(
-                                    title = "删除记录",
+                                    title = UiStrings.action_delete_records,
                                     text = text,
                                     error = true,
                                 )) return@launchUi
                                 vm.deleteLogs()
-                                toast("删除成功")
+                                toast(UiStrings.delete_success)
                             }
                         },
                     )
@@ -179,9 +185,10 @@ fun ActionLogPage(route: ActionLogRoute) {
                 }
             }
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                Spacer(modifier = Modifier.height(EmptyHeight))
                 if (list.itemCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                    EmptyText(text = "暂无数据")
+                    GkEmptyState(text = UiStrings.data_empty)
+                } else {
+                    GkPageBottomSpace()
                 }
             }
         }
@@ -208,16 +215,14 @@ fun ActionLogPage(route: ActionLogRoute) {
                     )
                 }
             },
-            onToggleGlobalAppExclusion = {
-                scope.launchUi {
-                    vm.toggleGlobalAppExclusion()
-                    toast("更新成功")
-                }
+            onSettingChange = { setting ->
+                val request = vm.prepareSwitch(state)
+                scope.launchUi { vm.applySwitch(request, setting).failureMessage?.let { toast(it) } }
             },
             onToggleActivityExclusion = {
                 scope.launchUi {
-                    vm.toggleActivityExclusion()
-                    toast("更新成功")
+                    vm.updateActivityExclusion(state)
+                    toast(UiStrings.update_success)
                 }
             },
         )
@@ -269,9 +274,9 @@ private fun ActionLogCard(
                             .background(MaterialTheme.colorScheme.secondary)
                             .size(4.dp)
                     )
-                    AppNameText(appId = actionLog.appId, modifier = Modifier.weight(1f))
-                    PerfIcon(
-                        imageVector = PerfIcon.KeyboardArrowRight,
+                    GkAppNameText(appId = actionLog.appId, modifier = Modifier.weight(1f))
+                    GkIcon(
+                        imageVector = GkIcons.KeyboardArrowRight,
                         modifier = Modifier
                             .iconTextSize()
                     )
@@ -296,7 +301,7 @@ private fun ActionLogCard(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                FixedTimeText(
+                GkFixedTimeText(
                     text = actionLog.date,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.secondary,
@@ -312,13 +317,13 @@ private fun ActionLogCard(
                         )
                     } else {
                         Text(
-                            text = "null",
+                            text = UiStrings.value_null,
                             color = LocalContentColor.current.copy(alpha = 0.5f),
                         )
                     }
                     if (subsId == null) {
                         Row {
-                            Text(text = subscription?.name ?: "id=${actionLog.subsId}")
+                            Text(text = subscription?.name ?: UiStrings.subscription_id_description(actionLog.subsId))
                             val lineHeightDp = LocalDensity.current.run {
                                 LocalTextStyle.current.lineHeight.toDp()
                             }
@@ -329,7 +334,7 @@ private fun ActionLogCard(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "v${actionLog.subsVersion}",
+                                    text = UiStrings.version_prefixed(actionLog.subsVersion),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.tertiary,
                                     modifier = Modifier
@@ -347,14 +352,14 @@ private fun ActionLogCard(
                         val textColor = LocalContentColor.current.let {
                             if (group?.name == null) it.copy(alpha = 0.5f) else it
                         }
-                        GroupNameText(
+                        GkGroupNameText(
                             isGlobal = actionLog.groupType == RuleGroupType.Global,
                             text = groupDesc,
                             color = textColor,
                         )
                         val ruleDesc = rule?.name ?: (if ((group?.rules?.size ?: 0) > 1) {
-                            val keyDesc = actionLog.ruleKey?.let { "key=$it, " } ?: ""
-                            "${keyDesc}index=${actionLog.ruleIndex}"
+                            val keyDesc = actionLog.ruleKey?.let { UiStrings.rule_key_prefix(it) } ?: ""
+                            UiStrings.rule_index_description(keyDesc, actionLog.ruleIndex)
                         } else {
                             null
                         })
@@ -377,41 +382,33 @@ private fun ActionLogDialog(
     state: ActionLogDialogState,
     onDismissRequest: () -> Unit,
     onOpenRule: () -> Unit,
-    onToggleGlobalAppExclusion: () -> Unit,
+    onSettingChange: (RuleSetting) -> Unit,
     onToggleActivityExclusion: () -> Unit,
 ) {
     val actionLog = state.actionLog
 
-    AppDialog(onDismissRequest = onDismissRequest) {
+    val environment = rememberRuleControlEnvironment()
+    GkRuleSettingsSheet(
+        title = state.group?.name ?: UiStrings.rule_actions,
+        subtitle = environment.apps[actionLog.appId]?.name ?: actionLog.appId,
+        onDismissRequest = onDismissRequest,
+    ) {
+        if (state.subscription != null && state.group != null) {
+            val control = environment.resolve(state.subscription, state.group, actionLog.appId, state.configs)
+            GkRuleSettingsContent(control, onSettingChange,
+                title = if (state.group is RawSubscription.RawGlobalGroup) UiStrings.rule_enable_in_app else UiStrings.rule_enable)
+        }
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
-            ItemText(
-                text = "查看规则",
-                onClick = onOpenRule,
-            )
-            HorizontalDivider()
-
-            if (actionLog.groupType == RuleGroupType.Global) {
-                val appChecked = state.globalAppChecked
-                if (appChecked != null) {
-                    ItemText(
-                        text = if (appChecked) "在此应用禁用" else "移除在此应用的禁用",
-                        onClick = onToggleGlobalAppExclusion,
-                    )
-                    HorizontalDivider()
-                }
-            }
-
+            ItemText(text = UiStrings.rule_view, onClick = onOpenRule)
             if (actionLog.activityId != null) {
                 ItemText(
-                    text = if (state.activityDisabled) "移除在此页面的禁用" else "在此页面禁用",
+                    text = if (state.activityDisabled) UiStrings.page_exclusion_remove else UiStrings.page_exclusion_add_current,
                     onClick = onToggleActivityExclusion,
                 )
-                HorizontalDivider()
             }
         }
     }

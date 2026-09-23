@@ -5,6 +5,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import li.gkd.app.text.UiStrings
 import li.gkd.db.SubsAppConfig
 import li.gkd.db.SubsAppGroupConfig
 import li.gkd.db.SubsCategoryConfig
@@ -182,7 +183,7 @@ object BackupFormat {
         return when (val version = root["formatVersion"]?.jsonPrimitive?.int ?: 1) {
             1 -> json.decodeFromJsonElement(LegacyBackupV1.serializer(), root).convert()
             2 -> json.decodeFromJsonElement(BackupDatabaseData.serializer(), root)
-            else -> error("不支持的备份版本: $version，请升级应用后重试")
+            else -> error(UiStrings.backup_version_unsupported(version))
         }
     }
 }
@@ -197,7 +198,7 @@ private data class LegacyBackupV1(
     fun convert(): BackupDatabaseData {
         val groups = subsConfigs.orEmpty().sortedBy { it.id }
         require(groups.all { it.type == RuleGroupType.App || it.type == RuleGroupType.Global }) {
-            "备份中存在未知的规则配置类型"
+            UiStrings.backup_unknown_rule_config_type
         }
         return BackupDatabaseData(
             subsItems = subsItems.orEmpty(),

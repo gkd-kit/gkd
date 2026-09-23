@@ -1,22 +1,25 @@
 package li.gkd.app.feature.subscription
 
-import androidx.activity.compose.BackHandler
+import li.gkd.app.MainViewModel
+
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import li.gkd.app.ui.component.GkEditorScaffold
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,18 +30,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
+import li.gkd.app.text.UiStrings
 import li.gkd.app.MainActivity
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.PerfTopAppBar
-import li.gkd.app.ui.component.SubscriptionPageContent
-import li.gkd.app.ui.component.autoFocus
 import li.gkd.app.ui.share.LocalDarkTheme
-import li.gkd.app.ui.share.LocalMainViewModel
 import li.gkd.app.ui.style.getJson5Transformation
 import li.gkd.app.ui.style.scaffoldPadding
-import li.gkd.app.ui.share.launchUiAction
-import li.gkd.app.util.throttle
+import li.gkd.app.ui.component.GkSubscriptionPageContent
+import li.gkd.app.ui.component.autoFocus
 
 @Serializable
 data class UpsertRuleGroupRoute(
@@ -54,70 +52,31 @@ fun UpsertRuleGroupPage(route: UpsertRuleGroupRoute) {
     val appId = route.appId
     val forward = route.forward
 
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     val context = LocalActivity.current as MainActivity
     val vm = viewModel { UpsertRuleGroupVm(route) }
-    SubscriptionPageContent(vm.uiState) { state ->
+    GkSubscriptionPageContent(vm.uiState) { state ->
         val editedText by vm.textFlow.collectAsStateWithLifecycle()
         val text = editedText ?: state.initialText
 
-        val checkIfSaveText = throttle(vm.scope.launchUiAction {
-            if (vm.hasTextChanged()) {
-                context.imeController.requestHide()
-                if (!mainVm.dialogRequests.confirm(
-                        title = "提示",
-                        text = "当前内容未保存，是否放弃编辑？",
-                    )
-                ) {
-                    return@launchUiAction
-                }
-            } else {
-                context.imeController.hideAndAwait()
-            }
-            mainVm.popPage()
-        })
-
-        val onClickSave = throttle(vm.scope.launchUiAction {
-            val addedAppId = vm.saveRule()
-            context.imeController.hideAndAwait()
-            if (forward) {
-                if (appId == null) {
+        var addedAppId by remember { mutableStateOf<String?>(null) }
+        GkEditorScaffold(
+            title = { Text(if (vm.isEdit) UiStrings.rule_edit else UiStrings.rule_add) },
+            hasChanges = vm::hasTextChanged,
+            saveEnabled = text.isNotBlank(),
+            onSave = { addedAppId = vm.saveRule() },
+            onSaved = {
+                if (forward) {
                     mainVm.navigatePage(
-                        SubsGlobalGroupListRoute(subsItemId = subsId),
+                        if (appId == null) SubsGlobalGroupListRoute(subsItemId = subsId)
+                        else SubsAppGroupListRoute(subsItemId = subsId, appId = addedAppId ?: appId),
                         replaced = true,
                     )
                 } else {
-                    mainVm.navigatePage(
-                        SubsAppGroupListRoute(
-                            subsItemId = subsId,
-                            appId = addedAppId ?: appId,
-                        ),
-                        replaced = true,
-                    )
+                    mainVm.popPage()
                 }
-            } else {
-                mainVm.popPage()
-            }
-        })
-        BackHandler(true, checkIfSaveText)
-        Scaffold(modifier = Modifier, topBar = {
-            PerfTopAppBar(
-                modifier = Modifier.fillMaxWidth(),
-                navigationIcon = {
-                    PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = checkIfSaveText)
-                },
-                title = {
-                    Text(text = if (vm.isEdit) "编辑规则" else "添加规则")
-                },
-                actions = {
-                    PerfIconButton(
-                        imageVector = PerfIcon.Save,
-                        onClick = onClickSave,
-                        enabled = text.isNotBlank(),
-                    )
-                },
-            )
-        }) { paddingValues ->
+            },
+        ) { paddingValues ->
             val textColors = TextFieldDefaults.colors(
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
@@ -132,7 +91,7 @@ fun UpsertRuleGroupPage(route: UpsertRuleGroupRoute) {
                 CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyLarge) {
                     val imeShowing by context.imeController.showAnimationRunningFlow.collectAsStateWithLifecycle()
                     val modifier = Modifier
-                        .autoFocus()
+                        .autoFocus(immediateFocus = true)
                         .fillMaxSize()
                         .run {
                             if (imeShowing) {
@@ -149,7 +108,7 @@ fun UpsertRuleGroupPage(route: UpsertRuleGroupRoute) {
                         colors = textColors,
                         visualTransformation = getJson5Transformation(LocalDarkTheme.current),
                         placeholder = {
-                            Text(text = if (vm.isApp) "请输入应用规则\n" else "请输入全局规则\n")
+                            Text(text = if (vm.isApp) UiStrings.app_rule_input_hint else UiStrings.global_rule_input_hint)
                         },
                     )
                 }

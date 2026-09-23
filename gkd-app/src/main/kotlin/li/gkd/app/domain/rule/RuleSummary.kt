@@ -9,20 +9,11 @@ import li.gkd.app.data.ResolvedGlobalGroup
 data class RuleSummary(
     val globalRules: List<GlobalRule> = emptyList(),
     val globalGroups: List<ResolvedGlobalGroup> = emptyList(),
+    val appIdToGlobalGroupCount: Map<String, Int> = emptyMap(),
     val appIdToRules: Map<String, List<AppRule>> = emptyMap(),
     val appIdToGroups: Map<String, List<RawSubscription.RawAppGroup>> = emptyMap(),
     val appIdToAllGroups: Map<String, List<ResolvedAppGroup>> = emptyMap(),
 ) {
     val appSize = appIdToRules.keys.size
     val appGroupSize = appIdToGroups.values.sumOf { it.size }
-    val slowGlobalGroups = globalRules
-        .filter { it.isSlow }
-        .distinctBy { it.group }
-        .map { it.group to it }
-    val slowAppGroups = appIdToRules.values
-        .flatten()
-        .filter { it.isSlow }
-        .distinctBy { it.group }
-        .map { it.group to it }
-    val slowGroupCount = slowGlobalGroups.size + slowAppGroups.size
 }

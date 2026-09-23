@@ -1,5 +1,7 @@
 package li.gkd.app.ui
 
+import li.gkd.app.MainViewModel
+
 import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,22 +26,22 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.Serializable
+import li.gkd.app.text.UiStrings
 import li.gkd.app.priv.gkdPrivilegeUiConfig
-import li.gkd.app.ui.component.AppAlertDialog
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.PerfTopAppBar
-import li.gkd.app.ui.share.LocalMainViewModel
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
 import priv.kit.ui.PrivilegeScaffold
 import priv.kit.ui.PrivilegeUiViewModel
+import li.gkd.app.ui.component.GkAlertDialog
+import li.gkd.app.ui.component.GkIconButton
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkTopAppBar
 
 @Serializable
 data object PrivilegeServiceRoute : NavKey
 
 @Composable
 fun PrivilegeServicePage() {
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     val application = LocalContext.current.applicationContext as Application
     val privilegeVm = viewModel {
         GkdPrivilegeUiViewModel(application) {
@@ -56,20 +58,20 @@ fun PrivilegeServicePage() {
         modifier = Modifier.fillMaxSize(),
         viewModel = privilegeVm,
         topBar = {
-            PerfTopAppBar(
+            GkTopAppBar(
                 navigationIcon = {
-                    PerfIconButton(
-                        imageVector = PerfIcon.ArrowBack,
+                    GkIconButton(
+                        imageVector = GkIcons.ArrowBack,
                         onClick = mainVm::popPage,
                     )
                 },
                 title = {
-                    Text(text = "特权服务")
+                    Text(text = UiStrings.privilege_service)
                 },
                 actions = {
-                    PerfIconButton(
-                        imageVector = PerfIcon.Info,
-                        contentDescription = "页面说明",
+                    GkIconButton(
+                        imageVector = GkIcons.Info,
+                        contentDescription = UiStrings.page_help,
                         onClick = throttle {
                             privilegeVm.setInfoDialogVisible(true)
                         },
@@ -88,37 +90,37 @@ private fun PrivilegeServiceInfoDialog(onDismissRequest: () -> Unit) {
             textDecoration = TextDecoration.Underline,
         ),
     )
-    AppAlertDialog(
+    GkAlertDialog(
         onDismissRequest = onDismissRequest,
         title = {
-            Text(text = "特权服务")
+            Text(text = UiStrings.privilege_service)
         },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = "此页面用于启动和管理特权服务。连接后，可为 GKD 提供自动化、必要权限授予等需要系统级能力的功能；断开后，依赖特权服务的功能将不可用。",
+                    text = UiStrings.privilege_service_help_description,
                 )
                 Text(
                     text = buildAnnotatedString {
-                        append("特权服务基于开源项目 ")
+                        append(UiStrings.privilege_service_project_prefix)
                         withLink(
                             LinkAnnotation.Url(
                                 url = "https://github.com/priv-kit/priv-kit",
                                 styles = linkStyles,
                             ),
                         ) {
-                            append("priv-kit")
+                            append(UiStrings.privilege_project_name)
                         }
-                        append(" (自有特权运行时) 实现不依赖外部授权器提权")
+                        append(UiStrings.privilege_service_project_suffix)
                     },
                 )
             }
         },
         confirmButton = {
             TextButton(onClick = onDismissRequest) {
-                Text(text = "我知道了")
+                Text(text = UiStrings.action_understood)
             }
         },
     )

@@ -3,8 +3,12 @@ package li.gkd.db
 import androidx.room3.Room
 import androidx.room3.withWriteTransaction
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
-import kotlinx.coroutines.Dispatchers
+import kotlin.io.path.createTempDirectory
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancelAndJoin
@@ -14,12 +18,52 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
-import kotlin.io.path.createTempDirectory
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 
 class SubscriptionConfigStoreTest {
+    @Test
+    fun explicitAppAndGroupSettingsSurviveChangesToTheirDefaults() = withDatabase { db, store ->
+        db.subsItemDao().upsert(SubsItem(7, order = 0))
+        db.subsCategoryConfigDao().upsert(SubsCategoryConfig(true, 7, 3))
+        store.setAppEnabled(7, "app.one", true)
+        store.updateAppGroupConfig(7, "app.one", 4) { it.copy(enable = true) }
+        store.updateGlobalGroupConfig(7, 5) { it.copy(enable = true) }
+        db.subsCategoryConfigDao().upsert(SubsCategoryConfig(false, 7, 3))
+        assertEquals(true, db.subsAppGroupConfigDao().getConfig(7, "app.one", 4)?.enable)
+        assertEquals(true, db.subsGlobalGroupConfigDao().getConfig(7, 5)?.enable)
+        assertEquals(true, store.capture().appConfigs.single().enable)
+    }
+
+    @Test
+    fun resettingAppGateAndGroupSettingsPreservesOtherScopesAndPageExclusions() = withDatabase { db, store ->
+        store.merge(sample())
+        store.setAppEnabled(7, "app.one", null)
+        store.updateAppGroupConfig(7, "app.one", 4) { it.copy(enable = null) }
+        assertEquals(emptyList(), store.capture().appConfigs)
+        assertEquals(SubsAppGroupConfig(7, "app.one", 4, null, "app.Activity"),
+            db.subsAppGroupConfigDao().getConfig(7, "app.one", 4))
+        assertEquals(sample().categoryConfigs, store.capture().categoryConfigs)
+        assertEquals(sample().globalGroupConfigs, store.capture().globalGroupConfigs)
+        store.updateAppGroupConfig(7, "app.one", 4) { it.copy(exclude = "") }
+        assertEquals(null, db.subsAppGroupConfigDao().getConfig(7, "app.one", 4))
+        store.updateGlobalGroupConfig(7, 4) { it.copy(enable = null, exclude = "") }
+        assertEquals(null, db.subsGlobalGroupConfigDao().getConfig(7, 4))
+    }
+
+    @Test
+    fun aFailedMixedScopeTransactionDoesNotLeavePartiallyChangedSwitches() = withDatabase { db, store ->
+        store.merge(sample())
+        val before = store.capture()
+        assertFailsWith<IllegalStateException> {
+            db.withWriteTransaction {
+                store.setAppEnabled(7, "app.one", true)
+                store.updateAppGroupConfig(7, "app.one", 4) { it.copy(enable = true) }
+                store.updateGlobalGroupConfig(7, 4) { it.copy(enable = false) }
+                error("write failed")
+            }
+        }
+        assertEquals(before, store.capture())
+    }
+
     private fun withDatabase(block: suspend (AppDb, SubscriptionConfigStore) -> Unit) = runBlocking {
         val directory = createTempDirectory("config-store-test")
         val database = Room.databaseBuilder<AppDb>(directory.resolve("test.db").toString())

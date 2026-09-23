@@ -9,10 +9,10 @@ import androidx.compose.ui.unit.dp
 
 val GitHub: ImageVector
     get() {
-        if (_GitHub != null) {
-            return _GitHub!!
+        if (_gitHub != null) {
+            return _gitHub!!
         }
-        _GitHub = ImageVector.Builder(
+        _gitHub = ImageVector.Builder(
             name = "GitHub",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
@@ -52,8 +52,7 @@ val GitHub: ImageVector
                 close()
             }
         }.build()
-        return _GitHub!!
+        return _gitHub!!
     }
 
-@Suppress("ObjectPropertyName")
-private var _GitHub: ImageVector? = null
+private var _gitHub: ImageVector? = null

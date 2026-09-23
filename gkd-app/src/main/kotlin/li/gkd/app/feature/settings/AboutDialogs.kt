@@ -1,5 +1,7 @@
 package li.gkd.app.feature.settings
 
+import li.gkd.app.MainViewModel
+
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,11 +21,11 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
+import li.gkd.app.text.UiStrings
 import li.gkd.app.META
 import li.gkd.app.MainActivity
-import li.gkd.app.ui.component.AppAlertDialog
-import li.gkd.app.ui.component.TextListDialog
-import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.ui.component.GkAlertDialog
+import li.gkd.app.ui.component.GkTextListDialog
 import li.gkd.app.util.PLAY_STORE_URL
 import li.gkd.app.util.ShortUrlSet
 import li.gkd.app.util.format
@@ -48,27 +50,27 @@ private fun VersionInfoDialog(
     onDismissRequest: () -> Unit,
 ) {
     if (visible) {
-        AppAlertDialog(
+        GkAlertDialog(
             onDismissRequest = onDismissRequest,
-            title = { Text(text = "版本信息") },
+            title = { Text(text = UiStrings.version_info) },
             text = {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Column {
-                        Text(text = "构建渠道")
+                        Text(text = UiStrings.build_channel)
                         Text(text = META.channel)
                     }
                     Column {
-                        Text(text = "版本代码")
+                        Text(text = UiStrings.version_code)
                         Text(text = META.versionCode.toString())
                     }
                     Column {
-                        Text(text = "版本名称")
+                        Text(text = UiStrings.version_name)
                         Text(text = META.versionName)
                     }
                     Column {
-                        Text(text = "代码记录")
+                        Text(text = UiStrings.code_history)
                         Text(
                             modifier = Modifier.clickable { IntentUtils.openUri(META.commitUrl) },
                             text = META.tagName ?: META.commitId.substring(0, 16),
@@ -77,14 +79,14 @@ private fun VersionInfoDialog(
                         )
                     }
                     Column {
-                        Text(text = "提交时间")
+                        Text(text = UiStrings.commit_time)
                         Text(text = META.commitTime.format("yyyy-MM-dd HH:mm:ss ZZ"))
                     }
                 }
             },
             confirmButton = {
                 TextButton(onClick = onDismissRequest) {
-                    Text(text = "关闭")
+                    Text(text = UiStrings.action_close)
                 }
             },
         )
@@ -97,10 +99,10 @@ private fun ShareAppDialog(
     onDismissRequest: () -> Unit,
 ) {
     val context = LocalActivity.current as MainActivity
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     if (visible) {
         val exportPlayTipText = buildAnnotatedString {
-            append("当前导出的 APK 文件只能在已安装 Google 框架的设备上才能使用，否则安装打开后会提示报错，")
+            append(UiStrings.apk_google_services_required)
             withLink(
                 LinkAnnotation.Url(
                     ShortUrlSet.URL13,
@@ -112,34 +114,34 @@ private fun ShareAppDialog(
                     )
                 )
             ) {
-                append("建议点此从官网下载")
+                append(UiStrings.apk_download_official_link)
             }
-            append("，或点击下方继续操作")
+            append(UiStrings.apk_continue_suffix)
         }
-        TextListDialog(
+        GkTextListDialog(
             onDismiss = onDismissRequest,
             textList = listOf(
-                "分享到其他应用" to mainVm.scope.launchUiAction(Dispatchers.IO) {
+                UiStrings.action_share_to_apps to mainVm.scope.launchUiAction(Dispatchers.IO) {
                     if (!META.isGkdChannel) {
                         if (!mainVm.dialogRequests.confirm(
-                            title = "分享提示",
+                            title = UiStrings.share_notice,
                             text = exportPlayTipText,
-                            confirmText = "继续",
+                            confirmText = UiStrings.action_continue,
                         )) return@launchUiAction
                     }
-                    context.shareFile(getShareApkFile(), "分享安装文件")
+                    context.shareFile(getShareApkFile(), UiStrings.apk_share)
                 },
-                "保存到下载" to mainVm.scope.launchUiAction(Dispatchers.IO) {
+                UiStrings.action_save_to_downloads to mainVm.scope.launchUiAction(Dispatchers.IO) {
                     if (!META.isGkdChannel) {
                         if (!mainVm.dialogRequests.confirm(
-                            title = "保存提示",
+                            title = UiStrings.save_notice,
                             text = exportPlayTipText,
-                            confirmText = "继续",
+                            confirmText = UiStrings.action_continue,
                         )) return@launchUiAction
                     }
                     context.saveFileToDownloads(getShareApkFile())
                 },
-                "Google Play" to {
+                UiStrings.google_play_label to {
                     mainVm.openUrl(PLAY_STORE_URL)
                 },
             )

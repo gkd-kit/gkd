@@ -5,12 +5,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import li.gkd.app.text.UiStrings
 import li.gkd.app.store.AppStore
 import li.gkd.app.data.RawSubscription
 import li.gkd.app.data.subscription.SubscriptionRepository
 import li.gkd.app.data.subscription.SubscriptionFileStore
 import li.gkd.app.data.subscription.SubscriptionPersistence
 import li.gkd.app.util.FolderUtils
+import li.gkd.app.util.ExportFileNames
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ZipUtils
 import li.gkd.app.util.json
@@ -49,13 +51,20 @@ object BackupManager {
                         resolve("${subs.id}.json").writeText(json.encodeToString(subs))
                     }
                 }
-                val file = FolderUtils.sharedDir.resolve(
-                    "gkd-backup-${System.currentTimeMillis()}.zip"
+                val file = ExportFileNames.reserve(
+                    FolderUtils.sharedDir,
+                    "gkd-backup-${ExportFileNames.timestamp(System.currentTimeMillis())}",
+                    "zip",
                 )
-                if (!ZipUtils.zipFiles(tempDir.listFiles().orEmpty().toList(), file)) {
-                    throw IOException("备份压缩失败")
+                try {
+                    if (!ZipUtils.zipFiles(tempDir.listFiles().orEmpty().toList(), file)) {
+                        throw IOException(UiStrings.backup_compress_failed)
+                    }
+                    file
+                } catch (e: Throwable) {
+                    file.delete()
+                    throw e
                 }
-                file
             } finally {
                 tempDir.deleteRecursively()
             }
@@ -72,10 +81,10 @@ object BackupManager {
                     BackupArchiveReader.extract(uri, zipFile, unzipDir)
                 } catch (e: SecurityException) {
                     LogUtils.d("importBackUpData.openFile", e)
-                    throw IllegalArgumentException("无法读取备份文件，请重新选择文件", e)
+                    throw IllegalArgumentException(UiStrings.backup_reselect_file, e)
                 } catch (e: Exception) {
                     LogUtils.d("importBackUpData.unzipFile", e)
-                    throw IllegalArgumentException("解压失败，非法备份文件", e)
+                    throw IllegalArgumentException(UiStrings.backup_invalid_archive, e)
                 }
                 zipFile.delete()
 
@@ -129,16 +138,16 @@ object BackupManager {
                     file.isFile && file.name.endsWith(".json")
                 } ?: emptyArray()).filterNotNull().sortedBy { it.name }.map { file ->
                     val fileId = file.nameWithoutExtension.toLongOrNull()
-                        ?: error("非法订阅文件名: ${file.name}")
+                        ?: error(UiStrings.subscription_invalid_filename(file.name))
                     val text = file.readText()
                     withContext(Dispatchers.Default) { json.decodeFromString<RawSubscription>(text) }.also { subscription ->
                         require(subscription.id == fileId) {
-                            "订阅文件id不一致: $fileId != ${subscription.id}"
+                            UiStrings.subscription_file_id_mismatch_detail(fileId, subscription.id)
                         }
                     }
                 }.also { list ->
                     require(list.map { it.id }.distinct().size == list.size) {
-                        "备份中存在重复订阅id"
+                        UiStrings.backup_duplicate_subscription_id
                     }
                 }
             } else {

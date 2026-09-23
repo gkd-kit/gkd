@@ -1,10 +1,12 @@
 package li.gkd.app.feature.subscription
 
 import kotlinx.coroutines.Dispatchers
+import li.gkd.app.ui.share.EditorSaveSession
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
+import li.gkd.app.text.UiStrings
 import li.gkd.app.data.RawSubscription
 import li.gkd.app.data.SubscriptionInputParser
 import li.gkd.app.data.edit
@@ -44,7 +46,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : BaseViewModel() {
                 subscription.globalGroups
             }
             groups.find { it.key == groupKey }
-                ?: error("订阅规则不存在: $groupKey")
+                ?: error(UiStrings.subscription_rule_missing_detail(groupKey))
         } else {
             null
         }
@@ -62,7 +64,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : BaseViewModel() {
     }
 
     private fun requireUiState(): UpsertRuleGroupUiState =
-        uiState.value.value ?: error("订阅尚未加载: ${route.subsId}")
+        uiState.value.value ?: error(UiStrings.subscription_not_loaded_id(route.subsId))
 
     suspend fun hasTextChanged(): Boolean {
         val state = uiState.value.value ?: return false
@@ -76,22 +78,26 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : BaseViewModel() {
         }
     }
 
-    suspend fun saveRule(): String? {
+    private val saveSession = EditorSaveSession<String?>()
+
+    suspend fun saveRule(): String? = saveSession.save { performSave() }
+
+    private suspend fun performSave(): String? {
         val state = requireUiState()
         val initialGroup = state.initialGroup
         val text = textFlow.value ?: state.initialText
         val baseGroup = editBaseGroup ?: initialGroup
         return withContext(Dispatchers.Default) {
             if (text.isBlank()) {
-                error("规则不能为空")
+                error(UiStrings.rule_content_required)
             }
             if (text == state.initialText) {
-                toast("规则无变动")
+                toast(UiStrings.rule_content_unchanged)
                 return@withContext null
             }
             val input = SubscriptionInputParser.parse(text, groupKey ?: 0)
             if (input.jsonObject == initialGroup?.cacheJsonObject) {
-                toast("规则无变动")
+                toast(UiStrings.rule_content_unchanged)
                 return@withContext null
             }
             var addedAppId: String? = null
@@ -99,7 +105,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : BaseViewModel() {
                 if (appId != null) {
                     val newGroup = input.parseAppGroup(appId).copy(key = groupKey)
                     if (newGroup == initialGroup) {
-                        toast("规则无变动")
+                        toast(UiStrings.rule_content_unchanged)
                         return@withContext null
                     }
                     val originalGroup = requireNotNull(
@@ -118,7 +124,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : BaseViewModel() {
                 } else {
                     val newGroup = input.parseGlobalGroup().copy(key = groupKey)
                     if (newGroup == initialGroup) {
-                        toast("规则无变动")
+                        toast(UiStrings.rule_content_unchanged)
                         return@withContext null
                     }
                     val originalGroup = requireNotNull(
@@ -157,9 +163,9 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : BaseViewModel() {
                 }
             }
             if (isEdit) {
-                toast("更新成功")
+                toast(UiStrings.update_success)
             } else {
-                toast("添加成功")
+                toast(UiStrings.add_success)
             }
             addedAppId
         }

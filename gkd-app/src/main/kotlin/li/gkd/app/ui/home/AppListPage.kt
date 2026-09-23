@@ -1,5 +1,9 @@
 package li.gkd.app.ui.home
 
+import li.gkd.app.ui.component.GkPageBottomSpaceDefaults
+import li.gkd.app.ui.component.GkPageBottomSpace
+import li.gkd.app.MainViewModel
+
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContent
@@ -8,7 +12,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,9 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -45,44 +46,47 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import li.gkd.app.text.UiStrings
 import li.gkd.app.MainActivity
-import li.gkd.app.R
 import li.gkd.app.data.AppInfo
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.store.AppStore.storeFlow
 import li.gkd.app.ui.AppConfigRoute
 import li.gkd.app.ui.EditBlockAppListRoute
-import li.gkd.app.ui.component.AnimatedIconButton
-import li.gkd.app.ui.component.AnimationFloatingActionButton
-import li.gkd.app.ui.component.AppBarTextField
-import li.gkd.app.ui.component.AppIcon
-import li.gkd.app.ui.component.AppNameText
-import li.gkd.app.ui.component.EmptyText
-import li.gkd.app.ui.component.MenuGroupCard
-import li.gkd.app.ui.component.MenuItemCheckbox
-import li.gkd.app.ui.component.MenuItemRadioButton
-import li.gkd.app.ui.component.PerfCheckbox
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.PerfTopAppBar
-import li.gkd.app.ui.component.QueryPkgAuthCard
-import li.gkd.app.ui.component.autoFocus
-import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.share.ListPlaceholder
-import li.gkd.app.ui.share.LocalMainViewModel
 import li.gkd.app.ui.share.noRippleClickable
-import li.gkd.app.ui.style.EmptyHeight
 import li.gkd.app.ui.style.appItemPadding
 import li.gkd.app.util.AppGroupOption
 import li.gkd.app.util.AppSortOption
 import li.gkd.app.util.findOption
 import li.gkd.app.util.getUpDownTransform
 import li.gkd.app.ui.share.launchUiAction
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
+import li.gkd.app.ui.component.GkAnimatedFloatingActionButton
+import li.gkd.app.ui.icon.GkSearchCloseIconButton
+import li.gkd.app.ui.icon.GkBlockCloseIconButton
+import li.gkd.app.ui.component.GkAppBarTextField
+import li.gkd.app.ui.component.GkAppIcon
+import li.gkd.app.ui.component.GkRuleStats
+import li.gkd.app.ui.component.GkRuleStatsData
+import li.gkd.app.ui.component.GkAppNameText
+import li.gkd.app.ui.component.GkCheckbox
+import li.gkd.app.ui.component.GkEmptyState
+import li.gkd.app.ui.component.GkFilterIconButton
+import li.gkd.app.ui.component.GkIcon
+import li.gkd.app.ui.component.GkIconButton
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkMenuGroupCard
+import li.gkd.app.ui.component.GkMenuItemCheckbox
+import li.gkd.app.ui.component.GkMenuItemRadioButton
+import li.gkd.app.ui.component.GkQueryPkgAuthCard
+import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.component.autoFocus
+import li.gkd.app.ui.component.rememberListScrollState
 
 @Composable
 fun useAppListPage(): ScaffoldExt {
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     val context = LocalActivity.current as MainActivity
 
     val vm = viewModel { AppListVm(mainVm) }
@@ -92,11 +96,6 @@ fun useAppListPage(): ScaffoldExt {
     val searchStr = state.searchText
     val ruleSummary = state.ruleSummary
 
-    val globalDesc = if (ruleSummary.globalGroups.isNotEmpty()) {
-        "${ruleSummary.globalGroups.size}全局"
-    } else {
-        null
-    }
     val showSearchBar = state.showSearchBar
     val refreshing = state.refreshing
     val pullToRefreshState = rememberPullToRefreshState()
@@ -126,7 +125,7 @@ fun useAppListPage(): ScaffoldExt {
                     vm.onLeaveScreen()
                 }
             }
-            PerfTopAppBar(scrollBehavior = scrollBehavior, title = {
+            GkTopAppBar(scrollBehavior = scrollBehavior, title = {
                 val firstShowSearchBar = remember { showSearchBar }
                 if (showSearchBar) {
                     BackHandler {
@@ -134,10 +133,10 @@ fun useAppListPage(): ScaffoldExt {
                             vm.closeSearch()
                         }
                     }
-                    AppBarTextField(
+                    GkAppBarTextField(
                         value = searchStr,
                         onValueChange = vm::setSearchText,
-                        hint = "请输入应用名称/ID",
+                        hint = UiStrings.app_name_id_input_hint,
                         modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                     )
                 } else {
@@ -157,7 +156,7 @@ fun useAppListPage(): ScaffoldExt {
                         if (localEditWhiteListMode) {
                             Text(
                                 modifier = titleModifier,
-                                text = "应用白名单",
+                                text = UiStrings.app_whitelist,
                             )
                         } else {
                             Text(
@@ -170,41 +169,27 @@ fun useAppListPage(): ScaffoldExt {
             }, actions = {
                 if (state.queryPackagesAbnormal) {
                     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
-                        PerfIconButton(
-                            imageVector = PerfIcon.WarningAmber,
-                            contentDescription = PermissionStates.queryPackages.name + "异常",
+                        GkIconButton(
+                            imageVector = GkIcons.WarningAmber,
+                            contentDescription = PermissionStates.queryPackages.name + UiStrings.error_label,
                             onClick = throttle(vm.scope.launchUiAction {
                                 mainVm.dialogRequests.showMessage(
-                                    title = "权限异常",
-                                    text = "检测到已授予「${PermissionStates.queryPackages.name}」但实际获取应用数量稀少，已使用其它方式获取但可能不全，在应用列表下拉刷新可重新获取，若无法解决可尝试关闭权限后重新授予或重启设备"
+                                    title = UiStrings.permission_error,
+                                    text = UiStrings.app_list_permission_error_description(PermissionStates.queryPackages.name)
                                 )
                             }),
                         )
                     }
                 }
-                PerfIconButton(
-                    imageVector = PerfIcon.Block,
-                    contentDescription = "切换白名单编辑模式",
-                    onClickLabel = if (editWhiteListMode) "退出编辑" else "进入编辑",
-                    colors = IconButtonDefaults.iconButtonColors(
-                        contentColor = if (editWhiteListMode) {
-                            CheckboxDefaults.colors().checkedBoxColor
-                        } else {
-                            LocalContentColor.current
-                        }
-                    ),
-                    onClick = throttle(vm::toggleEditWhiteListMode),
-                )
-                AnimatedIconButton(
+                GkSearchCloseIconButton(
                     onClick = throttle(vm::toggleSearch),
-                    id = R.drawable.ic_anim_search_close,
-                    atEnd = showSearchBar,
-                    contentDescription = if (showSearchBar) "关闭搜索" else "搜索应用列表",
+                    isSearchOpen = showSearchBar,
+                    contentDescription = if (showSearchBar) UiStrings.search_close else UiStrings.app_list_search,
                 )
                 var expanded by remember { mutableStateOf(false) }
-                PerfIconButton(
-                    imageVector = PerfIcon.Sort,
-                    contentDescription = "排序筛选",
+                GkFilterIconButton(
+                    filtered = !state.showAllApps,
+                    contentDescription = UiStrings.sort_filter,
                     onClick = {
                         expanded = true
                     }
@@ -217,19 +202,19 @@ fun useAppListPage(): ScaffoldExt {
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                         ) {
-                        MenuGroupCard(inTop = true, title = "排序") {
+                        GkMenuGroupCard(inTop = true, title = UiStrings.sort_title) {
                             AppSortOption.objects.forEach { option ->
-                                MenuItemRadioButton(
+                                GkMenuItemRadioButton(
                                     text = option.label,
                                     selected = AppSortOption.objects.findOption(store.appSort) == option,
                                     onClick = { vm.setSortType(option) },
                                 )
                             }
                         }
-                        MenuGroupCard(title = "分组") {
+                        GkMenuGroupCard(title = UiStrings.group_title) {
                             AppGroupOption.normalObjects.forEach { option ->
                                 val newValue = option.invert(store.appGroupType)
-                                MenuItemCheckbox(
+                                GkMenuItemCheckbox(
                                     enabled = newValue != 0,
                                     text = option.label,
                                     checked = option.include(store.appGroupType),
@@ -237,9 +222,9 @@ fun useAppListPage(): ScaffoldExt {
                                 )
                             }
                         }
-                        MenuGroupCard(title = "筛选") {
-                            MenuItemCheckbox(
-                                text = "白名单",
+                        GkMenuGroupCard(title = UiStrings.filter_title) {
+                            GkMenuItemCheckbox(
+                                text = UiStrings.whitelist_title,
                                 checked = store.showBlockApp,
                                 onClick = {
                                     vm.setShowBlockApp(!store.showBlockApp)
@@ -248,16 +233,22 @@ fun useAppListPage(): ScaffoldExt {
                         }
                     }
                 }
+                GkBlockCloseIconButton(
+                    isClose = editWhiteListMode,
+                    contentDescription = UiStrings.whitelist_edit_mode_toggle,
+                    onClickLabel = if (editWhiteListMode) UiStrings.edit_exit else UiStrings.edit_enter,
+                    onClick = vm::toggleEditWhiteListMode,
+                )
             })
         },
         floatingActionButton = {
-            AnimationFloatingActionButton(
+            GkAnimatedFloatingActionButton(
                 visible = editWhiteListMode,
-                contentDescription = "编辑白名单",
+                contentDescription = UiStrings.whitelist_edit,
                 onClick = {
                     mainVm.navigatePage(EditBlockAppListRoute)
                 },
-                imageVector = PerfIcon.Edit,
+                imageVector = GkIcons.Edit,
             )
         }
     ) { contentPadding ->
@@ -273,37 +264,18 @@ fun useAppListPage(): ScaffoldExt {
             ) {
                 if (!state.canQueryPackages) {
                     item(key = 1, contentType = 1) {
-                        QueryPkgAuthCard()
+                        GkQueryPkgAuthCard()
                     }
                 }
                 items(appInfos, { it.id }) { appInfo ->
-                    val desc = run {
-                        if (editWhiteListMode) return@run null
-                        val appGroups = ruleSummary.appIdToAllGroups[appInfo.id] ?: emptyList()
-                        val appDesc = if (appGroups.isNotEmpty()) {
-                            when (val disabledCount = appGroups.count { g -> !g.enable }) {
-                                0 -> "${appGroups.size}组规则"
-                                appGroups.size -> "${appGroups.size}组规则/${disabledCount}关闭"
-                                else -> {
-                                    "${appGroups.size}组规则/${appGroups.size - disabledCount}启用/${disabledCount}关闭"
-                                }
-                            }
-                        } else {
-                            null
-                        }
-                        if (globalDesc != null) {
-                            if (appDesc != null) {
-                                "$globalDesc/$appDesc"
-                            } else {
-                                globalDesc
-                            }
-                        } else {
-                            appDesc
-                        }
-                    }
+                    val stats = if (editWhiteListMode) null else GkRuleStatsData(
+                        globalGroups = ruleSummary.appIdToGlobalGroupCount[appInfo.id] ?: 0,
+                        appGroups = ruleSummary.appIdToAllGroups[appInfo.id]?.count { it.enable } ?: 0,
+                        enabledOnly = true,
+                    )
                     AppItemCard(
                         appInfo = appInfo,
-                        desc = desc,
+                        stats = stats,
                         editWhiteListMode = editWhiteListMode,
                         inWhiteList = appInfo.id in state.whiteListAppIds,
                         onClick = {
@@ -317,10 +289,11 @@ fun useAppListPage(): ScaffoldExt {
                     )
                 }
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                    Spacer(modifier = Modifier.height(EmptyHeight))
                     if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = if (state.showAllApps) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
-                        Spacer(modifier = Modifier.height(EmptyHeight / 2))
+                        GkEmptyState(text = if (state.showAllApps) UiStrings.search_no_results else UiStrings.search_no_results_filter_hint)
+                        GkPageBottomSpace(height = GkPageBottomSpaceDefaults.CompactHeight)
+                    } else {
+                        GkPageBottomSpace()
                     }
                 }
             }
@@ -331,7 +304,7 @@ fun useAppListPage(): ScaffoldExt {
 @Composable
 private fun AppItemCard(
     appInfo: AppInfo,
-    desc: String?,
+    stats: GkRuleStatsData?,
     editWhiteListMode: Boolean,
     inWhiteList: Boolean,
     onClick: () -> Unit,
@@ -343,15 +316,15 @@ private fun AppItemCard(
                 contentDescription = if (editWhiteListMode) {
                     appInfo.name
                 } else {
-                    "应用：${appInfo.name}，${desc ?: appInfo.id}"
+                    UiStrings.app_whitelist_state_description(appInfo.name, stats?.takeIf { it.hasRules }?.description ?: appInfo.id)
                 }
                 if (inWhiteList) {
-                    stateDescription = "已加入白名单"
+                    stateDescription = UiStrings.whitelist_member
                 } else if (editWhiteListMode) {
-                    stateDescription = "未加入白名单"
+                    stateDescription = UiStrings.whitelist_not_member
                 }
                 onClick(
-                    label = if (editWhiteListMode) if (inWhiteList) "从白名单中移除" else "加入白名单" else "进入规则汇总页面",
+                    label = if (editWhiteListMode) if (inWhiteList) UiStrings.whitelist_remove else UiStrings.whitelist_add else UiStrings.rule_summary_open,
                     action = null
                 )
             }
@@ -359,33 +332,37 @@ private fun AppItemCard(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AppIcon(appId = appInfo.id)
+        GkAppIcon(appId = appInfo.id)
         Column(
             modifier = Modifier
                 .weight(1f),
             verticalArrangement = Arrangement.Center
         ) {
-            AppNameText(appInfo = appInfo)
-            Text(
-                text = desc ?: appInfo.id,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                softWrap = false
-            )
+            GkAppNameText(appInfo = appInfo)
+            if (stats != null) {
+                GkRuleStats(stats, emptyText = appInfo.id)
+            } else {
+                Text(
+                    text = appInfo.id,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    softWrap = false,
+                )
+            }
         }
         if (editWhiteListMode) {
-            PerfCheckbox(
+            GkCheckbox(
                 key = appInfo.id,
                 checked = inWhiteList,
             )
         } else if (inWhiteList) {
-            PerfIcon(
+            GkIcon(
                 modifier = Modifier
                     .padding(2.dp)
                     .size(20.dp),
-                imageVector = PerfIcon.Block,
+                imageVector = GkIcons.Block,
                 tint = MaterialTheme.colorScheme.secondary,
             )
         }

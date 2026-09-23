@@ -1,8 +1,8 @@
 package li.gkd.app.feature.settings
 
-import androidx.compose.animation.graphics.res.animatedVectorResource
-import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
-import androidx.compose.animation.graphics.vector.AnimatedImageVector
+import li.gkd.app.ui.component.GkPageBottomSpace
+import li.gkd.app.MainViewModel
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -15,13 +15,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,22 +37,13 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.serialization.Serializable
+import li.gkd.app.text.UiStrings
 import li.gkd.app.META
 import li.gkd.app.R
 import li.gkd.app.store.AppStore.storeFlow
 import li.gkd.app.store.AppStore
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.PerfTopAppBar
-import li.gkd.app.ui.component.RotatingLoadingIcon
-import li.gkd.app.ui.component.SettingItem
-import li.gkd.app.ui.component.TextMenu
 import li.gkd.app.ui.share.LocalDarkTheme
-import li.gkd.app.ui.share.LocalMainViewModel
-import li.gkd.app.ui.style.EmptyHeight
 import li.gkd.app.ui.style.itemPadding
 import li.gkd.app.ui.style.titleItemPadding
 import li.gkd.app.util.ISSUES_URL
@@ -64,15 +53,22 @@ import li.gkd.app.util.UpdateChannelOption
 import li.gkd.app.util.findOption
 import li.gkd.app.ui.share.launchUiAction
 import li.gkd.app.ui.share.launchUi
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
 import li.gkd.app.util.ToastUtils.toast
+import li.gkd.app.ui.component.GkIconButton
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkRotatingLoadingIcon
+import li.gkd.app.ui.component.GkSettingItem
+import li.gkd.app.ui.component.GkTextMenu
+import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.icon.GkAnimatedLogoIcon
 
 @Serializable
 data object AboutRoute : NavKey
 
 @Composable
 fun AboutPage() {
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     var showVersionInfoDialog by rememberSaveable { mutableStateOf(false) }
     var showShareAppDialog by rememberSaveable { mutableStateOf(false) }
     val store by storeFlow.collectAsStateWithLifecycle()
@@ -82,20 +78,20 @@ fun AboutPage() {
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            PerfTopAppBar(
+            GkTopAppBar(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    PerfIconButton(
-                        imageVector = PerfIcon.ArrowBack,
+                    GkIconButton(
+                        imageVector = GkIcons.ArrowBack,
                         onClick = {
                             mainVm.popPage()
                         },
                     )
                 },
-                title = { Text(text = "关于") },
+                title = { Text(text = UiStrings.about_title) },
                 actions = {
-                    PerfIconButton(
-                        imageVector = PerfIcon.Share,
+                    GkIconButton(
+                        imageVector = GkIcons.Share,
                         onClick = { showShareAppDialog = true },
                     )
                 }
@@ -112,12 +108,15 @@ fun AboutPage() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                AnimatedLogoIcon(
+                GkAnimatedLogoIcon(
+                    tint = colorResource(
+                        if (LocalDarkTheme.current) R.color.better_white else R.color.better_black
+                    ),
                     modifier = Modifier
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
-                            onClick = throttle { toast("你干嘛~ 哎呦~") }
+                            onClick = throttle { toast(UiStrings.about_easter_egg) }
                         )
                         .fillMaxWidth(0.33f)
                         .aspectRatio(1f)
@@ -138,62 +137,62 @@ fun AboutPage() {
                 Spacer(modifier = Modifier.height(32.dp))
             }
 
-            SettingItem(
+            GkSettingItem(
                 imageVector = null,
-                title = "开源代码",
+                title = UiStrings.source_code,
                 onClick = {
                     mainVm.openUrl(REPOSITORY_URL)
                 },
             )
             if (META.isGkdChannel) {
-                SettingItem(
+                GkSettingItem(
                     imageVector = null,
-                    title = "捐赠支持",
+                    title = UiStrings.donate,
                     onClick = {
                         mainVm.navigateWebPage(ShortUrlSet.URL10)
                     },
                 )
             }
-            SettingItem(
+            GkSettingItem(
                 imageVector = null,
-                title = "使用协议",
+                title = UiStrings.terms_of_use,
                 onClick = {
                     mainVm.navigateWebPage(ShortUrlSet.URL12)
                 },
             )
-            SettingItem(
+            GkSettingItem(
                 imageVector = null,
-                title = "隐私政策",
+                title = UiStrings.privacy_policy,
                 onClick = {
                     mainVm.navigateWebPage(ShortUrlSet.URL11)
                 },
             )
 
             FeedbackSection()
-            SettingItem(
-                title = "导出日志",
-                imageVector = PerfIcon.Share,
+            GkSettingItem(
+                title = UiStrings.logs_export,
+                imageVector = GkIcons.Share,
                 onClick = {
                     mainVm.shareLog.show()
                 }
             )
             if (mainVm.updateStatus != null) {
                 Text(
-                    text = "更新",
+                    text = UiStrings.action_update,
                     modifier = Modifier.titleItemPadding(),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
-                TextMenu(
-                    title = "更新渠道",
+                GkTextMenu(
+                    title = UiStrings.update_channel,
                     option = updateChannel
                 ) {
-                    if (mainVm.updateStatus.checkUpdatingFlow.value) return@TextMenu
+                    if (mainVm.updateStatus.checkUpdatingFlow.value) return@GkTextMenu
                     if (it.value == UpdateChannelOption.Beta.value) {
                         mainVm.scope.launchUi {
                             if (!mainVm.dialogRequests.confirm(
-                                title = "版本渠道",
-                                text = "测试版本渠道更新快\n但不稳定可能存在较多BUG\n请谨慎使用",
+                                title = UiStrings.version_channel,
+                                text = UiStrings.beta_channel_warning,
                             )) return@launchUi
                             AppStore.updateSettings { settings ->
                                 settings.copy(updateChannel = it.value)
@@ -218,13 +217,13 @@ fun AboutPage() {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "检查更新",
+                        text = UiStrings.update_check,
                         style = MaterialTheme.typography.bodyLarge,
                     )
-                    RotatingLoadingIcon(loading = mainVm.updateStatus.checkUpdatingFlow.collectAsStateWithLifecycle().value)
+                    GkRotatingLoadingIcon(loading = mainVm.updateStatus.checkUpdatingFlow.collectAsStateWithLifecycle().value)
                 }
             }
-            Spacer(modifier = Modifier.height(EmptyHeight))
+            GkPageBottomSpace()
         }
     }
 
@@ -238,10 +237,10 @@ fun AboutPage() {
 
 @Composable
 private fun FeedbackSection() {
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     val primaryColor = MaterialTheme.colorScheme.primary
     Text(
-        text = "反馈",
+        text = UiStrings.feedback_title,
         modifier = Modifier.titleItemPadding(),
         style = MaterialTheme.typography.titleSmall,
         color = primaryColor,
@@ -254,21 +253,21 @@ private fun FeedbackSection() {
                         fontWeight = FontWeight.Bold,
                         color = primaryColor,
                     )
-                    append("感谢您愿意花时间反馈，")
+                    append(UiStrings.feedback_thanks_prefix)
                     withStyle(style = highlightStyle) {
-                        append("GKD 默认不携带任何规则，只接受应用本体功能相关的反馈")
+                        append(UiStrings.feedback_scope)
                     }
                     append("\n\n")
-                    append("请先判断是不是第三方规则订阅的问题，如果是，您应该向规则提供者反馈，而不是在此处反馈。")
+                    append(UiStrings.feedback_subscription_notice)
                     withStyle(style = highlightStyle) {
-                        append("如果您已经确信是 GKD 应用本体的问题")
+                        append(UiStrings.feedback_app_issue_prefix)
                     }
-                    append("，可点击下方继续反馈")
+                    append(UiStrings.feedback_continue_suffix)
                 }
                 if (!mainVm.dialogRequests.confirm(
-                    title = "反馈须知",
+                    title = UiStrings.feedback_notice,
                     text = noticeText,
-                    confirmText = "继续",
+                    confirmText = UiStrings.action_continue,
                     dismissOnRequest = true,
                 )) return@launchUiAction
                 mainVm.openUrl(ISSUES_URL)
@@ -277,34 +276,8 @@ private fun FeedbackSection() {
             .itemPadding()
     ) {
         Text(
-            text = "问题反馈",
+            text = UiStrings.feedback_report,
             style = MaterialTheme.typography.bodyLarge,
         )
     }
-}
-
-@Composable
-private fun AnimatedLogoIcon(
-    modifier: Modifier = Modifier
-) {
-    val darkTheme = LocalDarkTheme.current
-    val colorRid = if (darkTheme) R.color.better_white else R.color.better_black
-    var atEnd by remember { mutableStateOf(false) }
-    val animation = AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_anim_logo)
-    val painter = rememberAnimatedVectorPainter(
-        animation,
-        atEnd
-    )
-    LaunchedEffect(Unit) {
-        while (isActive) {
-            atEnd = !atEnd
-            delay(animation.totalDuration.toLong())
-        }
-    }
-    Icon(
-        modifier = modifier,
-        painter = painter,
-        contentDescription = null,
-        tint = colorResource(colorRid),
-    )
 }

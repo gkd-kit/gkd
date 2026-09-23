@@ -43,6 +43,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import li.gkd.app.text.UiStrings
 import li.gkd.app.META
 import li.gkd.app.appScope
 import li.gkd.db.A11yEventLog
@@ -51,13 +52,14 @@ import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.uiAutomationFlow
 import li.gkd.app.feature.log.EventLogCard
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.rememberLazyListAutoFollowState
 import li.gkd.app.util.IntentUtils
 import li.gkd.app.util.launchLogged
 import li.gkd.db.Db
 import kotlin.time.Duration.Companion.milliseconds
+import li.gkd.app.ui.component.GkIcon
+import li.gkd.app.ui.component.GkIconButton
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.rememberLazyListAutoFollowState
 
 class EventService : OverlayWindowService(positionKey = "event") {
 
@@ -74,14 +76,14 @@ class EventService : OverlayWindowService(positionKey = "event") {
     override fun ComposeContent() {
         if (minimized) {
             val alpha = 0.75f
-            PerfIcon(
-                imageVector = PerfIcon.UnfoldMore,
-                contentDescription = "恢复事件日志窗口",
+            GkIcon(
+                imageVector = GkIcons.UnfoldMore,
+                contentDescription = UiStrings.event_log_window_restore,
                 modifier = Modifier
                     .clip(MaterialTheme.shapes.small)
                     .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = alpha))
                     .semantics {
-                        onClick(label = "恢复事件日志窗口") {
+                        onClick(label = UiStrings.event_log_window_restore) {
                             minimized = false
                             true
                         }
@@ -107,9 +109,9 @@ class EventService : OverlayWindowService(positionKey = "event") {
                         .padding(4.dp)
                 ) {
                     ClosableTitle(
-                        title = if (A11yService.isRunning.collectAsStateWithLifecycle().value || uiAutomationFlow.collectAsStateWithLifecycle().value != null) "事件服务" else "事件服务(无权限)",
+                        title = if (A11yService.isRunning.collectAsStateWithLifecycle().value || uiAutomationFlow.collectAsStateWithLifecycle().value != null) UiStrings.event_service_label else UiStrings.event_service_no_permission,
                         onMinimizeRequest = { minimized = true },
-                        minimizeContentDescription = "缩小事件日志窗口",
+                        minimizeContentDescription = UiStrings.event_log_window_minimize,
                     )
                     val textStyle = MaterialTheme.typography.labelSmall
                     CompositionLocalProvider(
@@ -143,10 +145,10 @@ class EventService : OverlayWindowService(positionKey = "event") {
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                 ) {
                                     if (count > 0) {
-                                        Text(text = "+$count")
+                                        Text(text = UiStrings.event_pending_count(count))
                                     }
-                                    PerfIconButton(
-                                        imageVector = PerfIcon.ArrowDownward,
+                                    GkIconButton(
+                                        imageVector = GkIcons.ArrowDownward,
                                         onClick = followState::resume,
                                     )
                                 }
@@ -193,7 +195,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
         }
         useServicePresence(
             stateFlow = isRunning,
-            name = "事件服务",
+            name = UiStrings.event_service_label,
         )
     }
 

@@ -1,5 +1,7 @@
 package li.gkd.app.ui
 
+import li.gkd.app.MainViewModel
+
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.webkit.JavascriptInterface
@@ -33,12 +35,9 @@ import io.ktor.client.request.get
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
+import li.gkd.app.text.UiStrings
 import li.gkd.app.META
 import li.gkd.app.MainActivity
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.PerfTopAppBar
-import li.gkd.app.ui.share.LocalMainViewModel
 import li.gkd.app.ui.style.iconTextSize
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.util.AndroidTarget
@@ -47,7 +46,10 @@ import li.gkd.app.util.client
 import li.gkd.app.util.ToastUtils.copyText
 import li.gkd.app.ui.share.launchUiAction
 import li.gkd.app.util.IntentUtils
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
+import li.gkd.app.ui.component.GkIconButton
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkTopAppBar
 
 @Serializable
 data class WebViewRoute(val initUrl: String) : NavKey
@@ -55,16 +57,16 @@ data class WebViewRoute(val initUrl: String) : NavKey
 @Composable
 fun WebViewPage(route: WebViewRoute) {
     val initUrl = route.initUrl
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     val webViewState = rememberWebViewState(url = initUrl)
     val webViewClient = remember { GkdWebViewClient() }
     var webView by remember { mutableStateOf<WebView?>(null) }
     Scaffold(modifier = Modifier, topBar = {
-        PerfTopAppBar(
+        GkTopAppBar(
             modifier = Modifier.fillMaxWidth(),
             navigationIcon = {
-                PerfIconButton(
-                    imageVector = PerfIcon.ArrowBack,
+                GkIconButton(
+                    imageVector = GkIcons.ArrowBack,
                     onClick = { mainVm.popPage() },
                 )
             },
@@ -86,18 +88,18 @@ fun WebViewPage(route: WebViewRoute) {
             },
             actions = {
                 if (chromeVersion in 1..<MINI_CHROME_VERSION) {
-                    PerfIconButton(
-                        imageVector = PerfIcon.WarningAmber,
+                    GkIconButton(
+                        imageVector = GkIcons.WarningAmber,
                         onClick = throttle(mainVm.scope.launchUiAction {
                             mainVm.dialogRequests.showMessage(
-                                title = "兼容性提示",
-                                text = "检测到您的系统内置浏览器版本($chromeVersion)过低, 可能无法正常浏览网页文档\n\n建议自行升级版本后重启 GKD 再查看文档, 或点击右上角后在外部浏览器打开查阅\n\n若能正常浏览文档请忽略此项提示",
+                                title = UiStrings.compatibility_notice,
+                                text = UiStrings.webview_outdated_notice(chromeVersion),
                             )
                         }),
                     )
                 }
                 var expanded by remember { mutableStateOf(false) }
-                PerfIconButton(imageVector = PerfIcon.MoreVert, onClick = { expanded = true })
+                GkIconButton(imageVector = GkIcons.MoreVert, onClick = { expanded = true })
                 Box(
                     modifier = Modifier
                         .wrapContentSize(Alignment.TopStart)
@@ -109,7 +111,7 @@ fun WebViewPage(route: WebViewRoute) {
                         if (webViewState.loadingState !is LoadingState.Loading) {
                             DropdownMenuItem(
                                 text = {
-                                    Text(text = "刷新页面")
+                                    Text(text = UiStrings.webview_reload)
                                 },
                                 onClick = {
                                     expanded = false
@@ -119,7 +121,7 @@ fun WebViewPage(route: WebViewRoute) {
                         }
                         DropdownMenuItem(
                             text = {
-                                Text(text = "复制链接")
+                                Text(text = UiStrings.link_copy)
                             },
                             onClick = {
                                 expanded = false
@@ -128,7 +130,7 @@ fun WebViewPage(route: WebViewRoute) {
                         )
                         DropdownMenuItem(
                             text = {
-                                Text(text = "外部打开")
+                                Text(text = UiStrings.link_open_external)
                             },
                             onClick = {
                                 expanded = false

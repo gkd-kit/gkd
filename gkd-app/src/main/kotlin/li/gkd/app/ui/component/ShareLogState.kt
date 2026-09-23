@@ -16,10 +16,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
+import li.gkd.app.text.UiStrings
 import li.gkd.app.MainActivity
 import li.gkd.app.util.FolderUtils
 import li.gkd.app.ui.share.launchUi
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
 
 class ShareLogState(
     private val scope: CoroutineScope,
@@ -39,7 +40,7 @@ class ShareLogState(
         dismiss()
         scope.launchUi {
             val logZipFile = withContext(Dispatchers.IO) { FolderUtils.buildLogFile() }
-            context.shareFile(logZipFile, "分享日志文件")
+            context.shareFile(logZipFile, UiStrings.logs_share_file)
         }
     }
 
@@ -64,7 +65,7 @@ class ShareLogState(
         val visible by visibleFlow.collectAsStateWithLifecycle()
         if (visible) {
             val context = LocalActivity.current as MainActivity
-            AppDialog(onDismissRequest = ::dismiss) {
+            GkDialog(onDismissRequest = ::dismiss) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -75,19 +76,19 @@ class ShareLogState(
                         .fillMaxWidth()
                         .padding(16.dp)
                     Text(
-                        text = "分享到其他应用",
+                        text = UiStrings.action_share_to_apps,
                         modifier = Modifier
                             .clickable(onClick = throttle { share(context) })
                             .then(modifier),
                     )
                     Text(
-                        text = "保存到下载",
+                        text = UiStrings.action_save_to_downloads,
                         modifier = Modifier
                             .clickable(onClick = throttle { save(context) })
                             .then(modifier),
                     )
                     Text(
-                        text = "生成链接(需科学上网)",
+                        text = UiStrings.upload_generate_link,
                         modifier = Modifier
                             .clickable(onClick = throttle(::upload))
                             .then(modifier),

@@ -1,6 +1,7 @@
 package li.gkd.app.data.backup
 
 import android.net.Uri
+import li.gkd.app.text.UiStrings
 import li.gkd.app.app
 import li.gkd.app.util.ZipUtils
 import java.io.File
@@ -14,7 +15,7 @@ object BackupArchiveReader {
 
     private fun copyArchive(uri: Uri, archiveFile: File) {
         val input = app.contentResolver.openInputStream(uri)
-            ?: throw IOException("无法读取备份文件")
+            ?: throw IOException(UiStrings.backup_read_failed)
         input.use {
             archiveFile.outputStream().use { output ->
                 val buffer = ByteArray(BUFFER_SIZE)
@@ -24,7 +25,7 @@ object BackupArchiveReader {
                     if (size < 0) break
                     copiedBytes += size
                     if (copiedBytes > MAX_ARCHIVE_BYTES) {
-                        throw IOException("备份压缩包超过大小限制")
+                        throw IOException(UiStrings.backup_archive_too_large)
                     }
                     output.write(buffer, 0, size)
                 }

@@ -14,6 +14,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
+import li.gkd.app.text.UiStrings
 import li.gkd.app.a11y.A11yCommonImpl
 import li.gkd.app.a11y.A11yRuleEngine
 import li.gkd.app.a11y.A11yRuntime
@@ -72,7 +73,7 @@ class AutomationService private constructor(
         uiAutomation.toHidden.connect(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
         uiAutomation.setOnAccessibilityEventListener(listener)
         connected = true
-        toast("自动化已启动")
+        toast(UiStrings.automation_started)
         updateEnableAutomator(true)
         A11yRuntime.onA11yConnected(this)
     }
@@ -94,9 +95,9 @@ class AutomationService private constructor(
             connected = false
             if (wasConnected) {
                 if (tempShutdownFlag) {
-                    toast("自动化局部关闭")
+                    toast(UiStrings.automation_partially_disabled)
                 } else {
-                    toast("自动化已关闭")
+                    toast(UiStrings.automation_stopped)
                     updateEnableAutomator(false)
                 }
             }
@@ -126,7 +127,7 @@ class AutomationService private constructor(
         }
 
         fun showOccupiedWarning(silent: Boolean = false) {
-            toast("自动化服务被其他应用占用")
+            toast(UiStrings.automation_service_occupied)
             if (!silent) {
                 uiAutomationOccupiedFlow.value = true
             }
@@ -150,7 +151,7 @@ class AutomationService private constructor(
                         return@synchronized
                     }
                 } catch (e: Exception) {
-                    toast("自动化状态检测失败：${e.message}")
+                    toast(UiStrings.automation_state_check_failed(e.message))
                     LogUtils.d("detect automation state failed", e)
                     return@synchronized
                 }
@@ -169,7 +170,7 @@ class AutomationService private constructor(
                     }
                 } catch (e: Exception) {
                     instance.shutdown(true)
-                    toast("自动化启动失败：${e.message}")
+                    toast(UiStrings.automation_start_failed(e.message))
                     LogUtils.d(e)
                 }
             }

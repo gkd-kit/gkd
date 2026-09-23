@@ -1,7 +1,7 @@
 package li.gkd.app.ui.home
 
 import android.net.Uri
-import li.gkd.app.service.TrackService
+import li.gkd.app.text.UiStrings
 import li.gkd.app.service.fixRestartAutomatorService
 import li.gkd.app.store.AppStore.storeFlow
 import li.gkd.app.store.AppStore
@@ -12,38 +12,27 @@ import java.io.File
 
 class SettingsVm : BaseViewModel() {
 
-    fun saveActionToast(value: String): Boolean {
-        if (value == storeFlow.value.actionToast) return false
-        AppStore.updateSettings { it.copy(actionToast = value) }
+    fun saveActionToast(enabled: Boolean, useSystemToast: Boolean, text: String): Boolean {
+        require(text.isNotEmpty() && text.length <= 64)
+        val store = storeFlow.value
+        if (store.toastWhenClick == enabled && store.useSystemToast == useSystemToast && store.actionToast == text) return false
+        AppStore.updateSettings {
+            it.copy(toastWhenClick = enabled, useSystemToast = useSystemToast, actionToast = text)
+        }
         return true
     }
 
-    fun saveNotificationText(title: String, text: String): Boolean {
+    fun saveNotificationText(enabled: Boolean, title: String, text: String): Boolean {
         val store = storeFlow.value
-        if (store.customNotifTitle == title && store.customNotifText == text) return false
+        if (store.useCustomNotifText == enabled && store.customNotifTitle == title && store.customNotifText == text) return false
         AppStore.updateSettings {
             it.copy(
+                useCustomNotifText = enabled,
                 customNotifTitle = title,
                 customNotifText = text,
             )
         }
         return true
-    }
-
-    fun setToastWhenClick(enabled: Boolean) {
-        AppStore.updateSettings { it.copy(toastWhenClick = enabled) }
-    }
-
-    fun setUseSystemToast(enabled: Boolean) {
-        AppStore.updateSettings { it.copy(useSystemToast = enabled) }
-    }
-
-    fun setTrackServiceEnabled(enabled: Boolean) {
-        if (enabled) TrackService.start() else TrackService.stop()
-    }
-
-    fun setUseCustomNotificationText(enabled: Boolean) {
-        AppStore.updateSettings { it.copy(useCustomNotifText = enabled) }
     }
 
     fun setExcludeFromRecents(enabled: Boolean) {
@@ -66,9 +55,9 @@ class SettingsVm : BaseViewModel() {
     }
 
     suspend fun importBackup(uri: Uri) {
-        toast("导入备份中...")
+        toast(UiStrings.backup_import_progress)
         val skipped = BackupManager.importData(uri)
-        toast(if (skipped > 0) "导入成功，已跳过 $skipped 条所属订阅已不存在的配置" else "导入成功")
+        toast(if (skipped > 0) UiStrings.backup_import_skipped_config_count(skipped) else UiStrings.import_success)
     }
 
     suspend fun exportBackup(): File = BackupManager.exportData()

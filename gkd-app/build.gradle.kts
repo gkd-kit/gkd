@@ -5,6 +5,7 @@ import com.android.build.api.variant.impl.VariantOutputImpl
 import li.gkd.gradle.BuildAssetAdapter
 import li.gkd.gradle.BuildAssetVariant
 import li.gkd.gradle.GenerateSourcePathsTask
+import li.gkd.gradle.GenerateUiStringsTask
 import li.gkd.gradle.buildProperty
 import li.gkd.gradle.configureBuildAssets
 import li.gkd.gradle.gitInfo
@@ -30,7 +31,6 @@ android {
         versionCode = 92
         versionName = "1.12.1"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -53,7 +53,6 @@ android {
         resValues = true
     }
 
-    sourceSets.getByName("androidTest").assets.srcDir(project(":gkd-db").file("schemas"))
 
     val gkdStoreFile = buildProperty("GKD_STORE_FILE").orNull
     val gkdSigningConfig = if (gkdStoreFile != null) {
@@ -129,6 +128,14 @@ android {
         "META-INF/**",
         "DebugProbesKt.bin",
     )
+}
+
+val generateUiStrings = tasks.register<GenerateUiStringsTask>("generateUiStrings") {
+    stringsFile.set(layout.projectDirectory.file("src/main/res/values/strings.xml"))
+    outputDirectory.set(layout.buildDirectory.dir("generated/source/uiStrings"))
+}
+androidComponents.onVariants { variant ->
+    variant.sources.java?.addGeneratedSourceDirectory(generateUiStrings, GenerateUiStringsTask::outputDirectory)
 }
 
 val androidBuildAssetAdapter =
@@ -218,11 +225,9 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)
     implementation(libs.compose.animation)
-    implementation(libs.compose.animation.graphics)
     implementation(libs.compose.icons)
     implementation(libs.compose.preview)
     debugImplementation(libs.compose.tooling)
-    androidTestImplementation(libs.compose.junit4)
 
     implementation(libs.compose.activity)
     implementation(libs.compose.material3)
@@ -232,12 +237,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
 
     testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso)
-    androidTestImplementation(libs.androidx.room.testing)
-    androidTestImplementation(libs.androidx.sqlite.framework)
 
-    // AndroidTest shares this runtime dependency with the app and requires the newer version.
     implementation(libs.androidx.concurrent.futures)
 
     remapApi(project(":gkd-hidden-api"))
@@ -266,6 +266,7 @@ dependencies {
     implementation(libs.kotlinx.atomicfu)
 
     implementation(libs.reorderable)
+    implementation(libs.morph.compose)
 
     implementation(libs.androidx.splashscreen)
 

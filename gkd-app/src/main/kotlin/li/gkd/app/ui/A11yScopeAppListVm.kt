@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
+import li.gkd.app.text.UiStrings
 import li.gkd.app.MainViewModel
 import li.gkd.app.store.AppStore.a11yScopeAppListFlow
 import li.gkd.app.store.AppStore
@@ -80,9 +81,9 @@ class A11yScopeAppListVm(mainVm: MainViewModel) : BaseViewModel() {
     fun saveText() {
         if (textChanged) {
             AppStore.replaceA11yScopeAppList(AppListString.decode(textFlow.value))
-            toast("更新成功")
+            toast(UiStrings.update_success)
         } else {
-            toast("未修改")
+            toast(UiStrings.unchanged)
         }
         editableFlow.value = false
     }

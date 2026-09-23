@@ -8,10 +8,10 @@ import androidx.compose.ui.unit.dp
 
 val LockOpenRight: ImageVector
     get() {
-        if (_LockOpenRight != null) {
-            return _LockOpenRight!!
+        if (_lockOpenRight != null) {
+            return _lockOpenRight!!
         }
-        _LockOpenRight = ImageVector.Builder(
+        _lockOpenRight = ImageVector.Builder(
             name = "LockOpenRight",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
@@ -67,9 +67,7 @@ val LockOpenRight: ImageVector
                 close()
             }
         }.build()
-
-        return _LockOpenRight!!
+        return _lockOpenRight!!
     }
 
-@Suppress("ObjectPropertyName")
-private var _LockOpenRight: ImageVector? = null
+private var _lockOpenRight: ImageVector? = null

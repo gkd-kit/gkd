@@ -18,6 +18,7 @@ import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
+import li.gkd.app.text.UiStrings
 import li.gkd.app.data.GithubPoliciesAsset
 import li.songe.json5.Json5
 import java.io.File
@@ -61,117 +62,119 @@ private suspend fun graphqlFetch(
     }
 }
 
-// https://github.com/lisonge/user-attachments
-suspend fun uploadFileToGithub(
-    cookie: String,
-    file: File,
-    listener: ((progress: Float) -> Unit)
-): GithubPoliciesAsset {
-    // prepare upload asset
-    val policiesRawResp = client.post("https://github.com/upload/policies/assets") {
-        setCommonHeaders(cookie)
-        header("GitHub-Verified-Fetch", "true")
-        header("X-Requested-With", "XMLHttpRequest")
-        setBody(MultiPartFormDataContent(formData {
-            append("repository_id", "661952005")
-            append("name", "file.zip")
-            append("size", file.length().toString())
-            append("content_type", "application/x-zip-compressed")
-        }))
-    }
-    if (policiesRawResp.status == HttpStatusCode.Unauthorized) {
-        throw GithubCookieException("检测到 cookie 失效, 请更换")
-    }
-    val policiesResp = policiesRawResp.body<UploadPoliciesAssetsResponse>()
+object Github {
+    // https://github.com/lisonge/user-attachments
+    suspend fun uploadFileToGithub(
+        cookie: String,
+        file: File,
+        listener: ((progress: Float) -> Unit)
+    ): GithubPoliciesAsset {
+        // prepare upload asset
+        val policiesRawResp = client.post("https://github.com/upload/policies/assets") {
+            setCommonHeaders(cookie)
+            header("GitHub-Verified-Fetch", "true")
+            header("X-Requested-With", "XMLHttpRequest")
+            setBody(MultiPartFormDataContent(formData {
+                append("repository_id", "661952005")
+                append("name", "file.zip")
+                append("size", file.length().toString())
+                append("content_type", "application/x-zip-compressed")
+            }))
+        }
+        if (policiesRawResp.status == HttpStatusCode.Unauthorized) {
+            throw GithubCookieException(UiStrings.github_cookie_expired)
+        }
+        val policiesResp = policiesRawResp.body<UploadPoliciesAssetsResponse>()
 
-    // upload to s3
-    val byteArray = file.readBytes()
-    client.post(policiesResp.upload_url) {
-        // upload_url points to external storage, so GitHub credentials must not be sent.
-        setBody(MultiPartFormDataContent(formData {
-            policiesResp.form.forEach { (key, value) ->
-                append(key, value)
+        // upload to s3
+        val byteArray = file.readBytes()
+        client.post(policiesResp.upload_url) {
+            // upload_url points to external storage, so GitHub credentials must not be sent.
+            setBody(MultiPartFormDataContent(formData {
+                policiesResp.form.forEach { (key, value) ->
+                    append(key, value)
+                }
+                append("file", byteArray, Headers.build {
+                    append(HttpHeaders.ContentType, "application/x-zip-compressed")
+                    append(HttpHeaders.ContentDisposition, "filename=\"file.zip\"")
+                })
+            }))
+            onUpload { bytesSentTotal, contentLength ->
+                listener(bytesSentTotal / (contentLength ?: byteArray.size).toFloat())
             }
-            append("file", byteArray, Headers.build {
-                append(HttpHeaders.ContentType, "application/x-zip-compressed")
-                append(HttpHeaders.ContentDisposition, "filename=\"file.zip\"")
-            })
-        }))
-        onUpload { bytesSentTotal, contentLength ->
-            listener(bytesSentTotal / (contentLength ?: byteArray.size).toFloat())
         }
-    }
 
-    // check assets
-    client.put("https://github.com" + policiesResp.asset_upload_url) {
-        setCommonHeaders(cookie)
-        header("Accept", "application/json")
-        setBody(MultiPartFormDataContent(formData {
-            append("authenticity_token", policiesResp.asset_upload_authenticity_token)
-        }))
-    }
-
-    // send file url text to github comment
-    val commentResultResp = graphqlFetch(
-        cookie,
-        """
-        {
-            persistedQueryName: 'addCommentMutation',
-            query: 'edafa18ab5734f05c9893cbc92d0dfb1',
-            variables: {
-              connections: [
-                'client:I_kwDOJ3SWBc6viUWN:__Issue__backTimelineItems_connection(visibleEventsOnly:true)',
-              ],
-              input: {
-                body: '${policiesResp.asset.href}',
-                subjectId: 'I_kwDOJ3SWBc6viUWN',
-              },
-            },
+        // check assets
+        client.put("https://github.com" + policiesResp.asset_upload_url) {
+            setCommonHeaders(cookie)
+            header("Accept", "application/json")
+            setBody(MultiPartFormDataContent(formData {
+                append("authenticity_token", policiesResp.asset_upload_authenticity_token)
+            }))
         }
-        """.json5ToJsonString()
-    )
-    val commentResult = json.decodeFromString<JsonElement>(commentResultResp.bodyAsText())
 
-    // "xxx"
-    val commentId = (commentResult.jsonObject["data"]
-        ?.jsonObject["addComment"]
-        ?.jsonObject["timelineEdge"]
-        ?.jsonObject["node"]
-        ?.jsonObject["id"]?.toString() ?: error("commentId not found"))
-
-    // delay is needed
-    delay(1000)
-
-    // unsubscribe the comment
-    graphqlFetch(
-        cookie,
-        """
-        {
-            persistedQueryName: 'updateIssueSubscriptionMutation',
-            query: 'd0752b2e49295017f67c84f21bfe41a3',
-            variables: {
-                input: { state: 'UNSUBSCRIBED', subscribableId: 'I_kwDOJ3SWBc6viUWN' },
-            },
-        }
-        """.json5ToJsonString()
-    )
-
-    // delete the comment
-    graphqlFetch(
-        cookie,
-        """
-        {
-            persistedQueryName: 'deleteIssueCommentMutation',
-            query: 'b0f125991160e607a64d9407db9c01b3',
-            variables: {
-                connections: [
-                    'client:I_kwDOJ3SWBc6viUWN:__Issue__frontTimelineItems_connection(visibleEventsOnly:true)',
+        // send file url text to github comment
+        val commentResultResp = graphqlFetch(
+            cookie,
+            """
+            {
+                persistedQueryName: 'addCommentMutation',
+                query: 'edafa18ab5734f05c9893cbc92d0dfb1',
+                variables: {
+                  connections: [
                     'client:I_kwDOJ3SWBc6viUWN:__Issue__backTimelineItems_connection(visibleEventsOnly:true)',
-                ],
-                input: { id: $commentId },
-            },
-        }
-        """.json5ToJsonString()
-    )
-    return policiesResp.asset
+                  ],
+                  input: {
+                    body: '${policiesResp.asset.href}',
+                    subjectId: 'I_kwDOJ3SWBc6viUWN',
+                  },
+                },
+            }
+            """.json5ToJsonString()
+        )
+        val commentResult = json.decodeFromString<JsonElement>(commentResultResp.bodyAsText())
+
+        // "xxx"
+        val commentId = (commentResult.jsonObject["data"]
+            ?.jsonObject["addComment"]
+            ?.jsonObject["timelineEdge"]
+            ?.jsonObject["node"]
+            ?.jsonObject["id"]?.toString() ?: error("commentId not found"))
+
+        // delay is needed
+        delay(1000)
+
+        // unsubscribe the comment
+        graphqlFetch(
+            cookie,
+            """
+            {
+                persistedQueryName: 'updateIssueSubscriptionMutation',
+                query: 'd0752b2e49295017f67c84f21bfe41a3',
+                variables: {
+                    input: { state: 'UNSUBSCRIBED', subscribableId: 'I_kwDOJ3SWBc6viUWN' },
+                },
+            }
+            """.json5ToJsonString()
+        )
+
+        // delete the comment
+        graphqlFetch(
+            cookie,
+            """
+            {
+                persistedQueryName: 'deleteIssueCommentMutation',
+                query: 'b0f125991160e607a64d9407db9c01b3',
+                variables: {
+                    connections: [
+                        'client:I_kwDOJ3SWBc6viUWN:__Issue__frontTimelineItems_connection(visibleEventsOnly:true)',
+                        'client:I_kwDOJ3SWBc6viUWN:__Issue__backTimelineItems_connection(visibleEventsOnly:true)',
+                    ],
+                    input: { id: $commentId },
+                },
+            }
+            """.json5ToJsonString()
+        )
+        return policiesResp.asset
+    }
 }

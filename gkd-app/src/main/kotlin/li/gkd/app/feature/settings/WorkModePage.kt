@@ -1,9 +1,12 @@
 package li.gkd.app.feature.settings
 
+import li.gkd.app.ui.component.GkPageBottomSpace
+import li.gkd.app.MainViewModel
+
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,34 +38,31 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
+import li.gkd.app.text.UiStrings
 import li.gkd.app.META
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.service.A11yService
-import li.gkd.app.ui.component.AnimatedBooleanContent
 import li.gkd.app.ui.PrivilegeServiceRoute
 import li.gkd.app.ui.A11YScopeAppListRoute
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.PerfTopAppBar
-import li.gkd.app.ui.share.LocalMainViewModel
-import li.gkd.app.ui.style.EmptyHeight
-import li.gkd.app.ui.style.cardHorizontalPadding
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.surfaceCardColors
 import li.gkd.app.util.AutomatorModeOption
 import li.gkd.app.util.ShortUrlSet
 import li.gkd.app.ui.share.launchUiAction
 import li.gkd.app.util.IntentUtils
-import li.gkd.app.util.throttle
-import li.gkd.app.util.ToastUtils.toast
+import li.gkd.app.util.TimeUtils.throttle
+import li.gkd.app.ui.component.GkAnimatedBooleanContent
+import li.gkd.app.ui.component.GkIconButton
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkTopAppBar
 
 @Serializable
 data object WorkModeRoute : NavKey
 
 @Composable
 fun WorkModePage() {
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel<WorkModeVm>()
     val writeSecureSettings by PermissionStates.writeSecureSettings.stateFlow.collectAsStateWithLifecycle()
     val a11yRunning by A11yService.isRunning.collectAsStateWithLifecycle()
@@ -70,14 +70,14 @@ fun WorkModePage() {
     val automatorMode by mainVm.automatorModeFlow.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
-            PerfIconButton(
-                imageVector = PerfIcon.ArrowBack,
+        GkTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
+            GkIconButton(
+                imageVector = GkIcons.ArrowBack,
                 onClick = {
                     mainVm.popPage()
                 })
         }, title = {
-            Text(text = "工作模式")
+            Text(text = UiStrings.work_mode_title)
         })
     }) { contentPadding ->
         Column(
@@ -94,7 +94,7 @@ fun WorkModePage() {
                 colors = surfaceCardColors,
             ) {
                 Row(
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.padding(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     RadioButton(
@@ -109,133 +109,158 @@ fun WorkModePage() {
                 }
                 Text(
                     modifier = Modifier
-                        .padding(horizontal = cardHorizontalPadding)
-                        .padding(start = 4.dp),
-                    text = "基础",
+                        .padding(horizontal = 20.dp),
+                    text = UiStrings.work_mode_basic,
                     style = MaterialTheme.typography.titleSmall
                 )
                 TextListItem(
                     modifier = Modifier
-                        .padding(horizontal = cardHorizontalPadding)
-                        .padding(start = 8.dp, top = 4.dp),
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 8.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     list = listOf(
-                        "授予「无障碍权限」",
-                        "无障碍关闭后需重新授权"
+                        UiStrings.a11y_permission_grant,
+                        UiStrings.a11y_permission_regrant_description
                     ),
                 )
-                AnimatedBooleanContent(
+                GkAnimatedBooleanContent(
                     targetState = writeSecureSettings || a11yRunning,
                     contentTrue = {
                         Text(
                             modifier = Modifier
-                                .padding(horizontal = cardHorizontalPadding)
-                                .padding(start = 8.dp, top = 4.dp),
-                            text = "已持有「无障碍权限」可继续使用",
+                                .padding(horizontal = 20.dp)
+                                .padding(top = 8.dp),
+                            text = UiStrings.a11y_permission_ready,
                             style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     },
                     contentFalse = {
-                        Row(
+                        FlowRow(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = cardHorizontalPadding),
-                            verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                                .padding(horizontal = 20.dp)
+                                .padding(top = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
                             TextButton(
                                 onClick = throttle { IntentUtils.openA11ySettings() },
                             ) {
                                 Text(
-                                    text = "手动授权",
+                                    text = UiStrings.a11y_enable,
                                     style = MaterialTheme.typography.bodyLarge,
                                 )
                             }
-                            Text(
-                                modifier = Modifier
-                                    .padding(bottom = 12.dp)
-                                    .clip(MaterialTheme.shapes.extraSmall)
-                                    .clickable(onClick = throttle {
-                                        mainVm.navigateWebPage(ShortUrlSet.URL2)
-                                    })
-                                    .padding(horizontal = 4.dp),
-                                text = "无法开启无障碍?",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
+                            TextButton(
+                                onClick = throttle {
+                                    mainVm.navigateWebPage(ShortUrlSet.URL2)
+                                },
+                            ) {
+                                Text(
+                                    text = UiStrings.help_view,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                            }
                         }
                     }
                 )
                 Text(
                     modifier = Modifier
-                        .padding(horizontal = cardHorizontalPadding)
-                        .padding(start = 4.dp, top = 8.dp),
-                    text = "增强",
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 20.dp),
+                    text = UiStrings.work_mode_enhanced,
                     style = MaterialTheme.typography.titleSmall,
                 )
                 TextListItem(
                     modifier = Modifier
-                        .padding(horizontal = cardHorizontalPadding)
-                        .padding(start = 8.dp, top = 4.dp),
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 8.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     list = listOf(
-                        "授予「写入安全设置权限」",
-                        "应用可自行控制开关无障碍",
+                        UiStrings.secure_settings_permission_grant,
+                        UiStrings.secure_settings_permission_description,
                     ),
                 )
-                AnimatedBooleanContent(
+                GkAnimatedBooleanContent(
                     targetState = writeSecureSettings,
                     contentTrue = {
                         Text(
                             modifier = Modifier
-                                .padding(horizontal = cardHorizontalPadding)
-                                .padding(start = 8.dp, top = 4.dp),
-                            text = "已持有「写入安全设置权限」 优先使用此项",
+                                .padding(horizontal = 20.dp)
+                                .padding(top = 8.dp),
+                            text = UiStrings.secure_settings_permission_granted,
                             style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     },
-                    contentFalse = {
-                        PrivilegeAuthButton(
-                            modifier = Modifier.padding(horizontal = cardHorizontalPadding),
+                    contentFalse = {},
+                )
+                FlowRow(
+                    modifier = Modifier
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    if (!writeSecureSettings) {
+                        PrivilegeAuthButton()
+                    }
+                    TextButton(
+                        onClick = throttle(vm.scope.launchUiAction {
+                            val tutorialText = UiStrings.keep_alive_tile_description(META.appName) +
+                                    UiStrings.keep_alive_setup_heading +
+                                    UiStrings.keep_alive_setup_open_tiles +
+                                    UiStrings.keep_alive_setup_add_tile(META.appName) +
+                                    UiStrings.keep_alive_setup_place_tile
+                            if (writeSecureSettings) {
+                                mainVm.dialogRequests.showMessage(
+                                    title = UiStrings.keep_alive_title,
+                                    text = tutorialText,
+                                )
+                            } else if (mainVm.dialogRequests.confirm(
+                                    title = UiStrings.keep_alive_title,
+                                    text = tutorialText + UiStrings.keep_alive_permission_missing +
+                                            UiStrings.keep_alive_permission_description,
+                                    confirmText = UiStrings.settings_go_to,
+                                    dismissText = UiStrings.action_close,
+                                    dismissOnRequest = true,
+                                )
+                            ) {
+                                mainVm.navigatePage(PrivilegeServiceRoute)
+                            }
+                        })
+                    ) {
+                        Text(
+                            text = UiStrings.keep_alive_title,
+                            style = MaterialTheme.typography.bodyLarge,
                         )
                     }
-                )
-                TextButton(
-                    modifier = Modifier
-                        .padding(horizontal = cardHorizontalPadding),
-                    onClick = throttle(vm.scope.launchUiAction {
-                        if (!writeSecureSettings) {
-                            toast("请先授予「${PermissionStates.writeSecureSettings.name}」")
-                        }
-                        mainVm.dialogRequests.showMessage(
-                            title = "无感保活",
-                            text = "添加通知栏快捷开关\n\n1. 下拉通知栏至「快捷开关」标界面\n2. 找到名称为 ${META.appName} 的快捷开关\n3. 添加此开关到通知面板 \n\n只要此快捷开关在通知面板可见\n无论是系统杀后台还是自身崩溃\n简单下拉打开通知即可重启"
-                        )
-                    })
-                ) {
-                    Text(
-                        text = "无感保活",
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
             Spacer(modifier = Modifier.height(12.dp))
             Card(
                 modifier = Modifier
                     .padding(horizontal = itemHorizontalPadding)
                     .fillMaxWidth(),
-                onClick = throttle {
+                onClick = vm.scope.launchUiAction {
                     if (privilegeContext == null) {
-                        mainVm.navigatePage(PrivilegeServiceRoute)
-                        return@throttle
+                        if (mainVm.dialogRequests.confirm(
+                                title = UiStrings.privilege_service_required,
+                                text = UiStrings.automation_privilege_required_description,
+                                confirmText = UiStrings.settings_go_to,
+                                dismissOnRequest = true,
+                            )
+                        ) {
+                            mainVm.navigatePage(PrivilegeServiceRoute)
+                        }
+                    } else {
+                        mainVm.updateAutomatorMode(AutomatorModeOption.AutomationMode)
                     }
-                    mainVm.updateAutomatorMode(AutomatorModeOption.AutomationMode)
                 },
                 colors = surfaceCardColors,
             ) {
                 Row(
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.padding(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     RadioButton(
@@ -250,49 +275,49 @@ fun WorkModePage() {
                 }
                 TextListItem(
                     modifier = Modifier
-                        .padding(horizontal = cardHorizontalPadding)
-                        .padding(start = 8.dp),
+                        .padding(horizontal = 20.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     list = listOf(
-                        "自动化驱动的无障碍",
-                        "不会导致界面显示异常",
-                        "不会被应用检测为无障碍",
-                        "若不兼容可配置「局部无障碍」",
+                        UiStrings.automation_a11y_description,
+                        UiStrings.automation_no_display_issues,
+                        UiStrings.automation_undetectable_a11y,
+                        UiStrings.automation_scope_compatibility_hint,
                     ),
                 )
-                AnimatedBooleanContent(
+                GkAnimatedBooleanContent(
                     targetState = privilegeContext != null,
                     contentTrue = {
                         Text(
                             modifier = Modifier
-                                .padding(horizontal = cardHorizontalPadding)
-                                .padding(start = 8.dp, top = 8.dp),
-                            text = "已连接特权服务，可继续使用",
+                                .padding(horizontal = 20.dp)
+                                .padding(top = 8.dp),
+                            text = UiStrings.privilege_service_connected,
                             style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     },
-                    contentFalse = {
-                        PrivilegeAuthButton(
-                            modifier = Modifier.padding(
-                                start = cardHorizontalPadding
-                            )
+                    contentFalse = {},
+                )
+                FlowRow(
+                    modifier = Modifier
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    TextButton(
+                        onClick = throttle {
+                            mainVm.navigatePage(A11YScopeAppListRoute)
+                        },
+                    ) {
+                        Text(
+                            text = UiStrings.a11y_scoped,
+                            style = MaterialTheme.typography.bodyLarge,
                         )
                     }
-                )
-                TextButton(
-                    modifier = Modifier.padding(start = cardHorizontalPadding),
-                    onClick = throttle {
-                        mainVm.navigatePage(A11YScopeAppListRoute)
-                    },
-                ) {
-                    Text(
-                        text = "局部无障碍",
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
-            Spacer(modifier = Modifier.height(EmptyHeight))
+            GkPageBottomSpace()
         }
     }
 
@@ -302,7 +327,7 @@ fun WorkModePage() {
 private fun PrivilegeAuthButton(
     modifier: Modifier = Modifier,
 ) {
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     TextButton(
         modifier = modifier,
         onClick = throttle {
@@ -310,7 +335,7 @@ private fun PrivilegeAuthButton(
         },
     ) {
         Text(
-            text = "特权服务",
+            text = UiStrings.permission_grant,
             style = MaterialTheme.typography.bodyLarge,
         )
     }
@@ -325,7 +350,7 @@ private fun TextListItem(
     val lineHeightDp = LocalDensity.current.run { style.lineHeight.toDp() }
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         list.forEach { text ->
             Row {

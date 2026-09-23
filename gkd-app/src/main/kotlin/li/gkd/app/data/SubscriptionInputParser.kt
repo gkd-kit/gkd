@@ -1,5 +1,6 @@
 package li.gkd.app.data
 
+import li.gkd.app.text.UiStrings
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -51,14 +52,14 @@ class SubscriptionInputParser private constructor(
     }
 
     private fun requireExpectedAppId(expectedAppId: String) {
-        val id = jsonObject["id"] ?: error("缺少id")
+        val id = jsonObject["id"] ?: error(UiStrings.rule_id_required)
         if (id !is JsonPrimitive || !id.isString || id.content != expectedAppId) {
-            error("id与当前应用不一致")
+            error(UiStrings.rule_app_id_mismatch)
         }
     }
 
     private fun RawSubscription.RawApp.requireGroups(): RawSubscription.RawApp {
-        if (groups.isEmpty()) error("至少输入一个规则")
+        if (groups.isEmpty()) error(UiStrings.rule_input_required)
         return this
     }
 
@@ -70,7 +71,7 @@ class SubscriptionInputParser private constructor(
     private fun <T> parseRule(block: () -> T): T = try {
         block()
     } catch (e: Exception) {
-        error("非法规则\n${e.message}")
+        error(UiStrings.rule_invalid_detail(e.message))
     }
 
     companion object {
@@ -81,9 +82,9 @@ class SubscriptionInputParser private constructor(
             val element = try {
                 Json5.parseToJsonElement(source)
             } catch (e: Exception) {
-                error("非法格式\n${e.message}")
+                error(UiStrings.format_invalid_detail(e.message))
             }
-            if (element !is JsonObject) error("规则应为对象格式")
+            if (element !is JsonObject) error(UiStrings.rule_object_required)
             return SubscriptionInputParser(element.fillGroupKeys(defaultGroupKey))
         }
 

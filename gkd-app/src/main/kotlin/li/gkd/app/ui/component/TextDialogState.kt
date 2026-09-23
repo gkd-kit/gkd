@@ -18,8 +18,9 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
+import li.gkd.app.text.UiStrings
 import li.gkd.app.util.IntentUtils
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
 
 private data class TextDialogRequest(
     val text: String,
@@ -62,10 +63,10 @@ class TextDialogState {
         val currentRequest = request
         if (currentRequest != null) {
             val text = remember(currentRequest.text) { AnnotatedString(currentRequest.text) }
-            AppAlertDialog(
+            GkAlertDialog(
                 onDismissRequest = ::dismiss,
                 title = {
-                    Text(text = if (currentRequest.openable) "查看链接" else "查看文本")
+                    Text(text = if (currentRequest.openable) UiStrings.link_view else UiStrings.text_view)
                 },
                 text = {
                     Surface(
@@ -75,7 +76,7 @@ class TextDialogState {
                         shape = MaterialTheme.shapes.small,
                         color = MaterialTheme.colorScheme.surfaceVariant,
                     ) {
-                        CopyableText(
+                        GkCopyableText(
                             text = text,
                             modifier = Modifier.fillMaxWidth(),
                             contentPadding = PaddingValues(12.dp),
@@ -89,11 +90,11 @@ class TextDialogState {
                         horizontalArrangement = Arrangement.End,
                     ) {
                         TextButton(onClick = throttle(::dismiss)) {
-                            Text(text = "关闭")
+                            Text(text = UiStrings.action_close)
                         }
                         if (currentRequest.openable) {
                             TextButton(onClick = throttle { open(currentRequest) }) {
-                                Text(text = "打开")
+                                Text(text = UiStrings.action_open)
                             }
                         }
                     }

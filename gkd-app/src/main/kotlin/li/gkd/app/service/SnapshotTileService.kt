@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.isActive
+import li.gkd.app.text.UiStrings
 import li.gkd.app.a11y.A11yRuntime
 import li.gkd.app.appScope
 import li.gkd.app.ui.share.launchUi
@@ -22,7 +23,7 @@ private fun execSnapshot() {
     val service = A11yRuntime.service
     if (service == null) {
         A11yRuntime.performActionBack()
-        toast("服务未连接", forced = true)
+        toast(UiStrings.service_not_connected, forced = true)
         return
     }
     appScope.launchUi(Dispatchers.IO) {
@@ -30,7 +31,7 @@ private fun execSnapshot() {
 
         if (oldAppId == null) {
             A11yRuntime.performActionBack()
-            toast("获取信息根节点失败", forced = true)
+            toast(UiStrings.snapshot_root_node_failed, forced = true)
             return@launchUi
         }
 
@@ -46,7 +47,7 @@ private fun execSnapshot() {
                 // https://github.com/gkd-kit/gkd/issues/713
                 delay(250)
                 if (timeout()) {
-                    toast("当前应用没有无障碍信息，捕获失败", forced = true)
+                    toast(UiStrings.snapshot_app_a11y_missing, forced = true)
                     break
                 }
             } else if (latestAppId != oldAppId) {
@@ -58,7 +59,7 @@ private fun execSnapshot() {
                 A11yRuntime.performActionBack()
                 delay(500)
                 if (timeout()) {
-                    toast("未检测到界面切换，捕获失败", forced = true)
+                    toast(UiStrings.snapshot_activity_switch_missing, forced = true)
                     break
                 }
             }

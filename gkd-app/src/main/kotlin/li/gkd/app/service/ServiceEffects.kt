@@ -1,6 +1,7 @@
 package li.gkd.app.service
 
 import kotlinx.coroutines.flow.MutableStateFlow
+import li.gkd.app.text.UiStrings
 import li.gkd.app.notif.StopServiceReceiver
 import li.gkd.app.util.ToastUtils.toast
 import li.songe.codeorigin.CallSite
@@ -13,11 +14,11 @@ fun LifecycleHookService.useServicePresence(
 ) {
     onCreated {
         stateFlow.value = true
-        toast("${name}已启动", delayMillis = startToastDelayMillis, loc = loc)
+        toast(UiStrings.service_started(name), delayMillis = startToastDelayMillis, loc = loc)
     }
     onDestroyed(loc = loc) {
         stateFlow.value = false
-        toast("${name}已关闭", loc = loc)
+        toast(UiStrings.service_stopped(name), loc = loc)
     }
 }
 

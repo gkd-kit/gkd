@@ -1,6 +1,7 @@
 package li.gkd.app.util
 
 import android.net.Uri
+import li.gkd.app.text.UiStrings
 import li.gkd.app.app
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -15,7 +16,7 @@ object UriUtils {
                 val size = input.read(buffer)
                 if (size < 0) break
                 if (output.size() + size > maxBytes) {
-                    throw IOException("文件超过大小限制")
+                    throw IOException(UiStrings.file_too_large)
                 }
                 output.write(buffer, 0, size)
             }

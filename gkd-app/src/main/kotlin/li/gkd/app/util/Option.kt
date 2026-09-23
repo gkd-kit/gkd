@@ -1,7 +1,8 @@
 package li.gkd.app.util
 
 import androidx.compose.ui.graphics.vector.ImageVector
-import li.gkd.app.ui.component.PerfIcon
+import li.gkd.app.text.UiStrings
+import li.gkd.app.ui.component.GkIcons
 
 sealed interface Option<T> {
     val value: T
@@ -13,10 +14,6 @@ sealed interface OptionIcon {
     val icon: ImageVector
 }
 
-sealed interface OptionMenuLabel {
-    val menuLabel: String
-}
-
 fun <V, T : Option<V>> Iterable<T>.findOption(value: V): T {
     return find { it.value == value } ?: first()
 }
@@ -24,9 +21,9 @@ fun <V, T : Option<V>> Iterable<T>.findOption(value: V): T {
 sealed class AppSortOption(override val value: Int, override val label: String) : Option<Int> {
     override val options get() = objects
 
-    data object ByAppName : AppSortOption(0, "按应用名称")
-    data object ByActionTime : AppSortOption(2, "按最近触发")
-    data object ByUsedTime : AppSortOption(3, "按最近使用")
+    data object ByAppName : AppSortOption(0, UiStrings.app_sort_name)
+    data object ByActionTime : AppSortOption(2, UiStrings.app_sort_recent_trigger)
+    data object ByUsedTime : AppSortOption(3, UiStrings.app_sort_recent_used)
 
     companion object {
         val objects by lazy { listOf(ByAppName, ByUsedTime, ByActionTime) }
@@ -39,10 +36,10 @@ sealed class UpdateTimeOption(
 ) : Option<Long> {
     override val options get() = objects
 
-    data object Pause : UpdateTimeOption(-1, "暂停")
-    data object Everyday : UpdateTimeOption(24 * 60 * 60_000, "每天")
-    data object Every3Days : UpdateTimeOption(24 * 60 * 60_000 * 3, "每3天")
-    data object Every7Days : UpdateTimeOption(24 * 60 * 60_000 * 7, "每7天")
+    data object Pause : UpdateTimeOption(-1, UiStrings.action_pause)
+    data object Everyday : UpdateTimeOption(24 * 60 * 60_000, UiStrings.update_interval_daily)
+    data object Every3Days : UpdateTimeOption(24 * 60 * 60_000 * 3, UiStrings.update_interval_three_days)
+    data object Every7Days : UpdateTimeOption(24 * 60 * 60_000 * 7, UiStrings.update_interval_weekly)
 
     companion object {
         val objects by lazy { listOf(Pause, Everyday, Every3Days, Every7Days) }
@@ -52,17 +49,16 @@ sealed class UpdateTimeOption(
 sealed class DarkThemeOption(
     override val value: Boolean?,
     override val label: String,
-    override val menuLabel: String,
     override val icon: ImageVector
-) : Option<Boolean?>, OptionIcon, OptionMenuLabel {
+) : Option<Boolean?>, OptionIcon {
     override val options get() = objects
 
-    data object FollowSystem : DarkThemeOption(null, "自动", "自动", PerfIcon.AutoMode)
-    data object AlwaysEnable : DarkThemeOption(true, "启用", "深色", PerfIcon.DarkMode)
-    data object AlwaysDisable : DarkThemeOption(false, "关闭", "浅色", PerfIcon.LightMode)
+    data object FollowSystem : DarkThemeOption(null, UiStrings.theme_auto, GkIcons.BrightnessAuto)
+    data object AlwaysEnable : DarkThemeOption(true, UiStrings.theme_dark, GkIcons.DarkMode)
+    data object AlwaysDisable : DarkThemeOption(false, UiStrings.theme_light, GkIcons.LightMode)
 
     companion object {
-        val objects by lazy { listOf(FollowSystem, AlwaysEnable, AlwaysDisable) }
+        val objects by lazy { listOf(FollowSystem, AlwaysDisable, AlwaysEnable) }
     }
 }
 
@@ -72,9 +68,9 @@ sealed class EnableGroupOption(
 ) : Option<Boolean?> {
     override val options get() = objects
 
-    data object FollowSubs : EnableGroupOption(null, "跟随订阅")
-    data object AllEnable : EnableGroupOption(true, "全部启用")
-    data object AllDisable : EnableGroupOption(false, "全部关闭")
+    data object FollowSubs : EnableGroupOption(null, UiStrings.category_follow_subscription)
+    data object AllEnable : EnableGroupOption(true, UiStrings.rules_enable_all)
+    data object AllDisable : EnableGroupOption(false, UiStrings.settings_all_off)
 
     companion object {
         val objects by lazy { listOf(FollowSubs, AllEnable, AllDisable) }
@@ -84,9 +80,9 @@ sealed class EnableGroupOption(
 sealed class RuleSortOption(override val value: Int, override val label: String) : Option<Int> {
     override val options get() = objects
 
-    data object ByDefault : RuleSortOption(0, "按默认顺序")
-    data object ByActionTime : RuleSortOption(1, "按最近触发")
-    data object ByRuleName : RuleSortOption(2, "按规则名称")
+    data object ByDefault : RuleSortOption(0, UiStrings.rule_sort_default)
+    data object ByActionTime : RuleSortOption(1, UiStrings.app_sort_recent_trigger)
+    data object ByRuleName : RuleSortOption(2, UiStrings.rule_sort_name)
 
     companion object {
         val objects by lazy { listOf(ByDefault, ByActionTime, ByRuleName) }
@@ -102,13 +98,13 @@ sealed class UpdateChannelOption(
 
     data object Stable : UpdateChannelOption(
         0,
-        "稳定版",
+        UiStrings.update_channel_stable,
         "https://registry.npmmirror.com/@gkd-kit/app/latest/files/index.json"
     )
 
     data object Beta : UpdateChannelOption(
         1,
-        "测试版",
+        UiStrings.update_channel_beta,
         "https://registry.npmmirror.com/@gkd-kit/app-beta/latest/files/index.json"
     )
 
@@ -135,9 +131,9 @@ sealed class AppGroupOption(
 ) : BinaryOption {
     override val options get() = allObjects
 
-    data object SystemGroup : AppGroupOption(1 shl 0, "系统应用")
-    data object UserGroup : AppGroupOption(1 shl 1, "用户应用")
-    data object UnInstalledGroup : AppGroupOption(1 shl 2, "未安装应用")
+    data object SystemGroup : AppGroupOption(1 shl 0, UiStrings.apps_system)
+    data object UserGroup : AppGroupOption(1 shl 1, UiStrings.apps_user)
+    data object UnInstalledGroup : AppGroupOption(1 shl 2, UiStrings.apps_not_installed)
 
     companion object {
         val normalObjects by lazy { listOf(SystemGroup, UserGroup) }
@@ -151,11 +147,10 @@ sealed class AutomatorModeOption(
 ) : Option<Int> {
     override val options get() = objects
 
-    data object A11yMode : AutomatorModeOption(1, "无障碍")
-    data object AutomationMode : AutomatorModeOption(2, "自动化")
+    data object A11yMode : AutomatorModeOption(1, UiStrings.a11y_label)
+    data object AutomationMode : AutomatorModeOption(2, UiStrings.automation_label)
 
     companion object {
         val objects by lazy { listOf(A11yMode, AutomationMode) }
     }
 }
-

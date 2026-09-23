@@ -1,5 +1,6 @@
 package li.gkd.app.feature.snapshot
 
+import li.gkd.app.text.UiStrings
 import li.gkd.app.store.AppStore.storeFlow
 import li.gkd.app.store.AppStore
 import li.gkd.app.ui.share.BaseViewModel
@@ -21,14 +22,14 @@ class SnapshotSettingsVm : BaseViewModel() {
             return true
         }
         if (appId.isNotEmpty() && !AppInfoRepository.appInfoMapFlow.value.contains(appId)) {
-            toast("无效应用ID")
+            toast(UiStrings.app_id_invalid)
             return false
         }
         if (
             eventSelector.isNotEmpty() &&
             Selector.compile(eventSelector) is SelectorCompileResult.Failure
         ) {
-            toast("无效事件选择器")
+            toast(UiStrings.event_selector_invalid)
             return false
         }
         AppStore.updateSettings {
@@ -37,7 +38,7 @@ class SnapshotSettingsVm : BaseViewModel() {
                 screenshotEventSelector = eventSelector,
             )
         }
-        toast("更新成功")
+        toast(UiStrings.update_success)
         return true
     }
 
@@ -54,7 +55,7 @@ class SnapshotSettingsVm : BaseViewModel() {
                     store.screenshotEventSelector.isEmpty()
             )
         ) {
-            toast("请配置目标应用和特征事件选择器")
+            toast(UiStrings.snapshot_trigger_config_required)
         }
     }
 

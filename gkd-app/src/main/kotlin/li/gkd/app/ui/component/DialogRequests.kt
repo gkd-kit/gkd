@@ -17,12 +17,13 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import li.gkd.app.util.throttle
+import li.gkd.app.text.UiStrings
+import li.gkd.app.util.TimeUtils.throttle
 import kotlin.coroutines.resume
 
-private const val DEFAULT_MESSAGE_CONFIRM_TEXT = "我知道了"
-private const val DEFAULT_CONFIRM_TEXT = "确定"
-private const val DEFAULT_DISMISS_TEXT = "取消"
+private const val DEFAULT_MESSAGE_CONFIRM_TEXT = UiStrings.action_understood
+private const val DEFAULT_CONFIRM_TEXT = UiStrings.action_ok
+private const val DEFAULT_DISMISS_TEXT = UiStrings.action_cancel
 
 data class DialogRequest(
     val title: String,
@@ -110,7 +111,7 @@ class DialogRequests {
         val request by currentRequest.collectAsStateWithLifecycle()
         val currentRequest = request
         if (currentRequest != null) {
-            AppAlertDialog(
+            GkAlertDialog(
                 title = { Text(text = currentRequest.title) },
                 text = { Text(text = currentRequest.text) },
                 onDismissRequest = {

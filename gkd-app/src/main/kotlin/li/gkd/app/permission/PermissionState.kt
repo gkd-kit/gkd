@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.updateAndGet
+import li.gkd.app.text.UiStrings
 import li.gkd.app.app
 import li.gkd.app.appScope
 import li.gkd.app.priv.privilegeContextFlow
@@ -29,6 +30,7 @@ class PermissionState(
     val purpose: String? = null,
     val resolution: PermissionResolution? = null,
     private val onChanged: (() -> Unit)? = null,
+    val recheckPolicy: PermissionRecheckPolicy = PermissionRecheckPolicy.Immediate,
 ) {
     val stateFlow: StateFlow<Boolean>
         field = MutableStateFlow(false)
@@ -50,7 +52,7 @@ class PermissionState(
     fun checkOrToast(@CallSite loc: String = ""): Boolean {
         val granted = refresh()
         if (!granted) {
-            toast("请先授予「$name」", loc = loc)
+            toast(UiStrings.permission_required(name), loc = loc)
         }
         return granted
     }
@@ -58,7 +60,7 @@ class PermissionState(
 
 data class PermissionResolution(
     val message: String,
-    val confirmText: String = "去设置",
+    val confirmText: String = UiStrings.permission_open_settings,
     val navigateToPrivilegeService: Boolean = false,
 )
 
@@ -68,15 +70,17 @@ private fun requestablePermissionState(
     permission: IPermission,
     check: () -> Boolean = { XXPermissions.isGrantedPermission(app, permission) },
     onChanged: (() -> Unit)? = null,
+    recheckPolicy: PermissionRecheckPolicy = PermissionRecheckPolicy.Immediate,
 ) = PermissionState(
     name = name,
     check = check,
     permission = permission,
     purpose = purpose,
     resolution = PermissionResolution(
-        message = "未授予「$name」\n请前往系统权限设置开启",
+        message = UiStrings.permission_not_granted_description(name),
     ),
     onChanged = onChanged,
+    recheckPolicy = recheckPolicy,
 )
 
 private fun checkAllowedOp(op: String): Boolean = app.appOpsManager.checkOpNoThrow(
@@ -93,7 +97,7 @@ object PermissionStates {
     // https://github.com/gkd-kit/gkd/issues/887
     val foregroundServiceSpecialUse by lazy {
         PermissionState(
-            name = "特殊用途的前台服务",
+            name = UiStrings.permission_special_foreground_service,
             check = {
                 if (AndroidTarget.UPSIDE_DOWN_CAKE) {
                     checkAllowedOp(AppOpsManagerHidden.OPSTR_FOREGROUND_SERVICE_SPECIAL_USE)
@@ -102,8 +106,8 @@ object PermissionStates {
                 }
             },
             resolution = PermissionResolution(
-                message = "「特殊用途的前台服务」已被限制，请前往特权服务重新授权",
-                confirmText = "去授权",
+                message = UiStrings.permission_special_foreground_service_restricted,
+                confirmText = UiStrings.permission_go_authorize,
                 navigateToPrivilegeService = true,
             ),
         )
@@ -139,7 +143,7 @@ object PermissionStates {
 
     private val appOpsAllowed by lazy {
         PermissionState(
-            name = "启动相关操作权限",
+            name = UiStrings.permission_start_operations,
             check = {
                 val accessA11yAllowed = checkAccessA11y()
                 val accessRestrictedSettingsAllowed = checkAccessRestrictedSettings()
@@ -159,24 +163,24 @@ object PermissionStates {
 
     val notification by lazy {
         requestablePermissionState(
-            name = "通知权限",
-            purpose = "用于显示后台服务运行状态与必要通知",
+            name = UiStrings.permission_notifications,
+            purpose = UiStrings.permission_notifications_description,
             permission = PermissionLists.getPostNotificationsPermission(),
         )
     }
 
     val localNetwork by lazy {
         requestablePermissionState(
-            name = "访问本地网络权限",
-            purpose = "用于通过无线调试连接特权服务及允许局域网设备访问 HTTP 服务",
+            name = UiStrings.permission_local_network,
+            purpose = UiStrings.permission_local_network_description,
             permission = PermissionLists.getAccessLocalNetworkPermission(),
         )
     }
 
     val queryPackages by lazy {
         requestablePermissionState(
-            name = "读取应用列表权限",
-            purpose = "用于展示设备应用并匹配应用规则",
+            name = UiStrings.permission_query_apps,
+            purpose = UiStrings.permission_query_apps_description,
             permission = PermissionLists.getGetInstalledAppsPermission(),
             onChanged = {
                 AppInfoRepository.requestRefresh()
@@ -186,8 +190,8 @@ object PermissionStates {
 
     val drawOverlays by lazy {
         requestablePermissionState(
-            name = "悬浮窗权限",
-            purpose = "用于显示快照按钮、界面信息和事件提示等悬浮内容",
+            name = UiStrings.permission_overlay,
+            purpose = UiStrings.permission_overlay_description,
             permission = PermissionLists.getSystemAlertWindowPermission(),
             check = {
                 // https://developer.android.com/security/fraud-prevention/activities?hl=zh-cn#hide_overlay_windows
@@ -198,8 +202,8 @@ object PermissionStates {
 
     val writeExternalStorage by lazy {
         requestablePermissionState(
-            name = "写入外部存储权限",
-            purpose = "用于在 Android 9 及以下保存截图或文件到公共存储",
+            name = UiStrings.permission_external_storage,
+            purpose = UiStrings.permission_external_storage_description,
             permission = PermissionLists.getWriteExternalStoragePermission(),
             check = {
                 if (AndroidTarget.Q) {
@@ -213,9 +217,10 @@ object PermissionStates {
 
     val ignoreBatteryOptimizations by lazy {
         requestablePermissionState(
-            name = "忽略电池优化权限",
-            purpose = "用于降低后台服务被系统休眠或终止的概率",
+            name = UiStrings.permission_ignore_battery_optimization,
+            purpose = UiStrings.permission_ignore_battery_optimization_description,
             permission = PermissionLists.getRequestIgnoreBatteryOptimizationsPermission(),
+            recheckPolicy = PermissionRecheckPolicy.Settings,
             check = {
                 app.powerManager.isIgnoringBatteryOptimizations(app.packageName)
             },
@@ -224,14 +229,14 @@ object PermissionStates {
 
     val writeSecureSettings by lazy {
         PermissionState(
-            name = "写入安全设置权限",
+            name = UiStrings.permission_write_secure_settings,
             check = { app.checkGrantedPermission(Manifest.permission.WRITE_SECURE_SETTINGS) },
         )
     }
 
     val privilegeGranted by lazy {
         PermissionState(
-            name = "特权服务",
+            name = UiStrings.privilege_service,
             check = {
                 privilegeContextFlow.value != null && Privilege.pingServer()
             },

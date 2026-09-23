@@ -42,7 +42,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
-import li.gkd.app.ui.component.AppAlertDialog
+import li.gkd.app.ui.component.GkAlertDialog
 
 class PermissionRequestContent(
     private val coordinator: PermissionRequestCoordinator,
@@ -82,7 +82,7 @@ class PermissionRequestContent(
     private fun RequestDialog() {
         val state = coordinator.dialog.collectAsStateWithLifecycle().value
         if (state != null) {
-            AppAlertDialog(
+            GkAlertDialog(
                 title = {
                     Text(text = state.title)
                 },

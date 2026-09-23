@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
+import li.gkd.app.text.UiStrings
 import li.gkd.app.app
 import li.gkd.app.appScope
 import li.gkd.app.permission.PermissionStates
@@ -54,7 +55,7 @@ private suspend fun updatePrivilegeContext(serverInfo: PrivilegeServerInfo?) =
             }
 
             if (!app.justStarted) {
-                toast("正在连接特权服务...")
+                toast(UiStrings.privilege_service_connecting)
             }
             val userServiceConnection = Privilege.bindUserService(userServiceSpec)
             val privilegeContext = PrivilegeContext.create(serverInfo, userServiceConnection)
@@ -76,11 +77,11 @@ private suspend fun updatePrivilegeContext(serverInfo: PrivilegeServerInfo?) =
                 )
             }
             val delayMillis = if (app.justStarted) 1200L else 0L
-            toast("特权服务连接成功", delayMillis = delayMillis)
+            toast(UiStrings.privilege_service_connect_success, delayMillis = delayMillis)
         } else if (oldContext != null) {
             clearPrivilegeContext(oldContext)
             PermissionStates.refreshAll()
-            toast("特权服务已断开")
+            toast(UiStrings.privilege_service_disconnected)
         }
     }
 
@@ -94,7 +95,7 @@ fun initPrivilege() {
                 throw e
             } catch (e: Throwable) {
                 LogUtils.d("update PrivilegeContext failed", e)
-                toast("特权服务状态更新失败：${e.message}")
+                toast(UiStrings.privilege_service_state_update_failed(e.message))
             }
         }
     }

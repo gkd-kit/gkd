@@ -4,13 +4,28 @@ import li.gkd.app.data.ExcludeData
 import li.gkd.app.data.RawSubscription
 import li.gkd.db.SubsAppGroupConfig
 import li.gkd.db.SubsCategoryConfig
-import li.gkd.db.RuleGroupType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
 
 class RuleGroupPolicyTest {
+    @Test
+    fun explanationDistinguishesSubscriptionInheritanceFromExplicitGroupDefaultsAndManualOverrides() {
+        val group = subscription.apps.single().groups.single()
+        val category = subscription.categories.single()
+        val explicitDefault = SubsCategoryConfig(null, subscription.id, category.key)
+        assertEquals(RuleEnableDecision(false, RuleEnableSource.SubscriptionCategory),
+            RuleGroupPolicy.explainGroupEnabled(group, null, category, null))
+        assertEquals(RuleEnableDecision(true, RuleEnableSource.GroupDefault),
+            RuleGroupPolicy.explainGroupEnabled(group, null, category, explicitDefault))
+        assertEquals(RuleEnableDecision(false, RuleEnableSource.Category),
+            RuleGroupPolicy.explainGroupEnabled(group, null, category, explicitDefault.copy(enable = false)))
+        assertEquals(RuleEnableDecision(true, RuleEnableSource.Manual),
+            RuleGroupPolicy.explainGroupEnabled(group, SubsAppGroupConfig(subscription.id, "app.id", group.key, true),
+                category, explicitDefault.copy(enable = false)))
+    }
+
     private val subscription = RawSubscription.parse(
         """
         {
@@ -147,8 +162,9 @@ class RuleGroupPolicyTest {
                 setOf("system.app"),
             ),
         )
+        // Launcher permission does not bypass matchAnyApp for unspecified apps.
         assertEquals(
-            true,
+            false,
             RuleGroupPolicy.getGlobalGroupChecked(
                 subscription,
                 emptyExclude,
@@ -180,19 +196,5 @@ class RuleGroupPolicyTest {
                 setOf("system.app"),
             ),
         )
-    }
-
-    @Test
-    fun groupTargetKeepsPageScopeSeparateFromConfiguredGroupType() {
-        val appTarget = subscription.apps.single().groups.single()
-            .toRuleGroupTarget(subscription.id, "app.id")
-        val globalTarget = subscription.globalGroups.single()
-            .toRuleGroupTarget(subscription.id, "page.app")
-
-        assertEquals(RuleGroupType.App, appTarget.groupType)
-        assertEquals("app.id", appTarget.appId)
-        assertEquals(RuleGroupType.Global, globalTarget.groupType)
-        assertNull(globalTarget.appId)
-        assertEquals("page.app", globalTarget.pageAppId)
     }
 }

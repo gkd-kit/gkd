@@ -281,7 +281,9 @@ var lastTriggerTime = 0L
 var appChangeTime = 0L
 
 var imeAppId = ""
-var launcherAppId = ""
+val launcherAppIdFlow: StateFlow<String>
+    field = MutableStateFlow("")
+val launcherAppId: String get() = launcherAppIdFlow.value
 var systemRecentCn = ComponentName("", "")
 
 fun updateSystemDefaultAppId() {
@@ -289,7 +291,7 @@ fun updateSystemDefaultAppId() {
         ?.let(ComponentName::unflattenFromString)?.packageName ?: ""
     val launcherCn = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
         .resolveActivity(app.packageManager)
-    launcherAppId = launcherCn.packageName
+    launcherAppIdFlow.value = launcherCn.packageName
     if (app.getPkgInfo(launcherAppId)?.applicationInfo?.isSystem == true) {
         systemRecentCn = launcherCn
     } else {

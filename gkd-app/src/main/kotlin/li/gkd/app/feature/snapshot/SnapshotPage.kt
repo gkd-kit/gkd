@@ -1,11 +1,13 @@
 package li.gkd.app.feature.snapshot
 
+import li.gkd.app.ui.component.GkPageBottomSpace
+import li.gkd.app.MainViewModel
+
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -35,25 +37,16 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import li.gkd.app.text.UiStrings
 import li.gkd.app.MainActivity
 import li.gkd.app.data.date
 import li.gkd.app.data.screenshotFile
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.data.snapshot.SnapshotRepository
-import li.gkd.app.ui.component.EmptyText
 import li.gkd.app.ui.ImagePreviewRoute
-import li.gkd.app.ui.component.FixedTimeText
-import li.gkd.app.ui.component.AppDialog
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.PerfTopAppBar
-import li.gkd.app.ui.component.animateListItem
-import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.share.ListPlaceholder
 import li.gkd.app.core.state.Loadable
-import li.gkd.app.ui.share.LocalMainViewModel
 import li.gkd.app.ui.share.noRippleClickable
-import li.gkd.app.ui.style.EmptyHeight
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.itemVerticalPadding
 import li.gkd.app.ui.style.scaffoldPadding
@@ -61,9 +54,17 @@ import li.gkd.app.util.IMPORT_SHORT_URL
 import li.gkd.app.util.UriUtils
 import li.gkd.app.util.ToastUtils.copyText
 import li.gkd.app.ui.share.launchUi
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
 import li.gkd.app.util.ToastUtils.toast
 import li.gkd.db.Snapshot
+import li.gkd.app.ui.component.GkDialog
+import li.gkd.app.ui.component.GkEmptyState
+import li.gkd.app.ui.component.GkFixedTimeText
+import li.gkd.app.ui.component.GkIconButton
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.component.animateListItem
+import li.gkd.app.ui.component.rememberListScrollState
 
 @Serializable
 data object SnapshotPageRoute : NavKey
@@ -71,7 +72,7 @@ data object SnapshotPageRoute : NavKey
 @Composable
 fun SnapshotPage() {
     val context = LocalActivity.current as MainActivity
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     val colorScheme = MaterialTheme.colorScheme
     val vm = viewModel<SnapshotVm>()
     val loadableState by vm.uiState.collectAsStateWithLifecycle()
@@ -91,28 +92,28 @@ fun SnapshotPage() {
         firstLoading,
     )
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        PerfTopAppBar(
+        GkTopAppBar(
             scrollBehavior = scrollBehavior,
             navigationIcon = {
-                PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
+                GkIconButton(imageVector = GkIcons.ArrowBack, onClick = {
                     mainVm.popPage()
                 })
             },
             title = {
                 Text(
-                    text = "快照记录",
+                    text = UiStrings.snapshot_records,
                     modifier = Modifier.noRippleClickable(onClick = pageScrollState::resetScroll),
                 )
             },
             actions = {
                 if (snapshots.isNotEmpty()) {
-                    PerfIconButton(
-                        imageVector = PerfIcon.Delete,
+                    GkIconButton(
+                        imageVector = GkIcons.Delete,
                         onClick = throttle {
                             actionScope.launchUi {
                                 if (!mainVm.dialogRequests.confirm(
-                                    title = "删除快照",
-                                    text = "确定删除所有快照记录?",
+                                    title = UiStrings.snapshot_delete,
+                                    text = UiStrings.snapshot_delete_all_confirmation,
                                     error = true,
                                 )) return@launchUi
                                 vm.deleteAllSnapshots()
@@ -137,18 +138,19 @@ fun SnapshotPage() {
                 )
             }
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                Spacer(modifier = Modifier.height(EmptyHeight))
                 if (snapshots.isEmpty() && !firstLoading) {
-                    EmptyText(
-                        text = loadError?.let { it.message ?: "数据加载失败" } ?: "暂无数据",
+                    GkEmptyState(
+                        text = loadError?.let { it.message ?: UiStrings.data_load_failed } ?: UiStrings.data_empty,
                     )
+                } else {
+                    GkPageBottomSpace()
                 }
             }
         }
     })
 
     selectedSnapshot?.let { snapshotVal ->
-        AppDialog(onDismissRequest = { selectedSnapshot = null }) {
+        GkDialog(onDismissRequest = { selectedSnapshot = null }) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -159,7 +161,7 @@ fun SnapshotPage() {
                     .fillMaxWidth()
                     .padding(16.dp)
                 Text(
-                    text = "查看", modifier = Modifier
+                    text = UiStrings.action_view, modifier = Modifier
                         .clickable(onClick = throttle {
                             selectedSnapshot = null
                             mainVm.navigatePage(
@@ -173,14 +175,14 @@ fun SnapshotPage() {
                 )
                 HorizontalDivider()
                 Text(
-                    text = "分享到其他应用",
+                    text = UiStrings.action_share_to_apps,
                     modifier = Modifier
                         .clickable(onClick = throttle {
                             actionScope.launchUi {
                                 selectedSnapshot = null
                                 context.shareFile(
                                     vm.buildShareArchive(snapshotVal),
-                                    "分享快照文件",
+                                    UiStrings.snapshot_share,
                                 )
                             }
                         })
@@ -188,12 +190,12 @@ fun SnapshotPage() {
                 )
                 HorizontalDivider()
                 Text(
-                    text = "保存到下载",
+                    text = UiStrings.action_save_to_downloads,
                     modifier = Modifier
                         .clickable(onClick = throttle {
                             actionScope.launchUi {
                                 selectedSnapshot = null
-                                toast("正在保存...")
+                                toast(UiStrings.saving_progress)
                                 val archive = vm.buildShareArchive(snapshotVal)
                                 try {
                                     context.saveFileToDownloads(archive)
@@ -207,7 +209,7 @@ fun SnapshotPage() {
                 HorizontalDivider()
                 if (snapshotVal.githubAssetId != null) {
                     Text(
-                        text = "复制链接", modifier = Modifier
+                        text = UiStrings.link_copy, modifier = Modifier
                             .clickable(onClick = throttle {
                                 selectedSnapshot = null
                                 copyText(IMPORT_SHORT_URL + snapshotVal.githubAssetId)
@@ -216,7 +218,7 @@ fun SnapshotPage() {
                     )
                 } else {
                     Text(
-                        text = "生成链接(需科学上网)", modifier = Modifier
+                        text = UiStrings.upload_generate_link, modifier = Modifier
                             .clickable(onClick = throttle {
                                 selectedSnapshot = null
                                 mainVm.githubUpload.startTask(
@@ -233,11 +235,11 @@ fun SnapshotPage() {
                 HorizontalDivider()
 
                 Text(
-                    text = "保存截图到相册",
+                    text = UiStrings.screenshot_save_to_album,
                     modifier = Modifier
                         .clickable(onClick = throttle {
                             actionScope.launchUi {
-                                toast("正在保存...")
+                                toast(UiStrings.saving_progress)
                                 selectedSnapshot = null
                                 if (!mainVm.permissionRequests.ensurePermissions(
                                         PermissionStates.writeExternalStorage,
@@ -246,14 +248,14 @@ fun SnapshotPage() {
                                     return@launchUi
                                 }
                                 vm.saveScreenshotToAlbum(snapshotVal)
-                                toast("保存成功")
+                                toast(UiStrings.save_success)
                             }
                         })
                         .then(modifier)
                 )
                 HorizontalDivider()
                 Text(
-                    text = "替换截图(去除隐私)",
+                    text = UiStrings.screenshot_replace,
                     modifier = Modifier
                         .clickable(onClick = throttle {
                             actionScope.launchUi {
@@ -263,9 +265,9 @@ fun SnapshotPage() {
                                     UriUtils.uri2Bytes(uri)
                                 }
                                 if (vm.replaceScreenshot(snapshotVal, newBytes)) {
-                                    toast("替换成功")
+                                    toast(UiStrings.screenshot_replace_success)
                                 } else {
-                                    toast("截图尺寸不一致, 无法替换")
+                                    toast(UiStrings.screenshot_size_mismatch)
                                 }
                             }
                         })
@@ -273,20 +275,18 @@ fun SnapshotPage() {
                 )
                 HorizontalDivider()
                 Text(
-                    text = "删除", modifier = Modifier
+                    text = UiStrings.action_delete, modifier = Modifier
                         .clickable(onClick = throttle {
-                            actionScope.launchUi {
-                                if (!mainVm.dialogRequests.confirm(
-                                    title = "删除快照",
-                                    text = "确定删除当前快照吗?",
-                                    error = true,
-                                )) return@launchUi
+                            mainVm.confirmDelete(
+                                title = UiStrings.snapshot_delete,
+                                text = UiStrings.snapshot_delete_confirmation,
+                                dismiss = { selectedSnapshot = null },
+                            ) {
                                 vm.deleteSnapshot(snapshotVal)
-                                selectedSnapshot = null
-                                toast("删除成功")
+                                toast(UiStrings.delete_success)
                             }
                         })
-                        .then(modifier), color = colorScheme.error
+                        .then(modifier)
                 )
             }
         }
@@ -328,7 +328,7 @@ private fun SnapshotCard(
                     maxLines = 1,
                     softWrap = false,
                 )
-                FixedTimeText(
+                GkFixedTimeText(
                     text = snapshot.date,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -354,7 +354,7 @@ private fun SnapshotCard(
                 )
             } else {
                 Text(
-                    text = "null",
+                    text = UiStrings.value_null,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.typography.bodyMedium.color.copy(alpha = 0.5f)
                 )

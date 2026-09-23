@@ -8,10 +8,10 @@ import androidx.compose.ui.unit.dp
 
 val ToggleMid: ImageVector
     get() {
-        if (_IconName != null) {
-            return _IconName!!
+        if (_toggleMid != null) {
+            return _toggleMid!!
         }
-        _IconName = ImageVector.Builder(
+        _toggleMid = ImageVector.Builder(
             name = "IconName",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
@@ -55,9 +55,7 @@ val ToggleMid: ImageVector
                 close()
             }
         }.build()
-
-        return _IconName!!
+        return _toggleMid!!
     }
 
-@Suppress("ObjectPropertyName")
-private var _IconName: ImageVector? = null
+private var _toggleMid: ImageVector? = null

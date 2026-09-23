@@ -20,6 +20,7 @@ object RuleSummaryBuilder {
         appConfigs: List<SubsAppConfig>,
         groupConfigs: List<SubsGroupConfig>,
         categoryConfigs: List<SubsCategoryConfig>,
+        launcherAppId: String = "",
     ): RuleSummary {
         val appConfigByKey = appConfigs.associateBy { it.subsId to it.appId }
         val globalConfigByKey = groupConfigs
@@ -38,8 +39,7 @@ object RuleSummaryBuilder {
         subscriptions.forEach { (subsItem, subscription) ->
             val groupToRules = mutableMapOf<RawSubscription.RawGlobalGroup, List<GlobalRule>>()
             subscription.globalGroups.filter { group ->
-                (globalConfigByKey[subsItem.id to group.key]?.enable
-                    ?: group.enable ?: true) && group.valid
+                RuleGroupPolicy.getGroupEnabled(group, globalConfigByKey[subsItem.id to group.key])
             }.forEach { group ->
                 val resolvedGroup = ResolvedGlobalGroup(
                     group = group,
@@ -99,7 +99,17 @@ object RuleSummaryBuilder {
                 appGroupToRules.values.flatten().forEach { it.bindGroupRules(appGroupToRules) }
             }
         }
+        val systemAppIds = appInfoById.values.filter { it.isSystem }.mapTo(hashSetOf()) { it.id }
+        val globalCounts = if (globalGroups.isEmpty()) emptyMap() else appInfoById.mapValues { (appId, info) ->
+            globalGroups.count { resolved ->
+                RuleGroupPolicy.getGlobalGroupChecked(
+                    resolved.subscription, resolved.excludeData, resolved.group,
+                    appId, launcherAppId, systemAppIds, info,
+                ) == true
+            }
+        }
         return RuleSummary(
+            appIdToGlobalGroupCount = globalCounts,
             globalRules = globalRules,
             globalGroups = globalGroups,
             appIdToRules = appRules,

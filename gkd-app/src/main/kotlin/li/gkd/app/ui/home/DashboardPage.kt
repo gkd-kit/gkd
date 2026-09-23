@@ -1,5 +1,8 @@
 package li.gkd.app.ui.home
 
+import li.gkd.app.ui.component.GkPageBottomSpace
+import li.gkd.app.MainViewModel
+
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -19,7 +22,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconButton
+import li.gkd.app.text.UiStrings
+import li.gkd.app.ui.component.GkTooltipIconButtonBox
+import li.gkd.app.ui.icon.GkAnimatedRocketIcon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,7 +52,6 @@ import li.gkd.app.priv.uiAutomationFlow
 import li.gkd.app.service.A11yService
 import li.gkd.app.service.ActivityService
 import li.gkd.app.service.StatusService
-import li.gkd.app.platform.service.ServiceController
 import li.gkd.app.service.a11yPartDisabledFlow
 import li.gkd.app.service.switchAutomatorService
 import li.gkd.app.service.topAppIdFlow
@@ -59,28 +64,26 @@ import li.gkd.app.ui.AppConfigRoute
 import li.gkd.app.ui.PrivilegeServiceRoute
 import li.gkd.app.ui.WebViewRoute
 import li.gkd.app.feature.settings.WorkModeRoute
-import li.gkd.app.ui.component.GroupNameText
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.PerfSwitch
-import li.gkd.app.ui.component.PerfTopAppBar
-import li.gkd.app.ui.component.textSize
-import li.gkd.app.ui.component.rememberColumnScrollState
-import li.gkd.app.ui.share.LocalMainViewModel
-import li.gkd.app.ui.style.EmptyHeight
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.itemVerticalPadding
 import li.gkd.app.ui.style.surfaceCardColors
 import li.gkd.app.util.HOME_PAGE_URL
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.share.statusText
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
 import li.gkd.db.RuleGroupType
+import li.gkd.app.ui.component.GkGroupNameText
+import li.gkd.app.ui.component.GkIcon
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkSwitch
+import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.component.rememberColumnScrollState
+import li.gkd.app.ui.component.textSize
 
 @Composable
 fun useDashboardPage(): ScaffoldExt {
     val context = LocalActivity.current as MainActivity
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel<DashboardVm>()
     val ruleSummary by SubscriptionState.ruleSummaryFlow.collectAsStateWithLifecycle()
     val actionCount by actionCountFlow.collectAsStateWithLifecycle()
@@ -97,27 +100,28 @@ fun useDashboardPage(): ScaffoldExt {
         navItem = BottomNavItem.Dashboard,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            PerfTopAppBar(scrollBehavior = scrollBehavior, title = {
+            GkTopAppBar(scrollBehavior = scrollBehavior, title = {
                 Text(
                     text = stringResource(R.string.app_name)
                 )
             }, actions = {
                 val (contentDescription, contentColor) = when (privilegeServiceStatus) {
-                    PrivilegeServiceStatus.Connected -> "特权服务，已连接" to MaterialTheme.colorScheme.primary
-                    PrivilegeServiceStatus.Disconnected -> "特权服务，未连接" to MaterialTheme.colorScheme.onSurfaceVariant
-                    PrivilegeServiceStatus.DisconnectedDesired -> "特权服务，连接已中断" to MaterialTheme.colorScheme.error
+                    PrivilegeServiceStatus.Connected -> UiStrings.privilege_service_state_connected to MaterialTheme.colorScheme.onSurfaceVariant
+                    PrivilegeServiceStatus.Disconnected -> UiStrings.privilege_service_state_disconnected to MaterialTheme.colorScheme.onSurfaceVariant
+                    PrivilegeServiceStatus.DisconnectedDesired -> UiStrings.privilege_service_state_lost to MaterialTheme.colorScheme.error
                 }
-                PerfIconButton(
-                    imageVector = PerfIcon.RocketLaunch,
-                    onClickLabel = "前往特权服务页面",
-                    contentDescription = contentDescription,
-                    colors = IconButtonDefaults.iconButtonColors(
-                        contentColor = contentColor,
-                    ),
-                    onClick = throttle {
-                        mainVm.navigatePage(PrivilegeServiceRoute)
-                    },
-                )
+                GkTooltipIconButtonBox(contentDescription) {
+                    IconButton(
+                        modifier = Modifier.semantics { onClick(label = UiStrings.privilege_service_open, action = null) },
+                        onClick = { mainVm.navigatePage(PrivilegeServiceRoute) },
+                    ) {
+                        GkAnimatedRocketIcon(
+                            active = privilegeServiceStatus == PrivilegeServiceStatus.Connected,
+                            contentDescription = contentDescription,
+                            tint = contentColor,
+                        )
+                    }
+                }
             })
         }) { contentPadding ->
         val a11yRunning by A11yService.isRunning.collectAsStateWithLifecycle()
@@ -136,7 +140,7 @@ fun useDashboardPage(): ScaffoldExt {
                     modifier = Modifier
                         .fillMaxWidth()
                         .semantics(mergeDescendants = true) {
-                            this.onClick(label = "前往特权服务页面", action = null)
+                            this.onClick(label = UiStrings.privilege_service_open, action = null)
                         },
                     shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
@@ -151,30 +155,30 @@ fun useDashboardPage(): ScaffoldExt {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        PerfIcon(imageVector = PerfIcon.WarningAmber)
+                        GkIcon(imageVector = GkIcons.WarningAmber)
                         Text(
                             modifier = Modifier.weight(1f),
-                            text = "检测到权限受限，请前往特权服务",
+                            text = UiStrings.permission_restricted_privilege_notice,
                             style = MaterialTheme.typography.bodyLarge,
                         )
-                        PerfIcon(imageVector = PerfIcon.KeyboardArrowRight)
+                        GkIcon(imageVector = GkIcons.KeyboardArrowRight)
                     }
                 }
             }
             if (store.useA11y || actualA11yScopeAppList.contains(topAppIdFlow.collectAsStateWithLifecycle().value)) {
                 ServiceStatusCard(
                     subtitle = if (a11yRunning) {
-                        "无障碍正在运行"
+                        UiStrings.a11y_running
                     } else if (mainVm.a11yServiceEnabledFlow.collectAsStateWithLifecycle().value) {
-                        "无障碍发生故障"
+                        UiStrings.a11y_fault
                     } else if (writeSecureSettings) {
                         if (store.enableAutomator && a11yPartDisabledFlow.collectAsStateWithLifecycle().value) {
-                            "无障碍局部关闭"
+                            UiStrings.a11y_partially_disabled
                         } else {
-                            "无障碍已关闭"
+                            UiStrings.a11y_stopped
                         }
                     } else {
-                        "无障碍未授权"
+                        UiStrings.a11y_unauthorized
                     },
                     checked = a11yRunning,
                     onCheckedChange = { newEnabled ->
@@ -193,14 +197,14 @@ fun useDashboardPage(): ScaffoldExt {
                 val automation by uiAutomationFlow.collectAsStateWithLifecycle()
                 ServiceStatusCard(
                     subtitle = if (automation != null) {
-                        "自动化正在运行"
+                        UiStrings.automation_running
                     } else if (privilegeContext == null) {
-                        "自动化未授权"
+                        UiStrings.automation_unauthorized
                     } else {
                         if (store.enableAutomator && a11yPartDisabledFlow.collectAsStateWithLifecycle().value) {
-                            "自动化局部关闭"
+                            UiStrings.automation_partially_disabled
                         } else {
-                            "自动化已关闭"
+                            UiStrings.automation_stopped
                         }
                     },
                     checked = automation != null,
@@ -219,20 +223,14 @@ fun useDashboardPage(): ScaffoldExt {
             }
 
             PageSwitchItemCard(
-                imageVector = PerfIcon.Notifications,
-                title = "常驻通知",
-                subtitle = "显示运行状态及统计数据",
+                imageVector = GkIcons.Notifications,
+                title = UiStrings.persistent_notification,
+                subtitle = UiStrings.status_statistics_description,
                 checked = manageRunning && store.enableStatusService,
                 onCheckedChange = {
                     if (it) {
                         vm.scope.launchUi {
-                            if (mainVm.permissionRequests.ensurePermissions(
-                                    PermissionStates.foregroundServiceSpecialUse,
-                                    PermissionStates.notification,
-                                )
-                            ) {
-                                ServiceController.setStatusEnabled(true)
-                            }
+                            mainVm.enableStatusService()
                         }
                     } else {
                         vm.stopStatusService()
@@ -256,24 +254,24 @@ fun useDashboardPage(): ScaffoldExt {
 
             if (ActivityService.isRunning.collectAsStateWithLifecycle().value) {
                 PageItemCard(
-                    title = "界面日志",
-                    subtitle = "记录打开的应用及界面",
-                    imageVector = PerfIcon.Layers,
-                    onClickLabel = "打开界面日志页面",
+                    title = UiStrings.activity_log_title,
+                    subtitle = UiStrings.activity_record_description,
+                    imageVector = GkIcons.Layers,
+                    onClickLabel = UiStrings.activity_log_open,
                     onClick = {
                         mainVm.navigatePage(ActivityLogRoute)
                     })
             }
 
             PageItemCard(
-                title = "了解 GKD",
-                subtitle = "查阅规则文档和常见问题",
-                imageVector = PerfIcon.HelpOutline,
-                onClickLabel = "打开 GKD 文档页面",
+                title = UiStrings.gkd_learn_more,
+                subtitle = UiStrings.documentation_description,
+                imageVector = GkIcons.HelpOutline,
+                onClickLabel = UiStrings.documentation_open,
                 onClick = {
                     mainVm.navigatePage(WebViewRoute(initUrl = HOME_PAGE_URL))
                 })
-            Spacer(modifier = Modifier.height(EmptyHeight))
+            GkPageBottomSpace()
         }
     }
 }
@@ -330,7 +328,7 @@ private fun PageSwitchItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .semantics(mergeDescendants = true) {
-                this.onClick(label = "切换$title", action = null)
+                this.onClick(label = UiStrings.item_toggle_description(title), action = null)
             },
         shape = MaterialTheme.shapes.large,
         colors = surfaceCardColors,
@@ -353,7 +351,7 @@ private fun PageSwitchItemCard(
                 )
             }
             Spacer(Modifier.width(8.dp))
-            PerfSwitch(
+            GkSwitch(
                 checked = checked,
                 onCheckedChange = null,
             )
@@ -377,11 +375,11 @@ private fun ServiceStatusCard(
         colors = surfaceCardColors,
     ) {
         IconTextCard(
-            imageVector = PerfIcon.Memory,
+            imageVector = GkIcons.Memory,
             modifier = Modifier
                 .semantics(mergeDescendants = true) {}
                 .clickable(
-                    onClickLabel = "切换服务状态",
+                    onClickLabel = UiStrings.service_state_toggle,
                     onClick = onStatusClick,
                 ),
         ) {
@@ -389,7 +387,7 @@ private fun ServiceStatusCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "服务状态",
+                    text = UiStrings.service_state,
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 Text(
@@ -399,7 +397,7 @@ private fun ServiceStatusCard(
                 )
             }
             Spacer(Modifier.width(8.dp))
-            PerfSwitch(
+            GkSwitch(
                 checked = checked,
                 onCheckedChange = null,
             )
@@ -415,7 +413,7 @@ private fun ServiceStatusCard(
                 .fillMaxWidth()
                 .semantics(mergeDescendants = true) {}
                 .clickable(
-                    onClickLabel = "前往工作模式页面",
+                    onClickLabel = UiStrings.work_mode_open,
                     onClick = onModeRowClick,
                 )
                 .padding(
@@ -426,8 +424,8 @@ private fun ServiceStatusCard(
                 ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            PerfIcon(
-                imageVector = PerfIcon.AutoMode,
+            GkIcon(
+                imageVector = GkIcons.AutoMode,
                 modifier = Modifier
                     .padding(horizontal = 10.dp)
                     .size(20.dp),
@@ -436,7 +434,7 @@ private fun ServiceStatusCard(
             )
             Spacer(modifier = Modifier.width(itemHorizontalPadding))
             Text(
-                text = "工作模式",
+                text = UiStrings.work_mode_title,
                 style = MaterialTheme.typography.bodyMedium,
             )
             Spacer(modifier = Modifier.weight(1f))
@@ -445,8 +443,8 @@ private fun ServiceStatusCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            PerfIcon(
-                imageVector = PerfIcon.KeyboardArrowRight,
+            GkIcon(
+                imageVector = GkIcons.KeyboardArrowRight,
                 modifier = Modifier.size(20.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 contentDescription = null,
@@ -467,7 +465,7 @@ private fun IconTextCard(
             .padding(itemVerticalPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        PerfIcon(
+        GkIcon(
             imageVector = imageVector,
             modifier = Modifier
                 .clip(CircleShape)
@@ -500,7 +498,7 @@ private fun TriggerOverviewCard(
                 .fillMaxWidth()
                 .semantics(mergeDescendants = true) {}
                 .clickable(
-                    onClickLabel = "打开触发记录页面",
+                    onClickLabel = UiStrings.action_log_open,
                     onClick = throttle(onOpenActionLog),
                 )
                 .padding(
@@ -510,8 +508,8 @@ private fun TriggerOverviewCard(
                     bottom = itemVerticalPadding / 2
                 ), verticalAlignment = Alignment.CenterVertically
         ) {
-            PerfIcon(
-                imageVector = PerfIcon.Equalizer,
+            GkIcon(
+                imageVector = GkIcons.Equalizer,
                 modifier = Modifier
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer)
@@ -524,17 +522,17 @@ private fun TriggerOverviewCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "触发记录",
+                    text = UiStrings.action_log_title,
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 Text(
-                    text = "规则误触可定位关闭",
+                    text = UiStrings.action_log_description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            PerfIcon(
-                imageVector = PerfIcon.KeyboardArrowRight,
+            GkIcon(
+                imageVector = GkIcons.KeyboardArrowRight,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 contentDescription = null,
             )
@@ -559,7 +557,7 @@ private fun TriggerOverviewCard(
                         .padding(horizontal = 4.dp)
                         .clip(MaterialTheme.shapes.extraSmall)
                         .clickable(
-                            onClickLabel = "前往应用的规则汇总页面",
+                            onClickLabel = UiStrings.app_rule_summary_open,
                             onClick = throttle(onOpenLatestRecord),
                         )
                         .fillMaxWidth()
@@ -568,17 +566,17 @@ private fun TriggerOverviewCard(
                     Column(
                         modifier = Modifier.weight(1f),
                     ) {
-                        GroupNameText(
+                        GkGroupNameText(
                             modifier = Modifier.fillMaxWidth(),
-                            preText = "最近触发: ",
+                            preText = UiStrings.action_log_recent_prefix,
                             isGlobal = latestRecordIsGlobal,
                             text = latestRecordDesc,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
                         )
                     }
-                    PerfIcon(
-                        imageVector = PerfIcon.KeyboardArrowRight,
+                    GkIcon(
+                        imageVector = GkIcons.KeyboardArrowRight,
                         modifier = Modifier.textSize(style = MaterialTheme.typography.bodyMedium),
                         tint = MaterialTheme.colorScheme.primary,
                     )

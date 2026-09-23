@@ -1,5 +1,6 @@
 package li.gkd.app.util
 
+import li.gkd.app.text.UiStrings
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
@@ -83,7 +84,7 @@ object ZipUtils {
         require(limits.maxEntryBytes > 0)
         require(limits.maxTotalBytes > 0)
         if (!destDir.exists() && !destDir.mkdirs()) {
-            throw IOException("无法创建解压目录: ${destDir.name}")
+            throw IOException(UiStrings.unzip_directory_create_failed(destDir.name))
         }
         val rootPath = destDir.canonicalFile.toPath()
         var entryCount = 0
@@ -92,28 +93,28 @@ object ZipUtils {
             zip.entries().asSequence().forEach { entry ->
                 entryCount += 1
                 if (entryCount > limits.maxEntryCount) {
-                    throw IOException("压缩包文件数量超过限制: ${limits.maxEntryCount}")
+                    throw IOException(UiStrings.archive_file_count_exceeded(limits.maxEntryCount))
                 }
                 if (entry.name.indexOf('\\') >= 0) {
-                    throw IOException("压缩包包含非法路径: ${entry.name}")
+                    throw IOException(UiStrings.archive_path_invalid(entry.name))
                 }
                 val outPath = rootPath.resolve(entry.name).normalize()
                 if (!outPath.startsWith(rootPath)) {
-                    throw IOException("压缩包路径越界: ${entry.name}")
+                    throw IOException(UiStrings.archive_path_outside_destination(entry.name))
                 }
                 val outFile = outPath.toFile()
                 if (entry.isDirectory) {
                     if (!outFile.exists() && !outFile.mkdirs()) {
-                        throw IOException("无法创建解压目录: ${entry.name}")
+                        throw IOException(UiStrings.unzip_directory_create_failed(entry.name))
                     }
                 } else {
                     val declaredSize = entry.size
                     if (declaredSize > limits.maxEntryBytes) {
-                        throw IOException("压缩包文件过大: ${entry.name}")
+                        throw IOException(UiStrings.archive_file_too_large(entry.name))
                     }
                     outFile.parentFile?.let { parent ->
                         if (!parent.exists() && !parent.mkdirs()) {
-                            throw IOException("无法创建解压目录: ${parent.name}")
+                            throw IOException(UiStrings.unzip_directory_create_failed(parent.name))
                         }
                     }
                     zip.getInputStream(entry).use { input ->
@@ -126,10 +127,10 @@ object ZipUtils {
                                 entryBytes += size
                                 totalBytes += size
                                 if (entryBytes > limits.maxEntryBytes) {
-                                    throw IOException("压缩包文件过大: ${entry.name}")
+                                    throw IOException(UiStrings.archive_file_too_large(entry.name))
                                 }
                                 if (totalBytes > limits.maxTotalBytes) {
-                                    throw IOException("压缩包解压总量超过限制")
+                                    throw IOException(UiStrings.archive_total_size_exceeded)
                                 }
                                 output.write(buffer, 0, size)
                             }

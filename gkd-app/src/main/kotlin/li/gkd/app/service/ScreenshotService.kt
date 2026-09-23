@@ -6,6 +6,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withTimeoutOrNull
+import li.gkd.app.text.UiStrings
 import li.gkd.app.app
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.platform.lifecycle.ResourceSlot
@@ -44,7 +45,7 @@ class ScreenshotService : LifecycleHookService() {
         useLogLifecycle()
         useServicePresence(
             stateFlow = isRunning,
-            name = "截屏服务",
+            name = UiStrings.screenshot_service,
         )
         useStopServiceReceiver()
         onCreated {

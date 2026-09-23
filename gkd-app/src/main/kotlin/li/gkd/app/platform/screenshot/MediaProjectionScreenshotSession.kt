@@ -14,6 +14,7 @@ import android.os.HandlerThread
 import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
+import li.gkd.app.text.UiStrings
 import li.gkd.app.app
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ScreenUtils
@@ -32,9 +33,9 @@ class MediaProjectionScreenshotSession(
         val stopProjection: Boolean,
         val notifyOwner: Boolean,
     ) {
-        ProjectionStopped("截屏授权已失效", stopProjection = false, notifyOwner = true),
-        Closed("截屏服务已停止", stopProjection = true, notifyOwner = false),
-        InitializationFailed("截屏服务初始化失败", stopProjection = true, notifyOwner = true),
+        ProjectionStopped(UiStrings.screenshot_permission_expired, stopProjection = false, notifyOwner = true),
+        Closed(UiStrings.screenshot_service_stopped, stopProjection = true, notifyOwner = false),
+        InitializationFailed(UiStrings.screenshot_service_init_failed, stopProjection = true, notifyOwner = true),
     }
 
     private val handlerThread = HandlerThread("gkd-screenshot").apply { start() }
@@ -121,7 +122,7 @@ class MediaProjectionScreenshotSession(
         }
         if (!handler.post { startCapture(continuation) } && continuation.isActive) {
             continuation.resumeWithException(
-                IllegalStateException("截屏线程不可用")
+                IllegalStateException(UiStrings.screenshot_thread_unavailable)
             )
         }
     }
@@ -130,13 +131,13 @@ class MediaProjectionScreenshotSession(
         if (!continuation.isActive) return
         if (closed) {
             continuation.resumeWithException(
-                IllegalStateException("截屏服务不可用")
+                IllegalStateException(UiStrings.screenshot_service_unavailable)
             )
             return
         }
         if (activeContinuation != null) {
             continuation.resumeWithException(
-                IllegalStateException("正在截取屏幕")
+                IllegalStateException(UiStrings.screenshot_capturing)
             )
             return
         }
@@ -165,7 +166,7 @@ class MediaProjectionScreenshotSession(
                     imageReader.surface,
                     null,
                     handler,
-                ) ?: throw IllegalStateException("创建截屏虚拟显示失败")
+                ) ?: throw IllegalStateException(UiStrings.screenshot_virtual_display_failed)
             } else {
                 display.resize(captureWidth, captureHeight, captureDpi)
                 display.surface = imageReader.surface
@@ -185,13 +186,13 @@ class MediaProjectionScreenshotSession(
 
     private fun getOrCreateProjection(): MediaProjection {
         mediaProjection?.let { return it }
-        check(!projectionCreationAttempted) { "截屏授权不可重复使用" }
+        check(!projectionCreationAttempted) { UiStrings.screenshot_permission_reuse_forbidden }
         projectionCreationAttempted = true
         return (
             app.mediaProjectionManager.getMediaProjection(
                 RESULT_OK,
                 screenshotIntent,
-            ) ?: throw IllegalStateException("获取截屏授权失败")
+            ) ?: throw IllegalStateException(UiStrings.screenshot_permission_failed)
             ).also {
             it.registerCallback(mediaProjectionCallback, handler)
             mediaProjection = it

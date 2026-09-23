@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import li.gkd.app.text.UiStrings
 import li.gkd.app.META
 import li.gkd.app.a11y.useA11yServiceEnabledFlow
 import li.gkd.app.app
@@ -20,7 +21,7 @@ import li.gkd.app.priv.privilegeServiceStatusFlow
 import li.gkd.app.priv.uiAutomationFlow
 import li.gkd.app.store.AppStore.actionCountFlow
 import li.gkd.app.store.AppStore.storeFlow
-import li.gkd.app.domain.rule.RuleSummary
+import li.gkd.app.notif.replaceNotificationTemplate
 import li.gkd.app.data.appinfo.AppInfoRepository
 import li.gkd.app.data.subscription.SubscriptionState
 import li.gkd.app.ui.share.statusText
@@ -38,28 +39,28 @@ class StatusService : LifecycleHookService() {
         val count = actionCountFlow.value
         val privilegeServiceStatus = privilegeServiceStatusFlow.value
         val title = if (store.useCustomNotifText) {
-            store.customNotifTitle.replaceTemplate(ruleSummary, count)
+            store.customNotifTitle.replaceNotificationTemplate(ruleSummary, count)
         } else {
             META.appName
         }
         return if (PermissionStates.appOpsRestrictedFlow.value) {
-            Triple(title, "权限受限，请重新授权", "gkd://page/3")
+            Triple(title, UiStrings.permission_restricted_reauthorize, "gkd://page/3")
         } else if (privilegeServiceStatus == PrivilegeServiceStatus.DisconnectedDesired) {
-            Triple(title, "特权服务连接已中断，请检查", "gkd://page/4")
+            Triple(title, UiStrings.privilege_service_connection_lost, "gkd://page/4")
         } else if (!automationRunning && !abRunning) {
             if (currentAppUseA11y) {
                 val text = if (a11yServiceEnabledFlow.value) {
-                    "无障碍发生故障"
+                    UiStrings.a11y_fault
                 } else if (PermissionStates.writeSecureSettings.updateAndGet()) {
                     if (store.enableAutomator && store.enableBlockA11yAppList && a11yPartDisabledFlow.value) {
                         val name =
                             AppInfoRepository.appInfoMapFlow.value[topAppIdFlow.value]?.name ?: topAppIdFlow.value
-                        "局部关闭 · $name"
+                        UiStrings.service_partially_disabled_detail(name)
                     } else {
-                        "无障碍已关闭"
+                        UiStrings.a11y_stopped
                     }
                 } else {
-                    "无障碍未授权"
+                    UiStrings.a11y_unauthorized
                 }
                 Triple(title, text, defaultStatusNotification.uri)
             } else {
@@ -67,18 +68,18 @@ class StatusService : LifecycleHookService() {
                     if (store.enableAutomator && store.enableBlockA11yAppList && a11yPartDisabledFlow.value) {
                         val name =
                             AppInfoRepository.appInfoMapFlow.value[topAppIdFlow.value]?.name ?: topAppIdFlow.value
-                        "局部关闭 · $name"
+                        UiStrings.service_partially_disabled_detail(name)
                     } else {
-                        "自动化已关闭"
+                        UiStrings.automation_stopped
                     }
                 Triple(title, text, defaultStatusNotification.uri)
             }
         } else if (!store.enableMatch) {
-            Triple(title, "暂停规则匹配", "gkd://page?tab=1")
+            Triple(title, UiStrings.rule_matching_pause, "gkd://page?tab=1")
         } else if (store.useCustomNotifText) {
             Triple(
                 title,
-                store.customNotifText.replaceTemplate(ruleSummary, count),
+                store.customNotifText.replaceNotificationTemplate(ruleSummary, count),
                 defaultStatusNotification.uri
             )
         } else {
@@ -89,7 +90,7 @@ class StatusService : LifecycleHookService() {
     init {
         useServicePresence(
             stateFlow = isRunning,
-            name = "常驻通知",
+            name = UiStrings.persistent_notification,
             startToastDelayMillis = if (app.justStarted) 1000 else 0,
         )
         onCreated {
@@ -174,10 +175,3 @@ class StatusService : LifecycleHookService() {
 }
 
 private val defaultStatusNotification by lazy { NotificationCatalog.status() }
-
-private fun String.replaceTemplate(ruleSummary: RuleSummary, count: Long): String {
-    return replace($$"${i}", ruleSummary.globalGroups.size.toString())
-        .replace($$"${k}", ruleSummary.appSize.toString())
-        .replace($$"${u}", ruleSummary.appGroupSize.toString())
-        .replace($$"${n}", count.toString())
-}

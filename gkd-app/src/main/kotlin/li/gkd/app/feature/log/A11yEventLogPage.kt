@@ -1,5 +1,8 @@
 package li.gkd.app.feature.log
 
+import li.gkd.app.ui.component.GkPageBottomSpace
+import li.gkd.app.ui.share.launchUi
+
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,32 +46,32 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import li.gkd.app.text.UiStrings
 import li.gkd.app.MainActivity
 import li.gkd.app.data.fixedName
 import li.gkd.app.data.isStateChanged
-import li.gkd.app.ui.component.AppNameText
-import li.gkd.app.ui.component.CopyableText
-import li.gkd.app.ui.component.EmptyText
-import li.gkd.app.ui.component.FixedTimeText
-import li.gkd.app.ui.component.AppAlertDialog
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.PerfTopAppBar
-import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.share.ListPlaceholder
 import li.gkd.app.ui.share.LocalDarkTheme
 import li.gkd.app.ui.share.noRippleClickable
-import li.gkd.app.ui.style.EmptyHeight
 import li.gkd.app.ui.style.getJson5AnnotatedString
 import li.gkd.app.ui.style.iconTextSize
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.util.ToastUtils.copyText
 import li.gkd.app.util.format
-import li.gkd.app.ui.share.launchUi
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
 import li.gkd.app.util.toJson5String
 import li.gkd.app.util.ToastUtils.toast
 import li.gkd.db.A11yEventLog
+import li.gkd.app.ui.component.GkAlertDialog
+import li.gkd.app.ui.component.GkAppNameText
+import li.gkd.app.ui.component.GkCopyableText
+import li.gkd.app.ui.component.GkEmptyState
+import li.gkd.app.ui.component.GkFixedTimeText
+import li.gkd.app.ui.component.GkIcon
+import li.gkd.app.ui.component.GkIconButton
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.component.rememberListScrollState
 
 @Serializable
 data object A11yEventLogRoute : NavKey
@@ -89,32 +92,32 @@ fun A11yEventLogPage() {
     pageScrollState.ResetOnChange(list.itemCount > 0)
 
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        PerfTopAppBar(
+        GkTopAppBar(
             scrollBehavior = scrollBehavior,
             navigationIcon = {
-                PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
+                GkIconButton(imageVector = GkIcons.ArrowBack, onClick = {
                     mainVm.popPage()
                 })
             },
             title = {
                 Text(
-                    text = "事件日志",
+                    text = UiStrings.event_log_title,
                     modifier = Modifier.noRippleClickable(onClick = pageScrollState::resetScroll),
                 )
             },
             actions = {
                 if (logCount > 0) {
-                    PerfIconButton(
-                        imageVector = PerfIcon.Delete,
+                    GkIconButton(
+                        imageVector = GkIcons.Delete,
                         onClick = throttle {
                             scope.launchUi {
                                 if (!mainVm.dialogRequests.confirm(
-                                    title = "删除日志",
-                                    text = "确定删除所有事件日志?",
+                                    title = UiStrings.action_delete_logs,
+                                    text = UiStrings.event_log_delete_all_confirmation,
                                     error = true,
                                 )) return@launchUi
                                 vm.deleteAll()
-                                toast("删除成功")
+                                toast(UiStrings.delete_success)
                             }
                         }
                     )
@@ -142,9 +145,10 @@ fun A11yEventLogPage() {
                 }
             }
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                Spacer(modifier = Modifier.height(EmptyHeight))
                 if (logCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                    EmptyText(text = "暂无数据")
+                    GkEmptyState(text = UiStrings.data_empty)
+                } else {
+                    GkPageBottomSpace()
                 }
             }
         }
@@ -167,9 +171,9 @@ fun A11yEventLogPage() {
                 dark,
             )
         }
-        AppAlertDialog(
+        GkAlertDialog(
             onDismissRequest = onDismissRequest,
-            title = { Text(text = "事件详情") },
+            title = { Text(text = UiStrings.event_details) },
             text = {
                 val textModifier = Modifier
                     .background(
@@ -178,9 +182,9 @@ fun A11yEventLogPage() {
                     )
                     .padding(horizontal = 4.dp)
                 Column {
-                    Text(text = "类型: " + if (eventLog.isStateChanged) "状态变化" else "内容变化")
+                    Text(text = UiStrings.event_type_prefix + if (eventLog.isStateChanged) UiStrings.event_window_state_changed else UiStrings.event_window_content_changed)
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(text = "应用ID")
+                    Text(text = UiStrings.app_id)
                     Row {
                         Text(
                             text = eventLog.appId,
@@ -192,8 +196,8 @@ fun A11yEventLogPage() {
                         })
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(text = "事件数据")
-                    CopyableText(
+                    Text(text = UiStrings.event_data)
+                    GkCopyableText(
                         text = eventText,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -217,7 +221,7 @@ fun A11yEventLogPage() {
                                 "[${key}=${v}]"
                             }
                         }
-                        Text(text = "特征选择器")
+                        Text(text = UiStrings.event_selector)
                         Row(
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -235,7 +239,7 @@ fun A11yEventLogPage() {
             },
             confirmButton = {
                 TextButton(onClick = onDismissRequest) {
-                    Text(text = "关闭")
+                    Text(text = UiStrings.action_close)
                 }
             },
         )
@@ -266,7 +270,7 @@ fun EventLogCard(eventLog: A11yEventLog, modifier: Modifier = Modifier) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                FixedTimeText(
+                GkFixedTimeText(
                     text = eventLog.ctime.format("HH:mm:ss SSS"),
                 )
                 Spacer(
@@ -275,7 +279,7 @@ fun EventLogCard(eventLog: A11yEventLog, modifier: Modifier = Modifier) {
                         .background(MaterialTheme.colorScheme.tertiary)
                         .size(height = 8.dp, width = 1.dp)
                 )
-                AppNameText(
+                GkAppNameText(
                     appId = eventLog.appId,
                 )
             }
@@ -292,8 +296,8 @@ fun EventLogCard(eventLog: A11yEventLog, modifier: Modifier = Modifier) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    PerfIcon(
-                        imageVector = PerfIcon.Title,
+                    GkIcon(
+                        imageVector = GkIcons.Title,
                         modifier = Modifier.iconTextSize(
                             square = false
                         ),
@@ -314,8 +318,8 @@ fun EventLogCard(eventLog: A11yEventLog, modifier: Modifier = Modifier) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    PerfIcon(
-                        imageVector = PerfIcon.TextFields,
+                    GkIcon(
+                        imageVector = GkIcons.TextFields,
                         modifier = Modifier.iconTextSize(
                             square = false
                         ),
@@ -346,8 +350,8 @@ fun EventLogCard(eventLog: A11yEventLog, modifier: Modifier = Modifier) {
 
 @Composable
 private fun CopyIcon(modifier: Modifier = Modifier, onClick: () -> Unit) {
-    PerfIcon(
-        imageVector = PerfIcon.ContentCopy,
+    GkIcon(
+        imageVector = GkIcons.ContentCopy,
         modifier = modifier
             .clip(MaterialTheme.shapes.extraSmall)
             .clickable(onClick = onClick)

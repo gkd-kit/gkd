@@ -3,6 +3,7 @@ package li.gkd.app.service
 import android.app.Service
 import android.content.Intent
 import android.os.Binder
+import li.gkd.app.text.UiStrings
 import li.gkd.app.app
 import li.gkd.app.appScope
 import li.gkd.app.notif.NotificationCatalog
@@ -36,12 +37,12 @@ class ExposeService : Service() {
             -1 -> StatusService.autoStart()
             0 -> SnapshotCapture.capture()
             1 -> {
-                toast("执行成功", forced = true)
+                toast(UiStrings.execution_success, forced = true)
                 RuntimeStateSynchronizer.requestSync()
             }
 
             else -> {
-                toast("未知调用: expose=$expose data=$data", forced = true)
+                toast(UiStrings.external_call_unknown(expose, data), forced = true)
             }
         }
     }

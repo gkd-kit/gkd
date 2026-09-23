@@ -4,6 +4,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
 import kotlinx.coroutines.Job
+import li.gkd.app.text.UiStrings
 import li.gkd.app.a11y.appChangeTime
 import li.gkd.app.a11y.lastTriggerRule
 import li.gkd.app.a11y.lastTriggerTime
@@ -60,9 +61,6 @@ sealed class ResolvedRule(
         null
     } ?: group.actionMaximum
 
-    private val hasSlowSelector by lazy {
-        (matches + excludeMatches + anyMatches + excludeAllMatches).any { s -> s.isSlow(matchOptions) }
-    }
     val priorityTime = rule.priorityTime ?: group.priorityTime ?: 0
     val priorityActionMaximum = rule.priorityActionMaximum ?: group.priorityActionMaximum ?: 1
     val priorityEnabled: Boolean
@@ -75,8 +73,6 @@ sealed class ResolvedRule(
         val t = System.currentTimeMillis()
         return t - matchChangedTime.value < priorityTime + matchDelay
     }
-
-    val isSlow by lazy { preKeys.isEmpty() && (matchTime == null || matchTime > 10_000L) && hasSlowSelector }
 
     fun bindGroupRules(
         groupToRules: Map<out RawSubscription.RawGroupProps, List<ResolvedRule>>,
@@ -221,30 +217,16 @@ sealed class ResetMatchType(val value: String) {
 
 sealed class RuleStatus(val name: String) {
     data object StatusOk : RuleStatus("ok")
-    data object Status1 : RuleStatus("达到最大执行次数")
-    data object Status2 : RuleStatus("需要提前触发某个规则")
-    data object Status3 : RuleStatus("处于匹配延迟")
-    data object Status4 : RuleStatus("超出匹配时间")
-    data object Status5 : RuleStatus("处于冷却时间")
-    data object Status6 : RuleStatus("处于触发延迟")
+    data object Status1 : RuleStatus(UiStrings.rule_status_maximum_actions)
+    data object Status2 : RuleStatus(UiStrings.rule_status_prerequisite)
+    data object Status3 : RuleStatus(UiStrings.rule_status_match_delay)
+    data object Status4 : RuleStatus(UiStrings.rule_status_match_timeout)
+    data object Status5 : RuleStatus(UiStrings.rule_status_cooldown)
+    data object Status6 : RuleStatus(UiStrings.rule_status_action_delay)
 
     val ok: Boolean
         get() = this === StatusOk
 
     val alive: Boolean
         get() = this !== Status1 && this !== Status2 && this !== Status4
-}
-
-fun getFixActivityIds(
-    appId: String,
-    activityIds: List<String>?,
-): List<String> {
-    if (activityIds.isNullOrEmpty()) return emptyList()
-    return activityIds.map { activityId ->
-        if (activityId.startsWith('.')) { // .a.b.c -> com.x.y.x.a.b.c
-            appId + activityId
-        } else {
-            activityId
-        }
-    }
 }

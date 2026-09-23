@@ -21,14 +21,15 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import li.gkd.app.text.UiStrings
 import li.gkd.app.data.GithubPoliciesAsset
 import li.gkd.app.store.FileStateStore
 import li.gkd.app.util.GithubCookieException
 import li.gkd.app.util.LoadStatus
 import li.gkd.app.util.LogUtils
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
 import li.gkd.app.util.ToastUtils.toast
-import li.gkd.app.util.uploadFileToGithub
+import li.gkd.app.util.Github.uploadFileToGithub
 import java.io.File
 
 private class GithubUploadRequest(
@@ -85,7 +86,7 @@ class GithubUploadState(
         activeRequest = request
         val cookie = cookieFlow.value
         if (cookie.isEmpty()) {
-            toast("请先设置 cookie 后再上传")
+            toast(UiStrings.upload_cookie_required)
             showCookieEditor()
         } else {
             executeRequest(request, cookie)
@@ -150,7 +151,7 @@ class GithubUploadState(
         val cookie = cookieDraftFlow.value.trim()
         cookieFlow.value = cookie
         hideCookieEditor()
-        toast("更新成功")
+        toast(UiStrings.update_success)
         activeRequest?.let { executeRequest(it, cookie) }
     }
 
@@ -167,7 +168,7 @@ class GithubUploadState(
 
     private fun stopTask() {
         if (uploadStatusFlow.value is LoadStatus.Loading) {
-            uploadJob?.cancel("上传已取消")
+            uploadJob?.cancel(UiStrings.upload_cancelled)
         }
     }
 
@@ -183,7 +184,7 @@ class GithubUploadState(
         val uploadStatus by uploadStatusFlow.collectAsStateWithLifecycle()
         if (cookieEditorVisible) {
             val cookieRequired = activeRequest != null
-            AppAlertDialog(
+            GkAlertDialog(
                 properties = DialogProperties(dismissOnClickOutside = false),
                 onDismissRequest = ::dismissCookieEditor,
                 title = {
@@ -192,9 +193,9 @@ class GithubUploadState(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text(text = "Github Cookie")
-                        PerfIconButton(
-                            imageVector = PerfIcon.HelpOutline,
+                        Text(text = UiStrings.github_cookie_dialog_title)
+                        GkIconButton(
+                            imageVector = GkIcons.HelpOutline,
                             onClick = throttle(::openCookieHelp),
                         )
                     }
@@ -206,7 +207,7 @@ class GithubUploadState(
                             cookieDraftFlow.value =
                                 it.filter { char -> char != '\n' && char != '\r' }
                         },
-                        placeholder = { Text(text = "请输入 Github Cookie") },
+                        placeholder = { Text(text = UiStrings.github_cookie_input_hint) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .autoFocus(),
@@ -218,12 +219,12 @@ class GithubUploadState(
                         enabled = !cookieRequired || cookieDraft.isNotBlank(),
                         onClick = ::saveCookie,
                     ) {
-                        Text(text = "确认")
+                        Text(text = UiStrings.action_confirm)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = ::dismissCookieEditor) {
-                        Text(text = "取消")
+                        Text(text = UiStrings.action_cancel)
                     }
                 },
             )
@@ -231,8 +232,8 @@ class GithubUploadState(
         when (val status = uploadStatus) {
             null -> {}
             is LoadStatus.Loading -> {
-                AppAlertDialog(
-                    title = { Text(text = "上传文件中") },
+                GkAlertDialog(
+                    title = { Text(text = UiStrings.upload_file_progress) },
                     text = {
                         val showExactProgress = 0f < status.progress && status.progress < 1f
                         AnimatedContent(showExactProgress) { showExact ->
@@ -248,28 +249,28 @@ class GithubUploadState(
                     onDismissRequest = {},
                     confirmButton = {
                         TextButton(onClick = ::stopTask) {
-                            Text(text = "终止上传")
+                            Text(text = UiStrings.upload_abort)
                         }
                     },
                 )
             }
 
             is LoadStatus.Success -> {
-                AppAlertDialog(
-                    title = { Text(text = "上传完成") },
-                    text = { CopyTextCard(text = status.result) },
+                GkAlertDialog(
+                    title = { Text(text = UiStrings.upload_complete) },
+                    text = { GkCopyTextCard(text = status.result) },
                     onDismissRequest = {},
                     confirmButton = {
                         TextButton(onClick = ::closeUploadStatus) {
-                            Text(text = "关闭")
+                            Text(text = UiStrings.action_close)
                         }
                     },
                 )
             }
 
             is LoadStatus.Failure -> {
-                AppAlertDialog(
-                    title = { Text(text = "上传失败") },
+                GkAlertDialog(
+                    title = { Text(text = UiStrings.upload_failed) },
                     text = {
                         Text(text = status.exception.message ?: status.exception.toString())
                     },
@@ -277,7 +278,7 @@ class GithubUploadState(
                     dismissButton = if (status.exception is GithubCookieException) {
                         {
                             TextButton(onClick = ::replaceCookie) {
-                                Text(text = "更换 Cookie")
+                                Text(text = UiStrings.cookie_change)
                             }
                         }
                     } else {
@@ -285,7 +286,7 @@ class GithubUploadState(
                     },
                     confirmButton = {
                         TextButton(onClick = ::closeUploadStatus) {
-                            Text(text = "关闭")
+                            Text(text = UiStrings.action_close)
                         }
                     },
                 )

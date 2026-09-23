@@ -2,6 +2,8 @@ package li.gkd.app
 
 import android.content.Intent
 import android.net.Uri
+import androidx.annotation.MainThread
+import li.gkd.app.platform.service.ServiceController
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.CancellationException
@@ -13,6 +15,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import li.gkd.app.text.UiStrings
 import li.gkd.app.a11y.useA11yServiceEnabledFlow
 import li.gkd.app.a11y.useEnabledA11yServicesFlow
 import li.gkd.app.data.CrashData
@@ -49,6 +52,7 @@ import li.gkd.app.ui.home.HomeRoute
 import li.gkd.app.ui.share.BaseViewModel
 import li.gkd.app.ui.share.ActivityResultRequests
 import li.gkd.app.ui.share.launchUi
+import li.gkd.app.ui.share.DeletionTarget
 import li.gkd.app.util.AutomatorModeOption
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ShortUrlSet
@@ -75,13 +79,40 @@ data class PageScrollResetRequest(
 class MainViewModel : BaseViewModel() {
     companion object {
         private var tempTermsAccepted = false
+        private var currentInstance: MainViewModel? = null
+
+        /** Only available to the main UI after its Activity has bound the request hosts. */
+        @MainThread
+        fun requireCurrent(): MainViewModel = checkNotNull(currentInstance) {
+            "MainViewModel is not registered; a bound MainActivity is required"
+        }
     }
 
     init {
         LogUtils.d("MainViewModel:init")
         addCloseable {
+            if (currentInstance === this) {
+                currentInstance = null
+            }
             LogUtils.d("MainViewModel:close")
         }
+    }
+
+    /** Called by MainActivity after binding permission and Activity Result hosts. */
+    @MainThread
+    fun registerCurrent() {
+        currentInstance = this
+    }
+
+    /** Returns whether the start request was issued; observe StatusService for running state. */
+    suspend fun enableStatusService(): Boolean {
+        if (!permissionRequests.ensurePermissions(
+                PermissionStates.foregroundServiceSpecialUse,
+                PermissionStates.notification,
+            )
+        ) return false
+        ServiceController.setStatusEnabled(true)
+        return true
     }
 
     val termsStepFlow: StateFlow<Int>
@@ -133,6 +164,27 @@ class MainViewModel : BaseViewModel() {
 
     val dialogRequests = DialogRequests()
 
+    fun confirmDelete(
+        title: String,
+        text: String,
+        targets: () -> Set<DeletionTarget> = { emptySet() },
+        dismiss: () -> Unit = {},
+        delete: suspend () -> Unit,
+    ) = scope.launchUi {
+        if (!dialogRequests.confirm(title = title, text = text, error = true)) return@launchUi
+        val deletedTargets = targets()
+        dismiss()
+        subsSheet.dismissForDeletion(deletedTargets)
+        ruleGroupState.dismissForDeletion(deletedTargets)
+        ruleControlDialog.dismissForDeletion(deletedTargets)
+        // Remove the owning page and its descendants synchronously, without the back-button throttle.
+        val firstOwned = backStack.indexOfFirst { route -> deletedTargets.any { it.owns(route) } }
+        if (firstOwned > 0) {
+            while (backStack.size > firstOwned) backStack.removeAt(backStack.lastIndex)
+        }
+        delete()
+    }
+
     val updateStatus = if (META.updateEnabled) UpdateStatus(scope) else null
 
     val githubUpload = GithubUploadState(
@@ -160,6 +212,7 @@ class MainViewModel : BaseViewModel() {
     }.debounce(500).stateLoadable()
 
     val ruleGroupState = RuleGroupState(this)
+    val ruleControlDialog = li.gkd.app.feature.subscription.RuleControlDialogState()
 
     fun showRuleGroup(
         subscriptionId: Long,
@@ -222,7 +275,7 @@ class MainViewModel : BaseViewModel() {
     }
 
     fun handleGkdUri(uri: Uri) {
-        val notFoundToast = { toast("未知URI\n${uri}") }
+        val notFoundToast = { toast(UiStrings.uri_unknown(uri)) }
         when (uri.host) {
             "page" -> when (uri.path) {
                 "" -> runMainPost {
@@ -257,15 +310,15 @@ class MainViewModel : BaseViewModel() {
             handleGkdUri(uri)
         } else if (source == OpenFileActivity::class.jvmName && uri != null) {
             if (!dialogRequests.confirm(
-                    title = "导入备份",
-                    text = "备份会写入应用设置、订阅和规则配置，是否继续？",
+                    title = UiStrings.backup_import_label,
+                    text = UiStrings.backup_import_confirmation,
                 )
             ) {
                 return@launchUi
             }
-            toast("导入备份中...")
+            toast(UiStrings.backup_import_progress)
             withContext(Dispatchers.IO) { BackupManager.importData(uri) }
-            toast("导入成功")
+            toast(UiStrings.import_success)
         }
     }
 
@@ -319,7 +372,7 @@ class MainViewModel : BaseViewModel() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                toast("自动化状态检测失败：${e.message}")
+                toast(UiStrings.automation_state_check_failed(e.message))
                 LogUtils.d("detect automation state failed", e)
                 return@launch
             }

@@ -30,7 +30,7 @@ jobs:
         with:
           cache-encryption-key: ${{ secrets.GRADLE_CACHE_ENCRYPTION_KEY }}
 
-      - uses: pnpm/setup@v2
+      - uses: pnpm/setup@v3
 
       - name: Validate release tag
         run: node ./gkd-selector/scripts/validate-release-tag.ts "$GITHUB_REF_NAME"

@@ -1,5 +1,7 @@
 package li.gkd.app.ui.home
 
+import li.gkd.app.MainViewModel
+
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -14,8 +16,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.share.LocalMainViewModel
+import li.gkd.app.text.UiStrings
+import li.gkd.app.ui.component.GkIcon
+import li.gkd.app.ui.component.GkIcons
 
 sealed class BottomNavItem(
     val key: Int,
@@ -24,26 +27,26 @@ sealed class BottomNavItem(
 ) {
     object Dashboard : BottomNavItem(
         key = 0,
-        label = "首页",
-        icon = PerfIcon.Home,
+        label = UiStrings.home_title,
+        icon = GkIcons.Home,
     )
 
     object SubsManage : BottomNavItem(
         key = 1,
-        label = "订阅",
-        icon = PerfIcon.FormatListBulleted,
+        label = UiStrings.subscription_title,
+        icon = GkIcons.StackedDocuments,
     )
 
     object AppList : BottomNavItem(
         key = 2,
-        label = "应用",
-        icon = PerfIcon.Apps,
+        label = UiStrings.apps_title,
+        icon = GkIcons.Android,
     )
 
     object Settings : BottomNavItem(
         key = 3,
-        label = "设置",
-        icon = PerfIcon.Settings,
+        label = UiStrings.settings_title,
+        icon = GkIcons.Settings,
     )
 
     companion object {
@@ -59,7 +62,7 @@ fun ResetPageScrollOnRequest(
     navItem: BottomNavItem,
     resetScroll: suspend () -> Unit,
 ) {
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     val request by mainVm.pageScrollResetRequestFlow.collectAsStateWithLifecycle()
     val currentRequest = request
     LaunchedEffect(currentRequest) {
@@ -72,7 +75,7 @@ fun ResetPageScrollOnRequest(
 
 @Composable
 fun HomePage() {
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     viewModel<SubsManageVm>()
     val tab by mainVm.tabFlow.collectAsStateWithLifecycle()
     val selectedTab = BottomNavItem.allSubObjects.find { it.key == tab }
@@ -98,7 +101,7 @@ fun HomePage() {
                             modifier = Modifier,
                             onClick = { mainVm.handleClickTab(navItem) },
                             icon = {
-                                PerfIcon(
+                                GkIcon(
                                     imageVector = navItem.icon,
                                     contentDescription = null,
                                 )

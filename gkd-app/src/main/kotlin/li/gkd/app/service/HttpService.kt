@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
+import li.gkd.app.text.UiStrings
 import li.gkd.app.a11y.A11yRuntime
 import li.gkd.app.appScope
 import li.gkd.app.data.AppInfo
@@ -68,7 +69,7 @@ class HttpService : LifecycleHookService() {
         useLogLifecycle()
         useServicePresence(
             stateFlow = isRunning,
-            name = "HTTP服务",
+            name = UiStrings.http_service_compact_label,
         )
         useStopServiceReceiver()
         onDestroyed {
@@ -79,32 +80,29 @@ class HttpService : LifecycleHookService() {
             }
         }
         onCreated {
-            lifecycleScope.launchLogged(Dispatchers.IO) {
-                httpServerPortFlow.collect {
-                    localNetworkIpsFlow.value = NetworkUtils.getIpAddressInLocalNetwork()
-                }
-            }
             NotificationCatalog.http(httpServerPortFlow.value).startForeground()
             var startedOnce = false
             lifecycleScope.launchLogged(Dispatchers.IO) {
                 httpServerPortFlow.collectLatest { port ->
                     if (!NetworkUtils.isPortAvailable(port)) {
-                        toast("端口 $port 被占用，请更换后重试")
+                        toast(UiStrings.http_port_occupied(port))
                         stopSelf()
                         return@collectLatest
                     }
                     val server = try {
                         createServer(port).apply { start() }
                     } catch (e: Exception) {
-                        toast("HTTP服务启动失败:${e.stackTraceToString()}")
+                        toast(UiStrings.http_service_start_failed(e.stackTraceToString()))
                         LogUtils.d("HTTP服务启动失败", e)
                         stopSelf()
                         return@collectLatest
                     }
                     httpServerFlow.value = server
-                    NotificationCatalog.http(port).startForeground()
+                    val localNetworkIps = NetworkUtils.getIpAddressInLocalNetwork()
+                    localNetworkIpsFlow.value = localNetworkIps
+                    NotificationCatalog.http(port, localNetworkIps).startForeground()
                     if (startedOnce) {
-                        toast("HTTP服务重启成功")
+                        toast(UiStrings.http_service_restart_success)
                     }
                     startedOnce = true
                     try {
@@ -179,7 +177,7 @@ private fun createServer(port: Int) = embeddedServer(CIO, port) {
                 val data = call.receive<ReqId>()
                 val fp = SnapshotRepository.snapshotFile(data.id)
                 if (!fp.exists()) {
-                    throw RpcError("对应快照不存在")
+                    throw RpcError(UiStrings.snapshot_not_found)
                 }
                 call.respondFile(fp)
             }
@@ -187,7 +185,7 @@ private fun createServer(port: Int) = embeddedServer(CIO, port) {
                 val data = call.receive<ReqId>()
                 val fp = SnapshotRepository.screenshotFile(data.id)
                 if (!fp.exists()) {
-                    throw RpcError("对应截图不存在")
+                    throw RpcError(UiStrings.screenshot_not_found)
                 }
                 call.respondFile(fp)
             }
@@ -210,9 +208,9 @@ private fun createServer(port: Int) = embeddedServer(CIO, port) {
                 val snapshot = allSnapshots.find { it.id == data.id }
                 if (snapshot != null) {
                     SnapshotRepository.delete(snapshot)
-                    call.respond(RpcOk("快照删除成功"))
+                    call.respond(RpcOk(UiStrings.snapshot_delete_success))
                 } else {
-                    throw RpcError("快照不存在或已被删除")
+                    throw RpcError(UiStrings.snapshot_missing_or_deleted)
                 }
             }
             post("/updateSubscription") {
@@ -220,7 +218,7 @@ private fun createServer(port: Int) = embeddedServer(CIO, port) {
                     RawSubscription.parse(call.receiveText(), json5 = false)
                         .copy(
                             id = LOCAL_HTTP_SUBS_ID,
-                            name = "内存订阅",
+                            name = UiStrings.subscription_memory,
                             version = 0,
                             author = "@gkd-kit/inspect"
                         )

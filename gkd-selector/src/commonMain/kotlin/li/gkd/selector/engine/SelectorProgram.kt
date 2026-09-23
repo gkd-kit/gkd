@@ -109,11 +109,6 @@ internal class SelectorProgram private constructor(
         return result
     }
 
-    fun isSlow(options: MatchOptions): Boolean {
-        if ((!options.fastQuery || fastQueryList.isEmpty()) && !isMatchRoot) return true
-        return units.any { it.hasSlowTraversal(options) }
-    }
-
     fun validateType(globalType: SelectorType): TypeCheckFailure? {
         val collector = TypeCheckCollector(globalType, 1)
         collectTypeFailures(collector)

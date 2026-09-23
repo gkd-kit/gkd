@@ -2,6 +2,7 @@ package li.gkd.app.store
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
+import li.gkd.app.text.UiStrings
 import li.gkd.app.appScope
 import li.gkd.app.data.settings.SettingsRepository
 import li.gkd.app.data.settings.SettingsStore
@@ -105,9 +106,9 @@ object AppStore {
 
     fun toggleEnableMatch() {
         if (storeFlow.value.enableMatch) {
-            toast("暂停规则匹配")
+            toast(UiStrings.rule_matching_pause)
         } else {
-            toast("开启规则匹配")
+            toast(UiStrings.rule_matching_enable)
         }
         updateSettings { it.copy(enableMatch = !it.enableMatch) }
     }

@@ -6,18 +6,18 @@
     "fetch-selector-dist": "node ./gkd-selector/scripts/fetch-dist.ts"
   },
   "dependencies": {
-    "@types/node": "^26.4.0",
+    "@types/node": "^26.6.2",
     "typescript": "^7.0.2"
   },
   "devEngines": {
     "runtime": {
       "name": "node",
-      "version": "26.6.0",
+      "version": "26.9.0",
       "onFail": "warn"
     },
     "packageManager": {
       "name": "pnpm",
-      "version": "11.20.0",
+      "version": "12.5.1",
       "onFail": "error"
     }
   }

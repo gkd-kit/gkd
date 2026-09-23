@@ -1,5 +1,9 @@
 package li.gkd.app.feature.log
 
+import li.gkd.app.ui.component.GkPageBottomSpace
+import li.gkd.app.ui.share.launchUi
+import li.gkd.app.MainViewModel
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,35 +39,34 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import kotlinx.serialization.Serializable
+import li.gkd.app.text.UiStrings
 import li.gkd.app.data.date
 import li.gkd.app.data.showActivityId
-import li.gkd.app.ui.component.AppNameText
 import li.gkd.app.ui.AppConfigRoute
-import li.gkd.app.ui.component.EmptyText
-import li.gkd.app.ui.component.FixedTimeText
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.PerfTopAppBar
-import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.share.ListPlaceholder
-import li.gkd.app.ui.share.LocalMainViewModel
 import li.gkd.app.ui.share.noRippleClickable
-import li.gkd.app.ui.style.EmptyHeight
 import li.gkd.app.ui.style.iconTextSize
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.data.appinfo.AppInfoRepository
-import li.gkd.app.ui.share.launchUi
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
 import li.gkd.app.util.ToastUtils.toast
 import li.gkd.db.ActivityLog
+import li.gkd.app.ui.component.GkAppNameText
+import li.gkd.app.ui.component.GkEmptyState
+import li.gkd.app.ui.component.GkFixedTimeText
+import li.gkd.app.ui.component.GkIcon
+import li.gkd.app.ui.component.GkIconButton
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.component.rememberListScrollState
 
 @Serializable
 data object ActivityLogRoute : NavKey
 
 @Composable
 fun ActivityLogPage() {
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel<ActivityLogVm>()
     val scope = vm.scope
 
@@ -74,32 +77,32 @@ fun ActivityLogPage() {
     val listState = pageScrollState.listState
     pageScrollState.ResetOnChange(list.itemCount > 0)
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        PerfTopAppBar(
+        GkTopAppBar(
             scrollBehavior = scrollBehavior,
             navigationIcon = {
-                PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
+                GkIconButton(imageVector = GkIcons.ArrowBack, onClick = {
                     mainVm.popPage()
                 })
             },
             title = {
                 Text(
-                    text = "界面日志",
+                    text = UiStrings.activity_log_title,
                     modifier = Modifier.noRippleClickable(onClick = pageScrollState::resetScroll),
                 )
             },
             actions = {
                 if (logCount > 0) {
-                    PerfIconButton(
-                        imageVector = PerfIcon.Delete,
+                    GkIconButton(
+                        imageVector = GkIcons.Delete,
                         onClick = throttle {
                             scope.launchUi {
                                 if (!mainVm.dialogRequests.confirm(
-                                    title = "删除日志",
-                                    text = "确定删除所有界面日志?",
+                                    title = UiStrings.action_delete_logs,
+                                    text = UiStrings.activity_log_delete_all_confirmation,
                                     error = true,
                                 )) return@launchUi
                                 vm.deleteAll()
-                                toast("删除成功")
+                                toast(UiStrings.delete_success)
                             }
                         }
                     )
@@ -138,9 +141,10 @@ fun ActivityLogPage() {
                 }
             }
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                Spacer(modifier = Modifier.height(EmptyHeight))
                 if (logCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                    EmptyText(text = "暂无数据")
+                    GkEmptyState(text = UiStrings.data_empty)
+                } else {
+                    GkPageBottomSpace()
                 }
             }
         }
@@ -186,9 +190,9 @@ private fun ActivityLogCard(
                             .background(MaterialTheme.colorScheme.secondary)
                             .size(4.dp)
                     )
-                    AppNameText(appId = activityLog.appId, modifier = Modifier.weight(1f))
-                    PerfIcon(
-                        imageVector = PerfIcon.KeyboardArrowRight,
+                    GkAppNameText(appId = activityLog.appId, modifier = Modifier.weight(1f))
+                    GkIcon(
+                        imageVector = GkIcons.KeyboardArrowRight,
                         modifier = Modifier
                             .iconTextSize()
                     )
@@ -213,7 +217,7 @@ private fun ActivityLogCard(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                FixedTimeText(
+                GkFixedTimeText(
                     text = activityLog.date,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.secondary,
@@ -228,7 +232,7 @@ private fun ActivityLogCard(
                         )
                     } else {
                         Text(
-                            text = "null",
+                            text = UiStrings.value_null,
                             color = LocalContentColor.current.copy(alpha = 0.5f),
                         )
                     }

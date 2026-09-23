@@ -1,6 +1,7 @@
 package li.gkd.app.data
 
 import android.graphics.Rect
+import java.util.Objects
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -14,24 +15,24 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
+import li.gkd.app.text.UiStrings
 import li.gkd.app.a11y.selectorTypeModel
+import li.gkd.app.data.appinfo.AppInfoRepository
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ScreenUtils
-import li.gkd.app.data.appinfo.AppInfoRepository
+import li.gkd.app.util.ToastUtils.toast
 import li.gkd.app.util.distinctByIfAny
 import li.gkd.app.util.filterIfNotAll
 import li.gkd.app.util.json
 import li.gkd.app.util.toJson5String
-import li.gkd.app.util.ToastUtils.toast
 import li.gkd.db.LOCAL_SUBS_IDS
 import li.gkd.db.RuleGroupType
-import li.songe.json5.Json5
 import li.gkd.selector.Selector
 import li.gkd.selector.SelectorCompileResult
 import li.gkd.selector.SelectorTypeResult
+import li.songe.json5.Json5
 import net.objecthunter.exp4j.Expression
 import net.objecthunter.exp4j.ExpressionBuilder
-import java.util.Objects
 
 
 @Serializable
@@ -75,21 +76,10 @@ data class RawSubscription(
 
     private val categoryAppsMap: Map<Int, List<RawApp>> by lazy {
         val map = mutableMapOf<Int, MutableList<RawApp>>()
-        val usedGroups = mutableListOf<RawAppGroup>()
-        categories.forEach { c ->
-            apps.forEach { a ->
-                val subGroups = a.groups.filter { g ->
-                    g.name.startsWith(c.name) && !usedGroups.any { g2 -> g2 === g }
-                }
-                if (subGroups.isNotEmpty()) {
-                    usedGroups.addAll(subGroups)
-                    val list = map[c.key]
-                    val b = a.copy(groups = subGroups)
-                    if (list == null) {
-                        map[c.key] = mutableListOf(b)
-                    } else {
-                        list.add(b)
-                    }
+        apps.forEach { app ->
+            app.groups.groupBy { getCategory(it.name)?.key }.forEach { (key, groups) ->
+                if (key != null) {
+                    map.getOrPut(key) { mutableListOf() }.add(app.copy(groups = groups))
                 }
             }
         }
@@ -132,7 +122,7 @@ data class RawSubscription(
         if (!c.desc.isNullOrBlank()) return c.desc
         val groupSize = categoryGroupsMap[categoryKey]?.size ?: 0
         val appSize = categoryAppsMap[categoryKey]?.size ?: 0
-        if (groupSize > 0) return "${appSize}应用/${groupSize}规则"
+        if (groupSize > 0) return UiStrings.subscription_app_rule_counts(appSize, groupSize)
         return null
     }
 
@@ -160,25 +150,13 @@ data class RawSubscription(
         }.toMap()
     }
 
-    fun getGlobalGroupInnerDisabled(globalGroup: RawGlobalGroup, appId: String): Boolean {
-        globalGroup.appIdEnable[appId]?.let {
-            if (!it) return true
-        }
-        globalGroupAppGroupNameDisableMap[globalGroup.key]?.let {
-            if (it.contains(appId)) {
-                return true
-            }
-        }
-        return false
-    }
-
     val numText by lazy {
         val appsSize = apps.size
         val appGroupsSize = appGroups.size
         val globalGroupSize = globalGroups.size
         if (appGroupsSize + globalGroupSize > 0) {
             if (globalGroupSize > 0) {
-                "${globalGroupSize}全局" + if (appGroupsSize > 0) {
+                UiStrings.subscription_global_count(globalGroupSize) + if (appGroupsSize > 0) {
                     "/"
                 } else {
                     ""
@@ -186,12 +164,12 @@ data class RawSubscription(
             } else {
                 ""
             } + if (appGroupsSize > 0) {
-                "${appsSize}应用/${appGroupsSize}规则"
+                UiStrings.subscription_app_rule_counts(appsSize, appGroupsSize)
             } else {
                 ""
             }
         } else {
-            "暂无规则"
+            UiStrings.rules_empty
         }
     }
 
@@ -439,38 +417,6 @@ data class RawSubscription(
         override val rules: List<RawGlobalRule>,
         override val apps: List<RawGlobalApp>?,
     ) : RawGroupProps, RawGlobalRuleProps {
-        val appIdEnable: Map<String, Boolean> by lazy {
-            if (rules.all { r -> r.apps.isNullOrEmpty() }) {
-                apps?.associate { a -> a.id to (a.enable ?: true) } ?: emptyMap()
-            } else {
-                val allIds = mutableSetOf<String>()
-                apps?.forEach { a ->
-                    allIds.add(a.id)
-                }
-                rules.forEach { r ->
-                    r.apps?.forEach { a ->
-                        allIds.add(a.id)
-                    }
-                }
-                val dataMap = mutableMapOf<String, Boolean>()
-                allIds.forEach forEachId@{ id ->
-                    var temp: Boolean? = null
-                    rules.forEach { r ->
-                        val v = (r.apps ?: apps)?.find { it.id == id }?.enable ?: return@forEachId
-                        if (temp == null) {
-                            temp = v
-                        } else if (temp != v) {
-                            return@forEachId
-                        }
-                    }
-                    if (temp != null) {
-                        dataMap[id] = temp
-                    }
-                }
-                dataMap
-            }
-        }
-
         override val cacheMap by lazy { HashMap<String, Selector?>() }
         override val errorDesc by lazy { getErrorDesc() }
         override val valid by lazy { errorDesc == null }
@@ -611,20 +557,20 @@ data class RawSubscription(
                     is SelectorCompileResult.Success -> result.value
                     is SelectorCompileResult.Failure -> {
                         LogUtils.d("非法选择器", source, result.error.toString())
-                        return "非法选择器\n$source\n${result.error.message}"
+                        return UiStrings.selector_invalid_detail(source, result.error.message)
                     }
                 }
                 when (val result = selector.validateType(selectorTypeModel)) {
                     is SelectorTypeResult.Success -> cacheMap[source] = result.value
                     is SelectorTypeResult.Failure -> {
                         LogUtils.d("非法选择器", source, result.error.toString())
-                        return "非法选择器\n$source\n${result.error.message}"
+                        return UiStrings.selector_invalid_detail(source, result.error.message)
                     }
                 }
             }
             rules.forEach { r ->
                 if (r.position?.isValid == false) {
-                    return "非法位置:${r.position}"
+                    return UiStrings.rule_invalid_position(r.position)
                 }
             }
             return null

@@ -1,17 +1,18 @@
 package li.gkd.app.ui.app
 
+import li.gkd.app.MainViewModel
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
-import li.gkd.app.ui.share.LocalMainViewModel
 import li.gkd.app.ui.style.AppTheme
 
 @Composable
 fun AppRoot() {
-    val mainVm = LocalMainViewModel.current
+    val mainVm = MainViewModel.requireCurrent()
     AppTheme {
         Box(modifier = Modifier.fillMaxSize()) {
             MainNavigation()

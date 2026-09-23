@@ -3,6 +3,7 @@ package li.gkd.app.notif
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import androidx.core.app.NotificationManagerCompat
+import li.gkd.app.text.UiStrings
 import li.gkd.app.META
 import li.gkd.app.app
 
@@ -13,7 +14,7 @@ enum class AppNotificationChannel(
     val importance: Int = NotificationManager.IMPORTANCE_LOW,
 ) {
     Service(id = "0"),
-    Snapshot(id = "1", label = "保存快照通知");
+    Snapshot(id = "1", label = UiStrings.snapshot_notification_channel);
 
     val displayName: String
         get() = label ?: META.appName

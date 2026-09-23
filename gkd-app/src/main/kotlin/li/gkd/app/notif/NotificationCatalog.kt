@@ -1,6 +1,7 @@
 package li.gkd.app.notif
 
 import android.app.Service
+import li.gkd.app.text.UiStrings
 import li.gkd.app.META
 import li.gkd.app.R
 import li.gkd.app.service.ActivityService
@@ -87,7 +88,7 @@ data class PostedNotification(
 object NotificationCatalog {
     fun status(
         title: String = META.appName,
-        text: String? = "无障碍正在运行",
+        text: String? = UiStrings.a11y_running,
         uri: String? = null,
     ) = ForegroundNotification(
         key = ForegroundNotificationKey.Status,
@@ -98,32 +99,33 @@ object NotificationCatalog {
 
     fun screenshot() = ForegroundNotification(
         key = ForegroundNotificationKey.Screenshot,
-        title = "快照截屏已开启",
-        text = "保存快照时截取屏幕",
+        title = UiStrings.screenshot_capture_enabled,
+        text = UiStrings.screenshot_capture_notification_description,
         uri = "gkd://page/1",
         stopService = ScreenshotService::class,
     )
 
     fun button() = ForegroundNotification(
         key = ForegroundNotificationKey.Button,
-        title = "快照按钮已开启",
-        text = "点击按钮捕获快照",
+        title = UiStrings.snapshot_button_enabled,
+        text = UiStrings.snapshot_button_notification_description,
         uri = "gkd://page/1",
         stopService = ButtonService::class,
     )
 
-    fun http(port: Int) = ForegroundNotification(
+    fun http(port: Int, localNetworkIps: List<String> = emptyList()) = ForegroundNotification(
         key = ForegroundNotificationKey.Http,
-        title = "HTTP 服务已开启",
-        text = "监听端口：$port",
+        title = UiStrings.http_service_enabled,
+        text = localNetworkIps.ifEmpty { listOf("127.0.0.1") }
+            .joinToString(", ") { "$it:$port" },
         uri = "gkd://page/1",
         stopService = HttpService::class,
     )
 
     fun expose() = ForegroundNotification(
         key = ForegroundNotificationKey.Expose,
-        title = "正在处理外部调用",
-        text = "任务完成后自动关闭",
+        title = UiStrings.external_call_processing,
+        text = UiStrings.external_call_notification_description,
     )
 
     fun snapshotSaved(
@@ -133,18 +135,18 @@ object NotificationCatalog {
         savedToDownloads: Boolean,
     ) = PostedNotification(
         key = PostedNotificationKey.SnapshotSaved,
-        title = "快照已保存 · $appName",
+        title = UiStrings.snapshot_saved_app(appName),
         text = buildList {
             activityId?.let(::add)
             screenshotStatus.detailText()?.let(::add)
-            if (savedToDownloads) add("已保存至下载")
+            if (savedToDownloads) add(UiStrings.saved_to_downloads)
         }.joinToString(separator = " · ").takeIf { it.isNotEmpty() },
         uri = "gkd://page/2",
     )
 
     fun activity(text: String? = null) = ForegroundNotification(
         key = ForegroundNotificationKey.Activity,
-        title = "界面信息显示中",
+        title = UiStrings.activity_info_showing,
         text = text,
         uri = "gkd://page/1",
         stopService = ActivityService::class,
@@ -152,14 +154,14 @@ object NotificationCatalog {
 
     fun event() = ForegroundNotification(
         key = ForegroundNotificationKey.Event,
-        title = "无障碍事件记录中",
+        title = UiStrings.a11y_events_recording,
         uri = "gkd://page/1",
         stopService = EventService::class,
     )
 
     fun track() = ForegroundNotification(
         key = ForegroundNotificationKey.Track,
-        title = "轨迹提示已开启",
+        title = UiStrings.track_overlay_enabled,
         uri = "gkd://page?tab=3",
         stopService = TrackService::class,
     )

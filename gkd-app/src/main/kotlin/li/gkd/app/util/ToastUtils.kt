@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import com.hjq.toast.Toaster
 import com.hjq.toast.style.WhiteToastStyle
+import li.gkd.app.text.UiStrings
 import li.gkd.app.app
 import li.gkd.app.data.ResolvedRule
 import li.gkd.app.permission.PermissionStates
@@ -124,10 +125,12 @@ object ToastUtils {
             val t = System.currentTimeMillis()
             if (t - triggerTime > triggerInterval + 100) { // 100ms 保证二次显示的时候上一次已经完全消失
                 triggerTime = t
-                val text = storeFlow.value.actionToast
-                    .replace($$"${1}", rule.rule.name.toString())
-                    .replace($$"${2}", rule.g.group.name)
-                    .replace($$"${3}", actionCountFlow.value.toString())
+                val text = ActionToastTemplate.render(
+                    storeFlow.value.actionToast,
+                    rule.rule.name.toString(),
+                    rule.g.group.name,
+                    actionCountFlow.value,
+                )
                 if (storeFlow.value.useSystemToast) {
                     showSystemToast(text)
                 } else {
@@ -137,13 +140,20 @@ object ToastUtils {
         }
     }
 
+    fun previewActionToast(text: CharSequence, useSystemToast: Boolean) {
+        runMainPost {
+            if (useSystemToast) showSystemToast(text) else showA11yToast(text)
+        }
+    }
+
+    private var cancelCustomToast: (() -> Unit)? = null
     private var cacheToast: Toast? = null
     private fun showSystemToast(message: CharSequence) {
+        cancelCustomToast?.invoke()
         cacheToast?.cancel()
         cacheToast = Toast.makeText(app, message, Toast.LENGTH_SHORT).apply {
             show()
         }
-        runMainPost(Toast.LENGTH_SHORT.toLong()) { cacheToast = null }
     }
 
     // 1.使用 WeakReference<View> 在某些机型上导致无法取消
@@ -151,6 +161,9 @@ object ToastUtils {
     // https://github.com/gkd-kit/gkd/issues/697
     // https://github.com/gkd-kit/gkd/issues/698
     private fun showA11yToast(message: CharSequence) {
+        cancelCustomToast?.invoke()
+        cacheToast?.cancel()
+        cacheToast = null
         val wm = A11yService.instance?.wm
             ?: if (PermissionStates.drawOverlays.updateAndGet()) app.windowManager else null
         if (wm == null) {
@@ -182,17 +195,24 @@ object ToastUtils {
             windowAnimations = android.R.style.Animation_Toast
         }
         wm.addView(textView, layoutParams)
-        runMainPost(triggerInterval) {
+        val cancel: () -> Unit = {
+            cancelCustomToast = null
             try {
                 wm.removeViewImmediate(textView)
             } catch (_: Exception) {
+            }
+        }
+        cancelCustomToast = cancel
+        runMainPost(triggerInterval) {
+            if (cancelCustomToast === cancel) {
+                cancel()
             }
         }
     }
 
     fun copyText(text: String) {
         app.clipboardManager.setPrimaryClip(ClipData.newPlainText(app.packageName, text))
-        toast("复制成功")
+        toast(UiStrings.copy_success)
     }
 
     fun initToast() {

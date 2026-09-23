@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.gkd.app.appScope
+import li.gkd.app.a11y.launcherAppIdFlow
 import li.gkd.app.data.appinfo.AppInfoRepository
 import li.gkd.app.data.RawSubscription
 import li.gkd.app.domain.rule.RuleSummary
@@ -77,13 +78,15 @@ object SubscriptionState {
             subsMapFlow,
             AppInfoRepository.appInfoMapFlow,
             Db.subscriptionConfigStore.observe(),
-        ) { subscriptions, appInfoCache, configs ->
+            launcherAppIdFlow,
+        ) { subscriptions, appInfoCache, configs, launcherAppId ->
             RuleSummaryBuilder.build(
                 subscriptions = buildUsedSubsEntries(configs.subsItems, subscriptions),
                 appInfoById = appInfoCache,
                 appConfigs = configs.appConfigs,
                 groupConfigs = configs.appGroupConfigs + configs.globalGroupConfigs,
                 categoryConfigs = configs.categoryConfigs,
+                launcherAppId = launcherAppId,
             )
         }.flowOn(Dispatchers.Default).stateIn(appScope, SharingStarted.Eagerly, RuleSummary())
     }

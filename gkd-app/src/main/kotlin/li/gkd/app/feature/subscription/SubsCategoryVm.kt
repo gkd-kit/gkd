@@ -1,94 +1,72 @@
 package li.gkd.app.feature.subscription
 
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import li.gkd.db.SubsCategoryConfig
-import li.gkd.app.data.RawSubscription
-import li.gkd.app.data.edit
-import li.gkd.app.ui.share.BaseViewModel
-import li.gkd.app.core.state.Loadable
-import li.gkd.app.util.EnableGroupOption
-import li.gkd.app.util.findOption
+import kotlinx.coroutines.flow.StateFlow
+import li.gkd.app.data.ruleconfig.RuleGroupConfigService
+import li.gkd.app.data.subscription.SubscriptionRepository
+import li.gkd.app.util.MutexState
+import li.gkd.app.text.UiStrings
+import li.gkd.app.domain.rule.CategoryPolicy
+import li.gkd.app.domain.rule.CategorySetting
+import li.gkd.app.domain.rule.RuleGroupPolicy
 import li.gkd.db.Db
+import li.gkd.app.data.RawSubscription
+import li.gkd.app.ui.share.BaseViewModel
+
+data class CategorySummary(
+    val category: RawSubscription.RawCategory,
+    val appCount: Int,
+    val groupCount: Int,
+    val enabledGroupCount: Int,
+    val setting: CategorySetting,
+)
 
 data class SubsCategoryUiState(
     val subscription: RawSubscription,
-    val categoryConfigMap: Loadable<Map<Int, SubsCategoryConfig>>,
+    val categories: List<CategorySummary>,
 )
 
-class SubsCategoryVm(
-    val route: SubsCategoryRoute,
-) : BaseViewModel() {
-    val showAddCategoryDialogFlow: StateFlow<Boolean>
-        field = MutableStateFlow(false)
+class SubsCategoryVm(route: SubsCategoryRoute) : BaseViewModel() {
+    private val mutation = MutexState()
+    val busyFlow: StateFlow<Boolean> get() = mutation.state
 
-    private val subscription = requiredSubscription(route.subsItemId)
-    private val categoryConfigsFlow = Db.subsCategoryConfigDao.queryConfig(route.subsItemId)
-
-    val uiState = subscription.buildUiState(
-        initialValue = { rawSubscription ->
-            buildUiState(rawSubscription, Loadable.Loading)
-        },
-    ) { rawSubscription ->
-        categoryConfigsFlow.map { configs ->
-            buildUiState(
-                rawSubscription = rawSubscription,
-                categoryConfigMap = Loadable.Ready(
-                    configs.associateBy { it.categoryKey },
-                ),
-            )
-        }
+    suspend fun runAction(action: suspend () -> Unit) {
+        mutation.tryWithStateLock(action)
     }
 
-    private fun buildUiState(
-        rawSubscription: RawSubscription,
-        categoryConfigMap: Loadable<Map<Int, SubsCategoryConfig>>,
-    ) = SubsCategoryUiState(
-        subscription = rawSubscription,
-        categoryConfigMap = categoryConfigMap,
-    )
-
-    fun setAddCategoryDialogVisible(visible: Boolean) {
-        showAddCategoryDialogFlow.value = visible
+    suspend fun setSettings(state: SubsCategoryUiState, keys: Set<Int>, setting: CategorySetting) {
+        val expected = state.categories.filter { it.category.key in keys }
+            .associate { it.category.key to it.setting }
+        check(expected.size == keys.size) { UiStrings.category_missing }
+        RuleGroupConfigService.setCategorySettings(state.subscription, expected, setting)
     }
 
-    suspend fun setCategoryEnabled(
-        category: RawSubscription.RawCategory,
-        enabled: Boolean?,
-    ): String {
-        val option = EnableGroupOption.objects.findOption(enabled)
-        val state = uiState.value.value ?: error("订阅尚未加载")
-        val rawSubscription = subscription.requireValue()
-        val categoryConfigMap = state.categoryConfigMap.value
-            ?: error("类别配置尚未加载")
-        val oldConfig = categoryConfigMap[category.key]
-        Db.subsCategoryConfigDao.upsert(
-            (oldConfig ?: SubsCategoryConfig(
-                enable = option.value,
-                subsId = rawSubscription.id,
-                categoryKey = category.key,
-            )).copy(enable = option.value),
-        )
-        return option.label
+    suspend fun deleteCategories(state: SubsCategoryUiState, keys: Set<Int>) {
+        SubscriptionRepository.deleteCategories(state.subscription, keys)
     }
 
-    suspend fun addCategory(name: String, description: String): String {
-        subscription.update { current ->
-            if (current.categories.any { category -> category.name == name }) {
-                error("不可添加同名类别")
-            }
-            current.edit {
-                putCategory(
-                    RawSubscription.RawCategory(
-                        key = (current.categories.maxOfOrNull { it.key } ?: -1) + 1,
-                        enable = null,
-                        name = name,
-                        desc = description,
-                    ),
+    val uiState = requiredSubscription(route.subsItemId).buildUiState { subscription ->
+        Db.subscriptionConfigStore.observe().map { snapshot ->
+            val categoryConfigs = snapshot.categoryConfigs.filter { it.subsId == subscription.id }
+                .associateBy { it.categoryKey }
+            val groupConfigs = snapshot.appGroupConfigs.filter { it.subsId == subscription.id }
+                .associateBy { it.appId to it.groupKey }
+            SubsCategoryUiState(subscription, subscription.categories.map { category ->
+                val apps = subscription.getCategoryApps(category.key)
+                val config = categoryConfigs[category.key]
+                CategorySummary(
+                    category = category,
+                    appCount = apps.size,
+                    groupCount = apps.sumOf { it.groups.size },
+                    enabledGroupCount = apps.sumOf { app ->
+                        app.groups.count { group ->
+                            RuleGroupPolicy.getGroupEnabled(group, groupConfigs[app.id to group.key], category, config)
+                        }
+                    },
+                    setting = CategoryPolicy.setting(config),
                 )
-            }
+            })
         }
-        return "添加成功"
     }
+
 }

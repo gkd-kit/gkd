@@ -663,14 +663,6 @@ class SelectorQueryTest {
     }
 
     @Test
-    fun selectorSlowFlagUsesTheTopLevelCandidatePlan() {
-        val selector = compileSelector("(Button) && (Button[id='x'])")
-
-        assertFalse(selector.isSlow(MatchOptions(fastQuery = true)))
-        assertTrue(selector.isSlow(MatchOptions(fastQuery = false)))
-    }
-
-    @Test
     fun fastQueryNeverTreatsTheSourceNodeAsItsOwnDescendant() {
         val leaf = TestNode("leaf", "Button", mapOf("text" to "Confirm"))
         val singleSelector = compileSelector("Button[text='Confirm']")
@@ -854,7 +846,6 @@ class SelectorQueryTest {
         val leaf = deepest.find("path-0")
         val pathSelector = compileSelector(List(2_000) { "N" }.joinToString(" "))
         assertSame(leaf, pathSelector.match(leaf, TestNodeAdapter))
-        assertTrue(pathSelector.isSlow(MatchOptions.default))
         assertEquals(
             1_999,
             assertNotNull(

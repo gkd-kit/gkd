@@ -1,278 +1,208 @@
 package li.gkd.app.feature.subscription
 
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import li.gkd.app.ui.component.GkPageBottomSpace
+import li.gkd.app.MainViewModel
+import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import li.gkd.app.ui.component.GkMultiSelectionTopAppBar
+import li.gkd.app.ui.component.GkMultiSelectionActions
+import li.gkd.app.ui.component.GkBatchActionMenuItem
+import li.gkd.app.ui.component.rememberMultiSelectionState
+import li.gkd.app.util.ToastUtils.toast
+
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import li.gkd.app.domain.rule.CategorySetting
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
-import li.gkd.db.SubsCategoryConfig
-import li.gkd.app.data.RawSubscription
-import li.gkd.app.domain.rule.RuleGroupPolicy
-import li.gkd.app.ui.component.EmptyText
-import li.gkd.app.ui.component.FullscreenDialog
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.PerfTopAppBar
-import li.gkd.app.ui.component.PerfTriStateSwitch
-import li.gkd.app.ui.component.SubscriptionPageContent
-import li.gkd.app.ui.component.TowLineText
-import li.gkd.app.ui.component.autoFocus
+import li.gkd.app.text.UiStrings
+import li.gkd.app.ui.component.GkAnimatedFloatingActionButton
+import li.gkd.app.ui.component.GkEmptyState
+import li.gkd.app.ui.component.GkIcon
+import li.gkd.app.ui.component.GkIconButton
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkRuleListItem
+import li.gkd.app.ui.component.GkRuleStats
+import li.gkd.app.ui.component.GkRuleStatsData
+import li.gkd.app.ui.component.GkSubscriptionPageContent
+import li.gkd.app.ui.component.GkTwoLineText
+import li.gkd.app.ui.component.GkTooltipIconButtonBox
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.share.ListPlaceholder
-import li.gkd.app.core.state.Loadable
-import li.gkd.app.ui.share.LocalMainViewModel
-import li.gkd.app.ui.share.noRippleClickable
-import li.gkd.app.ui.style.EmptyHeight
-import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.ui.share.launchUi
-import li.gkd.app.util.throttle
-import li.gkd.app.util.ToastUtils.toast
+import li.gkd.app.ui.style.scaffoldPadding
 
 @Serializable
 data class SubsCategoryRoute(val subsItemId: Long) : NavKey
 
 @Composable
-fun SubsCategoryPage(@Suppress("unused") route: SubsCategoryRoute) {
-    val mainVm = LocalMainViewModel.current
-
+fun SubsCategoryPage(route: SubsCategoryRoute) {
+    val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { SubsCategoryVm(route) }
-    SubscriptionPageContent(vm.uiState) { state ->
-        val scope = vm.scope
-        val showAddCategory by vm.showAddCategoryDialogFlow.collectAsStateWithLifecycle()
+    val busy by vm.busyFlow.collectAsStateWithLifecycle()
+    val selection = rememberMultiSelectionState<Int>()
+    BackHandler(selection.active) { selection.clear() }
+    GkSubscriptionPageContent(vm.uiState) { state ->
         val subs = state.subscription
-        val categoryConfigMap = state.categoryConfigMap.value.orEmpty()
-        val switchEnabled = state.categoryConfigMap is Loadable.Ready
-
-        val categories = subs.categories
-
-        val pageScrollState = rememberListScrollState()
-        val scrollBehavior = pageScrollState.scrollBehavior
-        val listState = pageScrollState.listState
-        Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-            PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
-                PerfIconButton(
-                    imageVector = PerfIcon.ArrowBack,
-                    onClick = mainVm::popPage,
-                )
-            }, title = {
-                TowLineText(
-                    title = subs.name,
-                    subtitle = "规则类别",
-                    modifier = Modifier.noRippleClickable(onClick = pageScrollState::resetScroll)
-                )
-            }, actions = {
-                PerfIconButton(
-                    imageVector = PerfIcon.Info,
-                    onClick = throttle {
-                        scope.launchUi {
-                            mainVm.dialogRequests.showMessage(
-                                title = "类别说明",
-                                text = arrayOf(
-                                    "类别会捕获以当前类别开头的所有应用规则, 因此可调整类别开关(分类手动配置)来批量开关规则",
-                                    "规则开关优先级为:\n规则手动配置 > 分类手动配置 > 分类默认 > 规则默认",
-                                    "因此如果手动开关了规则(规则手动配置), 则该规则不会被批量开关, 可通过点击类别-重置规则开关, 来移除类别下所有规则手动配置",
-                                ).joinToString("\n\n"),
-                            )
+        val scroll = rememberListScrollState()
+        val keys = remember(state.categories) { state.categories.mapTo(mutableSetOf()) { it.category.key } }
+        val selected = selection.selectedKeys intersect keys
+        LaunchedEffect(keys) { selection.retain(keys) }
+        fun setSelected(setting: CategorySetting) {
+            val selectedKeys = selected
+            vm.scope.launchUi {
+                vm.runAction {
+                    vm.setSettings(state, selectedKeys, setting)
+                    toast(UiStrings.update_success)
+                }
+            }
+        }
+        Scaffold(
+            modifier = Modifier.nestedScroll(scroll.scrollBehavior.nestedScrollConnection),
+            topBar = {
+                GkMultiSelectionTopAppBar(
+                    selectedMode = selection.active,
+                    selectedCount = selected.size,
+                    onExitSelection = selection::clear,
+                    onNavigateBack = mainVm::popPage,
+                    onTitleClick = scroll::resetScroll,
+                    scrollBehavior = scroll.scrollBehavior,
+                    title = {
+                        GkTwoLineText(
+                            title = subs.name,
+                            subtitle = UiStrings.rule_categories,
+                        )
+                    },
+                    actions = { selectedMode ->
+                        if (selectedMode) {
+                            GkMultiSelectionActions(selection, keys, enabled = !busy) { dismiss ->
+                                GkBatchActionMenuItem(UiStrings.category_follow_subscription, dismiss,
+                                    { setSelected(CategorySetting.FollowSubscription) })
+                                GkBatchActionMenuItem(UiStrings.action_turn_on, dismiss,
+                                    { setSelected(CategorySetting.Enabled) })
+                                GkBatchActionMenuItem(UiStrings.action_close, dismiss,
+                                    { setSelected(CategorySetting.Disabled) })
+                                GkBatchActionMenuItem(UiStrings.category_use_group_default, dismiss,
+                                    { setSelected(CategorySetting.GroupDefault) })
+                                if (subs.isLocal) {
+                                    GkBatchActionMenuItem(UiStrings.action_delete, dismiss, {
+                                        val selectedKeys = selected
+                                        vm.scope.launchUi {
+                                            vm.runAction {
+                                                if (!mainVm.dialogRequests.confirm(
+                                                    title = UiStrings.category_delete,
+                                                    text = UiStrings.categories_delete_confirmation(selectedKeys.size),
+                                                    error = true,
+                                                )) return@runAction
+                                                vm.deleteCategories(state, selectedKeys)
+                                                selection.removeDeleted(selectedKeys)
+                                                toast(UiStrings.delete_success)
+                                            }
+                                        }
+                                    })
+                                }
+                            }
+                        } else {
+                        GkIconButton(imageVector = GkIcons.Info,
+                            contentDescription = UiStrings.category_help,
+                            onClick = {
+                                vm.scope.launchUi {
+                                    mainVm.dialogRequests.showMessage(
+                                        title = UiStrings.category_help,
+                                        text = UiStrings.category_help_description,
+                                    )
+                                }
+                            })
                         }
                     },
                 )
-            })
-        }, floatingActionButton = {
-            if (subs.isLocal) {
-                FloatingActionButton(onClick = { vm.setAddCategoryDialogVisible(true) }) {
-                    PerfIcon(
-                        imageVector = PerfIcon.Add,
+            },
+            floatingActionButton = {
+                if (subs.isLocal) {
+                    GkAnimatedFloatingActionButton(
+                        visible = !selection.active,
+                        onClick = { mainVm.navigatePage(CategoryEditorRoute(subs.id)) },
+                        imageVector = GkIcons.Add,
+                        contentDescription = UiStrings.category_add,
                     )
                 }
-            }
-        }) { contentPadding ->
+            },
+        ) { padding ->
             LazyColumn(
-                modifier = Modifier.scaffoldPadding(contentPadding),
-                state = listState,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.scaffoldPadding(padding),
+                state = scroll.listState,
             ) {
-                items(categories, { it.key }) { category ->
+                items(state.categories, key = { it.category.key }) { summary ->
                     CategoryItemCard(
-                        subs = subs,
-                        category = category,
-                        categoryConfig = categoryConfigMap[category.key],
-                        switchEnabled = switchEnabled,
-                        onOpen = {
-                            mainVm.navigatePage(
-                                SubsCategoryGroupRoute(
-                                    subsId = subs.id,
-                                    categoryKey = category.key,
-                                ),
-                            )
-                        },
-                        onEnabledChange = { enabled ->
-                            scope.launchUi {
-                                toast(vm.setCategoryEnabled(category, enabled))
-                            }
-                        },
+                        summary = summary,
+                        selectedMode = selection.active,
+                        selected = summary.category.key in selected,
+                        selectionEnabled = !busy,
+                        onLongClick = { selection.select(summary.category.key) },
+                        onSelect = { selection.toggle(summary.category.key) },
+                        onOpen = { mainVm.navigatePage(SubsCategoryGroupRoute(subs.id, summary.category.key)) },
                     )
                 }
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                    Spacer(modifier = Modifier.height(EmptyHeight))
-                    if (categories.isEmpty()) {
-                        EmptyText(text = "暂无类别")
-                    }
+                    if (state.categories.isEmpty()) GkEmptyState(UiStrings.categories_empty)
+                    GkPageBottomSpace()
                 }
             }
         }
 
-        if (showAddCategory) {
-            UpsertCategoryDialog(
-                category = null,
-                onDismissRequest = { vm.setAddCategoryDialogVisible(false) },
-                onSave = { name, description ->
-                    scope.launchUi {
-                        toast(vm.addCategory(name, description))
-                        vm.setAddCategoryDialogVisible(false)
-                    }
-                },
-            )
-        }
     }
 }
 
 @Composable
 private fun CategoryItemCard(
-    subs: RawSubscription,
-    category: RawSubscription.RawCategory,
-    categoryConfig: SubsCategoryConfig?,
-    switchEnabled: Boolean,
+    summary: CategorySummary,
+    selectedMode: Boolean,
+    selected: Boolean,
+    selectionEnabled: Boolean,
+    onLongClick: () -> Unit,
+    onSelect: () -> Unit,
     onOpen: () -> Unit,
-    onEnabledChange: (Boolean?) -> Unit,
 ) {
-    Card(
-        onClick = onOpen,
-        shape = MaterialTheme.shapes.extraSmall,
-        modifier = Modifier.padding(
-            horizontal = 8.dp,
-        ),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(8.dp)
-                    .weight(1f)
-            ) {
-                Text(
-                    text = category.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                val desc = subs.getCategoryCompatDesc(category.key)
-                if (desc != null) {
-                    Text(
-                        text = desc,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    Text(
-                        text = "暂无规则",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    )
-                }
-            }
-            PerfTriStateSwitch(
-                modifier = Modifier
-                    .pointerInput(Unit) { detectTapGestures { } } // 防止误触边界
-                    .padding(8.dp),
-                checked = RuleGroupPolicy.getCategoryEnabled(category, categoryConfig),
-                enabled = switchEnabled,
-                onCheckedChange = throttle(onEnabledChange),
-            )
-        }
-    }
-}
-
-@Composable
-fun UpsertCategoryDialog(
-    category: RawSubscription.RawCategory?,
-    onDismissRequest: () -> Unit,
-    onSave: (name: String, description: String) -> Unit,
-) {
-    var nameValue by remember { mutableStateOf(category?.name ?: "") }
-    var descValue by remember { mutableStateOf(category?.desc ?: "") }
-    FullscreenDialog(onDismissRequest = onDismissRequest) {
-        Scaffold(
-            topBar = {
-                PerfTopAppBar(
-                    navigationIcon = {
-                        PerfIconButton(
-                            imageVector = PerfIcon.Close,
-                            onClick = throttle(onDismissRequest),
-                        )
-                    },
-                    title = { Text(text = if (category == null) "添加类别" else "编辑类别") },
-                    actions = {
-                        PerfIconButton(
-                            imageVector = PerfIcon.Save,
-                            enabled = nameValue.isNotEmpty(),
-                            onClick = throttle { onSave(nameValue, descValue) },
-                        )
-                    }
-                )
-            },
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp),
-            ) {
-                OutlinedTextField(
-                    label = { Text("类别名称") },
-                    value = nameValue,
-                    onValueChange = { nameValue = it.trim() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .autoFocus(),
-                    placeholder = { Text(text = "请输入类别名称") },
-                    singleLine = true,
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(
-                    label = { Text("类别描述") },
-                    value = descValue,
-                    onValueChange = { descValue = it.trim() },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(text = "请输入类别描述") },
-                    singleLine = true,
+    GkRuleListItem(onClick = onOpen, selectedMode = selectedMode, selected = selected,
+        selectionEnabled = selectionEnabled, onLongClick = onLongClick, onSelect = onSelect, trailing = {
+        GkTooltipIconButtonBox(contentDescription = summary.setting.label) {
+            Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                GkIcon(
+                    imageVector = summary.setting.icon,
+                    modifier = Modifier.size(20.dp),
+                    contentDescription = summary.setting.label,
+                    tint = if (summary.setting == CategorySetting.FollowSubscription)
+                        MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
                 )
             }
         }
+    }) {
+        Text(summary.category.name, style = MaterialTheme.typography.bodyLarge,
+            maxLines = 2, overflow = TextOverflow.Ellipsis)
+        summary.category.desc?.trim()?.takeIf { it.isNotEmpty() && it != summary.category.name.trim() }?.let { description ->
+            Text(description, style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Spacer(Modifier.height(4.dp))
+        }
+        GkRuleStats(GkRuleStatsData(apps = summary.appCount, appGroups = summary.groupCount,
+            enabledAppGroups = summary.enabledGroupCount, showZeroCounts = true))
     }
 }

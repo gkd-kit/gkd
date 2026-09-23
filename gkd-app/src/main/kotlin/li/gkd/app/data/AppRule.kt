@@ -1,5 +1,7 @@
 package li.gkd.app.data
 
+import li.gkd.app.domain.rule.RuleScopePolicy
+
 class AppRule(
     rule: RawSubscription.RawAppRule,
     g: ResolvedAppGroup,
@@ -10,19 +12,11 @@ class AppRule(
 ) {
     val group = g.group
     val app = g.app
-    val enable = appInfo?.let {
-        if (rule.versionCode?.match(it.versionCode) == false) {
-            return@let false
-        }
-        if (rule.versionName?.match(it.versionName) == false) {
-            return@let false
-        }
-        null
-    } ?: true
+    val enable = RuleScopePolicy.appVersionMatches(group, rule, appInfo)
     val appId = app.id
-    private val activityIds = getFixActivityIds(app.id, rule.activityIds ?: group.activityIds)
+    private val activityIds = RuleScopePolicy.fixActivities(app.id, rule.activityIds ?: group.activityIds)
     private val excludeActivityIds =
-        (getFixActivityIds(
+        (RuleScopePolicy.fixActivities(
             app.id,
             rule.excludeActivityIds ?: group.excludeActivityIds
         ) + (excludeData.activityIds.filter { e -> e.first == appId }

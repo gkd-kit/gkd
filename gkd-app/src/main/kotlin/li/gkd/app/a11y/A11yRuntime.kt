@@ -8,6 +8,7 @@ import android.view.accessibility.AccessibilityWindowInfo
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import li.gkd.app.text.UiStrings
 import li.gkd.app.data.ActionPerformer
 import li.gkd.app.data.ActionResult
 import li.gkd.app.data.GkdAction
@@ -81,19 +82,19 @@ object A11yRuntime {
     suspend fun execAction(gkdAction: GkdAction): ActionResult {
         val selectorResult = Selector.compile(gkdAction.selector)
         val selector = (selectorResult as? SelectorCompileResult.Success)?.value
-            ?: throw RpcError("非法选择器")
+            ?: throw RpcError(UiStrings.selector_invalid)
         val typeResult = selector.validateType(selectorTypeModel)
         if (typeResult is SelectorTypeResult.Failure) {
-            throw RpcError("选择器类型错误:${typeResult.error.message}")
+            throw RpcError(UiStrings.selector_type_error(typeResult.error.message))
         }
-        val service = service ?: throw RpcError("服务未连接")
-        val root = getRoot(service) ?: throw RpcError("界面没有节点信息")
+        val service = service ?: throw RpcError(UiStrings.service_not_connected)
+        val root = getRoot(service) ?: throw RpcError(UiStrings.screen_nodes_unavailable)
         val targetNode = A11yContext(
             getRoot = { getRoot(service) },
             interruptable = false,
         ).querySelfOrSelector(
             root, selector, MatchOptions(fastQuery = gkdAction.fastQuery)
-        ) ?: throw RpcError("没有查询到节点")
+        ) ?: throw RpcError(UiStrings.selector_node_not_found)
         return withContext(Dispatchers.IO) {
             ActionPerformer
                 .getAction(gkdAction.action ?: ActionPerformer.None.action)

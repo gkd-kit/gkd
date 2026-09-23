@@ -20,15 +20,16 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import li.gkd.app.text.UiStrings
 import li.gkd.app.data.subscription.SubscriptionRepository
-import li.gkd.app.ui.component.AppAlertDialog
-import li.gkd.app.ui.component.PerfIcon
-import li.gkd.app.ui.component.PerfIconButton
-import li.gkd.app.ui.component.autoFocus
 import li.gkd.app.util.NetworkUtils
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
 import li.gkd.app.util.ToastUtils.toast
 import kotlin.coroutines.resume
+import li.gkd.app.ui.component.GkAlertDialog
+import li.gkd.app.ui.component.GkIconButton
+import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.autoFocus
 
 private data class SubsLinkDialogRequest(
     val initialValue: String,
@@ -60,16 +61,16 @@ class SubsLinkDialogState(
     private fun submit(request: SubsLinkDialogRequest) {
         val value = request.value
         if (!URLUtil.isNetworkUrl(value)) {
-            toast("非法链接")
+            toast(UiStrings.link_invalid)
             return
         }
         if (request.initialValue.isNotEmpty() && request.initialValue == value) {
-            toast("未修改")
+            toast(UiStrings.unchanged)
             complete(null)
             return
         }
         if (value in request.existingUrls) {
-            toast("已有相同链接订阅")
+            toast(UiStrings.subscription_duplicate_link)
             return
         }
         complete(value)
@@ -114,7 +115,7 @@ class SubsLinkDialogState(
         val request by requestFlow.collectAsStateWithLifecycle()
         val currentRequest = request
         if (currentRequest != null) {
-            AppAlertDialog(
+            GkAlertDialog(
                 properties = DialogProperties(dismissOnClickOutside = false),
                 title = {
                     Row(
@@ -124,14 +125,14 @@ class SubsLinkDialogState(
                     ) {
                         Text(
                             text = if (currentRequest.initialValue.isNotEmpty()) {
-                                "修改订阅"
+                                UiStrings.subscription_edit
                             } else {
-                                "添加订阅"
+                                UiStrings.subscription_add
                             },
                         )
-                        PerfIconButton(
-                            imageVector = PerfIcon.HelpOutline,
-                            contentDescription = "订阅帮助",
+                        GkIconButton(
+                            imageVector = GkIcons.HelpOutline,
+                            contentDescription = UiStrings.subscription_help,
                             onClick = throttle(::openHelp),
                         )
                     }
@@ -145,7 +146,7 @@ class SubsLinkDialogState(
                             .fillMaxWidth()
                             .autoFocus(),
                         placeholder = {
-                            Text(text = "请输入订阅链接")
+                            Text(text = UiStrings.subscription_link_input_hint)
                         },
                         isError = currentRequest.value.isNotEmpty() &&
                                 !URLUtil.isNetworkUrl(currentRequest.value),
@@ -159,12 +160,12 @@ class SubsLinkDialogState(
                             submit(currentRequest)
                         },
                     ) {
-                        Text(text = "确定")
+                        Text(text = UiStrings.action_ok)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = ::cancel) {
-                        Text(text = "取消")
+                        Text(text = UiStrings.action_cancel)
                     }
                 },
             )

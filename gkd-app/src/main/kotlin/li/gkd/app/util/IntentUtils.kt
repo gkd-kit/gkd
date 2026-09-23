@@ -1,5 +1,6 @@
 package li.gkd.app.util
 
+import li.gkd.app.text.UiStrings
 import li.gkd.app.util.ToastUtils.toast
 
 import android.app.Service
@@ -20,7 +21,7 @@ object IntentUtils {
             putExtra("LauncherUI.From.Scaner.Shortcut", true)
         }
         if (intent == null) {
-            toast("请检查微信是否安装或禁用")
+            toast(UiStrings.wechat_unavailable)
             return
         }
         app.tryStartActivity(intent)
@@ -45,7 +46,7 @@ object IntentUtils {
             uri.toUri()
         } catch (e: Exception) {
             e.printStackTrace()
-            toast("非法链接")
+            toast(UiStrings.link_invalid)
             return
         }
         openUri(parsedUri)
@@ -74,7 +75,7 @@ object IntentUtils {
         } catch (e: Throwable) {
             LogUtils.d(e, loc = loc)
             val prefix = if (MainActivityVisibility.isVisible) "" else "${META.appName}: "
-            toast("${prefix}启动服务失败: ${e.message}", forced = true, loc = loc)
+            toast(UiStrings.service_launch_failed(prefix, e.message), forced = true, loc = loc)
         }
     }
 }

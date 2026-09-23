@@ -101,12 +101,6 @@ internal class CompiledUnitSelector(
         )
     }
 
-    fun hasSlowTraversal(options: MatchOptions): Boolean = relations.indices.any { index ->
-            val relation = relations[index]
-            relation.operator == RelationOperator.Descendant &&
-                    !(options.fastQuery && propertySelectors[index].fastQueryList?.isNotEmpty() == true)
-        }
-
     fun collectTypeFailures(collector: TypeCheckCollector) {
         for (propertySelector in propertySelectors) {
             for (expression in propertySelector.comparisonExpressions) {

@@ -1,6 +1,8 @@
 package li.gkd.app.util
 
+import li.gkd.app.text.UiStrings
 import li.gkd.app.util.ToastUtils.toast
+import li.gkd.app.util.TimeUtils.throttle
 
 import android.content.Intent
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,7 +36,7 @@ import li.gkd.app.META
 import li.gkd.app.app
 import li.gkd.app.store.FileStateStore
 import li.gkd.app.store.AppStore.storeFlow
-import li.gkd.app.ui.component.AppAlertDialog
+import li.gkd.app.ui.component.GkAlertDialog
 import li.songe.codeorigin.CallSite
 import java.io.File
 import java.net.URI
@@ -91,11 +93,11 @@ class UpdateStatus(val scope: CoroutineScope) {
                 checkUpdatingMutex.tryWithStateLock {
                     lastCheckTime = System.currentTimeMillis()
                     if (!NetworkUtils.isAvailable()) {
-                        error("网络不可用")
+                        error(UiStrings.network_unavailable)
                     }
                     val newVersion = client.get(UPDATE_URL).body<NewVersion>()
                     if (newVersion.versionCode <= META.versionCode) {
-                        if (manual) toast("暂无更新", loc = loc)
+                        if (manual) toast(UiStrings.updates_none, loc = loc)
                         return@tryWithStateLock
                     }
                     if (
@@ -171,9 +173,9 @@ class UpdateStatus(val scope: CoroutineScope) {
                 }".trimEnd()
             }
             val scrollState = rememberScrollState()
-            AppAlertDialog(
+            GkAlertDialog(
                 title = {
-                    Text(text = "新版本")
+                    Text(text = UiStrings.update_new_version)
                 },
                 text = {
                     Text(
@@ -190,12 +192,12 @@ class UpdateStatus(val scope: CoroutineScope) {
                         newVersionFlow.value = null
                         startDownload(newVersionVal)
                     }) {
-                        Text(text = "下载更新")
+                        Text(text = UiStrings.update_download)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { newVersionFlow.value = null }) {
-                        Text(text = "取消")
+                        Text(text = UiStrings.action_cancel)
                     }
                     if (!lastManual) {
                         TextButton(onClick = {
@@ -203,9 +205,9 @@ class UpdateStatus(val scope: CoroutineScope) {
                             ignoreVersionListFlow.update {
                                 it + newVersionVal.versionCode
                             }
-                            toast("已忽略此版本")
+                            toast(UiStrings.update_version_ignored)
                         }) {
-                            Text(text = "忽略")
+                            Text(text = UiStrings.action_ignore)
                         }
                     }
                 },
@@ -215,8 +217,8 @@ class UpdateStatus(val scope: CoroutineScope) {
         downloadStatusFlow.collectAsStateWithLifecycle().value?.let { downloadStatusVal ->
             when (downloadStatusVal) {
                 is LoadStatus.Loading -> {
-                    AppAlertDialog(
-                        title = { Text(text = "下载中") },
+                    GkAlertDialog(
+                        title = { Text(text = UiStrings.image_downloading) },
                         text = {
                             LinearProgressIndicator(
                                 progress = { downloadStatusVal.progress },
@@ -226,18 +228,18 @@ class UpdateStatus(val scope: CoroutineScope) {
                         confirmButton = {
                             TextButton(onClick = {
                                 downloadStatusFlow.value = LoadStatus.Failure(
-                                    Exception("终止下载")
+                                    Exception(UiStrings.download_abort)
                                 )
                             }) {
-                                Text(text = "终止下载")
+                                Text(text = UiStrings.download_abort)
                             }
                         },
                     )
                 }
 
                 is LoadStatus.Failure -> {
-                    AppAlertDialog(
-                        title = { Text(text = "下载失败") },
+                    GkAlertDialog(
+                        title = { Text(text = UiStrings.download_failed) },
                         text = {
                             Text(text = downloadStatusVal.exception.let {
                                 it.message ?: it.toString()
@@ -248,31 +250,31 @@ class UpdateStatus(val scope: CoroutineScope) {
                             TextButton(onClick = {
                                 downloadStatusFlow.value = null
                             }) {
-                                Text(text = "关闭")
+                                Text(text = UiStrings.action_close)
                             }
                         },
                     )
                 }
 
                 is LoadStatus.Success -> {
-                    AppAlertDialog(
-                        title = { Text(text = "下载完毕") },
+                    GkAlertDialog(
+                        title = { Text(text = UiStrings.download_complete) },
                         text = {
-                            Text(text = "可继续选择安装新版本")
+                            Text(text = UiStrings.update_ready_to_install)
                         },
                         onDismissRequest = {},
                         dismissButton = {
                             TextButton(onClick = {
                                 downloadStatusFlow.value = null
                             }) {
-                                Text(text = "关闭")
+                                Text(text = UiStrings.action_close)
                             }
                         },
                         confirmButton = {
                             TextButton(onClick = throttle {
                                 installApk(downloadStatusVal.result)
                             }) {
-                                Text(text = "安装")
+                                Text(text = UiStrings.action_install)
                             }
                         })
                 }

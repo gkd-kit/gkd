@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import li.gkd.app.text.UiStrings
 import li.gkd.app.META
 import li.gkd.app.a11y.systemRecentCn
 import li.gkd.app.a11y.currentTopActivity
@@ -63,7 +64,7 @@ private suspend fun switchA11yService() {
     } else {
         if (!PermissionStates.writeSecureSettings.updateAndGet()) {
             if (!PermissionStates.writeSecureSettings.value) {
-                toast("请先授予「写入安全设置权限」")
+                toast(UiStrings.secure_settings_permission_required)
                 return
             }
         }
@@ -79,7 +80,7 @@ private suspend fun switchA11yService() {
         delay(A11Y_AWAIT_START_TIME.milliseconds)
         // https://github.com/orgs/gkd-kit/discussions/799
         if (!A11yService.isRunning.value) {
-            toast("开启无障碍失败")
+            toast(UiStrings.a11y_enable_failed)
             showAccessRestrictedSettingsDialog()
             return
         }
@@ -133,7 +134,7 @@ private suspend fun fixA11yService() {
         app.putSecureA11yServices(names)
         delay(A11Y_AWAIT_START_TIME.milliseconds)
         if (currentAppUseA11y && !A11yService.isRunning.value) {
-            toast("重启无障碍失败")
+            toast(UiStrings.a11y_restart_failed)
             showAccessRestrictedSettingsDialog()
         }
     }

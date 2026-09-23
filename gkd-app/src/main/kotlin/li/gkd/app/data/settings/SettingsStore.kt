@@ -1,6 +1,7 @@
 package li.gkd.app.data.settings
 
 import kotlinx.serialization.Serializable
+import li.gkd.app.text.UiStrings
 import li.gkd.app.META
 import li.gkd.app.util.AppGroupOption
 import li.gkd.app.util.AppSortOption
@@ -32,7 +33,7 @@ data class SettingsStore(
     val useSystemToast: Boolean = false,
     val useCustomNotifText: Boolean = false,
     val customNotifTitle: String = META.appName,
-    val customNotifText: String = $$"${i}全局/${k}应用/${u}规则/${n}触发",
+    val customNotifText: String = UiStrings.notification_summary_template,
     val updateChannel: Int = if (META.isBeta) UpdateChannelOption.Beta.value else UpdateChannelOption.Stable.value,
     val appSort: Int = AppSortOption.ByUsedTime.value,
     val showBlockApp: Boolean = true,

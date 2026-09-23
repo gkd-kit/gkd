@@ -128,9 +128,19 @@ object FolderUtils {
             it.writeText(formattedJson.encodeToString(META))
             files.add(it)
         }
-        val logZipFile = sharedDir.resolve("log-${System.currentTimeMillis()}.zip")
-        ZipUtils.zipFiles(files, logZipFile)
-        tempDir.deleteRecursively()
-        return logZipFile
+        val logZipFile = ExportFileNames.reserve(
+            sharedDir,
+            "log-${ExportFileNames.timestamp(System.currentTimeMillis())}",
+            "zip",
+        )
+        try {
+            ZipUtils.zipFiles(files, logZipFile)
+            return logZipFile
+        } catch (e: Throwable) {
+            logZipFile.delete()
+            throw e
+        } finally {
+            tempDir.deleteRecursively()
+        }
     }
 }

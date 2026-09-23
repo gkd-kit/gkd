@@ -48,8 +48,6 @@ public class Selector internal constructor(
     public val isMatchRoot: Boolean
         get() = program.isMatchRoot
 
-    public fun isSlow(options: MatchOptions): Boolean = program.isSlow(options)
-
     public fun validateType(typeModel: SelectorTypeModel): SelectorTypeResult {
         val failure = program.validateType(typeModel.globalType)
             ?: return SelectorTypeResult.Success(this)

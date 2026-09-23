@@ -1,8 +1,16 @@
 package li.gkd.app.permission
 
+import li.gkd.app.text.UiStrings
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
@@ -21,6 +29,26 @@ class PermissionRequests(
         updateHostState = ::updateHostState,
         detachHost = ::detachHost,
     )
+    private val hostInteractive = MutableStateFlow(false)
+    private val refreshScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val foregroundRefreshJob = refreshScope.launch {
+        hostInteractive.collectLatest { interactive ->
+            if (interactive) {
+                coroutineScope {
+                    PermissionStates.all.filter {
+                        it.recheckPolicy !== PermissionRecheckPolicy.Immediate
+                    }.forEach { permissionState ->
+                        launch {
+                            permissionState.recheckPolicy.awaitGranted(
+                                hostInteractive,
+                                permissionState::refresh,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
     private val requestMutex = Mutex()
     private var activeRequestJob: Job? = null
     private var disposed = false
@@ -54,18 +82,18 @@ class PermissionRequests(
                     hostCommands.requestPermission(
                         permission = permission,
                         prompt = PermissionPrompt(
-                            title = "正在申请「${permissionState.name}」",
+                            title = UiStrings.permission_request_progress(permissionState.name),
                             message = checkNotNull(permissionState.purpose) {
                                 "${permissionState.name} 缺少权限请求说明"
                             },
                         ),
                     )
-                    if (permissionState.refresh()) continue
+                    if (refreshAfterReturn(permissionState)) continue
                     if (!coordinator.awaitResolution(permissionState)) {
                         return@withLock false
                     }
                     hostCommands.openPermissionSettings(permission)
-                    if (!permissionState.refresh()) {
+                    if (!refreshAfterReturn(permissionState)) {
                         return@withLock false
                     }
                 }
@@ -78,21 +106,27 @@ class PermissionRequests(
         }
     }
 
+    private suspend fun refreshAfterReturn(permissionState: PermissionState): Boolean =
+        permissionState.recheckPolicy.awaitGranted(hostInteractive, permissionState::refresh)
+
     private fun updateHostState(
         resumed: Boolean,
         hasWindowFocus: Boolean,
     ) {
+        hostInteractive.value = resumed && hasWindowFocus
         coordinator.updateHostState(resumed, hasWindowFocus)
         hostCommands.updateHostState(resumed, hasWindowFocus)
     }
 
     private fun detachHost() {
+        hostInteractive.value = false
         coordinator.updateHostState(resumed = false, hasWindowFocus = false)
         hostCommands.detachHost()
     }
 
     private fun dispose() {
         disposed = true
+        refreshScope.cancel()
         activeRequestJob?.cancel()
         activeRequestJob = null
         hostCommands.dispose()

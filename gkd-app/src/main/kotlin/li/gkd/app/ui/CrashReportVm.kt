@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import li.gkd.app.text.UiStrings
 import li.gkd.app.data.CrashData
 import li.gkd.app.data.deleteCrashDataList
 import li.gkd.app.data.loadCrashDataList
@@ -58,7 +59,7 @@ class CrashReportVm(
             }
         } else {
             reloadAfterDeleteFailure()
-            error("删除崩溃记录失败")
+            error(UiStrings.crash_report_delete_failed)
         }
     }
 
@@ -72,7 +73,7 @@ class CrashReportVm(
         )
         expandedCrashId = null
         if (!deleted) {
-            error("部分崩溃记录删除失败")
+            error(UiStrings.crash_reports_delete_partially_failed)
         }
     }
 

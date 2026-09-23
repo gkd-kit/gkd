@@ -10,12 +10,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import li.gkd.app.text.UiStrings
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.permission.PermissionStates
-import li.gkd.app.ui.component.PerfIcon
 import li.gkd.app.snapshot.SnapshotCapture
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.util.IntentUtils
+import li.gkd.app.ui.component.GkIcon
+import li.gkd.app.ui.component.GkIcons
 
 class ButtonService : OverlayWindowService(
     positionKey = "button"
@@ -34,8 +36,8 @@ class ButtonService : OverlayWindowService(
     @Composable
     override fun ComposeContent() {
         val alpha = 0.75f
-        PerfIcon(
-            imageVector = PerfIcon.CenterFocusWeak,
+        GkIcon(
+            imageVector = GkIcons.CenterFocusWeak,
             modifier = Modifier
                 .clip(MaterialTheme.shapes.small)
                 .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = alpha))
@@ -47,7 +49,7 @@ class ButtonService : OverlayWindowService(
     init {
         useServicePresence(
             stateFlow = isRunning,
-            name = "快照按钮服务",
+            name = UiStrings.snapshot_button_service,
         )
         onCreated {
             NotificationCatalog.button().startForeground()

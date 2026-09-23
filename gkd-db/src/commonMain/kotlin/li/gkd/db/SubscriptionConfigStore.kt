@@ -16,6 +16,13 @@ data class SubscriptionConfigSnapshot(
 )
 
 class SubscriptionConfigStore(private val database: AppDb) {
+    suspend fun setAppEnabled(subsId: Long, appId: String, enabled: Boolean?) = database.withWriteTransaction {
+        val dao = database.subsAppConfigDao()
+        val current = dao.querySubsItemConfig(listOf(subsId)).find { it.appId == appId }
+        if (enabled == null) current?.let { dao.delete(it) }
+        else if (current?.enable != enabled) dao.upsert(SubsAppConfig(enabled, subsId, appId))
+    }
+
     suspend fun updateAppGroupConfig(
         subsId: Long,
         appId: String,
@@ -26,7 +33,9 @@ class SubscriptionConfigStore(private val database: AppDb) {
         val current = dao.getConfig(subsId, appId, groupKey)
         val next = transform(current ?: SubsAppGroupConfig(subsId, appId, groupKey))
         require(next.subsId == subsId && next.appId == appId && next.groupKey == groupKey)
-        if (next != current) dao.upsert(next)
+        if (next.enable == null && next.exclude.isEmpty()) {
+            if (current != null) dao.delete(current)
+        } else if (next != current) dao.upsert(next)
         next
     }
 
@@ -39,7 +48,9 @@ class SubscriptionConfigStore(private val database: AppDb) {
         val current = dao.getConfig(subsId, groupKey)
         val next = transform(current ?: SubsGlobalGroupConfig(subsId, groupKey))
         require(next.subsId == subsId && next.groupKey == groupKey)
-        if (next != current) dao.upsert(next)
+        if (next.enable == null && next.exclude.isEmpty()) {
+            if (current != null) dao.delete(current)
+        } else if (next != current) dao.upsert(next)
         next
     }
 

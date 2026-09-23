@@ -103,10 +103,14 @@ object SubscriptionPersistence {
         val globalConfigs = Db.subsGlobalGroupConfigDao.queryBySubsIds(listOf(subscription.id))
         val obsoleteApps = appConfigs.filter { appKeys[it.appId]?.contains(it.groupKey) != true }
         val obsoleteGlobals = globalConfigs.filter { it.groupKey !in globalKeys }
-        val size = obsoleteApps.size + obsoleteGlobals.size
+        val categoryKeys = subscription.categories.mapTo(mutableSetOf()) { it.key }
+        val obsoleteCategories = Db.subsCategoryConfigDao.querySubsItemConfig(listOf(subscription.id))
+            .filter { it.categoryKey !in categoryKeys }
+        val size = obsoleteApps.size + obsoleteGlobals.size + obsoleteCategories.size
         if (size == 0) return 0
         Db.subsAppGroupConfigDao.delete(*obsoleteApps.toTypedArray())
         Db.subsGlobalGroupConfigDao.delete(*obsoleteGlobals.toTypedArray())
+        Db.subsCategoryConfigDao.delete(*obsoleteCategories.toTypedArray())
         LogUtils.d(
             "清理已移除规则配置",
             "subsId=${subscription.id}, delete=$size",

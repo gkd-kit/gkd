@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import li.gkd.app.text.UiStrings
 import li.gkd.app.util.AppListString
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.json
@@ -135,7 +136,7 @@ private class PersistedValue<T>(
     suspend fun awaitPersistence() {
         val targetVersion = synchronized(this) { currentVersion }
         val result = writeResult.first { it.version >= targetVersion }
-        result.error?.let { throw IOException("设置写入失败: $filename", it) }
+        result.error?.let { throw IOException(UiStrings.settings_write_failed(filename), it) }
     }
 
     private fun enqueue(value: T) {

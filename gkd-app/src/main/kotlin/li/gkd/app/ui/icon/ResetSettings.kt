@@ -8,10 +8,10 @@ import androidx.compose.ui.unit.dp
 
 val ResetSettings: ImageVector
     get() {
-        if (_IconName != null) {
-            return _IconName!!
+        if (_resetSettings != null) {
+            return _resetSettings!!
         }
-        _IconName = ImageVector.Builder(
+        _resetSettings = ImageVector.Builder(
             name = "IconName",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
@@ -76,9 +76,7 @@ val ResetSettings: ImageVector
                 close()
             }
         }.build()
-
-        return _IconName!!
+        return _resetSettings!!
     }
 
-@Suppress("ObjectPropertyName")
-private var _IconName: ImageVector? = null
+private var _resetSettings: ImageVector? = null

@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import li.gkd.app.text.UiStrings
 import li.gkd.app.MainViewModel
 import li.gkd.app.data.AppInfo
 import li.gkd.app.permission.PermissionStates
@@ -210,7 +211,7 @@ class AppListVm(mainVm: MainViewModel) : BaseViewModel() {
     fun refresh() {
         scope.launchUi(Dispatchers.IO) {
             AppInfoRepository.refresh()
-            toast("应用列表更新成功")
+            toast(UiStrings.app_list_update_success)
         }
     }
 }

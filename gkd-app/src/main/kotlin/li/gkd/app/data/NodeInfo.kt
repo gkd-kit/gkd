@@ -2,6 +2,7 @@ package li.gkd.app.data
 
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.serialization.Serializable
+import li.gkd.app.text.UiStrings
 import li.gkd.app.a11y.MAX_CHILD_SIZE
 import li.gkd.app.a11y.currentTopActivity
 import li.gkd.app.util.LogUtils
@@ -76,9 +77,9 @@ fun info2nodeList(root: AccessibilityNodeInfo?): List<NodeInfo> {
             }
             if (times > MAX_KEEP_SIZE) {
                 // https://github.com/gkd-kit/gkd/issues/28
-                toast("节点数量至多保留$MAX_KEEP_SIZE,丢弃后续节点")
+                toast(UiStrings.snapshot_nodes_truncated(MAX_KEEP_SIZE))
                 LogUtils.d(
-                    "节点数量过多",
+                    UiStrings.snapshot_too_many_nodes,
                     root.packageName,
                     currentTopActivity.activityId,
                 )

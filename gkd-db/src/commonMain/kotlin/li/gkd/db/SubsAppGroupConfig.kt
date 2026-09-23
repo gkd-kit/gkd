@@ -73,7 +73,5 @@ data class SubsAppGroupConfig(
         @Query("DELETE FROM subs_app_group_config WHERE subs_id=:subsId AND app_id=:appId AND group_key IN (:keys)")
         suspend fun deleteGroups(subsId: Long, appId: String, keys: List<Int>): Int
 
-        @Query("UPDATE subs_app_group_config SET enable = null WHERE subs_id=:subsId AND app_id=:appId AND group_key=:groupKey AND enable IS NOT NULL")
-        suspend fun resetEnable(subsId: Long, appId: String, groupKey: Int): Int
     }
 }

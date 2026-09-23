@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import li.gkd.app.text.UiStrings
 import li.gkd.app.app
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.priv.toHidden
@@ -291,7 +292,7 @@ class TrackService : LifecycleHookService(), SavedStateRegistryOwner {
         useLogLifecycle()
         useServicePresence(
             stateFlow = isRunning,
-            name = "轨迹提示",
+            name = UiStrings.track_overlay,
         )
         useStopServiceReceiver()
         onCreated {

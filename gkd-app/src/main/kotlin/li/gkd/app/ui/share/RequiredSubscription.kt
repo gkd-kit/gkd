@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import li.gkd.app.text.UiStrings
 import li.gkd.app.core.state.Loadable
 import li.gkd.app.data.RawSubscription
 import li.gkd.app.data.subscription.SubscriptionSnapshot
@@ -46,7 +47,7 @@ class RequiredSubscription(
             Loadable.Failure(
                 snapshot.loadErrors[id]
                     ?: snapshot.updateErrors[id]
-                    ?: IllegalStateException("订阅不存在: $id"),
+                    ?: IllegalStateException(UiStrings.subscription_missing_id(id)),
             )
         }
     }
@@ -60,7 +61,7 @@ class RequiredSubscription(
 
     fun requireValue(): RawSubscription {
         return when (val current = state.value) {
-            Loadable.Loading -> error("订阅尚未加载: $id")
+            Loadable.Loading -> error(UiStrings.subscription_not_loaded_id(id))
             is Loadable.Failure -> throw current.cause
             is Loadable.Ready -> current.value.value
         }

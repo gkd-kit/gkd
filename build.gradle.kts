@@ -42,7 +42,6 @@ object Cfg {
         "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
         "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
         "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
-        "-opt-in=androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi",
         "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
         "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
         "-XXLanguage:+MultiDollarInterpolation",

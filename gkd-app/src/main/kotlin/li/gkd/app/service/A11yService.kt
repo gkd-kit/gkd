@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import li.gkd.app.text.UiStrings
 import li.gkd.app.a11y.A11yCommonImpl
 import li.gkd.app.a11y.A11yRuleEngine
 import li.gkd.app.a11y.A11yRuntime
@@ -108,7 +109,7 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
             if (currentAppUseA11y) {
                 updateEnableAutomator(true)
             } else {
-                toast("当前为自动化模式，无障碍将自动关闭", forced = true)
+                toast(UiStrings.a11y_automation_mode_notice, forced = true)
                 scope.launch {
                     delay(1)
                     shutdown(true)
@@ -118,7 +119,7 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
             scope.launch {
                 delay(3000)
                 if (!(destroyed || connected)) {
-                    toast("无障碍启动超时，请尝试关闭重启", forced = true)
+                    toast(UiStrings.a11y_start_timeout, forced = true)
                 }
             }
         }
@@ -130,9 +131,9 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
             isRunning.value = false
             releaseKeepAliveOverlayAfterHandoff()
             if (tempShutdownFlag) {
-                toast("无障碍局部关闭")
+                toast(UiStrings.a11y_partially_disabled)
             } else {
-                toast("无障碍已关闭")
+                toast(UiStrings.a11y_stopped)
                 updateEnableAutomator(false)
             }
             A11yState.withTopActivityLock {
@@ -157,7 +158,7 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
                 windowType = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
             )
         ) {
-            toast("添加无障碍保活失败\n请尝试重启无障碍")
+            toast(UiStrings.a11y_keep_alive_failed)
         }
     }
 
@@ -183,7 +184,7 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
         instance = this
         attachKeepAliveOverlay()
         connected = true
-        toast("无障碍已启动")
+        toast(UiStrings.a11y_started)
         if (currentAppUseA11y) {
             A11yRuntime.onA11yConnected(this)
         }

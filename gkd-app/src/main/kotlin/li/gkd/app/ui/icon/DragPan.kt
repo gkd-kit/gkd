@@ -8,10 +8,10 @@ import androidx.compose.ui.unit.dp
 
 val DragPan: ImageVector
     get() {
-        if (_IconName != null) {
-            return _IconName!!
+        if (_dragPan != null) {
+            return _dragPan!!
         }
-        _IconName = ImageVector.Builder(
+        _dragPan = ImageVector.Builder(
             name = "IconName",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
@@ -55,9 +55,7 @@ val DragPan: ImageVector
                 close()
             }
         }.build()
-
-        return _IconName!!
+        return _dragPan!!
     }
 
-@Suppress("ObjectPropertyName")
-private var _IconName: ImageVector? = null
+private var _dragPan: ImageVector? = null

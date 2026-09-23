@@ -1,5 +1,6 @@
 package li.gkd.app.permission
 
+import li.gkd.app.text.UiStrings
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +18,7 @@ data class PermissionDialogState(
     val title: String,
     val message: String,
     val confirmText: String,
-    val dismissText: String = "取消",
+    val dismissText: String = UiStrings.action_cancel,
     val onConfirm: () -> Unit,
     val onDismiss: () -> Unit,
 )
@@ -81,7 +82,7 @@ class PermissionRequestCoordinator {
         val resolution = permissionState.resolution ?: return false
         return suspendCancellableCoroutine { continuation ->
             val id = showDialog(
-                title = "权限请求",
+                title = UiStrings.permission_request_title,
                 message = listOfNotNull(
                     permissionState.purpose,
                     resolution.message,

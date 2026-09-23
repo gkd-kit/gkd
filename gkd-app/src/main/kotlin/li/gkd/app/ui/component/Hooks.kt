@@ -104,13 +104,20 @@ class ListScrollState(
         performScrollReset()
     }
 
+    suspend fun scrollToItemAndAwait(index: Int) {
+        resetJob?.cancelAndJoin()
+        scrollBehavior.resetScroll()
+        listState.scrollToItem(index)
+    }
+
     @Composable
-    fun ResetOnChange(vararg keys: Any?) {
+    fun ResetOnChange(vararg keys: Any?, enabled: Boolean = true) {
         val currentKeys = rememberUpdatedState(keys.toList())
+        val currentEnabled = rememberUpdatedState(enabled)
         LaunchedEffect(this) {
             snapshotFlow { currentKeys.value }
                 .drop(1)
-                .collect { resetScroll() }
+                .collect { if (currentEnabled.value) resetScroll() }
         }
     }
 }

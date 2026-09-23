@@ -2,96 +2,31 @@ package li.gkd.app.data
 
 import li.gkd.app.a11y.launcherAppId
 import li.gkd.app.data.appinfo.AppInfoRepository
-
-data class GlobalApp(
-    val id: String,
-    val enable: Boolean,
-    val activityIds: List<String>,
-    val excludeActivityIds: List<String>,
-)
+import li.gkd.app.domain.rule.RuleScopePolicy
 
 class GlobalRule(
-    rule: RawSubscription.RawGlobalRule,
+    private val rawRule: RawSubscription.RawGlobalRule,
     g: ResolvedGlobalGroup,
-    appInfoCache: Map<String, AppInfo>,
+    private val appInfoCache: Map<String, AppInfo>,
 ) : ResolvedRule(
-    rule = rule,
+    rule = rawRule,
     g = g,
 ) {
     val groupExcludeAppIds = g.groupExcludeAppIds
     val group = g.group
-    private val matchAnyApp = rule.matchAnyApp ?: group.matchAnyApp ?: true
-    private val matchLauncher = rule.matchLauncher ?: group.matchLauncher ?: false
-    private val matchSystemApp = rule.matchSystemApp ?: group.matchSystemApp ?: false
-    val apps = mutableMapOf<String, GlobalApp>().apply {
-        (rule.apps ?: group.apps ?: emptyList()).filter { a ->
-            // https://github.com/gkd-kit/gkd/issues/619
-            appInfoCache.isEmpty() || appInfoCache.containsKey(a.id) // 过滤掉未安装应用
-        }.forEach { a ->
-            val enable = a.enable ?: appInfoCache[a.id]?.let { appInfo ->
-                if (a.versionCode?.match(appInfo.versionCode) == false) {
-                    return@let false
-                }
-                if (a.versionName?.match(appInfo.versionName) == false) {
-                    return@let false
-                }
-                null
-            } ?: true
-            this[a.id] = GlobalApp(
-                id = a.id,
-                enable = enable,
-                activityIds = getFixActivityIds(a.id, a.activityIds),
-                excludeActivityIds = getFixActivityIds(a.id, a.excludeActivityIds),
-            )
-        }
-    }
+    private val matchAnyApp = rawRule.matchAnyApp ?: group.matchAnyApp ?: true
+    private val matchLauncher = rawRule.matchLauncher ?: group.matchLauncher ?: false
+    private val matchSystemApp = rawRule.matchSystemApp ?: group.matchSystemApp ?: false
+    private val apps = (rawRule.apps ?: group.apps).orEmpty()
+        // Only installed apps can supply runtime activity events (issue #619).
+        .filter { appInfoCache.isEmpty() || it.id in appInfoCache }
+        .associate { it.id to RuleScopePolicy.globalScope(it, appInfoCache[it.id]) }
 
     override val type = "global"
 
-    private val excludeAppIds = apps.filter { e ->
-        !e.value.enable
-    }.keys
-
-    private val enableApps = apps.filter { e -> e.value.enable }
-
-    /**
-     * 内置禁用>用户配置>规则自带
-     * 范围越精确优先级越高
-     */
-    override fun matchActivity(appId: String, activityId: String?): Boolean {
-        // 规则自带禁用
-        if (excludeAppIds.contains(appId) || groupExcludeAppIds.contains(appId)) {
-            return false
-        }
-
-        // 用户自定义禁用
-        if (excludeData.excludeAppIds.contains(appId)) {
-            return false
-        }
-        if (activityId != null && excludeData.activityIds.contains(appId to activityId)) {
-            return false
-        }
-        if (excludeData.includeAppIds.contains(appId)) {
-            activityId ?: return true
-            val app = enableApps[appId] ?: return true
-            // 规则自带页面的禁用
-            return !app.excludeActivityIds.any { e -> e.startsWith(activityId) }
-        }
-
-        // 范围比较
-        val app = enableApps[appId]
-        if (app != null) { // 规则自定义启用
-            activityId ?: return true
-            return app.activityIds.isEmpty() || app.activityIds.any { e -> e.startsWith(activityId) }
-        } else {
-            if (!matchLauncher && appId == launcherAppId) {
-                return false
-            }
-            if (!matchSystemApp && AppInfoRepository.systemAppsFlow.value.contains(appId)) {
-                return false
-            }
-            return matchAnyApp
-        }
-    }
-
+    override fun matchActivity(appId: String, activityId: String?): Boolean = RuleScopePolicy.matchGlobalActivity(
+        apps[appId], matchAnyApp && (matchLauncher || appId != launcherAppId) &&
+            (matchSystemApp || appId !in AppInfoRepository.systemAppsFlow.value),
+        appId, activityId, appId in groupExcludeAppIds, excludeData,
+    )
 }

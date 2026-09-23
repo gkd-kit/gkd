@@ -1,40 +1,42 @@
 package li.gkd.app.feature.subscription
 
-import li.gkd.app.domain.rule.RuleGroupTarget
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import li.gkd.app.a11y.launcherAppId
+import li.gkd.app.text.UiStrings
 import li.gkd.app.data.RawSubscription
-import li.gkd.app.data.ruleconfig.RuleGroupConfigService
 import li.gkd.app.data.edit
+import li.gkd.app.data.ruleconfig.RuleGroupConfigService
+import li.gkd.app.data.ruleconfig.RuleSwitchRequest
+import li.gkd.app.domain.rule.RuleSwitchTarget
+import li.gkd.app.domain.rule.RuleSetting
 import li.gkd.app.domain.rule.toRuleGroupTarget
-import li.gkd.app.util.MutexState
+import li.gkd.app.domain.rule.toSwitchTarget
 import li.gkd.app.ui.share.BaseViewModel
-import li.gkd.app.core.state.Loadable
+import li.gkd.app.util.MutexState
 import li.gkd.app.util.toJson5String
-import li.gkd.app.data.appinfo.AppInfoRepository
-import li.gkd.db.SubsAppGroupConfig
-import li.gkd.db.SubsCategoryConfig
 import li.gkd.db.Db
-
-data class SubsAppGroupConfigs(
-    val subsConfigs: List<SubsAppGroupConfig>,
-    val categoryConfigs: List<SubsCategoryConfig>,
-)
+import li.gkd.db.SubscriptionConfigSnapshot
 
 data class SubsAppGroupListUiState(
     val subscription: RawSubscription,
     val app: RawSubscription.RawApp,
-    val configs: Loadable<SubsAppGroupConfigs>,
+    val configs: SubscriptionConfigSnapshot,
 )
 
 class SubsAppGroupListVm(
     val route: SubsAppGroupListRoute,
 ) : BaseViewModel() {
     private val batchMutex = MutexState()
+    fun removeFromWhitelist() {
+        li.gkd.app.store.AppStore.updateBlockMatchAppList { it - route.appId }
+    }
+
+    fun removeFromPartialDisable() {
+        li.gkd.app.store.AppStore.updateBlockA11yAppList { it - route.appId }
+    }
+
     val batchBusyFlow: StateFlow<Boolean> get() = batchMutex.state
 
     suspend fun runBatchAction(action: suspend () -> Unit) {
@@ -44,59 +46,21 @@ class SubsAppGroupListVm(
 
     private val subscription = requiredSubscription(route.subsItemId)
 
-    private val subsConfigsFlow =
-        Db.subsAppGroupConfigDao.queryByAppId(route.subsItemId, route.appId)
-
-    private val categoryConfigsFlow = Db.subsCategoryConfigDao.queryConfig(route.subsItemId)
-
-    val uiState = subscription.buildUiState(
-        initialValue = { rawSubscription ->
-            buildUiState(rawSubscription, Loadable.Loading)
-        },
-    ) { rawSubscription ->
-        combine(subsConfigsFlow, categoryConfigsFlow) { configs, categoryConfigs ->
-            buildUiState(
-                rawSubscription = rawSubscription,
-                configs = Loadable.Ready(
-                    SubsAppGroupConfigs(
-                        subsConfigs = configs,
-                        categoryConfigs = categoryConfigs,
-                    ),
-                ),
+    val uiState = subscription.buildUiState { rawSubscription ->
+        Db.subscriptionConfigStore.observe().map { configs ->
+            SubsAppGroupListUiState(
+                subscription = rawSubscription,
+                app = rawSubscription.getApp(route.appId),
+                configs = configs,
             )
         }
-    }
-
-    private fun buildUiState(
-        rawSubscription: RawSubscription,
-        configs: Loadable<SubsAppGroupConfigs>,
-    ) = SubsAppGroupListUiState(
-        subscription = rawSubscription,
-        app = rawSubscription.apps.find { it.id == route.appId }
-            ?: error("订阅应用不存在: ${route.appId}"),
-        configs = configs,
-    )
-
-    val focusGroupFlow: StateFlow<Triple<Long, String?, Int>?>?
-        field = route.focusGroupKey?.let {
-            MutableStateFlow<Triple<Long, String?, Int>?>(
-                Triple(
-                    route.subsItemId,
-                    route.appId,
-                    route.focusGroupKey,
-                )
-            )
-        }
-
-    fun consumeFocusGroup() {
-        focusGroupFlow?.value = null
     }
 
     suspend fun buildSelectedGroupsText(selectedKeys: Set<Int>): String =
         withContext(Dispatchers.Default) {
-            val app = uiState.value.value?.app ?: error("订阅应用尚未加载")
+            val app = uiState.value.value?.app ?: error(UiStrings.subscription_app_not_loaded)
             val groups = app.groups.filter { it.key in selectedKeys }
-            check(groups.isNotEmpty()) { "所选规则已变化，无可复制规则" }
+            check(groups.isNotEmpty()) { UiStrings.selected_rules_no_copyable }
             toJson5String(
                 app.copy(
                     groups = groups,
@@ -104,32 +68,21 @@ class SubsAppGroupListVm(
             )
         }
 
-    suspend fun updateSelectedEnabled(selectedKeys: Set<Int>, enabled: Boolean?): Int {
-        val app = uiState.value.value?.app ?: error("订阅应用尚未加载")
-        val selectedGroups = app.groups
-            .filter { it.key in selectedKeys }
-            .map { it.toRuleGroupTarget(route.subsItemId, route.appId) }
-            .toSet()
-        return RuleGroupConfigService.batchUpdateGroupEnabled(
-            selectedGroups,
-            enabled,
-            launcherAppId,
-            AppInfoRepository.systemAppsFlow.value,
-        ).size
+    fun prepareAppSwitch(state: SubsAppGroupListUiState): RuleSwitchRequest =
+        RuleGroupConfigService.prepare(listOf(RuleSwitchTarget.App(route.subsItemId, route.appId)),
+            listOf(state.subscription), state.configs)
+
+    fun prepareSwitches(state: SubsAppGroupListUiState, keys: Set<Int>): RuleSwitchRequest {
+        val targets = state.app.groups.filter { it.key in keys }
+            .map { it.toRuleGroupTarget(route.subsItemId, route.appId).toSwitchTarget() }
+        check(targets.size == keys.size) { UiStrings.selected_rules_reselect }
+        return RuleGroupConfigService.prepare(targets, listOf(state.subscription), state.configs)
     }
 
-    suspend fun setGroupEnabled(
-        group: RawSubscription.RawAppGroup,
-        enabled: Boolean,
-    ) {
-        RuleGroupConfigService.updateGroupEnabled(
-            RuleGroupTarget.App(route.subsItemId, route.appId, group.key),
-            enabled,
-        )
-    }
+    suspend fun applySwitches(request: RuleSwitchRequest, setting: RuleSetting) = RuleGroupConfigService.apply(request, setting)
 
     suspend fun deleteSelectedGroups(selectedKeys: Set<Int>): Int {
-        check(route.subsItemId < 0) { "远程订阅规则不可删除" }
+        check(route.subsItemId < 0) { UiStrings.remote_rule_delete_unsupported }
         var deletedSize = 0
         subscription.update { current ->
             current.edit {

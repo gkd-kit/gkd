@@ -2,6 +2,8 @@
 
 - 除 `app_icon`、`service` 等 Android 平台必须使用 XML 的场景外，禁止新增 XML 文件。
 - UI、图标及其他能够使用 Kotlin 表达的实现必须使用 `.kt` 文件，不得为其新增 drawable、layout 等 XML 资源。
+- 新增图标资源时，页面及页面内组件使用的图标必须以 Kotlin `ImageVector` 定义，不得使用 drawable XML。
+- 只有 `AndroidManifest.xml` 等 Android 平台 XML 配置需要引用的图标及其依赖资源，才允许使用 drawable XML；同一图标同时用于平台配置和页面时，页面仍必须使用 Kotlin `ImageVector`。
 - 无法确定是否属于 XML 例外场景时，必须先向用户确认。
 
 ## Git 提交与推送
@@ -23,9 +25,18 @@
 - `XxxExt.kt` 文件只允许放置扩展声明；普通工具函数和共享工具属性必须移入对应的 `XxxUtils.kt` 或职责明确的同名 `object`。
 - Compose 页面、组件及其私有 Composable 不适用上述工具声明规则。
 
+## 通用 UI 组件命名
+
+- 项目自定义、供跨页面或跨文件复用的 UI 组件统一使用 `Gk` 前缀和 PascalCase，命名为 `GkAbc`，包括基础控件和共享业务组件；该规则不受组件所在包限制。
+- 名称必须描述组件用途，不再使用 `Perf`、`Custom` 等泛化前缀；具有实际语义的 `App`、`AppBar`、`Rule`、`Subs` 等词保留，例如 `GkAppIcon`、`GkAppBarTextField`、`GkRuleGroupCard`。
+- 单组件文件与组件同名；同一组件族的重载、私有实现和配套声明允许放在同一文件，文件以 `Gk` 开头并描述该组件族。
+- 组件专属配置类型使用 `GkAbcDefaults`、`GkAbcColors` 等名称；图标组件使用 `GkIcon`，共享图标集合使用 `GkIcons`。
+- 页面、页面私有 Composable、Preview、普通工具函数、Modifier 扩展及独立状态管理类型不强制添加 `Gk`；状态对象的 `Render()` 成员不属于独立组件入口。
+
 ## Compose 与状态边界
 
-- 除悬浮窗 Compose 外，应用 Compose 树中的 Composable 都可以通过 `LocalMainViewModel` 获取 `mainVm`，无需逐层转发导航、全局弹窗、打开 URL 等应用级操作。
+- 主界面的 Composable 和页面 ViewModel 统一通过 `MainViewModel.requireCurrent()` 获取当前 `mainVm`，无需逐层转发导航、全局弹窗、打开 URL 等应用级操作；不再使用 `LocalMainViewModel`。实例由 `MainActivity` 在权限及 Activity Result 宿主绑定后、创建 Compose 界面前注册，ViewModel 清理时按实例身份清除引用。
+- `MainViewModel.requireCurrent()` 仅用于已初始化的主界面调用链，不得用于 Service、后台任务或悬浮窗。一次操作获取一次实例并贯穿整个操作，不得在权限等待前后重新获取，也不得在静态字段中缓存；该方法不得自行创建替代实例。
 - 路由页面及其私有 Composable 可以直接获取页面 ViewModel，并处理权限和 Activity Result 等平台 UI 行为。可复用组件不得获取页面 ViewModel，只接收所需的状态和事件回调。
 - 应用级只读 Flow 由实际消费它的 Composable 直接收集，不要复制进页面 `UiState` 或 ViewModel。普通 Flow 使用 `collectAsStateWithLifecycle`，Paging 使用专用 API，高频状态放在最小消费子树。
 - Service 启停、持久化和其他业务副作用必须由明确事件触发，并交给 ViewModel、Repository 或 Store 完成；Composable 不得通过状态监听执行写入。
@@ -41,9 +52,20 @@
 - 持久化和业务副作用必须由明确的用户事件、系统事件或领域方法触发，并在 Repository/Store 中按业务一致性边界完成。允许将单一权威状态同步到幂等外部投影，但同步回调不得再读取其他状态拼装写入。
 - `debounce`、`conflate`、`collectLatest` 和互斥锁只能控制调度或并发，不能替代多状态源的原子更新；需要一致读取的状态应聚合为同一个不可变状态对象。
 
+## UI 交互与过渡动画
+
+- 可滚动页面必须在内容末尾提供统一的额外底部留白：普通 `Column` 使用 `GkPageBottomSpace()`，`LazyColumn` 使用 `gkPageBottomSpace()` 添加末尾 item；已有末尾 item 包含空状态等内容时，可在该 item 内使用 `GkPageBottomSpace()`，不得重复添加。高度统一由 `GkPageBottomSpaceDefaults` 管理，不再手写页面底部 Spacer 高度。
+- 底部留白必须位于滚动内容内部，让最后一项可以继续向上滚动；它不替代 Scaffold、系统导航栏或 IME inset 处理，也不得在统一组件中重复叠加已由宿主处理的 inset。
+
+- 动画只负责视觉过渡，交互按当前业务或 UI 状态立即响应。禁止因动画未结束、图标变形或旧内容正在退场，给按钮、图标、开关、标题等添加临时禁用态、等待动画完成、延时解锁或额外点击节流；也不得改成在点击回调中吞掉操作。
+- 禁用交互必须对应明确的业务前提，例如没有可操作数据、输入无效或权限不足。普通开关的短暂保存、模式切换或对快速点击的假设，不得成为临时锁定控件、扩大禁用范围的理由；写入一致性在 ViewModel、Repository 或 Store 中处理。
+- 退场重复内容可以从无障碍导航中隐藏，但不得因此改变控件颜色或增加点击等待。相关测试应验证过渡期间的正常点击和状态切换，不得将这类临时禁用作为正确行为固化。
+
 ## 构建与测试
 
 - 常规测试只编译 `gkd` 渠道；若用户没有明确指令，禁止运行任何 `play` 渠道的编译任务。
+- 执行界面测试（包括真机、模拟器上的 Compose UI / Instrumentation 测试）前，必须先记录应用原有的自动化开关与运行模式，临时关闭自动化功能（关闭 `enableAutomator` 并退出自动化模式），确认设置已生效后再初始化测试，防止应用自动化干扰测试初始化。
+- 测试结束后必须恢复并核对原有自动化设置；测试失败或中断时也必须执行恢复，脚本应通过 `finally` 等清理机制保证这一点。恢复时只还原本次临时修改的字段，不得用整份旧配置覆盖其他设置。
 
 ## 测试策略
 

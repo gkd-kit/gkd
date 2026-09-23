@@ -42,11 +42,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import li.gkd.app.text.UiStrings
 import li.gkd.app.a11y.topActivityFlow
 import li.gkd.app.app
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.store.FileStateStore
-import li.gkd.app.ui.component.PerfIcon
 import li.gkd.app.ui.icon.DragPan
 import li.gkd.app.ui.style.AppTheme
 import li.gkd.app.ui.style.iconTextSize
@@ -56,11 +56,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
 import li.gkd.app.util.px
 import li.gkd.app.util.runMainPost
-import li.gkd.app.util.throttle
+import li.gkd.app.util.TimeUtils.throttle
 import li.gkd.app.util.ToastUtils.toast
 import kotlin.coroutines.resume
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds
+import li.gkd.app.ui.component.GkIcon
+import li.gkd.app.ui.component.GkIcons
 
 private var tempShareContext: ShareContext? = null
 private fun acquireShareContext(): ShareContextLease {
@@ -102,7 +104,7 @@ private class ShareContext {
                         val newV = PermissionStates.drawOverlays.updateAndGet()
                         canDrawOverlays = newV
                         if (!newV && oldV) {
-                            toast("当前界面拒绝显示悬浮窗")
+                            toast(UiStrings.overlay_screen_denied)
                             break
                         }
                         delay(500.milliseconds)
@@ -142,16 +144,16 @@ abstract class OverlayWindowService(
     fun ClosableTitle(
         title: String,
         onMinimizeRequest: (() -> Unit)? = null,
-        minimizeContentDescription: String = "缩小窗口",
+        minimizeContentDescription: String = UiStrings.window_minimize,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
         ) {
-            PerfIcon(imageVector = DragPan, modifier = Modifier.iconTextSize())
+            GkIcon(imageVector = DragPan, modifier = Modifier.iconTextSize())
             Text(text = title, modifier = Modifier.weight(1f))
             if (onMinimizeRequest != null) {
-                PerfIcon(
-                    imageVector = PerfIcon.ExpandMore,
+                GkIcon(
+                    imageVector = GkIcons.ExpandMore,
                     contentDescription = minimizeContentDescription,
                     modifier = Modifier
                         .clip(MaterialTheme.shapes.extraSmall)
@@ -159,8 +161,8 @@ abstract class OverlayWindowService(
                         .iconTextSize(),
                 )
             }
-            PerfIcon(
-                imageVector = PerfIcon.Close,
+            GkIcon(
+                imageVector = GkIcons.Close,
                 modifier = Modifier
                     .clip(MaterialTheme.shapes.extraSmall)
                     .clickable(onClick = throttle {

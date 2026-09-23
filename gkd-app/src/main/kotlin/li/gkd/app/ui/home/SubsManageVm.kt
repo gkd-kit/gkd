@@ -93,6 +93,10 @@ class SubsManageVm : BaseViewModel() {
         AppStore.updateSettings { it.copy(enableMatch = !it.enableMatch) }
     }
 
+    fun enableMatching() {
+        AppStore.updateSettings { it.copy(enableMatch = true) }
+    }
+
     fun refresh() {
         scope.launchUi {
             SubscriptionRepository.refresh().message?.let { toast(it) }
