@@ -1,9 +1,7 @@
 name: Publish-Selector
 
 on:
-  push:
-    tags:
-      - '@gkd-kit/selector@*.*.*'
+  workflow_dispatch:
 
 concurrency:
   group: publish-selector
