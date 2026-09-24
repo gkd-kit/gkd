@@ -35,15 +35,19 @@ public class SurfaceControlHidden {
         throw new RuntimeException();
     }
 
-    public static class DisplayCaptureArgs {
-        public static class Builder {
+    public abstract static class CaptureArgs {
+        public abstract static class Builder<T extends Builder<T>> {
             @RequiresApi(Build.VERSION_CODES.S)
-            public Builder(IBinder displayToken) {
+            public T setSourceCrop(Rect sourceCrop) {
                 throw new RuntimeException();
             }
+        }
+    }
 
+    public static class DisplayCaptureArgs extends CaptureArgs {
+        public static class Builder extends CaptureArgs.Builder<Builder> {
             @RequiresApi(Build.VERSION_CODES.S)
-            public Builder setSourceCrop(Rect sourceCrop) {
+            public Builder(IBinder displayToken) {
                 throw new RuntimeException();
             }
 

@@ -45,10 +45,10 @@ object CompatScreenshot {
         return when {
             AndroidTarget.S -> {
                 val displayToken = SurfaceControlHidden.getInternalDisplayToken()
-                val captureArgs = SurfaceControlHidden.DisplayCaptureArgs.Builder(displayToken)
-                    .setSourceCrop(crop)
-                    .setSize(width, height)
-                    .build()
+                val builder = SurfaceControlHidden.DisplayCaptureArgs.Builder(displayToken)
+                builder.setSourceCrop(crop)
+                builder.setSize(width, height)
+                val captureArgs = builder.build()
                 SurfaceControlHidden.captureDisplay(captureArgs)?.asBitmap()
             }
 
