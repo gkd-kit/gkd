@@ -12,13 +12,13 @@ class RuleExclusionsSummaryTest {
 
     @Test
     fun globalEditorSummaryIncludesBothAppOverridesAndAllPages() {
-        assertEquals("2 个应用 · 2 个页面", RulePropertyText.personalSummary(exclude, null))
-        assertEquals("2 个应用", RulePropertyText.personalSummary(exclude.copy(activityIds = emptySet()), null))
+        assertEquals("2 apps · 2 pages", RulePropertyText.personalSummary(exclude, null))
+        assertEquals("2 apps", RulePropertyText.personalSummary(exclude.copy(activityIds = emptySet()), null))
     }
 
     @Test
     fun pageEditorSummaryCountsOnlyPagesInItsApp() {
-        assertEquals("1 个页面", RulePropertyText.personalSummary(exclude, "app.one"))
+        assertEquals("1 page", RulePropertyText.personalSummary(exclude, "app.one"))
         assertEquals(null, RulePropertyText.personalSummary(exclude, "app.three"))
     }
 }

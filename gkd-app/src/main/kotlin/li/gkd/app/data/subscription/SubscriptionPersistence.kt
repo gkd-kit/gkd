@@ -112,7 +112,7 @@ object SubscriptionPersistence {
         Db.subsGlobalGroupConfigDao.delete(*obsoleteGlobals.toTypedArray())
         Db.subsCategoryConfigDao.delete(*obsoleteCategories.toTypedArray())
         LogUtils.d(
-            "清理已移除规则配置",
+            "Clean up removed rule configurations",
             "subsId=${subscription.id}, delete=$size",
         )
         return size

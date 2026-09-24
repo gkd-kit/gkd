@@ -164,8 +164,8 @@ class StatusService : LifecycleHookService() {
         private var lastAutoStart = 0L
         fun autoStart() {
             if (System.currentTimeMillis() - lastAutoStart < 1000) return
-            // 重启自动打开通知栏状态服务
-            // 需要已有服务或前台才能自主启动，否则报错 startForegroundService() not allowed due to mAllowStartForeground false
+            // Restart auto-open notification bar status service
+            // Requires an existing service or foreground to start independently, otherwise it will error with startForegroundService() not allowed due to mAllowStartForeground false
             if (needRestart) {
                 start()
                 lastAutoStart = System.currentTimeMillis()

@@ -283,7 +283,7 @@ class MainViewModel : BaseViewModel() {
                     if (tab != null && BottomNavItem.allSubObjects.any { it.key == tab }) {
                         tabFlow.value = tab
                     }
-                    // MainActivity 被复用时，也需要返回首页。
+                    // When MainActivity is reused, it also needs to return to the home page.
                     backStack.subList(1, backStack.size).clear()
                 }
 
@@ -394,7 +394,7 @@ class MainViewModel : BaseViewModel() {
         // preload
         AppInfoRepository.appIconMapFlow.value
         scope.launchLogged(Dispatchers.IO) {
-            // 每次进入删除缓存
+            // Clear cache every time the app enters
             FolderUtils.clearCache()
         }
 
@@ -408,7 +408,7 @@ class MainViewModel : BaseViewModel() {
                 try {
                     json.decodeFromString<CrashData>(it.readText())
                 } catch (e: Exception) {
-                    LogUtils.d("解析崩溃日志失败: ${it.name}", e)
+                    LogUtils.d("Failed to parse crash log: ${it.name}", e)
                     null
                 }
             }.sortedBy { -it.mtime }

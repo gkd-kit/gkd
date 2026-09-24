@@ -33,7 +33,7 @@ object Cfg {
     val sourceVersion = JavaVersion.VERSION_11
     val targetVersion get() = sourceVersion
     val kotlinTargetVersion get() = JvmTarget.fromTarget(targetVersion.majorVersion)
-    // 统一应用于所有子项目；未依赖对应库的模块允许出现 unresolved opt-in marker 警告。
+    // Uniformly applied to all subprojects; modules that do not depend on the corresponding library are allowed to have unresolved opt-in marker warnings.
     val kotlinCompilerArgs = listOf(
         "-opt-in=kotlin.RequiresOptIn",
         "-opt-in=kotlin.contracts.ExperimentalContracts",

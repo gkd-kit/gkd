@@ -185,8 +185,8 @@ val uiAutomationOccupiedFlow: StateFlow<Boolean>
 
 private val remoteCallbackThreadField by lazy {
     if (AndroidTarget.P) {
-        // UiAutomation 在 CONNECTING 阶段同步失败时，disconnect() 会在进入自身的
-        // finally 前直接抛错，因此需要通过内部字段兜底关闭其回调线程。
+        // When UiAutomation fails synchronously during the CONNECTING phase, disconnect() will enter its own
+        // finally before directly throwing an error, therefore need to use internal fields as a fallback to close its callback thread.
         @SuppressLint("SoonBlockedPrivateApi")
         UiAutomation::class.java.getDeclaredField("mRemoteCallbackThread").apply {
             isAccessible = true

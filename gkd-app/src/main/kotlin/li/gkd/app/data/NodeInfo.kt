@@ -51,7 +51,7 @@ private fun getChildren(node: AccessibilityNodeInfo) = sequence {
 
 private const val MAX_KEEP_SIZE = 5000
 
-// 先获取所有节点构建树结构, 然后再判断 idQf/textQf 如果存在一个能同时 idQf 和 textQf 的节点, 则认为 idQf 和 textQf 等价
+// First get all nodes to build the tree structure, then judge idQf/textQf. If there exists a node that can satisfy both idQf and textQf simultaneously, then idQf and textQf are considered equivalent.
 fun info2nodeList(root: AccessibilityNodeInfo?): List<NodeInfo> {
     if (root == null) {
         return emptyList()
@@ -206,8 +206,8 @@ fun info2nodeList(root: AccessibilityNodeInfo?): List<NodeInfo> {
 
     LogUtils.d(
         currentTopActivity,
-        "快照节点数量:${nodes.size}, 总耗时:${collectTime + qfTime}ms",
-        "收集节点耗时:${collectTime}ms, 收集 fastQuery 耗时:${qfTime}ms",
+        "Snapshot node count:${nodes.size}, total time:${collectTime + qfTime}ms",
+        "Node collection time:${collectTime}ms, fastQuery collection time:${qfTime}ms",
     )
 
     return nodes.map { n ->

@@ -45,7 +45,7 @@ object A11yRuntime {
         latestServiceMode.value = service.mode.value
         latestServiceTime.value = serviceTime
         engine.onA11yConnected()
-        runMainPost(1000L) {// 共存 1000ms, 等待另一个服务稳定
+        runMainPost(1000L) {// Coexist for 1000ms, wait for another service to stabilize
             if (latestServiceTime.value == serviceTime) {
                 when (service.mode) {
                     AutomatorModeOption.A11yMode -> uiAutomationFlow.value?.shutdown(true)

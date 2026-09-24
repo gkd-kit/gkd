@@ -85,14 +85,14 @@ sealed class ResolvedRule(
                 }
         val groupRules = selfGroupRules + othersGroupRules
 
-        // 共享次数
+        // Share count
         if (actionMaximumKey != null) {
             val otherRule = groupRules.find { r -> r.key == actionMaximumKey }
             if (otherRule != null) {
                 actionCount = otherRule.actionCount
             }
         }
-        // 共享 cd
+        // Shared cd
         if (actionCdKey != null) {
             val otherRule = groupRules.find { r -> r.key == actionCdKey }
             if (otherRule != null) {
@@ -169,27 +169,27 @@ sealed class ResolvedRule(
         get() {
             if (actionMaximum != null) {
                 if (actionCount.value >= actionMaximum) {
-                    return RuleStatus.Status1 // 达到最大执行次数
+                    return RuleStatus.Status1 // Maximum execution count reached
                 }
             }
             if (preRules.isNotEmpty() && !preRules.any { it === lastTriggerRule }) {
-                return RuleStatus.Status2 // 需要提前触发某个规则
+                return RuleStatus.Status2 // Need to trigger a rule in advance
             }
             val t = System.currentTimeMillis()
             val c = matchChangedTime.value
             if (matchDelay > 0 && t - c < matchDelay) {
-                return RuleStatus.Status3 // 处于匹配延迟中
+                return RuleStatus.Status3 // In match delay
             }
             if (matchTime != null && t - c > matchLimitTime) {
-                return RuleStatus.Status4 // 超出匹配时间
+                return RuleStatus.Status4 // Match time exceeded
             }
             if (actionTriggerTime.value + actionCd > t) {
-                return RuleStatus.Status5 // 处于冷却时间
+                return RuleStatus.Status5 // In cooldown period
             }
             val d = actionDelayTriggerTime.value
             if (d > 0) {
                 if (d + actionDelay > t) {
-                    return RuleStatus.Status6 // 处于触发延迟中
+                    return RuleStatus.Status6 // In trigger delay
                 }
             }
             return RuleStatus.StatusOk
@@ -201,7 +201,7 @@ sealed class ResolvedRule(
 
     abstract val type: String
 
-    // 范围越精确, 优先级越高
+    // The more precise the range, the higher the priority
     abstract fun matchActivity(appId: String, activityId: String? = null): Boolean
 }
 

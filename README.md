@@ -4,70 +4,70 @@
 <a href="https://gkd.li/"><img src="https://e.gkd.li/2a0a7787-f2dd-4529-a885-93f3b8c857c3" alt="GKD.LI" width="40%" /></a>
 </p>
 
-基于 [高级选择器](https://gkd.li/guide/selector) + [订阅规则](https://gkd.li/guide/subscription) + [快照审查](https://github.com/gkd-kit/inspect) 的自定义屏幕点击 Android 应用
+Custom screen-tap Android app based on [advanced selectors](https://gkd.li/guide/selector) + [subscription rules](https://gkd.li/guide/subscription) + [snapshot inspection](https://github.com/gkd-kit/inspect)
 
-通过自定义规则，在指定界面，满足指定条件(如屏幕上存在特定文字)时，点击特定的节点或位置或执行其他操作
+Through custom rules, on specified interfaces, when specified conditions are met (such as specific text existing on screen), tap specific nodes or positions or perform other actions
 
-- **快捷操作**
+- **Quick actions**
 
-  帮助你简化一些重复的流程, 如某些软件自动确认电脑登录
+  Helps you simplify some repetitive processes, such as certain software automatically confirming computer login
 
-- **跳过流程**
+- **Skip flows**
 
-  某些软件可能在启动时存在一些烦人的流程, 这个软件可以帮助你点击跳过这个流程
+  Some software may have annoying flows during startup. This app can help you tap to skip the flow
 
-## 免责声明
+## Disclaimer
 
-**本项目遵循 [GPL-3.0-only](/LICENSE) 开源，项目仅供学习交流，禁止用于商业或非法用途**
+**This project is open source under [GPL-3.0-only](/LICENSE) and is for learning and exchange only. Commercial or illegal use is prohibited.**
 
-## 安装
+## Install
 
 <a href="https://gkd.li/guide/"><img src="https://e.gkd.li/f23b704d-d781-494b-9719-393f95683b89" alt="Download from GKD.LI" width="32%" /></a><a href="https://play.google.com/store/apps/details?id=li.songe.gkd"><img src="https://e.gkd.li/f63fabeb-0342-4961-a46d-cac61b0f8856" alt="Download from Google Play" width="32%" /></a><a href="https://github.com/gkd-kit/gkd/releases"><img src="https://e.gkd.li/c1ef2bb9-7472-46d5-9806-81b4c37e5b4d" alt="Download from GitHub releases" width="32%" /></a>
 
-如遇问题请先查看 [疑难解答](https://gkd.li/guide/faq)
+If you encounter issues, please first check the [FAQ](https://gkd.li/guide/faq)
 
-## 截图
+## Screenshots
 
 |                                                               |                                                               |                                                               |                                                               |
 | ------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- |
 | ![img](https://e.gkd.li/1e8934c1-2303-4182-9ef2-ad4c46882570) | ![img](https://e.gkd.li/01f230d7-9b89-4314-b573-38bd233d22f9) | ![img](https://e.gkd.li/dfa0a782-b21e-473a-96e4-eef27773b71b) | ![img](https://e.gkd.li/641decd1-2e60-4e95-b78c-df38d1d98a4d) |
 | ![img](https://e.gkd.li/b216b703-d3de-4798-81ba-29e0ae63264f) | ![img](https://e.gkd.li/76c25ac9-4189-47cd-b40b-b9e72c79b584) | ![img](https://e.gkd.li/7288502e-808b-4d9a-88b5-1085abaa0d46) | ![img](https://e.gkd.li/aa974940-7773-409a-ae84-3c02fee9c770) |
 
-## 订阅
+## Subscription
 
-GKD **默认不提供规则**，需自行添加本地规则，或者通过订阅链接的方式获取远程规则
+GKD **does not provide rules by default**. You need to add local rules yourself, or obtain remote rules through subscription links
 
-也可通过 [subscription-template](https://github.com/gkd-kit/subscription-template) 快速构建自己的远程订阅
+You can also quickly build your own remote subscription through [subscription-template](https://github.com/gkd-kit/subscription-template)
 
-第三方订阅列表可在 <https://github.com/topics/gkd-subscription> 查看
+Third-party subscription lists can be viewed at <https://github.com/topics/gkd-subscription>
 
-要加入此列表, 需点击仓库主页右上角设置图标后在 Topics 中添加 `gkd-subscription`
+To join this list, click the settings icon in the top right corner of the repository homepage and add `gkd-subscription` in Topics
 
 <details>
-<summary>示例图片 - 添加至 Topics (点击展开)</summary>
+<summary>Example image - Add to Topics (click to expand)</summary>
 
 ![image](https://e.gkd.li/9e340459-254f-4ca0-8a44-cc823069e5a7)
 
 </details>
 
-## 选择器
+## Selector
 
-一个类似 CSS 选择器的选择器, 能联系节点上下文信息, 更容易也更精确找到目标节点
+A selector similar to a CSS selector, which can relate to node context information, making it easier and more precise to find the target node
 
 <https://gkd.li/guide/selector>
 
-[@[vid=\"menu\"] < [vid=\"menu_container\"] - [vid=\"dot_text_layout\"] > [text^=\"广告\"]](https://i.gkd.li/i/14881985?gkd=QFt2aWQ9Im1lbnUiXSA8IFt2aWQ9Im1lbnVfY29udGFpbmVyIl0gLSBbdmlkPSJkb3RfdGV4dF9sYXlvdXQiXSA-IFt0ZXh0Xj0i5bm_5ZGKIl0)
+[@[vid="menu"] < [vid="menu_container"] - [vid="dot_text_layout"] > [text^="ad"]](https://i.gkd.li/i/14881985?gkd=QFt2aWQ9Im1lbnUiXSA8IFt2aWQ9Im1lbnVfY29udGFpbmVyIl0gLSBbdmlkPSJkb3RfdGV4dF9sYXlvdXQiXSA-IFt0ZXh0Xj0i5bm_5ZGKIl0)
 
 <details>
-<summary>示例图片 - 选择器路径视图 (点击展开)</summary>
+<summary>Example image - Selector path view (click to expand)</summary>
 
 [![image](https://e.gkd.li/a2ae667b-b8c5-4556-a816-37743347b972)](https://i.gkd.li/i/14881985?gkd=QFt2aWQ9Im1lbnUiXSA8IFt2aWQ9Im1lbnVfY29udGFpbmVyIl0gLSBbdmlkPSJkb3RfdGV4dF9sYXlvdXQiXSA-IFt0ZXh0Xj0i5bm_5ZGKIl0)
 
 </details>
 
-## 衍生
+## Derivatives
 
-开发过程中的衍生项目，它们正在被 gkd 使用，也许对你有帮助
+Derivative projects during development that are being used by gkd, which may be helpful to you
 
 - [kotlin-json5](https://github.com/lisonge/kotlin-json5)
 - [kotlin-codeorigin](https://github.com/lisonge/kotlin-codeorigin)
@@ -75,10 +75,10 @@ GKD **默认不提供规则**，需自行添加本地规则，或者通过订阅
 - [remap](https://github.com/lisonge/remap)
 - [priv-kit](https://github.com/priv-kit/priv-kit)
 
-## 捐赠
+## Donate
 
-如果 GKD 对你有用, 可以通过以下链接支持该项目
+If GKD is useful to you, you can support the project through the following links
 
 <https://github.com/lisonge/sponsor>
 
-或前往 [Google Play](https://play.google.com/store/apps/details?id=li.songe.gkd) 给个好评
+Or go to [Google Play](https://play.google.com/store/apps/details?id=li.songe.gkd) and leave a good review

@@ -28,7 +28,7 @@ fun Modifier.appItemPadding() = this.padding(itemHorizontalPadding, itemVertical
 fun Modifier.scaffoldPadding(values: PaddingValues): Modifier {
     return padding(
         top = values.calculateTopPadding(),
-        // 被 LazyXXX 使用时, 移除 bottom padding, 否则 底部导航栏 无法实现透明背景
+        // When used by LazyXXX, remove bottom padding, otherwise the bottom navigation bar cannot achieve a transparent background
     )
 }
 

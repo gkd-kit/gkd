@@ -89,13 +89,13 @@ class MediaProjectionScreenshotSession(
             try {
                 projection.unregisterCallback(mediaProjectionCallback)
             } catch (e: Exception) {
-                LogUtils.d("注销截屏授权回调失败", e)
+                LogUtils.d("Failed to unregister screenshot authorization callback", e)
             }
             if (reason.stopProjection) {
                 try {
                     projection.stop()
                 } catch (e: Exception) {
-                    LogUtils.d("停止截屏授权失败", e)
+                    LogUtils.d("Failed to stop screenshot authorization", e)
                 }
             }
         }
@@ -106,7 +106,7 @@ class MediaProjectionScreenshotSession(
             try {
                 onInvalidated(this)
             } catch (e: Exception) {
-                LogUtils.d("通知截屏会话失效失败", e)
+                LogUtils.d("Failed to invalidate screenshot notification session", e)
             }
         }
         handlerThread.quitSafely()
@@ -262,7 +262,7 @@ class MediaProjectionScreenshotSession(
         try {
             virtualDisplay?.surface = null
         } catch (e: Exception) {
-            LogUtils.d("释放截屏 Surface 失败", e)
+            LogUtils.d("Failed to release screenshot Surface", e)
         }
         activeImageReader?.close()
         activeImageReader = null

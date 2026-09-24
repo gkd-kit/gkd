@@ -1,52 +1,52 @@
-name: 错误反馈 / Bug report
+name: Bug report
 title: "[BUG] "
-description: 反馈你遇到的错误 / Report the bug you encountered
+description: Report the bug you encountered
 labels: ["pending triage"]
 
 body:
   - type: markdown
     attributes:
       value: |
-        ## 感谢您花时间填写，在提交问题之前，请确保您完成以下操作
-        1. 请 **确保** 您已经查阅了 [GKD 官方文档](https://gkd.li) 以及 [常见问题](https://gkd.li/guide/faq)
-        2. 请 **判断** 是不是第三方规则订阅的问题，如果是，你应该向规则提供者反馈，而不是在这里提交，**此处只接受 GKD 应用本体的问题**
-        3. 请 **确保** 已有的 [问题](https://github.com/gkd-kit/gkd/issues?q=is%3Aissue) 或 [讨论](https://github.com/orgs/gkd-kit/discussions?discussions_q=) 中没有人提交过相似问题，否则请在该问题下进行讨论
-        4. 请 **确保** 你的问题能在 [releases](https://github.com/gkd-kit/gkd/releases/latest) 发布的最新版本(包含测试版本)上复现 (如果不是请先更新到最新版本复现后再提交问题)
+        ## Thank you for taking the time to fill this out. Before submitting, please make sure you have:
+        1. Please **ensure** you have read the [GKD official documentation](https://gkd.li) and the [FAQ](https://gkd.li/guide/faq)
+        2. Please **determine** if it is a third-party rule subscription issue. If so, you should feedback to the rule provider instead of submitting here. **Only issues with the GKD app itself are accepted here.**
+        3. Please **ensure** no one has submitted a similar issue in the existing [issues](https://github.com/gkd-kit/gkd/issues?q=is%3Aissue) or [discussions](https://github.com/orgs/gkd-kit/discussions?discussions_q=). Otherwise, please discuss under that issue
+        4. Please **ensure** your issue can be reproduced on the latest version released in [releases](https://github.com/gkd-kit/gkd/releases/latest) (including test versions). If not, please update to the latest version and reproduce before submitting
   - type: textarea
     id: log-file
     attributes:
       label: |
-        日志文件
+        Log file
       description: |
-        首页-设置-关于-日志，上传日志文件或生成链接并粘贴到下面的输入框\
-        任何问题都需要提供日志文件. 否则将直接关闭，请不要纯发文字/截图/视频
+        Home - Settings - About - Logs, upload the log file or generate a link and paste it into the input box below\
+        Log files are required for any issue. Otherwise it will be closed directly. Please do not just send text/screenshots/videos
     validations:
       required: true
   - type: textarea
     id: bug-1
     attributes:
       label: |
-        BUG描述(文字/截图/视频)
+        Bug description (text/screenshot/video)
       description: |
-        请使用尽量准确的描述，否则你的问题将会被直接关闭\
-        另外如果你的问题是关于快照/选择器的，请必须提供快照链接或者快照文件，否则你的问题将会被直接关闭
+        Please use as accurate a description as possible, otherwise your issue will be closed directly\
+        Also, if your issue is about snapshots/selectors, you must provide a snapshot link or snapshot file, otherwise your issue will be closed directly
     validations:
       required: true
   - type: textarea
     id: bug-2
     attributes:
       label: |
-        期望行为(文字/截图/视频)
+        Expected behavior (text/screenshot/video)
       description: |
-        请使用尽量准确的描述，否则你的问题将会被直接关闭
+        Please use as accurate a description as possible, otherwise your issue will be closed directly
     validations:
       required: true
   - type: textarea
     id: bug-3
     attributes:
       label: |
-        实际行为(文字/截图/视频)
+        Actual behavior (text/screenshot/video)
       description: |
-        请使用尽量准确的描述，否则你的问题将会被直接关闭
+        Please use as accurate a description as possible, otherwise your issue will be closed directly
     validations:
       required: true

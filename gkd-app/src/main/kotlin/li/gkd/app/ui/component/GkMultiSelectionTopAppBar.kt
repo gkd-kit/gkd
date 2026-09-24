@@ -70,7 +70,7 @@ fun GkMultiSelectionTopAppBar(
     SideEffect {
         if (selectedMode) lastSelectedCount = selectedCount
     }
-    // Clearing selection must not replace the outgoing title with "已选 0 项".
+    // Clearing selection must not replace the outgoing title with "0 items selected".
     val displayedCount = if (selectedMode) selectedCount else lastSelectedCount
     val density = LocalDensity.current
     val travel = with(density) { ActionRowHeight.roundToPx() }

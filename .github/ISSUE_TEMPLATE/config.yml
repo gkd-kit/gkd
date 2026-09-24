@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 讨论交流 / Discussions
+  - name: Discussions
     url: https://github.com/gkd-kit/gkd/discussions
-    about: '其他提问或请求: 选择器/规则/快照/无障碍/设备/相关问题. 在 issues 搜索不到可前往搜索讨论'
+    about: 'Other questions or requests: selectors/rules/snapshots/accessibility/device related issues. If not found in issues, search discussions'

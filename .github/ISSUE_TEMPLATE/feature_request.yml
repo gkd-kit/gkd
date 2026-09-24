@@ -1,25 +1,25 @@
-name: 功能请求 / Feature request
+name: Feature request
 title: "[Feature] "
-description: 提出你的功能请求 / Propose your feature request
+description: Propose your feature request
 labels: ["pending triage"]
 
 body:
   - type: markdown
     attributes:
       value: |
-        ## 感谢您花时间填写，在提交问题之前，请确保您完成以下操作
-        1. GKD 默认不提供任何规则，你可以查看 [GKD 官方文档](https://gkd.li) 后自行编写规则或者导入远程订阅，请不要再提出类似想要XXX规则这种问题
-        2. 请 **判断** 是不是第三方规则订阅的功能请求，如果是，你应该向规则提供者反馈，而不是在这里提交，**此处只接受 GKD 应用本体的功能请求**
-        3. 请 **确保** 已有的 [问题](https://github.com/gkd-kit/gkd/issues?q=is%3Aissue) 或 [讨论](https://github.com/orgs/gkd-kit/discussions?discussions_q=) 中没有人提交过相似问题，否则请在该问题下进行讨论
-        4. 请 **确保** 你想要的功能在 [releases](https://github.com/gkd-kit/gkd/releases/latest) 发布的最新版本(包含测试版本)上没有找到 (如果不是请先更新到最新版本验证后再提交问题)
+        ## Thank you for taking the time to fill this out. Before submitting, please make sure you have:
+        1. GKD does not provide any rules by default. You can write your own rules or import remote subscriptions after reviewing the [GKD official documentation](https://gkd.li). Please do not ask about wanting specific rules like "I want XXX rule"
+        2. Please **determine** if it is a third-party rule subscription feature request. If so, you should feedback to the rule provider instead of submitting here. **Only feature requests for the GKD app itself are accepted here.**
+        3. Please **ensure** no one has submitted a similar issue in the existing [issues](https://github.com/gkd-kit/gkd/issues?q=is%3Aissue) or [discussions](https://github.com/orgs/gkd-kit/discussions?discussions_q=). Otherwise, please discuss under that issue
+        4. Please **ensure** the feature you want is not available in the latest version released in [releases](https://github.com/gkd-kit/gkd/releases/latest) (including test versions). If not, please update to the latest version to verify before submitting
   - type: textarea
     id: feature-description
     attributes:
       label: |
-        新功能描述
+        New feature description
       description: |
-        例如: 我希望在 GKD 中的什么页面添加什么功能，以及这个功能的作用是什么\
-        或者在规则定义中添加某个字段，以及这个字段的作用是什么\
-        请使用准确的描述，否则你的问题将会被直接关闭
+        For example: what feature you want to add to which page in GKD, and what the feature does\
+        Or adding a certain field to the rule definition, and what the field does\
+        Please use accurate descriptions, otherwise your issue will be closed directly
     validations:
       required: true

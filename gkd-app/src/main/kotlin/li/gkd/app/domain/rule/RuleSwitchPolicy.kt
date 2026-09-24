@@ -8,7 +8,7 @@ import li.gkd.db.withExclude
 object RuleSwitchPolicy {
     fun updateGroup(target: RuleSwitchTarget, current: SubsGroupConfig, setting: RuleSetting): SubsGroupConfig =
         when (target) {
-            is RuleSwitchTarget.App -> error("应用总开关不属于规则组配置")
+            is RuleSwitchTarget.App -> error("App master switch does not belong to rule group configuration")
             is RuleSwitchTarget.AppGroup, is RuleSwitchTarget.GlobalGroup -> current.withEnable(setting.value)
             is RuleSwitchTarget.GlobalApp -> {
                 val exclude = ExcludeData.parse(current.exclude)

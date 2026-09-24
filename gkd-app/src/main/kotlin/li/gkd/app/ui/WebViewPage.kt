@@ -78,7 +78,7 @@ fun WebViewPage(route: WebViewRoute) {
                     )
                 } else {
                     Text(
-                        // webViewState.pageTitle 在调用 reload 后会变成 null
+                        // webViewState.pageTitle becomes null after calling reload
                         text = webViewState.pageTitle ?: webView?.title ?: "",
                         maxLines = 1,
                         softWrap = false,

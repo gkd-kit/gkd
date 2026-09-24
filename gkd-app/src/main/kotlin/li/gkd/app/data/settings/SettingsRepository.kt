@@ -81,7 +81,7 @@ private class PersistedValue<T>(
                 }
                 writeResult.value = result
                 result.error?.let { error ->
-                    runCatching { LogUtils.d("设置写入失败: $filename", error) }
+                    runCatching { LogUtils.d("Settings write failed: $filename", error) }
                 }
             }
         }
@@ -95,7 +95,7 @@ private class PersistedValue<T>(
         return PreparedValueRestore(
             begin = {
                 synchronized(this) {
-                    check(rollbackState == null) { "设置恢复已在进行: $filename" }
+                    check(rollbackState == null) { "Settings restore is already in progress: $filename" }
                     rollbackState = RollbackState(mutableState.value)
                     started = true
                     mutableState.value = restored
@@ -142,7 +142,7 @@ private class PersistedValue<T>(
     private fun enqueue(value: T) {
         currentVersion += 1
         val request = WriteRequest(currentVersion, value)
-        check(writeRequests.trySend(request).isSuccess) { "设置写入队列已关闭: $filename" }
+        check(writeRequests.trySend(request).isSuccess) { "Settings write queue is closed: $filename" }
     }
 }
 

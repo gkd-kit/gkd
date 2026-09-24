@@ -45,9 +45,9 @@ class RegexOptimizationTest {
             Case("(?is).*abc.*", "prefix AbC suffix", "abx"),
             Case("(?is).*abc", "prefix AbC", "AbC suffix"),
             Case("(?is).*ababaca.*", "prefix ABABABACA suffix", "ABABABAXA"),
-            Case("(?is)a你b好c.*", "A你B好C tail", "A他B好C tail"),
-            Case("(?is).*a你b好c.*", "prefix A你B好C suffix", "A你B他C"),
-            Case("(?is).*a你b好c", "prefix A你B好C", "A你B好C suffix"),
+            Case("(?is)aNiHaoC.*", "ANiHaoC tail", "ATaHaoC tail"),
+            Case("(?is).*aNiHaoC.*", "prefix ANiHaoC suffix", "ANiTaC"),
+            Case("(?is).*aNiHaoC", "prefix ANiHaoC", "ANiHaoC suffix"),
         )
 
         cases.forEach { case ->
@@ -93,7 +93,7 @@ class RegexOptimizationTest {
     @Test
     fun emptySimpleRegexMatchesEveryText() {
         val selector = Selector.compile("[text~='(?is).*']").value
-        listOf("", "anything", "中文").forEach { text ->
+        listOf("", "anything", "Chinese").forEach { text ->
             val node = TestNode("node", "View", mapOf("text" to text))
             assertSame(node, selector.match(node, TestNodeAdapter), text)
         }

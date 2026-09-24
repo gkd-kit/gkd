@@ -100,7 +100,7 @@ class SubscriptionInputParserTest {
             input.parseAppGroups("app.id")
         }
 
-        assertEquals("非法规则\nid与当前应用不一致", error.message)
+        assertEquals("Invalid rule\nid does not match current app", error.message)
     }
 
     @Test
@@ -111,7 +111,7 @@ class SubscriptionInputParserTest {
             input.parseApp()
         }
 
-        assertEquals("非法规则\n至少输入一个规则", error.message)
+        assertEquals("Invalid rule\nAt least one rule must be entered", error.message)
     }
 
     @Test
@@ -123,7 +123,7 @@ class SubscriptionInputParserTest {
             SubscriptionInputParser.parse("[]")
         }
 
-        assertTrue(syntaxError.message.orEmpty().startsWith("非法格式\n"))
-        assertEquals("规则应为对象格式", typeError.message)
+        assertTrue(syntaxError.message.orEmpty().startsWith("Invalid format\n"))
+        assertEquals("Rules should be in object format", typeError.message)
     }
 }

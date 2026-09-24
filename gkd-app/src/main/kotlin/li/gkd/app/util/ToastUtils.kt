@@ -123,7 +123,7 @@ object ToastUtils {
         if (!storeFlow.value.toastWhenClick) return
         runMainPost {
             val t = System.currentTimeMillis()
-            if (t - triggerTime > triggerInterval + 100) { // 100ms 保证二次显示的时候上一次已经完全消失
+            if (t - triggerTime > triggerInterval + 100) { // 100ms to ensure the previous one is completely gone when showing for the second time
                 triggerTime = t
                 val text = ActionToastTemplate.render(
                     storeFlow.value.actionToast,
@@ -156,8 +156,8 @@ object ToastUtils {
         }
     }
 
-    // 1.使用 WeakReference<View> 在某些机型上导致无法取消
-    // 2.使用协程 delay + cacheView 也可能导致无法取消
+    // 1.Using WeakReference<View> causes inability to cancel on certain models
+    // 2.Using coroutine delay + cacheView may also fail to cancel
     // https://github.com/gkd-kit/gkd/issues/697
     // https://github.com/gkd-kit/gkd/issues/698
     private fun showA11yToast(message: CharSequence) {
@@ -218,7 +218,7 @@ object ToastUtils {
     fun initToast() {
         Toaster.init(app)
         Toaster.setDebugMode(false)
-        Toaster.setInterceptor { false } // 覆盖默认拦截器
+        Toaster.setInterceptor { false } // Override default interceptor
         setReactiveToastStyle()
     }
 }

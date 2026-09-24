@@ -80,13 +80,13 @@ class RuleScopePolicyTest {
         assertTrue(partial.canEnable)
         assertTrue(partial.available)
         assertTrue(partial.restrictions.isEmpty())
-        assertEquals(listOf("规则排除了当前应用"), partial.limitations.blockedReasons)
+        assertEquals(listOf("Rules exclude the current app"), partial.limitations.blockedReasons)
         val allExcluded = group.copy(rules = listOf(group.rules.first()))
         val blocked = RuleGroupPolicy.controlState(sub, allExcluded, "app.id", configs, info, "launcher", emptySet())
         assertFalse(blocked.canEnable)
         assertFalse(blocked.available)
         assertEquals(RuleSetting.Enabled, blocked.setting)
-        assertEquals(listOf("规则排除了当前应用"), blocked.restrictions)
+        assertEquals(listOf("Rules exclude the current app"), blocked.restrictions)
     }
 
     @Test
@@ -107,7 +107,7 @@ class RuleScopePolicyTest {
         val manual = RuleGroupPolicy.controlState(sub, group, "app.id", configs.copy(
             globalGroupConfigs = listOf(SubsGlobalGroupConfig(-2, 1, null, "!app.id"))), info, "launcher", emptySet())
         assertTrue(manual.available)
-        assertEquals(listOf("当前应用版本不符合规则要求"), manual.limitations.blockedReasons)
+        assertEquals(listOf("Current app version does not meet rule requirements"), manual.limitations.blockedReasons)
     }
 
     @Test
@@ -125,16 +125,16 @@ class RuleScopePolicyTest {
         assertTrue(RuleScopePolicy.appVersionMatches(group, group.rules[0], null))
         val limits = RuleLimitationPolicy.resolve(sub, group, "app.id", empty, info)
         assertEquals(1, limits.blockedRules)
-        assertEquals(listOf("当前应用版本不符合规则要求"), limits.blockedReasons)
-        assertEquals(setOf("至少 20", "至少 1"), limits.builtIn.map { it.value }.toSet())
+        assertEquals(listOf("Current app version does not meet rule requirements"), limits.blockedReasons)
+        assertEquals(setOf("At least 20", "At least 1"), limits.builtIn.map { it.value }.toSet())
     }
 
     @Test
     fun unavailableReasonsDistinguishAppGroupMatchingFromExplicitExclusionsAndVersionChecks() {
         val sub = RawSubscription.parse("""{
           id:-2,name:'Test',version:0,
-          apps:[{id:'app.id',groups:[{key:1,name:'广告-开屏',rules:[{matches:'[text="Ad"]'}]}]}],
-          globalGroups:[{key:1,name:'Global',disableIfAppGroupMatch:'广告',
+          apps:[{id:'app.id',groups:[{key:1,name:'Ads-Splash',rules:[{matches:'[text="Ad"]'}]}]}],
+          globalGroups:[{key:1,name:'Global',disableIfAppGroupMatch:'Ads',
             rules:[{matches:'[text="Ad"]',apps:[{id:'app.id',enable:false}]}]}]
         }""")
         val group = sub.globalGroups.single()
@@ -143,17 +143,17 @@ class RuleScopePolicyTest {
             RuleGroupPolicy.controlState(subscription, raw, "app.id", configs, info, "launcher", emptySet())
         val matched = state(sub, group)
         assertFalse(matched.canEnable)
-        assertEquals(listOf("当前应用存在匹配的应用规则组，按订阅设置停用此全局规则"), matched.restrictions)
+        assertEquals(listOf("Current app has matching app rule groups, deactivate this global rule per subscription settings"), matched.restrictions)
 
         val ignored = sub.copy(apps = sub.apps.map { app ->
             app.copy(groups = app.groups.map { it.copy(ignoreGlobalGroupMatch = true) })
         })
-        assertEquals(listOf("规则排除了当前应用"), state(ignored, group).restrictions)
+        assertEquals(listOf("Rules exclude the current app"), state(ignored, group).restrictions)
         val versionGroup = group.copy(rules = listOf(group.rules.single().copy(apps = listOf(
             group.rules.single().apps!!.single().copy(enable = null,
                 versionCode = RawSubscription.IntegerMatcher(20, null, null, null)),
         ))))
-        assertEquals(listOf("当前应用版本不符合规则要求"), state(ignored, versionGroup).restrictions)
+        assertEquals(listOf("Current app version does not meet rule requirements"), state(ignored, versionGroup).restrictions)
         val explicitlyEnabled = versionGroup.copy(rules = listOf(versionGroup.rules.single().copy(
             apps = versionGroup.rules.single().apps!!.map { it.copy(enable = true) },
         )))
@@ -166,6 +166,6 @@ class RuleScopePolicyTest {
         val emptyGroup = group.copy(apps = group.rules.single().apps, rules = emptyList())
         val emptyState = state(ignored, emptyGroup)
         assertFalse(emptyState.canEnable)
-        assertEquals(listOf("规则排除了当前应用"), emptyState.restrictions)
+        assertEquals(listOf("Rules exclude the current app"), emptyState.restrictions)
     }
 }

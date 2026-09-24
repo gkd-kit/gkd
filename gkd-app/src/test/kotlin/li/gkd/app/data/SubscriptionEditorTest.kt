@@ -173,7 +173,7 @@ class SubscriptionEditorTest {
             }
         }
 
-        assertEquals("已存在同名「Duplicate」规则", error.message)
+        assertEquals("Rule with name \"Duplicate\" already exists", error.message)
     }
 
     @Test
@@ -208,7 +208,7 @@ class SubscriptionEditorTest {
             }
         }
 
-        assertEquals("规则已发生变化，请重新编辑", error.message)
+        assertEquals("Rules have changed, please re-edit", error.message)
     }
 
     @Test

@@ -36,8 +36,8 @@ fun GkTopAppBar(
             }
         }
     }
-    // SingleRowTopAppBar 内部 containerColor+scrolledContainerColor 合成了一个动画
-    // 应用主题颜色更新时形成叠加动画，导致和周围正常组件视觉变换效果表现割裂
+    // SingleRowTopAppBar internally containerColor+scrolledContainerColor are composited into one animation
+    // App theme color update creates a superimposed animation, causing a disjoint visual transition compared to surrounding normal components.
     key(MaterialTheme.colorScheme.primary) {
         TopAppBar(
             title = title,

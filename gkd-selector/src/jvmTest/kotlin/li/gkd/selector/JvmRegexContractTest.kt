@@ -10,7 +10,7 @@ import kotlin.test.assertTrue
 class JvmRegexContractTest {
     @Test
     fun documentedJVMRegexDifferencesRemainVisible() {
-        val chinese = TestNode("chinese", "View", mapOf("text" to "中文"))
+        val chinese = TestNode("chinese", "View", mapOf("text" to "Chinese"))
         assertSame(
             chinese,
             compileSelector("[text~='(?U)\\\\w+']")

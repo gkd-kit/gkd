@@ -8,7 +8,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 
-// 文件重命名和数据库发布必须作为不可取消的提交阶段完成，耗时写入仍应响应取消。
+// File renaming and database publishing must be completed as an uncancellable commit phase; time-consuming writes should still respond to cancellation.
 suspend fun commitSnapshotDirectory(
     layout: SnapshotFileLayout,
     id: Long,

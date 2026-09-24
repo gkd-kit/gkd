@@ -156,7 +156,7 @@ object SnapshotCapture {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                LogUtils.d("读取前台窗口 FLAG_SECURE 失败", e)
+                LogUtils.d("Failed to read foreground window FLAG_SECURE", e)
                 null
             }
         }
@@ -166,9 +166,9 @@ object SnapshotCapture {
         automatorMode: AutomatorModeOption,
         forcedCropStatusBar: Boolean,
     ): ScreenResult {
-        // Android 14+ 的部分 ROM（已在 Android 16 HyperOS 上复现）不会在 FLAG_SECURE
-        // 窗口下回调 IWindowManager.captureDisplay 的 listener，读取 buffer 会等待系统 4 秒后超时。
-        // 自动化模式先检查窗口标志，命中后跳过特权截图，避免无意义的等待。
+        // Some ROMs on Android 14+ (reproduced on Android 16 HyperOS) will not FLAG_SECURE
+        // Under window, the callback listener of IWindowManager.captureDisplay will wait for the system buffer to time out after 4 seconds.
+        // Automation mode checks window flags first, and skips privileged screenshot after a hit to avoid meaningless waiting.
         val checkSecureBeforeCapture =
             automatorMode == AutomatorModeOption.AutomationMode && AndroidTarget.UPSIDE_DOWN_CAKE
         val focusedWindowSecure = if (checkSecureBeforeCapture) {
@@ -184,7 +184,7 @@ object SnapshotCapture {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                LogUtils.d("无障碍截图失败", e)
+                LogUtils.d("Accessibility screenshot failed", e)
                 null
             }
         }
@@ -288,7 +288,7 @@ object SnapshotCapture {
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    LogUtils.d("自动保存快照至下载失败", e)
+                    LogUtils.d("Failed to automatically save snapshot to download", e)
                     false
                 }
             } else {

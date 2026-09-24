@@ -403,7 +403,7 @@ object SubscriptionRepository {
                 )
                 return@tryWithStateLock
             }
-            LogUtils.d("开始检测更新")
+            LogUtils.d("Start checking for updates")
             var successCount = 0
             entries.filter { !it.subsItem.isLocal }.forEach { entry ->
                 try {
@@ -418,14 +418,14 @@ object SubscriptionRepository {
                     throw e
                 } catch (e: Exception) {
                     setUpdateError(entry.subsItem.id, e)
-                    LogUtils.d("检测更新失败", e.message)
+                    LogUtils.d("Failed to check for updates", e.message)
                 }
             }
             result = SubscriptionResult.Success(
                 kind = SubscriptionResult.SuccessKind.Refreshed,
                 count = successCount,
             )
-            LogUtils.d("结束检测更新")
+            LogUtils.d("End checking for updates")
         }
         if (!acquired) return@withContext SubscriptionResult.Busy
         result
@@ -451,7 +451,7 @@ object SubscriptionRepository {
             loadErrors = snapshot.loadErrors.toMutableMap().apply { remove(id) },
             updateErrors = snapshot.updateErrors.toMutableMap().apply { remove(id) },
         ))
-        LogUtils.d("更新订阅文件:id=$id,name=${nextSubscription.name}")
+        LogUtils.d("Update subscription file:id=$id,name=${nextSubscription.name}")
     }
 
     private fun prepareSubscription(
@@ -533,7 +533,7 @@ object SubscriptionRepository {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                LogUtils.d("快速检测更新失败", item, e.message)
+                LogUtils.d("Quick update check failed", item, e.message)
             }
         }
         val updateUrl = current?.updateUrl ?: itemUpdateUrl

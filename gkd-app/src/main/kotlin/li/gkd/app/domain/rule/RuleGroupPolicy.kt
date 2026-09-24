@@ -90,7 +90,7 @@ object RuleGroupPolicy {
         category: RawSubscription.RawCategory?,
         categoryConfig: SubsCategoryConfig?,
     ): Boolean? = if (categoryConfig != null) {
-        // 已保存的 null 表示使用各规则组默认值，而不是类别默认值。
+        // Saved null means using the default values of each rule group, not the category default values.
         categoryConfig.enable
     } else {
         category?.enable

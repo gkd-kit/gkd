@@ -1,86 +1,123 @@
 # Repository Instructions
 
-- 除 `app_icon`、`service` 等 Android 平台必须使用 XML 的场景外，禁止新增 XML 文件。
-- UI、图标及其他能够使用 Kotlin 表达的实现必须使用 `.kt` 文件，不得为其新增 drawable、layout 等 XML 资源。
-- 新增图标资源时，页面及页面内组件使用的图标必须以 Kotlin `ImageVector` 定义，不得使用 drawable XML。
-- 只有 `AndroidManifest.xml` 等 Android 平台 XML 配置需要引用的图标及其依赖资源，才允许使用 drawable XML；同一图标同时用于平台配置和页面时，页面仍必须使用 Kotlin `ImageVector`。
-- 无法确定是否属于 XML 例外场景时，必须先向用户确认。
+- Except for scenarios where Android platform components such as `app_icon` and `service` must use XML, adding new XML files is prohibited.
+- UI, icons, and other implementations that can be expressed in Kotlin must use `.kt` files; no drawable, layout, or other XML resources should be added for them.
+- When adding new icon resources, icons used by pages and components within pages must be defined as Kotlin `ImageVector`; drawable XML must not be used.
+- Drawable XML is only allowed for icons and their dependent resources that are referenced by Android platform XML configurations such as `AndroidManifest.xml`; when the same icon is used for both platform configuration and a page, the page must still use Kotlin `ImageVector`.
+- When it is unclear whether a scenario falls under an XML exception, user confirmation must be obtained first.
 
-## Git 提交与推送
+## Git Commits and Pushes
 
-- 用户明确要求提交或推送代码时，只执行必要的轻量核对与对应的 Git 操作；不得自动扩展为深度代码审查、临时 worktree 隔离验证、全量构建或测试、Release Gate、发布检查等重量级流程。只有用户明确要求对应检查时才允许执行。
+- When the user explicitly requests a commit or push, only perform necessary lightweight checks and the corresponding Git operations; do not automatically expand into deep code review, temporary worktree isolation verification, full build or test, Release Gate, release checks, or other heavyweight processes. Corresponding checks are only allowed when the user explicitly requests them.
 
-## Kotlin 可见性
+## Kotlin Visibility
 
-- `gkd-app` 模块内禁止使用 `internal` 关键字；由于没有其他模块会引用 `gkd-app` 模块，对外可见的声明应省略可见性修饰符（使用 Kotlin 默认的 `public`），仅在需要收窄作用域时使用 `private`。
-- 与公开属性直接一一对应、仅用于收窄可见性或可变性的 `_xxx` backing property，必须改用 Explicit Backing Fields；不禁止不存在这种直接对应关系的普通私有字段、缓存或生成代码风格命名。未使用的 Lambda 参数占位符 `_` 不受此限制。
+- The `internal` keyword is prohibited within the `gkd-app` module; since no other module will reference `gkd-app`, visibility modifiers should be omitted from publicly visible declarations (using Kotlin's default `public`), and `private` should only be used when narrowing the scope.
+- `_xxx` backing properties that directly correspond one-to-one with public properties and are only used to narrow visibility or mutability must be changed to use Explicit Backing Fields; this does not prohibit regular private fields, caches, or code-style naming that do not have such a direct correspondence. Unused Lambda parameter placeholders `_` are not subject to this restriction.
 
-## Kotlin 静态初始化
+## Kotlin Static Initialization
 
-- `companion object` 或 `object` 中由 `object`/`data object` 单例组成的列表、集合、映射及其排序结果必须使用 `by lazy` 初始化；禁止在静态初始化阶段直接构造这类集合，以避免 JVM、JS 和 Wasm 上的循环初始化。
+- Lists, sets, maps, and their sorted results composed of `object`/`data object` singletons within `companion object` or `object` must be initialized using `by lazy`; directly constructing such collections during static initialization is prohibited to avoid circular initialization on JVM, JS, and Wasm.
 
-## Kotlin 工具声明
+## Kotlin Utility Declarations
 
-- `gkd-app` 的 `util` 包中，新增或修改的跨文件工具函数和共享工具属性必须声明为与文件名同名的 `object` 成员；扩展函数、类型声明以及仅供文件内部使用的 `private` 实现可以保留为顶级声明。
-- `XxxExt.kt` 文件只允许放置扩展声明；普通工具函数和共享工具属性必须移入对应的 `XxxUtils.kt` 或职责明确的同名 `object`。
-- Compose 页面、组件及其私有 Composable 不适用上述工具声明规则。
+- In the `util` package of `gkd-app`, new or modified cross-file utility functions and shared utility properties must be declared as members of an `object` with the same name as the file; extension functions, type declarations, and `private` implementations intended only for internal file use may remain as top-level declarations.
+- `XxxExt.kt` files are only allowed to contain extension declarations; regular utility functions and shared utility properties must be moved to the corresponding `XxxUtils.kt` or a same-named `object` with a clear responsibility.
+- Compose pages, components, and their private Composables are not subject to the above utility declaration rules.
 
-## 通用 UI 组件命名
+## General UI Component Naming
 
-- 项目自定义、供跨页面或跨文件复用的 UI 组件统一使用 `Gk` 前缀和 PascalCase，命名为 `GkAbc`，包括基础控件和共享业务组件；该规则不受组件所在包限制。
-- 名称必须描述组件用途，不再使用 `Perf`、`Custom` 等泛化前缀；具有实际语义的 `App`、`AppBar`、`Rule`、`Subs` 等词保留，例如 `GkAppIcon`、`GkAppBarTextField`、`GkRuleGroupCard`。
-- 单组件文件与组件同名；同一组件族的重载、私有实现和配套声明允许放在同一文件，文件以 `Gk` 开头并描述该组件族。
-- 组件专属配置类型使用 `GkAbcDefaults`、`GkAbcColors` 等名称；图标组件使用 `GkIcon`，共享图标集合使用 `GkIcons`。
-- 页面、页面私有 Composable、Preview、普通工具函数、Modifier 扩展及独立状态管理类型不强制添加 `Gk`；状态对象的 `Render()` 成员不属于独立组件入口。
+- Custom UI components intended for reuse across pages or files are uniformly prefixed with `Gk` and use PascalCase, named `GkAbc`, including basic controls and shared business components; this rule is not restricted by the package in which the component resides.
+- Component names must describe their purpose; generic prefixes like `Perf`, `Custom` are no longer used; semantically meaningful words such as `App`, `AppBar`, `Rule`, `Subs` are retained, e.g., `GkAppIcon`, `GkAppBarTextField`, `GkRuleGroupCard`.
+- Single-component files share the name of the component; overloads, private implementations, and supporting declarations of the same component family may be placed in the same file, with the file name starting with `Gk` and describing the component family.
+- Component-specific configuration types use names like `GkAbcDefaults`, `GkAbcColors`; icon components use `GkIcon`, shared icon sets use `GkIcons`.
+- Pages, page-private Composables, Previews, regular utility functions, Modifier extensions, and independent state management types are not required to add `Gk`; the `Render()` member of a state object is not an independent component entry.
 
-## Compose 与状态边界
+## Compose and State Boundaries
 
-- 主界面的 Composable 和页面 ViewModel 统一通过 `MainViewModel.requireCurrent()` 获取当前 `mainVm`，无需逐层转发导航、全局弹窗、打开 URL 等应用级操作；不再使用 `LocalMainViewModel`。实例由 `MainActivity` 在权限及 Activity Result 宿主绑定后、创建 Compose 界面前注册，ViewModel 清理时按实例身份清除引用。
-- `MainViewModel.requireCurrent()` 仅用于已初始化的主界面调用链，不得用于 Service、后台任务或悬浮窗。一次操作获取一次实例并贯穿整个操作，不得在权限等待前后重新获取，也不得在静态字段中缓存；该方法不得自行创建替代实例。
-- 路由页面及其私有 Composable 可以直接获取页面 ViewModel，并处理权限和 Activity Result 等平台 UI 行为。可复用组件不得获取页面 ViewModel，只接收所需的状态和事件回调。
-- 应用级只读 Flow 由实际消费它的 Composable 直接收集，不要复制进页面 `UiState` 或 ViewModel。普通 Flow 使用 `collectAsStateWithLifecycle`，Paging 使用专用 API，高频状态放在最小消费子树。
-- Service 启停、持久化和其他业务副作用必须由明确事件触发，并交给 ViewModel、Repository 或 Store 完成；Composable 不得通过状态监听执行写入。
-- `XxxUiState` 和 `XxxUiActions` 只在复用、独立预览或复杂页面契约确有需要时使用。`UiState` 只能表示不可变页面快照，不得包含 Flow、Paging 或高频状态；相同映射存在多个构造路径时再提取私有构建函数。
-- ViewModel 的可变状态必须为 `private`，只暴露不可变状态和明确的业务方法。只读 `StateFlow` 使用 Explicit Backing Fields，禁止 `_xxxFlow`/`xxxFlow` 双属性和 `.asStateFlow()`。
-- 滚动、焦点、菜单、动画、拖拽和多选等纯 UI 状态留在 Compose；可复用交互逻辑可以封装为 `rememberXxxState`，但不得访问 ViewModel、数据库、Store、Service 或导航。需要原子一致性的多个字段必须由事实源提供同一个不可变快照，业务状态不得通过 `CompositionLocal` 传递。
-- Composable 需要根据条件决定是否输出后续 UI 时，禁止使用提前 `return`，必须将 UI 包裹在对应的条件区块中；事件或协程 Lambda 的标记返回不受此限制。
+- Main interface Composables and page ViewModels uniformly obtain the current `mainVm` through `MainViewModel.requireCurrent()`, without needing to forward navigation, global popups, URL opening, and other application-level operations layer by layer; `LocalMainViewModel` is no longer used. Instances are registered by `MainActivity` after permission and Activity Result host binding, before creating the Compose interface; when the ViewModel is cleaned up, references are cleared by instance identity.
+- `MainViewModel.requireCurrent()` is only for initialized main interface call chains and must not be used for Services, background tasks, or floating windows. One instance is obtained once and maintained throughout the operation; it must not be re-obtained before and after permission waiting, nor cached in static fields; this method must not create alternative instances itself.
+- Route pages and their private Composables can directly obtain the page ViewModel and handle platform UI behaviors such as permissions and Activity Results. Reusable components must not obtain page ViewModels; they only receive the required state and event callbacks.
+- Application-level read-only Flows are directly collected by the Composables that actually consume them; do not copy them into page `UiState` or ViewModel. Regular Flows use `collectAsStateWithLifecycle`, Paging uses dedicated APIs, and high-frequency state is placed in the smallest consuming subtree.
+- Service start/stop, persistence, and other business side effects must be triggered by clear events and handed to ViewModels, Repositories, or Stores; Composables must not perform writes through state listening.
+- `XxxUiState` and `XxxUiActions` are only used when truly needed for reuse, independent preview, or complex page contracts. `UiState` can only represent immutable page snapshots and must not contain Flow, Paging, or high-frequency state; when the same mapping has multiple construction paths, a private builder function is then extracted.
+- Mutable state in ViewModels must be `private`, exposing only immutable state and clear business methods. Read-only `StateFlow` uses Explicit Backing Fields; `_xxxFlow`/`xxxFlow` dual properties and `.asStateFlow()` are prohibited.
+- Pure UI states such as scrolling, focus, menus, animations, drag-and-drop, and multi-selection remain in Compose; reusable interaction logic can be encapsulated as `rememberXxxState`, but must not access ViewModels, databases, Stores, Services, or navigation. Multiple fields requiring atomic consistency must be provided by the same source of truth as one immutable snapshot; business state must not be passed through `CompositionLocal`.
+- When a Composable needs to decide conditionally whether to output subsequent UI, early `return` is prohibited; the UI must be wrapped in the corresponding conditional block; labeled returns for events or coroutine Lambdas are not subject to this restriction.
 
-## 状态与副作用
+## State and Side Effects
 
-- Room 可观察查询应保持为冷 `Flow`，先在 ViewModel 内按页面一致性边界完成聚合，再将最终页面快照转换为 `StateFlow<Loadable<XxxUiState>>`；`Loading` 表示尚未收到完整首发，`Ready(emptyList())` 表示已加载但结果为空。禁止用空集合伪装初始值，也禁止用计数器、`attachLoad` 等旁路状态推断多个查询是否加载完成。
-- `combine`、`map`、`stateIn` 等产生的派生展示状态只能用于渲染和临时 UI 同步，禁止通过 `collect`、`onEach` 或状态 watch 驱动数据库、文件、网络写入以及 Service 启停。
-- 持久化和业务副作用必须由明确的用户事件、系统事件或领域方法触发，并在 Repository/Store 中按业务一致性边界完成。允许将单一权威状态同步到幂等外部投影，但同步回调不得再读取其他状态拼装写入。
-- `debounce`、`conflate`、`collectLatest` 和互斥锁只能控制调度或并发，不能替代多状态源的原子更新；需要一致读取的状态应聚合为同一个不可变状态对象。
+- Room observable queries should remain as cold `Flow`s, first aggregated within the ViewModel according to page consistency boundaries, then the final page snapshot is converted to `StateFlow<Loadable<XxxUiState>>`; `Loading` indicates that the complete initial payload has not yet been received, `Ready(emptyList())` indicates that loading is complete but the result is empty. Using empty collections to fake initial values is prohibited, as is using counters, `attachLoad`, or other bypass states to infer whether multiple queries have finished loading.
+- Derived display states produced by `combine`, `map`, `stateIn`, etc., can only be used for rendering and temporary UI synchronization; driving database, file, network writes, and Service start/stop through `collect`, `onEach`, or state watch is prohibited.
+- Persistence and business side effects must be triggered by clear user events, system events, or domain methods, and completed within Repository/Store according to business consistency boundaries. Allowing a single authoritative state to be synchronized to an idempotent external projection is permitted, but synchronization callbacks must not read other states to assemble writes.
+- `debounce`, `conflate`, `collectLatest`, and mutexes can only control scheduling or concurrency; they cannot substitute for atomic updates across multiple state sources; states requiring consistent reads should be aggregated into a single immutable state object.
 
-## UI 交互与过渡动画
+## UI Interaction and Transition Animations
 
-- 可滚动页面必须在内容末尾提供统一的额外底部留白：普通 `Column` 使用 `GkPageBottomSpace()`，`LazyColumn` 使用 `gkPageBottomSpace()` 添加末尾 item；已有末尾 item 包含空状态等内容时，可在该 item 内使用 `GkPageBottomSpace()`，不得重复添加。高度统一由 `GkPageBottomSpaceDefaults` 管理，不再手写页面底部 Spacer 高度。
-- 底部留白必须位于滚动内容内部，让最后一项可以继续向上滚动；它不替代 Scaffold、系统导航栏或 IME inset 处理，也不得在统一组件中重复叠加已由宿主处理的 inset。
+- Scrollable pages must provide unified additional bottom padding at the end of the content: regular `Column` uses `GkPageBottomSpace()`, `LazyColumn` uses `gkPageBottomSpace()` to add a trailing item; when the trailing item already contains content such as an empty state, `GkPageBottomSpace()` can be used within that item without adding it again. Height is uniformly managed by `GkPageBottomSpaceDefaults`; hand-written page bottom Spacer heights are no longer used.
+- Bottom padding must be located inside the scrollable content so that the last item can continue scrolling upward; it does not replace Scaffold, system navigation bar, or IME inset handling, and must not be repeatedly stacked in unified components with insets already handled by the host.
 
-- 动画只负责视觉过渡，交互按当前业务或 UI 状态立即响应。禁止因动画未结束、图标变形或旧内容正在退场，给按钮、图标、开关、标题等添加临时禁用态、等待动画完成、延时解锁或额外点击节流；也不得改成在点击回调中吞掉操作。
-- 禁用交互必须对应明确的业务前提，例如没有可操作数据、输入无效或权限不足。普通开关的短暂保存、模式切换或对快速点击的假设，不得成为临时锁定控件、扩大禁用范围的理由；写入一致性在 ViewModel、Repository 或 Store 中处理。
-- 退场重复内容可以从无障碍导航中隐藏，但不得因此改变控件颜色或增加点击等待。相关测试应验证过渡期间的正常点击和状态切换，不得将这类临时禁用作为正确行为固化。
+- Animations are only responsible for visual transitions; interactions respond immediately based on the current business or UI state. Temporary disabled states, waiting for animations to complete, delayed unlocks, or extra click throttling must not be added to buttons, icons, switches, or titles due to unfinished animations, icon deformation, or old content exiting; operations must also not be swallowed in click callbacks.
+- Disabled interactions must correspond to clear business premises, such as no operable data, invalid input, or insufficient permissions. Brief saves, mode switches, or assumptions about rapid clicks of normal switches must not become reasons for temporarily locking controls or expanding the disabled scope; write consistency is handled in ViewModels, Repositories, or Stores.
+- Repeated exiting content can be hidden from accessibility navigation, but this must not change control colors or add click waiting. Related tests should verify normal clicks and state transitions during the transition; such temporary disabling must not be solidified as correct behavior.
 
-## 构建与测试
+## Build and Test
 
-- 常规测试只编译 `gkd` 渠道；若用户没有明确指令，禁止运行任何 `play` 渠道的编译任务。
-- 执行界面测试（包括真机、模拟器上的 Compose UI / Instrumentation 测试）前，必须先记录应用原有的自动化开关与运行模式，临时关闭自动化功能（关闭 `enableAutomator` 并退出自动化模式），确认设置已生效后再初始化测试，防止应用自动化干扰测试初始化。
-- 测试结束后必须恢复并核对原有自动化设置；测试失败或中断时也必须执行恢复，脚本应通过 `finally` 等清理机制保证这一点。恢复时只还原本次临时修改的字段，不得用整份旧配置覆盖其他设置。
+- Regular tests only compile the `gkd` flavor; if the user has not explicitly instructed otherwise, running any `play` flavor compilation tasks is prohibited.
+- Before running UI tests (including Compose UI / Instrumentation tests on real devices or emulators), the app's original automation switches and running modes must be recorded first, automation must be temporarily disabled (turn off `enableAutomator` and exit automation mode), and the settings must be confirmed effective before initializing the test to prevent app automation from interfering with test initialization.
+- After tests, the original automation settings must be restored and verified; recovery must also be performed if tests fail or interrupt; scripts should use `finally` and other cleanup mechanisms to guarantee this. Only the fields temporarily modified in this session should be restored; do not overwrite other settings with the entire old configuration.
 
-## 测试策略
+## Test Strategy
 
-- 新增测试必须验证可观察行为，明确被测输入、预期输出和要防止的具体回归。优先覆盖纯函数、边界条件、异常路径、平台或版本兼容差异，以及已修复缺陷的回归场景。
-- 禁止仅为增加测试而拆散本应聚合的生产逻辑、扩大声明可见性或暴露测试专用 API；测试必须适配合理的生产设计，而不是反向塑造生产代码。
-- 禁止新增仅复述生产代码静态声明的测试，包括枚举成员、常量取值或集合、连续编号、由同一注册表推导出的成员关系，以及 Kotlin 类型系统已经保证的约束。
-- 只有当常量或标识属于外部协议、持久化格式或跨版本兼容契约时，才允许为其新增稳定性测试，并在测试名称或注释中说明要保护的兼容行为。
+- New tests must verify observable behavior, clearly specifying the tested input, expected output, and specific regressions to prevent. Priority coverage includes pure functions, boundary conditions, exception paths, platform or version compatibility differences, and regression scenarios for fixed defects.
+- Splitting production logic that should be aggregated just to add tests, expanding declaration visibility, or exposing test-specific APIs is prohibited; tests must fit reasonable production design rather than shaping production code in reverse.
+- Adding tests that merely restate static declarations of production code is prohibited, including enum members, constant values, collections, sequential numbering, member relationships derived from the same registry, and constraints already guaranteed by the Kotlin type system.
+- Stability tests are only allowed when a constant or identifier belongs to an external protocol, persistence format, or cross-version compatibility contract, and the compatible behavior to be protected must be explained in the test name or comment.
 
-## Android API 调研
+## Android API Investigation
 
-- 涉及 Android framework Java/AIDL API 的源码定位、跨版本签名或可用性比较、API 缺失原因分析，以及 Java hidden-API 访问代码生成时，必须使用项目内的 `android-api-diff` skill：`.agents/skills/android-api-diff/SKILL.md`。
-- 按该 skill 的路由使用 `android-api-diff` CLI，并保留默认 JSON 输出；不得自行实现或模拟 Android API 版本检查。
-- 安装或更新项目级 skill 时，在项目根目录运行 `android-api-diff skill install`。
+- When performing source code localization, cross-version signature or availability comparisons, API missing reason analysis, or Java hidden-API access code generation involving Android framework Java/AIDL APIs, the project's `android-api-diff` skill must be used: `.agents/skills/android-api-diff/SKILL.md`.
+- The `android-api-diff` CLI must be used according to that skill's routing, with default JSON output retained; implementing or simulating Android API version checks independently is prohibited.
+- When installing or updating project-level skills, run `android-api-diff skill install` in the project root directory.
 
-## 嵌入式 UserService 异常边界
+## Embedded UserService Exception Boundaries
 
-- 嵌入式 `UserService` 运行在特权进程中。调用隐藏 API 等可能失败的 Binder 方法，必须在方法最外层以末端 `catch (e: Throwable)` 兜住可恢复错误，并通过 Binder 可传输的异常或失败结果将原始类型、消息和堆栈交给主进程；不得只在主进程捕获，也不得让 `NoSuchMethodError` 等 `LinkageError` 逃逸导致特权进程崩溃。
-- `VirtualMachineError` 和 `ThreadDeath` 等无法可靠恢复的终止错误可以原样抛出；不要把它们伪装成普通业务失败。
+- Embedded `UserService` runs in a privileged process. Binder methods that may fail, such as calling hidden APIs, must be caught with a terminal `catch (e: Throwable)` at the outermost layer of the method to handle recoverable errors, and the original type, message, and stack trace must be passed to the main process through Binder-transmittable exceptions or failure results; catching only in the main process must not be done, and `LinkageError` such as `NoSuchMethodError` must not escape and cause the privileged process to crash.
+- Terminating errors that cannot be reliably recovered, such as `VirtualMachineError` and `ThreadDeath`, can be thrown as-is; do not disguise them as ordinary business failures.
+
+## Git Remote Configuration
+
+- `origin` points to the main repository (push requires PAT token authentication)
+- `upstream` points to the original repo (`https://github.com/theclumsypirate/gkd-english`)
+- `gkd-kit` points to the main kit repo (`https://github.com/gkd-kit/gkd`)
+- To fork: set `origin` to your fork URL, keep `upstream` pointing to the original repo
+- To sync from the original repo without losing translations: `git fetch upstream && git merge upstream/main`
+- To contribute to gkd-kit: `git push gkd-kit main` after making changes, then create a PR on `https://github.com/gkd-kit/gkd`
+
+## GitHub Actions Secrets
+
+Required secrets for the `Build-Release.yml` workflow (create them at Settings → Secrets and variables → Actions):
+
+| Secret | Description |
+|--------|-------------|
+| `GRADLE_CACHE_ENCRYPTION_KEY` | Random key for Gradle cache encryption |
+| `GKD_STORE_FILE_BASE64` | Base64-encoded gkd.jks keystore file |
+| `PLAY_STORE_FILE_BASE64` | Base64-encoded play.jks keystore file |
+| `GKD_STORE_PASSWORD` | Keystore password for gkd.jks |
+| `GKD_KEY_ALIAS` | Key alias for gkd.jks |
+| `GKD_KEY_PASSWORD` | Key password for gkd.jks |
+| `PLAY_STORE_PASSWORD` | Keystore password for play.jks |
+| `PLAY_KEY_ALIAS` | Key alias for play.jks |
+| `PLAY_KEY_PASSWORD` | Key password for play.jks |
+| `GKD_GITHUB_COOKIE` | GitHub cookie for API access |
+| `GKD_API_AUTH_TOKEN` | API auth token |
+
+To create a keystore base64 secret: `base64 -w 0 gkd.jks | pbpaste` or `base64 -w 0 gkd.jks`
+
+## Workflow
+
+The `Build-Release.yml` workflow:
+- Triggers on `v*` tag pushes
+- Builds gkd release APK and Play Store bundle
+- Uploads artifacts and creates GitHub Release
+- Uses `softprops/action-gh-release@v3` for release creation

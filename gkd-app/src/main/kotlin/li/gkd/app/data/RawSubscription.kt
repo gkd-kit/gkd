@@ -48,7 +48,7 @@ data class RawSubscription(
     val categories: List<RawCategory> = emptyList(),
     val apps: List<RawApp> = emptyList(),
 ) {
-    // 重写 equals 和 hashCode 便于 compose 重组比较
+    // Override equals and hashCode to facilitate compose recomposition comparison
     override fun equals(other: Any?): Boolean {
         return other === this
     }
@@ -277,7 +277,7 @@ data class RawSubscription(
                     return x to y
                 }
             } catch (e: Exception) {
-                // 可能存在 1/0 导致错误
+                // There may be a 1/0 error causing issues
                 e.printStackTrace()
                 LogUtils.d("Position.calc", e)
                 toast(e.message ?: e.stackTraceToString())
@@ -556,14 +556,14 @@ data class RawSubscription(
                 val selector = when (val result = Selector.compile(source)) {
                     is SelectorCompileResult.Success -> result.value
                     is SelectorCompileResult.Failure -> {
-                        LogUtils.d("非法选择器", source, result.error.toString())
+                        LogUtils.d("Illegal selector", source, result.error.toString())
                         return UiStrings.selector_invalid_detail(source, result.error.message)
                     }
                 }
                 when (val result = selector.validateType(selectorTypeModel)) {
                     is SelectorTypeResult.Success -> cacheMap[source] = result.value
                     is SelectorTypeResult.Failure -> {
-                        LogUtils.d("非法选择器", source, result.error.toString())
+                        LogUtils.d("Illegal selector", source, result.error.toString())
                         return UiStrings.selector_invalid_detail(source, result.error.message)
                     }
                 }
@@ -606,7 +606,7 @@ data class RawSubscription(
                 try {
                     ExpressionBuilder(value).variables(*preFillExpVars).build().apply {
                         preFillExpVars.forEach { v ->
-                            // 预填充作 validate
+                            // Pre-fill as validate
                             setVariable(v, 0.0)
                         }
                     }.let { e ->

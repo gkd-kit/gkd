@@ -217,7 +217,7 @@ object AppInfoRepository {
                 userAppInfoMapFlow.value = newAppMap
                 userAppIconMapFlow.value = newIconMap
                 if (PermissionStates.queryPackages.value && mayAuthDenied && app.justStarted) {
-                    // 概率出现：即使有「读取应用列表权限」在刚启动时也只能获取到少量应用，延迟几秒再试一次
+                    // Probabilistic occurrence: Even with "Read app list permission", only a few apps can be obtained at startup; delay a few seconds and try again.
                     appScope.launch {
                         delay(App.START_WAIT_TIME.milliseconds)
                         requestRefresh()

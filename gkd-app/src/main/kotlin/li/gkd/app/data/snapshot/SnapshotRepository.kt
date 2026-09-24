@@ -160,7 +160,7 @@ open class SnapshotStore(
                         }
                         finishReplacement(previousWebp)
                         if (files.legacyPngFile.exists() && !files.legacyPngFile.delete()) {
-                            LogUtils.d("无法删除旧快照截图", files.legacyPngFile.absolutePath)
+                            LogUtils.d("Failed to delete old snapshot screenshot", files.legacyPngFile.absolutePath)
                         }
                     }
                     true
@@ -234,7 +234,7 @@ open class SnapshotStore(
             return@withContext
         }
         if (directory.exists() && !directory.deleteRecursively()) {
-            LogUtils.d("无法清理快照压缩目录", directory.absolutePath)
+            LogUtils.d("Failed to clean snapshot compression directory", directory.absolutePath)
         }
     }
 
@@ -286,7 +286,7 @@ open class SnapshotStore(
 
     private fun finishDeletion(staged: File?) {
         if (staged != null && staged.exists() && !staged.deleteRecursively()) {
-            LogUtils.d("无法清理已删除快照目录", staged.absolutePath)
+            LogUtils.d("Failed to clean deleted snapshot directory", staged.absolutePath)
         }
     }
 
@@ -308,7 +308,7 @@ open class SnapshotStore(
 
     private fun finishReplacement(staged: File?) {
         if (staged != null && staged.exists() && !staged.delete()) {
-            LogUtils.d("无法清理旧快照截图", staged.absolutePath)
+            LogUtils.d("Failed to clean old snapshot screenshot", staged.absolutePath)
         }
     }
 

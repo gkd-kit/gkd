@@ -126,7 +126,7 @@ class PermissionHostCommands {
     private suspend fun awaitCommand(command: Command) {
         suspendCancellableCoroutine { currentContinuation ->
             synchronized(this) {
-                check(commandFlow.value == null) { "已有权限平台请求正在执行" }
+                check(commandFlow.value == null) { "A permission platform request is already in progress" }
                 continuation = currentContinuation
                 commandFlow.value = PendingCommand(command)
             }

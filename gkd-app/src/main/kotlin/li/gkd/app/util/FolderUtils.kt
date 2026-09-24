@@ -106,17 +106,17 @@ object FolderUtils {
         tempDir.resolve("permission.txt").also {
             val grantedPermissions = PermissionStates.all.filter { state -> state.value }
             if (grantedPermissions.isNotEmpty()) {
-                it.appendText("已授权\n" + grantedPermissions.joinToString("\n") { state -> state.name })
+                it.appendText("Authorized\n" + grantedPermissions.joinToString("\n") { state -> state.name })
                 it.appendText("\n\n")
             }
             val deniedPermissions = PermissionStates.all.filter { state -> !state.value }
             if (deniedPermissions.isNotEmpty()) {
-                it.appendText("未授权\n" + deniedPermissions.joinToString("\n") { state -> state.name })
+                it.appendText("Unauthorized\n" + deniedPermissions.joinToString("\n") { state -> state.name })
                 it.appendText("\n\n")
             }
             if (AppInfoRepository.appListAuthAbnormalFlow.value) {
-                it.appendText("其它\n")
-                it.appendText("读取应用列表权限异常")
+                it.appendText("Others\n")
+                it.appendText("Exception reading app list permissions")
             }
             it.appendText("\n")
             files.add(it)

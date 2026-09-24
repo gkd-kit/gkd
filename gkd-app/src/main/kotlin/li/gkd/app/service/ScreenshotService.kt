@@ -71,7 +71,7 @@ class ScreenshotService : LifecycleHookService() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                LogUtils.d("截取屏幕失败", e)
+                LogUtils.d("Screen capture failed", e)
                 null
             }
         }

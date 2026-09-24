@@ -182,7 +182,7 @@ object A11yState {
             lastActivityForceUpdateTime = t
         } else if (scene == ActivityScene.A11y) {
             if (idChanged && lastActivityForceUpdateTime > 0) {
-                // ITaskStackListener 大部分场景快于无障碍
+                // ITaskStackListener is faster than accessibility in most scenarios
                 if (t - lastActivityForceUpdateTime < 1000) return
                 if (activityId != null && t - lastActivityForceUpdateTime < 3000) return
             }

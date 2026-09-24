@@ -1,18 +1,18 @@
-# UI 文案
+# UI Strings
 
-用户可见的标题、按钮、副文案、Toast、通知、无障碍描述和校验提示统一维护在
-`src/main/res/values/strings.xml`。日志、内部诊断、协议字段、URL、动画调试标签和用户输入不属于固定 UI 文案。
+User-visible titles, buttons, subtitles, Toasts, notifications, accessibility descriptions, and validation prompts are uniformly maintained in
+`src/main/res/values/strings.xml`. Logs, internal diagnostics, protocol fields, URLs, animation debug tags, and user input are not considered fixed UI strings.
 
-资源键按用途命名，例如 `rule_enable_in_app`、`subscription_disabled`，不加 `gk_`；无障碍相关键使用 `a11y`。
-复用已有键前应确认语义相同；显示值相同但用途不同的文案可以分别命名。
+Resource keys are named by purpose, e.g. `rule_enable_in_app`, `subscription_disabled`, without `gk_`; accessibility-related keys use `a11y`.
+Before reusing an existing key, confirm that the semantics are the same; strings with the same display value but different purposes can be named separately.
 
-目前只支持一套文案，不做运行时语言切换。`generateUiStrings` 从该 XML 生成
-`li.gkd.app.text.UiStrings`，供 Compose、通知、ViewModel 和纯 Kotlin 规则逻辑共同使用，
-无需 Android Context。生成文件位于 `build/generated/source/uiStrings`，不要手动修改。
+Currently only one set of strings is supported; runtime language switching is not performed. `generateUiStrings` generates
+`li.gkd.app.text.UiStrings` from this XML, shared by Compose, notifications, ViewModels, and pure Kotlin rule logic,
+without requiring Android Context. The generated file is located at `build/generated/source/uiStrings` and should not be manually modified.
 
 ```xml
-<string name="rule_enable_in_app">在此应用启用</string>
-<string name="app_count">%1$s 个应用</string>
+<string name="rule_enable_in_app">Enable in this app</string>
+<string name="app_count">%1$s apps</string>
 ```
 
 ```kotlin
@@ -20,12 +20,12 @@ Text(UiStrings.rule_enable_in_app)
 Text(UiStrings.app_count(apps.size))
 ```
 
-无参数文案生成常量；带参数的文案生成函数，参数使用连续编号的 `%1$s`、`%2$s`。
-普通文案无需声明 `translatable` 或 `formatted` 属性。带参数文案中的字面百分号写成 `%%`。
-普通文案不加外层双引号，仅需保留首尾空格、连续空白时使用引号包裹。
-换行写成 `\n`，双引号写成 `\"`，反斜杠写成 `\\`，XML 中的 `&`、`<` 使用实体转义。
-`${i}` 等自定义通知模板变量作为普通文本保留，无需额外属性。
-只有需要将 `%1$s` 等格式符本身作为普通文本显示时，才声明 `formatted="false"`。
+Parameterless strings generate constants; parameterized strings generate functions, with parameters using sequentially numbered `%1$s`, `%2$s`.
+Normal strings do not need to declare `translatable` or `formatted` attributes. Literal percent signs in parameterized strings are written as `%%`.
+Normal strings do not need outer double quotes; quotes are only needed when preserving leading/trailing spaces or consecutive whitespace.
+Newlines are written as `\n`, double quotes as `\"`, backslashes as `\\`, and `&`, `<` in XML use entity escaping.
+Custom notification template variables like `${i}` are retained as plain text without additional attributes.
+`formatted="false"` is only declared when the format specifier itself (e.g., `%1$s`) needs to be displayed as plain text.
 
-带 `debug_suffix` 的平台标签继续通过 `R.string` 获取，以保留构建变体后缀，不生成访问器。
-如果将来增加多语言，应将文案解析切换为 Android 资源机制，不能只新增 `values-xx` 目录。
+Platform tags with `debug_suffix` continue to be obtained via `R.string` to preserve build variant suffixes and do not generate accessors.
+If multiple languages are added in the future, string parsing should be switched to the Android resource mechanism; adding only `values-xx` directories is not sufficient.

@@ -84,7 +84,7 @@ class PermissionRequests(
                         prompt = PermissionPrompt(
                             title = UiStrings.permission_request_progress(permissionState.name),
                             message = checkNotNull(permissionState.purpose) {
-                                "${permissionState.name} 缺少权限请求说明"
+                                "${permissionState.name} is missing a permission request description"
                             },
                         ),
                     )

@@ -324,7 +324,7 @@ fun EventLogCard(eventLog: A11yEventLog, modifier: Modifier = Modifier) {
                             square = false
                         ),
                     )
-                    // 如果祖先容器有设置了 height(IntrinsicSize.Min) 会导致 FlowRow 不会自动换行
+                    // If an ancestor container has height(IntrinsicSize.Min) set, it will cause FlowRow to not wrap automatically
                     FlowRow(
                         modifier = Modifier.weight(1f),
                         horizontalArrangement = Arrangement.spacedBy(2.dp),

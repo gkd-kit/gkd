@@ -11,7 +11,7 @@ import li.gkd.app.ui.share.LocalIsTalkbackEnabled
 
 @Composable
 fun GkTooltipIconButtonBox(contentDescription: String?, content: @Composable () -> Unit) {
-    // 视障用户使用 TalkBack 朗读 contentDescription，不需要 Tooltip
+    // Visually impaired users use TalkBack to read contentDescription; Tooltips are not needed.
     if (contentDescription.isNullOrEmpty() || LocalIsTalkbackEnabled.current) {
         content()
     } else {

@@ -50,14 +50,14 @@ class A11yRuleEngine(private val service: A11yCommonImpl) {
     }
 
     fun onScreenForcedActive() {
-        // 关闭屏幕 -> Activity::onStop -> 点亮屏幕 -> Activity::onStart -> Activity::onResume
+        // Screen off -> Activity::onStop -> Screen on -> Activity::onStart -> Activity::onResume
         A11yState.onScreenForcedActive()
         startQueryJob()
     }
 
     val safeActiveWindow: AccessibilityNodeInfo?
         get() = try {
-            // 某些应用耗时 554ms
+            // Some apps take 554ms
             // java.lang.SecurityException: Call from user 0 as user -2 without permission INTERACT_ACROSS_USERS or INTERACT_ACROSS_USERS_FULL not allowed.
             service.windowNodeInfo?.setGeneratedTime()
         } catch (_: Throwable) {
@@ -79,18 +79,18 @@ class A11yRuleEngine(private val service: A11yCommonImpl) {
     fun onA11yEvent(event: AccessibilityEvent?) {
         if (!effective) return
         if (!event.isUseful()) return
-        // 拒绝副屏无障碍事件
+        // Reject secondary screen accessibility events
         if (AndroidTarget.TIRAMISU && event.displayId != Display.DEFAULT_DISPLAY) return
         onA11yFeatEvent(event)
         if (event.eventType == CONTENT_CHANGED) {
-            if (!isInteractive) return // 屏幕关闭后仍然有无障碍事件 type:2048, time:8094, app:com.miui.aod, cls:android.widget.TextView
+            if (!isInteractive) return // Accessibility event type:2048 still exists after screen off, time:8094, app:com.miui.aod, cls:android.widget.TextView
             if (event.packageName == systemUiAppId && event.packageName != currentTopActivity.appId) return
         }
-        // 过滤部分输入法事件
+        // Filter partial input method events
         if (event.packageName == imeAppId && currentTopActivity.appId != imeAppId) {
             if (event.recordCount == 0 && event.action == 0 && !event.isFullScreen) return
         }
-        // 直接丢弃自身事件，自行更新 topActivity
+        // Discard its own events directly and update topActivity independently
         if (
             (event.eventType == CONTENT_CHANGED || !MainActivityVisibility.isVisible) &&
             event.packageName == META.appId
@@ -98,7 +98,7 @@ class A11yRuleEngine(private val service: A11yCommonImpl) {
 
         val a11yEvent = event.toA11yEvent() ?: return
         if (a11yEvent.type == CONTENT_CHANGED) {
-            // 防止 content 类型事件过快
+            // Prevent content type events from being too fast
             if (a11yEvent.time - lastContentEventTime < 100 && a11yEvent.time - appChangeTime > 5000 && a11yEvent.time - lastTriggerTime > 3000) {
                 return
             }
@@ -112,7 +112,7 @@ class A11yRuleEngine(private val service: A11yCommonImpl) {
             )
         }
         if (event.eventTime < lastEventTime) {
-            // 某些应用会发送负时间事件, 直接丢弃
+            // Some apps send negative time events; discard directly
             // type:32, time:-104, app:com.miui.home, cls:com.miui.home.launcher.Launcher
             return
         }
@@ -153,7 +153,7 @@ class A11yRuleEngine(private val service: A11yCommonImpl) {
         }
         if (rightAppId != currentTopActivity.appId) {
             A11yState.withTopActivityLock {
-                // 从 锁屏，下拉通知栏 返回等情况, 应用不会发送事件, 但是系统组件会发送事件
+                // In cases such as returning from screen lock or pulling down notification bar, the app does not send events, but system components do.
                 val topCpn = privilegeContextFlow.value?.topCpn()
                 if (topCpn?.packageName == rightAppId) {
                     updateTopActivity(topCpn.packageName, topCpn.className)
@@ -175,7 +175,7 @@ class A11yRuleEngine(private val service: A11yCommonImpl) {
     private var lastAppId: String? = null
     private suspend fun getTimeoutAppId(): String? {
         if (lastAppId != null && System.currentTimeMillis() - lastGetAppIdTime <= 100) return lastAppId
-        // 某些应用通过无障碍获取 safeActiveWindow 耗时长，导致多个事件连续堆积堵塞，无法检测到 appId 切换导致状态异常
+        // Some apps take a long time to get safeActiveWindow via accessibility, causing multiple events to pile up and block, making it impossible to detect appId switch leading to state anomaly
         // https://github.com/gkd-kit/gkd/issues/622
         lastAppId = withTimeoutOrNull(100.milliseconds) {
             runInterruptible(Dispatchers.IO) { safeActiveWindowAppId }
@@ -184,7 +184,7 @@ class A11yRuleEngine(private val service: A11yCommonImpl) {
         return lastAppId
     }
 
-    // 某些场景耗时 5000 ms
+    // Some scenarios take 5000 ms
     private suspend fun getTimeoutActiveWindow(): AccessibilityNodeInfo? {
         return suspendCancellableCoroutine { s ->
             val temp = atomic<Continuation<AccessibilityNodeInfo?>?>(s)
@@ -216,7 +216,7 @@ class A11yRuleEngine(private val service: A11yCommonImpl) {
         if (!storeFlow.value.enableMatch) return
         if (activityRuleFlow.value.currentRules.isEmpty()) return
         if (querying) return
-        // 无障碍从零启动时获取 safeActiveWindow 非常耗时
+        // Getting safeActiveWindow from scratch during accessibility startup is very time-consuming
         if (byEvent == null && service.justStarted && !hasOthersService) return checkFutureStartJob()
         scope.launchLogged(queryDispatcher) {
             querying = true
@@ -277,7 +277,7 @@ class A11yRuleEngine(private val service: A11yCommonImpl) {
         delayRule: ResolvedRule? = null,
     ) {
         val tempStateEvent = latestStateEvent
-        val newEvents = if (delayRule != null) {// 延迟规则不消耗事件
+        val newEvents = if (delayRule != null) {// Deferred rules do not consume events
             null
         } else {
             synchronized(queryEvents) {
@@ -289,10 +289,10 @@ class A11yRuleEngine(private val service: A11yCommonImpl) {
                         queryEvents.any { e2 -> !e.sameAs(e2) }
                     }
                     if (hasDiffItem) {
-                        // 存在不同的事件节点, 全部丢弃使用 root 查询
+                        // Different event nodes exist; discard all and use root query
                         null
                     } else {
-                        // type,appId,className 一致, 需要在 synchronized 外验证是否是同一节点
+                        // type,appId,className are consistent; need to verify outside synchronized whether it is the same node
                         arrayOf(
                             queryEvents[queryEvents.size - 2],
                             queryEvents.last(),
@@ -318,14 +318,14 @@ class A11yRuleEngine(private val service: A11yCommonImpl) {
             }
         }
         if (activityRule.skipMatch) {
-            // 如果当前应用没有规则/暂停匹配, 则不去调用获取事件节点避免阻塞
+            // If the current app has no rules/match pause, do not call to get event nodes to avoid blocking
             return
         }
         var lastNode = if (newEvents == null || newEvents.size <= 1) {
             newEvents?.firstOrNull()?.safeSource
         } else {
-            // 获取最后两个事件, 如果最后两个事件的节点不一致, 则丢弃
-            // 相等则是同一个节点发出的连续事件, 常见于倒计时界面
+            // Get the last two events; if the nodes of the last two events are inconsistent, discard them
+            // If equal, it is a continuous event from the same node, commonly seen in countdown interfaces
             val lastNode = newEvents.last().safeSource
             if (lastNode == null || lastNode == newEvents[0].safeSource) {
                 lastNode
@@ -335,12 +335,12 @@ class A11yRuleEngine(private val service: A11yCommonImpl) {
         }
         var lastNodeUsed = false
         if (!a11yContext.clearOldAppNodeCache()) {
-            if (byEvent != null) { // 此为多数情况
-                // 新事件到来时, 若缓存清理不及时会导致无法查询到节点
+            if (byEvent != null) { // This is the majority of cases
+                // When new events arrive, if cache is not cleaned up in time, nodes cannot be queried.
                 a11yContext.clearNodeCache(lastNode)
             }
         }
-        for (rule in activityRule.priorityRules) { // 规则数量有可能过多导致耗时过长
+        for (rule in activityRule.priorityRules) { // There may be too many rules causing excessive time consumption
             if (!effective) return
             if (checkOutDate(activityRule, tempStateEvent)) break
             if (delayRule != null && delayRule !== rule) continue

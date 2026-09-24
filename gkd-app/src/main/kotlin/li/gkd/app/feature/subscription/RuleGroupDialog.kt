@@ -231,7 +231,7 @@ private fun RuleSourceDialog(group: RawSubscription.RawGroupProps, onDismissRequ
     }
 }
 
-// 规则组示例图需要保留“图片属于哪个子规则”的上下文，预览页才能显示更具体的标题。
+// Rule group example images need to retain the context of "which sub-rule the image belongs to" so the preview page can display more specific titles.
 private fun buildRuleGroupPreviewItems(group: RawSubscription.RawGroupProps): List<ImagePreviewItem> {
     val uriTitlesMap = linkedMapOf<String, LinkedHashSet<String>>()
 

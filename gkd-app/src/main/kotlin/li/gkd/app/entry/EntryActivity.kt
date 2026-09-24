@@ -25,8 +25,8 @@ abstract class EntryActivity : Activity() {
         intent?.let { sourceIntent ->
             val navIntent = Intent(sourceIntent)
             navIntent.component = MainActivity::class.componentName
-            // 保留已有 MainActivity 及其 ViewModel，由 onNewIntent 处理入口参数。
-            // 只转发 URI 授权，避免外部任务栈 flags 改变 MainActivity 的启动行为。
+            // Keep the existing MainActivity and its ViewModel, and handle entry parameters via onNewIntent.
+            // Only forward URI authorization to avoid external task stack flags changing MainActivity's launch behavior.
             navIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or sourceIntent.uriPermissionFlags()
             navIntent.putExtra(activityNavSourceName, this::class.jvmName)
             startActivity(navIntent)

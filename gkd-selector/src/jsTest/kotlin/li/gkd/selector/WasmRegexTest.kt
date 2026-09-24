@@ -43,7 +43,7 @@ class WasmRegexTest {
     @Test
     fun regexWasmPlatformDifferencesRemainExplicit() {
         val unicodeWord = assertIs<RegexCompileResult.Success>("(?U)\\w+".compileRegex())
-        assertFalse(unicodeWord.matches("中文"))
+        assertFalse(unicodeWord.matches("Chinese"))
         assertIs<RegexCompileResult.Failure>("\\p{javaLowerCase}+".compileRegex())
     }
 

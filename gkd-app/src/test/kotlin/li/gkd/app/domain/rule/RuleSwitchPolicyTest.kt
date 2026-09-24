@@ -85,7 +85,7 @@ class RuleSwitchPolicyTest {
         val state = RuleGroupPolicy.controlState(sub, group, "app.id", initial.copy(globalGroupConfigs = listOf(config)), info, "launcher", emptySet())
         assertTrue(state.configuredEnabled)
         assertFalse(state.available)
-        assertTrue(state.restrictions.contains("全局规则组总开关已关闭"))
+        assertTrue(state.restrictions.contains("Global rule group master switch is off"))
     }
 
     @Test

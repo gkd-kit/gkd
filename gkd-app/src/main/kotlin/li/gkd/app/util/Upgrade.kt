@@ -136,7 +136,7 @@ class UpdateStatus(val scope: CoroutineScope) {
                                     bytesSentTotal.toFloat() / (newVersion.fileSize)
                                 )
                             } else if (downloadStatus is LoadStatus.Failure) {
-                                // 提前终止下载
+                                // Cancel download in advance
                                 downloadJob?.cancel()
                             }
                         }

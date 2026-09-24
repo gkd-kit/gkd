@@ -13,7 +13,7 @@ class SelectorTokenizerTest {
             "TextView[text='unfinished",
             """TextView[text='\'""",
             "A ??? B",
-            "😀[text='值']",
+            "😀[text='value']",
         )
 
         sources.forEach { source ->

@@ -29,7 +29,7 @@ object NotificationDispatcher {
             spec.id,
             Intent().apply {
                 component = MainActivity::class.componentName
-                // MainActivity 使用 singleTask，由 onNewIntent 接收跳转；不能清空已有任务栈。
+                // MainActivity uses singleTask, receives navigation via onNewIntent; cannot clear the existing task stack.
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 data = spec.uri?.toUri()
             },
@@ -82,8 +82,8 @@ object NotificationDispatcher {
             return false
         }
         return try {
-            // 系统自动重启 startRequested 的 Service 时不会经过应用侧的启动检查，
-            // 且权限可能在检查后发生变化，因此这里仍需兜底 SecurityException。
+            // When the system automatically restarts a Service with startRequested, it will not go through the app-side startup check,
+            // And permissions may change after the check, so SecurityException fallback is still needed here.
             ServiceCompat.startForeground(
                 service,
                 notification.id,
@@ -93,7 +93,7 @@ object NotificationDispatcher {
             true
         } catch (e: SecurityException) {
             service.canStartForeground()
-            LogUtils.d("前台服务启动失败", service.javaClass.name, e)
+            LogUtils.d("Foreground service failed to start", service.javaClass.name, e)
             service.stopSelf()
             false
         }

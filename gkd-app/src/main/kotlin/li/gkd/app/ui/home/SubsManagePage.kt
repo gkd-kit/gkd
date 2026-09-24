@@ -132,7 +132,7 @@ private fun useLoadedSubsManagePage(
 
     val refreshing = state.refreshing
     val pullToRefreshState = rememberPullToRefreshState()
-    // 多选仅属于当前订阅 Tab 的临时交互状态，切换 Tab 后按设计清空，不要改为可保存状态。
+    // Multi-selection is only a temporary interaction state belonging to the current subscription Tab; clear it after switching Tab as designed, do not change it to a savable state.
     val selectionState = rememberMultiSelectionState<Long>()
     val allIds = remember(subItems) { subItems.mapTo(mutableSetOf()) { it.id } }
     val selectedIds = selectionState.selectedKeys intersect allIds

@@ -14,7 +14,7 @@ object AppChangeMonitor {
 
     @Synchronized
     fun register(onChanged: (String) -> Unit) {
-        check(!registered) { "应用变更监听已经注册" }
+        check(!registered) { "App change listener is already registered" }
         registered = true
         ContextCompat.registerReceiver(
             app,
@@ -34,7 +34,7 @@ object AppChangeMonitor {
             ContextCompat.RECEIVER_EXPORTED,
         )
 
-        // 某些设备 ACTION_PACKAGE_ADDED 接收不到，使用 LauncherApps.Callback 作为补充。
+        // Some devices cannot receive ACTION_PACKAGE_ADDED; use LauncherApps.Callback as a supplement.
         app.launcherApps.registerCallback(object : LauncherApps.Callback() {
             override fun onPackageAdded(packageName: String, user: UserHandle) {
                 onChanged(packageName)

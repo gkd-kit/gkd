@@ -93,7 +93,7 @@ class HttpService : LifecycleHookService() {
                         createServer(port).apply { start() }
                     } catch (e: Exception) {
                         toast(UiStrings.http_service_start_failed(e.stackTraceToString()))
-                        LogUtils.d("HTTP服务启动失败", e)
+                        LogUtils.d("HTTP service failed to start", e)
                         stopSelf()
                         return@collectLatest
                     }
@@ -149,7 +149,7 @@ data class ServerInfo(
 )
 
 fun clearHttpSubs() {
-    // 如果 app 被直接在任务列表划掉, HTTP订阅会没有清除, 所以在后续的第一次启动时清除
+    // If the app is swiped away directly from the task list, HTTP subscriptions will not be cleared, so clear them on the next startup.
     if (HttpService.isRunning.value) return
     appScope.launchLogged {
         delay(1000)
@@ -261,13 +261,13 @@ private fun getKtorErrorPlugin() = createApplicationPlugin(name = "KtorErrorPlug
     on(CallFailed) { call, cause ->
         when (cause) {
             is RpcError -> {
-                // 主动抛出的错误
+                // Actively thrown error
                 LogUtils.d(call.request.uri, cause.message)
                 call.respond(cause)
             }
 
             is Exception -> {
-                // 未知错误
+                // Unknown error
                 LogUtils.d(call.request.uri, cause.message)
                 cause.printStackTrace()
                 call.respond(RpcError(message = cause.message ?: "unknown error", unknown = true))

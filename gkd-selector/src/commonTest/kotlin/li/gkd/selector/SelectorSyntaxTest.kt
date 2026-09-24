@@ -281,7 +281,7 @@ class SelectorSyntaxTest {
             "(A + B) || (M > N)",
             "(A + B) && (M > N)",
             "!(A + B)",
-            "@LinearLayout > TextView[id=`com.byted.pangle:id/tt_item_tv`][text=`不感兴趣`]",
+            "@LinearLayout > TextView[id=`com.byted.pangle:id/tt_item_tv`][text=`Not interested`]",
             "TextView[text=\"\\\\\\n\"]",
             "TextView[text~=`(?is).*abc.*`]",
             "[null=parent]",

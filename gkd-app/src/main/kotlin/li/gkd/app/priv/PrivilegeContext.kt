@@ -59,7 +59,7 @@ class PrivilegeContext private constructor(
     }
 
     fun startForegroundService(intent: Intent) {
-        // 被启动的服务必须设置 android:exported="true"
+        // Started services must set android:exported="true"
         // https://github.com/android-cs/16/blob/main/services/core/java/com/android/server/am/ActivityManagerShellCommand.java#L982
         activityManager.startService(
             intent = intent,

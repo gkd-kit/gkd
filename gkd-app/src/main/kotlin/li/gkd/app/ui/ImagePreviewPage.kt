@@ -140,7 +140,7 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
     val context = LocalActivity.current as MainActivity
     var showBars by remember { mutableStateOf(true) }
 
-    // 路由同时兼容旧的 uri/uris 和新的 items，预览页内部统一按图片项处理。
+    // Routes simultaneously support old uri/uris and new items; the preview page uniformly handles them as image items internally.
     val previewItems = remember(route) {
         when {
             route.items.isNotEmpty() -> route.items
@@ -176,7 +176,7 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
         }
     }
 
-    // 规则组示例图会连续横滑，但预取并发限制在 2，避免与首图显示请求抢带宽。
+    // Rule group example images will swipe continuously horizontally, but prefetch concurrency is limited to 2 to avoid competing for bandwidth with the first image display request.
     LaunchedEffect(previewUris) {
         if (previewUris.size <= 1) return@LaunchedEffect
         previewUris
@@ -355,7 +355,7 @@ private fun UriImage(
     val phaseTextFlow = remember(uri) { MutableStateFlow<String?>(null) }
     val phaseText by phaseTextFlow.collectAsStateWithLifecycle()
 
-    // 手势层切至 Telephoto，loading / error 还是使用 AsyncImagePainter.State 统一驱动。
+    // When the gesture layer switches to Telephoto, loading/error still uses AsyncImagePainter.State for unified drive.
     val model = remember(uri) {
         buildPreviewImageRequest(
             context = context,
@@ -479,12 +479,12 @@ private fun ZoomableImageContent(
     painter: Painter,
     onToggleBars: () -> Unit,
 ) {
-    // 每个 pager page 都独立持有一个 ZoomableState，避免翻页后复用缩放位置。
+    // Each pager page independently holds a ZoomableState to avoid reusing zoom position after page flip.
     val zoomableState = rememberZoomableState()
     val intrinsicSize = painter.intrinsicSize
 
-    // Image() 的绘制区域和实际图片内容边界并不总是完全一致。
-    // 把内容位置告诉 Telephoto 后，边缘检测和与 pager 的手势协同会更稳定。
+    // The drawing area of Image() and the actual image content boundary are not always exactly the same.
+    // After telling Telephoto the content position, edge detection and gesture coordination with the pager will be more stable.
     LaunchedEffect(uri, intrinsicSize) {
         if (intrinsicSize != Size.Unspecified && intrinsicSize.width > 0f && intrinsicSize.height > 0f) {
             zoomableState.setContentLocation(
@@ -493,7 +493,7 @@ private fun ZoomableImageContent(
         }
     }
 
-    // 限制图片成功状态下的深色画布背景，防止非必要全局黑色背景不跟随主题
+    // Restrict dark canvas background in successful image state to prevent unnecessary global black background from not following the theme
     Box(
         modifier = Modifier
             .fillMaxSize()

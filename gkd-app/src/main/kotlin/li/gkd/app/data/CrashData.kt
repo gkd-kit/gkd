@@ -55,7 +55,7 @@ fun trimCrashDataFiles() {
             .drop(MAX_CRASH_RECORD_COUNT)
             .forEach { file ->
                 if (!file.delete()) {
-                    LogUtils.d("删除过期崩溃日志失败: ${file.name}")
+                    LogUtils.d("Failed to delete expired crash log: ${file.name}")
                 }
             }
     }
@@ -68,7 +68,7 @@ fun loadCrashDataList(): List<CrashData> =
             try {
                 json.decodeFromString<CrashData>(file.readText())
             } catch (e: Exception) {
-                LogUtils.d("解析崩溃日志失败: ${file.name}", e)
+                LogUtils.d("Failed to parse crash log: ${file.name}", e)
                 null
             }
         }

@@ -45,15 +45,15 @@ fun useA11yServiceEnabledFlow(
 const val STATE_CHANGED = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
 const val CONTENT_CHANGED = AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
 
-// 某些应用耗时 300ms
+// Some apps take 300ms
 private val AccessibilityEvent.safeSource: AccessibilityNodeInfo?
     get() = if (className == null) {
-        null // https://github.com/gkd-kit/gkd/issues/426 event.clear 已被系统调用
+        null // https://github.com/gkd-kit/gkd/issues/426 event.clear has been called by the system
     } else {
         try {
             source?.setGeneratedTime()
         } catch (_: Exception) {
-            // 原因未知, 仍然报错 Cannot perform this action on a not sealed instance.
+            // Unknown reason, still throws error Cannot perform this action on a not sealed instance.
             null
         }
     }
@@ -72,7 +72,7 @@ fun AccessibilityNodeInfo.getVid(): CharSequence? {
 
 // https://github.com/gkd-kit/gkd/issues/115
 // https://github.com/gkd-kit/gkd/issues/650
-// 限制节点遍历的数量避免内存溢出
+// Limit the number of node traversals to avoid out-of-memory
 const val MAX_CHILD_SIZE = 512
 const val MAX_DESCENDANTS_SIZE = 4096
 
@@ -131,7 +131,7 @@ data class A11yEvent(
     }
 }
 
-// AccessibilityEvent 的 clear 方法会在后续时间被 某些系统 调用导致内部数据丢失, 导致异步子线程获取到的数据不一致
+// AccessibilityEvent's clear method will be called by some systems at a later time, causing internal data loss and leading to inconsistent data obtained by async child threads
 fun AccessibilityEvent.toA11yEvent(): A11yEvent? {
     val appId = packageName ?: return null
     val b = className ?: return null

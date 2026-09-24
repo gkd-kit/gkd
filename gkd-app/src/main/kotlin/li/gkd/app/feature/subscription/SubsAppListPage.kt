@@ -141,7 +141,7 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                         GkAppBarTextField(
                             value = searchStr,
                             onValueChange = {
-                            // 关闭时失焦可能回传旧文本，不能恢复已清空的搜索条件。
+                            // Losing focus when closing may send back old text; cannot restore cleared search conditions.
                             if (showSearchBar) searchStr = it
                         },
                             hint = UiStrings.app_search_hint,

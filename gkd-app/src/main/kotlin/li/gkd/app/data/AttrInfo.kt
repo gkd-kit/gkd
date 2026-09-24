@@ -47,7 +47,7 @@ data class AttrInfo(
             val vid = if (id != null && id.startsWith(idPrefix)) {
                 id.substring(idPrefix.length)
             } else {
-                // 此处不使用 id 是因为某些节点的 id 没有 appId:id/ 前缀
+                // id is not used here because some nodes' ids do not have the appId:id/ prefix
                 null
             }
             return AttrInfo(
