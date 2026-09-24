@@ -30,9 +30,9 @@ import li.gkd.selector.NodeAdapter
 fun onA11yFeatEvent(event: AccessibilityEvent) = event.run {
     if (event.eventType == STATE_CHANGED) {
         watchCaptureScreenshot()
-        if (event.packageName == launcherAppId) {
-            watchAutoUpdateSubs()
-        }
+    }
+    if (event.packageName == launcherAppId) {
+        watchAutoUpdateSubs()
     }
 }
 
