@@ -85,6 +85,13 @@
 - Embedded `UserService` runs in a privileged process. Binder methods that may fail, such as calling hidden APIs, must be caught with a terminal `catch (e: Throwable)` at the outermost layer of the method to handle recoverable errors, and the original type, message, and stack trace must be passed to the main process through Binder-transmittable exceptions or failure results; catching only in the main process must not be done, and `LinkageError` such as `NoSuchMethodError` must not escape and cause the privileged process to crash.
 - Terminating errors that cannot be reliably recovered, such as `VirtualMachineError` and `ThreadDeath`, can be thrown as-is; do not disguise them as ordinary business failures.
 
+## Internationalization (i18n)
+
+- `values/strings.xml` contains the **original Chinese** strings (default language)
+- `values-en/strings.xml` contains **English** translations
+- Android automatically selects the correct strings based on device language
+- When contributing to the original repo, only submit `values-en/strings.xml` as a PR — do NOT overwrite `values/strings.xml`
+
 ## Git Remote Configuration
 
 - `origin` points to the main repository (push requires PAT token authentication)
@@ -93,6 +100,7 @@
 - To fork: set `origin` to your fork URL, keep `upstream` pointing to the original repo
 - To sync from the original repo without losing translations: `git fetch upstream && git merge upstream/main`
 - To contribute to gkd-kit: `git push gkd-kit main` after making changes, then create a PR on `https://github.com/gkd-kit/gkd`
+- To contribute translations: submit a PR with only `values-en/strings.xml` — never modify `values/strings.xml`
 
 ## GitHub Actions Secrets
 
@@ -121,3 +129,7 @@ The `Build-Release.yml` workflow:
 - Builds gkd release APK and Play Store bundle
 - Uploads artifacts and creates GitHub Release
 - Uses `softprops/action-gh-release@v3` for release creation
+
+The `Publish-Selector.yml` workflow:
+- Triggers only on `workflow_dispatch` (manual trigger)
+- Publishes the gkd-kit/selector package
