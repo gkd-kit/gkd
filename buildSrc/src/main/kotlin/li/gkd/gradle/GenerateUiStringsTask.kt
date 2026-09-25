@@ -12,7 +12,7 @@ import org.gradle.api.tasks.TaskAction
 import org.w3c.dom.Element
 import javax.xml.parsers.DocumentBuilderFactory
 
-/** Single-language accessors keep shared presentation text usable without an Android Context. */
+/** Generate resource-backed accessors so shared presentation text follows the app locale. */
 @CacheableTask
 abstract class GenerateUiStringsTask : DefaultTask() {
     @get:InputFile
@@ -45,12 +45,12 @@ abstract class GenerateUiStringsTask : DefaultTask() {
                     Regex("%(\\d+)\\\$s").findAll(value).map { it.groupValues[1].toInt() }.distinct().sorted().toList()
                 val literal = quoteKotlin(value)
                 if (parameters.isEmpty()) {
-                    appendLine("    const val $name: String = $literal")
+                    appendLine("    val $name: String get() = li.gkd.app.appOrNull()?.getString(li.gkd.app.R.string.$name) ?: $literal")
                 } else {
                     require(parameters == (1..parameters.size).toList()) { "Non-contiguous arguments: $name" }
                     val args = parameters.joinToString { "arg$it: Any?" }
                     val values = parameters.joinToString { "arg$it" }
-                    appendLine("    fun $name($args): String = String.format(java.util.Locale.ROOT, $literal, $values)")
+                    appendLine("    fun $name($args): String = li.gkd.app.appOrNull()?.getString(li.gkd.app.R.string.$name, $values) ?: String.format(java.util.Locale.ROOT, $literal, $values)")
                 }
             }
             appendLine("}")

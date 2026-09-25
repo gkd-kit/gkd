@@ -66,6 +66,8 @@ private lateinit var innerApp: App
 val app: App
     get() = innerApp
 
+fun appOrNull(): App? = if (::innerApp.isInitialized) innerApp else null
+
 private val applicationInfo by lazy {
     app.packageManager.getApplicationInfo(
         app.packageName,

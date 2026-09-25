@@ -21,9 +21,9 @@ import li.gkd.app.text.UiStrings
 import li.gkd.app.util.TimeUtils.throttle
 import kotlin.coroutines.resume
 
-private const val DEFAULT_MESSAGE_CONFIRM_TEXT = UiStrings.action_understood
-private const val DEFAULT_CONFIRM_TEXT = UiStrings.action_ok
-private const val DEFAULT_DISMISS_TEXT = UiStrings.action_cancel
+private val DEFAULT_MESSAGE_CONFIRM_TEXT get() = UiStrings.action_understood
+private val DEFAULT_CONFIRM_TEXT get() = UiStrings.action_ok
+private val DEFAULT_DISMISS_TEXT get() = UiStrings.action_cancel
 
 data class DialogRequest(
     val title: String,
