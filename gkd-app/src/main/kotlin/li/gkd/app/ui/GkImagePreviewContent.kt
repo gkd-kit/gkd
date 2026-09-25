@@ -13,14 +13,18 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,6 +37,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -101,8 +106,6 @@ data class ImagePreviewItem(
 @Serializable
 data class ImagePreviewRoute(
     val title: String? = null,
-    val uri: String? = null,
-    val uris: List<String> = emptyList(),
     val items: List<ImagePreviewItem> = emptyList(),
 ) : NavKey
 
@@ -137,21 +140,54 @@ private val imageLoader by lazy {
 @Composable
 fun ImagePreviewPage(route: ImagePreviewRoute) {
     val mainVm = MainViewModel.requireCurrent()
+    GkImagePreviewContent(
+        route = route,
+        onBack = mainVm::popPage,
+        actionContent = { currentUri, _ ->
+            if (currentUri != null && URLUtil.isNetworkUrl(currentUri)) {
+                GkIconButton(
+                    imageVector = GkIcons.OpenInNew,
+                    onClick = throttle(fn = { mainVm.openUrl(currentUri) }),
+                    colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
+                )
+            }
+        },
+    )
+}
+
+@Composable
+private fun PreviewBaseTitle(title: String) {
+    val style = MaterialTheme.typography.titleLarge.copy(
+        color = Color.White,
+        fontWeight = FontWeight.Medium,
+    )
+    Text(
+        text = title,
+        maxLines = 1,
+        softWrap = false,
+        overflow = TextOverflow.MiddleEllipsis,
+        style = style,
+    )
+}
+
+@Composable
+fun GkImagePreviewContent(
+    route: ImagePreviewRoute,
+    onBack: () -> Unit,
+    imageVersion: Int = 0,
+    pagerState: PagerState? = null,
+    titleContent: (@Composable (Int) -> Unit)? = null,
+    actionContent: @Composable RowScope.(String?, Int) -> Unit = { _, _ -> },
+) {
     val context = LocalActivity.current as MainActivity
     var showBars by remember { mutableStateOf(true) }
 
-    // 路由同时兼容旧的 uri/uris 和新的 items，预览页内部统一按图片项处理。
-    val previewItems = remember(route) {
-        when {
-            route.items.isNotEmpty() -> route.items
-            route.uris.isNotEmpty() -> route.uris.map { ImagePreviewItem(it) }
-            route.uri != null -> listOf(ImagePreviewItem(uri = route.uri))
-            else -> emptyList()
-        }
-    }
+    val previewItems = route.items
     val previewUris = remember(previewItems) { previewItems.map { it.uri } }
     val singleItem = previewItems.singleOrNull()
-    val pagerState = rememberPagerState(pageCount = { previewItems.size.coerceAtLeast(1) })
+    val localPagerState = rememberPagerState(pageCount = { previewItems.size.coerceAtLeast(1) })
+    val activePagerState = pagerState ?: localPagerState
+    val currentPage = activePagerState.currentPage
 
     val controller = remember {
         WindowCompat.getInsetsController(context.window, context.window.decorView)
@@ -197,28 +233,34 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
             }
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .background(Color.Black)
             .fillMaxSize()
     ) {
         when {
             singleItem != null -> {
-                UriImage(
-                    uri = singleItem.uri,
-                    onToggleBars = { showBars = !showBars },
-                )
+                key(singleItem.uri, imageVersion) {
+                    UriImage(
+                        uri = singleItem.uri,
+                        version = imageVersion,
+                        onToggleBars = { showBars = !showBars },
+                    )
+                }
             }
 
             previewItems.isNotEmpty() -> {
                 HorizontalPager(
                     modifier = Modifier.fillMaxSize(),
-                    state = pagerState,
+                    state = activePagerState,
                     pageContent = { index ->
-                        UriImage(
-                            uri = previewItems[index].uri,
-                            onToggleBars = { showBars = !showBars },
-                        )
+                        key(previewItems[index].uri, imageVersion) {
+                            UriImage(
+                                uri = previewItems[index].uri,
+                                version = imageVersion,
+                                onToggleBars = { showBars = !showBars },
+                            )
+                        }
                     }
                 )
             }
@@ -234,27 +276,48 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
         ) {
             Column {
                 val currentPreviewItem =
-                    singleItem ?: previewItems.getOrNull(pagerState.currentPage)
+                    singleItem ?: previewItems.getOrNull(currentPage)
                 val currentUri = currentPreviewItem?.uri
                 GkTopAppBar(
                     modifier = Modifier.background(Color.Black.copy(alpha = 0.5f)),
                     navigationIcon = {
                         GkIconButton(
                             imageVector = GkIcons.ArrowBack,
-                            onClick = { mainVm.popPage() },
+                            onClick = onBack,
                             colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White)
                         )
                     },
                     title = {
-                        val baseTitle = route.title?.takeIf { it.isNotBlank() }
-                        val itemTitle = currentPreviewItem
-                            ?.let(::buildPreviewSubtitle)
-                            ?.takeIf { it.isNotBlank() && it != baseTitle }
-                        when {
-                            baseTitle != null && itemTitle != null -> {
-                                Column {
+                        if (titleContent != null) {
+                            titleContent(currentPage)
+                        } else {
+                            val baseTitle = route.title?.takeIf { it.isNotBlank() }
+                            val itemTitle = currentPreviewItem?.let(::buildPreviewSubtitle)
+                                ?.takeIf { it.isNotBlank() && it != baseTitle }
+                            when {
+                                baseTitle != null && itemTitle != null -> {
+                                    Column {
+                                        PreviewBaseTitle(baseTitle)
+                                        Text(
+                                            text = itemTitle,
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            overflow = TextOverflow.MiddleEllipsis,
+                                            style = MaterialTheme.typography.titleSmall.copy(
+                                                color = Color.White.copy(alpha = 0.8f),
+                                                fontWeight = FontWeight.Normal
+                                            )
+                                        )
+                                    }
+                                }
+
+                                baseTitle != null -> {
+                                    PreviewBaseTitle(baseTitle)
+                                }
+
+                                itemTitle != null -> {
                                     Text(
-                                        text = baseTitle,
+                                        text = itemTitle,
                                         maxLines = 1,
                                         softWrap = false,
                                         overflow = TextOverflow.MiddleEllipsis,
@@ -263,55 +326,11 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                                             fontWeight = FontWeight.Medium
                                         )
                                     )
-                                    Text(
-                                        text = itemTitle,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        overflow = TextOverflow.MiddleEllipsis,
-                                        style = MaterialTheme.typography.titleSmall.copy(
-                                            color = Color.White.copy(alpha = 0.8f),
-                                            fontWeight = FontWeight.Normal
-                                        )
-                                    )
                                 }
                             }
-
-                            baseTitle != null -> {
-                                Text(
-                                    text = baseTitle,
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    overflow = TextOverflow.MiddleEllipsis,
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                )
-                            }
-
-                            itemTitle != null -> {
-                                Text(
-                                    text = itemTitle,
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    overflow = TextOverflow.MiddleEllipsis,
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                )
-                            }
                         }
                     },
-                    actions = {
-                        if (currentUri != null && URLUtil.isNetworkUrl(currentUri)) {
-                            GkIconButton(
-                                imageVector = GkIcons.OpenInNew,
-                                onClick = throttle(fn = { mainVm.openUrl(currentUri) }),
-                                colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White)
-                            )
-                        }
-                    },
+                    actions = { actionContent(currentUri, currentPage) },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
                         navigationIconContentColor = Color.White,
@@ -319,26 +338,26 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
                         actionIconContentColor = Color.White
                     )
                 )
-
-                if (previewItems.size > 1) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = UiStrings.progress_fraction(pagerState.currentPage + 1, previewItems.size),
-                            modifier = Modifier
-                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                                .padding(horizontal = 12.dp, vertical = 4.dp),
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                }
+            }
+        }
+        if (previewItems.size > 1) {
+            AnimatedVisibility(
+                visible = showBars,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier.align(Alignment.BottomCenter).zIndex(1f)
+                    .offset(y = -(maxHeight / 4)),
+            ) {
+                Text(
+                    text = UiStrings.progress_fraction(currentPage + 1, previewItems.size),
+                    modifier = Modifier
+                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                )
             }
         }
     }
@@ -347,16 +366,17 @@ fun ImagePreviewPage(route: ImagePreviewRoute) {
 @Composable
 private fun UriImage(
     uri: String,
+    version: Int,
     onToggleBars: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val imageLoader = context.imageLoader
     val isNetworkImage = remember(uri) { URLUtil.isNetworkUrl(uri) }
-    val phaseTextFlow = remember(uri) { MutableStateFlow<String?>(null) }
+    val phaseTextFlow = remember(uri, version) { MutableStateFlow<String?>(null) }
     val phaseText by phaseTextFlow.collectAsStateWithLifecycle()
 
     // 手势层切至 Telephoto，loading / error 还是使用 AsyncImagePainter.State 统一驱动。
-    val model = remember(uri) {
+    val model = remember(uri, version) {
         buildPreviewImageRequest(
             context = context,
             uri = uri,
@@ -431,11 +451,13 @@ private fun UriImage(
             }
 
             is AsyncImagePainter.State.Success -> {
-                ZoomableImageContent(
-                    uri = uri,
-                    painter = painter,
-                    onToggleBars = onToggleBars,
-                )
+                key(uri, version) {
+                    ZoomableImageContent(
+                        uri = uri,
+                        painter = painter,
+                        onToggleBars = onToggleBars,
+                    )
+                }
             }
 
             is AsyncImagePainter.State.Error -> {

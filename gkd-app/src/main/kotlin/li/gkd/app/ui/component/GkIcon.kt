@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.AutoMode
 import androidx.compose.material.icons.outlined.Check
@@ -44,6 +45,7 @@ import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.BrightnessAuto
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material.icons.outlined.Settings
@@ -166,6 +168,7 @@ object GkIcons {
     val Settings get() = Icons.Outlined.Settings
     val Home get() = Icons.Outlined.Home
     val FormatListBulleted get() = Icons.AutoMirrored.Filled.FormatListBulleted
+    val CalendarMonth get() = Icons.Outlined.CalendarMonth
     val Apps get() = Icons.Default.Apps
     val Info get() = Icons.Outlined.Info
     val Flowchart get() = li.gkd.app.ui.icon.Flowchart
@@ -174,6 +177,7 @@ object GkIcons {
     val HelpOutline get() = Icons.AutoMirrored.Outlined.HelpOutline
     val ArrowForward get() = Icons.AutoMirrored.Filled.ArrowForward
     val Image get() = Icons.Outlined.Image
+    val AddPhotoAlternate get() = Icons.Outlined.AddPhotoAlternate
     val WarningAmber get() = Icons.Default.WarningAmber
     val RocketLaunch get() = Icons.Outlined.RocketLaunch
     val CenterFocusWeak get() = Icons.Default.CenterFocusWeak

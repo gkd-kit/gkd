@@ -37,6 +37,11 @@ object SnapshotRepository : SnapshotStore(
     snapshotRoot = FolderUtils.snapshotFolder,
 )
 
+data class SnapshotUploadArchive(
+    val file: File,
+    val screenshotModifiedAt: Long,
+)
+
 open class SnapshotStore(
     private val snapshotDao: Snapshot.SnapshotDao,
     snapshotRoot: File,
@@ -50,10 +55,19 @@ open class SnapshotStore(
 
     fun snapshots(): Flow<List<Snapshot>> = snapshotDao.query()
 
-    suspend fun markUploaded(snapshot: Snapshot, githubAssetId: Int) =
+    suspend fun markUploaded(
+        snapshotId: Long,
+        githubAssetId: Int,
+        screenshotModifiedAt: Long,
+    ): Boolean = mutationMutex.withLock {
         withContext(Dispatchers.IO) {
-            snapshotDao.update(snapshot.copy(githubAssetId = githubAssetId))
+            val screenshot = fileLayout.committed(snapshotId).screenshotFile
+            if (!screenshot.isFile || screenshot.lastModified() != screenshotModifiedAt) {
+                return@withContext false
+            }
+            snapshotDao.markUploadedIfPending(snapshotId, githubAssetId) > 0
         }
+    }
 
     suspend fun getMinSnapshot(id: Long): JsonObject = mutationMutex.withLock {
         val files = fileLayout.committed(id)
@@ -97,26 +111,6 @@ open class SnapshotStore(
         }
     }
 
-    suspend fun deleteAll() = mutationMutex.withLock {
-        currentCoroutineContext().ensureActive()
-        withContext(NonCancellable + Dispatchers.IO) {
-            val snapshotRoot = fileLayout.rootDirectory
-            val staged = stageDeletion(snapshotRoot)
-            if (!snapshotRoot.mkdirs()) {
-                val error = IOException(UiStrings.snapshot_directory_recreate_failed)
-                rollbackDeletion(snapshotRoot, staged, error)
-                throw error
-            }
-            try {
-                snapshotDao.deleteAll()
-            } catch (e: Throwable) {
-                rollbackDeletion(snapshotRoot, staged, e)
-                throw e
-            }
-            finishDeletion(staged)
-        }
-    }
-
     suspend fun replaceScreenshot(snapshot: Snapshot, newBytes: ByteArray): Boolean =
         mutationMutex.withLock {
             withContext(Dispatchers.IO) {
@@ -150,9 +144,7 @@ open class SnapshotStore(
                         val previousWebp = stageReplacement(files.webpFile)
                         try {
                             Os.rename(tempFile.absolutePath, files.webpFile.absolutePath)
-                            if (snapshot.githubAssetId != null) {
-                                snapshotDao.deleteGithubAssetId(snapshot.id)
-                            }
+                            snapshotDao.deleteGithubAssetId(snapshot.id)
                         } catch (e: Throwable) {
                             files.webpFile.delete()
                             restoreReplacement(files.webpFile, previousWebp, e)
@@ -171,60 +163,77 @@ open class SnapshotStore(
             }
         }
 
+    suspend fun createUploadArchive(snapshotId: Long): SnapshotUploadArchive =
+        mutationMutex.withLock {
+            val screenshotModifiedAt = withContext(Dispatchers.IO) {
+                fileLayout.committed(snapshotId).screenshotFile.lastModified()
+            }
+            SnapshotUploadArchive(
+                file = createArchiveLocked(snapshotId),
+                screenshotModifiedAt = screenshotModifiedAt,
+            )
+        }
+
     suspend fun createArchive(
         snapshotId: Long,
         appId: String? = null,
         activityId: String? = null,
     ): File =
         mutationMutex.withLock {
-            withContext(Dispatchers.IO) {
-                FolderUtils.clearCache()
-                val filename = if (appId != null) {
-                    val appName = AppInfoRepository.appInfoMapFlow.value[appId]?.name
-                        ?.filterNot { char -> char in "\\/:*?\"<>|" || char <= ' ' }
-                    val stem = if (activityId != null) {
-                        "${(appName ?: appId).take(20)}_${
-                            activityId.split('.').last().take(40)
-                        }-${ExportFileNames.timestamp(snapshotId)}"
-                    } else {
-                        "${(appName ?: appId).take(20)}-${ExportFileNames.timestamp(snapshotId)}"
-                    }
-                    ExportFileNames.availableName(stem, "zip") { name ->
-                        FolderUtils.sharedDir.listFiles().orEmpty().any { directory ->
-                            directory.isDirectory && directory.name.startsWith("snapshot-") &&
-                                directory.resolve(name).exists()
-                        }
-                    }
+            createArchiveLocked(snapshotId, appId, activityId)
+        }
+
+    private suspend fun createArchiveLocked(
+        snapshotId: Long,
+        appId: String? = null,
+        activityId: String? = null,
+    ): File =
+        withContext(Dispatchers.IO) {
+            val filename = if (appId != null) {
+                val appName = AppInfoRepository.appInfoMapFlow.value[appId]?.name
+                    ?.filterNot { char -> char in "\\/:*?\"<>|" || char <= ' ' }
+                val stem = if (activityId != null) {
+                    "${(appName ?: appId).take(20)}_${
+                        activityId.split('.').last().take(40)
+                    }-${ExportFileNames.timestamp(snapshotId)}"
                 } else {
-                    "${snapshotId}.zip"
+                    "${(appName ?: appId).take(20)}-${ExportFileNames.timestamp(snapshotId)}"
                 }
-                require(File(filename).name == filename) { UiStrings.archive_name_invalid }
-                val outputDirectory = FolderUtils.sharedDir.resolve(
-                    "snapshot-$snapshotId-${UUID.randomUUID()}"
-                )
-                if (!outputDirectory.mkdirs()) {
-                    throw IOException(UiStrings.snapshot_archive_directory_create_failed)
+                ExportFileNames.availableName(stem, "zip") { name ->
+                    FolderUtils.sharedDir.listFiles().orEmpty().any { directory ->
+                        directory.isDirectory && directory.name.startsWith("snapshot-") &&
+                            directory.resolve(name).exists()
+                    }
                 }
-                val outputFile = outputDirectory.resolve(filename)
-                try {
-                    val files = fileLayout.committed(snapshotId)
-                    if (!files.hasCompleteFiles) {
-                        throw IOException(UiStrings.snapshot_files_incomplete(snapshotId))
-                    }
-                    if (!ZipUtils.zipFiles(
-                            listOf(files.snapshotFile, files.screenshotFile),
-                            outputFile,
-                        )
-                    ) {
-                        throw IOException(UiStrings.snapshot_compress_failed)
-                    }
-                    outputFile
-                } catch (e: Throwable) {
-                    if (!outputDirectory.deleteRecursively()) {
-                        e.addSuppressed(IOException(UiStrings.snapshot_archive_directory_cleanup_failed))
-                    }
-                    throw e
+            } else {
+                "${snapshotId}.zip"
+            }
+            require(File(filename).name == filename) { UiStrings.archive_name_invalid }
+            val outputDirectory = FolderUtils.sharedDir.resolve(
+                "snapshot-$snapshotId-${UUID.randomUUID()}"
+            )
+            if (!outputDirectory.mkdirs()) {
+                throw IOException(UiStrings.snapshot_archive_directory_create_failed)
+            }
+            val outputFile = outputDirectory.resolve(filename)
+            try {
+                val files = fileLayout.committed(snapshotId)
+                if (!files.hasCompleteFiles) {
+                    throw IOException(UiStrings.snapshot_files_incomplete(snapshotId))
                 }
+                if (!ZipUtils.zipFiles(
+                        listOf(files.snapshotFile, files.screenshotFile),
+                        outputFile,
+                    )
+                ) {
+                    throw IOException(UiStrings.snapshot_compress_failed)
+                }
+                outputFile
+            } catch (e: Throwable) {
+                if (!outputDirectory.deleteRecursively()) {
+                    e.addSuppressed(IOException(UiStrings.snapshot_archive_directory_cleanup_failed))
+                }
+                throw e
             }
         }
 

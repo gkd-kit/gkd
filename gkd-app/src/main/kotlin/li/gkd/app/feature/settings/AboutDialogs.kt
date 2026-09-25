@@ -121,7 +121,7 @@ private fun ShareAppDialog(
         GkTextListDialog(
             onDismiss = onDismissRequest,
             textList = listOf(
-                UiStrings.action_share_to_apps to mainVm.scope.launchUiAction(Dispatchers.IO) {
+                UiStrings.action_share to mainVm.scope.launchUiAction(Dispatchers.IO) {
                     if (!META.isGkdChannel) {
                         if (!mainVm.dialogRequests.confirm(
                             title = UiStrings.share_notice,

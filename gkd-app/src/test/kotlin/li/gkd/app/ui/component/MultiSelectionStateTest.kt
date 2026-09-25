@@ -7,6 +7,19 @@ import org.junit.Test
 
 class MultiSelectionStateTest {
     @Test
+    fun selectingAndDeselectingOneGroupKeepsOtherSelections() {
+        val state = MultiSelectionState<Long>()
+        state.select(1)
+
+        state.selectMany(listOf(2, 3))
+        assertEquals(setOf(1L, 2L, 3L), state.selectedKeys)
+
+        state.deselectMany(listOf(2, 3))
+        assertTrue(state.active)
+        assertEquals(setOf(1L), state.selectedKeys)
+    }
+
+    @Test
     fun deselectingLastItemKeepsModeUntilExplicitExit() {
         val state = MultiSelectionState<Int>()
         state.select(1)

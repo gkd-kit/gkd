@@ -19,6 +19,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import java.io.IOException
 import li.gkd.app.util.json
+import li.gkd.app.util.SnapshotDisplayModeOption
 import org.junit.Test
 import java.nio.file.Files
 
@@ -37,11 +38,12 @@ class SettingsRepositoryTest {
             )
 
             repository.updateSettings {
-                it.copy(enableMatch = false, httpServerPort = 9123)
+                it.copy(enableMatch = false, httpServerPort = 9123, snapshotDisplayMode = SnapshotDisplayModeOption.ByApp.value)
             }
 
             assertFalse(repository.settings.value.enableMatch)
             assertEquals(9123, repository.settings.value.httpServerPort)
+            assertEquals(2, repository.settings.value.snapshotDisplayMode)
             withTimeout(5_000) {
                 while (!directory.resolve("store.json").isFile) delay(10)
             }
@@ -54,6 +56,7 @@ class SettingsRepositoryTest {
             )
             assertFalse(recreated.settings.value.enableMatch)
             assertEquals(9123, recreated.settings.value.httpServerPort)
+            assertEquals(2, recreated.settings.value.snapshotDisplayMode)
         } finally {
             writeScope.cancel()
             readScope.cancel()

@@ -29,6 +29,7 @@ import li.gkd.app.store.AppStore.storeFlow
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.AutomatorModeOption
 import li.gkd.app.util.BarUtils
+import li.gkd.app.util.FolderUtils
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ScreenUtils
 import li.gkd.app.util.SystemDownloads
@@ -275,15 +276,17 @@ object SnapshotCapture {
                 storeFlow.value.autoSaveSnapshotToDownloads && SystemDownloads.canSave()
             ) {
                 try {
-                    val archive = SnapshotRepository.createArchive(
-                        snapshot.id,
-                        snapshot.appId,
-                        snapshot.activityId,
-                    )
-                    try {
+                    FolderUtils.withTemporaryZip(
+                        create = {
+                            SnapshotRepository.createArchive(
+                                snapshot.id,
+                                snapshot.appId,
+                                snapshot.activityId,
+                            )
+                        },
+                        delete = SnapshotRepository::deleteArchive,
+                    ) { archive ->
                         SystemDownloads.save(archive) != null
-                    } finally {
-                        SnapshotRepository.deleteArchive(archive)
                     }
                 } catch (e: CancellationException) {
                     throw e

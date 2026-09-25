@@ -36,6 +36,7 @@ import li.gkd.app.ui.style.titleItemPadding
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.DarkThemeOption
 import li.gkd.app.util.findOption
+import li.gkd.app.util.FolderUtils
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.util.ToastUtils.toast
 import li.gkd.app.ui.component.GkSettingItem
@@ -82,7 +83,7 @@ fun useSettingsPage(): ScaffoldExt {
         GkTextListDialog(
             onDismiss = { showExportBackupDialog = false },
             textList = listOf(
-                UiStrings.action_share_to_apps to {
+                UiStrings.action_share to {
                     actionScope.launchUi {
                         val file = vm.exportBackup()
                         context.shareFile(file, UiStrings.backup_share)
@@ -90,8 +91,12 @@ fun useSettingsPage(): ScaffoldExt {
                 },
                 UiStrings.action_save_to_downloads to {
                     actionScope.launchUi {
-                        val file = vm.exportBackup()
-                        context.saveFileToDownloads(file)
+                        FolderUtils.withTemporaryZip(
+                            create = vm::exportBackup,
+                            delete = FolderUtils::deleteSharedFile,
+                        ) { file ->
+                            context.saveFileToDownloads(file)
+                        }
                     }
                 },
             )

@@ -27,6 +27,14 @@ class MultiSelectionState<K> {
         selection = Selection(active = true, keys = selectedKeys + key)
     }
 
+    fun selectMany(keys: Iterable<K>) {
+        selection = Selection(active = true, keys = selectedKeys + keys)
+    }
+
+    fun deselectMany(keys: Iterable<K>) {
+        selection = selection.copy(keys = selectedKeys - keys.toSet())
+    }
+
     fun toggle(key: K) {
         val keys = if (key in selectedKeys) {
             selectedKeys - key

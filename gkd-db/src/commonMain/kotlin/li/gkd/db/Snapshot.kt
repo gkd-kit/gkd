@@ -7,7 +7,6 @@ import androidx.room3.Entity
 import androidx.room3.Insert
 import androidx.room3.PrimaryKey
 import androidx.room3.Query
-import androidx.room3.Update
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 
@@ -30,14 +29,8 @@ data class Snapshot(
     ) : BaseSnapshot {
     @Dao
     interface SnapshotDao {
-        @Update
-        suspend fun update(vararg objects: Snapshot): Int
-
         @Insert
         suspend fun insert(vararg users: Snapshot): List<Long>
-
-        @Query("DELETE FROM snapshot")
-        suspend fun deleteAll()
 
         @Delete
         suspend fun delete(vararg users: Snapshot): Int
@@ -47,6 +40,9 @@ data class Snapshot(
 
         @Query("UPDATE snapshot SET github_asset_id=null WHERE id = :id")
         suspend fun deleteGithubAssetId(id: Long)
+
+        @Query("UPDATE snapshot SET github_asset_id=:assetId WHERE id=:id AND github_asset_id IS NULL")
+        suspend fun markUploadedIfPending(id: Long, assetId: Int): Int
 
         @Query("SELECT COUNT(*) FROM snapshot")
         fun count(): Flow<Int>

@@ -18,6 +18,17 @@ fun <V, T : Option<V>> Iterable<T>.findOption(value: V): T {
     return find { it.value == value } ?: first()
 }
 
+sealed class SnapshotDisplayModeOption(override val value: Int, override val label: String) : Option<Int> {
+    override val options get() = objects
+
+    data object ByTime : SnapshotDisplayModeOption(1, UiStrings.snapshot_view_time)
+    data object ByApp : SnapshotDisplayModeOption(2, UiStrings.snapshot_view_app)
+
+    companion object {
+        val objects by lazy { listOf(ByTime, ByApp) }
+    }
+}
+
 sealed class AppSortOption(override val value: Int, override val label: String) : Option<Int> {
     override val options get() = objects
 
@@ -123,7 +134,6 @@ sealed interface BinaryOption : Option<Int> {
         }
     }
 }
-
 
 sealed class AppGroupOption(
     override val value: Int,

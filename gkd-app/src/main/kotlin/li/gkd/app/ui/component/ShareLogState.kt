@@ -21,6 +21,7 @@ import li.gkd.app.MainActivity
 import li.gkd.app.util.FolderUtils
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.util.TimeUtils.throttle
+import li.gkd.app.util.ToastUtils.toast
 
 class ShareLogState(
     private val scope: CoroutineScope,
@@ -47,17 +48,24 @@ class ShareLogState(
     private fun save(context: MainActivity) {
         dismiss()
         scope.launchUi {
-            val logZipFile = withContext(Dispatchers.IO) { FolderUtils.buildLogFile() }
-            context.saveFileToDownloads(logZipFile)
+            FolderUtils.withTemporaryZip(
+                create = { withContext(Dispatchers.IO) { FolderUtils.buildLogFile() } },
+                delete = FolderUtils::deleteSharedFile,
+            ) { logZipFile ->
+                context.saveFileToDownloads(logZipFile)
+            }
         }
     }
 
     private fun upload() {
         dismiss()
-        githubUpload.startTask(
+        val item = GithubUploadItem(
+            label = UiStrings.logs_title,
             getFile = { FolderUtils.buildLogFile() },
             showHref = { "http://i.gkd.li/log/${it.id}" },
+            releaseFile = FolderUtils::deleteSharedFile,
         )
+        if (!githubUpload.startTask(item)) toast(UiStrings.upload_busy)
     }
 
     @Composable
@@ -76,7 +84,7 @@ class ShareLogState(
                         .fillMaxWidth()
                         .padding(16.dp)
                     Text(
-                        text = UiStrings.action_share_to_apps,
+                        text = UiStrings.action_share,
                         modifier = Modifier
                             .clickable(onClick = throttle { share(context) })
                             .then(modifier),
