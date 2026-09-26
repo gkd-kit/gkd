@@ -28,7 +28,6 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,8 +43,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.launch
 import li.gkd.app.text.UiStrings
 import li.gkd.app.MainActivity
 import li.gkd.app.data.AppInfo
@@ -103,18 +100,11 @@ fun useAppListPage(): ScaffoldExt {
     val pageScrollState = rememberListScrollState()
     val scrollBehavior = pageScrollState.scrollBehavior
     val listState = pageScrollState.listState
-    LaunchedEffect(null) {
-        listOf(
-            PermissionStates.queryPackages.stateFlow,
-            vm.appInfosFlow,
-        ).forEach {
-            launch {
-                it.drop(1).collect {
-                    pageScrollState.resetScroll()
-                }
-            }
-        }
-    }
+    pageScrollState.ResetOnListChange(
+        appInfos,
+        key = { it.id },
+        leadingItemKey = if (state.canQueryPackages) null else 1,
+    )
     ResetPageScrollOnRequest(BottomNavItem.AppList, pageScrollState::resetScrollAndAwait)
     return ScaffoldExt(
         navItem = BottomNavItem.AppList,

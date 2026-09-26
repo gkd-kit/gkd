@@ -124,7 +124,7 @@ fun SubsAppListPage(route: SubsAppListRoute) {
     val pageScrollState = rememberListScrollState()
     val scrollBehavior = pageScrollState.scrollBehavior
     val listState = pageScrollState.listState
-    pageScrollState.ResetOnChange(apps.map { it.id })
+    pageScrollState.ResetOnListChange(apps, key = { it.id })
     var expanded by remember { mutableStateOf(false) }
 
     Scaffold(

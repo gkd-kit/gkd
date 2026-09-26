@@ -132,6 +132,7 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
                 AppSortOption.ByUsedTime -> named.sortedBy { visits.value?.get(it) ?: Int.MAX_VALUE }
             }
         }
+        scroll.ResetOnListChange(visibleIds, key = { it })
         val selectableTargets = visibleIds.filterTo(mutableSetOf()) { controls.getValue(it).canEnable }
         val selected = selection.selectedKeys intersect selectableTargets
         LaunchedEffect(selectableTargets) { selection.retain(selectableTargets) }

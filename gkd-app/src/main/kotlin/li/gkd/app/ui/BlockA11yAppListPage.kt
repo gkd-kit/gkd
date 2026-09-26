@@ -83,7 +83,7 @@ fun BlockA11yAppListPage() {
     val pageScrollState = rememberListScrollState(canScroll = { !editable })
     val scrollBehavior = pageScrollState.scrollBehavior
     val listState = pageScrollState.listState
-    pageScrollState.ResetOnChange(appInfos)
+    pageScrollState.ResetOnListChange(appInfos, key = { it.id })
     BackHandler(editable, vm.scope.launchUiAction {
         context.imeController.requestHide()
         if (vm.textChanged) {
