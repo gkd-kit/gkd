@@ -38,9 +38,6 @@ class A11yEventLog(
         @Insert
         suspend fun insert(objects: List<A11yEventLog>): List<Long>
 
-        @Query("DELETE FROM a11y_event_log")
-        suspend fun deleteAll()
-
         @Query("SELECT COUNT(*) FROM a11y_event_log")
         fun count(): Flow<Int>
 

@@ -509,7 +509,7 @@ private fun TriggerOverviewCard(
                 ), verticalAlignment = Alignment.CenterVertically
         ) {
             GkIcon(
-                imageVector = GkIcons.Equalizer,
+                imageVector = GkIcons.History,
                 modifier = Modifier
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer)

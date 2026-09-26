@@ -28,9 +28,6 @@ data class ActivityLog(
         @Insert
         suspend fun insert(vararg objects: ActivityLog): List<Long>
 
-        @Query("DELETE FROM activity_log")
-        suspend fun deleteAll()
-
         @Query("SELECT * FROM activity_log ORDER BY ctime DESC ")
         fun pagingSource(): PagingSource<Int, ActivityLog>
 

@@ -48,15 +48,6 @@ data class ActionLog(
         @Query("DELETE FROM action_log WHERE subs_id IN (:subsIds)")
         suspend fun deleteBySubsId(vararg subsIds: Long): Int
 
-        @Query("DELETE FROM action_log")
-        suspend fun deleteAll()
-
-        @Query("DELETE FROM action_log WHERE subs_id=:subsId")
-        suspend fun deleteSubsAll(subsId: Long)
-
-        @Query("DELETE FROM action_log WHERE app_id=:appId")
-        suspend fun deleteAppAll(appId: String)
-
         @Query("SELECT * FROM action_log ORDER BY id DESC LIMIT 1000")
         fun query(): Flow<List<ActionLog>>
 

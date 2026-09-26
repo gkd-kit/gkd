@@ -11,7 +11,4 @@ class A11yEventLogVm : BaseViewModel() {
         Pager(PagingConfig(pageSize = 100)) { Db.a11yEventLogDao.pagingSource() }
             .flow.cachedIn(scope)
 
-    suspend fun deleteAll() {
-        Db.a11yEventLogDao.deleteAll()
-    }
 }

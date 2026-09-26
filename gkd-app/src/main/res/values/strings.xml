@@ -55,7 +55,6 @@
     <string name="action_count_summary">%1$s/%2$s触发</string>
     <string name="action_delete">删除</string>
     <string name="action_copy">复制</string>
-    <string name="action_delete_logs">删除日志</string>
     <string name="action_delete_records">删除记录</string>
     <string name="action_disable">停用</string>
     <string name="action_disagree">不同意</string>
@@ -67,11 +66,10 @@
     <string name="action_got_it">知道了</string>
     <string name="action_ignore">忽略</string>
     <string name="action_install">安装</string>
-    <string name="action_log_delete_all_confirmation">确定删除所有触发记录?</string>
-    <string name="action_log_delete_app_confirmation">确定删除当前应用所有触发记录?</string>
-    <string name="action_log_delete_subscription_confirmation">确定删除当前订阅所有触发记录?</string>
+    <string name="action_log_activity_unknown">界面未记录</string>
     <string name="action_log_description">规则误触可定位关闭</string>
     <string name="action_log_open">打开触发记录页面</string>
+    <string name="action_log_open_app">查看应用</string>
     <string name="action_log_recent_prefix">"最近触发: "</string>
     <string name="action_log_title">触发记录</string>
     <string name="action_notice">操作提示</string>
@@ -106,7 +104,6 @@
     <string name="action_upload">上传</string>
     <string name="action_view">查看</string>
     <string name="activity_info_showing">界面信息显示中</string>
-    <string name="activity_log_delete_all_confirmation">确定删除所有界面日志?</string>
     <string name="activity_log_open">打开界面日志页面</string>
     <string name="activity_log_title">界面日志</string>
     <string name="activity_record_description">记录打开的应用及界面</string>
@@ -320,7 +317,6 @@
     <string name="error_label">异常</string>
     <string name="event_data">事件数据</string>
     <string name="event_details">事件详情</string>
-    <string name="event_log_delete_all_confirmation">确定删除所有事件日志?</string>
     <string name="event_log_title">事件日志</string>
     <string name="event_log_window_minimize">缩小事件日志窗口</string>
     <string name="event_log_window_restore">恢复事件日志窗口</string>

@@ -118,14 +118,6 @@ class ActionLogVm(
         selectedActionLogFlow.value = null
     }
 
-    suspend fun deleteLogs() {
-        when {
-            route.subsId != null -> Db.actionLogDao.deleteSubsAll(route.subsId)
-            route.appId != null -> Db.actionLogDao.deleteAppAll(route.appId)
-            else -> Db.actionLogDao.deleteAll()
-        }
-    }
-
     fun prepareSwitch(state: ActionLogDialogState): RuleSwitchRequest {
         val subscription = checkNotNull(state.subscription) { UiStrings.subscription_missing }
         val group = checkNotNull(state.group) { UiStrings.rule_missing }

@@ -11,7 +11,4 @@ class ActivityLogVm : BaseViewModel() {
         Db.activityLogDao.pagingSource()
     }
         .flow.cachedIn(scope)
-    suspend fun deleteAll() {
-        Db.activityLogDao.deleteAll()
-    }
 }

@@ -153,7 +153,7 @@ abstract class OverlayWindowService(
             Text(text = title, modifier = Modifier.weight(1f))
             if (onMinimizeRequest != null) {
                 GkIcon(
-                    imageVector = GkIcons.ExpandMore,
+                    imageVector = GkIcons.CollapseContent,
                     contentDescription = minimizeContentDescription,
                     modifier = Modifier
                         .clip(MaterialTheme.shapes.extraSmall)

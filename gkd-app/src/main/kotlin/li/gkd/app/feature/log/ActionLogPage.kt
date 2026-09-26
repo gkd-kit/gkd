@@ -1,72 +1,49 @@
 package li.gkd.app.feature.log
 
-import li.gkd.app.ui.component.GkPageBottomSpace
-import li.gkd.app.MainViewModel
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
-import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.paging.compose.itemKey
 import kotlinx.serialization.Serializable
-import li.gkd.app.text.UiStrings
-import li.gkd.app.data.date
+import li.gkd.app.MainViewModel
+import li.gkd.app.data.RawSubscription
 import li.gkd.app.data.showActivityId
 import li.gkd.app.domain.rule.RuleSetting
 import li.gkd.app.feature.subscription.SubsAppGroupListRoute
 import li.gkd.app.feature.subscription.SubsGlobalGroupListRoute
+import li.gkd.app.text.UiStrings
 import li.gkd.app.ui.AppConfigRoute
-import li.gkd.app.ui.share.ListPlaceholder
-import li.gkd.app.ui.share.launchUi
-import li.gkd.app.ui.share.noRippleClickable
-import li.gkd.app.ui.style.iconTextSize
-import li.gkd.app.ui.style.itemHorizontalPadding
-import li.gkd.app.ui.style.scaffoldPadding
-import li.gkd.app.util.ToastUtils.toast
-import li.gkd.app.util.TimeUtils.throttle
-import li.gkd.db.RuleGroupType
-import li.gkd.app.ui.component.GkAppNameText
-import li.gkd.app.ui.component.GkEmptyState
-import li.gkd.app.ui.component.GkFixedTimeText
+import li.gkd.app.ui.component.GkLogTimeline
+import li.gkd.app.ui.component.GkLogTimeText
+import li.gkd.app.ui.component.gkLogTimelineRail
 import li.gkd.app.ui.component.GkGroupNameText
 import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
-import li.gkd.app.data.RawSubscription
 import li.gkd.app.ui.component.GkRuleSettingsContent
 import li.gkd.app.ui.component.GkRuleSettingsSheet
 import li.gkd.app.ui.component.GkTopAppBar
@@ -75,6 +52,14 @@ import li.gkd.app.ui.component.animateListItem
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.component.useSubs
+import li.gkd.app.ui.share.launchUi
+import li.gkd.app.ui.share.noRippleClickable
+import li.gkd.app.ui.style.itemHorizontalPadding
+import li.gkd.app.ui.style.scaffoldPadding
+import li.gkd.app.util.TimeUtils.throttle
+import li.gkd.app.util.ToastUtils.toast
+import li.gkd.db.ActionLog
+import li.gkd.db.RuleGroupType
 
 @Serializable
 data class ActionLogRoute(
@@ -86,6 +71,7 @@ data class ActionLogRoute(
 fun ActionLogPage(route: ActionLogRoute) {
     val subsId = route.subsId
     val appId = route.appId
+    val appScoped = subsId == null && appId != null
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { ActionLogVm(route) }
     val dialogState by vm.dialogStateFlow.collectAsStateWithLifecycle()
@@ -130,67 +116,32 @@ fun ActionLogPage(route: ActionLogRoute) {
                         modifier = titleModifier,
                     )
                 }
-            },
-            actions = {
-                if (list.itemCount > 0) {
-                    GkIconButton(
-                        imageVector = GkIcons.Delete,
-                        onClick = throttle {
-                            val text = if (subsId != null) {
-                                UiStrings.action_log_delete_subscription_confirmation
-                            } else if (appId != null) {
-                                UiStrings.action_log_delete_app_confirmation
-                            } else {
-                                UiStrings.action_log_delete_all_confirmation
-                            }
-                            scope.launchUi {
-                                if (!mainVm.dialogRequests.confirm(
-                                    title = UiStrings.action_delete_records,
-                                    text = text,
-                                    error = true,
-                                )) return@launchUi
-                                vm.deleteLogs()
-                                toast(UiStrings.delete_success)
-                            }
-                        },
-                    )
-                }
             })
     }, content = { contentPadding ->
-        LazyColumn(
+        GkLogTimeline(
+            items = list,
+            listState = listState,
+            key = { it.actionLog.id },
+            appId = { it.actionLog.appId },
+            time = { it.actionLog.ctime },
             modifier = Modifier.scaffoldPadding(contentPadding),
-            state = listState,
-        ) {
-            items(
-                count = list.itemCount,
-                key = list.itemKey { item -> item.actionLog.id }
-            ) { i ->
-                val item = list[i]
-                if (item != null) {
-                    val lastItem = if (i > 0) list[i - 1] else null
-                    ActionLogCard(
-                        modifier = Modifier.animateListItem(),
-                        i = i,
-                        item = item,
-                        lastItem = lastItem,
-                        onClick = {
-                            vm.showActionLog(item.actionLog)
-                        },
-                        subsId = subsId,
-                        appId = appId,
-                        onOpenApp = {
-                            mainVm.navigatePage(AppConfigRoute(it))
-                        },
-                    )
-                }
-            }
-            item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                if (list.itemCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                    GkEmptyState(text = UiStrings.data_empty)
-                } else {
-                    GkPageBottomSpace()
-                }
-            }
+            showAppHeaders = !appScoped,
+            contextChanged = { previous, current ->
+                !sameActionLogContext(previous.actionLog, current.actionLog)
+            },
+            contextHeader = { item, previous ->
+                ActionLogContextHeader(
+                    item = item,
+                    previousLog = previous?.actionLog,
+                    includeSubscriptionName = subsId == null,
+                )
+            },
+        ) { entry ->
+            ActionLogEntry(
+                modifier = Modifier.animateListItem(),
+                item = entry,
+                onClick = { vm.showActionLog(entry.actionLog) },
+            )
         }
     })
 
@@ -198,6 +149,11 @@ fun ActionLogPage(route: ActionLogRoute) {
         ActionLogDialog(
             state = state,
             onDismissRequest = vm::dismissActionLog,
+            showAppContext = appId == null,
+            onOpenApp = {
+                vm.dismissActionLog()
+                mainVm.navigatePage(AppConfigRoute(state.actionLog.appId))
+            },
             onOpenRule = {
                 vm.dismissActionLog()
                 val actionLog = state.actionLog
@@ -230,150 +186,148 @@ fun ActionLogPage(route: ActionLogRoute) {
 }
 
 
+private fun sameActionLogContext(first: ActionLog, second: ActionLog): Boolean =
+    first.activityId == second.activityId &&
+        first.subsId == second.subsId &&
+        first.subsVersion == second.subsVersion
+
 @Composable
-private fun ActionLogCard(
-    modifier: Modifier = Modifier,
-    i: Int,
+private fun ActionLogContextHeader(
     item: ActionLogListItem,
-    lastItem: ActionLogListItem?,
-    onClick: () -> Unit,
-    onOpenApp: (String) -> Unit,
-    subsId: Long?,
-    appId: String?,
+    previousLog: ActionLog?,
+    includeSubscriptionName: Boolean,
 ) {
-    val (actionLog, group, rule, subscription) = item
-    val lastActionLog = lastItem?.actionLog
-    val isDiffApp = actionLog.appId != lastActionLog?.appId
-    val verticalPadding = if (i == 0) 0.dp else if (isDiffApp) 12.dp else 8.dp
-    val indicatorOffset = if (appId == null) 2.dp else 0.dp
-    val indicatorColor = MaterialTheme.colorScheme.primaryContainer
+    val activityChanged = previousLog == null || previousLog.activityId != item.actionLog.activityId
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .gkLogTimelineRail(MaterialTheme.colorScheme.outlineVariant)
+            .padding(start = 20.dp, end = itemHorizontalPadding,
+                top = if (previousLog == null) 4.dp else 8.dp, bottom = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surface),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (activityChanged) {
+                GkIcon(
+                    imageVector = GkIcons.Layers,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                    contentDescription = null,
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                )
+            }
+        }
+        ActionLogContextText(
+            item = item,
+            showActivity = activityChanged,
+            showSubscriptionLine = previousLog == null ||
+                previousLog.subsId != item.actionLog.subsId ||
+                previousLog.subsVersion != item.actionLog.subsVersion,
+            includeSubscriptionName = includeSubscriptionName,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun ActionLogContextText(
+    item: ActionLogListItem,
+    showActivity: Boolean,
+    showSubscriptionLine: Boolean,
+    includeSubscriptionName: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val actionLog = item.actionLog
     Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        if (showActivity) {
+            Text(
+                text = actionLog.showActivityId ?: UiStrings.action_log_activity_unknown,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.MiddleEllipsis,
+            )
+        }
+        if (showSubscriptionLine) {
+            Text(
+                text = if (includeSubscriptionName) {
+                    listOf(
+                        item.subscription?.name ?: UiStrings.subscription_id_description(actionLog.subsId),
+                        UiStrings.version_prefixed(actionLog.subsVersion),
+                    ).joinToString(" · ")
+                } else {
+                    UiStrings.version_prefixed(actionLog.subsVersion)
+                },
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.tertiary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActionLogEntry(
+    modifier: Modifier = Modifier,
+    item: ActionLogListItem,
+    onClick: () -> Unit,
+) {
+    val (actionLog, group, rule) = item
+    val ruleName = rule?.name?.takeIf { it.isNotBlank() } ?: if ((group?.rules?.size ?: 0) > 1) {
+        val key = actionLog.ruleKey?.let { UiStrings.rule_key_prefix(it) } ?: ""
+        UiStrings.rule_index_description(key, actionLog.ruleIndex)
+    } else {
+        null
+    }
+    Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(
-                start = itemHorizontalPadding / 2,
-                end = itemHorizontalPadding / 2,
-                top = verticalPadding
-            )
+            .gkLogTimelineRail(MaterialTheme.colorScheme.outlineVariant)
+            .clickable(onClick = onClick)
+            .padding(start = 56.dp, end = itemHorizontalPadding, top = 6.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Top,
     ) {
-        if (isDiffApp && appId == null) {
-            Row(
-                modifier = Modifier
-                    .padding(start = itemHorizontalPadding / 4)
-                    .clip(MaterialTheme.shapes.extraSmall)
-                    .clickable(onClick = throttle { onOpenApp(actionLog.appId) })
-                    .fillMaxWidth()
-                    .padding(start = 5.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.primary) {
-                    Spacer(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.secondary)
-                            .size(4.dp)
-                    )
-                    GkAppNameText(appId = actionLog.appId, modifier = Modifier.weight(1f))
-                    GkIcon(
-                        imageVector = GkIcons.KeyboardArrowRight,
-                        modifier = Modifier
-                            .iconTextSize()
-                    )
-                }
-            }
-        }
-        Row(
-            modifier = Modifier
-                .padding(start = itemHorizontalPadding / 4)
-                .clickable(onClick = onClick)
-                .fillMaxWidth()
-                .padding(start = itemHorizontalPadding / 4)
-                .drawBehind {
-                    drawRect(
-                        color = indicatorColor,
-                        topLeft = Offset(indicatorOffset.toPx(), 0f),
-                        size = Size(2.dp.toPx(), size.height),
-                    )
-                }
-                .padding(start = indicatorOffset + 10.dp)
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                GkFixedTimeText(
-                    text = actionLog.date,
+            GkGroupNameText(
+                isGlobal = actionLog.groupType == RuleGroupType.Global,
+                text = group?.name ?: UiStrings.rule_missing,
+                color = if (group == null) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (ruleName != null) {
+                Text(
+                    text = ruleName,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyMedium) {
-                    val showActivityId = actionLog.showActivityId
-                    if (showActivityId != null) {
-                        Text(
-                            text = showActivityId,
-                            softWrap = false,
-                            maxLines = 1,
-                            overflow = TextOverflow.MiddleEllipsis,
-                        )
-                    } else {
-                        Text(
-                            text = UiStrings.value_null,
-                            color = LocalContentColor.current.copy(alpha = 0.5f),
-                        )
-                    }
-                    if (subsId == null) {
-                        Row {
-                            Text(text = subscription?.name ?: UiStrings.subscription_id_description(actionLog.subsId))
-                            val lineHeightDp = LocalDensity.current.run {
-                                LocalTextStyle.current.lineHeight.toDp()
-                            }
-                            Row(
-                                modifier = Modifier
-                                    .height(lineHeightDp)
-                                    .padding(start = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = UiStrings.version_prefixed(actionLog.subsVersion),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.tertiary,
-                                    modifier = Modifier
-                                        .clip(MaterialTheme.shapes.extraSmall)
-                                        .background(MaterialTheme.colorScheme.tertiaryContainer)
-                                        .padding(horizontal = 2.dp),
-                                )
-                            }
-                        }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        val groupDesc = group?.name.toString()
-                        val textColor = LocalContentColor.current.let {
-                            if (group?.name == null) it.copy(alpha = 0.5f) else it
-                        }
-                        GkGroupNameText(
-                            isGlobal = actionLog.groupType == RuleGroupType.Global,
-                            text = groupDesc,
-                            color = textColor,
-                        )
-                        val ruleDesc = rule?.name ?: (if ((group?.rules?.size ?: 0) > 1) {
-                            val keyDesc = actionLog.ruleKey?.let { UiStrings.rule_key_prefix(it) } ?: ""
-                            UiStrings.rule_index_description(keyDesc, actionLog.ruleIndex)
-                        } else {
-                            null
-                        })
-                        if (ruleDesc != null) {
-                            Text(
-                                text = ruleDesc,
-                                modifier = Modifier.padding(start = 8.dp),
-                                color = LocalContentColor.current.copy(alpha = 0.8f),
-                            )
-                        }
-                    }
-                }
             }
         }
+        GkLogTimeText(actionLog.ctime)
     }
 }
 
@@ -381,6 +335,8 @@ private fun ActionLogCard(
 private fun ActionLogDialog(
     state: ActionLogDialogState,
     onDismissRequest: () -> Unit,
+    showAppContext: Boolean,
+    onOpenApp: () -> Unit,
     onOpenRule: () -> Unit,
     onSettingChange: (RuleSetting) -> Unit,
     onToggleActivityExclusion: () -> Unit,
@@ -390,7 +346,7 @@ private fun ActionLogDialog(
     val environment = rememberRuleControlEnvironment()
     GkRuleSettingsSheet(
         title = state.group?.name ?: UiStrings.rule_actions,
-        subtitle = environment.apps[actionLog.appId]?.name ?: actionLog.appId,
+        subtitle = if (showAppContext) environment.apps[actionLog.appId]?.name ?: actionLog.appId else null,
         onDismissRequest = onDismissRequest,
     ) {
         if (state.subscription != null && state.group != null) {
@@ -403,6 +359,9 @@ private fun ActionLogDialog(
             shape = MaterialTheme.shapes.large,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
+            if (showAppContext) {
+                ItemText(text = UiStrings.action_log_open_app, onClick = onOpenApp)
+            }
             ItemText(text = UiStrings.rule_view, onClick = onOpenRule)
             if (actionLog.activityId != null) {
                 ItemText(
@@ -415,7 +374,7 @@ private fun ActionLogDialog(
 }
 
 @Composable
-fun ItemText(
+private fun ItemText(
     text: String,
     color: Color = Color.Unspecified,
     onClick: () -> Unit

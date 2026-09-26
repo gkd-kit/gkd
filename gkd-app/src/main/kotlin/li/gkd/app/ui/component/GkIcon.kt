@@ -36,7 +36,6 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Equalizer
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Info
@@ -48,6 +47,7 @@ import androidx.compose.material.icons.outlined.BrightnessAuto
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.RocketLaunch
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.outlined.Title
@@ -153,6 +153,9 @@ object GkIcons {
     val FlashOff get() = li.gkd.app.ui.icon.FlashOff
     val Block get() = Icons.Default.Block
     val History get() = Icons.Default.History
+    val Schedule get() = Icons.Outlined.Schedule
+    val CollapseContent get() = li.gkd.app.ui.icon.CollapseContent
+    val ExpandContent get() = li.gkd.app.ui.icon.ExpandContent
     val Sort get() = Icons.AutoMirrored.Filled.Sort
     val Add get() = Icons.Outlined.Add
     val KeyboardArrowRight get() = Icons.AutoMirrored.Filled.KeyboardArrowRight
@@ -193,7 +196,6 @@ object GkIcons {
     val Memory get() = Icons.Default.Memory
     val Notifications get() = Icons.Outlined.Notifications
     val Layers get() = Icons.Outlined.Layers
-    val Equalizer get() = Icons.Outlined.Equalizer
     val Lock get() = Icons.Outlined.Lock
     val Title get() = Icons.Outlined.Title
     val TextFields get() = Icons.Outlined.TextFields

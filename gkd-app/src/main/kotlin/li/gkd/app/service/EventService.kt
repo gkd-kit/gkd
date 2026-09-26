@@ -51,7 +51,7 @@ import li.gkd.app.data.toA11yEventLog
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.uiAutomationFlow
-import li.gkd.app.feature.log.EventLogCard
+import li.gkd.app.ui.component.GkEventLogOverlayCard
 import li.gkd.app.util.IntentUtils
 import li.gkd.app.util.launchLogged
 import li.gkd.db.Db
@@ -77,7 +77,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
         if (minimized) {
             val alpha = 0.75f
             GkIcon(
-                imageVector = GkIcons.UnfoldMore,
+                imageVector = GkIcons.ExpandContent,
                 contentDescription = UiStrings.event_log_window_restore,
                 modifier = Modifier
                     .clip(MaterialTheme.shapes.small)
@@ -88,7 +88,8 @@ class EventService : OverlayWindowService(positionKey = "event") {
                             true
                         }
                     }
-                    .size(40.dp),
+                    .size(40.dp)
+                    .padding(8.dp),
                 tint = MaterialTheme.colorScheme.primary.copy(alpha = alpha),
             )
         } else {
@@ -129,7 +130,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
                                 verticalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
                                 items(eventLogs, { it.id }) {
-                                    EventLogCard(
+                                    GkEventLogOverlayCard(
                                         eventLog = it,
                                         modifier = Modifier.padding(horizontal = 2.dp)
                                     )
