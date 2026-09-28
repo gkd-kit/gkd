@@ -25,6 +25,7 @@ import li.gkd.app.MainActivity
 import li.gkd.app.META
 import li.gkd.app.data.subscription.SubscriptionState
 import li.gkd.app.notif.replaceNotificationTemplate
+import li.gkd.app.permission.PermissionStates
 import li.gkd.app.store.AppStore.actionCountFlow
 import li.gkd.app.ui.share.statusText
 import li.gkd.app.priv.privilegeContextFlow
@@ -54,6 +55,7 @@ fun useSettingsPage(): ScaffoldExt {
     val context = LocalActivity.current as MainActivity
     val vm = viewModel<SettingsVm>()
     val privilegeAvailable = privilegeContextFlow.collectAsStateWithLifecycle().value != null
+    val writeSecureSettings by PermissionStates.writeSecureSettings.stateFlow.collectAsStateWithLifecycle()
     val store by storeFlow.collectAsStateWithLifecycle()
     val actionScope = vm.scope
     var showBackupDialog by rememberSaveable { mutableStateOf(false) }
@@ -235,6 +237,14 @@ fun useSettingsPage(): ScaffoldExt {
             GkSettingItem(title = UiStrings.advanced_settings, onClick = {
                 mainVm.navigatePage(AdvancedPageRoute)
             })
+            if (writeSecureSettings) {
+                GkTextSwitch(
+                    title = UiStrings.boot_heal_switch,
+                    subtitle = UiStrings.boot_heal_description,
+                    checked = store.enableBootHeal,
+                    onCheckedChange = { vm.setEnableBootHeal(it) },
+                )
+            }
             GkSettingItem(title = UiStrings.backup_restore, onClick = {
                 showBackupDialog = true
             })

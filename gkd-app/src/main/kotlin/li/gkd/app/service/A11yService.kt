@@ -2,6 +2,7 @@ package li.gkd.app.service
 
 import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.Bitmap
 import android.view.Display
 import android.view.WindowManager
@@ -98,7 +99,6 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
     }
 
     private var destroyed = false
-    private var connected = false
 
     val wm by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
 
@@ -118,7 +118,7 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
             StatusService.autoStart()
             scope.launch {
                 delay(3000)
-                if (!(destroyed || connected)) {
+                if (!(destroyed || connected.value)) {
                     toast(UiStrings.a11y_start_timeout, forced = true)
                 }
             }
@@ -129,6 +129,7 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
                 instance = null
             }
             isRunning.value = false
+            connected.value = false
             releaseKeepAliveOverlayAfterHandoff()
             if (tempShutdownFlag) {
                 toast(UiStrings.a11y_partially_disabled)
@@ -183,11 +184,19 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
         LogUtils.d("onA11yConnected -> ${this::class.simpleName}")
         instance = this
         attachKeepAliveOverlay()
-        connected = true
+        connected.value = true
         toast(UiStrings.a11y_started)
         if (currentAppUseA11y) {
             A11yRuntime.onA11yConnected(this)
         }
+    }
+
+    override fun onUnbind(intent: Intent?): Boolean {
+        // 系统主动解绑时 settings 中的 enabled 状态会被保留, 只有立刻尝试重新绑定才能避免"假在线"
+        LogUtils.d("onA11yUnbind -> ${this::class.simpleName}")
+        connected.value = false
+        A11yHealService.onA11yUnbound()
+        return super.onUnbind(intent)
     }
 
     override fun onDestroy() {
@@ -198,6 +207,10 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
     companion object {
         val a11yCn by lazy { SelectToSpeakService::class.componentName }
         val isRunning: StateFlow<Boolean>
+            field = MutableStateFlow(false)
+
+        /** 系统是否真的回调过 [onServiceConnected]; 与 [isRunning] 不同, 它不依赖进程存活且可被外部观测 */
+        val connected: StateFlow<Boolean>
             field = MutableStateFlow(false)
 
         @Volatile

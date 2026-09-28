@@ -221,6 +221,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.service)
+    implementation(libs.androidx.work.runtime.ktx)
 
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)

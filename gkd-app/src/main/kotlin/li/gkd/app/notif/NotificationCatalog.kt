@@ -32,6 +32,7 @@ enum class PostedNotificationKey(
     val channel: AppNotificationChannel,
 ) {
     SnapshotSaved(id = 105, channel = AppNotificationChannel.Snapshot),
+    A11yRecoveryFailed(id = 109, channel = AppNotificationChannel.Service),
 }
 
 sealed interface AppNotificationSpec {
@@ -164,5 +165,13 @@ object NotificationCatalog {
         title = UiStrings.track_overlay_enabled,
         uri = "gkd://page?tab=3",
         stopService = TrackService::class,
+    )
+
+    /** 开机自愈全部失败后的兜底提示 */
+    fun a11yRecoveryFailed() = PostedNotification(
+        key = PostedNotificationKey.A11yRecoveryFailed,
+        title = UiStrings.a11y_fault,
+        text = UiStrings.boot_heal_recovery_failed,
+        uri = "gkd://page/1",
     )
 }

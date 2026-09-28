@@ -30,6 +30,8 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.Serializable
 import li.gkd.app.a11y.initA11yFeat
 import li.gkd.app.data.CrashData
@@ -42,6 +44,7 @@ import li.gkd.app.platform.lifecycle.RuntimeStateSynchronizer
 import li.gkd.app.priv.PrivilegeOwnerLifecycle
 import li.gkd.app.priv.gkdPrivilegeUiConfig
 import li.gkd.app.priv.initPrivilege
+import li.gkd.app.service.A11yHealService
 import li.gkd.app.service.ExposeService
 import li.gkd.app.service.clearHttpSubs
 import li.gkd.app.service.initA11yWhiteAppList
@@ -65,6 +68,10 @@ val appScope by lazy { MainScope() }
 private lateinit var innerApp: App
 val app: App
     get() = innerApp
+
+/** Application 级初始化是否完成; 后台任务需据此避免读到尚未加载的持久化设置 */
+val appReady: StateFlow<Boolean>
+    field = MutableStateFlow(false)
 
 private val applicationInfo by lazy {
     app.packageManager.getApplicationInfo(
@@ -227,6 +234,7 @@ class App : Application() {
         LogUtils.d()
         installCrashHandler()
         initializeRuntimeComponents()
+        appReady.value = true
     }
 
     private fun installCrashHandler() {
@@ -279,6 +287,7 @@ class App : Application() {
         }
         initA11yWhiteAppList()
         clearHttpSubs()
+        A11yHealService.startPatrol()
         RuntimeStateSynchronizer.requestSync()
     }
 }

@@ -39,6 +39,10 @@ class SettingsVm : BaseViewModel() {
         AppStore.updateSettings { it.copy(excludeFromRecents = enabled) }
     }
 
+    fun setEnableBootHeal(enabled: Boolean) {
+        AppStore.updateSettings { it.copy(enableBootHeal = enabled) }
+    }
+
     fun setBlockA11yAppListEnabled(enabled: Boolean) {
         AppStore.updateSettings { it.copy(enableBlockA11yAppList = enabled) }
         if (!enabled) {

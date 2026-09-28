@@ -194,6 +194,9 @@
     <string name="backup_share">分享备份文件</string>
     <string name="backup_unknown_rule_config_type">备份中存在未知的规则配置类型</string>
     <string name="backup_version_unsupported">不支持的备份版本: %1$s，请升级应用后重试</string>
+    <string name="boot_heal_description">开机后检测无障碍服务是否真正连接，未连接时自动重写系统设置以触发重新绑定</string>
+    <string name="boot_heal_recovery_failed">开机后无障碍服务未能正常启动，请手动重新开启无障碍，或连接 Shizuku/root 后重试</string>
+    <string name="boot_heal_switch">开机检测并自愈无障碍</string>
     <string name="battery_optimization_settings_open">打开忽略电池优化设置页面</string>
     <string name="battery_strategy_unrestricted">省电策略无限制</string>
     <string name="beta_channel_warning">测试版本渠道更新快\n但不稳定可能存在较多BUG\n请谨慎使用</string>
