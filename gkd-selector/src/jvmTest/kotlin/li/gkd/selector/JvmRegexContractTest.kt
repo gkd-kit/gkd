@@ -1,11 +1,11 @@
 package li.gkd.selector
 
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.measureTime
 import kotlin.test.Test
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.measureTime
 
 class JvmRegexContractTest {
     @Test

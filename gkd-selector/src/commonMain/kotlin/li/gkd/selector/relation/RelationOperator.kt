@@ -1,8 +1,8 @@
 package li.gkd.selector.relation
 
 import li.gkd.selector.MatchContext
-import li.gkd.selector.SelectorRelationKind
 import li.gkd.selector.NodeAdapter
+import li.gkd.selector.SelectorRelationKind
 import li.gkd.selector.TraversalCandidate
 
 internal sealed class RelationOperator(
@@ -45,7 +45,9 @@ internal sealed class RelationOperator(
         SelectorRelationKind.BeforeSibling,
     ) {
         override fun <T : Any> traversal(
-            context: MatchContext<T>, adapter: NodeAdapter<T>, relationExpression: RelationExpression
+            context: MatchContext<T>,
+            adapter: NodeAdapter<T>,
+            relationExpression: RelationExpression
         ) = adapter.traversePreviousSiblings(context.current, relationExpression)
 
     }
@@ -58,7 +60,9 @@ internal sealed class RelationOperator(
         SelectorRelationKind.AfterSibling,
     ) {
         override fun <T : Any> traversal(
-            context: MatchContext<T>, adapter: NodeAdapter<T>, relationExpression: RelationExpression
+            context: MatchContext<T>,
+            adapter: NodeAdapter<T>,
+            relationExpression: RelationExpression
         ) = adapter.traverseFollowingSiblings(context.current, relationExpression)
     }
 
@@ -70,7 +74,9 @@ internal sealed class RelationOperator(
         SelectorRelationKind.Ancestor,
     ) {
         override fun <T : Any> traversal(
-            context: MatchContext<T>, adapter: NodeAdapter<T>, relationExpression: RelationExpression
+            context: MatchContext<T>,
+            adapter: NodeAdapter<T>,
+            relationExpression: RelationExpression
         ) = adapter.traverseAncestors(context.current, relationExpression)
 
     }
@@ -83,7 +89,9 @@ internal sealed class RelationOperator(
         SelectorRelationKind.Child,
     ) {
         override fun <T : Any> traversal(
-            context: MatchContext<T>, adapter: NodeAdapter<T>, relationExpression: RelationExpression
+            context: MatchContext<T>,
+            adapter: NodeAdapter<T>,
+            relationExpression: RelationExpression
         ) = adapter.traverseChildren(context.current, relationExpression)
     }
 
@@ -95,7 +103,9 @@ internal sealed class RelationOperator(
         SelectorRelationKind.Descendant,
     ) {
         override fun <T : Any> traversal(
-            context: MatchContext<T>, adapter: NodeAdapter<T>, relationExpression: RelationExpression
+            context: MatchContext<T>,
+            adapter: NodeAdapter<T>,
+            relationExpression: RelationExpression
         ) = adapter.traverseDescendants(context.current, relationExpression)
     }
 
@@ -108,7 +118,9 @@ internal sealed class RelationOperator(
         SelectorRelationKind.Previous,
     ) {
         override fun <T : Any> traversal(
-            context: MatchContext<T>, adapter: NodeAdapter<T>, relationExpression: RelationExpression
+            context: MatchContext<T>,
+            adapter: NodeAdapter<T>,
+            relationExpression: RelationExpression
         ) = sequence {
             var prev = context.getPrev(relationExpression.minOffset)
             var offset = relationExpression.minOffset

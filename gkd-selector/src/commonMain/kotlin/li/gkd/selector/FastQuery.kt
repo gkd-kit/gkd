@@ -11,7 +11,8 @@ public sealed class FastQuery(
 ) {
     internal abstract val attributeName: String
 
-    internal open fun acceptValue(candidate: Any?): Boolean = comparePrimitiveValue(candidate, value)
+    internal open fun acceptValue(candidate: Any?): Boolean =
+        comparePrimitiveValue(candidate, value)
 
     public data class Id(override val value: String) : FastQuery(value) {
         override val attributeName: String

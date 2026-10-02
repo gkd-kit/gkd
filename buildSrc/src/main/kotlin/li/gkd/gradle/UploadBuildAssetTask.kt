@@ -55,7 +55,7 @@ private const val GITHUB_REFERER = "https://github.com/gkd-kit/inspect/issues/46
 private const val GITHUB_ORIGIN = "https://github.com"
 private const val GITHUB_USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-        "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0"
+            "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0"
 private const val GITHUB_POLICIES_URL = "https://github.com/upload/policies/assets"
 private const val GITHUB_GRAPHQL_URL = "https://github.com/_graphql"
 private const val GITHUB_ISSUE_ID = "I_kwDOJ3SWBc6viUWN"
@@ -407,9 +407,9 @@ abstract class UploadBuildAssetTask : DefaultTask() {
             if (
                 gitMetadata != null &&
                 (
-                    existingBuildAsset.commitId != gitMetadata.commitId ||
-                        existingBuildAsset.tag != gitMetadata.tag
-                )
+                        existingBuildAsset.commitId != gitMetadata.commitId ||
+                                existingBuildAsset.tag != gitMetadata.tag
+                        )
             ) {
                 runBlocking {
                     BuildAssetApiClient(authToken).use { apiClient ->
@@ -422,13 +422,13 @@ abstract class UploadBuildAssetTask : DefaultTask() {
                 }
                 logger.lifecycle(
                     "Build asset Git metadata updated: $resolvedBuildKey -> " +
-                        "${existingBuildAsset.assetId}",
+                            "${existingBuildAsset.assetId}",
                 )
                 return
             }
             logger.lifecycle(
                 "Build asset already exists: $resolvedBuildKey -> " +
-                    "${existingBuildAsset.assetId}",
+                        "${existingBuildAsset.assetId}",
             )
             return
         }
@@ -446,7 +446,7 @@ abstract class UploadBuildAssetTask : DefaultTask() {
         createBuildArchive(mapping, sourcePaths, zipFile)
         logger.lifecycle(
             "Uploading build archive for $resolvedBuildKey as $GITHUB_UPLOAD_FILE_NAME " +
-                "(${zipFile.length()} bytes)",
+                    "(${zipFile.length()} bytes)",
         )
         val assetId = runBlocking {
             val uploadedAssetId = GithubAssetUploader(cookie).use { uploader ->
@@ -604,7 +604,7 @@ private fun Map<*, *>.requiredPositiveInt(key: String): Int {
     val value = number.toLong()
     require(
         number.toDouble() == value.toDouble() &&
-            value in 1..Int.MAX_VALUE.toLong(),
+                value in 1..Int.MAX_VALUE.toLong(),
     ) {
         "JSON integer must be a positive 32-bit value: $key"
     }

@@ -165,7 +165,8 @@ class SelectorSyntaxTest {
         )
 
         sources.forEach { source ->
-            val compileResult = assertIs<SelectorCompileResult.Failure>(Selector.compile(source), source)
+            val compileResult =
+                assertIs<SelectorCompileResult.Failure>(Selector.compile(source), source)
             val parseResult = assertIs<SelectorParseResult.Failure>(Selector.parse(source), source)
             assertEquals(compileResult.error.index, parseResult.error.index, source)
             assertEquals(source.length, parseResult.tokens.sumOf { it.end - it.start }, source)
@@ -234,11 +235,13 @@ class SelectorSyntaxTest {
         )
 
         cases.forEach { case ->
-            val failure = assertIs<SelectorCompileResult.Failure>(Selector.compile(case.source), case.source)
+            val failure =
+                assertIs<SelectorCompileResult.Failure>(Selector.compile(case.source), case.source)
             assertEquals(case.expected, failure.error.expected, case.source)
             assertEquals(SourceRange(case.start, case.end), failure.error.range, case.source)
 
-            val invalid = Selector.tokenize(case.source).first { it.kind == SelectorTokenKind.Invalid }
+            val invalid =
+                Selector.tokenize(case.source).first { it.kind == SelectorTokenKind.Invalid }
             assertEquals(case.source.indexOf('\''), invalid.start, case.source)
             assertEquals(case.end, invalid.end, case.source)
         }
@@ -261,7 +264,8 @@ class SelectorSyntaxTest {
         )
 
         cases.forEach { case ->
-            val failure = assertIs<SelectorCompileResult.Failure>(Selector.compile(case.source), case.source)
+            val failure =
+                assertIs<SelectorCompileResult.Failure>(Selector.compile(case.source), case.source)
             assertEquals(case.expected, failure.error.expected, case.source)
             assertEquals(SourceRange(case.start, case.end), failure.error.range, case.source)
         }
@@ -384,7 +388,11 @@ class SelectorSyntaxTest {
             val parsed = assertIs<SelectorParseResult.Success>(Selector.parse(source), source)
             assertEquals(canonical, parsed.value.toString(), source)
             assertEquals(canonical, Selector.compile(canonical).value.toString(), source)
-            assertEquals(source, parsed.tokens.joinToString("") { source.substring(it.start, it.end) }, source)
+            assertEquals(
+                source,
+                parsed.tokens.joinToString("") { source.substring(it.start, it.end) },
+                source
+            )
             parsed.tokens.asList().zipWithNext().forEach { (left, right) ->
                 assertEquals(left.end, right.start, source)
             }
@@ -396,7 +404,10 @@ class SelectorSyntaxTest {
             }
             parsed.positions.forEach { position ->
                 assertTrue(position.start >= 0, "$source: $position")
-                assertTrue(position.end in (position.start + 1)..source.length, "$source: $position")
+                assertTrue(
+                    position.end in (position.start + 1)..source.length,
+                    "$source: $position"
+                )
                 assertTrue(position.start in tokenBoundaries, "$source: $position")
                 assertTrue(position.end in tokenBoundaries, "$source: $position")
             }

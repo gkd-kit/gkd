@@ -148,7 +148,7 @@ private class SimpleRegex private constructor(
             if (
                 value.any { character ->
                     character.isSurrogateCodeUnit ||
-                        character.hasCase && !character.isAsciiLetter
+                            character.hasCase && !character.isAsciiLetter
                 }
             ) {
                 return null

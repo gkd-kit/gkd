@@ -65,6 +65,13 @@ GKD **默认不提供规则**，需自行添加本地规则，或者通过订阅
 
 </details>
 
+## 开发
+
+- [应用架构与依赖](docs/architecture.md)
+- [Desktop 启动与调试](gkd-app/README.md)
+- [本地数据与产物](docs/local-development.md)
+- [开发约束](AGENTS.md)
+
 ## 衍生
 
 开发过程中的衍生项目，它们正在被 gkd 使用，也许对你有帮助
@@ -74,6 +81,8 @@ GKD **默认不提供规则**，需自行添加本地规则，或者通过订阅
 - [android-api-diff](https://github.com/android-cs/android-api-diff)
 - [remap](https://github.com/lisonge/remap)
 - [priv-kit](https://github.com/priv-kit/priv-kit)
+- [morph-compose](https://github.com/lisonge/morph-compose)
+- [compose-webview2](https://github.com/lisonge/compose-webview2)
 
 ## 捐赠
 

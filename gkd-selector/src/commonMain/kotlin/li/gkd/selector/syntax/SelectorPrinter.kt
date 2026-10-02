@@ -1,9 +1,5 @@
 package li.gkd.selector.syntax
 
-import li.gkd.selector.relation.RelationExpression
-import li.gkd.selector.relation.RelationSelector
-import li.gkd.selector.relation.PolynomialExpression
-import li.gkd.selector.relation.TupleExpression
 import li.gkd.selector.engine.LogicalSelectorExpression
 import li.gkd.selector.engine.NotSelectorExpression
 import li.gkd.selector.engine.SelectorExpression
@@ -14,6 +10,10 @@ import li.gkd.selector.property.NotExpression
 import li.gkd.selector.property.PropertyExpression
 import li.gkd.selector.property.PropertySelector
 import li.gkd.selector.property.ValueExpression
+import li.gkd.selector.relation.PolynomialExpression
+import li.gkd.selector.relation.RelationExpression
+import li.gkd.selector.relation.RelationSelector
+import li.gkd.selector.relation.TupleExpression
 
 internal object SelectorPrinter {
     private sealed interface Action
@@ -42,7 +42,8 @@ internal object SelectorPrinter {
 
     fun render(expression: SelectorExpression): String = render(SelectorAction(expression))
 
-    fun render(expression: PropertyExpression): String = render(PropertyExpressionAction(expression))
+    fun render(expression: PropertyExpression): String =
+        render(PropertyExpressionAction(expression))
 
     fun render(expression: ValueExpression): String = render(ValueAction(expression))
 
@@ -280,6 +281,7 @@ private fun escapeString(value: String, wrapChar: Char = '"'): String {
                 in 0x10..0x1f -> result.append("\\x" + char.code.toString(16))
                 in 0xd800..0xdfff ->
                     result.append("\\u" + char.code.toString(16).padStart(4, '0'))
+
                 else -> result.append(char)
             }
         }

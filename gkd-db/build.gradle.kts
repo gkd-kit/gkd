@@ -1,5 +1,3 @@
-import org.gradle.api.tasks.testing.Test
-
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
@@ -15,26 +13,19 @@ kotlin {
     jvm()
 
     sourceSets {
-        commonMain {
-            dependencies {
-                implementation(libs.kotlin.stdlib)
-                api(libs.androidx.room.runtime)
-                api(libs.androidx.room.paging)
-                api(libs.kotlinx.serialization.core)
-                implementation(libs.kotlinx.serialization.json)
-            }
+        commonMain.dependencies {
+            api(libs.androidx.room.runtime)
+            api(libs.androidx.room.paging)
+            api(libs.kotlinx.serialization.core)
+            implementation(libs.kotlinx.serialization.json)
         }
-        androidMain {
-            dependencies {
-                implementation(libs.androidx.sqlite.framework)
-            }
+        androidMain.dependencies {
+            implementation(libs.androidx.sqlite.framework)
         }
-        jvmTest {
-            dependencies {
-                implementation(libs.androidx.room.testing)
-                implementation(libs.androidx.sqlite.bundled)
-                implementation(libs.kotlin.test)
-            }
+        jvmMain.dependencies { implementation(libs.androidx.sqlite.bundled) }
+        jvmTest.dependencies {
+            implementation(libs.androidx.room.testing)
+            implementation(libs.kotlin.test)
         }
     }
 }

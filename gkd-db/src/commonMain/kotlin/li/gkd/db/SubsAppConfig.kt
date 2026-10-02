@@ -4,12 +4,12 @@ import androidx.room3.ColumnInfo
 import androidx.room3.Dao
 import androidx.room3.Delete
 import androidx.room3.Entity
+import androidx.room3.ForeignKey
 import androidx.room3.Insert
 import androidx.room3.OnConflictStrategy
-import androidx.room3.ForeignKey
-import androidx.room3.Upsert
 import androidx.room3.Query
 import androidx.room3.Update
+import androidx.room3.Upsert
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 
@@ -39,12 +39,6 @@ data class SubsAppConfig(
 
         @Upsert
         suspend fun upsert(vararg users: SubsAppConfig)
-
-        @Query("SELECT * FROM subs_app_config WHERE subs_id=:subsId")
-        fun queryAppTypeConfig(subsId: Long): Flow<List<SubsAppConfig>>
-
-        @Query("SELECT * FROM subs_app_config WHERE app_id=:appId AND subs_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)")
-        fun queryAppUsedList(appId: String): Flow<List<SubsAppConfig>>
 
         @Query("SELECT * FROM subs_app_config WHERE subs_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)")
         fun queryUsedList(): Flow<List<SubsAppConfig>>

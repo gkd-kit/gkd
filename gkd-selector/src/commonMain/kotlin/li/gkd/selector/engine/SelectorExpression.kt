@@ -1,8 +1,8 @@
 package li.gkd.selector.engine
 
 import li.gkd.selector.LogicalOperator
-import li.gkd.selector.relation.RelationSelector
 import li.gkd.selector.property.PropertySelector
+import li.gkd.selector.relation.RelationSelector
 
 internal sealed class SelectorExpression
 

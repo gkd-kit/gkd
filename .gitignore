@@ -1,7 +1,6 @@
 .gradle
 .idea
 .vscode
-.cache
 .kotlin
 
 node_modules
@@ -20,3 +19,4 @@ kotlin-js-store
 *.zip
 local.properties
 libs.versions.updates.toml
+/.local/

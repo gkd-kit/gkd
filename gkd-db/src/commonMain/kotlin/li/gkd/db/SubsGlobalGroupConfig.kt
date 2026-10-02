@@ -60,9 +60,6 @@ data class SubsGlobalGroupConfig(
         @Delete
         suspend fun delete(vararg objects: SubsGlobalGroupConfig): Int
 
-        @Query("SELECT * FROM subs_global_group_config WHERE subs_id IN (:subsIds)")
-        fun queryGlobalConfig(subsIds: List<Long>): Flow<List<SubsGlobalGroupConfig>>
-
         @Query("DELETE FROM subs_global_group_config WHERE subs_id=:subsId AND group_key IN (:keys)")
         suspend fun deleteGroups(subsId: Long, keys: List<Int>): Int
     }

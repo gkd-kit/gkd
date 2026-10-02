@@ -169,6 +169,9 @@ importers:
       '@types/node':
         specifier: ^26.6.2
         version: 26.6.2
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
@@ -304,6 +307,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  fflate@0.8.3:
+    resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==}
+
   regex-wasm@0.1.1:
     resolution: {integrity: sha512-bWkfffC4bnzYbKxqDTGEZYBBiy1g6e94rZ+mXAx2KvaimO0Hb9RAY1eom7l7yRZwFOyjRlhdB8mVnmkJR8rDEw==}
 
@@ -380,6 +386,8 @@ snapshots:
 
   '@typescript/typescript-win32-x64@7.0.2':
     optional: true
+
+  fflate@0.8.3: {}
 
   regex-wasm@0.1.1: {}
 

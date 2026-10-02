@@ -3,10 +3,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "fetch-selector-dist": "node ./gkd-selector/scripts/fetch-dist.ts"
+    "clean-empty-dirs": "node ./scripts/clean-empty-dirs.ts",
+    "fetch-selector-dist": "node ./gkd-selector/scripts/fetch-dist.ts",
+    "app:tools": "node ./scripts/desktop/index.ts",
+    "type-check": "tsc -p tsconfig.json",
+    "test": "node --test ./scripts/desktop/lib/tools.test.ts"
   },
   "dependencies": {
     "@types/node": "^26.6.2",
+    "fflate": "^0.8.3",
     "typescript": "^7.0.2"
   },
   "devEngines": {

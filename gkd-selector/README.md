@@ -24,11 +24,11 @@ pnpm --dir gkd-selector build
 
 ## Release
 
-Publishing uses npm Trusted Publishing from `.github/workflows/Publish-Selector.yml`; no long-lived npm token is stored in GitHub. Configure the `@gkd-kit/selector` package on npm once with this GitHub trusted publisher:
+Publishing uses npm Trusted Publishing from `.github/workflows/publish-selector.yml`; no long-lived npm token is stored in GitHub. Configure the `@gkd-kit/selector` package on npm once with this GitHub trusted publisher:
 
 - Organization or user: `gkd-kit`
 - Repository: `gkd`
-- Workflow filename: `Publish-Selector.yml`
+- Workflow filename: `publish-selector.yml`
 - Allowed action: `npm publish`
 
 For each release, update `gkd-selector/package.json` to the intended stable version, commit and push it, then create a tag with the exact package name and version:
@@ -128,8 +128,6 @@ Use `selector.validateType(typeModel)` when selectors need to be checked against
 `selector.validateType(typeModel)` is the fast validation path: it stops at the first error and returns `SelectorTypeResult`, so expected failures do not require `catch`. A failure contains one structured `SelectorTypeException`; reading its `value` throws that same exception instance.
 
 Editors and debugging tools can call `selector.getTypeErrors(typeModel)` to collect every independent type error, ordered by source position. A selector created by `Selector.parse` retains source positions, so its errors include exact ranges; a selector created by `Selector.compile` performs the same checks with `null` ranges. Syntax failure produces no selector and therefore cannot proceed to type checking.
-
-Type failures from selectors created by `Selector.parse` include an exact source range. Matching-only selectors created by `Selector.compile` do not retain positions, so their type failure range is `null`.
 
 ## Successful match trace
 

@@ -1,22 +1,22 @@
 package li.gkd.selector.engine
 
 import li.gkd.selector.FastQuery
-import li.gkd.selector.MatchOptions
 import li.gkd.selector.MatchContext
+import li.gkd.selector.MatchOptions
+import li.gkd.selector.NodeAdapter
 import li.gkd.selector.SelectorMatchStep
 import li.gkd.selector.SelectorMatchUnit
 import li.gkd.selector.SelectorSourceMap
 import li.gkd.selector.SelectorTypeErrorKind
-import li.gkd.selector.NodeAdapter
 import li.gkd.selector.TraversalCandidate
 import li.gkd.selector.TypeCheckFailure
 import li.gkd.selector.getFastQueryDescendantsExcludingSelf
-import li.gkd.selector.relation.RelationOperator
-import li.gkd.selector.relation.RelationSelector
 import li.gkd.selector.property.PropertySelector
 import li.gkd.selector.property.TypeCheckCollector
 import li.gkd.selector.property.TypeInferenceResult
 import li.gkd.selector.property.inferType
+import li.gkd.selector.relation.RelationOperator
+import li.gkd.selector.relation.RelationSelector
 import li.gkd.selector.syntax.SelectorPrinter
 
 private class SearchFrame<T : Any>(

@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "hidden.api"
+    namespace = "li.gkd.hidden.api"
 }
 
 dependencies {

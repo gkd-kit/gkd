@@ -5,17 +5,17 @@ import androidx.room3.Room
 import androidx.room3.testing.MigrationTestHelper
 import androidx.room3.withWriteTransaction
 import androidx.sqlite.SQLiteConnection
-import androidx.sqlite.execSQL
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import androidx.sqlite.execSQL
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import java.nio.file.Path
 import kotlin.io.path.createTempDirectory
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 
 class AppDbMigrationTest {
     private val schemaDirectory =
@@ -39,6 +39,14 @@ class AppDbMigrationTest {
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
             .build()
+
+    private suspend fun AppDb.captureConfigurations() = SubscriptionConfigSnapshot(
+        subsItems = subsItemDao().queryAll(),
+        appConfigs = subsAppConfigDao().queryAll(),
+        categoryConfigs = subsCategoryConfigDao().queryAll(),
+        appGroupConfigs = subsAppGroupConfigDao().queryAll(),
+        globalGroupConfigs = subsGlobalGroupConfigDao().queryAll(),
+    )
 
     private fun SQLiteConnection.queryLong(sql: String): Long =
         prepare(sql).use { statement ->
@@ -82,36 +90,62 @@ class AppDbMigrationTest {
             connection.execSQL("""INSERT INTO a11y_event_log VALUES (5, 300, 32, 'app.one', 'Event', 'description', '["first","second"]')""")
         }
         helper.runMigrationsAndValidate(16, listOf(Migration14To15)).use { connection ->
-            assertEquals(100L, connection.queryLong("SELECT last_visit_time FROM app_last_visit WHERE app_id = 'app.one'"))
-            assertEquals("app.one", connection.queryText("SELECT app_id FROM a11y_event_log WHERE id = 5"))
-            assertEquals("description", connection.queryText("SELECT desc FROM a11y_event_log WHERE id = 5"))
-            assertEquals("""["first","second"]""", connection.queryText("SELECT text FROM a11y_event_log WHERE id = 5"))
-            assertEquals("MainActivity", connection.queryText("SELECT activity_id FROM activity_log WHERE id = 41"))
+            assertEquals(
+                100L,
+                connection.queryLong("SELECT last_visit_time FROM app_last_visit WHERE app_id = 'app.one'")
+            )
+            assertEquals(
+                "app.one",
+                connection.queryText("SELECT app_id FROM a11y_event_log WHERE id = 5")
+            )
+            assertEquals(
+                "description",
+                connection.queryText("SELECT desc FROM a11y_event_log WHERE id = 5")
+            )
+            assertEquals(
+                """["first","second"]""",
+                connection.queryText("SELECT text FROM a11y_event_log WHERE id = 5")
+            )
+            assertEquals(
+                "MainActivity",
+                connection.queryText("SELECT activity_id FROM activity_log WHERE id = 41")
+            )
             connection.prepare("PRAGMA foreign_key_check").use { assertTrue(!it.step()) }
         }
         val database = openDatabase(name)
         try {
-            val store = SubscriptionConfigStore(database)
-            val before = store.capture()
-            assertEquals(listOf(SubsItem(7, ctime = 1, mtime = 2, enable = true, order = 0)), before.subsItems)
+            val before = database.captureConfigurations()
+            assertEquals(
+                listOf(SubsItem(7, ctime = 1, mtime = 2, enable = true, order = 0)),
+                before.subsItems
+            )
             assertEquals(listOf(SubsAppConfig(false, 7, "app.one")), before.appConfigs)
             assertEquals(listOf(SubsCategoryConfig(null, 7, 3)), before.categoryConfigs)
-            assertEquals(listOf(SubsAppGroupConfig(7, "app.one", 4, null, "app-exclude")), before.appGroupConfigs)
-            assertEquals(listOf(SubsGlobalGroupConfig(7, 4, true, "global-exclude")), before.globalGroupConfigs)
+            assertEquals(
+                listOf(SubsAppGroupConfig(7, "app.one", 4, null, "app-exclude")),
+                before.appGroupConfigs
+            )
+            assertEquals(
+                listOf(SubsGlobalGroupConfig(7, 4, true, "global-exclude")),
+                before.globalGroupConfigs
+            )
 
             assertEquals(listOf("app.two", "app.one"), database.appLastVisitDao().query().first())
             database.appLastVisitDao().insert(AppLastVisit("app.one", 400))
             assertEquals(listOf("app.one", "app.two"), database.appLastVisitDao().query().first())
-            assertEquals(listOf(42L), database.activityLogDao().insert(ActivityLog(ctime = 400, appId = "app.two")))
+            assertEquals(
+                listOf(42L),
+                database.activityLogDao().insert(ActivityLog(ctime = 400, appId = "app.two"))
+            )
             assertEquals(2, database.activityLogDao().count().first())
             assertEquals(1, database.a11yEventLogDao().count().first())
 
             // Renaming child tables must preserve both parent-update and cascading-delete behavior.
             val updatedItem = before.subsItems.single().copy(enable = false)
             database.subsItemDao().upsert(updatedItem)
-            assertEquals(before.copy(subsItems = listOf(updatedItem)), store.capture())
+            assertEquals(before.copy(subsItems = listOf(updatedItem)), database.captureConfigurations())
             database.subsItemDao().deleteById(7)
-            assertEquals(SubscriptionConfigSnapshot(), store.capture())
+            assertEquals(SubscriptionConfigSnapshot(), database.captureConfigurations())
         } finally {
             database.close()
         }
@@ -147,10 +181,22 @@ class AppDbMigrationTest {
         try {
             val appDao = database.subsAppGroupConfigDao()
             assertEquals(3, appDao.queryAll().size)
-            assertEquals(SubsAppGroupConfig(7, "app.one", 4, false, "old"), appDao.queryConfig(7, "app.one", 4).first())
-            assertEquals(listOf(SubsGlobalGroupConfig(7, 4, null, "old-global")), database.subsGlobalGroupConfigDao().queryAll())
-            assertEquals(listOf(SubsAppConfig(false, 7, "app.one")), database.subsAppConfigDao().queryAll())
-            assertEquals(listOf(SubsCategoryConfig(null, 7, 3)), database.subsCategoryConfigDao().queryAll())
+            assertEquals(
+                SubsAppGroupConfig(7, "app.one", 4, false, "old"),
+                appDao.queryConfig(7, "app.one", 4).first()
+            )
+            assertEquals(
+                listOf(SubsGlobalGroupConfig(7, 4, null, "old-global")),
+                database.subsGlobalGroupConfigDao().queryAll()
+            )
+            assertEquals(
+                listOf(SubsAppConfig(false, 7, "app.one")),
+                database.subsAppConfigDao().queryAll()
+            )
+            assertEquals(
+                listOf(SubsCategoryConfig(null, 7, 3)),
+                database.subsCategoryConfigDao().queryAll()
+            )
 
             // A switch update must affect the same sole row used by first-match UI and indexed runtime reads.
             appDao.upsert(SubsAppGroupConfig(7, "app.one", 4, true, "old"))

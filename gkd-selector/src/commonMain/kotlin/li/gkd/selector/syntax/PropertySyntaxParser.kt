@@ -1,9 +1,10 @@
 package li.gkd.selector.syntax
 
-import li.gkd.selector.SelectorPositionKind
 import li.gkd.selector.LogicalOperator
-import li.gkd.selector.property.ComparisonExpression
+import li.gkd.selector.SelectorPositionKind
+import li.gkd.selector.SourceRange
 import li.gkd.selector.property.CompareOperator
+import li.gkd.selector.property.ComparisonExpression
 import li.gkd.selector.property.LogicalExpression
 import li.gkd.selector.property.NotExpression
 import li.gkd.selector.property.PropertyExpression
@@ -15,7 +16,7 @@ import li.gkd.selector.property.compileRegex
 internal class PropertySyntaxParser(
     private val context: ParserContext,
 ) {
-    private val cursor = context.cursor
+    private val cursor get() = context.cursor
 
     private class PositionedValue<T : Any>(
         val value: T,
@@ -223,14 +224,18 @@ internal class PropertySyntaxParser(
                             cursor.index = regexStart
                             cursor.errorExpected(
                                 expected = "valid regular expression string",
-                                range = li.gkd.selector.SourceRange(regexStart, regexEnd),
+                                range = SourceRange(regexStart, regexEnd),
                                 detail = result.detail,
                             )
                         }
                     }
                 }
 
-                is CompareOperator.ValueOperator -> ComparisonExpression.ValueComparison(left, operator, right)
+                is CompareOperator.ValueOperator -> ComparisonExpression.ValueComparison(
+                    left,
+                    operator,
+                    right
+                )
             }
         }
 

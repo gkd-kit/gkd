@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GKD</string>
+    <string name="a11y_desc">基于高级选择器和订阅规则的屏幕自定义点击服务\n\n通过自定义选择器和订阅规则，能帮助你实现点击任意位置控件，自定义快捷操作等高级功能</string>
+    <string name="import_backup">导入备份</string>
+    <string name="capture_snapshot">捕获快照</string>
+    <string name="http_server">HTTP服务</string>
+    <string name="snapshot_button">快照按钮</string>
+    <string name="rule_match">规则匹配</string>
+    <string name="record_activity">界面服务</string>
+    <string name="record_a11y_event">事件服务</string>
+</resources>

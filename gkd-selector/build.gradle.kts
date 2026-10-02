@@ -24,22 +24,13 @@ kotlin {
             languageSettings.optIn("kotlin.js.ExperimentalJsStatic")
             languageSettings.optIn("kotlin.js.ExperimentalJsCollectionsApi")
         }
-        commonMain {
-            dependencies {
-                implementation(libs.kotlin.stdlib)
-            }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.json5)
         }
-        commonTest {
-            dependencies {
-                implementation(libs.kotlin.test)
-                implementation(libs.json5)
-            }
-        }
-        jsMain {
-            dependencies {
-                readNpmDependencies().forEach { dependency ->
-                    implementation(npm(dependency.name, dependency.version))
-                }
+        jsMain.dependencies {
+            readNpmDependencies().forEach { dependency ->
+                implementation(npm(dependency.name, dependency.version))
             }
         }
     }

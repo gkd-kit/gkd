@@ -1,15 +1,16 @@
 package li.gkd.selector
 
+import kotlin.js.JsExport
+import li.gkd.selector.property.BuiltinMembers
 import li.gkd.selector.property.BuiltinScope
 import li.gkd.selector.property.BuiltinTypeSet
-import li.gkd.selector.property.BuiltinMembers
 
 private object DefaultSelectorTypeModels {
     val standard: SelectorTypeModel by lazy { buildDefaultSelectorTypeModel(webField = false) }
     val web: SelectorTypeModel by lazy { buildDefaultSelectorTypeModel(webField = true) }
 }
 
-@kotlin.js.JsExport
+@JsExport
 public fun createDefaultSelectorTypeModel(webField: Boolean = false): SelectorTypeModel =
     if (webField) DefaultSelectorTypeModels.web else DefaultSelectorTypeModels.standard
 
@@ -31,9 +32,11 @@ private fun buildDefaultSelectorTypeModel(webField: Boolean): SelectorTypeModel 
     )
     builder.methods(booleanType, BuiltinMembers.methodInfos(BuiltinScope.Boolean, builtinTypes))
     builder.methods(intType, BuiltinMembers.methodInfos(BuiltinScope.Int, builtinTypes))
-    builder.properties(stringType, listOf(
-        SelectorProperty("length", intType),
-    ))
+    builder.properties(
+        stringType, listOf(
+            SelectorProperty("length", intType),
+        )
+    )
     builder.methods(stringType, BuiltinMembers.methodInfos(BuiltinScope.String, builtinTypes))
     val nodeProps = (if (webField) {
         listOf(

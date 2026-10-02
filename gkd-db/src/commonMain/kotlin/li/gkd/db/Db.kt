@@ -6,15 +6,12 @@ object Db {
     private var createDatabase: (() -> AppDb)? = null
 
     internal fun initialize(createDatabase: () -> AppDb) {
-        check(this.createDatabase == null) { "Db is already initialized" }
         this.createDatabase = createDatabase
     }
 
-    private val database by lazy {
+    internal val database by lazy {
         checkNotNull(createDatabase) { "Db is not initialized" }.invoke()
     }
-
-    val subscriptionConfigStore by lazy { SubscriptionConfigStore(database) }
 
     val subsItemDao get() = database.subsItemDao()
     val subsAppGroupConfigDao get() = database.subsAppGroupConfigDao()
@@ -26,6 +23,8 @@ object Db {
     val subsAppConfigDao get() = database.subsAppConfigDao()
     val appLastVisitDao get() = database.appLastVisitDao()
     val a11yEventLogDao get() = database.a11yEventLogDao()
+
+    fun close() = database.close()
 
     suspend fun <T> withTransaction(block: suspend () -> T): T =
         database.withWriteTransaction { block() }

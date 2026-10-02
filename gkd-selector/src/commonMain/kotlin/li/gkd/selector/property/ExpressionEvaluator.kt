@@ -1,8 +1,8 @@
 package li.gkd.selector.property
 
+import li.gkd.selector.LogicalOperator
 import li.gkd.selector.MatchContext
 import li.gkd.selector.NodeAdapter
-import li.gkd.selector.LogicalOperator
 
 private class EvaluationFrame(
     val expression: PropertyExpression,
@@ -132,6 +132,7 @@ private fun ValueExpression.usesPreviousContext(): Boolean {
             ) {
                 return true
             }
+
             is ValueExpression.MemberExpression -> stack.add(expression.object0)
             is ValueExpression.CallExpression -> {
                 val callee = expression.callee

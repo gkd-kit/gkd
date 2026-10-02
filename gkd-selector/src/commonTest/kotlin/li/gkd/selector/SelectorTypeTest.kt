@@ -2,12 +2,13 @@ package li.gkd.selector
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertSame
-import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.test.fail
 
 private data class TypeFailureCase(
     val source: String,
@@ -134,7 +135,7 @@ class SelectorTypeTest {
 
         try {
             failure.value
-            kotlin.test.fail("Failure.value must throw")
+            fail("Failure.value must throw")
         } catch (thrown: SelectorTypeException) {
             assertSame(error, thrown)
         }

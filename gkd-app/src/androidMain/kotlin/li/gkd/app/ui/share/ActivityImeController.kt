@@ -1,0 +1,82 @@
+package li.gkd.app.ui.share
+
+import androidx.activity.ComponentActivity
+import androidx.annotation.MainThread
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsAnimationCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import li.gkd.app.util.AndroidTarget
+import li.gkd.app.util.KeyboardUtils
+
+class ActivityImeController(
+    private val activity: ComponentActivity,
+) : DefaultLifecycleObserver {
+    val showAnimationRunningFlow: StateFlow<Boolean>
+        field = MutableStateFlow(false)
+
+
+    private val imeVisible: Boolean
+        get() = ViewCompat.getRootWindowInsets(activity.window.decorView)
+            ?.isVisible(WindowInsetsCompat.Type.ime()) == true // fix #1315
+
+    private val animationCallback = object : WindowInsetsAnimationCompat.Callback(
+        DISPATCH_MODE_CONTINUE_ON_SUBTREE,
+    ) {
+        override fun onStart(
+            animation: WindowInsetsAnimationCompat,
+            bounds: WindowInsetsAnimationCompat.BoundsCompat,
+        ): WindowInsetsAnimationCompat.BoundsCompat {
+            if (animation.isImeAnimation) {
+                showAnimationRunningFlow.value = imeVisible
+            }
+            return bounds
+        }
+
+        override fun onProgress(
+            insets: WindowInsetsCompat,
+            runningAnimations: List<WindowInsetsAnimationCompat>,
+        ): WindowInsetsCompat = insets
+
+        override fun onEnd(animation: WindowInsetsAnimationCompat) {
+            if (animation.isImeAnimation) {
+                showAnimationRunningFlow.value = false
+            }
+        }
+    }
+
+    init {
+        activity.lifecycle.addObserver(this)
+    }
+
+    override fun onCreate(owner: LifecycleOwner) {
+        if (AndroidTarget.R) {
+            ViewCompat.setWindowInsetsAnimationCallback(
+                activity.window.decorView,
+                animationCallback,
+            )
+        }
+    }
+
+    override fun onDestroy(owner: LifecycleOwner) {
+        if (AndroidTarget.R) {
+            ViewCompat.setWindowInsetsAnimationCallback(activity.window.decorView, null)
+        }
+        showAnimationRunningFlow.value = false
+    }
+
+    @MainThread
+    fun requestHide(): Boolean {
+        if (!imeVisible) {
+            return false
+        }
+        KeyboardUtils.hide(activity)
+        return true
+    }
+
+    private val WindowInsetsAnimationCompat.isImeAnimation: Boolean
+        get() = typeMask and WindowInsetsCompat.Type.ime() != 0
+}

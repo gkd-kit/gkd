@@ -1,31 +1,32 @@
 package li.gkd.selector.syntax
 
 import li.gkd.selector.SelectorPositionKind
+import li.gkd.selector.relation.PolynomialExpression
 import li.gkd.selector.relation.RelationExpression
 import li.gkd.selector.relation.RelationOperator
 import li.gkd.selector.relation.RelationSelector
-import li.gkd.selector.relation.PolynomialExpression
 import li.gkd.selector.relation.TupleExpression
 
 internal class RelationSyntaxParser(
     private val context: ParserContext,
 ) {
-    private val cursor = context.cursor
+    private val cursor get() = context.cursor
 
     private class Monomial(
         val coefficient: Int,
         val power: Int,
     )
 
-    fun readRelationSelector(): RelationSelector = context.positioned(SelectorPositionKind.Relation) {
-        val operator = readOperator()
-        val expression = if (cursor.current.isOneOf("(n$DIGIT_CHARS")) {
-            readExpression()
-        } else {
-            PolynomialExpression()
+    fun readRelationSelector(): RelationSelector =
+        context.positioned(SelectorPositionKind.Relation) {
+            val operator = readOperator()
+            val expression = if (cursor.current.isOneOf("(n$DIGIT_CHARS")) {
+                readExpression()
+            } else {
+                PolynomialExpression()
+            }
+            RelationSelector(operator, expression)
         }
-        RelationSelector(operator, expression)
-    }
 
     private fun readOperator(): RelationOperator {
         val operator = RelationOperator.parseOrder.firstOrNull {

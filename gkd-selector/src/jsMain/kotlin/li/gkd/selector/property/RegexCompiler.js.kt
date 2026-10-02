@@ -1,7 +1,5 @@
 package li.gkd.selector.property
 
-import kotlin.js.asDynamic
-
 internal actual fun String.compilePlatformRegex(): RegexCompileResult {
     return compileWasmRegex { pattern -> npm.regex_wasm.toMatches(pattern) }
 }

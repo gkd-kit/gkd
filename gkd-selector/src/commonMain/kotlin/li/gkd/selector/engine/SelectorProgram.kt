@@ -1,14 +1,14 @@
 package li.gkd.selector.engine
 
 import li.gkd.selector.FastQuery
-import li.gkd.selector.MatchOptions
 import li.gkd.selector.LogicalOperator
 import li.gkd.selector.MatchContext
+import li.gkd.selector.MatchOptions
+import li.gkd.selector.NodeAdapter
 import li.gkd.selector.SelectorMatch
 import li.gkd.selector.SelectorSourceMap
-import li.gkd.selector.NodeAdapter
-import li.gkd.selector.TypeCheckFailure
 import li.gkd.selector.SelectorType
+import li.gkd.selector.TypeCheckFailure
 import li.gkd.selector.property.TypeCheckCollector
 
 private const val MATCH_UNIT = 0

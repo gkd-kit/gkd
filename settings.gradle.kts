@@ -19,6 +19,8 @@ plugins {
 
 rootProject.name = "gkd"
 include(
+    ":gkd-android",
+    ":gkd-aidl",
     ":gkd-app",
     ":gkd-db",
     ":gkd-hidden-api",

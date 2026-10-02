@@ -5,6 +5,7 @@ import androidx.room3.withWriteTransaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import li.gkd.db.Db.database
 
 // A single checkpoint for the subscription metadata and all of its user overrides.
 data class SubscriptionConfigSnapshot(
@@ -15,13 +16,14 @@ data class SubscriptionConfigSnapshot(
     val globalGroupConfigs: List<SubsGlobalGroupConfig> = emptyList(),
 )
 
-class SubscriptionConfigStore(private val database: AppDb) {
-    suspend fun setAppEnabled(subsId: Long, appId: String, enabled: Boolean?) = database.withWriteTransaction {
-        val dao = database.subsAppConfigDao()
-        val current = dao.querySubsItemConfig(listOf(subsId)).find { it.appId == appId }
-        if (enabled == null) current?.let { dao.delete(it) }
-        else if (current?.enable != enabled) dao.upsert(SubsAppConfig(enabled, subsId, appId))
-    }
+object SubscriptionConfigStore {
+    suspend fun setAppEnabled(subsId: Long, appId: String, enabled: Boolean?) =
+        database.withWriteTransaction {
+            val dao = database.subsAppConfigDao()
+            val current = dao.querySubsItemConfig(listOf(subsId)).find { it.appId == appId }
+            if (enabled == null) current?.let { dao.delete(it) }
+            else if (current?.enable != enabled) dao.upsert(SubsAppConfig(enabled, subsId, appId))
+        }
 
     suspend fun updateAppGroupConfig(
         subsId: Long,
@@ -55,7 +57,11 @@ class SubscriptionConfigStore(private val database: AppDb) {
     }
 
     fun observe(): Flow<SubscriptionConfigSnapshot> = database.invalidationTracker.createFlow(
-        "subs_item", "subs_app_config", "subs_category_config", "subs_app_group_config", "subs_global_group_config",
+        "subs_item",
+        "subs_app_config",
+        "subs_category_config",
+        "subs_app_group_config",
+        "subs_global_group_config",
     ).map { capture() }.distinctUntilChanged()
 
     suspend fun capture(): SubscriptionConfigSnapshot = database.withReadTransaction {

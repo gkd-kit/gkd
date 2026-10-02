@@ -52,9 +52,9 @@ fun Project.registerSourcePathsTask(commitId: String): TaskProvider<GenerateSour
             .filter { it.endsWith(".kt") }
             .filterNot { path ->
                 "/jvmTest/kotlin/" in path ||
-                    "/androidTest/kotlin/" in path ||
-                    "/test/kotlin/" in path ||
-                    "/li/songe/gradle/" in path
+                        "/androidTest/kotlin/" in path ||
+                        "/test/kotlin/" in path ||
+                        "/li/songe/gradle/" in path
             }
             .sorted()
     }

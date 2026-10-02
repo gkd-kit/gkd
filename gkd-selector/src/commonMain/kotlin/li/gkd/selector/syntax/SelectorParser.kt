@@ -2,19 +2,19 @@ package li.gkd.selector.syntax
 
 import li.gkd.selector.LogicalOperator
 import li.gkd.selector.SelectorPositionKind
-import li.gkd.selector.relation.RelationSelector
-import li.gkd.selector.relation.PolynomialExpression
 import li.gkd.selector.engine.LogicalSelectorExpression
 import li.gkd.selector.engine.NotSelectorExpression
 import li.gkd.selector.engine.SelectorExpression
 import li.gkd.selector.engine.UnitSelectorExpression
+import li.gkd.selector.relation.PolynomialExpression
+import li.gkd.selector.relation.RelationSelector
 
 internal class SelectorParser(
     source: String,
     positionRecorder: PositionRecorder? = null,
 ) {
     private val context = ParserContext(source, positionRecorder)
-    private val cursor = context.cursor
+    private val cursor get() = context.cursor
     private val propertyParser = PropertySyntaxParser(context)
     private val relationParser = RelationSyntaxParser(context)
 

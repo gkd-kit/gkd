@@ -1,7 +1,7 @@
 package li.gkd.selector.property
 
-import li.gkd.selector.SelectorMethod
 import li.gkd.selector.MatchContext
+import li.gkd.selector.SelectorMethod
 import li.gkd.selector.SelectorType
 
 internal enum class BuiltinScope {
@@ -132,8 +132,18 @@ internal object BuiltinMembers {
             intMethod(BuiltinMethodId.IntMoreEqual, "moreEqual", BuiltinScope.Boolean),
             intMethod(BuiltinMethodId.IntLess, "less", BuiltinScope.Boolean),
             intMethod(BuiltinMethodId.IntLessEqual, "lessEqual", BuiltinScope.Boolean),
-            stringMethod(BuiltinMethodId.StringGet, "get", listOf(BuiltinScope.Int), BuiltinScope.String),
-            stringMethod(BuiltinMethodId.StringAt, "at", listOf(BuiltinScope.Int), BuiltinScope.String),
+            stringMethod(
+                BuiltinMethodId.StringGet,
+                "get",
+                listOf(BuiltinScope.Int),
+                BuiltinScope.String
+            ),
+            stringMethod(
+                BuiltinMethodId.StringAt,
+                "at",
+                listOf(BuiltinScope.Int),
+                BuiltinScope.String
+            ),
             BuiltinMethod(
                 BuiltinMethodId.StringSubstring,
                 BuiltinScope.String,

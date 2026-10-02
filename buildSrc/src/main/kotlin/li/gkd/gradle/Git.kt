@@ -124,7 +124,10 @@ private fun readGitInfo(repositoryDirectory: String): GitInfo {
     val commitId = runGitCommand(repositoryDirectory, listOf("rev-parse", "HEAD"))
     return GitInfo(
         commitId = commitId,
-        commitTime = runGitCommand(repositoryDirectory, listOf("log", "-1", "--format=%ct")) + "000",
+        commitTime = runGitCommand(
+            repositoryDirectory,
+            listOf("log", "-1", "--format=%ct")
+        ) + "000",
         tagName = runCatching {
             runGitCommand(repositoryDirectory, listOf("describe", "--tags", "--exact-match"))
         }.getOrNull(),

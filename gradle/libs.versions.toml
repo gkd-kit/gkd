@@ -1,95 +1,108 @@
 [versions]
-kotlin = "2.4.20"
-serialization = "1.11.0"
-ksp = "2.3.12"
 agp = "9.4.1"
-compose = "1.12.1"
-nav3 = "1.1.7"
-room = "3.0.3"
-sqlite = "2.7.1"
-paging = "3.5.1"
-lifecycle = "2.11.0"
-ktor = "3.6.0"
 atomicfu = "0.33.0"
-coil = "3.6.3"
-telephoto = "0.19.0"
-remap = "0.1.5"
-shizuku = "13.1.5"
-priv-kit = "0.16.1"
+cmp = "1.12.1"
 codeorigin = "0.2.1"
+coil = "3.6.3"
+compose = "1.12.1"
+coroutines = "1.11.0"
+jna = "5.19.1"
+kotlin = "2.4.20"
+ksp = "2.3.12"
+ktor = "3.6.0"
+lifecycle = "2.11.0"
+nav3 = "1.2.0"
+paging = "3.5.1"
+priv-kit = "0.17.0"
+proguard = "7.10.0"
+remap = "0.1.6"
+room = "3.0.3"
+serialization = "1.11.0"
+shizuku = "13.1.5"
+sqlite = "2.7.1"
+telephoto = "0.19.0"
 
 [libraries]
-morph-compose = "li.songe.morph:morph-compose:0.4.0"
-kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
-kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "serialization" }
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
-kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
-ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
-ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
-ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
-ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
-ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
-ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
-ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
-compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics", version.ref = "compose" }
-compose-animation = { module = "androidx.compose.animation:animation", version.ref = "compose" }
-compose-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "compose" }
-compose-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
-compose-icons = "androidx.compose.material:material-icons-extended:1.7.8"
-compose-material3 = "androidx.compose.material3:material3:1.4.0"
-compose-activity = "androidx.activity:activity-compose:1.13.0"
-androidx-appcompat = "androidx.appcompat:appcompat:1.8.0"
-androidx-concurrent-futures = "androidx.concurrent:concurrent-futures:1.3.0"
-androidx-core-ktx = "androidx.core:core-ktx:1.19.0"
-androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
-androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-annotation = "androidx.annotation:annotation:1.11.0"
+androidx-core-ktx = "androidx.core:core-ktx:1.19.1"
 androidx-lifecycle-service = { module = "androidx.lifecycle:lifecycle-service", version.ref = "lifecycle" }
-androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3" }
-androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3" }
-androidx-annotation = "androidx.annotation:annotation:1.10.0"
-androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room" }
+androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
 androidx-room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room" }
 androidx-room-paging = { module = "androidx.room3:room3-paging", version.ref = "room" }
+androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room" }
 androidx-room-testing = { module = "androidx.room3:room3-testing", version.ref = "room" }
-androidx-sqlite-framework = { module = "androidx.sqlite:sqlite-framework", version.ref = "sqlite" }
-androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 androidx-splashscreen = "androidx.core:core-splashscreen:1.2.0"
-androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.ref = "paging" }
-androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
+androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
+androidx-sqlite-framework = { module = "androidx.sqlite:sqlite-framework", version.ref = "sqlite" }
+cmp-animation = { module = "org.jetbrains.compose.animation:animation", version.ref = "cmp" }
+cmp-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "cmp" }
+cmp-icons = "org.jetbrains.compose.material:material-icons-extended:1.7.3"
+cmp-material3 = "org.jetbrains.compose.material3:material3:1.9.0"
+cmp-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "cmp" }
+cmp-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "cmp" }
+cmp-ui-graphics = { module = "org.jetbrains.compose.ui:ui-graphics", version.ref = "cmp" }
+codeorigin = { module = "li.songe:codeorigin", version.ref = "codeorigin" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil" }
+coil-network = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
+compose-activity = "androidx.activity:activity-compose:1.13.0"
+compose-animation = { module = "androidx.compose.animation:animation", version.ref = "compose" }
+compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "compose" }
+compose-material3 = "androidx.compose.material3:material3:1.4.0"
+compose-runtime = { module = "androidx.compose.runtime:runtime", version.ref = "compose" }
+compose-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
+compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
+compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics", version.ref = "compose" }
+device = "com.github.getActivity:DeviceCompat:2.6"
+exp4j = "net.objecthunter:exp4j:0.4.8"
 google-accompanist-drawablepainter = "com.google.accompanist:accompanist-drawablepainter:0.37.3"
+jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+jna-platform = { module = "net.java.dev.jna:jna-platform", version.ref = "jna" }
+json5 = "li.songe:json5:0.8.0"
 junit = "junit:junit:4.13.2"
-remap-processor = { module = "li.songe.remap:remap-processor", version.ref = "remap" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "serialization" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
+ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
+ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+lsposed-hiddenapibypass = "org.lsposed.hiddenapibypass:hiddenapibypass:6.1"
+morph-compose = "li.songe.morph:morph-compose:0.4.0"
+kmp-lifecycle = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+kmp-navigation3 = "org.jetbrains.androidx.navigation3:navigation3-ui:1.1.2"
+kmp-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+kmp-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
+permissions = "com.github.getActivity:XXPermissions:28.3"
+priv-kit-ui = { module = "io.github.priv-kit:priv-ui", version.ref = "priv-kit" }
 remap-annotation = { module = "li.songe.remap:remap-annotation", version.ref = "remap" }
+remap-processor = { module = "li.songe.remap:remap-processor", version.ref = "remap" }
+reorderable = "sh.calvin.reorderable:reorderable:3.1.0"
 rikka-shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
 rikka-shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
-priv-kit-ui = { module = "io.github.priv-kit:priv-ui", version.ref = "priv-kit" }
-lsposed-hiddenapibypass = "org.lsposed.hiddenapibypass:hiddenapibypass:6.1"
-coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
-coil-network = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
-coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil" }
+robolectric = "org.robolectric:robolectric:4.17"
 telephoto-zoomable = { module = "me.saket.telephoto:zoomable", version.ref = "telephoto" }
-codeorigin = { module = "li.songe:codeorigin", version.ref = "codeorigin" }
-reorderable = "sh.calvin.reorderable:reorderable:3.1.0"
-exp4j = "net.objecthunter:exp4j:0.4.8"
 toaster = "com.github.getActivity:Toaster:15.0"
-permissions = "com.github.getActivity:XXPermissions:28.3"
-device = "com.github.getActivity:DeviceCompat:2.6"
-json5 = "li.songe:json5:0.8.0"
-kevinnzouWebview = "io.github.kevinnzou:compose-webview:0.33.6"
+webview2-compose = "li.songe.webview2:webview2-compose:0.1.1"
 
 [plugins]
-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
-kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-android-library = { id = "com.android.library", version.ref = "agp" }
-android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
 androidx-room = { id = "androidx.room3", version.ref = "room" }
-google-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-remap = { id = "li.songe.remap", version.ref = "remap" }
+cmp = { id = "org.jetbrains.compose", version.ref = "cmp" }
 codeorigin = { id = "li.songe.codeorigin", version.ref = "codeorigin" }
+google-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 littlerobots-version = "nl.littlerobots.version-catalog-update:1.1.1"
+remap = { id = "li.songe.remap", version.ref = "remap" }

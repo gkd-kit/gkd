@@ -4,8 +4,8 @@ import li.gkd.selector.LogicalOperator
 import li.gkd.selector.SelectorToken
 import li.gkd.selector.SelectorTokenKind
 import li.gkd.selector.SelectorTokenScope
-import li.gkd.selector.relation.RelationOperator
 import li.gkd.selector.property.CompareOperator
+import li.gkd.selector.relation.RelationOperator
 
 internal object SelectorTokenizer {
     /** Tolerant lexical scanning for editors and syntax highlighters. */
@@ -79,7 +79,8 @@ internal object SelectorTokenizer {
                 }
 
                 char.isOneOf(DIGIT_CHARS) ||
-                        (char == '-' && source.getOrNull(index + 1).isOneOf(DIGIT_CHARS) && bracketDepth > 0) -> {
+                        (char == '-' && source.getOrNull(index + 1)
+                            .isOneOf(DIGIT_CHARS) && bracketDepth > 0) -> {
                     index++
                     while (source.getOrNull(index).isOneOf(DIGIT_CHARS)) index++
                     add(SelectorTokenKind.Integer, start, index)
@@ -143,10 +144,20 @@ internal object SelectorTokenizer {
                         continue
                     }
                     val operator = if (bracketDepth > 0) {
-                        CompareOperator.parseOrder.firstOrNull { source.startsWith(it.key, index) }?.key
+                        CompareOperator.parseOrder.firstOrNull {
+                            source.startsWith(
+                                it.key,
+                                index
+                            )
+                        }?.key
                             ?: "!".takeIf { source.startsWith(it, index) }
                     } else {
-                        RelationOperator.parseOrder.firstOrNull { source.startsWith(it.key, index) }?.key
+                        RelationOperator.parseOrder.firstOrNull {
+                            source.startsWith(
+                                it.key,
+                                index
+                            )
+                        }?.key
                             ?: "!".takeIf { source.startsWith(it, index) }
                     }
                     if (operator == null) {

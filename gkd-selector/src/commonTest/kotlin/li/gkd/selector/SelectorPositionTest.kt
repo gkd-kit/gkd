@@ -118,13 +118,33 @@ class SelectorPositionTest {
             PositionExpectation(SelectorPositionKind.BooleanLiteral, 30, 35, "false"),
             PositionExpectation(SelectorPositionKind.Comparison, 25, 35, "flag=false"),
             PositionExpectation(SelectorPositionKind.NegatedCondition, 23, 36, "!(flag=false)"),
-            PositionExpectation(SelectorPositionKind.LogicalCondition, 6, 36, "x.a(1,'s')=null&&!(flag=false)"),
-            PositionExpectation(SelectorPositionKind.Property, 5, 37, "[x.a(1,'s')=null&&!(flag=false)]"),
-            PositionExpectation(SelectorPositionKind.PropertySelector, 3, 37, "@A[x.a(1,'s')=null&&!(flag=false)]"),
+            PositionExpectation(
+                SelectorPositionKind.LogicalCondition,
+                6,
+                36,
+                "x.a(1,'s')=null&&!(flag=false)"
+            ),
+            PositionExpectation(
+                SelectorPositionKind.Property,
+                5,
+                37,
+                "[x.a(1,'s')=null&&!(flag=false)]"
+            ),
+            PositionExpectation(
+                SelectorPositionKind.PropertySelector,
+                3,
+                37,
+                "@A[x.a(1,'s')=null&&!(flag=false)]"
+            ),
             PositionExpectation(SelectorPositionKind.TupleRange, 39, 44, "(1,2)"),
             PositionExpectation(SelectorPositionKind.Relation, 38, 44, "+(1,2)"),
             PositionExpectation(SelectorPositionKind.PropertySelector, 45, 46, "B"),
-            PositionExpectation(SelectorPositionKind.Unit, 3, 46, "@A[x.a(1,'s')=null&&!(flag=false)] +(1,2) B"),
+            PositionExpectation(
+                SelectorPositionKind.Unit,
+                3,
+                46,
+                "@A[x.a(1,'s')=null&&!(flag=false)] +(1,2) B"
+            ),
             PositionExpectation(SelectorPositionKind.PropertySelector, 52, 53, "C"),
             PositionExpectation(SelectorPositionKind.PolynomialRange, 55, 61, "(2n-1)"),
             PositionExpectation(SelectorPositionKind.Relation, 54, 61, "+(2n-1)"),

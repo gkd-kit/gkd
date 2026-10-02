@@ -64,12 +64,6 @@ data class SubsAppGroupConfig(
         @Query("SELECT * FROM subs_app_group_config WHERE subs_id=:subsId AND app_id=:appId")
         fun queryByAppId(subsId: Long, appId: String): Flow<List<SubsAppGroupConfig>>
 
-        @Query("SELECT * FROM subs_app_group_config WHERE app_id=:appId AND subs_id IN (:subsIds)")
-        fun queryAppConfig(subsIds: List<Long>, appId: String): Flow<List<SubsAppGroupConfig>>
-
-        @Query("DELETE FROM subs_app_group_config WHERE subs_id=:subsId AND app_id=:appId")
-        suspend fun deleteAppConfig(subsId: Long, appId: String): Int
-
         @Query("DELETE FROM subs_app_group_config WHERE subs_id=:subsId AND app_id=:appId AND group_key IN (:keys)")
         suspend fun deleteGroups(subsId: Long, appId: String, keys: List<Int>): Int
 

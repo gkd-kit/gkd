@@ -12,7 +12,9 @@ import androidx.room3.Query
 import androidx.room3.migration.AutoMigrationSpec
 import androidx.room3.paging.PagingSourceDaoReturnTypeConverter
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Entity(
     tableName = "activity_log",
 )

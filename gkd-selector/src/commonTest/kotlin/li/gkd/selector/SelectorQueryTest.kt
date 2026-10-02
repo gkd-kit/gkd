@@ -3,12 +3,12 @@ package li.gkd.selector
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
-import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import li.gkd.selector.relation.RelationExpression
 
 class SelectorQueryTest {
     @Test
@@ -247,7 +247,11 @@ class SelectorQueryTest {
             MatchCase("@Button[text='Confirm'] - TextView[text='Title']", "title", "confirm"),
             MatchCase("Root >n TextView[text='Alpha42']", "alpha", "alpha"),
             MatchCase("TextView[text='Alpha42'] < Card", "card1", "card1"),
-            MatchCase("TextView[text='Beta7'] <<n FrameLayout[vid='content']", "content", "content"),
+            MatchCase(
+                "TextView[text='Beta7'] <<n FrameLayout[vid='content']",
+                "content",
+                "content"
+            ),
             MatchCase("Root TextView[text='Beta7']", "beta", "beta"),
             MatchCase("@TextView[text='Title'] +2 Button[text='Cancel']", "cancel", "title"),
             MatchCase("@TextView[text='Title'] +(1,2) Button[text='Cancel']", "cancel", "title"),
@@ -284,7 +288,9 @@ class SelectorQueryTest {
                 "${it.source.key} ${it.formattedRelation} ${it.target.key}"
             },
         )
-        assertEquals(source, result.units.single().range?.let { source.substring(it.start, it.end) })
+        assertEquals(
+            source,
+            result.units.single().range?.let { source.substring(it.start, it.end) })
         assertEquals(
             listOf(">", ">n"),
             result.units.single().steps.map { step ->
@@ -349,7 +355,7 @@ class SelectorQueryTest {
 
             override fun traverseAncestors(
                 node: FreshNode,
-                relationExpression: li.gkd.selector.relation.RelationExpression,
+                relationExpression: RelationExpression,
             ): Sequence<TraversalCandidate<FreshNode>> {
                 ancestorTraversalCount++
                 return super.traverseAncestors(node, relationExpression)
@@ -444,7 +450,10 @@ class SelectorQueryTest {
                 .matchWithTrace(node, TestNodeAdapter),
         )
         val successfulRange = assertNotNull(orTrace.units.single().range)
-        assertEquals("Button[id='b']", orSource.substring(successfulRange.start, successfulRange.end))
+        assertEquals(
+            "Button[id='b']",
+            orSource.substring(successfulRange.start, successfulRange.end)
+        )
 
         val notTrace = assertNotNull(
             Selector.parse("!(Button[id='x'])")
@@ -823,7 +832,10 @@ class SelectorQueryTest {
             node,
             propertySelector.match(node, TestNodeAdapter),
         )
-        assertEquals(propertySelector.toString(), compileSelector(propertySelector.toString()).toString())
+        assertEquals(
+            propertySelector.toString(),
+            compileSelector(propertySelector.toString()).toString()
+        )
 
         val selectorSource = List(5_000) { "(View[x=1])" }.joinToString(" || ")
         val logicalSelector = compileSelector(selectorSource)
@@ -831,7 +843,10 @@ class SelectorQueryTest {
             node,
             logicalSelector.match(node, TestNodeAdapter),
         )
-        assertEquals(logicalSelector.toString(), compileSelector(logicalSelector.toString()).toString())
+        assertEquals(
+            logicalSelector.toString(),
+            compileSelector(logicalSelector.toString()).toString()
+        )
         assertEquals(
             1,
             assertNotNull(
@@ -1046,7 +1061,7 @@ private class RootLookupNodeAdapter : NodeAdapter<GraphNode>() {
 
     override fun traverseAncestors(
         node: GraphNode,
-        relationExpression: li.gkd.selector.relation.RelationExpression,
+        relationExpression: RelationExpression,
     ): Sequence<TraversalCandidate<GraphNode>> {
         ancestorTraversalCount++
         return super.traverseAncestors(node, relationExpression)
