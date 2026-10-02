@@ -20,7 +20,7 @@ actual fun GkBackHandler(
     enabled: Boolean,
     onBack: () -> Unit,
 ) {
-    if (enabled) GkDesktopBackHandler(onBack)
+    if (enabled) GkDesktopBackHandler(onBack = onBack)
 }
 
 @Composable
@@ -34,7 +34,7 @@ actual fun GkFullscreenDialog(
     onDismiss: () -> Unit,
     content: @Composable () -> Unit,
 ) {
-    GkDesktopBackHandler(onDismiss)
+    GkDesktopBackHandler(onBack = onDismiss)
     GkDialog(onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(
             Modifier.fillMaxSize()

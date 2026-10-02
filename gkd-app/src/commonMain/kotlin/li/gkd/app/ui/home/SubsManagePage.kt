@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -52,6 +53,7 @@ import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.SubscriptionResult
 import li.gkd.app.ui.component.GkAlertDialog
+import li.gkd.app.ui.component.GkDesktopKeyHandler
 import li.gkd.app.ui.component.GkAnimatedFloatingActionButton
 import li.gkd.app.ui.component.GkBatchActionMenuItem
 import li.gkd.app.ui.component.GkIcons
@@ -125,6 +127,8 @@ private fun subsManageContent(
         }
     }
 
+    val refresh: () -> Unit = { launchAction { vm.refreshSubscriptions().message()?.let(toast) } }
+    GkDesktopKeyHandler(Key.F5, onKey = refresh)
     var settingsDialogVisible by remember { mutableStateOf(false) }
     val powerWarningItem by vm.powerWarningItemFlow.collectAsStateWithLifecycle()
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
@@ -331,7 +335,7 @@ private fun subsManageContent(
                 modifier = Modifier.weight(1f),
                 state = pullToRefreshState,
                 isRefreshing = refreshing,
-                onRefresh = { launchAction { vm.refreshSubscriptions().message()?.let(toast) } },
+                onRefresh = refresh,
             ) {
                 LazyColumn(
                     state = lazyListState,

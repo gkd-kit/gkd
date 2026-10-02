@@ -125,7 +125,7 @@ Invoke-RestMethod -NoProxy "$api/semantics?window=app"
 {"window":"app","type":"key","key":"Escape"}
 ```
 
-`invoke/text` 调用真实无障碍操作；坐标事件由 Compose 命中检测与手势处理器执行，不移动系统鼠标、不发送系统键盘事件、不激活窗口。按键支持 Tab、Enter、Escape、Space、Backspace、F12。坐标及控件树 bounds 使用 AWT 逻辑像素，相对当前输入弹窗内容区，无弹窗时相对宿主内容区。节点路径仅属于该窗口最近一次控件树；失效返回 `Stale node path`。后台操作只支持 `area=content`，拒绝 `nativeKey`。
+`invoke/text` 调用真实无障碍操作；坐标事件由 Compose 命中检测与手势处理器执行，不移动系统鼠标、不发送系统键盘事件、不激活窗口。按键支持 Tab、Enter、Escape、Space、Backspace、F5、F12。F5 刷新当前订阅或应用列表，菜单和弹窗打开时不触发。坐标及控件树 bounds 使用 AWT 逻辑像素，相对当前输入弹窗内容区，无弹窗时相对宿主内容区。节点路径仅属于该窗口最近一次控件树；失效返回 `Stale node path`。后台操作只支持 `area=content`，拒绝 `nativeKey`。
 
 截图默认 `mode=compose`，读取当前 Skia 绘制记录并合成弹窗和最近网页帧，响应头为 `X-GKD-Capture: compose-recording`。它不重新创建页面，可在窗口被遮挡或位于屏幕外时使用，但不含系统菜单等原生窗口。`mode=screen` 捕获屏幕像素，响应头为 `X-GKD-Capture: screen`，要求窗口可见且可能包含遮挡。两者均禁止 `activate=true`。`area=frame` 包含 Compose 标题栏，不含原生外边框。
 

@@ -32,6 +32,7 @@ object DesktopInput {
             "Escape" -> KeyEvent.VK_ESCAPE
             "Space" -> KeyEvent.VK_SPACE
             "Backspace" -> KeyEvent.VK_BACK_SPACE
+            "F5" -> KeyEvent.VK_F5
             "F12" -> KeyEvent.VK_F12
             else -> throw IllegalArgumentException("Unsupported key: $key")
         }

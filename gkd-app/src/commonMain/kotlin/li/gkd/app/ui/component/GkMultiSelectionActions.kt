@@ -54,6 +54,9 @@ fun <K> RowScope.GkMultiSelectionActions(
             enabled = enabled && selectedKeys.isNotEmpty(),
             onClick = { expanded = true },
         )
+        if (expanded && enabled && selectedKeys.isNotEmpty()) {
+            LocalOverlayBackHandler.current { expanded = false }
+        }
         DropdownMenu(
             expanded = expanded && enabled && selectedKeys.isNotEmpty(),
             onDismissRequest = { expanded = false },

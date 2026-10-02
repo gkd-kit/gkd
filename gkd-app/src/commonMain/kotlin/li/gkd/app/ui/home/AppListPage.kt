@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,6 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -40,7 +40,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import li.gkd.app.model.AppInfo
 import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_reload
 import li.gkd.app.resources.app_list_permission_error_description
 import li.gkd.app.resources.app_list_search
 import li.gkd.app.resources.app_list_update_success
@@ -70,6 +69,8 @@ import li.gkd.app.resources.whitelist_remove
 import li.gkd.app.resources.whitelist_title
 import li.gkd.app.state.Loadable
 import li.gkd.app.ui.component.DialogRequests
+import li.gkd.app.ui.component.GkDesktopKeyHandler
+import li.gkd.app.ui.component.LocalOverlayBackHandler
 import li.gkd.app.ui.component.GkAnimatedFloatingActionButton
 import li.gkd.app.ui.component.GkAppBarTextField
 import li.gkd.app.ui.component.GkCheckbox
@@ -151,6 +152,7 @@ fun appListPage(
             }
         }
     }
+    GkDesktopKeyHandler(Key.F5, onKey = ::refresh)
     dialogs.Render()
     val appInfos = state.appInfos
     val searchStr = state.searchText
@@ -243,6 +245,7 @@ fun appListPage(
                     ),
                 )
                 var expanded by remember { mutableStateOf(false) }
+                if (expanded) LocalOverlayBackHandler.current { expanded = false }
                 GkFilterIconButton(
                     filtered = !state.showAllApps,
                     contentDescription = stringResource(Res.string.sort_filter),
@@ -258,13 +261,6 @@ fun appListPage(
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                     ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.action_reload)) },
-                            onClick = {
-                                expanded = false
-                                refresh()
-                            },
-                        )
                         GkMenuGroupCard(
                             inTop = true,
                             title = stringResource(Res.string.sort_title)

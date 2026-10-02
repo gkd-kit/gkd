@@ -127,6 +127,7 @@ fun runDesktop(args: Array<String>) {
         )
         var appReady by remember { mutableStateOf(false) }
         val backDispatcher = remember { DesktopBackDispatcher() }
+        val keyDispatcher = remember { DesktopKeyDispatcher() }
         val controlsWindowState =
             rememberWindowState(width = 460.dp, height = 820.dp, position = testPosition)
         var controlsVisible by remember { mutableStateOf(false) }
@@ -224,6 +225,9 @@ fun runDesktop(args: Array<String>) {
         Window(
             onCloseRequest = requestExit,
             title = "GKD",
+            onKeyEvent = { event ->
+                !backDispatcher.hasOverlay && keyDispatcher.dispatch(event)
+            },
             state = windowState,
             visible = appReady,
             icon = windowIcon,
@@ -312,7 +316,8 @@ fun runDesktop(args: Array<String>) {
                         LocalDarkTheme provides darkTheme,
                         LocalIsTalkbackEnabled provides false,
                         LocalDesktopBackDispatcher provides backDispatcher,
-                        LocalOverlayBackHandler provides { dismiss -> GkDesktopBackHandler(dismiss) },
+                        LocalDesktopKeyDispatcher provides keyDispatcher,
+                        LocalOverlayBackHandler provides { dismiss -> GkDesktopBackHandler(overlay = true, onBack = dismiss) },
                     ) {
                         // The JVM resource environment reads Locale.getDefault(); recreate resource consumers on language changes.
                         key(size.locale) {

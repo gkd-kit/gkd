@@ -31,6 +31,7 @@ fun RowScope.GkSubscriptionActions(
     onAddAppRule: () -> Unit, onAddGlobalRule: () -> Unit, onMenuOpen: () -> Boolean = { true },
 ) {
     var expanded by remember { mutableStateOf(false) }
+    if (expanded) LocalOverlayBackHandler.current { expanded = false }
     GkIconButton(
         imageVector = if (matching) GkIcons.FlashOn else GkIcons.FlashOff, animateMorph = true,
         colors = IconButtonDefaults.iconButtonColors(contentColor = if (!matching) CheckboxDefaults.colors().checkedBoxColor else LocalContentColor.current),
