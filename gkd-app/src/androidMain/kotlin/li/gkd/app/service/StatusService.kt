@@ -178,7 +178,7 @@ class StatusService : LifecycleHookService() {
         fun autoStart() {
             if (System.currentTimeMillis() - lastAutoStart < 1000) return
             // 重启自动打开通知栏状态服务
-            // 需要已有服务或前台才能自主启动，否则报错 startForegroundService() not allowed due to mAllowStartForeground false
+            // 需要前台、已有服务或开机广播等系统豁免场景，否则系统可能拒绝启动前台服务
             if (needRestart) {
                 start()
                 lastAutoStart = System.currentTimeMillis()

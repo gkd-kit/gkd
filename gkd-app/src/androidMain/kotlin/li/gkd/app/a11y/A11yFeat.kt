@@ -132,8 +132,8 @@ private fun initRuleChangedLog() {
 private const val volumeChangedAction = "android.media.VOLUME_CHANGED_ACTION"
 private fun createVolumeReceiver() = object : BroadcastReceiver() {
     var lastVolumeTriggerTime = -1L
-    override fun onReceive(context: Context?, intent: Intent?) {
-        if (intent?.action == volumeChangedAction) {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == volumeChangedAction) {
             val t = System.currentTimeMillis()
             if (t - lastVolumeTriggerTime > 3000 && !ScreenUtils.isLocked()) {
                 lastVolumeTriggerTime = t
@@ -170,11 +170,8 @@ private fun initCaptureVolume() {
 var isInteractive = true
     private set
 private val screenStateReceiver = object : BroadcastReceiver() {
-    override fun onReceive(
-        context: Context?,
-        intent: Intent?
-    ) {
-        val action = intent?.action ?: return
+    override fun onReceive(context: Context, intent: Intent) {
+        val action = intent.action ?: return
         LogUtils.d("screenStateReceiver->${action}")
         isInteractive = when (action) {
             Intent.ACTION_SCREEN_ON -> true

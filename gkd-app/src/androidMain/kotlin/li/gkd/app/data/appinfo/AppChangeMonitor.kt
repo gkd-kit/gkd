@@ -14,8 +14,8 @@ object AppChangeMonitor {
         ContextCompat.registerReceiver(
             app,
             object : BroadcastReceiver() {
-                override fun onReceive(context: Context?, intent: Intent?) {
-                    intent?.data?.schemeSpecificPart?.let(onChanged)
+                override fun onReceive(context: Context, intent: Intent) {
+                    intent.data?.schemeSpecificPart?.let(onChanged)
                 }
             },
             IntentFilter().apply {
