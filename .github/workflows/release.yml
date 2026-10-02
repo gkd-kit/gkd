@@ -6,7 +6,7 @@ on:
       - v*
 
 jobs:
-  build:
+  build-android:
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -43,22 +43,22 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: release
+          name: gkd-apk
           path: gkd-android/build/outputs/apk/gkd/release
 
       - uses: actions/upload-artifact@v7
         with:
-          name: playRelease
+          name: gkd-play-aab
           path: gkd-android/build/outputs/bundle/playRelease
 
       - uses: actions/upload-artifact@v7
         with:
-          name: outputs
+          name: gkd-${{ github.ref_name }}.outputs
           path: gkd-android/build/outputs
 
       - run: |
           cp outputs/apk/gkd/release/*.apk "${GITHUB_WORKSPACE}/gkd-${GITHUB_REF_NAME}.apk"
-          zip -r "${GITHUB_WORKSPACE}/outputs-${GITHUB_REF_NAME}.zip" outputs
+          zip -r "${GITHUB_WORKSPACE}/gkd-${GITHUB_REF_NAME}.outputs.zip" outputs
         working-directory: gkd-android/build
 
       - uses: softprops/action-gh-release@v3
@@ -70,10 +70,10 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             gkd-*.apk
-            outputs-*.zip
+            gkd-v*.outputs.zip
 
   build-windows:
-    needs: build
+    needs: build-android
     permissions:
       contents: write
     runs-on: windows-latest
@@ -99,10 +99,10 @@ jobs:
           archive: false
           include-hidden-files: true
           if-no-files-found: error
-          path: .local/desktop-packages/gkd-*-windows-*-portable.zip
+          path: .local/desktop-packages/gkd-v*.win-*.zip
 
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           fail_on_unmatched_files: true
-          files: .local/desktop-packages/gkd-*-windows-*-portable.zip
+          files: .local/desktop-packages/gkd-v*.win-*.zip

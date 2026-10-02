@@ -36,9 +36,9 @@ pnpm app:tools --help
 ./gradlew.bat :gkd-app:packageWindowsPortable
 ```
 
-ZIP 输出到 `.local/desktop-packages/gkd-windows-<架构>-portable.zip`。解压完整的 `GKD/` 目录后运行 `GKD.exe`，无需安装 Java，也不生成 MSI 或安装器。架构跟随构建所用 JDK；当前 WebView2 集成使用 Windows x64，建议使用 x64 JDK，网页功能仍需系统 WebView2 Runtime。
+ZIP 输出到 `.local/desktop-packages/gkd.win-<架构>.zip`。解压完整的 `GKD/` 目录后运行 `GKD.exe`，无需安装 Java，也不生成 MSI 或安装器。架构跟随构建所用 JDK，`amd64` / `x86_64` 统一命名为 `x86_64`；当前 WebView2 集成使用 Windows x64，建议使用 x64 JDK，网页功能仍需系统 WebView2 Runtime。
 
-设置非空环境变量或 Gradle 属性 `GKD_RENAME_PACKAGE_FLAG` 后，APK 命名为 `gkd-v<版本号><提交后缀>.apk`，ZIP 命名为 `gkd-v<版本号><提交后缀>-windows-<架构>-portable.zip`。HEAD 正好位于 Git tag 时无提交后缀，否则追加 `-<7位提交ID>`。例如：
+设置非空环境变量或 Gradle 属性 `GKD_RENAME_PACKAGE_FLAG` 后，APK 命名为 `gkd-v<版本号><提交后缀>.apk`，ZIP 命名为 `gkd-v<版本号><提交后缀>.win-<架构>.zip`。HEAD 正好位于 Git tag 时无提交后缀，否则追加 `-<7位提交ID>`。例如：
 
 ```powershell
 ./gradlew.bat :gkd-app:packageWindowsPortable -PGKD_RENAME_PACKAGE_FLAG=1

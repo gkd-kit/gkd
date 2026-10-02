@@ -155,11 +155,15 @@ if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
     } else {
         "gkd"
     }
+    val archiveArchitecture = when (val architecture = System.getProperty("os.arch").lowercase()) {
+        "amd64", "x86_64" -> "x86_64"
+        else -> architecture
+    }
     tasks.register<Zip>("packageWindowsPortable") {
         group = "compose desktop"
         description = "Packages the Windows application and Java runtime as a portable ZIP."
         from(tasks.named("createReleaseDistributable"))
-        archiveFileName.set("$archiveBaseName-windows-${System.getProperty("os.arch")}-portable.zip")
+        archiveFileName.set("$archiveBaseName.win-$archiveArchitecture.zip")
         destinationDirectory.set(rootProject.layout.projectDirectory.dir(".local/desktop-packages"))
     }
 }

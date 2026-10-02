@@ -12,7 +12,7 @@ on:
       - '.github/**'
 
 jobs:
-  build:
+  build-android:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -44,9 +44,18 @@ jobs:
           archive: false
           path: gkd-android/build/outputs/apk/gkd/release/*.apk
 
+      - name: derive outputs artifact name from APK
+        id: outputs-artifact
+        shell: bash
+        run: |
+          apk_files=(gkd-android/build/outputs/apk/gkd/release/gkd-v*.apk)
+          [[ ${#apk_files[@]} -eq 1 && -f "${apk_files[0]}" ]]
+          apk_name=$(basename "${apk_files[0]}" .apk)
+          echo "name=${apk_name}.outputs" >> "$GITHUB_OUTPUT"
+
       - uses: actions/upload-artifact@v7
         with:
-          name: outputs
+          name: ${{ steps.outputs-artifact.outputs.name }}
           path: gkd-android/build/outputs
 
   build-windows:
@@ -73,4 +82,4 @@ jobs:
           archive: false
           include-hidden-files: true
           if-no-files-found: error
-          path: .local/desktop-packages/gkd-*-windows-*-portable.zip
+          path: .local/desktop-packages/gkd-v*.win-*.zip
