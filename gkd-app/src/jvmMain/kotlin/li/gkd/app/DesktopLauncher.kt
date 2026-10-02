@@ -105,11 +105,13 @@ fun runDesktop(args: Array<String>) {
         val state =
             remember { DesktopState(isolated = DesktopStorage.isolated, simulator = simulator) }
         val tasks = remember { DesktopTasks(state) }
+        var appWindow by remember { mutableStateOf<ComposeWindow?>(null) }
         val session = remember(state.revision) {
             DesktopSession(
                 state,
                 runtime,
-                tasks
+                tasks,
+                fileDialogOwner = { requireNotNull(appWindow) }
             )
         }
         val initialSize = remember { simulator.settings.value.device }
@@ -128,7 +130,6 @@ fun runDesktop(args: Array<String>) {
         val controlsWindowState =
             rememberWindowState(width = 460.dp, height = 820.dp, position = testPosition)
         var controlsVisible by remember { mutableStateOf(false) }
-        var appWindow by remember { mutableStateOf<ComposeWindow?>(null) }
         var controlsWindow by remember { mutableStateOf<ComposeWindow?>(null) }
         val openControls: () -> Unit = {
             controlsWindowState.isMinimized = false

@@ -27,13 +27,16 @@ import li.gkd.app.ui.subscription.SubsSheetHost
 import li.gkd.app.ui.subscription.SubsSheetState
 import li.gkd.app.ui.text.displayMessage
 import li.gkd.app.ui.text.getSync
+import java.awt.Window
 import java.io.File
 
 class DesktopSession(
     val state: DesktopState,
     val runtime: DesktopRuntime,
-    private val tasks: DesktopTasks
+    private val tasks: DesktopTasks,
+    fileDialogOwner: () -> Window
 ) {
+    val fileActions = DesktopFileActions(fileDialogOwner)
     val revision = state.revision
     var showShareLogs by mutableStateOf(false)
     var backupPath by mutableStateOf("")
@@ -51,7 +54,7 @@ class DesktopSession(
                     save -> FileExports.withTemporaryFile(
                         create = { file },
                         delete = { it.delete() },
-                        consume = DesktopFileActions::saveAs
+                        consume = fileActions::saveAs
                     )
 
                     else -> state.toast.show(
@@ -69,7 +72,7 @@ class DesktopSession(
     fun importBackup(selectFile: Boolean = true) {
         scope.launch {
             try {
-                val file = if (selectFile) DesktopFileActions.choose(appStorage().sharedCache)
+                val file = if (selectFile) fileActions.choose(appStorage().sharedCache)
                     ?: return@launch else File(backupPath)
                 runtime.subscriptionInitialization.join()
                 state.toast.show(Res.string.backup_import_progress.getSync())
@@ -100,7 +103,7 @@ class DesktopSession(
                     save -> FileExports.withTemporaryFile(
                         create = { file },
                         delete = { it.delete() },
-                        consume = DesktopFileActions::saveAs
+                        consume = fileActions::saveAs
                     )
 
                     else -> state.toast.show(
