@@ -1,13 +1,16 @@
 package li.gkd.app.ui.component
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
@@ -31,10 +34,18 @@ fun GkMenuItemCheckbox(
     onClick: () -> Unit,
     enabled: Boolean = true,
 ) {
+    val colors = MenuDefaults.itemColors()
+    // Theme colors already animate in GkTheme; reset only the local color animation.
+    val textColor by key(MaterialTheme.colorScheme.primary) {
+        animateColorAsState(
+            targetValue = if (enabled) colors.textColor else colors.disabledTextColor,
+            animationSpec = tween(180), label = "menuCheckboxTextColor",
+        )
+    }
     DropdownMenuItem(
         text = { Text(text = text) },
         trailingIcon = {
-            Checkbox(
+            GkCheckbox(
                 checked = checked,
                 onCheckedChange = { onClick() },
                 enabled = enabled,
@@ -42,6 +53,7 @@ fun GkMenuItemCheckbox(
         },
         onClick = onClick,
         enabled = enabled,
+        colors = colors.copy(textColor = textColor, disabledTextColor = textColor),
     )
 }
 

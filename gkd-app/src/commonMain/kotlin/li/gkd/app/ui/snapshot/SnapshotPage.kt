@@ -24,7 +24,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -110,6 +109,7 @@ import li.gkd.app.time.format
 import li.gkd.app.ui.component.DialogRequests
 import li.gkd.app.ui.component.GkAppNameText
 import li.gkd.app.ui.component.GkBatchActionMenuItem
+import li.gkd.app.ui.component.GkCheckbox
 import li.gkd.app.ui.component.GkEmptyState
 import li.gkd.app.ui.component.GkFixedTimeText
 import li.gkd.app.ui.component.GkIconButton
@@ -650,7 +650,7 @@ private fun SnapshotCard(
                     contentAlignment = Alignment.Center,
                 ) {
                     if (selectedMode) {
-                        Checkbox(
+                        GkCheckbox(
                             checked = selected,
                             onCheckedChange = null,
                             modifier = Modifier.clearAndSetSemantics {},
