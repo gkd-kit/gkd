@@ -25,7 +25,7 @@ import li.gkd.db.SubsItem
 import li.songe.json5.decodeFromJson5String
 
 object SubscriptionRepository {
-    internal val files by lazy { FileSubscriptionFiles(appStorage().subscription) }
+    val files by lazy { FileSubscriptionFiles(appStorage().subscription) }
     private val categoryPolicy by lazy { CategoryPolicy() }
 
     private val updateMutex = MutexState()

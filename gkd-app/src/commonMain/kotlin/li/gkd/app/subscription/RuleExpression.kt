@@ -13,12 +13,12 @@ sealed interface RuleValidationError {
     data class InvalidPosition(val value: String) : RuleValidationError
 }
 
-internal interface RuleExpression {
+interface RuleExpression {
     fun setVariable(name: String, value: Double)
     fun evaluate(): Double
 }
 
-internal fun compileRuleExpression(source: String, variables: Set<String>): RuleExpression? = try {
+fun compileRuleExpression(source: String, variables: Set<String>): RuleExpression? = try {
     val expression = ExpressionBuilder(source).variables(variables).build()
     variables.forEach { expression.setVariable(it, 0.0) }
     if (expression.validate().isValid) object : RuleExpression {

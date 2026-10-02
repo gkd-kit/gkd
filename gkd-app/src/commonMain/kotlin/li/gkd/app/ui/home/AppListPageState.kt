@@ -19,7 +19,7 @@ class AppListPageState(search: String = "", searchOpen: Boolean = false) {
     var searchOpen by mutableStateOf(searchOpen)
         private set
     private var editingFilter by mutableStateOf<Set<String>?>(null)
-    internal var query by mutableStateOf(search)
+    var query by mutableStateOf(search)
 
     fun setSearchText(value: String) {
         search = value.trim()

@@ -16,7 +16,7 @@ data class LogMetadata(
 )
 
 /** One application-owned writer; arguments have already been rendered on the calling thread. */
-internal class FileLogWriter(private val directory: File, private val metadata: LogMetadata) :
+class FileLogWriter(private val directory: File, private val metadata: LogMetadata) :
     AutoCloseable {
     private val executor = Executors.newSingleThreadExecutor { task ->
         Thread(task, "gkd-log-writer").apply { isDaemon = true }

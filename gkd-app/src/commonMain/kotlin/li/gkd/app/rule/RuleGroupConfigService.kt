@@ -26,7 +26,7 @@ data class RuleGroupConfiguration(
 )
 
 object RuleGroupConfigService {
-    internal val policy by lazy { RuleGroupPolicy() }
+    val policy by lazy { RuleGroupPolicy() }
     fun groupConfiguration(target: RuleGroupTarget): Flow<RuleGroupConfiguration> =
         SubscriptionConfigStore.observe().map { snapshot ->
             RuleGroupConfiguration(

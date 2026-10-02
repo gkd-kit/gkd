@@ -25,9 +25,9 @@ class RuleRuntime(
         changedAt.value = time
     }
 
-    internal fun onTriggered(rule: ResolvedRule, time: Long) {
+    fun onTriggered(rule: ResolvedRule, time: Long) {
         trigger.value = Trigger(rule, time)
     }
 
-    internal fun onReset(rule: ResolvedRule) = cancelPending(rule)
+    fun onReset(rule: ResolvedRule) = cancelPending(rule)
 }

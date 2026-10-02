@@ -97,4 +97,4 @@ object SnapshotCaptureRepository {
     }
 }
 
-internal expect suspend fun canExportDownloads(): Boolean
+expect suspend fun canExportDownloads(): Boolean

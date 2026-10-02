@@ -17,7 +17,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.core.content.FileProvider
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import li.gkd.app.development.DesktopProfileExport
@@ -40,6 +39,7 @@ import li.gkd.app.ui.component.LocalTopBarWindowInsets
 import li.gkd.app.ui.share.ActivityImeController
 import li.gkd.app.ui.share.ActivityResultRequests
 import li.gkd.app.ui.share.FixedWindowInsets
+import li.gkd.app.ui.theme.installThemedSplashScreen
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.BarUtils
 import li.gkd.app.util.ToastUtils
@@ -99,7 +99,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        installThemedSplashScreen()
         enableEdgeToEdge()
         fixTransparentNavigationBar()
         super.onCreate(savedInstanceState)

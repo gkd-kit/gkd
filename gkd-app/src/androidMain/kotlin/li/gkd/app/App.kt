@@ -69,38 +69,21 @@ private lateinit var innerApp: App
 val app: App
     get() = innerApp
 
-private val applicationInfo by lazy {
-    app.packageManager.getApplicationInfo(
-        app.packageName,
-        PackageManager.GET_META_DATA
-    )
-}
-
-private fun getMetaString(key: String): String {
-    return applicationInfo.metaData.getString(key) ?: error("Missing meta-data: $key")
-}
-
-val notificationSmallIcon: Int by lazy {
-    val resourceId = applicationInfo.metaData?.getInt("notificationSmallIcon") ?: 0
-    check(resourceId != 0) { "Missing resource meta-data: notificationSmallIcon" }
-    resourceId
-}
-
 // https://github.com/android-cs/16/blob/main/packages/SettingsLib/src/com/android/settingslib/accessibility/AccessibilityUtils.java#L41
 private const val ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR = ':'
 
 @Serializable
 data class AppMeta(
-    val channel: String = getMetaString("channel"),
-    val buildKey: String = getMetaString("buildKey"),
-    val commitId: String = getMetaString("commitId"),
-    val commitTime: Long = getMetaString("commitTime").toLong(),
-    val tagName: String? = getMetaString("tagName").takeIf { it.isNotEmpty() },
-    val debuggable: Boolean = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0,
+    val channel: String = app.getMetaString("channel"),
+    val buildKey: String = app.getMetaString("buildKey"),
+    val commitId: String = app.getMetaString("commitId"),
+    val commitTime: Long = app.getMetaString("commitTime").toLong(),
+    val tagName: String? = app.getMetaString("tagName").takeIf { it.isNotEmpty() },
+    val debuggable: Boolean = app.applicationInfoWithMetadata.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0,
     val versionCode: Int = selfAppInfo.versionCode,
     val versionName: String = selfAppInfo.versionName!!,
     val appId: String = app.packageName!!,
-    val appName: String = applicationInfo.loadLabel(app.packageManager).toString()
+    val appName: String = app.applicationInfoWithMetadata.loadLabel(app.packageManager).toString()
 ) {
     val commitUrl = "${AppLinks.Repository}/".run {
         plus(if (tagName != null) "tree/$tagName" else "commit/$commitId")
@@ -112,10 +95,6 @@ data class AppMeta(
 
 val META by lazy { AppMeta() }
 
-fun contentObserver(listener: () -> Unit) = object : ContentObserver(null) {
-    override fun onChange(selfChange: Boolean) = listener()
-}
-
 class App : Application() {
     companion object {
         const val START_WAIT_TIME = 3000L
@@ -123,6 +102,33 @@ class App : Application() {
 
     init {
         innerApp = this
+    }
+
+    val applicationInfoWithMetadata: ApplicationInfo by lazy {
+        packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
+    }
+
+    val notificationSmallIcon: Int by lazy {
+        getMetaInt("notificationSmallIcon")
+    }
+
+    val splashScreenLightTheme: Int by lazy {
+        getMetaInt("splashScreenLightTheme")
+    }
+
+    val splashScreenNightTheme: Int by lazy {
+        getMetaInt("splashScreenNightTheme")
+    }
+
+    fun getMetaString(key: String): String {
+        return applicationInfoWithMetadata.metaData?.getString(key)
+            ?: error("Missing meta-data: $key")
+    }
+
+    fun getMetaInt(key: String): Int {
+        val resourceId = applicationInfoWithMetadata.metaData?.getInt(key) ?: 0
+        check(resourceId != 0) { "Missing resource meta-data: $key" }
+        return resourceId
     }
 
     override fun attachBaseContext(base: Context?) {

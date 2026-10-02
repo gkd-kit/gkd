@@ -6,14 +6,14 @@ import android.util.Log
 import li.gkd.app.META
 import li.gkd.app.data.AndroidLogMetadata
 
-internal actual fun logMetadata(): LogMetadata = AndroidLogMetadata.create()
-internal actual fun isLogDebuggable(): Boolean = META.debuggable
+actual fun logMetadata(): LogMetadata = AndroidLogMetadata.create()
+actual fun isLogDebuggable(): Boolean = META.debuggable
 
-internal actual fun writePlatformLog(tag: String, message: String) {
+actual fun writePlatformLog(tag: String, message: String) {
     Log.d(tag, message)
 }
 
-internal actual fun formatLogValue(value: Any?): String = when (value) {
+actual fun formatLogValue(value: Any?): String = when (value) {
     is Bundle -> {
         val sb = StringBuilder()
         sb.append("Bundle{")

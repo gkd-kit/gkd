@@ -13,7 +13,7 @@ import priv.kit.ui.PrivilegeUiStartupMode
 import priv.kit.ui.adb.PrivilegeUiStaticTcpSwitchAction
 
 /** Executes simulated actions only. Every observable value belongs to SimulatorStore. */
-internal class DesktopPrivilegeSimulation(
+class DesktopPrivilegeSimulation(
     private val scope: CoroutineScope,
     val store: SimulatorStore,
     private val copyText: (String) -> Unit,

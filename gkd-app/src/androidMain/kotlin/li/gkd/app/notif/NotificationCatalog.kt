@@ -2,7 +2,7 @@ package li.gkd.app.notif
 
 import android.app.Service
 import li.gkd.app.META
-import li.gkd.app.notificationSmallIcon
+import li.gkd.app.app
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.a11y_events_recording
 import li.gkd.app.resources.a11y_running
@@ -66,7 +66,7 @@ data class ForegroundNotification(
     override val title: String,
     override val text: String? = null,
     override val uri: String? = null,
-    override val smallIcon: Int = notificationSmallIcon,
+    override val smallIcon: Int = app.notificationSmallIcon,
     override val stopService: KClass<out Service>? = null,
 ) : AppNotificationSpec {
     override val id: Int
@@ -85,7 +85,7 @@ data class PostedNotification(
     override val title: String,
     override val text: String? = null,
     override val uri: String? = null,
-    override val smallIcon: Int = notificationSmallIcon,
+    override val smallIcon: Int = app.notificationSmallIcon,
     override val ongoing: Boolean = false,
     override val autoCancel: Boolean = true,
 ) : AppNotificationSpec {

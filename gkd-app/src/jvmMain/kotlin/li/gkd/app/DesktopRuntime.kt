@@ -37,16 +37,16 @@ import li.gkd.db.initialize
 
 /** Application-owned repositories outlive routes and explicit UI scenario reloads. */
 class DesktopRuntime(
-    internal val simulator: SimulatorStore
+    val simulator: SimulatorStore
 ) : AutoCloseable {
     private val scope = applicationScope()
-    internal val appCatalog = DesktopAppCatalog(simulator)
+    val appCatalog = DesktopAppCatalog(simulator)
 
     companion object {
         @Volatile
         private var current: DesktopRuntime? = null
 
-        internal fun requireCurrent(): DesktopRuntime =
+        fun requireCurrent(): DesktopRuntime =
             checkNotNull(current) { "Desktop runtime is not active" }
     }
 

@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="NewApi">
 
     <style name="AppLightTheme" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@android:color/transparent</item>
@@ -9,12 +9,20 @@
     </style>
 
     <style name="SplashScreenLightTheme" parent="Theme.SplashScreen">
+        <!-- Match Material3 lightColorScheme().background. -->
+        <item name="windowSplashScreenBackground">#FEF7FF</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/gkd_black</item>
         <item name="windowSplashScreenAnimationDuration">1000</item>
         <item name="postSplashScreenTheme">@style/AppLightTheme</item>
     </style>
 
     <style name="SplashScreenNightTheme" parent="Theme.SplashScreen">
+        <!-- Match Material3 darkColorScheme().background. -->
+        <item name="windowSplashScreenBackground">#141218</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/gkd_white</item>
         <item name="windowSplashScreenAnimationDuration">1000</item>
         <item name="postSplashScreenTheme">@style/AppNightTheme</item>

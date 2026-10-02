@@ -36,6 +36,13 @@
             android:resource="@drawable/ic_status" />
 
         <meta-data
+            android:name="splashScreenLightTheme"
+            android:resource="@style/SplashScreenLightTheme" />
+        <meta-data
+            android:name="splashScreenNightTheme"
+            android:resource="@style/SplashScreenNightTheme" />
+
+        <meta-data
             android:name="channel"
             android:value="${channel}" />
         <meta-data

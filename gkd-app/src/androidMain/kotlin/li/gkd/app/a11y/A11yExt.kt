@@ -1,6 +1,7 @@
 package li.gkd.app.a11y
 
 import android.content.ComponentName
+import android.database.ContentObserver
 import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -11,7 +12,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.stateIn
 import li.gkd.app.app
-import li.gkd.app.contentObserver
 import li.gkd.app.service.A11yService
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.mapState
@@ -21,8 +21,10 @@ import kotlin.contracts.contract
 fun useEnabledA11yServicesFlow(scope: CoroutineScope): StateFlow<Set<ComponentName>> {
     val initialValue = app.getSecureA11yServices()
     return callbackFlow {
-        val contextObserver = contentObserver {
-            trySend(app.getSecureA11yServices())
+        val contextObserver = object : ContentObserver(null) {
+            override fun onChange(selfChange: Boolean) {
+                trySend(app.getSecureA11yServices())
+            }
         }
         app.registerObserver(
             Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),

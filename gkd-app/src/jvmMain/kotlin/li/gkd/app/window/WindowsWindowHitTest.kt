@@ -4,7 +4,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 
 /** All coordinates are physical client pixels, including on monitors left of the primary display. */
-internal data class WindowsWindowHitTest(
+data class WindowsWindowHitTest(
     val title: Rect = Rect.Zero,
     val minimize: Rect = Rect.Zero,
     val maximize: Rect = Rect.Zero,

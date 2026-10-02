@@ -1,7 +1,7 @@
 package li.gkd.app.window
 
 /** Win32 constants absent from the pinned JNA WinUser API. */
-internal object WindowsConstants {
+object WindowsConstants {
     const val SC_RESTORE = 0xf120
     const val SC_MOVE = 0xf010
     const val SC_SIZE = 0xf000

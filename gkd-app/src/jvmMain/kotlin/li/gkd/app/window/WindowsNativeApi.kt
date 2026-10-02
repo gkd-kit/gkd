@@ -12,7 +12,7 @@ import com.sun.jna.platform.win32.WinDef.WPARAM
 import com.sun.jna.win32.StdCallLibrary
 import com.sun.jna.win32.W32APIOptions
 
-internal interface WindowsNativeApi : StdCallLibrary {
+interface WindowsNativeApi : StdCallLibrary {
     fun SetWindowLongPtrW(window: HWND, index: Int, value: Pointer): Pointer?
     fun CallWindowProcW(
         previous: Pointer,
@@ -45,7 +45,7 @@ internal interface WindowsNativeApi : StdCallLibrary {
     }
 }
 
-internal interface WindowsDwmApi : StdCallLibrary {
+interface WindowsDwmApi : StdCallLibrary {
     fun DwmExtendFrameIntoClientArea(window: HWND, margins: Margins): Int
 
     @Structure.FieldOrder("left", "right", "top", "bottom")

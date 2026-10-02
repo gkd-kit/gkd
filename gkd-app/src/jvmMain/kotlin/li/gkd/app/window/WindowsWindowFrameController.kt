@@ -17,7 +17,7 @@ import java.awt.Container
 import java.util.concurrent.ConcurrentHashMap
 
 /** Owns both callbacks strongly until they have been uninstalled. No shared state between windows. */
-internal class WindowsWindowFrameController(private val window: ComposeWindow) : AutoCloseable {
+class WindowsWindowFrameController(private val window: ComposeWindow) : AutoCloseable {
     private val api get() = WindowsNativeApi.instance
     private val user get() = User32.INSTANCE
     private val handle = window.windowHandle

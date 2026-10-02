@@ -71,12 +71,12 @@ object DesktopWindowGeometry {
     }
 
     fun isCustom(window: ComposeWindow) = window.rootPane.getClientProperty(FRAME) == true
-    internal fun update(window: ComposeWindow, bounds: Rectangle, custom: Boolean) {
+    fun update(window: ComposeWindow, bounds: Rectangle, custom: Boolean) {
         window.rootPane.putClientProperty(CONTENT, bounds)
         window.rootPane.putClientProperty(FRAME, custom)
     }
 
-    internal fun clear(window: ComposeWindow) {
+    fun clear(window: ComposeWindow) {
         window.rootPane.putClientProperty(CONTENT, null)
         window.rootPane.putClientProperty(FRAME, null)
     }

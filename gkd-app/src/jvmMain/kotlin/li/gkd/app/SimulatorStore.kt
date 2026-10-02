@@ -27,7 +27,7 @@ class SimulatorStore(
         field = MutableStateFlow(initial)
 
     @Synchronized
-    internal fun update(transform: (SimulatorSettings) -> SimulatorSettings) {
+    fun update(transform: (SimulatorSettings) -> SimulatorSettings) {
         val previous = settings.value
         val transformed = transform(previous)
         val next = hostBatteryPercent?.let {
@@ -118,7 +118,7 @@ class SimulatorStore(
     fun grantLocalNetwork() =
         update { it.copy(permissions = it.permissions.copy(localNetworkGranted = true)) }
 
-    internal fun updatePrivilege(
+    fun updatePrivilege(
         operationId: Long? = null,
         transform: (SimulatedPrivilege) -> SimulatedPrivilege
     ) = update {

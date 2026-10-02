@@ -108,7 +108,7 @@ class DesktopState(
     val environment: DesktopEnvironment get() = simulator.settings.value.environment()
     private val privilegeScope =
         CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    internal val privilege = DesktopPrivilegeSimulation(
+    val privilege = DesktopPrivilegeSimulation(
         scope = privilegeScope,
         store = simulator,
         copyText = {
