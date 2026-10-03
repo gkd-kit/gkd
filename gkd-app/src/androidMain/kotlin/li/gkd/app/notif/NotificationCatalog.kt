@@ -26,6 +26,7 @@ import li.gkd.app.service.TrackService
 import li.gkd.app.snapshot.SnapshotScreenshotStatus
 import li.gkd.app.snapshot.detailText
 import li.gkd.app.ui.text.getSync
+import li.gkd.app.util.Constants
 import kotlin.reflect.KClass
 
 enum class ForegroundNotificationKey(
@@ -131,7 +132,7 @@ object NotificationCatalog {
     fun http(port: Int, localNetworkIps: List<String> = emptyList()) = ForegroundNotification(
         key = ForegroundNotificationKey.Http,
         title = Res.string.http_service_enabled.getSync(),
-        text = localNetworkIps.ifEmpty { listOf("127.0.0.1") }
+        text = localNetworkIps.ifEmpty { listOf(Constants.loopbackHost) }
             .joinToString(", ") { "$it:$port" },
         uri = "gkd://page/1",
         stopService = HttpService::class,

@@ -50,11 +50,7 @@ class A11yEventLog(
         @Query(
             """
             DELETE FROM a11y_event_log
-            WHERE (
-                    SELECT COUNT(*)
-                    FROM a11y_event_log
-                ) > 1000
-                AND id <= (
+            WHERE id <= (
                     SELECT id
                     FROM a11y_event_log
                     ORDER BY id DESC

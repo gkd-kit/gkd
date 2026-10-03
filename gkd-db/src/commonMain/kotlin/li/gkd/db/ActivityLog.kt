@@ -39,11 +39,7 @@ data class ActivityLog(
         @Query(
             """
             DELETE FROM activity_log
-            WHERE (
-                    SELECT COUNT(*)
-                    FROM activity_log
-                ) > 500
-                AND ctime <= (
+            WHERE ctime <= (
                     SELECT ctime
                     FROM activity_log
                     ORDER BY ctime DESC

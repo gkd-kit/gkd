@@ -21,6 +21,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.model.AppInventory
+import li.gkd.app.util.Constants
 import li.gkd.app.window.DesktopWindowGeometry
 import java.awt.Frame
 import java.awt.Point
@@ -98,6 +99,9 @@ class DesktopDebugServer private constructor(private val stop: () -> Unit) : Aut
     override fun close() = stop()
 
     companion object {
+        private val port = System.getenv("GKD_DESKTOP_PORT")?.toInt() ?: 17322
+        val address = "${Constants.loopbackHost}:$port"
+
         fun start(
             state: DesktopState,
             runtime: DesktopRuntime,
@@ -105,7 +109,6 @@ class DesktopDebugServer private constructor(private val stop: () -> Unit) : Aut
             awaitFrame: suspend () -> Unit,
             controlsWindow: () -> ComposeWindow? = { null },
             hostKey: (String) -> Boolean = { false },
-            port: Int = System.getenv("GKD_DESKTOP_PORT")?.toInt() ?: 17322,
         ): DesktopDebugServer {
             require(port in 1024..65535)
             fun target(id: String): ComposeWindow = when (id) {
@@ -116,7 +119,7 @@ class DesktopDebugServer private constructor(private val stop: () -> Unit) : Aut
 
             val windowNodes =
                 mutableMapOf<String, MutableMap<String, Pair<AccessibleContext, String?>>>()
-            val server = embeddedServer(CIO, host = "127.0.0.1", port = port) {
+            val server = embeddedServer(CIO, host = Constants.loopbackHost, port = port) {
                 install(ContentNegotiation) { json() }
                 routing {
                     get("/health") { call.respond(mapOf("status" to "ready", "protocol" to "1")) }
@@ -325,7 +328,7 @@ class DesktopDebugServer private constructor(private val stop: () -> Unit) : Aut
                     }
                 }
             }.start(wait = false)
-            println("GKD desktop debug API: http://127.0.0.1:$port")
+            println("GKD desktop debug API: http://$address")
             return DesktopDebugServer { server.stop(500, 1500) }
         }
     }

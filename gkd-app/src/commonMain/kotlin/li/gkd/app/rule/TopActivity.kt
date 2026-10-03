@@ -1,9 +1,10 @@
 package li.gkd.app.rule
 
 import li.gkd.app.app.ActivityNames
+import li.gkd.app.util.Constants
 
 data class TopActivity(
-    val appId: String = "",
+    val appId: String = Constants.systemUiAppId,
     val activityId: String? = null,
     val number: Int = 0,
 ) {

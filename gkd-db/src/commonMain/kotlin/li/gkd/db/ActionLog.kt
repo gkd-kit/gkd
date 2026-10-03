@@ -86,11 +86,7 @@ data class ActionLog(
         @Query(
             """
             DELETE FROM action_log
-            WHERE (
-                    SELECT COUNT(*)
-                    FROM action_log
-                ) > 500
-                AND id <= (
+            WHERE id <= (
                     SELECT id
                     FROM action_log
                     ORDER BY id DESC

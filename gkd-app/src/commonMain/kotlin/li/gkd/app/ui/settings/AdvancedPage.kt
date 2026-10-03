@@ -105,6 +105,7 @@ import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.itemVerticalPadding
 import li.gkd.app.ui.style.titleItemPadding
 import li.gkd.app.ui.text.getSync
+import li.gkd.app.util.Constants
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -406,7 +407,7 @@ private fun HttpServiceItem(
                         bottom = 4.dp,
                     )
             ) {
-                addressItem("127.0.0.1", stringResource(Res.string.network_local_device))
+                addressItem(Constants.loopbackHost, stringResource(Res.string.network_local_device))
                 localNetworkIps.forEach { host ->
                     addressItem(host, stringResource(Res.string.network_lan))
                 }

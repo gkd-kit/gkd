@@ -59,12 +59,12 @@ object DesktopProfile {
             debuggable = debuggable,
         ).toJson()
     }
-    val statusBar = profile["statusBar"]?.jsonPrimitive?.float ?: 24f
-    val navigationBar = profile["navigationBar"]?.jsonPrimitive?.float ?: 24f
+    val statusBar = profile["statusBar"]?.jsonPrimitive?.float ?: defaultSimulatedDevice.statusBarHeight
+    val navigationBar = profile["navigationBar"]?.jsonPrimitive?.float ?: defaultSimulatedDevice.navigationBarHeight
     val environment = DesktopEnvironment(
-        width = profile["width"]?.jsonPrimitive?.int ?: 393,
-        height = profile["height"]?.jsonPrimitive?.int ?: 852,
-        fontScale = profile["fontScale"]?.jsonPrimitive?.float ?: 1f,
+        width = profile["width"]?.jsonPrimitive?.int ?: defaultSimulatedDevice.width,
+        height = profile["height"]?.jsonPrimitive?.int ?: defaultSimulatedDevice.height,
+        fontScale = profile["fontScale"]?.jsonPrimitive?.float ?: defaultSimulatedDevice.fontScale,
         dark = profile["dark"]?.jsonPrimitive?.boolean ?: false,
         android = AndroidWindow(statusBarHeight = statusBar, navigationBarHeight = navigationBar),
     )

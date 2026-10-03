@@ -297,7 +297,7 @@ fun DesktopControls(
                 "数据目录：${DesktopStorage.data}",
                 style = MaterialTheme.typography.bodySmall
             )
-            Text("HTTP：127.0.0.1:${System.getenv("GKD_DESKTOP_PORT") ?: "17322"}")
+            Text("HTTP：${DesktopDebugServer.address}")
         }
     }
 }

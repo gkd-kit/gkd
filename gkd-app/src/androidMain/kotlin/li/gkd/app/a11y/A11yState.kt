@@ -76,7 +76,7 @@ object A11yState {
     fun <T> withTopActivityLock(block: () -> T): T = synchronized(lock, block)
 
     val activityRuleFlow: StateFlow<ActivityRule>
-        field = MutableStateFlow(ActivityRule(blockMatch = SettingsRepository.checkAppBlockMatch("")))
+        field = MutableStateFlow(ActivityRule(blockMatch = SettingsRepository.checkAppBlockMatch(Constants.systemUiAppId)))
     val currentRule: ActivityRule
         get() = synchronized(lock) { activityRuleFlow.value }
 
@@ -95,7 +95,7 @@ object A11yState {
     private var lastActivityUpdateTime = 0L
     private var lastActivityForceUpdateTime = 0L
 
-    private var lastAppId = ""
+    private var lastAppId = Constants.systemUiAppId
 
     fun updateTopActivity(
         appId: String,
@@ -209,7 +209,7 @@ fun updateSystemDefaultAppId() {
             // https://github.com/android-cs/8/blob/main/packages/SystemUI/src/com/android/systemui/recents/RecentsActivity.java
             systemRecentCn = ComponentName(
                 Constants.systemUiAppId,
-                "$Constants.systemUiAppId.recents.RecentsActivity",
+                "${Constants.systemUiAppId}.recents.RecentsActivity",
             )
         }
     }

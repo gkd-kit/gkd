@@ -8,10 +8,12 @@ import priv.kit.ui.PrivilegeUiServerRestartRequest
 import priv.kit.ui.PrivilegeUiStartupMode
 import priv.kit.ui.adb.PrivilegeUiStaticTcpSwitchAction
 
+val defaultSimulatedDevice = SimulatedDevice()
+
 /** The only simulator snapshot. DesktopEnvironment projects inputs for window and page rendering. */
 @Serializable
 data class SimulatorSettings(
-    val device: SimulatedDevice = SimulatedDevice(),
+    val device: SimulatedDevice = defaultSimulatedDevice,
     val permissions: SimulatedPermissions = SimulatedPermissions(),
     val services: SimulatedServices = SimulatedServices(),
     val prompts: SimulatedPrompts = SimulatedPrompts(),
@@ -97,7 +99,7 @@ data class SimulatorSettings(
     }
 
     fun persistent() = copy(
-        device = device.copy(imeVisible = false, batteryPercent = 100),
+        device = device.copy(imeVisible = false, batteryPercent = defaultSimulatedDevice.batteryPercent),
         privilege = privilege.persistent()
     )
 

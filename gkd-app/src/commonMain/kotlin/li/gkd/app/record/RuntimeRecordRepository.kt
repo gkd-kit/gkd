@@ -7,6 +7,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import li.gkd.app.app.applicationId
 import li.gkd.app.app.launcherAppIdFlow
+import li.gkd.app.util.Constants
 import li.gkd.db.ActionLog
 import li.gkd.db.ActivityLog
 import li.gkd.db.AppLastVisit
@@ -37,6 +38,8 @@ data class ActionRecordInput(
  * Only partial/failed Activity batches are buffered; visits and actions are never queued for retry.
  */
 object RuntimeRecordRepository {
+    private const val TRIM_INTERVAL = 100L
+
     private val writer = Mutex()
     private val activities = mutableListOf<ActivityLog>()
     private var visitCount = 0L
@@ -47,7 +50,7 @@ object RuntimeRecordRepository {
         val currentLauncherAppId = launcherAppIdFlow.value
         fun weighted(appId: String, time: Long) = when (appId) {
             applicationId -> time - 120_000
-            currentLauncherAppId, "com.android.systemui" -> time - 60_000
+            currentLauncherAppId, Constants.systemUiAppId -> time - 60_000
             else -> time
         }
 
@@ -57,7 +60,7 @@ object RuntimeRecordRepository {
         )
         writer.withLock {
             withContext(NonCancellable) {
-                RuntimeRecordStore.writeVisits(records, visitCount % 100 == 0L)
+                RuntimeRecordStore.writeVisits(records, visitCount % TRIM_INTERVAL == 0L)
                 visitCount++
             }
         }
@@ -77,7 +80,7 @@ object RuntimeRecordRepository {
         )
         writer.withLock {
             withContext(NonCancellable) {
-                RuntimeRecordStore.writeAction(record, (actionCount + 1) % 100 == 0L)
+                RuntimeRecordStore.writeAction(record, (actionCount + 1) % TRIM_INTERVAL == 0L)
                 actionCount++
             }
         }
@@ -91,7 +94,8 @@ object RuntimeRecordRepository {
         // Finish COMMIT and in-memory acknowledgement together, even if the caller is canceled.
         withContext(NonCancellable) {
             val end = activityCount + activities.size
-            val trim = activityCount == 0L || (activityCount - 1) / 100 != (end - 1) / 100
+            val trim = activityCount == 0L ||
+                    (activityCount - 1) / TRIM_INTERVAL != (end - 1) / TRIM_INTERVAL
             RuntimeRecordStore.writeActivities(activities.toList(), trim)
             activities.clear()
             activityCount = end

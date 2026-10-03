@@ -5,18 +5,18 @@ import kotlinx.serialization.Serializable
 /** Android window geometry in logical dp. This is a UI host, not an Android runtime. */
 @Serializable
 data class AndroidWindow(
-    val statusBarHeight: Float = 24f,
-    val navigationBarHeight: Float = 24f,
+    val statusBarHeight: Float = defaultSimulatedDevice.statusBarHeight,
+    val navigationBarHeight: Float = defaultSimulatedDevice.navigationBarHeight,
     val statusBarVisible: Boolean = true,
     val navigationBarVisible: Boolean = true,
     val gestureHandleVisible: Boolean = true,
     val cutoutWidth: Float = 0f,
     val cutoutHeight: Float = 0f,
-    val batteryPercent: Int = 100,
+    val batteryPercent: Int = defaultSimulatedDevice.batteryPercent,
     val charging: Boolean = false,
     val wifi: Boolean = true,
     val localNetworkGranted: Boolean = true,
-    val mobileSignal: Int = 4,
+    val mobileSignal: Int = defaultSimulatedDevice.mobileSignal,
     val serviceEnabled: Boolean = false,
     val automationRunning: Boolean = false,
     val a11yEnabled: Boolean = false,
@@ -31,7 +31,7 @@ data class AndroidWindow(
     val ignoreBatteryOptimizations: Boolean = false,
     val writeSecureSettings: Boolean = false,
     val imeVisible: Boolean = false,
-    val imeHeight: Float = 280f,
+    val imeHeight: Float = defaultSimulatedDevice.imeHeight,
 ) {
     val topInset: Float get() = maxOf(if (statusBarVisible) statusBarHeight else 0f, cutoutHeight)
     val bottomInset: Float get() = if (navigationBarVisible) navigationBarHeight else 0f
