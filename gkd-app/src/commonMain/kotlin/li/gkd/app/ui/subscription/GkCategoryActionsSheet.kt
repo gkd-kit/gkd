@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -116,8 +115,8 @@ fun GkCategoryActionsSheet(
                             TextButton(
                                 enabled = !busy,
                                 onClick = onClearOverrides,
-                                modifier = Modifier.defaultMinSize(minWidth = 1.dp),
-                                contentPadding = PaddingValues(0.dp),
+                                modifier = Modifier.size(width = 56.dp, height = 48.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp),
                             ) {
                                 Text(stringResource(Res.string.action_clear))
                             }
