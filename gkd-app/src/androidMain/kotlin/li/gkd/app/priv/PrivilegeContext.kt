@@ -1,21 +1,23 @@
 package li.gkd.app.priv
 
-import android.Manifest
+import li.gkd.app.permission.AndroidPermissions
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.accessibilityservice.IAccessibilityServiceClient
 import android.app.AppOpsManager
 import android.app.AppOpsManagerHidden
 import android.content.Intent
 import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.IBinder
 import android.os.Process
-import com.hjq.permissions.permission.dangerous.GetInstalledAppsPermission
 import li.gkd.aidl.IUserService
 import li.gkd.app.META
 import li.gkd.app.app
 import li.gkd.app.model.AppUser
 import li.gkd.app.permission.PermissionStates
+import kotlinx.coroutines.CancellationException
+import li.gkd.app.util.LogUtils
 import li.gkd.app.util.AndroidTarget
 import priv.kit.core.Privilege
 import priv.kit.core.PrivilegeServerInfo
@@ -36,6 +38,9 @@ class PrivilegeContext private constructor(
     private val userService = IUserService.Stub.asInterface(userServiceConnection.binder)
     private var taskStackListenerRegistered = false
 
+    private fun hasPermission(name: String): Boolean =
+        Privilege.checkServerPermission(name) == PackageManager.PERMISSION_GRANTED
+
     private fun initialize() {
         activityManager.value.registerTaskStackListener(CompatTaskStackListener)
         taskStackListenerRegistered = true
@@ -54,9 +59,14 @@ class PrivilegeContext private constructor(
     }
 
     fun grantSelf() {
-        if (Privilege.isPermissionRestricted()) return
-        allowAllSelfMode()
-        allowAllSelfPermission()
+        try {
+            if (hasPermission(AndroidPermissions.UPDATE_APP_OPS_STATS)) allowAllSelfMode()
+            if (hasPermission(AndroidPermissions.GRANT_RUNTIME_PERMISSIONS)) allowAllSelfPermission()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            LogUtils.d("Automatic permission grant failed", e)
+        }
     }
 
     fun startForegroundService(intent: Intent) {
@@ -84,9 +94,12 @@ class PrivilegeContext private constructor(
         return packageManager.appPackageManager.getInstalledPackagesAsUser(flags, userId)
     }
 
-    fun tap(x: Float, y: Float, duration: Long = 0): Boolean {
-        return inputManager.tap(x, y, duration)
-    }
+    // null means no input was attempted; false means an attempted input failed and must not be replayed.
+    private inline fun injectInputIfPermitted(block: () -> Boolean): Boolean? =
+        if (hasPermission(AndroidPermissions.INJECT_EVENTS)) block() else null
+
+    fun tap(x: Float, y: Float, duration: Long = 0): Boolean? =
+        injectInputIfPermitted { inputManager.tap(x, y, duration) }
 
     fun swipe(
         x1: Float,
@@ -94,13 +107,9 @@ class PrivilegeContext private constructor(
         x2: Float,
         y2: Float,
         duration: Long,
-    ): Boolean {
-        return inputManager.swipe(x1, y1, x2, y2, duration)
-    }
+    ): Boolean? = injectInputIfPermitted { inputManager.swipe(x1, y1, x2, y2, duration) }
 
-    fun keyevent(keyCode: Int): Boolean {
-        return inputManager.keyevent(keyCode)
-    }
+    fun keyevent(keyCode: Int): Boolean? = injectInputIfPermitted { inputManager.keyevent(keyCode) }
 
     fun registerUiTestAutomationService(
         owner: IBinder,
@@ -174,18 +183,18 @@ class PrivilegeContext private constructor(
 
     private fun allowAllSelfPermission() {
         if (!PermissionStates.queryPackages.value) {
-            grantSelfPermission(GetInstalledAppsPermission.PERMISSION_NAME)
+            grantSelfPermission(AndroidPermissions.GET_INSTALLED_APPS)
         }
-        grantSelfPermission(PermissionStates.Manifest_permission_GET_APP_OPS_STATS)
-        grantSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS)
+        grantSelfPermission(AndroidPermissions.GET_APP_OPS_STATS)
+        grantSelfPermission(AndroidPermissions.WRITE_SECURE_SETTINGS)
         if (!AndroidTarget.Q) {
-            grantSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            grantSelfPermission(AndroidPermissions.WRITE_EXTERNAL_STORAGE)
         }
         if (AndroidTarget.TIRAMISU) {
-            grantSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+            grantSelfPermission(AndroidPermissions.POST_NOTIFICATIONS)
         }
         if (AndroidTarget.CINNAMON_BUN) {
-            grantSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK)
+            grantSelfPermission(AndroidPermissions.ACCESS_LOCAL_NETWORK)
         }
     }
 

@@ -21,6 +21,7 @@ actual fun AppWindow.dashboardPlatformState(): DashboardPlatformState {
     val mainVm = MainViewModel.requireCurrent()
     val privilege by privilegeContextFlow.collectAsStateWithLifecycle()
     val privilegeStatus by privilegeServiceStatusFlow.collectAsStateWithLifecycle()
+    val capabilities by PermissionStates.privilegeCapabilities.collectAsStateWithLifecycle()
     val a11y by A11yService.isRunning.collectAsStateWithLifecycle()
     val automation by uiAutomationFlow.collectAsStateWithLifecycle()
     val status by StatusService.isRunning.collectAsStateWithLifecycle()
@@ -28,13 +29,13 @@ actual fun AppWindow.dashboardPlatformState(): DashboardPlatformState {
     val a11yEnabled by mainVm.a11yServiceEnabledFlow.collectAsStateWithLifecycle()
     val partial by a11yPartDisabledFlow.collectAsStateWithLifecycle()
     val topApp by topAppIdFlow.collectAsStateWithLifecycle()
-    val restricted by PermissionStates.appOpsRestrictedFlow.collectAsStateWithLifecycle()
+    val restrictions by PermissionStates.appRestrictionsFlow.collectAsStateWithLifecycle()
     val activity by ActivityService.isRunning.collectAsStateWithLifecycle()
     return DashboardPlatformState(
         a11y, automation != null, a11yEnabled, secure, partial, privilege != null,
         when (privilegeStatus) {
             PrivilegeServiceStatus.Connected -> DashboardPrivilegeStatus.Connected; PrivilegeServiceStatus.DisconnectedDesired -> DashboardPrivilegeStatus.DisconnectedDesired; PrivilegeServiceStatus.Disconnected -> DashboardPrivilegeStatus.Disconnected
         },
-        status, activity, restricted, topApp
+        status, activity, restrictions.isNotEmpty(), topApp, capabilities, restrictions
     )
 }

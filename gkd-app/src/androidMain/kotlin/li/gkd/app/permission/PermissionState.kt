@@ -1,6 +1,7 @@
 package li.gkd.app.permission
 
-import android.Manifest
+import android.content.pm.PackageManager
+import li.gkd.app.priv.PrivilegeCapabilities
 import android.app.AppOpsManager
 import android.app.AppOpsManagerHidden
 import android.os.Process
@@ -43,6 +44,7 @@ import li.gkd.app.resources.privilege_service
 import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.ToastUtils
+import li.gkd.app.util.mapState
 import li.songe.codeorigin.CallSite
 import org.jetbrains.compose.resources.StringResource
 import priv.kit.core.Privilege
@@ -148,14 +150,12 @@ object PermissionStates {
                 checkAllowedOp(AppOpsManagerHidden.OPSTR_ACCESS_ACCESSIBILITY)
     }
 
-    val Manifest_permission_GET_APP_OPS_STATS get() = "android.permission.GET_APP_OPS_STATS"
-
     private var canRestrictsRead = true
     private fun checkAccessRestrictedSettings(): Boolean {
         return if (
             canRestrictsRead &&
             AndroidTarget.UPSIDE_DOWN_CAKE &&
-            app.checkGrantedPermission(Manifest_permission_GET_APP_OPS_STATS)
+            app.checkGrantedPermission(AndroidPermissions.GET_APP_OPS_STATS)
         ) {
             try {
                 // https://cs.android.com/android/platform/superproject/+/android-14.0.0_r55:frameworks/base/services/core/java/com/android/server/appop/AppOpsService.java;l=4237
@@ -170,25 +170,33 @@ object PermissionStates {
         }
     }
 
+    private val accessRestrictions = MutableStateFlow<Set<AppPermissionRestriction>>(emptySet())
+
     private val appOpsAllowed by lazy {
         PermissionState(
             nameResource = Res.string.permission_start_operations,
             check = {
                 val accessA11yAllowed = checkAccessA11y()
                 val accessRestrictedSettingsAllowed = checkAccessRestrictedSettings()
+                accessRestrictions.value = buildSet {
+                    if (!accessA11yAllowed) add(AppPermissionRestriction.Accessibility)
+                    if (!accessRestrictedSettingsAllowed) add(AppPermissionRestriction.RestrictedSettings)
+                }
                 accessA11yAllowed && accessRestrictedSettingsAllowed
             },
         )
     }
 
-    val appOpsRestrictedFlow by lazy {
+    val appRestrictionsFlow by lazy {
         combine(
-            appOpsAllowed.stateFlow,
+            accessRestrictions,
             foregroundServiceSpecialUse.stateFlow,
-        ) { appOpsAllowed, foregroundServiceSpecialUseAllowed ->
-            !appOpsAllowed || !foregroundServiceSpecialUseAllowed
-        }.stateIn(appScope, SharingStarted.Eagerly, false)
+        ) { access, foregroundServiceAllowed ->
+            if (foregroundServiceAllowed) access else access + AppPermissionRestriction.ForegroundService
+        }.stateIn(appScope, SharingStarted.Eagerly, emptySet())
     }
+
+    val appOpsRestrictedFlow by lazy { appRestrictionsFlow.mapState(appScope) { it.isNotEmpty() } }
 
     val notification by lazy {
         requestablePermissionState(
@@ -238,7 +246,7 @@ object PermissionStates {
                 if (AndroidTarget.Q) {
                     true
                 } else {
-                    app.checkGrantedPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    app.checkGrantedPermission(AndroidPermissions.WRITE_EXTERNAL_STORAGE)
                 }
             },
         )
@@ -259,7 +267,7 @@ object PermissionStates {
     val writeSecureSettings by lazy {
         PermissionState(
             nameResource = Res.string.permission_write_secure_settings,
-            check = { app.checkGrantedPermission(Manifest.permission.WRITE_SECURE_SETTINGS) },
+            check = { app.checkGrantedPermission(AndroidPermissions.WRITE_SECURE_SETTINGS) },
         )
     }
 
@@ -287,9 +295,20 @@ object PermissionStates {
         )
     }
 
+    val privilegeCapabilities: StateFlow<PrivilegeCapabilities?>
+        field = MutableStateFlow(null)
+
     fun refreshAll() {
         all.forEach {
             it.refresh()
         }
+        privilegeCapabilities.value = if (privilegeGranted.value) {
+            PrivilegeCapabilities(
+                grantRuntimePermissions = Privilege.checkServerPermission(AndroidPermissions.GRANT_RUNTIME_PERMISSIONS) == PackageManager.PERMISSION_GRANTED,
+                injectEvents = Privilege.checkServerPermission(AndroidPermissions.INJECT_EVENTS) == PackageManager.PERMISSION_GRANTED,
+                writeSecureSettings = Privilege.checkServerPermission(AndroidPermissions.WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED,
+                updateAppOps = Privilege.checkServerPermission(AndroidPermissions.UPDATE_APP_OPS_STATS) == PackageManager.PERMISSION_GRANTED,
+            )
+        } else null
     }
 }

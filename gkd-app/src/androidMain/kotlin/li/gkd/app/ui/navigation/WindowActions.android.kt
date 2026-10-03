@@ -57,8 +57,9 @@ actual fun AppWindow.openAppDetails() {
 
 actual fun AppWindow.openRecents() {
     val context = privilegeContextFlow.value
-    if (context == null) ToastUtils.show(Res.string.recents_lock_manual_hint.getSync())
-    else context.keyevent(android.view.KeyEvent.KEYCODE_APP_SWITCH)
+    if (context?.keyevent(android.view.KeyEvent.KEYCODE_APP_SWITCH) != true) {
+        ToastUtils.show(Res.string.recents_lock_manual_hint.getSync())
+    }
 }
 
 actual fun AppWindow.openA11ySettings() {

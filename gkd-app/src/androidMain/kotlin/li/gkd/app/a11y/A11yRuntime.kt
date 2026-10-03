@@ -79,7 +79,7 @@ object A11yRuntime {
 
     fun performActionBack(): Boolean {
         val result = privilegeContextFlow.value?.keyevent(KeyEvent.KEYCODE_BACK)
-        if (result == true) return true
+        if (result != null) return result
         return A11yService.instance?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK) == true
     }
 

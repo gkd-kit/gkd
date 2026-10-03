@@ -20,7 +20,6 @@ import li.gkd.app.service.currentAppBlocked
 import li.gkd.app.service.currentAppUseA11y
 import li.gkd.app.service.updateTopTaskAppId
 import li.gkd.app.settings.SettingsRepository
-import li.gkd.app.settings.SettingsRepository.settings
 import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils
@@ -72,7 +71,8 @@ private suspend fun updatePrivilegeContext(serverInfo: PrivilegeServerInfo?) =
                 updateTopTaskAppId(cpn.packageName)
             }
             if (
-                settings.value.useAutomation &&
+                SettingsRepository.settings.value.enableAutomator &&
+                SettingsRepository.settings.value.useAutomation &&
                 !currentAppBlocked &&
                 !currentAppUseA11y
             ) {

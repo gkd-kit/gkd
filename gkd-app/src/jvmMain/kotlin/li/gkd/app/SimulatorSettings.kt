@@ -137,6 +137,7 @@ data class SimulatedPermissions(
     val canQueryPackages: Boolean = true, val queryPackagesAbnormal: Boolean = false,
     val restricted: Boolean = false, val localNetworkGranted: Boolean = true,
     val ignoreBatteryOptimizations: Boolean = false, val writeSecureSettings: Boolean = false,
+    val deniedServerPermissions: Set<String> = emptySet(),
 )
 
 @Serializable

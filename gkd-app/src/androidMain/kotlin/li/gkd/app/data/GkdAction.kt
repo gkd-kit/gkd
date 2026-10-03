@@ -53,11 +53,7 @@ sealed class ActionPerformer(val action: String) {
             TrackService.addXyPosition(x, y)
             return ActionResult(
                 action = action,
-                result = if (
-                    privilegeContextFlow.value?.tap(x, y) == true
-                ) {
-                    true
-                } else {
+                result = privilegeContextFlow.value?.tap(x, y) ?: run {
                     val gestureDescription = GestureDescription.Builder()
                     val path = Path()
                     path.moveTo(x, y)
@@ -68,7 +64,7 @@ sealed class ActionPerformer(val action: String) {
                     )
                     A11yService.instance?.dispatchGesture(
                         gestureDescription.build(), null, null
-                    ) != null
+                    ) == true
                 },
                 position = x to y
             )
@@ -128,11 +124,7 @@ sealed class ActionPerformer(val action: String) {
             TrackService.addXyPosition(x, y)
             return ActionResult(
                 action = action,
-                result = if (
-                    privilegeContextFlow.value?.tap(x, y, LONG_DURATION) == true
-                ) {
-                    true
-                } else {
+                result = privilegeContextFlow.value?.tap(x, y, LONG_DURATION) ?: run {
                     val gestureDescription = GestureDescription.Builder()
                     val path = Path()
                     path.moveTo(x, y)
@@ -143,7 +135,7 @@ sealed class ActionPerformer(val action: String) {
                     )
                     (A11yService.instance?.dispatchGesture(
                         gestureDescription.build(), null, null
-                    ) != null).apply {
+                    ) == true).apply {
                         if (this) {
                             delay(LONG_DURATION.milliseconds)
                         }
@@ -223,18 +215,17 @@ sealed class ActionPerformer(val action: String) {
                 )
             }
             TrackService.addSwipePosition(startX, startY, endX, endY, swipeArg.duration)
-            return if (
-                privilegeContextFlow.value?.swipe(
-                    startX,
-                    startY,
-                    endX,
-                    endY,
-                    swipeArg.duration,
-                ) == true
-            ) {
+            val injected = privilegeContextFlow.value?.swipe(
+                startX,
+                startY,
+                endX,
+                endY,
+                swipeArg.duration,
+            )
+            return if (injected != null) {
                 ActionResult(
                     action = action,
-                    result = true,
+                    result = injected,
                     shell = true,
                     position = endX to endY,
                 )
@@ -252,7 +243,7 @@ sealed class ActionPerformer(val action: String) {
                     action = action,
                     result = (A11yService.instance?.dispatchGesture(
                         gestureDescription.build(), null, null
-                    ) != null).apply {
+                    ) == true).apply {
                         if (this) {
                             delay(swipeArg.duration.milliseconds)
                         }

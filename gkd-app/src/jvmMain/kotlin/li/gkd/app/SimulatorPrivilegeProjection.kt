@@ -1,5 +1,8 @@
 package li.gkd.app
 
+import li.gkd.app.permission.AndroidPermissions
+import li.gkd.app.priv.PrivilegeCapabilities
+
 import priv.kit.ui.PrivilegeUiAdbPairingStatus
 import priv.kit.ui.PrivilegeUiAdbTcpAuthorizationStatus
 import priv.kit.ui.PrivilegeUiExternalStartItemState
@@ -16,7 +19,8 @@ import priv.kit.ui.PrivilegeUiWirelessAdbStatus
 /** Pure projection: permissions and availability never have a second writable copy. */
 fun SimulatorSettings.privilegeUiState(): PrivilegeUiScreenState {
     val p = privilege
-    val restricted = p.serverUid == SimulatorUid.SHELL_UID && permissions.restricted
+    val denied = if (p.serverUid == SimulatorUid.SHELL_UID) permissions.deniedServerPermissions else emptySet()
+    val restricted = denied.isNotEmpty()
     val directory = "/data/app/~~simulation/priv.kit.sample-simulation"
     return PrivilegeUiScreenState(
         startupModes = PrivilegeUiStartupMode.entries.toList(),
@@ -38,11 +42,7 @@ fun SimulatorSettings.privilegeUiState(): PrivilegeUiScreenState {
         runtimeStartPhase = if (p.runtimeStatus == PrivilegeUiRuntimeStatus.STARTING) PrivilegeUiRuntimeStartPhase.RUNNING else PrivilegeUiRuntimeStartPhase.IDLE,
         runtimeProgressText = if (p.runtimeStatus == PrivilegeUiRuntimeStatus.STARTING) "正在启动模拟特权服务…" else null,
         permissionRestrictionStatus = if (restricted) PrivilegeUiPermissionRestrictionStatus.RESTRICTED else PrivilegeUiPermissionRestrictionStatus.NOT_RESTRICTED,
-        deniedServerPermissions = if (restricted) listOf(
-            "android.permission.GRANT_RUNTIME_PERMISSIONS",
-            "android.permission.INJECT_EVENTS",
-            "android.permission.WRITE_SECURE_SETTINGS"
-        ) else emptyList(),
+        deniedServerPermissions = denied.sorted(),
         pairingCode = p.pairingCode, pairingDialogVisible = p.pairingDialogVisible,
         pairingText = if (p.pairingDialogVisible) "请输入任意六位数字完成模拟配对" else null,
         pairingStatus = when {
@@ -72,5 +72,16 @@ fun SimulatorSettings.privilegeUiState(): PrivilegeUiScreenState {
                 ), statusLoaded = true
             )
         ),
+    )
+}
+
+fun SimulatorSettings.privilegeCapabilities(): PrivilegeCapabilities? {
+    if (!privilege.available) return null
+    val denied = if (privilege.serverUid == SimulatorUid.SHELL_UID) permissions.deniedServerPermissions else emptySet()
+    return PrivilegeCapabilities(
+        grantRuntimePermissions = AndroidPermissions.GRANT_RUNTIME_PERMISSIONS !in denied,
+        injectEvents = AndroidPermissions.INJECT_EVENTS !in denied,
+        writeSecureSettings = AndroidPermissions.WRITE_SECURE_SETTINGS !in denied,
+        updateAppOps = AndroidPermissions.UPDATE_APP_OPS_STATS !in denied,
     )
 }

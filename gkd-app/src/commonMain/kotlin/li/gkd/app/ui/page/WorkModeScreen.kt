@@ -39,12 +39,10 @@ import li.gkd.app.resources.a11y_permission_grant
 import li.gkd.app.resources.a11y_permission_ready
 import li.gkd.app.resources.a11y_permission_regrant_description
 import li.gkd.app.resources.a11y_scoped
-import li.gkd.app.resources.action_cancel
 import li.gkd.app.resources.action_close
 import li.gkd.app.resources.action_understood
 import li.gkd.app.resources.automation_a11y_description
 import li.gkd.app.resources.automation_no_display_issues
-import li.gkd.app.resources.automation_privilege_required_description
 import li.gkd.app.resources.automation_scope_compatibility_hint
 import li.gkd.app.resources.automation_undetectable_a11y
 import li.gkd.app.resources.help_view
@@ -58,7 +56,6 @@ import li.gkd.app.resources.keep_alive_tile_description
 import li.gkd.app.resources.keep_alive_title
 import li.gkd.app.resources.permission_grant
 import li.gkd.app.resources.privilege_service_connected
-import li.gkd.app.resources.privilege_service_required
 import li.gkd.app.resources.secure_settings_permission_description
 import li.gkd.app.resources.secure_settings_permission_grant
 import li.gkd.app.resources.secure_settings_permission_granted
@@ -77,6 +74,9 @@ import li.gkd.app.ui.option.AutomatorModeOption
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.surfaceCardColors
 import org.jetbrains.compose.resources.stringResource
+import li.gkd.app.permission.AppPermissionRestriction
+import li.gkd.app.ui.component.GkPermissionRestrictionDialog
+import li.gkd.app.priv.PrivilegeCapabilities
 
 
 @Composable
@@ -93,24 +93,17 @@ fun WorkModeScreen(
     onPrivilege: () -> Unit,
     appName: String,
     onScope: () -> Unit,
+    privilegeCapabilities: PrivilegeCapabilities? = null,
+    appRestrictions: Set<AppPermissionRestriction> = emptySet(),
 ) {
+    val automationAvailable = privilegeAvailable && privilegeCapabilities?.injectEvents != false
     var showPrivilegeRequired by rememberSaveable { mutableStateOf(false) }
-    if (showPrivilegeRequired) GkAlertDialog(
-        onDismissRequest = { showPrivilegeRequired = false },
-        title = { Text(stringResource(Res.string.privilege_service_required)) },
-        text = { Text(stringResource(Res.string.automation_privilege_required_description)) },
-        confirmButton = {
-            TextButton(onClick = {
-                showPrivilegeRequired = false; onPrivilege()
-            }) { Text(stringResource(Res.string.settings_go_to)) }
-        },
-        dismissButton = {
-            TextButton(onClick = { showPrivilegeRequired = false }) {
-                Text(
-                    stringResource(Res.string.action_cancel)
-                )
-            }
-        },
+    if (showPrivilegeRequired) GkPermissionRestrictionDialog(
+        privilegeAvailable = privilegeAvailable,
+        capabilities = privilegeCapabilities,
+        appRestrictions = appRestrictions,
+        onDismiss = { showPrivilegeRequired = false },
+        onPrivilege = onPrivilege,
     )
     var showKeepAlive by rememberSaveable { mutableStateOf(false) }
     if (showKeepAlive) {
@@ -304,7 +297,7 @@ fun WorkModeScreen(
                     .padding(horizontal = itemHorizontalPadding)
                     .fillMaxWidth(),
                 onClick = {
-                    if (privilegeAvailable) onAutomationMode() else showPrivilegeRequired = true
+                    if (automationAvailable) onAutomationMode() else showPrivilegeRequired = true
                 },
                 colors = surfaceCardColors,
             ) {

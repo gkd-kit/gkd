@@ -23,6 +23,7 @@ import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.component.DialogRequests
+import li.gkd.app.ui.component.GkPermissionRestrictionDialog
 import li.gkd.app.ui.component.GkAppNameText
 import li.gkd.app.ui.component.GkSettingItem
 import li.gkd.app.ui.navigation.AboutRoute
@@ -74,6 +75,16 @@ fun HomePage(
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val scopeApps by SettingsRepository.a11yScopeAppList.collectAsStateWithLifecycle()
     val platform = window.dashboardPlatformState()
+    var showRestrictionDetails by rememberSaveable { mutableStateOf(false) }
+    if (showRestrictionDetails) {
+        GkPermissionRestrictionDialog(
+            privilegeAvailable = platform.privilegeAvailable,
+            capabilities = platform.privilegeCapabilities,
+            appRestrictions = platform.appRestrictions,
+            onDismiss = { showRestrictionDetails = false },
+            onPrivilege = { onNavigate(PrivilegeServiceRoute) },
+        )
+    }
     var showBackup by rememberSaveable { mutableStateOf(false) }
     GkBackupDialogs(
         showBackup,
@@ -109,11 +120,16 @@ fun HomePage(
                         privilegeStatus = platform.privilegeStatus,
                         activityLogVisible = platform.activityRunning,
                         restricted = platform.restricted,
+                        privilegeCapabilities = platform.privilegeCapabilities,
                     ),
                     actions = DashboardUiActions(
                         onService = { enabled ->
                             val route = platform.authorizationRoute(enabled, store, scopeApps)
-                            if (route != null) onNavigate(route) else window.switchAutomator()
+                            when (route) {
+                                PrivilegeServiceRoute -> showRestrictionDetails = true
+                                null -> window.switchAutomator()
+                                else -> onNavigate(route)
+                            }
                         },
                         onMode = { onNavigate(WorkModeRoute) },
                         onStatus = window::setStatusServiceEnabled,
@@ -131,6 +147,7 @@ fun HomePage(
                         onActivityLog = { onNavigate(ActivityLogRoute) },
                         onHelp = { onNavigate(WebViewRoute(AppLinks.Home)) },
                         onPrivilege = { onNavigate(PrivilegeServiceRoute) },
+                        onRestrictionDetails = { showRestrictionDetails = true },
                     ),
                 )
             }

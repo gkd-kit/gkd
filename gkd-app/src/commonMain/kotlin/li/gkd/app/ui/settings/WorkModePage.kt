@@ -26,6 +26,8 @@ fun WorkModePage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRoute) -
     WorkModeScreen(
         writeSecureSettings = platform.writeSecureSettings, a11yRunning = platform.a11yRunning,
         privilegeAvailable = platform.privilegeAvailable,
+        privilegeCapabilities = platform.privilegeCapabilities,
+        appRestrictions = platform.appRestrictions,
         automatorMode = AutomatorModeOption.objects.findOption(store.automatorMode),
         onBack = onBack,
         onA11yMode = { window.changeAutomatorMode(AutomatorModeOption.A11yMode) },

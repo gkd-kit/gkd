@@ -1,5 +1,9 @@
 package li.gkd.app.priv
 
+import li.gkd.app.permission.AndroidPermissions
+import android.content.pm.PackageManager
+import priv.kit.core.Privilege
+import li.gkd.app.resources.automation_permission_restricted
 import android.annotation.SuppressLint
 import android.app.UiAutomation
 import android.app.UiAutomationHidden
@@ -161,6 +165,10 @@ class AutomationService private constructor(
                 uiAutomationFlow.value?.shutdown()
                 val privilegeContext = privilegeContextFlow.value ?: return@synchronized
                 try {
+                    if (Privilege.checkServerPermission(AndroidPermissions.INJECT_EVENTS) != PackageManager.PERMISSION_GRANTED) {
+                        if (!silent) ToastUtils.show(Res.string.automation_permission_restricted.getSync())
+                        return@synchronized
+                    }
                     if (isOtherUiAutomationRunning()) {
                         showOccupiedWarning(silent)
                         return@synchronized

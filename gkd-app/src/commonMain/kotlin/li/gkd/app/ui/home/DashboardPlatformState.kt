@@ -10,6 +10,8 @@ import li.gkd.app.resources.automation_partially_disabled
 import li.gkd.app.resources.automation_running
 import li.gkd.app.resources.automation_stopped
 import li.gkd.app.resources.automation_unauthorized
+import li.gkd.app.priv.PrivilegeCapabilities
+import li.gkd.app.permission.AppPermissionRestriction
 import li.gkd.app.settings.SettingsStore
 import li.gkd.app.ui.navigation.AppRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
@@ -29,6 +31,8 @@ data class DashboardPlatformState(
     val activityRunning: Boolean,
     val restricted: Boolean,
     val topAppId: String,
+    val privilegeCapabilities: PrivilegeCapabilities? = null,
+    val appRestrictions: Set<AppPermissionRestriction> = emptySet(),
 ) {
     fun usesA11y(store: SettingsStore, scope: Set<String>) =
         store.useA11y || (store.useAutomation && topAppId in scope)
@@ -57,7 +61,8 @@ data class DashboardPlatformState(
     fun authorizationRoute(enable: Boolean, store: SettingsStore, scope: Set<String>): AppRoute? =
         when {
             enable && usesA11y(store, scope) && !writeSecureSettings -> WorkModeRoute
-            enable && !usesA11y(store, scope) && !privilegeAvailable -> PrivilegeServiceRoute
+            enable && !usesA11y(store, scope) &&
+                    (!privilegeAvailable || privilegeCapabilities?.injectEvents == false) -> PrivilegeServiceRoute
             else -> null
         }
 }

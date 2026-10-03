@@ -1,6 +1,8 @@
 package li.gkd.app.ui.home
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +24,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,6 +36,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import li.gkd.app.priv.PrivilegeCapabilities
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.action_count_summary
 import li.gkd.app.resources.action_log_description
@@ -39,6 +46,9 @@ import li.gkd.app.resources.action_log_title
 import li.gkd.app.resources.activity_log_open
 import li.gkd.app.resources.activity_log_title
 import li.gkd.app.resources.activity_record_description
+import li.gkd.app.resources.adb_permission_restricted
+import li.gkd.app.resources.adb_restricted_privilege_notice
+import li.gkd.app.resources.app_permission_restricted
 import li.gkd.app.resources.app_rule_summary_open
 import li.gkd.app.resources.data_load_failed
 import li.gkd.app.resources.documentation_description
@@ -51,6 +61,7 @@ import li.gkd.app.resources.privilege_service_open
 import li.gkd.app.resources.privilege_service_state_connected
 import li.gkd.app.resources.privilege_service_state_disconnected
 import li.gkd.app.resources.privilege_service_state_lost
+import li.gkd.app.resources.restriction_details_open
 import li.gkd.app.resources.rules_empty
 import li.gkd.app.resources.service_state
 import li.gkd.app.resources.service_state_toggle
@@ -83,6 +94,7 @@ data class DashboardUiState(
     val latestLoadFailed: Boolean = false,
     val activityLogVisible: Boolean = false, val restricted: Boolean = false,
     val privilegeStatus: DashboardPrivilegeStatus = DashboardPrivilegeStatus.Disconnected,
+    val privilegeCapabilities: PrivilegeCapabilities? = null,
 )
 
 data class DashboardUiActions(
@@ -90,6 +102,7 @@ data class DashboardUiActions(
     val onStatus: (Boolean) -> Unit, val onLog: () -> Unit,
     val onLatest: () -> Unit, val onActivityLog: () -> Unit,
     val onHelp: () -> Unit, val onPrivilege: () -> Unit,
+    val onRestrictionDetails: () -> Unit,
 )
 
 @Composable
@@ -129,6 +142,16 @@ fun dashboardPage(
         }
     )
     val openPrivilege = stringResource(Res.string.privilege_service_open)
+    val connected = state.privilegeStatus == DashboardPrivilegeStatus.Connected
+    val warningTitle = when {
+        connected && state.privilegeCapabilities?.restricted == true -> Res.string.adb_permission_restricted
+        !connected && state.restricted -> Res.string.app_permission_restricted
+        else -> null
+    }
+    // Keep the outgoing text until the exit transition finishes.
+    var retainedWarningTitle by remember { mutableStateOf(warningTitle) }
+    if (warningTitle != null) retainedWarningTitle = warningTitle
+    val openRestrictionDetails = stringResource(Res.string.restriction_details_open)
     return ScaffoldExt(
         BottomNavItem.Dashboard,
         modifier = Modifier.nestedScroll(scroll.scrollBehavior.nestedScrollConnection),
@@ -162,36 +185,60 @@ fun dashboardPage(
                 .padding(horizontal = itemHorizontalPadding),
             verticalArrangement = Arrangement.spacedBy(itemHorizontalPadding / 2)
         ) {
-            if (state.restricted) {
-                Card(
-                    modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
-                        onClick(label = openPrivilege, action = null)
-                    }, shape = MaterialTheme.shapes.large,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                    onClick = actions.onPrivilege
+            Column {
+                AnimatedVisibility(
+                    visible = warningTitle != null,
+                    enter = expandVertically(expandFrom = Alignment.Top),
+                    exit = shrinkVertically(shrinkTowards = Alignment.Top),
                 ) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(itemVerticalPadding),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    Card(
+                        modifier = Modifier.fillMaxWidth()
+                            .padding(bottom = itemHorizontalPadding / 2)
+                            .semantics(mergeDescendants = true) {
+                                onClick(label = openRestrictionDetails, action = null)
+                            }, shape = MaterialTheme.shapes.large,
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                        onClick = actions.onRestrictionDetails
                     ) {
-                        GkIcon(GkIcons.WarningAmber)
-                        Text(
-                            stringResource(Res.string.permission_restricted_privilege_notice),
-                            Modifier.weight(1f),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        GkIcon(GkIcons.KeyboardArrowRight)
+                        Row(
+                            Modifier.fillMaxWidth().padding(itemVerticalPadding),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Column(
+                                Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    GkIcon(GkIcons.WarningAmber)
+                                    Text(
+                                        stringResource(requireNotNull(retainedWarningTitle)),
+                                        style = MaterialTheme.typography.titleMedium,
+                                    )
+                                }
+                                Text(
+                                    stringResource(
+                                        if (retainedWarningTitle == Res.string.adb_permission_restricted) Res.string.adb_restricted_privilege_notice
+                                        else Res.string.permission_restricted_privilege_notice
+                                    ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            }
+                            GkIcon(GkIcons.KeyboardArrowRight)
+                        }
                     }
                 }
+                ServiceStatusCard(
+                    state.serviceSubtitle,
+                    state.serviceEnabled,
+                    actions.onService,
+                    state.mode,
+                    actions.onMode
+                )
             }
-            ServiceStatusCard(
-                state.serviceSubtitle,
-                state.serviceEnabled,
-                actions.onService,
-                state.mode,
-                actions.onMode
-            )
             PageSwitchItemCard(
                 GkIcons.Notifications,
                 stringResource(Res.string.persistent_notification),
@@ -320,7 +367,6 @@ private fun ServiceStatusCard(
     onModeClick: () -> Unit,
 ) {
     val onStatusClick = { onCheckedChange(!checked) }
-    val onModeRowClick = onModeClick
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
@@ -366,7 +412,7 @@ private fun ServiceStatusCard(
                 .semantics(mergeDescendants = true) {}
                 .clickable(
                     onClickLabel = stringResource(Res.string.work_mode_open),
-                    onClick = onModeRowClick,
+                    onClick = onModeClick,
                 )
                 .padding(
                     start = itemVerticalPadding,

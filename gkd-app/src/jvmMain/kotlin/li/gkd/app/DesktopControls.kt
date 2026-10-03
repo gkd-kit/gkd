@@ -1,5 +1,6 @@
 package li.gkd.app
 
+import li.gkd.app.permission.AndroidPermissions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -230,6 +231,28 @@ fun DesktopControls(
                 title = "系统设置受限（模拟）",
                 checked = settings.permissions.restricted,
                 onCheckedChange = { v -> state.simulatorCommand { state.simulator.setRestricted(v) } })
+            listOf(
+                AndroidPermissions.GRANT_RUNTIME_PERMISSIONS,
+                AndroidPermissions.INJECT_EVENTS,
+                AndroidPermissions.WRITE_SECURE_SETTINGS,
+                AndroidPermissions.UPDATE_APP_OPS_STATS,
+            ).forEach { permission ->
+                val name = permission.substringAfterLast('.')
+                GkTextSwitch(
+                    title = "ADB 缺少 $name（模拟）",
+                    checked = permission in settings.permissions.deniedServerPermissions,
+                    onCheckedChange = { denied ->
+                        state.simulatorCommand {
+                            state.simulator.update {
+                                it.copy(permissions = it.permissions.copy(
+                                    deniedServerPermissions = if (denied) it.permissions.deniedServerPermissions + permission
+                                    else it.permissions.deniedServerPermissions - permission
+                                ))
+                            }
+                        }
+                    },
+                )
+            }
             GkTextSwitch(
                 title = "受限设置提示（模拟）",
                 checked = android.restrictedWarning,
