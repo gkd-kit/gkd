@@ -1,5 +1,7 @@
 package li.gkd.app.ui.home
 
+import li.gkd.app.app.AppInfoRepository
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +38,7 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import li.gkd.app.model.AppInfo
@@ -67,13 +70,14 @@ import li.gkd.app.resources.whitelist_member
 import li.gkd.app.resources.whitelist_not_member
 import li.gkd.app.resources.whitelist_remove
 import li.gkd.app.resources.whitelist_title
+import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
 import li.gkd.app.ui.component.DialogRequests
-import li.gkd.app.ui.component.GkDesktopKeyHandler
-import li.gkd.app.ui.component.LocalOverlayBackHandler
 import li.gkd.app.ui.component.GkAnimatedFloatingActionButton
 import li.gkd.app.ui.component.GkAppBarTextField
+import li.gkd.app.ui.component.GkAppNameText
 import li.gkd.app.ui.component.GkCheckbox
+import li.gkd.app.ui.component.GkDesktopKeyHandler
 import li.gkd.app.ui.component.GkEmptyState
 import li.gkd.app.ui.component.GkFilterIconButton
 import li.gkd.app.ui.component.GkIcon
@@ -88,10 +92,19 @@ import li.gkd.app.ui.component.GkQueryPkgAuthCard
 import li.gkd.app.ui.component.GkRuleStats
 import li.gkd.app.ui.component.GkRuleStatsData
 import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.component.LocalOverlayBackHandler
 import li.gkd.app.ui.component.autoFocus
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.icon.GkBlockCloseIconButton
 import li.gkd.app.ui.icon.GkSearchCloseIconButton
+import li.gkd.app.ui.navigation.AppConfigRoute
+import li.gkd.app.ui.navigation.AppRoute
+import li.gkd.app.ui.navigation.AppWindow
+import li.gkd.app.ui.navigation.EditBlockAppListRoute
+import li.gkd.app.ui.navigation.GkAppIcon
+import li.gkd.app.ui.navigation.GkBackHandler
+import li.gkd.app.ui.navigation.hideIme
+import li.gkd.app.ui.navigation.requestQueryPackages
 import li.gkd.app.ui.option.AppGroupOption
 import li.gkd.app.ui.option.AppSortOption
 import li.gkd.app.ui.option.findOption
@@ -119,31 +132,25 @@ data class AppListContentState(
     val showBlocked: Boolean = true,
 )
 
-data class AppListActions(
-    val onSearch: (String) -> Unit, val onToggleSearch: () -> Unit,
-    val onToggleEdit: () -> Unit, val onRefresh: suspend () -> Unit,
-    val onSort: (Int) -> Unit, val onGroup: (Int) -> Unit, val onShowBlocked: (Boolean) -> Unit,
-    val onEditWhitelist: () -> Unit, val onToggleWhitelist: (String) -> Unit,
-    val onOpen: (String) -> Unit, val onLeave: () -> Unit = {}, val onRequestPermission: () -> Unit,
-)
-
 @Composable
 fun appListPage(
-    state: AppListContentState, actions: AppListActions,
-    appIcon: @Composable (String) -> Unit,
-    appName: @Composable (AppInfo) -> Unit,
+    window: AppWindow,
+    vm: HomeViewModel,
+    onNavigate: (AppRoute) -> Unit,
     toast: (String) -> Unit,
-    searchBackHandler: @Composable () -> Unit = {},
-    editBackHandler: @Composable () -> Unit = {},
-    bindScroll: @Composable (suspend () -> Unit) -> Unit = {},
+    dialogs: DialogRequests,
 ): ScaffoldExt {
+    val store by SettingsRepository.settings.collectAsStateWithLifecycle()
+    val appState by vm.appsState.collectAsStateWithLifecycle()
+    val blocked by SettingsRepository.blockMatchAppList.collectAsStateWithLifecycle()
+    val controls = rememberAppListPageState()
+    val state = controls.content(appState, store, blocked)
 
-    val dialogs = remember { DialogRequests() }
     val scope = rememberCoroutineScope()
     fun refresh() {
         scope.launch {
             try {
-                actions.onRefresh()
+                AppInfoRepository.refresh()
                 toast(getString(Res.string.app_list_update_success))
             } catch (e: CancellationException) {
                 throw e
@@ -153,7 +160,6 @@ fun appListPage(
         }
     }
     GkDesktopKeyHandler(Key.F5, onKey = ::refresh)
-    dialogs.Render()
     val appInfos = state.appInfos
     val searchStr = state.searchText
 
@@ -169,152 +175,161 @@ fun appListPage(
         key = { it.id },
         leadingItemKey = if (state.canQueryPackages) null else 1,
     )
-    bindScroll(pageScrollState::resetScrollAndAwait)
+    ResetPageScrollOnRequest(
+        vm.homeState,
+        BottomNavItem.AppList,
+        pageScrollState::resetScrollAndAwait,
+    )
     return ScaffoldExt(
         navItem = BottomNavItem.AppList,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             DisposableEffect(null) {
                 onDispose {
-                    actions.onLeave()
+                    controls.onLeave()
                 }
             }
-            GkTopAppBar(scrollBehavior = scrollBehavior, title = {
-                val firstShowSearchBar = remember { showSearchBar }
-                if (showSearchBar) {
-                    searchBackHandler()
-                    GkAppBarTextField(
-                        value = searchStr,
-                        onValueChange = actions.onSearch,
-                        hint = stringResource(Res.string.app_name_id_input_hint),
-                        modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
-                    )
-                } else {
-                    val titleModifier = Modifier
-                        .clickable(
-                            interactionSource = null, indication = null,
-                            onClick = {
-                                pageScrollState.resetScroll()
-                            }
+            GkTopAppBar(
+                scrollBehavior = scrollBehavior,
+                title = {
+                    val firstShowSearchBar = remember { showSearchBar }
+                    if (showSearchBar) {
+                        GkBackHandler { if (!window.hideIme()) controls.closeSearch() }
+                        GkAppBarTextField(
+                            value = searchStr,
+                            onValueChange = controls::setSearchText,
+                            hint = stringResource(Res.string.app_name_id_input_hint),
+                            modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                         )
-                    if (editWhiteListMode) {
-                        editBackHandler()
-                    }
-                    AnimatedContent(
-                        targetState = editWhiteListMode,
-                        transitionSpec = { getUpDownTransform() },
-                    ) { localEditWhiteListMode ->
-                        if (localEditWhiteListMode) {
-                            Text(
-                                modifier = titleModifier,
-                                text = stringResource(Res.string.app_whitelist),
-                            )
-                        } else {
-                            Text(
-                                modifier = titleModifier,
-                                text = BottomNavItem.AppList.label,
-                            )
-                        }
-                    }
-                }
-            }, actions = {
-                if (state.queryPackagesAbnormal) {
-                    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
-                        GkIconButton(
-                            imageVector = GkIcons.WarningAmber,
-                            contentDescription = stringResource(Res.string.permission_error),
-                            onClick = {
-                                scope.launch {
-                                    dialogs.showMessage(
-                                        getString(Res.string.permission_error),
-                                        getString(
-                                            Res.string.app_list_permission_error_description,
-                                            getString(Res.string.permission_query_apps)
-                                        )
-                                    )
-                                }
-                            },
-                        )
-                    }
-                }
-                GkSearchCloseIconButton(
-                    onClick = actions.onToggleSearch,
-                    isSearchOpen = showSearchBar,
-                    contentDescription = if (showSearchBar) stringResource(Res.string.search_close) else stringResource(
-                        Res.string.app_list_search
-                    ),
-                )
-                var expanded by remember { mutableStateOf(false) }
-                if (expanded) LocalOverlayBackHandler.current { expanded = false }
-                GkFilterIconButton(
-                    filtered = !state.showAllApps,
-                    contentDescription = stringResource(Res.string.sort_filter),
-                    onClick = {
-                        expanded = true
-                    }
-                )
-                Box(
-                    modifier = Modifier
-                        .wrapContentSize(Alignment.TopStart)
-                ) {
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        GkMenuGroupCard(
-                            inTop = true,
-                            title = stringResource(Res.string.sort_title)
-                        ) {
-                            AppSortOption.objects.forEach { option ->
-                                GkMenuItemRadioButton(
-                                    text = option.label,
-                                    selected = AppSortOption.objects.findOption(state.sort) == option,
-                                    onClick = { actions.onSort(option.value) },
-                                )
-                            }
-                        }
-                        GkMenuGroupCard(title = stringResource(Res.string.group_title)) {
-                            AppGroupOption.normalObjects.forEach { option ->
-                                val newValue = option.invert(state.group)
-                                GkMenuItemCheckbox(
-                                    enabled = newValue != 0,
-                                    text = option.label,
-                                    checked = option.include(state.group),
-                                    onClick = { actions.onGroup(newValue) },
-                                )
-                            }
-                        }
-                        GkMenuGroupCard(title = stringResource(Res.string.filter_title)) {
-                            GkMenuItemCheckbox(
-                                text = stringResource(Res.string.whitelist_title),
-                                checked = state.showBlocked,
+                    } else {
+                        val titleModifier =
+                            Modifier.clickable(
+                                interactionSource = null,
+                                indication = null,
                                 onClick = {
-                                    actions.onShowBlocked(!state.showBlocked)
+                                    pageScrollState.resetScroll()
+                                },
+                            )
+                        if (editWhiteListMode) {
+                            GkBackHandler(onBack = controls::closeEdit)
+                        }
+                        AnimatedContent(
+                            targetState = editWhiteListMode,
+                            transitionSpec = { getUpDownTransform() },
+                        ) { localEditWhiteListMode ->
+                            if (localEditWhiteListMode) {
+                                Text(
+                                    modifier = titleModifier,
+                                    text = stringResource(Res.string.app_whitelist),
+                                )
+                            } else {
+                                Text(
+                                    modifier = titleModifier,
+                                    text = BottomNavItem.AppList.label,
+                                )
+                            }
+                        }
+                    }
+                },
+                actions = {
+                    if (state.queryPackagesAbnormal) {
+                        CompositionLocalProvider(
+                            LocalContentColor provides MaterialTheme.colorScheme.error
+                        ) {
+                            GkIconButton(
+                                imageVector = GkIcons.WarningAmber,
+                                contentDescription = stringResource(Res.string.permission_error),
+                                onClick = {
+                                    scope.launch {
+                                        dialogs.showMessage(
+                                            getString(Res.string.permission_error),
+                                            getString(
+                                                Res.string.app_list_permission_error_description,
+                                                getString(Res.string.permission_query_apps),
+                                            ),
+                                        )
+                                    }
                                 },
                             )
                         }
                     }
-                }
-                GkBlockCloseIconButton(
-                    isClose = editWhiteListMode,
-                    contentDescription = stringResource(Res.string.whitelist_edit_mode_toggle),
-                    onClickLabel = if (editWhiteListMode) stringResource(Res.string.edit_exit) else stringResource(
-                        Res.string.edit_enter
-                    ),
-                    onClick = actions.onToggleEdit,
-                )
-            })
+                    GkSearchCloseIconButton(
+                        onClick = controls::toggleSearch,
+                        isSearchOpen = showSearchBar,
+                        contentDescription =
+                            if (showSearchBar) stringResource(Res.string.search_close)
+                            else stringResource(Res.string.app_list_search),
+                    )
+                    var expanded by remember { mutableStateOf(false) }
+                    if (expanded) LocalOverlayBackHandler.current { expanded = false }
+                    GkFilterIconButton(
+                        filtered = !state.showAllApps,
+                        contentDescription = stringResource(Res.string.sort_filter),
+                        onClick = {
+                            expanded = true
+                        },
+                    )
+                    Box(modifier = Modifier.wrapContentSize(Alignment.TopStart)) {
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false },
+                        ) {
+                            GkMenuGroupCard(
+                                inTop = true,
+                                title = stringResource(Res.string.sort_title),
+                            ) {
+                                AppSortOption.objects.forEach { option ->
+                                    GkMenuItemRadioButton(
+                                        text = option.label,
+                                        selected =
+                                            AppSortOption.objects.findOption(state.sort) == option,
+                                        onClick = { SettingsRepository.updateSettings { it.copy(appSort = option.value) } },
+                                    )
+                                }
+                            }
+                            GkMenuGroupCard(title = stringResource(Res.string.group_title)) {
+                                AppGroupOption.normalObjects.forEach { option ->
+                                    val newValue = option.invert(state.group)
+                                    GkMenuItemCheckbox(
+                                        enabled = newValue != 0,
+                                        text = option.label,
+                                        checked = option.include(state.group),
+                                        onClick = { SettingsRepository.updateSettings { it.copy(appGroupType = newValue) } },
+                                    )
+                                }
+                            }
+                            GkMenuGroupCard(title = stringResource(Res.string.filter_title)) {
+                                GkMenuItemCheckbox(
+                                    text = stringResource(Res.string.whitelist_title),
+                                    checked = state.showBlocked,
+                                    onClick = {
+                                        SettingsRepository.updateSettings { it.copy(showBlockApp = !state.showBlocked) }
+                                    },
+                                )
+                            }
+                        }
+                    }
+                    GkBlockCloseIconButton(
+                        isClose = editWhiteListMode,
+                        contentDescription = stringResource(Res.string.whitelist_edit_mode_toggle),
+                        onClickLabel =
+                            if (editWhiteListMode) stringResource(Res.string.edit_exit)
+                            else stringResource(Res.string.edit_enter),
+                        onClick = { controls.toggleEdit(blocked) },
+                    )
+                },
+            )
         },
         floatingActionButton = {
             GkAnimatedFloatingActionButton(
                 visible = editWhiteListMode,
                 contentDescription = stringResource(Res.string.whitelist_edit),
                 onClick = {
-                    actions.onEditWhitelist()
+                    onNavigate(EditBlockAppListRoute)
                 },
                 imageVector = GkIcons.Edit,
             )
-        }
+        },
     ) { contentPadding ->
         PullToRefreshBox(
             modifier = Modifier.padding(contentPadding),
@@ -324,17 +339,20 @@ fun appListPage(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                state = listState
+                state = listState,
             ) {
                 if (!state.canQueryPackages) {
                     item(key = 1, contentType = 1) {
-                        GkQueryPkgAuthCard(state.refreshing, actions.onRequestPermission)
+                        GkQueryPkgAuthCard(state.refreshing, window::requestQueryPackages)
                     }
                 }
                 if (state.listState !is Loadable.Ready || state.ruleStatsFailed) {
                     item("load-state") {
                         Text(
-                            stringResource(if (state.listState is Loadable.Loading) Res.string.loading_progress else Res.string.data_load_failed),
+                            stringResource(
+                                if (state.listState is Loadable.Loading) Res.string.loading_progress
+                                else Res.string.data_load_failed
+                            ),
                             modifier = Modifier.padding(16.dp),
                         )
                     }
@@ -343,26 +361,33 @@ fun appListPage(
                     val stats = if (editWhiteListMode) null else state.ruleStats[appInfo.id]
                     GkAppListItem(
                         appInfo = appInfo,
-                        icon = { appIcon(appInfo.id) },
-                        name = { appName(appInfo) },
+                        icon = { window.GkAppIcon(appInfo.id, 32.dp) },
+                        name = { GkAppNameText(appInfo = appInfo) },
                         stats = stats,
                         editWhiteListMode = editWhiteListMode,
                         inWhiteList = appInfo.id in state.whiteListAppIds,
                         onClick = {
                             if (editWhiteListMode) {
-                                actions.onToggleWhitelist(appInfo.id)
+                                SettingsRepository.updateBlockMatchAppList {
+                                    if (appInfo.id in it) it - appInfo.id else it + appInfo.id
+                                }
                             } else {
-                                actions.onOpen(appInfo.id)
+                                window.hideIme()
+                                onNavigate(AppConfigRoute(appInfo.id))
                             }
                         },
                     )
                 }
                 item("placeholder", "placeholder") {
-                    if (state.listState is Loadable.Ready && appInfos.isEmpty() && searchStr.isNotEmpty()) {
+                    if (
+                        state.listState is Loadable.Ready &&
+                            appInfos.isEmpty() &&
+                            searchStr.isNotEmpty()
+                    ) {
                         GkEmptyState(
-                            text = if (state.showAllApps) stringResource(Res.string.search_no_results) else stringResource(
-                                Res.string.search_no_results_filter_hint
-                            )
+                            text =
+                                if (state.showAllApps) stringResource(Res.string.search_no_results)
+                                else stringResource(Res.string.search_no_results_filter_hint)
                         )
                         GkPageBottomSpace(height = GkPageBottomSpaceDefaults.CompactHeight)
                     } else {
@@ -385,42 +410,46 @@ fun GkAppListItem(
     onClick: () -> Unit,
 ) {
     val statsDescription = stats?.takeIf { it.hasRules }?.description
-    val description = if (editWhiteListMode) appInfo.name else stringResource(
-        Res.string.app_whitelist_state_description,
-        appInfo.name,
-        statsDescription ?: appInfo.id
-    )
+    val description =
+        if (editWhiteListMode) appInfo.name
+        else
+            stringResource(
+                Res.string.app_whitelist_state_description,
+                appInfo.name,
+                statsDescription ?: appInfo.id,
+            )
     val member = stringResource(Res.string.whitelist_member)
     val notMember = stringResource(Res.string.whitelist_not_member)
     val clickLabel =
-        if (editWhiteListMode) stringResource(if (inWhiteList) Res.string.whitelist_remove else Res.string.whitelist_add) else stringResource(
-            Res.string.rule_summary_open
-        )
+        if (editWhiteListMode)
+            stringResource(
+                if (inWhiteList) Res.string.whitelist_remove else Res.string.whitelist_add
+            )
+        else stringResource(Res.string.rule_summary_open)
 
     Row(
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .clearAndSetSemantics {
-                contentDescription = description
-                if (inWhiteList) {
-                    stateDescription = member
-                } else if (editWhiteListMode) {
-                    stateDescription = notMember
+        modifier =
+            Modifier.clickable(onClick = onClick)
+                .clearAndSetSemantics {
+                    contentDescription = description
+                    if (inWhiteList) {
+                        stateDescription = member
+                    } else if (editWhiteListMode) {
+                        stateDescription = notMember
+                    }
+                    onClick(
+                        label = clickLabel,
+                        action = null,
+                    )
                 }
-                onClick(
-                    label = clickLabel,
-                    action = null
-                )
-            }
-            .itemPadding(),
+                .itemPadding(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         icon()
         Column(
-            modifier = Modifier
-                .weight(1f),
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Center,
         ) {
             name()
             if (stats != null) {
@@ -443,9 +472,7 @@ fun GkAppListItem(
             )
         } else if (inWhiteList) {
             GkIcon(
-                modifier = Modifier
-                    .padding(2.dp)
-                    .size(20.dp),
+                modifier = Modifier.padding(2.dp).size(20.dp),
                 imageVector = GkIcons.Block,
                 tint = MaterialTheme.colorScheme.secondary,
             )

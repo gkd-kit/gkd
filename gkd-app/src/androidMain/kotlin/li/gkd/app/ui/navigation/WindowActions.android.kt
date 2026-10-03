@@ -23,6 +23,10 @@ import li.gkd.app.util.IntentUtils
 import li.gkd.app.util.ToastUtils
 
 @Composable
+actual fun AppWindow.privilegeAvailable() =
+    privilegeContextFlow.collectAsStateWithLifecycle().value != null
+
+@Composable
 actual fun AppWindow.ignoresBatteryOptimizations() =
     PermissionStates.ignoreBatteryOptimizations.stateFlow.collectAsStateWithLifecycle().value
 

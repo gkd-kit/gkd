@@ -26,20 +26,6 @@ class HomeViewModel : BaseViewModel() {
     val homeState = HomeState()
     val latestState = HomeDataSources.observeLatest().stateInit(Loadable.Loading)
 
-    fun setExcludeFromRecents(enabled: Boolean) {
-        SettingsRepository.updateSettings { it.copy(excludeFromRecents = enabled) }
-    }
-
-    fun setBlockA11yEnabled(enabled: Boolean) = SettingsRepository.setBlockA11yAppListEnabled(enabled)
-
-    fun setDarkTheme(enabled: Boolean?) {
-        SettingsRepository.updateSettings { it.copy(enableDarkTheme = enabled) }
-    }
-
-    fun setDynamicColor(enabled: Boolean) {
-        SettingsRepository.updateSettings { it.copy(enableDynamicColor = enabled) }
-    }
-
     val appsState = AppListSources.observe(
         AppInfoRepository.state,
         ruleGroupState,
@@ -48,24 +34,6 @@ class HomeViewModel : BaseViewModel() {
         globalGroupCounts = { it.groups.appIdToGlobalGroupCount },
         appGroups = { it.groups.appIdToAllGroups },
     ).catch { emit(Loadable.Failure(it)) }.stateInit(Loadable.Loading)
-
-    fun setSortType(value: Int) {
-        SettingsRepository.updateSettings { it.copy(appSort = value) }
-    }
-
-    fun setAppGroupType(value: Int) {
-        SettingsRepository.updateSettings { it.copy(appGroupType = value) }
-    }
-
-    fun setShowBlockApp(value: Boolean) {
-        SettingsRepository.updateSettings { it.copy(showBlockApp = value) }
-    }
-
-    fun toggleWhiteList(appId: String) {
-        SettingsRepository.updateBlockMatchAppList { if (appId in it) it - appId else it + appId }
-    }
-
-    suspend fun refreshApps() = AppInfoRepository.refresh()
 
     private val batchMutex = MutexState()
     val batchBusyFlow: StateFlow<Boolean> get() = batchMutex.state

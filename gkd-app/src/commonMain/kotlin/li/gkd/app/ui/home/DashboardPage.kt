@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,7 +37,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import li.gkd.app.priv.PrivilegeCapabilities
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import li.gkd.app.app.AppInfoRepository
+import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.action_count_summary
 import li.gkd.app.resources.action_log_description
@@ -71,39 +74,39 @@ import li.gkd.app.resources.subscription_global_count
 import li.gkd.app.resources.work_mode_open
 import li.gkd.app.resources.work_mode_title
 import li.gkd.app.rule.RuleGroupSnapshot
+import li.gkd.app.rule.ruleGroupState
+import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
+import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.component.GkGroupNameText
 import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkPageBottomSpace
+import li.gkd.app.ui.component.GkPermissionRestrictionDialog
 import li.gkd.app.ui.component.GkSwitch
 import li.gkd.app.ui.component.GkTooltipIconButtonBox
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.rememberColumnScrollState
 import li.gkd.app.ui.component.textSize
 import li.gkd.app.ui.icon.GkAnimatedRocketIcon
+import li.gkd.app.ui.navigation.ActionLogRoute
+import li.gkd.app.ui.navigation.ActivityLogRoute
+import li.gkd.app.ui.navigation.AppConfigRoute
+import li.gkd.app.ui.navigation.AppRoute
+import li.gkd.app.ui.navigation.AppWindow
+import li.gkd.app.ui.navigation.PrivilegeServiceRoute
+import li.gkd.app.ui.navigation.WebViewRoute
+import li.gkd.app.ui.navigation.WorkModeRoute
+import li.gkd.app.ui.navigation.setStatusServiceEnabled
+import li.gkd.app.ui.navigation.switchAutomator
+import li.gkd.app.ui.option.AutomatorModeOption
+import li.gkd.app.ui.option.findOption
+import li.gkd.app.ui.settings.appVersion
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.itemVerticalPadding
 import li.gkd.app.ui.style.surfaceCardColors
+import li.gkd.db.RuleGroupType
 import org.jetbrains.compose.resources.stringResource
-
-data class DashboardUiState(
-    val appName: String, val serviceSubtitle: String, val serviceEnabled: Boolean,
-    val mode: String, val statusEnabled: Boolean, val subsStatus: String,
-    val latestRecord: String? = null, val latestIsGlobal: Boolean = false,
-    val latestLoadFailed: Boolean = false,
-    val activityLogVisible: Boolean = false, val restricted: Boolean = false,
-    val privilegeStatus: DashboardPrivilegeStatus = DashboardPrivilegeStatus.Disconnected,
-    val privilegeCapabilities: PrivilegeCapabilities? = null,
-)
-
-data class DashboardUiActions(
-    val onService: (Boolean) -> Unit, val onMode: () -> Unit,
-    val onStatus: (Boolean) -> Unit, val onLog: () -> Unit,
-    val onLatest: () -> Unit, val onActivityLog: () -> Unit,
-    val onHelp: () -> Unit, val onPrivilege: () -> Unit,
-    val onRestrictionDetails: () -> Unit,
-)
 
 @Composable
 fun dashboardSummary(state: Loadable<RuleGroupSnapshot>, actionCount: Long): String =
@@ -112,42 +115,81 @@ fun dashboardSummary(state: Loadable<RuleGroupSnapshot>, actionCount: Long): Str
         is Loadable.Failure -> stringResource(Res.string.data_load_failed)
         is Loadable.Ready -> {
             val groups = state.value.groups
-            val rules = listOfNotNull(
-                if (groups.globalGroups.isNotEmpty()) stringResource(
-                    Res.string.subscription_global_count, groups.globalGroups.size.toString(),
-                ) else null,
-                if (groups.appGroupSize > 0) stringResource(
-                    Res.string.subscription_app_rule_counts,
-                    groups.appSize.toString(), groups.appGroupSize.toString(),
-                ) else null,
-            ).joinToString("/").ifEmpty { stringResource(Res.string.rules_empty) }
-            if (actionCount > 0) stringResource(
-                Res.string.action_count_summary, rules, actionCount.toString(),
-            ) else rules
+            val rules =
+                listOfNotNull(
+                        if (groups.globalGroups.isNotEmpty())
+                            stringResource(
+                                Res.string.subscription_global_count,
+                                groups.globalGroups.size.toString(),
+                            )
+                        else null,
+                        if (groups.appGroupSize > 0)
+                            stringResource(
+                                Res.string.subscription_app_rule_counts,
+                                groups.appSize.toString(),
+                                groups.appGroupSize.toString(),
+                            )
+                        else null,
+                    )
+                    .joinToString("/")
+                    .ifEmpty { stringResource(Res.string.rules_empty) }
+            if (actionCount > 0)
+                stringResource(
+                    Res.string.action_count_summary,
+                    rules,
+                    actionCount.toString(),
+                )
+            else rules
         }
     }
 
 @Composable
 fun dashboardPage(
-    state: DashboardUiState, actions: DashboardUiActions,
-    bindScroll: @Composable (suspend () -> Unit) -> Unit = {},
+    window: AppWindow,
+    vm: HomeViewModel,
+    onNavigate: (AppRoute) -> Unit,
 ): ScaffoldExt {
-    val scroll = rememberColumnScrollState()
-    bindScroll(scroll::resetScrollAndAwait)
-    val privilegeLabel = stringResource(
-        when (state.privilegeStatus) {
-            DashboardPrivilegeStatus.Connected -> Res.string.privilege_service_state_connected
-            DashboardPrivilegeStatus.DisconnectedDesired -> Res.string.privilege_service_state_lost
-            DashboardPrivilegeStatus.Disconnected -> Res.string.privilege_service_state_disconnected
-        }
-    )
-    val openPrivilege = stringResource(Res.string.privilege_service_open)
-    val connected = state.privilegeStatus == DashboardPrivilegeStatus.Connected
-    val warningTitle = when {
-        connected && state.privilegeCapabilities?.restricted == true -> Res.string.adb_permission_restricted
-        !connected && state.restricted -> Res.string.app_permission_restricted
-        else -> null
+    val appName = window.appVersion().appName
+    val store by SettingsRepository.settings.collectAsStateWithLifecycle()
+    val scopeApps by SettingsRepository.a11yScopeAppList.collectAsStateWithLifecycle()
+    val platform = window.dashboardPlatformState()
+    var showRestrictionDetails by rememberSaveable { mutableStateOf(false) }
+    if (showRestrictionDetails) {
+        GkPermissionRestrictionDialog(
+            privilegeAvailable = platform.privilegeAvailable,
+            capabilities = platform.privilegeCapabilities,
+            appRestrictions = platform.appRestrictions,
+            onDismiss = { showRestrictionDetails = false },
+            onPrivilege = { onNavigate(PrivilegeServiceRoute) },
+        )
     }
+    val latestState by vm.latestState.collectAsStateWithLifecycle()
+    val rules by ruleGroupState.collectAsStateWithLifecycle()
+    val actionCount by SettingsRepository.actionCount.collectAsStateWithLifecycle()
+    val appCatalog by AppInfoRepository.state.collectAsStateWithLifecycle()
+    val subscriptions by SubscriptionRepository.snapshotFlow.collectAsStateWithLifecycle()
+    val latest = latestState.value?.record
+    val scroll = rememberColumnScrollState()
+    ResetPageScrollOnRequest(vm.homeState, BottomNavItem.Dashboard, scroll::resetScrollAndAwait)
+    val privilegeLabel =
+        stringResource(
+            when (platform.privilegeStatus) {
+                DashboardPrivilegeStatus.Connected -> Res.string.privilege_service_state_connected
+                DashboardPrivilegeStatus.DisconnectedDesired ->
+                    Res.string.privilege_service_state_lost
+                DashboardPrivilegeStatus.Disconnected ->
+                    Res.string.privilege_service_state_disconnected
+            }
+        )
+    val openPrivilege = stringResource(Res.string.privilege_service_open)
+    val connected = platform.privilegeStatus == DashboardPrivilegeStatus.Connected
+    val warningTitle =
+        when {
+            connected && platform.privilegeCapabilities?.restricted == true ->
+                Res.string.adb_permission_restricted
+            !connected && platform.restricted -> Res.string.app_permission_restricted
+            else -> null
+        }
     // Keep the outgoing text until the exit transition finishes.
     var retainedWarningTitle by remember { mutableStateOf(warningTitle) }
     if (warningTitle != null) retainedWarningTitle = warningTitle
@@ -158,32 +200,42 @@ fun dashboardPage(
         topBar = {
             GkTopAppBar(
                 scrollBehavior = scroll.scrollBehavior,
-                title = { Text(state.appName) },
+                title = { Text(appName) },
                 actions = {
                     GkTooltipIconButtonBox(privilegeLabel) {
                         IconButton(
-                            onClick = actions.onPrivilege,
-                            modifier = Modifier.semantics {
-                                onClick(
-                                    label = openPrivilege,
-                                    action = null
-                                )
-                            }) {
+                            onClick = { onNavigate(PrivilegeServiceRoute) },
+                            modifier =
+                                Modifier.semantics {
+                                    onClick(
+                                        label = openPrivilege,
+                                        action = null,
+                                    )
+                                },
+                        ) {
                             GkAnimatedRocketIcon(
-                                active = state.privilegeStatus == DashboardPrivilegeStatus.Connected,
+                                active =
+                                    platform.privilegeStatus == DashboardPrivilegeStatus.Connected,
                                 contentDescription = privilegeLabel,
-                                tint = if (state.privilegeStatus == DashboardPrivilegeStatus.DisconnectedDesired) MaterialTheme.colorScheme.error
-                                else MaterialTheme.colorScheme.onSurfaceVariant
+                                tint =
+                                    if (
+                                        platform.privilegeStatus ==
+                                            DashboardPrivilegeStatus.DisconnectedDesired
+                                    )
+                                        MaterialTheme.colorScheme.error
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
-                })
+                },
+            )
         },
     ) { padding ->
         Column(
-            Modifier.verticalScroll(scroll.scrollState).padding(padding)
+            Modifier.verticalScroll(scroll.scrollState)
+                .padding(padding)
                 .padding(horizontal = itemHorizontalPadding),
-            verticalArrangement = Arrangement.spacedBy(itemHorizontalPadding / 2)
+            verticalArrangement = Arrangement.spacedBy(itemHorizontalPadding / 2),
         ) {
             Column {
                 AnimatedVisibility(
@@ -192,22 +244,27 @@ fun dashboardPage(
                     exit = shrinkVertically(shrinkTowards = Alignment.Top),
                 ) {
                     Card(
-                        modifier = Modifier.fillMaxWidth()
-                            .padding(bottom = itemHorizontalPadding / 2)
-                            .semantics(mergeDescendants = true) {
-                                onClick(label = openRestrictionDetails, action = null)
-                            }, shape = MaterialTheme.shapes.large,
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                        onClick = actions.onRestrictionDetails
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .padding(bottom = itemHorizontalPadding / 2)
+                                .semantics(mergeDescendants = true) {
+                                    onClick(label = openRestrictionDetails, action = null)
+                                },
+                        shape = MaterialTheme.shapes.large,
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            ),
+                        onClick = { showRestrictionDetails = true },
                     ) {
                         Row(
                             Modifier.fillMaxWidth().padding(itemVerticalPadding),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Column(
                                 Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -221,7 +278,11 @@ fun dashboardPage(
                                 }
                                 Text(
                                     stringResource(
-                                        if (retainedWarningTitle == Res.string.adb_permission_restricted) Res.string.adb_restricted_privilege_notice
+                                        if (
+                                            retainedWarningTitle ==
+                                                Res.string.adb_permission_restricted
+                                        )
+                                            Res.string.adb_restricted_privilege_notice
                                         else Res.string.permission_restricted_privilege_notice
                                     ),
                                     style = MaterialTheme.typography.bodyMedium,
@@ -232,35 +293,45 @@ fun dashboardPage(
                     }
                 }
                 ServiceStatusCard(
-                    state.serviceSubtitle,
-                    state.serviceEnabled,
-                    actions.onService,
-                    state.mode,
-                    actions.onMode
+                    stringResource(platform.subtitle(store, scopeApps)),
+                    platform.serviceEnabled(store, scopeApps),
+                    { enabled ->
+                        when (val route = platform.authorizationRoute(enabled, store, scopeApps)) {
+                            PrivilegeServiceRoute -> showRestrictionDetails = true
+                            null -> window.switchAutomator()
+                            else -> onNavigate(route)
+                        }
+                    },
+                    AutomatorModeOption.objects.findOption(store.automatorMode).label,
+                    { onNavigate(WorkModeRoute) },
                 )
             }
             PageSwitchItemCard(
                 GkIcons.Notifications,
                 stringResource(Res.string.persistent_notification),
                 stringResource(Res.string.status_statistics_description),
-                state.statusEnabled,
-                actions.onStatus
+                platform.statusRunning && store.enableStatusService,
+                window::setStatusServiceEnabled,
             )
             TriggerOverviewCard(
-                state.subsStatus,
-                state.latestRecord,
-                state.latestIsGlobal,
-                actions.onLog,
-                actions.onLatest,
-                state.latestLoadFailed,
+                dashboardSummary(rules, actionCount),
+                HomeDataText.latest(
+                    latest,
+                    subscriptions.value?.subscriptions.orEmpty(),
+                    appCatalog.snapshot?.apps.orEmpty(),
+                ),
+                (latest?.groupType == RuleGroupType.Global),
+                { onNavigate(ActionLogRoute()) },
+                { latest?.let { onNavigate(AppConfigRoute(it.appId, focusLog = it)) } },
+                (latestState is Loadable.Failure),
             )
-            if (state.activityLogVisible) {
+            if (platform.activityRunning) {
                 PageItemCard(
                     GkIcons.Layers,
                     stringResource(Res.string.activity_log_title),
                     stringResource(Res.string.activity_record_description),
                     stringResource(Res.string.activity_log_open),
-                    actions.onActivityLog
+                    { onNavigate(ActivityLogRoute) },
                 )
             }
             PageItemCard(
@@ -268,7 +339,7 @@ fun dashboardPage(
                 stringResource(Res.string.gkd_learn_more),
                 stringResource(Res.string.documentation_description),
                 stringResource(Res.string.documentation_open),
-                actions.onHelp
+                { onNavigate(WebViewRoute(AppLinks.Home)) },
             )
             GkPageBottomSpace()
         }
@@ -284,21 +355,16 @@ private fun PageItemCard(
     onClick: () -> Unit,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics {
+        modifier =
+            Modifier.fillMaxWidth().semantics {
                 this.onClick(label = onClickLabel, action = null)
             },
         shape = MaterialTheme.shapes.large,
         colors = surfaceCardColors,
-        onClick = onClick
+        onClick = onClick,
     ) {
-        IconTextCard(
-            imageVector = imageVector,
-        ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+        IconTextCard(imageVector = imageVector) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
@@ -324,21 +390,16 @@ private fun PageSwitchItemCard(
     val onClick = { onCheckedChange(!checked) }
     val toggleLabel = stringResource(Res.string.item_toggle_description, title)
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics(mergeDescendants = true) {
+        modifier =
+            Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
                 this.onClick(label = toggleLabel, action = null)
             },
         shape = MaterialTheme.shapes.large,
         colors = surfaceCardColors,
         onClick = onClick,
     ) {
-        IconTextCard(
-            imageVector = imageVector,
-        ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+        IconTextCard(imageVector = imageVector) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
@@ -374,16 +435,14 @@ private fun ServiceStatusCard(
     ) {
         IconTextCard(
             imageVector = GkIcons.Memory,
-            modifier = Modifier
-                .semantics(mergeDescendants = true) {}
-                .clickable(
-                    onClickLabel = stringResource(Res.string.service_state_toggle),
-                    onClick = onStatusClick,
-                ),
+            modifier =
+                Modifier.semantics(mergeDescendants = true) {}
+                    .clickable(
+                        onClickLabel = stringResource(Res.string.service_state_toggle),
+                        onClick = onStatusClick,
+                    ),
         ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(Res.string.service_state),
                     style = MaterialTheme.typography.bodyLarge,
@@ -401,32 +460,31 @@ private fun ServiceStatusCard(
             )
         }
         HorizontalDivider(
-            modifier = Modifier.padding(
-                start = itemVerticalPadding + 40.dp + itemHorizontalPadding,
-                end = itemVerticalPadding,
-            ),
+            modifier =
+                Modifier.padding(
+                    start = itemVerticalPadding + 40.dp + itemHorizontalPadding,
+                    end = itemVerticalPadding,
+                )
         )
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .semantics(mergeDescendants = true) {}
-                .clickable(
-                    onClickLabel = stringResource(Res.string.work_mode_open),
-                    onClick = onModeClick,
-                )
-                .padding(
-                    start = itemVerticalPadding,
-                    end = itemVerticalPadding,
-                    top = 10.dp,
-                    bottom = 10.dp,
-                ),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .semantics(mergeDescendants = true) {}
+                    .clickable(
+                        onClickLabel = stringResource(Res.string.work_mode_open),
+                        onClick = onModeClick,
+                    )
+                    .padding(
+                        start = itemVerticalPadding,
+                        end = itemVerticalPadding,
+                        top = 10.dp,
+                        bottom = 10.dp,
+                    ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             GkIcon(
                 imageVector = GkIcons.AutoMode,
-                modifier = Modifier
-                    .padding(horizontal = 10.dp)
-                    .size(20.dp),
+                modifier = Modifier.padding(horizontal = 10.dp).size(20.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 contentDescription = null,
             )
@@ -458,18 +516,16 @@ private fun IconTextCard(
     content: @Composable () -> Unit,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(itemVerticalPadding),
-        verticalAlignment = Alignment.CenterVertically
+        modifier = modifier.fillMaxWidth().padding(itemVerticalPadding),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         GkIcon(
             imageVector = imageVector,
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .padding(8.dp)
-                .size(24.dp),
+            modifier =
+                Modifier.clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(8.dp)
+                    .size(24.dp),
             tint = MaterialTheme.colorScheme.primary,
             contentDescription = null,
         )
@@ -493,33 +549,32 @@ private fun TriggerOverviewCard(
         colors = surfaceCardColors,
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .semantics(mergeDescendants = true) {}
-                .clickable(
-                    onClickLabel = stringResource(Res.string.action_log_open),
-                    onClick = onOpenActionLog,
-                )
-                .padding(
-                    start = itemVerticalPadding,
-                    end = itemVerticalPadding,
-                    top = itemVerticalPadding,
-                    bottom = itemVerticalPadding / 2
-                ), verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier.fillMaxWidth()
+                    .semantics(mergeDescendants = true) {}
+                    .clickable(
+                        onClickLabel = stringResource(Res.string.action_log_open),
+                        onClick = onOpenActionLog,
+                    )
+                    .padding(
+                        start = itemVerticalPadding,
+                        end = itemVerticalPadding,
+                        top = itemVerticalPadding,
+                        bottom = itemVerticalPadding / 2,
+                    ),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             GkIcon(
                 imageVector = GkIcons.History,
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(8.dp)
-                    .size(24.dp),
-                tint = MaterialTheme.colorScheme.primary
+                modifier =
+                    Modifier.clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .padding(8.dp)
+                        .size(24.dp),
+                tint = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.width(itemHorizontalPadding))
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(Res.string.action_log_title),
                     style = MaterialTheme.typography.bodyLarge,
@@ -536,11 +591,7 @@ private fun TriggerOverviewCard(
                 contentDescription = null,
             )
         }
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = itemVerticalPadding)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = itemVerticalPadding)) {
             AnimatedVisibility(subsStatus.isNotEmpty()) {
                 Text(
                     modifier = Modifier.padding(horizontal = 8.dp),
@@ -552,7 +603,8 @@ private fun TriggerOverviewCard(
 
             if (latestLoadFailed) {
                 Text(
-                    text = stringResource(Res.string.action_log_recent_prefix) +
+                    text =
+                        stringResource(Res.string.action_log_recent_prefix) +
                             stringResource(Res.string.data_load_failed),
                     modifier = Modifier.padding(horizontal = 8.dp),
                     style = MaterialTheme.typography.bodyMedium,
@@ -561,19 +613,17 @@ private fun TriggerOverviewCard(
             }
             if (latestRecordDesc != null) {
                 Row(
-                    modifier = Modifier
-                        .padding(horizontal = 4.dp)
-                        .clip(MaterialTheme.shapes.extraSmall)
-                        .clickable(
-                            onClickLabel = stringResource(Res.string.app_rule_summary_open),
-                            onClick = onOpenLatestRecord,
-                        )
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp)
+                    modifier =
+                        Modifier.padding(horizontal = 4.dp)
+                            .clip(MaterialTheme.shapes.extraSmall)
+                            .clickable(
+                                onClickLabel = stringResource(Res.string.app_rule_summary_open),
+                                onClick = onOpenLatestRecord,
+                            )
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                    ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         GkGroupNameText(
                             modifier = Modifier.fillMaxWidth(),
                             preText = stringResource(Res.string.action_log_recent_prefix),

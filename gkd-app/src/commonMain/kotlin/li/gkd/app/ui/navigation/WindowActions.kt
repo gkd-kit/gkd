@@ -4,6 +4,9 @@ import androidx.compose.runtime.Composable
 import li.gkd.app.ui.option.AutomatorModeOption
 
 @Composable
+expect fun AppWindow.privilegeAvailable(): Boolean
+
+@Composable
 expect fun AppWindow.ignoresBatteryOptimizations(): Boolean
 @Composable
 expect fun AppWindow.RefreshPermissions()

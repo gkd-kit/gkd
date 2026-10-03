@@ -152,10 +152,9 @@ fun SnapshotPage(
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
     val displayMode = SnapshotDisplayModeOption.objects.findOption(settings.snapshotDisplayMode)
     val actionScope = vm.scope
-    val state = loadableState.value
     val firstLoading = loadableState is Loadable.Loading
     val loadError = (loadableState as? Loadable.Failure)?.cause
-    val snapshots = state?.snapshots.orEmpty()
+    val snapshots = loadableState.value.orEmpty()
     val catalog by li.gkd.app.app.AppInfoRepository.state.collectAsStateWithLifecycle()
     val appNames =
         remember(catalog.snapshot) { catalog.snapshot?.apps.orEmpty().mapValues { it.value.name } }

@@ -64,7 +64,7 @@ fun SnapshotPreviewPage(
     key(route) {
         var actionRequest by remember { mutableStateOf<SheetRequest<Long>?>(null) }
         var imageVersion by remember { mutableIntStateOf(0) }
-        val snapshotsById = state?.snapshots?.associateBy { it.id }.orEmpty()
+        val snapshotsById = state?.associateBy { it.id }.orEmpty()
         val previewSnapshots = route.snapshotIds.mapNotNull(snapshotsById::get)
 
         if (previewSnapshots.isNotEmpty()) {

@@ -6,6 +6,10 @@ import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.option.AutomatorModeOption
 
 @Composable
+actual fun AppWindow.privilegeAvailable() =
+    state.simulator.settings.collectAsStateWithLifecycle().value.privilege.available
+
+@Composable
 actual fun AppWindow.ignoresBatteryOptimizations() =
     state.simulator.settings.collectAsStateWithLifecycle().value.environment().android.ignoreBatteryOptimizations
 

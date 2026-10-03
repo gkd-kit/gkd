@@ -293,7 +293,8 @@ fun GkAppNavigation(
                             onNavigate,
                             showToast,
                             updateStatus,
-                            onExportLogs
+                            onExportLogs,
+                            dialogs,
                         )
 
                         BlockA11ySetupRoute -> li.gkd.app.ui.home.BlockA11ySetupPage(

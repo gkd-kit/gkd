@@ -1,6 +1,5 @@
 package li.gkd.app.ui.page
 
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 
@@ -13,4 +12,3 @@ data class EditorSession(
     val titleContent: @Composable () -> Unit = { Text(title) },
 )
 
-typealias EditorFrame = @Composable (EditorSession, @Composable (PaddingValues) -> Unit) -> Unit

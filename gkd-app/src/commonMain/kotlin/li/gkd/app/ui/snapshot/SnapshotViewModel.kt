@@ -1,16 +1,11 @@
 package li.gkd.app.ui.snapshot
 
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.map
 import li.gkd.app.snapshot.SnapshotStore
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.app.util.LogUtils
 import li.gkd.db.Db
 import li.gkd.db.Snapshot
-
-data class SnapshotUiState(
-    val snapshots: List<Snapshot>,
-)
 
 data class SnapshotDeleteResult(
     val deletedIds: Set<Long>,
@@ -18,7 +13,7 @@ data class SnapshotDeleteResult(
 )
 
 class SnapshotViewModel : BaseViewModel() {
-    val uiState = Db.snapshotDao.query().map(::SnapshotUiState).stateLoadable()
+    val uiState = Db.snapshotDao.query().stateLoadable()
 
 
     suspend fun deleteSnapshots(snapshots: List<Snapshot>): SnapshotDeleteResult {
