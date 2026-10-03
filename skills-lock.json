@@ -7,6 +7,13 @@
       "sourceType": "github",
       "skillPath": "skills/android-api-diff/SKILL.md",
       "computedHash": "1dcdc7e450ceb0bf24e300a9bdda06a1a0852714596f809a6d7af62c45e3db82"
+    },
+    "android-hidden-api-r8": {
+      "source": "lisonge/remap",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/android-hidden-api-r8/SKILL.md",
+      "computedHash": "211d60f45888d04b3f4d6bca0d73c0e4e55a42b525d59a5def0b8455613676ad"
     }
   }
 }

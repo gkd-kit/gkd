@@ -79,4 +79,5 @@
 
 - 外部 npm 依赖/版本集中根 package.json，private 子包所有 dependencies/devDependencies/optionalDependencies/peerDependencies 仅用 workspace:。可发布子包自行声明独立安装所需运行时/optional/peer 依赖，公共开发工具仍在根；变更同步清单和 pnpm 锁文件。
 - Android framework Java/AIDL 源码定位、跨版本签名/可用性、缺失分析及 Java hidden-API 生成必须使用 [android-api-diff skill](.agents/skills/android-api-diff/SKILL.md) 与其 CLI，保留默认 JSON，不自行模拟版本检查。安装/更新 skill 在根执行 `android-api-diff skill install`。
+- 修改隐藏接口/父类实现、系统回调、remap 或相关模块依赖/R8 配置，以及排查相关混淆 Release 故障时，必须使用 [android-hidden-api-r8 skill](.agents/skills/android-hidden-api-r8/SKILL.md)。检查最终应用模块 `gkd-android` 的实际 R8 输入及优化后的运行时契约，不以源码 override、编译成功或 Debug 正常代替；`gkd-app` 可见的 `gkd-hidden-api` stub 不代表最终 R8 可见。默认仅验证受影响的 gkd Release 路径，未经用户要求或证据支持不扩大审计范围。
 - 特权进程 UserService 的可能失败 Binder 方法在最外层末端 `catch (e: Throwable)` 捕获可恢复错误，通过 Binder 可传输异常/结果保留原类型、消息、堆栈；不只在主进程捕获，不让 NoSuchMethodError 等 LinkageError 逃逸崩溃。VirtualMachineError/ThreadDeath 等终止错误可原样抛出，不伪装普通失败。

@@ -178,6 +178,8 @@ if (buildProperty("GKD_RENAME_PACKAGE_FLAG").isPresent) {
 
 dependencies {
     implementation(project(":gkd-app"))
+    // R8 needs hidden framework declarations to preserve system callback implementations.
+    compileOnly(project(":gkd-hidden-api"))
     implementation(libs.rikka.shizuku.provider)
     debugImplementation(libs.compose.tooling)
 
