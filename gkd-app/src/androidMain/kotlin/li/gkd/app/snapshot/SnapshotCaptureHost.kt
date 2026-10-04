@@ -47,6 +47,7 @@ import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.BarUtils
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ScreenUtils
+import li.gkd.app.util.SystemServiceDump
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.px
 import org.jetbrains.compose.resources.getString
@@ -187,12 +188,10 @@ object SnapshotCaptureHost {
         return topActivity.activityId.takeIf { topActivity.appId == appId }
     }
 
-    private suspend fun isFocusedWindowSecure(appId: String): Boolean? =
+    private suspend fun queryFocusedWindowSecure(appId: String): Boolean? =
         withContext(Dispatchers.IO) {
             try {
-                privilegeContextFlow.value?.isFocusedWindowSecure(appId)
-            } catch (e: CancellationException) {
-                throw e
+                SystemServiceDump.isFocusedWindowSecure(appId)
             } catch (e: Exception) {
                 LogUtils.d("读取前台窗口 FLAG_SECURE 失败", e)
                 null
@@ -211,7 +210,7 @@ object SnapshotCaptureHost {
         val checkSecureBeforeCapture =
             automatorMode == AutomatorModeOption.AutomationMode && AndroidTarget.UPSIDE_DOWN_CAKE
         val focusedWindowSecure = if (checkSecureBeforeCapture) {
-            isFocusedWindowSecure(appId)
+            queryFocusedWindowSecure(appId)
         } else {
             null
         }
@@ -243,7 +242,7 @@ object SnapshotCaptureHost {
                     val secure = if (checkSecureBeforeCapture) {
                         focusedWindowSecure
                     } else {
-                        isFocusedWindowSecure(appId)
+                        queryFocusedWindowSecure(appId)
                     }
                     val status = if (secure == false) {
                         SnapshotScreenshotStatus.Captured

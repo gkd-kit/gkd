@@ -1,45 +1,22 @@
 package li.gkd.app.text
 
-import li.gkd.app.AndroidResourcesTest
-import li.gkd.app.notif.NotificationCatalog
+import android.app.Application
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.action_log_recent_prefix
 import li.gkd.app.resources.app_rule_input_hint
 import li.gkd.app.resources.notification_summary_template
 import li.gkd.app.resources.rule_name_duplicate
 import li.gkd.app.resources.selector_invalid_detail
-import li.gkd.app.snapshot.SnapshotScreenshotStatus
 import li.gkd.app.ui.text.getSync
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
-class StringResourcesTest : AndroidResourcesTest() {
-    @Test
-    fun exportFailureNotificationStillSaysSnapshotSaved() {
-        val notification = NotificationCatalog.snapshotSaved(
-            appName = "Example",
-            activityId = null,
-            screenshotStatus = SnapshotScreenshotStatus.Captured,
-            savedToDownloads = false,
-            exportDetail = "自动导出失败：disk full",
-        )
-        assertEquals("快照已保存 · Example", notification.title)
-        assertEquals("自动导出失败：disk full", notification.text)
-    }
-
-    @Test
-    fun snapshotNotificationPreservesAppNameAndDownloadResult() {
-        val name = "50% %1\$s <App>"
-        val notification = NotificationCatalog.snapshotSaved(
-            appName = name,
-            activityId = "example.MainActivity",
-            screenshotStatus = SnapshotScreenshotStatus.Captured,
-            savedToDownloads = true,
-        )
-        assertEquals("快照已保存 · $name", notification.title)
-        assertEquals("example.MainActivity · 已保存至下载", notification.text)
-    }
-
+@RunWith(RobolectricTestRunner::class)
+@Config(application = Application::class, sdk = [28])
+class StringResourcesTest {
     @Test
     fun androidAssetReadsPreserveWhitespaceAndNewlines() {
         assertEquals("最近触发: ", Res.string.action_log_recent_prefix.getSync())

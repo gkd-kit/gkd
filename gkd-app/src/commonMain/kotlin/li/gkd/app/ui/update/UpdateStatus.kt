@@ -180,8 +180,6 @@ class UpdateStatus(
                 downloaded?.let { file ->
                     try {
                         if (requestPackageInstall(file) == PlatformResult.Unsupported) toast(Res.string.platform_action_unsupported.getSync())
-                    } catch (e: CancellationException) {
-                        throw e
                     } catch (e: Exception) {
                         toast(e.displayMessage())
                     }

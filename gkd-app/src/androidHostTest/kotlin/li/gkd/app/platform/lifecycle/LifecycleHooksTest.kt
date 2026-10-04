@@ -1,21 +1,25 @@
 package li.gkd.app.platform.lifecycle
 
 import android.app.Application
-import java.io.File
-import java.nio.file.Files
-import li.gkd.app.logging.LogMetadata
 import li.gkd.app.util.LogUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.Implementation
+import org.robolectric.annotation.Implements
+import org.robolectric.shadow.api.Shadow
 
 @RunWith(RobolectricTestRunner::class)
-@Config(application = Application::class, sdk = [28])
+@Config(
+    application = Application::class,
+    sdk = [28],
+    shadows = [LifecycleHooksTest.CapturedLog::class],
+    instrumentedPackages = ["li.gkd.app.util.LogUtils"],
+)
 class LifecycleHooksTest {
     @Test
     fun lifecycleLoggingUsesOwnerAndRegistrationLocation() {
@@ -113,27 +117,27 @@ class LifecycleHooksTest {
 
     @Test
     fun resourceSlotReportsResourceRegistrationLocation() {
-        val project = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }
-            .first { it.resolve("settings.gradle.kts").isFile }
-        val parent = project.resolve(".local/tests/android").apply { mkdirs() }
-        val root = Files.createTempDirectory(parent.toPath(), "resource-slot-").toFile()
-        try {
-            LogUtils.initialize(root, LogMetadata("Android", "9 (28)", "test", "test (1)"), false)
-            try {
-                ResourceSlot<AutoCloseable>().use { slot ->
-                    slot.replace(loc = "resource-registration-loc") {
-                        AutoCloseable { error("failed close") }
-                    }
-                }
-                LogUtils.flush()
-                val text = root.listFiles()!!.single().readText()
-                assertTrue(text, text.contains("IllegalStateException: failed close"))
-                assertTrue(text, text.contains("resource-registration-loc"))
-            } finally {
-                LogUtils.close()
+        val error = IllegalStateException("failed close")
+        ResourceSlot<AutoCloseable>().use { slot ->
+            slot.replace(loc = "resource-registration-loc") {
+                AutoCloseable { throw error }
             }
-        } finally {
-            root.deleteRecursively()
+        }
+        val captured = Shadow.extract<CapturedLog>(LogUtils)
+        assertSame(error, captured.arguments.single())
+        assertEquals("resource-registration-loc", captured.location)
+    }
+
+    // Check the lifecycle-to-logger boundary without initializing the application-owned log writer.
+    @Implements(LogUtils::class, isInAndroidSdk = false)
+    class CapturedLog {
+        var arguments: List<Any?> = emptyList()
+        var location: String = ""
+
+        @Implementation
+        fun d(args: Array<out Any?>, loc: String, fileName: String, tag: String) {
+            arguments = args.toList()
+            location = loc
         }
     }
 }

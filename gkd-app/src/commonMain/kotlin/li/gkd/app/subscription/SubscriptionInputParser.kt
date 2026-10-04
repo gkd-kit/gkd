@@ -74,8 +74,6 @@ class SubscriptionInputParser private constructor(
 
     private fun <T> parseRule(block: () -> T): T = try {
         block()
-    } catch (e: kotlinx.coroutines.CancellationException) {
-        throw e
     } catch (e: SubscriptionException) {
         throw e
     } catch (e: Exception) {
@@ -89,8 +87,6 @@ class SubscriptionInputParser private constructor(
         ): SubscriptionInputParser {
             val element = try {
                 Json5.parseToJsonElement(source)
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
             } catch (e: Exception) {
                 throw SubscriptionException(SubscriptionFailureReason.FormatInvalidDetail, cause = e)
             }

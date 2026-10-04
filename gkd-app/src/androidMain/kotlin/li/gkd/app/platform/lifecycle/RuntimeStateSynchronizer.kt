@@ -1,6 +1,5 @@
 package li.gkd.app.platform.lifecycle
 
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -29,8 +28,6 @@ object RuntimeStateSynchronizer {
                     privilegeContextFlow.value?.grantSelf()
                     PermissionStates.refreshAll()
                     fixRestartAutomatorService()
-                } catch (e: CancellationException) {
-                    throw e
                 } catch (e: Exception) {
                     LogUtils.d(e, loc = loc)
                 }

@@ -30,47 +30,72 @@ class PrivilegeRestrictionTest {
         )
 
     @Test
-    fun deniedInputBlocksStartButUnknownPermissionsAndStopRemainAvailable() {
+    fun unknownAndAllowedPermissionsDoNotBlockAutomationStart() {
         // Only a confirmed denial blocks the UI; starting performs the actual permission check.
-        val denied = dashboard(allowed.copy(injectEvents = false))
-        assertEquals(PrivilegeServiceRoute, denied.authorizationRoute(true, automation, emptySet()))
-        assertNull(denied.authorizationRoute(false, automation, emptySet()))
         assertNull(dashboard(null).authorizationRoute(true, automation, emptySet()))
         assertNull(dashboard(allowed).authorizationRoute(true, automation, emptySet()))
     }
 
     @Test
-    fun grantAndSecureSettingsRestrictionsDoNotInvalidateIndependentExecutionPaths() {
-        // Previously granted app permission survives an ADB restriction; automation only needs input here.
+    fun anyServerRestrictionBlocksAutomationStartButKeepsStopAndAccessibilityAvailable() {
+        // New automation requires an unrestricted server; accessibility uses previously granted app permissions.
         for (capabilities in listOf(
+            allowed.copy(injectEvents = false),
             allowed.copy(grantRuntimePermissions = false),
             allowed.copy(writeSecureSettings = false),
             allowed.copy(updateAppOps = false),
         )) {
             val state = dashboard(capabilities)
-            assertNull(state.authorizationRoute(true, automation, emptySet()))
+            assertEquals(PrivilegeServiceRoute, state.authorizationRoute(true, automation, emptySet()))
+            assertNull(state.authorizationRoute(false, automation, emptySet()))
+            assertNull(state.copy(automationRunning = true)
+                .authorizationRoute(false, automation, emptySet()))
+            assertNull(state.authorizationRoute(true, automation, setOf("example.app")))
             assertNull(state.authorizationRoute(true, SettingsStore(), emptySet()))
             assertEquals(WorkModeRoute, state.copy(writeSecureSettings = false)
                 .authorizationRoute(true, SettingsStore(), emptySet()))
         }
-        // Scoped accessibility mode must keep using the app's permission even when injection is denied.
-        assertNull(dashboard(allowed.copy(injectEvents = false))
-            .authorizationRoute(true, automation, setOf("example.app")))
     }
 
     @Test
-    fun inputRestrictionDoesNotStopExistingSimulatedAutomation() {
+    fun legacyAppOpsPermissionDenialDoesNotBlockModernSimulatedAutomation() {
+        // Android 9+ setMode requires MANAGE_APP_OPS_MODES, not UPDATE_APP_OPS_STATS.
+        val settings = SimulatorSettings(
+            permissions = SimulatedPermissions(
+                deniedServerPermissions = setOf(AndroidPermissions.UPDATE_APP_OPS_STATS),
+            ),
+            privilege = SimulatedPrivilege().withAvailability(true),
+        )
+        val capabilities = settings.privilegeCapabilities()!!
+        assertTrue(capabilities.updateAppOps)
+        assertFalse(capabilities.restricted)
+        assertNull(dashboard(capabilities).authorizationRoute(true, automation, emptySet()))
+    }
+
+    @Test
+    fun serverRestrictionsDoNotStopExistingSimulatedAutomation() {
         val store = SimulatorStore(SimulatorSettings(
             permissions = SimulatedPermissions(writeSecureSettings = true),
             services = SimulatedServices(automationRunning = true),
             privilege = SimulatedPrivilege().withAvailability(true),
         ))
-        store.update { it.copy(permissions = it.permissions.copy(
-            deniedServerPermissions = setOf(AndroidPermissions.INJECT_EVENTS)
-        )) }
-        assertTrue(store.settings.value.services.automationRunning)
-        assertTrue(store.settings.value.privilege.available)
-        assertTrue(store.settings.value.permissions.writeSecureSettings)
+        for (permission in listOf(
+            AndroidPermissions.INJECT_EVENTS,
+            AndroidPermissions.GRANT_RUNTIME_PERMISSIONS,
+            AndroidPermissions.WRITE_SECURE_SETTINGS,
+            AndroidPermissions.MANAGE_APP_OPS_MODES,
+        )) {
+            store.update { it.copy(permissions = it.permissions.copy(
+                deniedServerPermissions = setOf(permission)
+            )) }
+            val capabilities = store.settings.value.privilegeCapabilities()!!
+            assertTrue(capabilities.restricted)
+            assertEquals(PrivilegeServiceRoute, dashboard(capabilities)
+                .authorizationRoute(true, automation, emptySet()))
+            assertTrue(store.settings.value.services.automationRunning)
+            assertTrue(store.settings.value.privilege.available)
+            assertTrue(store.settings.value.permissions.writeSecureSettings)
+        }
         store.update { it.copy(permissions = it.permissions.copy(deniedServerPermissions = emptySet())) }
         assertTrue(store.settings.value.services.automationRunning)
         assertTrue(store.settings.value.privilegeCapabilities()!!.injectEvents)

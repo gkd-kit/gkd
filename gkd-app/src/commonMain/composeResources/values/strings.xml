@@ -1017,7 +1017,8 @@
     <string name="rule_group_key_description">规则组 %1$s</string>
     <string name="adb_permission_restricted">ADB 权限受限</string>
     <string name="privilege_permissions_unverified">尚未确认特权操作权限，请前往特权服务检查后重试</string>
-    <string name="automation_permission_restricted">ADB 权限受限，无法使用自动化模式；请前往特权服务处理或切换无障碍模式</string>
+    <string name="automation_permission_restricted">特权服务权限受限，无法启动自动化；请前往特权服务处理或切换无障碍模式</string>
+    <string name="permission_dump_required">系统状态读取权限（DUMP）未授予，请前往特权服务重新授权</string>
     <string name="restriction_details_open">查看受限详情</string>
     <string name="restriction_details_go">前往</string>
     <string name="restriction_adb_intro">当前 ADB 权限不完整，以下功能受到影响：</string>

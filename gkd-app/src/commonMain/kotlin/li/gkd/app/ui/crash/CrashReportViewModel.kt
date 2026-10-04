@@ -1,6 +1,5 @@
 package li.gkd.app.ui.crash
 
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,8 +29,6 @@ class CrashReportViewModel(
     private val initialLoadJob = scope.launch(Dispatchers.IO) {
         crashDataState.value = try {
             Loadable.Ready(FileCrashStorage.load())
-        } catch (e: CancellationException) {
-            throw e
         } catch (e: Exception) {
             if (initialCrashDataList.isEmpty()) {
                 Loadable.Failure(e)

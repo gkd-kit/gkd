@@ -82,6 +82,6 @@ fun SimulatorSettings.privilegeCapabilities(): PrivilegeCapabilities? {
         grantRuntimePermissions = AndroidPermissions.GRANT_RUNTIME_PERMISSIONS !in denied,
         injectEvents = AndroidPermissions.INJECT_EVENTS !in denied,
         writeSecureSettings = AndroidPermissions.WRITE_SECURE_SETTINGS !in denied,
-        updateAppOps = AndroidPermissions.UPDATE_APP_OPS_STATS !in denied,
+        updateAppOps = AndroidPermissions.MANAGE_APP_OPS_MODES !in denied,
     )
 }

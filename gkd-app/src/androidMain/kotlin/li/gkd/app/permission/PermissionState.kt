@@ -1,7 +1,5 @@
 package li.gkd.app.permission
 
-import android.content.pm.PackageManager
-import li.gkd.app.priv.PrivilegeCapabilities
 import android.app.AppOpsManager
 import android.app.AppOpsManagerHidden
 import android.os.Process
@@ -19,6 +17,8 @@ import li.gkd.app.app
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.appScope
 import li.gkd.app.priv.privilegeContextFlow
+import li.gkd.app.priv.PrivilegeCapabilities
+import li.gkd.app.priv.queryPrivilegeCapabilities
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.permission_external_storage
 import li.gkd.app.resources.permission_external_storage_description
@@ -303,12 +303,7 @@ object PermissionStates {
             it.refresh()
         }
         privilegeCapabilities.value = if (privilegeGranted.value) {
-            PrivilegeCapabilities(
-                grantRuntimePermissions = Privilege.checkServerPermission(AndroidPermissions.GRANT_RUNTIME_PERMISSIONS) == PackageManager.PERMISSION_GRANTED,
-                injectEvents = Privilege.checkServerPermission(AndroidPermissions.INJECT_EVENTS) == PackageManager.PERMISSION_GRANTED,
-                writeSecureSettings = Privilege.checkServerPermission(AndroidPermissions.WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED,
-                updateAppOps = Privilege.checkServerPermission(AndroidPermissions.UPDATE_APP_OPS_STATS) == PackageManager.PERMISSION_GRANTED,
-            )
+            queryPrivilegeCapabilities()
         } else null
     }
 }

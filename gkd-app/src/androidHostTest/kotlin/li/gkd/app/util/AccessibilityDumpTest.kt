@@ -1,10 +1,10 @@
-package li.gkd.app.priv
+package li.gkd.app.util
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CompatAccessibilityManagerTest {
+class AccessibilityDumpTest {
 
     @Test
     fun androidOCurrentUserAutomationIsRunning() {

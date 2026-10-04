@@ -102,7 +102,7 @@ fun WorkModePage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRoute) -
     val appName: String = window.appVersion().appName
 
     val automationAvailable =
-        platform.privilegeAvailable && platform.privilegeCapabilities?.injectEvents != false
+        platform.privilegeAvailable && platform.privilegeCapabilities?.restricted != true
     var showPrivilegeRequired by rememberSaveable { mutableStateOf(false) }
     if (showPrivilegeRequired)
         GkPermissionRestrictionDialog(

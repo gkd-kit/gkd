@@ -1,6 +1,5 @@
 package li.gkd.app
 
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -55,8 +54,6 @@ class SimulatorPersistence(
             storage.save(snapshot.value)
             completed(snapshot, null)
             true
-        } catch (e: CancellationException) {
-            throw e
         } catch (e: Exception) {
             e.printStackTrace()
             completed(snapshot, e)

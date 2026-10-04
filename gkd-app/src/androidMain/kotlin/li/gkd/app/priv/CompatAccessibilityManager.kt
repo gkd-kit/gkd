@@ -26,26 +26,4 @@ class CompatAccessibilityManager {
     } else {
         value.registerUiTestAutomationService(owner, client, info, flags)
     }
-
-    fun isUiAutomationRunning(): Boolean {
-        val serviceDump = value.asBinder().dump()
-        check(serviceDump.isNotBlank()) {
-            "AccessibilityManagerService dump is empty"
-        }
-        return containsUiAutomation(serviceDump)
-    }
-}
-
-private val uiAutomationDumpRegex = Regex("""\bUi Automation\[""")
-private val legacyUserStateDumpRegex = Regex("""User state\[attributes:\{([\s\S]*?)services:\{""")
-private val legacyCurrentUserRegex = Regex("""\bcurrentUser\s*=\s*true\b""")
-private val legacyUiAutomationDumpRegex = Regex("""\bService\[""")
-
-fun containsUiAutomation(dump: String): Boolean {
-    if (uiAutomationDumpRegex.containsMatchIn(dump)) return true
-    return legacyUserStateDumpRegex.findAll(dump).any { result ->
-        val attributes = result.groupValues[1]
-        legacyCurrentUserRegex.containsMatchIn(attributes) &&
-                legacyUiAutomationDumpRegex.containsMatchIn(attributes)
-    }
 }

@@ -235,7 +235,7 @@ fun DesktopControls(
                 AndroidPermissions.GRANT_RUNTIME_PERMISSIONS,
                 AndroidPermissions.INJECT_EVENTS,
                 AndroidPermissions.WRITE_SECURE_SETTINGS,
-                AndroidPermissions.UPDATE_APP_OPS_STATS,
+                AndroidPermissions.MANAGE_APP_OPS_MODES,
             ).forEach { permission ->
                 val name = permission.substringAfterLast('.')
                 GkTextSwitch(

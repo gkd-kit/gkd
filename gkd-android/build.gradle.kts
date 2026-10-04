@@ -41,8 +41,6 @@ android {
         resValues = true
     }
 
-    testOptions.unitTests.isIncludeAndroidResources = true
-
     val gkdStoreFile = buildProperty("GKD_STORE_FILE").orNull
     val gkdSigningConfig = if (gkdStoreFile != null) {
         signingConfigs.create("gkd") {
@@ -182,10 +180,4 @@ dependencies {
     compileOnly(project(":gkd-hidden-api"))
     implementation(libs.rikka.shizuku.provider)
     debugImplementation(libs.compose.tooling)
-
-    // These tests use the application manifest and gkd build variant.
-    testImplementation(libs.junit)
-    testImplementation(libs.robolectric) {
-        exclude(group = "org.robolectric", module = "nativeruntime-dist-compat")
-    }
 }

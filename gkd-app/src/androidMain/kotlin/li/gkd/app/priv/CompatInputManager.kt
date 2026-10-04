@@ -11,6 +11,7 @@ import android.view.KeyCharacterMap
 import android.view.KeyEvent
 import android.view.MotionEvent
 import li.gkd.app.util.AndroidTarget
+import li.gkd.app.util.shellCommand
 import priv.kit.core.binder.PrivilegeBinderWrapper
 
 class CompatInputManager {

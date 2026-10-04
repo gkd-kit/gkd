@@ -1,6 +1,5 @@
 package li.gkd.app.priv
 
-import li.gkd.app.permission.AndroidPermissions
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.accessibilityservice.IAccessibilityServiceClient
 import android.app.AppOpsManager
@@ -15,10 +14,10 @@ import li.gkd.aidl.IUserService
 import li.gkd.app.META
 import li.gkd.app.app
 import li.gkd.app.model.AppUser
+import li.gkd.app.permission.AndroidPermissions
 import li.gkd.app.permission.PermissionStates
-import kotlinx.coroutines.CancellationException
-import li.gkd.app.util.LogUtils
 import li.gkd.app.util.AndroidTarget
+import li.gkd.app.util.LogUtils
 import priv.kit.core.Privilege
 import priv.kit.core.PrivilegeServerInfo
 import priv.kit.core.PrivilegeUserServiceConnection
@@ -60,10 +59,8 @@ class PrivilegeContext private constructor(
 
     fun grantSelf() {
         try {
-            if (hasPermission(AndroidPermissions.UPDATE_APP_OPS_STATS)) allowAllSelfMode()
+            if (hasAppOpsPermission()) allowAllSelfMode()
             if (hasPermission(AndroidPermissions.GRANT_RUNTIME_PERMISSIONS)) allowAllSelfPermission()
-        } catch (e: CancellationException) {
-            throw e
         } catch (e: Exception) {
             LogUtils.d("Automatic permission grant failed", e)
         }
@@ -125,8 +122,6 @@ class PrivilegeContext private constructor(
         a11yManager.value.unregisterUiTestAutomationService(client)
     }
 
-    fun isUiAutomationRunning(): Boolean = a11yManager.isUiAutomationRunning()
-
     fun isRotationFrozen(): Boolean = wmManager.value.isRotationFrozen
 
     fun getDefaultDisplayRotation(): Int = wmManager.value.defaultDisplayRotation
@@ -137,10 +132,6 @@ class PrivilegeContext private constructor(
 
     fun thawRotation(caller: String) {
         wmManager.thawRotation(caller)
-    }
-
-    fun isFocusedWindowSecure(appId: String): Boolean? {
-        return wmManager.isFocusedWindowSecure(appId)
     }
 
     fun screenshot(): Bitmap? {
@@ -182,6 +173,7 @@ class PrivilegeContext private constructor(
     }
 
     private fun allowAllSelfPermission() {
+        grantSelfPermission(AndroidPermissions.DUMP)
         if (!PermissionStates.queryPackages.value) {
             grantSelfPermission(AndroidPermissions.GET_INSTALLED_APPS)
         }

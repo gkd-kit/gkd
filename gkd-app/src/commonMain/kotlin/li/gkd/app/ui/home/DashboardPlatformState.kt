@@ -62,7 +62,7 @@ data class DashboardPlatformState(
         when {
             enable && usesA11y(store, scope) && !writeSecureSettings -> WorkModeRoute
             enable && !usesA11y(store, scope) &&
-                    (!privilegeAvailable || privilegeCapabilities?.injectEvents == false) -> PrivilegeServiceRoute
+                    (!privilegeAvailable || privilegeCapabilities?.restricted == true) -> PrivilegeServiceRoute
             else -> null
         }
 }

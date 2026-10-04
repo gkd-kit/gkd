@@ -1,9 +1,10 @@
-package li.gkd.app.priv
+package li.gkd.app.util
 
 import android.os.Bundle
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import android.os.ResultReceiver
+import li.gkd.app.priv.ShellCommandResult
 import priv.kit.core.binder.PrivilegeBinderWrapper
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.FutureTask
@@ -19,7 +20,12 @@ fun IBinder.dump(vararg args: String): String {
     } finally {
         outputPipe[1].closeQuietly()
     }
-    return output.get()
+    val text = output.get()
+    if (text.trimStart().startsWith("Permission Denial:")) {
+        throw SecurityException(text.trim())
+    }
+    check(text.isNotBlank()) { "System service dump is empty" }
+    return text
 }
 
 fun IBinder.shellCommand(vararg args: String): ShellCommandResult {
@@ -48,7 +54,6 @@ fun IBinder.shellCommand(vararg args: String): ShellCommandResult {
     } catch (e: Throwable) {
         e.printStackTrace()
         thrown = e
-        resultLatch.countDown()
     } finally {
         stdoutPipe[1].closeQuietly()
         stderrPipe[1].closeQuietly()

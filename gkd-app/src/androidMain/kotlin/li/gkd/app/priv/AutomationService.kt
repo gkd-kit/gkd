@@ -1,9 +1,5 @@
 package li.gkd.app.priv
 
-import li.gkd.app.permission.AndroidPermissions
-import android.content.pm.PackageManager
-import priv.kit.core.Privilege
-import li.gkd.app.resources.automation_permission_restricted
 import android.annotation.SuppressLint
 import android.app.UiAutomation
 import android.app.UiAutomationHidden
@@ -26,6 +22,7 @@ import li.gkd.app.appScope
 import li.gkd.app.record.RuntimeRecordRepository
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.automation_partially_disabled
+import li.gkd.app.resources.automation_permission_restricted
 import li.gkd.app.resources.automation_service_occupied
 import li.gkd.app.resources.automation_start_failed
 import li.gkd.app.resources.automation_started
@@ -36,6 +33,7 @@ import li.gkd.app.ui.option.AutomatorModeOption
 import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.LogUtils
+import li.gkd.app.util.SystemServiceDump
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
 
@@ -142,7 +140,7 @@ class AutomationService private constructor(
 
         fun isOtherUiAutomationRunning(): Boolean {
             if (uiAutomationFlow.value != null) return false
-            return privilegeContextFlow.value?.isUiAutomationRunning() == true
+            return SystemServiceDump.isUiAutomationRunning()
         }
 
         fun showOccupiedWarning(silent: Boolean = false) {
@@ -165,7 +163,7 @@ class AutomationService private constructor(
                 uiAutomationFlow.value?.shutdown()
                 val privilegeContext = privilegeContextFlow.value ?: return@synchronized
                 try {
-                    if (Privilege.checkServerPermission(AndroidPermissions.INJECT_EVENTS) != PackageManager.PERMISSION_GRANTED) {
+                    if (queryPrivilegeCapabilities().restricted) {
                         if (!silent) ToastUtils.show(Res.string.automation_permission_restricted.getSync())
                         return@synchronized
                     }

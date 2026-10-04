@@ -38,7 +38,7 @@ object NotificationDispatcher {
             pendingIntentFlags,
         )
         val builder = NotificationCompat.Builder(app, spec.channel.id)
-            .setSmallIcon(spec.smallIcon)
+            .setSmallIcon(app.notificationSmallIcon)
             .setContentTitle(spec.title)
             .setContentText(spec.text)
             .setContentIntent(contentIntent)

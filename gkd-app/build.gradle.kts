@@ -30,7 +30,9 @@ kotlin {
     android {
         namespace = "li.gkd.app"
         androidResources.enable = true
-        withHostTest {}
+        withHostTest {
+            isIncludeAndroidResources = true
+        }
     }
     jvm()
     sourceSets {
@@ -101,6 +103,14 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
+        }
+        named("androidHostTest") {
+            dependencies {
+                implementation(libs.junit)
+                implementation(libs.robolectric.get().toString()) {
+                    exclude(group = "org.robolectric", module = "nativeruntime-dist-compat")
+                }
+            }
         }
         jvmTest.dependencies {
             implementation(libs.androidx.sqlite.bundled)
