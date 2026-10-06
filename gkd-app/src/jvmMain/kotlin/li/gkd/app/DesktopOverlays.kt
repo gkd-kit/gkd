@@ -31,7 +31,7 @@ fun DesktopOverlays(state: DesktopState, session: DesktopSession) {
         { session.showShareLogs = false; session.exportLogs(share = true) },
         { session.showShareLogs = false; session.exportLogs(save = true) }, ::uploadLogs
     )
-    session.githubUpload.Render()
+    session.githubUpload.Render(onCopy = { li.gkd.app.ui.navigation.copyText(it, state.toast::show) })
     session.updateStatus.UpgradeDialog()
     val simulatorSettings by state.simulator.settings.collectAsStateWithLifecycle()
     val device = simulatorSettings.environment().android

@@ -30,7 +30,7 @@ fun GkLazyCopyableText(
     textStyle: TextStyle = LocalTextStyle.current,
     contentColor: Color = LocalContentColor.current,
     textContentDescription: String? = null,
-    onCopy: ((String) -> Unit)? = null,
+    onCopy: (String) -> Unit,
 ) {
     val chunkRanges = remember(text.text) { buildTextChunkRanges(text.text) }
     GkCopyIconOverlay(

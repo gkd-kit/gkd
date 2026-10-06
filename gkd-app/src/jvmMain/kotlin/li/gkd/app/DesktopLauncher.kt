@@ -352,7 +352,7 @@ fun runDesktop(args: Array<String>) {
                                     } else {
                                         DesktopOverlays(state, session)
                                         session.dialogs.Render()
-                                        session.textDialog.Render()
+                                        session.textDialog.Render(onCopy = { li.gkd.app.ui.navigation.copyText(it, state.toast::show) })
                                         session.links.Render()
                                         session.subsSheet.Render()
                                         session.rules.Render(

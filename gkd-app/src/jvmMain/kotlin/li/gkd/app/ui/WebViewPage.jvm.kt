@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 import li.gkd.app.DesktopProfile
 import li.gkd.app.DesktopStorage
 import li.gkd.app.LocalDesktopRouteActive
-import li.gkd.app.platform.writeClipboardText
+import li.gkd.app.ui.navigation.copyText
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.webview_content
 import li.gkd.app.resources.webview_load_failed
@@ -167,7 +167,7 @@ actual fun WebViewPage(
             loading = error == null && browser.isLoading,
             onBack = state::popPage,
             onReload = { if (error != null) retry() else browser.reload() },
-            onCopyLink = { writeClipboardText(url) },
+            onCopyLink = { copyText(url, state.toast::show) },
             onOpenExternal = { SystemActionFeedback.openExternal(url, state.toast::show) },
         ) { padding ->
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {

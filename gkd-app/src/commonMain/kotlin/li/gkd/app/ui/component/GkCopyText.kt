@@ -32,7 +32,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import li.gkd.app.platform.writeClipboardText
 
 @Composable
 fun GkCopyableText(
@@ -43,7 +42,7 @@ fun GkCopyableText(
     textStyle: TextStyle = LocalTextStyle.current,
     contentColor: Color = LocalContentColor.current,
     textContentDescription: String? = null,
-    onCopy: ((String) -> Unit)? = null,
+    onCopy: (String) -> Unit,
 ) {
     val textFieldState = remember(text.text) { TextFieldState(text.text) }
     val scrollState = rememberScrollState()
@@ -97,7 +96,7 @@ fun GkCopyableText(
 fun GkCopyIconOverlay(
     textToCopy: String,
     copyIconVisible: Boolean,
-    onCopy: ((String) -> Unit)? = null,
+    onCopy: (String) -> Unit,
     contentColor: Color,
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit,
@@ -113,7 +112,7 @@ fun GkCopyIconOverlay(
             GkIconButton(
                 imageVector = GkIcons.ContentCopy,
                 onClick = {
-                    if (onCopy != null) onCopy(textToCopy) else writeClipboardText(textToCopy)
+                    onCopy(textToCopy)
                 },
                 colors = IconButtonDefaults.iconButtonColors(
                     contentColor = contentColor.copy(alpha = 0.5f),
@@ -130,7 +129,7 @@ fun GkCopyTextCard(
     containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
     contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
-    onCopy: ((String) -> Unit)? = null,
+    onCopy: (String) -> Unit,
 ) {
     val shape = MaterialTheme.shapes.extraSmall
     GkCopyableText(

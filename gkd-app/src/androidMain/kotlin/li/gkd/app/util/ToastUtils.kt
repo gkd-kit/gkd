@@ -23,9 +23,7 @@ import com.hjq.toast.style.WhiteToastStyle
 import li.gkd.app.app
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.platform.lifecycle.MainActivityVisibility
-import li.gkd.app.platform.writeClipboardText
 import li.gkd.app.resources.Res
-import li.gkd.app.resources.copy_success
 import li.gkd.app.rule.ResolvedRule
 import li.gkd.app.service.A11yService
 import li.gkd.app.service.OverlayWindowService
@@ -214,8 +212,7 @@ object ToastUtils {
     }
 
     fun copyText(text: String) {
-        writeClipboardText(text)
-        show(Res.string.copy_success.getSync())
+        li.gkd.app.ui.navigation.copyText(text, ::show)
     }
 
     fun init() {

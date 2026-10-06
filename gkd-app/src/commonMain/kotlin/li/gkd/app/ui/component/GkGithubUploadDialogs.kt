@@ -59,7 +59,7 @@ fun GkGithubUploadDialogs(
     cookieEditorVisible: Boolean, cookieDraft: String, status: GithubUploadStatus?,
     canSaveCookie: Boolean, onDismissCookie: () -> Unit, onCookieHelp: () -> Unit,
     onCookieChange: (String) -> Unit, onSaveCookie: () -> Unit, onStop: () -> Unit,
-    onClose: () -> Unit, onEditCookie: () -> Unit,
+    onClose: () -> Unit, onEditCookie: () -> Unit, onCopy: (String) -> Unit,
 ) {
     if (cookieEditorVisible) {
         GkAlertDialog(
@@ -159,14 +159,14 @@ fun GkGithubUploadDialogs(
                                 )
                             )
                             if (visibleStatus.links.isNotEmpty()) {
-                                GkCopyTextCard(text = visibleStatus.links.joinToString("\n"))
+                                GkCopyTextCard(text = visibleStatus.links.joinToString("\n"), onCopy = onCopy)
                             }
                             visibleStatus.failures.take(5).forEach { (label, message) ->
                                 Text("$label: $message", style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     } else if (visibleStatus.remainingCount == 0) {
-                        GkCopyTextCard(text = visibleStatus.links.single())
+                        GkCopyTextCard(text = visibleStatus.links.single(), onCopy = onCopy)
                     } else {
                         Text(visibleStatus.failures.first().second)
                     }

@@ -60,7 +60,7 @@ class TextDialogState(private val openUri: (String) -> Unit) {
     }
 
     @Composable
-    fun Render() {
+    fun Render(onCopy: (String) -> Unit) {
         val request by requestFlow.collectAsStateWithLifecycle()
         val currentRequest = request
         if (currentRequest != null) {
@@ -83,6 +83,7 @@ class TextDialogState(private val openUri: (String) -> Unit) {
                         color = MaterialTheme.colorScheme.surfaceVariant,
                     ) {
                         GkCopyableText(
+                            onCopy = onCopy,
                             text = text,
                             modifier = Modifier.fillMaxWidth(),
                             contentPadding = PaddingValues(12.dp),

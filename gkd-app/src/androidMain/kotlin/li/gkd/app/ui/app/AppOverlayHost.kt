@@ -35,7 +35,7 @@ fun AppOverlayHost() {
         // Dialog
         PlatformWarnings()
         mainVm.dialogRequests.Render()
-        mainVm.githubUpload.Render()
+        mainVm.githubUpload.Render(onCopy = ToastUtils::copyText)
         mainVm.updateStatus?.UpgradeDialog()
         mainVm.subsLinkDialog.Render()
         mainVm.ruleGroupState.Render(
@@ -45,7 +45,7 @@ fun AppOverlayHost() {
             copyText = { li.gkd.app.ui.navigation.copyText(it, ToastUtils::show) },
         )
         mainVm.ruleControlDialog.Render()
-        mainVm.textDialog.Render()
+        mainVm.textDialog.Render(onCopy = ToastUtils::copyText)
         mainVm.shareLog.Render()
     }
 }

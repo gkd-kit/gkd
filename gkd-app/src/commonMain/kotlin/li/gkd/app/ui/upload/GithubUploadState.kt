@@ -235,7 +235,7 @@ class GithubUploadState(
     }
 
     @Composable
-    fun Render() {
+    fun Render(onCopy: (String) -> Unit) {
         val cookieEditorVisible by cookieEditorVisibleFlow.collectAsStateWithLifecycle()
         val cookieDraft by cookieDraftFlow.collectAsStateWithLifecycle()
         val status by statusFlow.collectAsStateWithLifecycle()
@@ -250,7 +250,8 @@ class GithubUploadState(
             ::saveCookie,
             ::stopTask,
             ::closeUploadStatus,
-            ::showCookieEditor
+            ::showCookieEditor,
+            onCopy,
         )
     }
 }
