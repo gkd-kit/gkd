@@ -1,15 +1,18 @@
 package li.gkd.app.backup
 
-import kotlinx.coroutines.CancellationException
+import java.io.File
+import java.io.IOException
+import java.io.InputStream
+import java.nio.file.Files
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import li.gkd.app.settings.SettingsRepository
+import li.gkd.app.storage.BackupIssue
 import li.gkd.app.storage.ExportFileNames
 import li.gkd.app.storage.FileSource
 import li.gkd.app.storage.StorageException
-import li.gkd.app.storage.StorageIssue
 import li.gkd.app.storage.StorageMaintenance
 import li.gkd.app.storage.ZipArchive
 import li.gkd.app.storage.appStorage
@@ -18,12 +21,9 @@ import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionJson
 import li.gkd.app.subscription.SubscriptionPersistence
 import li.gkd.app.subscription.SubscriptionRepository
-import li.gkd.app.util.LogUtils
 import li.gkd.db.Db
 import li.gkd.db.SubscriptionConfigSnapshot
 import li.gkd.db.SubscriptionConfigStore
-import java.io.File
-import java.io.InputStream
 
 private data class PreparedBackup(
     val dbData: SubscriptionConfigSnapshot?,
@@ -63,9 +63,9 @@ object BackupManager {
                     "zip",
                 )
                 try {
-                    if (!ZipArchive.zipFiles(tempDir.listFiles().orEmpty().toList(), file)) {
-                        throw StorageException(StorageIssue.backup_compress_failed)
-                    }
+                    val files = tempDir.listFiles()
+                        ?: throw IOException("Cannot list directory: $tempDir")
+                    ZipArchive.zipFiles(files.toList(), file)
                     file
                 } catch (e: Throwable) {
                     file.delete()
@@ -86,17 +86,7 @@ object BackupManager {
             try {
                 val zipFile = tempDir.resolve("file.zip")
                 val unzipDir = tempDir.resolve("unzip")
-                try {
-                    BackupArchiveReader.extract(open, zipFile, unzipDir)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: SecurityException) {
-                    LogUtils.d("importBackUpData.openFile", e)
-                    throw StorageException(StorageIssue.backup_reselect_file, cause = e)
-                } catch (e: Exception) {
-                    LogUtils.d("importBackUpData.unzipFile", e)
-                    throw StorageException(StorageIssue.backup_invalid_archive, cause = e)
-                }
+                BackupArchiveReader.extract(open, zipFile, unzipDir)
                 zipFile.delete()
 
                 val prepared = prepareBackup(unzipDir)
@@ -147,28 +137,28 @@ object BackupManager {
                 filename to file.readText()
             }
             val subsDir = unzipDir.resolve("subscription")
-            val subscriptions = if (subsDir.exists() && subsDir.isDirectory) {
+            val subscriptions = if (!Files.notExists(subsDir.toPath())) {
                 (subsDir.listFiles { file ->
                     file.isFile && file.name.endsWith(".json")
-                } ?: emptyArray()).filterNotNull().sortedBy { it.name }.map { file ->
+                } ?: throw IOException("Cannot list directory: $subsDir")).sortedBy { it.name }.map { file ->
                     val fileId = file.nameWithoutExtension.toLongOrNull()
                         ?: throw StorageException(
-                            StorageIssue.subscription_invalid_filename,
+                            BackupIssue.SubscriptionInvalidFilename,
                             file.name
                         )
                     val text = file.readText()
                     withContext(Dispatchers.Default) { json.decodeFromString<RawSubscription>(text) }.also { subscription ->
-                        if (!(subscription.id == fileId)) {
+                        if (subscription.id != fileId) {
                             throw StorageException(
-                                StorageIssue.subscription_file_id_mismatch_detail,
+                                BackupIssue.SubscriptionFileIdMismatch,
                                 fileId,
                                 subscription.id
                             )
                         }
                     }
                 }.also { list ->
-                    if (!(list.map { it.id }.distinct().size == list.size)) {
-                        throw StorageException(StorageIssue.backup_duplicate_subscription_id)
+                    if (list.map { it.id }.distinct().size != list.size) {
+                        throw StorageException(BackupIssue.DuplicateSubscriptionId)
                     }
                 }
             } else {

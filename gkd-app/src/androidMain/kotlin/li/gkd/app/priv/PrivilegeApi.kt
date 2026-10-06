@@ -21,10 +21,12 @@ import li.gkd.app.service.currentAppUseA11y
 import li.gkd.app.service.updateTopTaskAppId
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.text.getSync
+import li.gkd.app.util.AndroidStorage
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
 import priv.kit.core.Privilege
+import priv.kit.core.PrivilegeConfig
 import priv.kit.core.PrivilegeServerInfo
 import priv.kit.core.userservice.PrivilegeUserServiceSpec
 
@@ -97,6 +99,7 @@ private suspend fun updatePrivilegeContext(serverInfo: PrivilegeServerInfo?) =
     }
 
 fun initPrivilege() {
+    PrivilegeConfig.crashLogDirectory = AndroidStorage.privilegeCrashDirectory
     var configuredEnableAutomator = SettingsRepository.settings.value.enableAutomator
     PrivilegeOwnerLifecycle.configure(configuredEnableAutomator)
     appScope.launchLogged(Dispatchers.IO) {

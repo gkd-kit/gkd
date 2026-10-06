@@ -13,12 +13,12 @@ class ExportFileNamesTest {
         val directory =
             Files.createTempDirectory(TestFiles.root.toPath(), "gkd-export-names-test").toFile()
         try {
-            val first = ExportFileNames.reserve(directory, "gkd-backup-20260923_143205", "zip")
+            val first = ExportFileNames.reserve(directory, "gkd-backup-20260923143205", "zip")
             first.writeText("original")
 
-            val second = ExportFileNames.reserve(directory, "gkd-backup-20260923_143205", "zip")
+            val second = ExportFileNames.reserve(directory, "gkd-backup-20260923143205", "zip")
 
-            assertEquals("gkd-backup-20260923_143205-2.zip", second.name)
+            assertEquals("gkd-backup-20260923143205-2.zip", second.name)
             assertEquals("original", first.readText())
             assertTrue(second.isFile)
         } finally {
@@ -28,11 +28,11 @@ class ExportFileNamesTest {
 
     @Test
     fun snapshotNameSkipsExistingArchivesInTheSameSecond() {
-        val taken = setOf("App-20260923_143205.zip", "App-20260923_143205-2.zip")
+        val taken = setOf("App-20260923143205.zip", "App-20260923143205-2.zip")
 
         assertEquals(
-            "App-20260923_143205-3.zip",
-            ExportFileNames.availableName("App-20260923_143205", "zip", taken::contains),
+            "App-20260923143205-3.zip",
+            ExportFileNames.availableName("App-20260923143205", "zip", taken::contains),
         )
     }
 }

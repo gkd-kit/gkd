@@ -1,11 +1,17 @@
 package li.gkd.app.data
 
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import li.gkd.app.META
 import li.gkd.app.app
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.util.JsonUtils
+import li.gkd.app.storage.storageExportMetadata
+import java.util.TimeZone
 
 /** Host facts only; shared LogArchive owns material creation, archiving and cleanup. */
 object LogMetadataSources {
@@ -18,17 +24,34 @@ object LogMetadataSources {
         "apps.json" to {
             JsonUtils.default.encodeToString(requireNotNull(AppInfoRepository.snapshot).inventory)
         },
-        "permission.txt" to {
-            val permissions = PermissionStates.all.map { it.name to it.value }
-            buildString {
-                val granted = permissions.filter { it.second }
-                if (granted.isNotEmpty()) append("已授权\n" + granted.joinToString("\n") { it.first } + "\n\n")
-                val denied = permissions.filterNot { it.second }
-                if (denied.isNotEmpty()) append("未授权\n" + denied.joinToString("\n") { it.first } + "\n\n")
-                if ((AppInfoRepository.snapshot?.queryPackagesAbnormal == true)) append("其它\n读取应用列表权限异常")
-                append("\n")
-            }
-        },
+        "permission.json" to ::permissionMetadata,
+        "storage.json" to ::storageExportMetadata,
         "gkd.json" to { metadataJson.encodeToString(META) },
     )
+
+    private fun permissionMetadata(): String = metadataJson.encodeToString(JsonObject.serializer(), buildJsonObject {
+        put("capturedAt", System.currentTimeMillis())
+        put("timeZone", TimeZone.getDefault().id)
+        // These are application checks (including version exemptions), not raw system grants.
+        put("source", "cached_application_check")
+        put("permissions", buildJsonArray {
+            PermissionStates.all.forEach { permission ->
+                val check = permission.lastCheck
+                add(buildJsonObject {
+                    put("id", permission.id)
+                    put("name", permission.name)
+                    put("checkedAt", check?.checkedAt)
+                    put("status", when {
+                        check == null -> "unknown"
+                        check.granted -> "granted"
+                        else -> "denied"
+                    })
+                })
+            }
+        })
+        put("appList", buildJsonObject {
+            put("source", "cached_app_catalog")
+            put("queryAbnormal", AppInfoRepository.snapshot?.queryPackagesAbnormal)
+        })
+    })
 }

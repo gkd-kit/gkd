@@ -5,8 +5,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import li.gkd.app.storage.BackupIssue
 import li.gkd.app.storage.StorageException
-import li.gkd.app.storage.StorageIssue
 import li.gkd.db.RuleGroupType
 import li.gkd.db.SubsAppConfig
 import li.gkd.db.SubsAppGroupConfig
@@ -198,7 +198,7 @@ object BackupFormat {
                 root
             )
 
-            else -> throw StorageException(StorageIssue.backup_version_unsupported, version)
+            else -> throw StorageException(BackupIssue.VersionUnsupported, version)
         }
     }
 }
@@ -213,7 +213,7 @@ private data class LegacyBackupV1(
     fun convert(): BackupDatabaseData {
         val groups = subsConfigs.orEmpty().sortedBy { it.id }
         if (!(groups.all { it.type == RuleGroupType.App || it.type == RuleGroupType.Global })) {
-            throw StorageException(StorageIssue.backup_unknown_rule_config_type)
+            throw StorageException(BackupIssue.UnknownRuleConfigType)
         }
         return BackupDatabaseData(
             subsItems = subsItems.orEmpty(),

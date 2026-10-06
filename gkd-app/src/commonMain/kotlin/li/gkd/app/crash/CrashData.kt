@@ -1,6 +1,7 @@
 package li.gkd.app.crash
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import li.gkd.app.time.format
 
 @Serializable
@@ -16,6 +17,6 @@ data class CrashData(
     val message: String?,
     val thread: String,
     val stackTrace: String,
-) {
-    val filename get() = "gkd_crash-" + mtime.format("yyyyMMdd_HHmmss") + ".json"
-}
+    @Transient
+    val filename: String = "gkd-crash-" + mtime.format("yyyyMMddHHmmss") + ".json",
+)

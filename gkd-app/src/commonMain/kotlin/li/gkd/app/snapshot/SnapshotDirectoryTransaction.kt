@@ -4,10 +4,10 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import li.gkd.app.storage.StorageException
-import li.gkd.app.storage.StorageIssue
 import java.io.File
 import java.io.IOException
+import java.nio.file.FileAlreadyExistsException
+import java.nio.file.Files
 
 // 文件重命名和数据库发布必须作为不可取消的提交阶段完成，耗时写入仍应响应取消。
 suspend fun commitSnapshotDirectory(
@@ -20,28 +20,15 @@ suspend fun commitSnapshotDirectory(
     val target = layout.committed(id)
     val staging = layout.staging(id)
     if (target.directory.exists()) {
-        throw StorageException(
-            StorageIssue.directory_target_exists,
-            target.directory.name
-        )
+        throw FileAlreadyExistsException(target.directory.absolutePath)
     }
     staging.directory.deleteIfExists()
-    if (!staging.directory.mkdirs()) {
-        throw StorageException(
-            StorageIssue.directory_temp_create_failed,
-            staging.directory.name
-        )
-    }
+    Files.createDirectories(staging.directory.toPath())
     try {
         write(staging)
         currentCoroutineContext().ensureActive()
         withContext(NonCancellable) {
-            if (!staging.directory.renameTo(target.directory)) {
-                throw StorageException(
-                    StorageIssue.directory_commit_failed,
-                    target.directory.name
-                )
-            }
+            Files.move(staging.directory.toPath(), target.directory.toPath())
             try {
                 publish()
             } catch (e: Throwable) {
@@ -67,6 +54,6 @@ suspend fun commitSnapshotDirectory(
 
 private fun File.deleteIfExists() {
     if (exists() && !deleteRecursively()) {
-        throw StorageException(StorageIssue.directory_delete_failed, name)
+        throw IOException("Cannot delete directory: $absolutePath")
     }
 }

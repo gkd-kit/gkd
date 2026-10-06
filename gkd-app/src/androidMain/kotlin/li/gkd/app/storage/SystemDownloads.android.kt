@@ -15,11 +15,12 @@ import li.gkd.app.resources.download_directory_create_failed
 import li.gkd.app.resources.download_file_create_failed
 import li.gkd.app.resources.download_file_open_failed
 import li.gkd.app.ui.text.getSync
+import li.gkd.app.util.AndroidTarget
 import java.io.File
 
 actual suspend fun saveToDownloads(source: File): PlatformResult<String> {
     return withContext(Dispatchers.IO) {
-        if (Build.VERSION.SDK_INT >= 29) {
+        if (AndroidTarget.Q) {
             PlatformResult.Success(saveWithMediaStore(source))
         } else {
             PlatformResult.Success(saveToLegacyDownloads(source))

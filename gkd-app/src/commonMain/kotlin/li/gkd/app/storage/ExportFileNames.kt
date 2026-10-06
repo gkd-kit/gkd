@@ -7,7 +7,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 object ExportFileNames {
-    private val timestampFormatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss", Locale.ROOT)
+    private val timestampFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss", Locale.ROOT)
 
     private fun name(stem: String, extension: String, suffix: Int): String =
         "$stem${if (suffix == 1) "" else "-$suffix"}${if (extension.isEmpty()) "" else ".$extension"}"

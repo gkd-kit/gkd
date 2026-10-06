@@ -14,6 +14,23 @@ fun assertCrashReports() {
         assertTrue(FileCrashStorage.deleteAll())
         assertTrue(FileCrashStorage.load().isEmpty())
 
+        // Previously persisted filenames remain deletable after naming changes.
+        for (legacyName in listOf("gkd_crash-19700101_080001.json", "gkd_crash-19700101080001.json")) {
+            FileCrashStorage.save(record)
+            val folders = listOf(appStorage().crash, appStorage().crashTemp)
+            folders.forEach { folder ->
+                java.nio.file.Files.move(
+                    folder.resolve(record.filename).toPath(), folder.resolve(legacyName).toPath(),
+                )
+            }
+            val loaded = FileCrashStorage.load().single()
+            assertEquals(record.id, loaded.id)
+            assertEquals(legacyName, loaded.filename)
+            assertTrue(FileCrashStorage.delete(loaded))
+            folders.forEach { assertFalse(it.resolve(legacyName).exists()) }
+            assertTrue(FileCrashStorage.load().isEmpty())
+        }
+
         // A real nonempty directory blocks deletion; repairing it permits retry.
         FileCrashStorage.save(record)
         assertTrue(blocked.delete())

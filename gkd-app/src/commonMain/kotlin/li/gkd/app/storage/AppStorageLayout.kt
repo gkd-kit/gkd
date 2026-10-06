@@ -22,6 +22,7 @@ class AppStorageLayout(
     val crash get() = directory(files, "crash")
     val crashTemp get() = directory(files, "crash/temp")
     val privateStore get() = directory(privateFiles, "private-store")
+    val startupLog get() = privateFiles.resolve("startup-log")
     val coilCache get() = directory(cache, "coil")
     val webViewCache get() = directory(cache, "webview")
     val sharedCache get() = directory(cache, "shared")

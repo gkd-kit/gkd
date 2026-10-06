@@ -2,7 +2,6 @@ package li.gkd.app.development
 
 import android.content.Intent
 import android.graphics.Bitmap
-import android.os.Build
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -32,6 +31,7 @@ import li.gkd.app.app
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.subscription.SubscriptionRepository
+import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.LogUtils
 import li.gkd.db.Db
 import org.json.JSONArray
@@ -173,13 +173,13 @@ object DesktopProfileExport {
             put(
                 "lightColors",
                 palette(
-                    if (Build.VERSION.SDK_INT >= 31) dynamicLightColorScheme(context) else lightColorScheme()
+                    if (AndroidTarget.S) dynamicLightColorScheme(context) else lightColorScheme()
                 )
             )
             put(
                 "darkColors",
                 palette(
-                    if (Build.VERSION.SDK_INT >= 31) dynamicDarkColorScheme(context) else darkColorScheme()
+                    if (AndroidTarget.S) dynamicDarkColorScheme(context) else darkColorScheme()
                 )
             )
         }

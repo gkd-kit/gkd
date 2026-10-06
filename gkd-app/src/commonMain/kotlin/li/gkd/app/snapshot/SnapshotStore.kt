@@ -1,5 +1,10 @@
 package li.gkd.app.snapshot
 
+import java.io.File
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
@@ -15,17 +20,13 @@ import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.snapshot.platform.prepareSnapshotReplacement
 import li.gkd.app.storage.ExportFileNames
+import li.gkd.app.storage.SnapshotIssue
 import li.gkd.app.storage.StorageException
-import li.gkd.app.storage.StorageIssue
 import li.gkd.app.storage.ZipArchive
 import li.gkd.app.storage.appStorage
 import li.gkd.app.util.LogUtils
 import li.gkd.db.Db
 import li.gkd.db.Snapshot
-import java.io.File
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
-import java.util.UUID
 
 data class SnapshotUploadArchive(
     val file: File,
@@ -182,9 +183,8 @@ object SnapshotStore {
         activityId: String? = null,
     ): File =
         withContext(Dispatchers.IO) {
-            val filename = if (appId != null) {
+            val filename = (if (appId != null) {
                 val appName = AppInfoRepository.snapshot?.apps?.get(appId)?.name
-                    ?.filterNot { char -> char in "\\/:*?\"<>|" || char <= ' ' }
                 val stem = if (activityId != null) {
                     "${(appName ?: appId).take(20)}_${
                         activityId.split('.').last().take(40)
@@ -199,36 +199,28 @@ object SnapshotStore {
                 "$stem.zip"
             } else {
                 "${snapshotId}.zip"
-            }
-            if (!(File(filename).name == filename)) {
-                throw StorageException(StorageIssue.archive_name_invalid)
-            }
+            }).filterNot { char -> char in "\\/:*?\"<>|" || char <= ' ' }
             val outputDirectory = sharedDirectory.resolve(
                 "snapshot-$snapshotId-${UUID.randomUUID()}"
             )
-            if (!outputDirectory.mkdirs()) {
-                throw StorageException(StorageIssue.snapshot_archive_directory_create_failed)
-            }
+            Files.createDirectory(outputDirectory.toPath())
             val outputFile = outputDirectory.resolve(filename)
             try {
                 val files = fileLayout.committed(snapshotId)
                 if (!files.hasCompleteFiles) {
                     throw StorageException(
-                        StorageIssue.snapshot_files_incomplete,
+                        SnapshotIssue.FilesIncomplete,
                         snapshotId
                     )
                 }
-                if (!ZipArchive.zipFiles(
-                        listOf(files.snapshotFile, files.screenshotFile),
-                        outputFile,
-                    )
-                ) {
-                    throw StorageException(StorageIssue.snapshot_compress_failed)
-                }
+                ZipArchive.zipFiles(
+                    listOf(files.snapshotFile, files.screenshotFile),
+                    outputFile,
+                )
                 outputFile
             } catch (e: Throwable) {
                 if (!outputDirectory.deleteRecursively()) {
-                    e.addSuppressed(StorageException(StorageIssue.snapshot_archive_directory_cleanup_failed))
+                    e.addSuppressed(IOException("Cannot delete archive directory: $outputDirectory"))
                 }
                 throw e
             }
@@ -263,33 +255,20 @@ object SnapshotStore {
         if (!target.exists()) return null
         val staged = requireNotNull(target.parentFile)
             .resolve(".${target.name}.delete-${UUID.randomUUID()}")
-        if (!target.renameTo(staged)) {
-            throw StorageException(
-                StorageIssue.directory_stage_delete_failed,
-                target.name
-            )
-        }
+        Files.move(target.toPath(), staged.toPath())
         return staged
     }
 
     private fun rollbackDeletion(target: File, staged: File?, cause: Throwable) {
         if (staged == null) return
         if (target.exists() && !target.deleteRecursively()) {
-            cause.addSuppressed(
-                StorageException(
-                    StorageIssue.directory_rollback_cleanup_failed,
-                    target.name
-                )
-            )
+            cause.addSuppressed(IOException("Cannot delete directory during rollback: $target"))
             return
         }
-        if (!staged.renameTo(target)) {
-            cause.addSuppressed(
-                StorageException(
-                    StorageIssue.snapshot_directory_restore_failed,
-                    target.name
-                )
-            )
+        try {
+            Files.move(staged.toPath(), target.toPath())
+        } catch (e: IOException) {
+            cause.addSuppressed(e)
         }
     }
 
@@ -303,15 +282,16 @@ object SnapshotStore {
         if (!target.exists()) return null
         val staged = requireNotNull(target.parentFile)
             .resolve(".${target.name}.replace-${UUID.randomUUID()}")
-        if (!target.renameTo(staged)) {
-            throw StorageException(StorageIssue.screenshot_stage_old_failed)
-        }
+        Files.move(target.toPath(), staged.toPath())
         return staged
     }
 
     private fun restoreReplacement(target: File, staged: File?, cause: Throwable) {
-        if (staged != null && !staged.renameTo(target)) {
-            cause.addSuppressed(StorageException(StorageIssue.screenshot_restore_old_failed))
+        if (staged == null) return
+        try {
+            Files.move(staged.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        } catch (e: IOException) {
+            cause.addSuppressed(e)
         }
     }
 

@@ -3,7 +3,9 @@ package li.gkd.app
 import androidx.lifecycle.ViewModelStore
 import java.io.File
 import java.io.IOException
+import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
@@ -113,8 +115,8 @@ class ApplicationIntegrationTest {
                 )
                 li.gkd.app.record.assertRuntimeRecords(appStorage().database)
                 li.gkd.app.storage.LogArchiveChecks().apply {
-                    archiveContainsHostMaterialsAndProductionLogsAndCleansStaging()
-                    materialFailurePreservesCauseAndCleansAlreadyWrittenFiles()
+                    archiveContainsMaterialsAndExpiredCacheIsCleanedByMaintenance()
+                    materialFailurePreservesCauseAndLeavesFilesForCacheMaintenance()
                 }
                 assertBackupRoundTrip(appStorage())
             }
@@ -405,6 +407,25 @@ class ApplicationIntegrationTest {
         )
         assertFailsWith<CancellationException> {
             manager.importData { throw CancellationException("cancelled selection") }
+        }
+        val malformedArchive = layout.sharedCache.resolve("invalid-subscription-directory.zip")
+        try {
+            ZipOutputStream(malformedArchive.outputStream()).use { zip ->
+                zip.putNextEntry(ZipEntry("subscription"))
+                zip.write("not a directory".toByteArray())
+                zip.closeEntry()
+            }
+            assertFailsWith<IOException> {
+                manager.importData(FileSource.Local(malformedArchive))
+            }
+            assertEquals(
+                SubscriptionJson.json.encodeToString(original),
+                SubscriptionJson.json.encodeToString(
+                    repository.awaitSnapshot().subscriptions.getValue(-2)
+                ),
+            )
+        } finally {
+            malformedArchive.delete()
         }
         assertEquals("later", settings.settings.value.actionToast)
         manager.importData(FileSource.Uri(archive.toURI().toString()))

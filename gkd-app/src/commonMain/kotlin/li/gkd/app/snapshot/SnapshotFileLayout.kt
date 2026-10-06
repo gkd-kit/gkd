@@ -42,20 +42,18 @@ class SnapshotFileLayout(
 
 private fun File.hasSupportedImageHeader(): Boolean {
     if (!isFile || length() < 2) return false
-    return runCatching {
-        val header = ByteArray(12)
-        val size = inputStream().use { it.read(header) }
-        fun matches(vararg bytes: Int): Boolean {
-            return size >= bytes.size && bytes.indices.all { index ->
-                header[index].toInt() and 0xff == bytes[index]
-            }
+    val header = ByteArray(12)
+    val size = inputStream().use { it.read(header) }
+    fun matches(vararg bytes: Int): Boolean {
+        return size >= bytes.size && bytes.indices.all { index ->
+            header[index].toInt() and 0xff == bytes[index]
         }
-        matches(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a) ||
-                matches(0xff, 0xd8, 0xff) ||
-                matches(0x52, 0x49, 0x46, 0x46) &&
-                size >= 12 && header.copyOfRange(8, 12).contentEquals("WEBP".encodeToByteArray()) ||
-                matches(0x47, 0x49, 0x46, 0x38, 0x37, 0x61) ||
-                matches(0x47, 0x49, 0x46, 0x38, 0x39, 0x61) ||
-                matches(0x42, 0x4d)
-    }.getOrDefault(false)
+    }
+    return matches(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a) ||
+            matches(0xff, 0xd8, 0xff) ||
+            matches(0x52, 0x49, 0x46, 0x46) &&
+            size >= 12 && header.copyOfRange(8, 12).contentEquals("WEBP".encodeToByteArray()) ||
+            matches(0x47, 0x49, 0x46, 0x38, 0x37, 0x61) ||
+            matches(0x47, 0x49, 0x46, 0x38, 0x39, 0x61) ||
+            matches(0x42, 0x4d)
 }

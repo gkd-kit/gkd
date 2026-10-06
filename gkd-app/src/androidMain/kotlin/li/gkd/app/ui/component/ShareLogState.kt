@@ -33,7 +33,10 @@ class ShareLogState(
 
     private fun buildArchive(): java.io.File {
         LogUtils.flush()
-        return LogArchive.build(LogMetadataSources.sources())
+        return LogArchive.build(
+            LogMetadataSources.sources(),
+            listOfNotNull(AndroidStorage.privilegeCrashDirectory),
+        )
     }
 
     fun show() {

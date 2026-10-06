@@ -19,7 +19,6 @@ class FileTooLargeException : IOException("File exceeds the size limit")
 
 suspend fun readFileBytes(source: FileSource, maxBytes: Int = 32 * 1024 * 1024): ByteArray =
     withContext(Dispatchers.IO) {
-        require(maxBytes > 0)
         openFileSource(source).use { input ->
             ByteArrayOutputStream(minOf(maxBytes, 8192)).use { output ->
                 BoundedStreams.copy(input, output, maxBytes.toLong()) { FileTooLargeException() }

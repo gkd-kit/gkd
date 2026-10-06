@@ -5,20 +5,20 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import li.gkd.app.app
 import li.gkd.app.platform.PlatformResult
+import li.gkd.app.util.AndroidTarget
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 
 private val webpFormat
-    get() = if (Build.VERSION.SDK_INT >= 30) Bitmap.CompressFormat.WEBP_LOSSY
+    get() = if (AndroidTarget.R) Bitmap.CompressFormat.WEBP_LOSSY
     else @Suppress("DEPRECATION") Bitmap.CompressFormat.WEBP
 
 actual fun prepareSnapshotReplacement(original: File, bytes: ByteArray, output: File): Boolean {
@@ -52,7 +52,7 @@ actual suspend fun saveImageToAlbum(image: File): PlatformResult<Unit> =
             ?: throw IOException("Cannot decode screenshot")
         try {
             val name = "${System.currentTimeMillis()}_85.WEBP"
-            if (Build.VERSION.SDK_INT < 29) {
+            if (!AndroidTarget.Q) {
                 @Suppress("DEPRECATION")
                 val directory = File(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM),

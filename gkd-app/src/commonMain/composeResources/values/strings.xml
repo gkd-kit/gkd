@@ -147,7 +147,6 @@
     <string name="apps_user">用户应用</string>
     <string name="archive_file_count_exceeded">压缩包文件数量超过限制: %1$s</string>
     <string name="archive_file_too_large">压缩包文件过大: %1$s</string>
-    <string name="archive_name_invalid">无效压缩包名称</string>
     <string name="archive_path_invalid">压缩包包含非法路径: %1$s</string>
     <string name="archive_path_outside_destination">压缩包路径越界: %1$s</string>
     <string name="archive_total_size_exceeded">压缩包解压总量超过限制</string>
@@ -171,7 +170,6 @@
     <string name="autostart_allow">允许自启动</string>
     <string name="background_running">持续后台运行</string>
     <string name="backup_archive_too_large">备份压缩包超过大小限制</string>
-    <string name="backup_compress_failed">备份压缩失败</string>
     <string name="backup_duplicate_subscription_id">备份中存在重复订阅id</string>
     <string name="backup_export">导出备份</string>
     <string name="backup_import_confirmation">备份会写入应用设置、订阅和规则配置，是否继续？</string>
@@ -179,7 +177,6 @@
     <string name="backup_import_progress">导入备份中...</string>
     <string name="backup_import_skipped_config_count">导入成功，已跳过 %1$s 条所属订阅已不存在的配置</string>
     <string name="backup_invalid_archive">解压失败，非法备份文件</string>
-    <string name="backup_read_failed">无法读取备份文件</string>
     <string name="backup_reselect_file">无法读取备份文件，请重新选择文件</string>
     <string name="backup_restore">备份恢复</string>
     <string name="backup_share">分享备份文件</string>
@@ -281,12 +278,6 @@
     <string name="details_view">查看详情</string>
     <string name="dialog_close">关闭弹窗</string>
     <string name="dialog_close_description">关闭%1$s</string>
-    <string name="directory_commit_failed">无法提交目录: %1$s</string>
-    <string name="directory_delete_failed">无法删除目录: %1$s</string>
-    <string name="directory_rollback_cleanup_failed">无法清理回滚目标: %1$s</string>
-    <string name="directory_stage_delete_failed">无法暂存待删除目录: %1$s</string>
-    <string name="directory_target_exists">目标目录已存在: %1$s</string>
-    <string name="directory_temp_create_failed">无法创建临时目录: %1$s</string>
     <string name="disabled">已禁用</string>
     <string name="documentation_description">查阅规则文档和常见问题</string>
     <string name="documentation_open">打开 GKD 文档页面</string>
@@ -648,15 +639,12 @@
     <string name="screenshot_replace">替换截图(去除隐私)</string>
     <string name="screenshot_replace_manually">请手动替换截图</string>
     <string name="screenshot_replace_success">替换成功</string>
-    <string name="screenshot_replacement_compress_failed">替换截图压缩失败</string>
-    <string name="screenshot_restore_old_failed">无法恢复旧快照截图</string>
     <string name="screenshot_service">截屏服务</string>
     <string name="screenshot_service_description">生成快照需要获取屏幕截图</string>
     <string name="screenshot_service_init_failed">截屏服务初始化失败</string>
     <string name="screenshot_service_stopped">截屏服务已停止</string>
     <string name="screenshot_service_unavailable">截屏服务不可用</string>
     <string name="screenshot_size_mismatch">截图尺寸不一致, 无法替换</string>
-    <string name="screenshot_stage_old_failed">无法暂存旧快照截图</string>
     <string name="screenshot_thread_unavailable">截屏线程不可用</string>
     <string name="screenshot_virtual_display_failed">创建截屏虚拟显示失败</string>
     <string name="search_clear">清空搜索</string>
@@ -717,8 +705,6 @@
     <string name="share_notice">分享提示</string>
     <string name="snapshot_activity_switch_missing">未检测到界面切换，捕获失败</string>
     <string name="snapshot_app_a11y_missing">当前应用没有无障碍信息，捕获失败</string>
-    <string name="snapshot_archive_directory_cleanup_failed">无法清理快照压缩目录</string>
-    <string name="snapshot_archive_directory_create_failed">无法创建快照压缩目录</string>
     <string name="snapshot_auto_export">自动保存至下载</string>
     <string name="snapshot_auto_export_description">快照完成后导出 ZIP 文件</string>
     <string name="upload_batch_progress">正在上传第 %1$s/%2$s 条</string>
@@ -730,7 +716,6 @@
     <string name="snapshot_button_notification_description">点击按钮捕获快照</string>
     <string name="snapshot_button_service">快照按钮服务</string>
     <string name="snapshot_capture_methods">生成方式</string>
-    <string name="snapshot_compress_failed">快照压缩失败</string>
     <string name="snapshot_copy_links_upload_all_confirmation">所选 %1$s 条快照均未生成链接。生成后会显示链接。</string>
     <string name="snapshot_copy_links_upload_some_confirmation">有 %1$s 条快照尚未生成链接。生成后显示所有已生成的链接；取消则只显示已有链接。</string>
     <string name="snapshot_delete">删除快照</string>
@@ -742,7 +727,6 @@
     <string name="snapshot_save_selected_success">已保存 %1$s 条</string>
     <string name="snapshot_save_selected_partial">已保存 %1$s 条，失败 %2$s 条</string>
     <string name="snapshot_delete_success">快照删除成功</string>
-    <string name="snapshot_directory_restore_failed">无法恢复快照目录: %1$s</string>
     <string name="snapshot_event_selector">特征事件选择器</string>
     <string name="snapshot_event_selector_hint">请输入特征事件选择器</string>
     <string name="snapshot_files_incomplete">快照文件不完整: %1$s</string>
@@ -761,7 +745,6 @@
     <string name="snapshot_saved">快照已保存</string>
     <string name="snapshot_saved_app">快照已保存 · %1$s</string>
     <string name="snapshot_saved_warning">快照已保存 (%1$s)</string>
-    <string name="snapshot_screenshot_compress_failed">快照截图压缩失败</string>
     <string name="snapshot_screenshot_settings">截屏快照设置</string>
     <string name="snapshot_screenshot_settings_open">打开配置截屏快照弹窗</string>
     <string name="snapshot_screenshot_trigger">截屏快照</string>
@@ -910,7 +893,6 @@
     <string name="tutorial_view">获取教程</string>
     <string name="unchanged">未修改</string>
     <string name="unknown">未知</string>
-    <string name="unzip_directory_create_failed">无法创建解压目录: %1$s</string>
     <string name="update_channel">更新渠道</string>
     <string name="update_channel_beta">测试版</string>
     <string name="update_channel_stable">稳定版</string>

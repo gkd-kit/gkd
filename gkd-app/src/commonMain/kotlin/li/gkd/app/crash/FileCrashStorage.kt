@@ -19,7 +19,7 @@ object FileCrashStorage {
     fun load(): List<CrashData> =
         directory.listFiles().orEmpty().filter { it.isFile }.mapNotNull { file ->
             try {
-                json.decodeFromString<CrashData>(file.readText())
+                json.decodeFromString<CrashData>(file.readText()).copy(filename = file.name)
             } catch (e: Exception) {
                 LogUtils.d("解析崩溃日志失败: ${file.name}", e); null
             }

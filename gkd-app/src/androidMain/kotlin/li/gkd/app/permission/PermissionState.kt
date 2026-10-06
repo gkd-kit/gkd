@@ -49,7 +49,13 @@ import li.songe.codeorigin.CallSite
 import org.jetbrains.compose.resources.StringResource
 import priv.kit.core.Privilege
 
+data class PermissionCheck(
+    val checkedAt: Long,
+    val granted: Boolean,
+)
+
 class PermissionState(
+    val id: String,
     private val nameResource: StringResource,
     private val check: () -> Boolean,
     val permission: IPermission? = null,
@@ -65,8 +71,16 @@ class PermissionState(
         field = MutableStateFlow(false)
     val value get() = stateFlow.value
 
+    @Volatile
+    var lastCheck: PermissionCheck? = null
+        private set
+
     fun updateAndGet(): Boolean {
-        return stateFlow.updateAndGet { check() }
+        return stateFlow.updateAndGet {
+            val granted = check()
+            lastCheck = PermissionCheck(System.currentTimeMillis(), granted)
+            granted
+        }
     }
 
     fun refresh(): Boolean {
@@ -97,6 +111,7 @@ class PermissionResolution(
 }
 
 private fun requestablePermissionState(
+    id: String,
     nameResource: StringResource,
     purposeResource: StringResource,
     permission: IPermission,
@@ -104,6 +119,7 @@ private fun requestablePermissionState(
     onChanged: (() -> Unit)? = null,
     recheckPolicy: PermissionRecheckPolicy = PermissionRecheckPolicy.Immediate,
 ) = PermissionState(
+    id = id,
     nameResource = nameResource,
     check = check,
     permission = permission,
@@ -128,6 +144,7 @@ object PermissionStates {
     // https://github.com/gkd-kit/gkd/issues/887
     val foregroundServiceSpecialUse by lazy {
         PermissionState(
+            id = "foreground_service_special_use",
             nameResource = Res.string.permission_special_foreground_service,
             check = {
                 if (AndroidTarget.UPSIDE_DOWN_CAKE) {
@@ -174,6 +191,7 @@ object PermissionStates {
 
     private val appOpsAllowed by lazy {
         PermissionState(
+            id = "app_ops_allowed",
             nameResource = Res.string.permission_start_operations,
             check = {
                 val accessA11yAllowed = checkAccessA11y()
@@ -200,6 +218,7 @@ object PermissionStates {
 
     val notification by lazy {
         requestablePermissionState(
+            id = "notification",
             nameResource = Res.string.permission_notifications,
             purposeResource = Res.string.permission_notifications_description,
             permission = PermissionLists.getPostNotificationsPermission(),
@@ -208,6 +227,7 @@ object PermissionStates {
 
     val localNetwork by lazy {
         requestablePermissionState(
+            id = "local_network",
             nameResource = Res.string.permission_local_network,
             purposeResource = Res.string.permission_local_network_description,
             permission = PermissionLists.getAccessLocalNetworkPermission(),
@@ -216,6 +236,7 @@ object PermissionStates {
 
     val queryPackages by lazy {
         requestablePermissionState(
+            id = "query_packages",
             nameResource = Res.string.permission_query_apps,
             purposeResource = Res.string.permission_query_apps_description,
             permission = PermissionLists.getGetInstalledAppsPermission(),
@@ -227,6 +248,7 @@ object PermissionStates {
 
     val drawOverlays by lazy {
         requestablePermissionState(
+            id = "overlay",
             nameResource = Res.string.permission_overlay,
             purposeResource = Res.string.permission_overlay_description,
             permission = PermissionLists.getSystemAlertWindowPermission(),
@@ -239,6 +261,7 @@ object PermissionStates {
 
     val writeExternalStorage by lazy {
         requestablePermissionState(
+            id = "write_external_storage",
             nameResource = Res.string.permission_external_storage,
             purposeResource = Res.string.permission_external_storage_description,
             permission = PermissionLists.getWriteExternalStoragePermission(),
@@ -254,6 +277,7 @@ object PermissionStates {
 
     val ignoreBatteryOptimizations by lazy {
         requestablePermissionState(
+            id = "ignore_battery_optimizations",
             nameResource = Res.string.permission_ignore_battery_optimization,
             purposeResource = Res.string.permission_ignore_battery_optimization_description,
             permission = PermissionLists.getRequestIgnoreBatteryOptimizationsPermission(),
@@ -266,6 +290,7 @@ object PermissionStates {
 
     val writeSecureSettings by lazy {
         PermissionState(
+            id = "write_secure_settings",
             nameResource = Res.string.permission_write_secure_settings,
             check = { app.checkGrantedPermission(AndroidPermissions.WRITE_SECURE_SETTINGS) },
         )
@@ -273,6 +298,7 @@ object PermissionStates {
 
     val privilegeGranted by lazy {
         PermissionState(
+            id = "privilege_granted",
             nameResource = Res.string.privilege_service,
             check = {
                 privilegeContextFlow.value != null && Privilege.pingServer()
