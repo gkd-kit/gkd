@@ -1,8 +1,10 @@
 package li.gkd.app.ui.app
 
+import androidx.compose.runtime.getValue
+import li.gkd.app.util.copyText
+
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.gkd.app.priv.AutomationService
@@ -11,7 +13,6 @@ import li.gkd.app.resources.Res
 import li.gkd.app.resources.permission_reauthorize_to_unrestrict
 import li.gkd.app.service.A11yService
 import li.gkd.app.settings.SettingsRepository
-import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkPlatformWarningDialogs
 import li.gkd.app.ui.component.GkTermsAcceptDialog
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
@@ -20,13 +21,13 @@ import li.gkd.app.util.ToastUtils
 
 @Composable
 fun AppOverlayHost() {
-    val mainVm = MainViewModel.requireCurrent()
-    val activity = LocalActivity.current
+    val activity = LocalActivity.current as li.gkd.app.MainActivity
+    val mainVm = activity.mainVm
     if (!SettingsRepository.termsAccepted.collectAsStateWithLifecycle().value) {
         GkTermsAcceptDialog(
             onAccept = SettingsRepository::acceptTerms,
             onError = { ToastUtils.show(it.message ?: it.toString()) },
-            onDisagree = { activity?.finish() },
+            onDisagree = { activity.finish() },
         )
     } else {
         // Sheet
@@ -35,18 +36,16 @@ fun AppOverlayHost() {
         // Dialog
         PlatformWarnings()
         mainVm.dialogRequests.Render()
-        mainVm.githubUpload.Render(onCopy = ToastUtils::copyText)
+        mainVm.githubUpload.Render(onCopy = ::copyText)
         mainVm.updateStatus?.UpgradeDialog()
         mainVm.subsLinkDialog.Render()
         mainVm.ruleGroupState.Render(
-            onNavigate = { mainVm.navigatePage(it) }, showToast = ToastUtils::show,
-            topRoute = { mainVm.topRoute }, openSubscription = mainVm.subsSheet::show,
+            navigator = mainVm.navigator, openSubscription = mainVm.subsSheet::show,
             ruleControl = mainVm.ruleControlDialog, confirmDelete = mainVm::confirmDelete,
-            copyText = { li.gkd.app.ui.navigation.copyText(it, ToastUtils::show) },
         )
         mainVm.ruleControlDialog.Render()
-        mainVm.textDialog.Render(onCopy = ToastUtils::copyText)
-        mainVm.shareLog.Render()
+        mainVm.textDialog.Render(onCopy = ::copyText)
+        mainVm.shareLog.Render(activity)
     }
 }
 
@@ -62,17 +61,17 @@ private fun dismissAccessRestrictedSettingsDialog() {
 
 @Composable
 private fun PlatformWarnings() {
-    val mainVm = MainViewModel.requireCurrent()
+    val mainVm = (androidx.activity.compose.LocalActivity.current as li.gkd.app.MainActivity).mainVm
     val a11y by A11yService.isRunning.collectAsStateWithLifecycle()
     val restricted by accessRestrictedSettingsShowFlow.collectAsStateWithLifecycle()
     val occupied by uiAutomationOccupiedFlow.collectAsStateWithLifecycle()
     GkPlatformWarningDialogs(
         restricted,
         a11y,
-        mainVm.topRoute is PrivilegeServiceRoute,
+        mainVm.navigator.topRoute is PrivilegeServiceRoute,
         occupied,
         ::dismissAccessRestrictedSettingsDialog,
-        { mainVm.navigatePage(PrivilegeServiceRoute) },
+        { mainVm.navigator.navigate(PrivilegeServiceRoute) },
         { ToastUtils.show(Res.string.permission_reauthorize_to_unrestrict.getSync()) },
         AutomationService::dismissOccupiedWarning
     )

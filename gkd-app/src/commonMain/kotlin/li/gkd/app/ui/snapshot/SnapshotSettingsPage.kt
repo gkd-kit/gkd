@@ -19,7 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +26,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.action_cancel
@@ -57,6 +57,7 @@ import li.gkd.app.resources.target_app_id_hint
 import li.gkd.app.resources.update_success
 import li.gkd.app.settings.ScreenshotConfigResult
 import li.gkd.app.settings.SettingsRepository
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAlertDialog
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
@@ -67,48 +68,46 @@ import li.gkd.app.ui.component.GkSizedIconButton
 import li.gkd.app.ui.component.GkTextSwitch
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.autoFocus
-import li.gkd.app.ui.navigation.AppRoute
-import li.gkd.app.ui.navigation.AppWindow
-import li.gkd.app.ui.navigation.WebViewRoute
-import li.gkd.app.ui.navigation.launchUi
+import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.titleItemPadding
 import li.gkd.app.ui.text.getSync
+import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SnapshotSettingsPage(
-    window: AppWindow,
-    onBack: () -> Unit,
-    onNavigate: (AppRoute) -> Unit,
-    toast: (String) -> Unit,
+    host: UiHost,
 ) {
+    val mainVm = MainViewModel.requireCurrent()
+    val vm = viewModel { SnapshotSettingsViewModel() }
     val scope = rememberCoroutineScope()
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
-    val screenshotServiceRunning: Boolean = window.screenshotServiceRunning()
+    val screenshotServiceRunning: Boolean = screenshotServiceRunning()
 
-    val nativeScreenshotAvailable: Boolean = window.nativeScreenshotAvailable()
+    val nativeScreenshotAvailable: Boolean = nativeScreenshotAvailable()
 
-    var showCaptureScreenshotDialog by rememberSaveable { mutableStateOf(false) }
+    val showCaptureScreenshotDialog by vm.showCaptureScreenshotDialog.collectAsStateWithLifecycle()
 
     if (showCaptureScreenshotDialog) {
         CaptureScreenshotConfigDialog(
             appId = store.screenshotTargetAppId,
             eventSelector = store.screenshotEventSelector,
             onOpenHelp = {
-                showCaptureScreenshotDialog = false
-                onNavigate(WebViewRoute(AppLinks.SnapshotHelp))
+                vm.setShowCaptureScreenshotDialog(false)
+                mainVm.navigator.openWebPage(AppLinks.SnapshotHelp)
             },
-            onDismissRequest = { showCaptureScreenshotDialog = false },
+            onDismissRequest = { vm.setShowCaptureScreenshotDialog(false) },
             onConfirm = { appId, selector ->
                 when (SettingsRepository.saveCaptureScreenshotConfig(appId, selector)) {
-                    ScreenshotConfigResult.Unchanged -> showCaptureScreenshotDialog = false
+                    ScreenshotConfigResult.Unchanged -> vm.setShowCaptureScreenshotDialog(false)
                     ScreenshotConfigResult.Saved -> {
-                        toast(Res.string.update_success.getSync())
-                        showCaptureScreenshotDialog = false
+                        ToastUtils.show(Res.string.update_success.getSync())
+                        vm.setShowCaptureScreenshotDialog(false)
                     }
-                    ScreenshotConfigResult.InvalidApp -> toast(Res.string.app_id_invalid.getSync())
+                    ScreenshotConfigResult.InvalidApp -> ToastUtils.show(Res.string.app_id_invalid.getSync())
                     ScreenshotConfigResult.InvalidSelector ->
-                        toast(Res.string.event_selector_invalid.getSync())
+                        ToastUtils.show(Res.string.event_selector_invalid.getSync())
                 }
             },
         )
@@ -123,7 +122,7 @@ fun SnapshotSettingsPage(
                 navigationIcon = {
                     GkIconButton(
                         imageVector = GkIcons.ArrowBack,
-                        onClick = onBack,
+                        onClick = mainVm.navigator::pop,
                     )
                 },
                 title = { Text(text = stringResource(Res.string.snapshot_settings)) },
@@ -145,7 +144,7 @@ fun SnapshotSettingsPage(
                     title = stringResource(Res.string.screenshot_service),
                     subtitle = stringResource(Res.string.screenshot_service_description),
                     checked = screenshotServiceRunning,
-                    onCheckedChange = window::setScreenshotServiceEnabled,
+                    onCheckedChange = host::setScreenshotServiceEnabled,
                 )
             }
             GkTextSwitch(
@@ -167,7 +166,7 @@ fun SnapshotSettingsPage(
                         size = 32.dp,
                         iconSize = 20.dp,
                         onClickLabel = stringResource(Res.string.snapshot_screenshot_settings_open),
-                        onClick = { showCaptureScreenshotDialog = true },
+                        onClick = { vm.setShowCaptureScreenshotDialog(true) },
                         imageVector = GkIcons.PageInfo,
                         contentDescription =
                             stringResource(Res.string.snapshot_screenshot_settings),
@@ -181,7 +180,7 @@ fun SnapshotSettingsPage(
                             (current.screenshotTargetAppId.isEmpty() ||
                                 current.screenshotEventSelector.isEmpty())
                     ) {
-                        toast(Res.string.snapshot_trigger_config_required.getSync())
+                        ToastUtils.show(Res.string.snapshot_trigger_config_required.getSync())
                     }
                 },
             )
@@ -214,8 +213,8 @@ fun SnapshotSettingsPage(
                 subtitle = stringResource(Res.string.snapshot_auto_export_description),
                 checked = store.autoSaveSnapshotToDownloads,
                 onCheckedChange = { enabled ->
-                    launchUi(scope, toast) {
-                        if (!enabled || window.ensureSnapshotSavePermission())
+                    scope.launchUi {
+                        if (!enabled || host.ensureSnapshotSavePermission())
                             SettingsRepository.updateSettings {
                                 it.copy(autoSaveSnapshotToDownloads = enabled)
                             }
@@ -227,13 +226,13 @@ fun SnapshotSettingsPage(
     }
 }
 
-@Composable expect fun AppWindow.screenshotServiceRunning(): Boolean
+@Composable expect fun screenshotServiceRunning(): Boolean
 
-expect fun AppWindow.nativeScreenshotAvailable(): Boolean
+expect fun nativeScreenshotAvailable(): Boolean
 
-expect fun AppWindow.setScreenshotServiceEnabled(enabled: Boolean)
+expect fun UiHost.setScreenshotServiceEnabled(enabled: Boolean)
 
-expect suspend fun AppWindow.ensureSnapshotSavePermission(): Boolean
+expect suspend fun UiHost.ensureSnapshotSavePermission(): Boolean
 
 @Composable
 private fun CaptureScreenshotConfigDialog(

@@ -1,57 +1,42 @@
 package li.gkd.app.ui.settings
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.listSaver
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import li.gkd.app.settings.SettingsAppIds
 
-class AppListEditorState(
-    searchOpen: Boolean = false,
-    editing: Boolean = false,
-    draft: String = ""
+data class AppListEditorUiState(
+    val searchOpen: Boolean = false,
+    val editing: Boolean = false,
+    val draft: String = "",
 ) {
-    var searchOpen by mutableStateOf(searchOpen)
-        private set
-    var editing by mutableStateOf(editing)
-        private set
-    var draft by mutableStateOf(draft)
-        private set
-
     val indicatorSize get() = SettingsAppIds.decode(draft).size
+}
+
+class AppListEditorState {
+    val state: StateFlow<AppListEditorUiState>
+        field = MutableStateFlow(AppListEditorUiState())
 
     fun toggleSearch(query: String, updateQuery: (String) -> Unit) {
-        if (!searchOpen) searchOpen = true
-        else if (query.isEmpty()) searchOpen = false
+        if (!state.value.searchOpen) state.update { it.copy(searchOpen = true) }
+        else if (query.isEmpty()) state.update { it.copy(searchOpen = false) }
         else updateQuery("")
     }
 
     fun closeSearch(updateQuery: (String) -> Unit) {
-        searchOpen = false
+        state.update { it.copy(searchOpen = false) }
         updateQuery("")
     }
 
     fun startEditing(text: String) {
-        searchOpen = false
-        draft = text
-        editing = true
+        state.value = AppListEditorUiState(editing = true, draft = text)
     }
 
     fun setText(text: String) {
-        draft = text
+        state.update { it.copy(draft = text) }
     }
 
     fun closeEditor() {
-        editing = false
+        state.update { it.copy(editing = false) }
     }
 }
-
-@Composable
-fun rememberAppListEditorState(): AppListEditorState = rememberSaveable(
-    saver = listSaver(
-        save = { listOf(it.searchOpen, it.editing, it.draft) },
-        restore = { AppListEditorState(it[0] as Boolean, it[1] as Boolean, it[2] as String) },
-    ),
-) { AppListEditorState() }

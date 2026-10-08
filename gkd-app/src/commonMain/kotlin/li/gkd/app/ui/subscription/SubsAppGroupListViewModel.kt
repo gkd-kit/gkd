@@ -1,6 +1,7 @@
 package li.gkd.app.ui.subscription
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -36,6 +37,13 @@ data class SubsAppGroupListUiState(
 class SubsAppGroupListViewModel(
     val route: SubsAppGroupListRoute,
 ) : BaseViewModel() {
+    val showAppSetting: StateFlow<Boolean>
+        field = MutableStateFlow(false)
+
+    fun setShowAppSetting(value: Boolean) {
+        showAppSetting.value = value
+    }
+
     private val batchMutex = MutexState()
     fun removeFromWhitelist() {
         SettingsRepository.updateBlockMatchAppList { it - route.appId }

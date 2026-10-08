@@ -1,6 +1,7 @@
 package li.gkd.app.ui.subscription
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
@@ -45,6 +46,13 @@ data class AppConfigUiState(
 class AppConfigViewModel(
     val route: AppConfigRoute,
 ) : BaseViewModel() {
+    val revealDisabledRules: StateFlow<Boolean>
+        field = MutableStateFlow(false)
+
+    fun setRevealDisabledRules(value: Boolean) {
+        revealDisabledRules.value = value
+    }
+
     private val batchMutex = MutexState()
     fun removeFromWhitelist() {
         SettingsRepository.updateBlockMatchAppList { it - route.appId }
@@ -137,5 +145,4 @@ class AppConfigViewModel(
                 )
             )
         }
-
 }

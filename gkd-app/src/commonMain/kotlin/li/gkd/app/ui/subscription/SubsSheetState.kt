@@ -34,7 +34,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import li.gkd.app.resources.Res
@@ -74,7 +73,10 @@ import li.gkd.app.ui.component.GkPageBottomSpaceDefaults
 import li.gkd.app.ui.component.GkRetainedSheet
 import li.gkd.app.ui.component.SheetRequest
 import li.gkd.app.ui.navigation.ActionLogRoute
-import li.gkd.app.ui.navigation.AppRoute
+import li.gkd.app.ui.navigation.AppNavigator
+import li.gkd.app.ui.navigation.ConfirmDeletion
+import li.gkd.app.ui.settings.appVersion
+import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.navigation.SubsAppListRoute
 import li.gkd.app.ui.navigation.SubsCategoryRoute
 import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
@@ -82,7 +84,7 @@ import li.gkd.app.ui.share.DeletionTarget
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.text.formatTimeAgo
 import li.gkd.app.ui.text.getSync
-import li.gkd.app.ui.text.subscriptionMessage
+import li.gkd.app.util.ToastUtils
 import li.gkd.db.Db
 import li.gkd.db.LOCAL_SUBS_ID
 import li.gkd.db.SubsItem
@@ -94,17 +96,11 @@ private data class SubsSheetSnapshot(
     val loading: Boolean,
 )
 
-class SubsSheetHost(
-    val appName: String,
-    val navigate: (AppRoute) -> Unit,
-    val openUrl: (String) -> Unit,
-    val requestUrl: suspend (String) -> String?,
-    val toast: (String) -> Unit,
-    val confirmDelete: (String, String, () -> Set<DeletionTarget>, () -> Unit, suspend () -> Unit) -> Unit,
-)
-
 class SubsSheetState(
-    private val hostProvider: () -> SubsSheetHost
+    private val navigator: AppNavigator,
+    private val openUrl: (String) -> Unit,
+    private val requestUrl: suspend (String) -> String?,
+    private val confirmDelete: ConfirmDeletion,
 ) {
     private val subsIdFlow = MutableStateFlow<SheetRequest<Long>?>(null)
 
@@ -145,20 +141,7 @@ class SubsSheetState(
         ) { _, displayed, sheetState, dismiss ->
             val subsItem = displayed.item
             val subscription = displayed.subscription
-            val host = hostProvider()
-
-            val toast = host.toast
             val scope = rememberCoroutineScope()
-            fun launchAction(block: suspend () -> Unit) = scope.launch {
-                try {
-                    block()
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    toast(e.subscriptionMessage())
-                }
-            }
-
             val scrollState = rememberScrollState()
             val sheetGesturesEnabled by remember {
                 derivedStateOf { scrollState.value == 0 }
@@ -191,7 +174,7 @@ class SubsSheetState(
                     )
                     if (subscription != null) {
                         val timeStr = formatTimeAgo(subsItem.mtime)
-                        val author = if (subsItem.isLocal) host.appName else subscription.author
+                        val author = if (subsItem.isLocal) appVersion().appName else subscription.author
                             ?: stringResource(Res.string.unknown)
                         val metadataDescription = stringResource(
                             Res.string.subscription_metadata_description,
@@ -211,7 +194,7 @@ class SubsSheetState(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Text(
-                                text = if (subsItem.isLocal) host.appName else subscription.author
+                                text = if (subsItem.isLocal) appVersion().appName else subscription.author
                                     ?: stringResource(Res.string.unknown),
                                 modifier = Modifier.weight(1f, fill = false),
                                 style = MaterialTheme.typography.labelMedium,
@@ -267,7 +250,7 @@ class SubsSheetState(
                                 onClickLabel = stringResource(Res.string.global_rules_view_list),
                                 onClick = click@{
                                     dismiss()
-                                    host.navigate(SubsGlobalGroupListRoute(subsItem.id))
+                                    navigator.navigate(SubsGlobalGroupListRoute(subsItem.id))
                                 },
                             ) {
                                 Column(
@@ -303,7 +286,7 @@ class SubsSheetState(
                                 onClickLabel = stringResource(Res.string.app_rules_view_list),
                                 onClick = click@{
                                     dismiss()
-                                    host.navigate(SubsAppListRoute(subsItem.id))
+                                    navigator.navigate(SubsAppListRoute(subsItem.id))
                                 },
                             ) {
                                 Column(
@@ -341,7 +324,7 @@ class SubsSheetState(
                                 onClickLabel = stringResource(Res.string.rule_categories_view_list),
                                 onClick = click@{
                                     dismiss()
-                                    host.navigate(SubsCategoryRoute(subsItem.id))
+                                    navigator.navigate(SubsCategoryRoute(subsItem.id))
                                 },
                             ) {
                                 Column(
@@ -378,18 +361,18 @@ class SubsSheetState(
                                 onClickLabel = stringResource(Res.string.subscription_link_edit),
                                 onClick = click@{
                                     if (SubscriptionRepository.isBusy) {
-                                        toast(Res.string.subscription_refresh_wait_compact.getSync())
+                                        ToastUtils.show(Res.string.subscription_refresh_wait_compact.getSync())
                                         return@click
                                     }
-                                    launchAction {
-                                        val url = host.requestUrl(
+                                    scope.launchUi {
+                                        val url = requestUrl(
                                             updateUrl,
                                         )
-                                            ?: return@launchAction
+                                            ?: return@launchUi
                                         SubscriptionRepository.addOrModifyRemote(url, subsItem)
                                             .message()
                                             ?.let {
-                                                toast(it)
+                                                ToastUtils.show(it)
                                             }
                                     }
                                 },
@@ -413,7 +396,7 @@ class SubsSheetState(
                                             .clickable(
                                                 onClickLabel = stringResource(Res.string.subscription_link_view),
                                                 onClick = {
-                                                    host.openUrl(updateUrl)
+                                                    openUrl(updateUrl)
                                                 })
                                     )
                                 }
@@ -439,9 +422,9 @@ class SubsSheetState(
                                     color = MaterialTheme.colorScheme.error,
                                 )
                                 TextButton(onClick = click@{
-                                    launchAction {
+                                    scope.launchUi {
                                         SubscriptionRepository.refresh().message()
-                                            ?.let { toast(it) }
+                                            ?.let { ToastUtils.show(it) }
                                     }
                                 }) {
                                     Text(text = stringResource(Res.string.action_reload))
@@ -458,19 +441,19 @@ class SubsSheetState(
                             GkIconButton(
                                 imageVector = GkIcons.HelpOutline,
                                 onClick = click@{
-                                    host.openUrl(subscription.supportUri)
+                                    openUrl(subscription.supportUri)
                                 },
                             )
                         }
                         GkIconButton(imageVector = GkIcons.History, onClick = click@{
                             dismiss()
-                            host.navigate(ActionLogRoute(subsId = subsItem.id))
+                            navigator.navigate(ActionLogRoute(subsId = subsItem.id))
                         })
                         if (subsItem.id != LOCAL_SUBS_ID) {
                             GkIconButton(
                                 imageVector = GkIcons.Delete,
                                 onClick = click@{
-                                    host.confirmDelete(
+                                    confirmDelete(
                                         Res.string.subscription_delete.getSync(),
                                         Res.string.delete_named_confirmation.getSync(
                                             subscription?.name ?: subsItem.id
@@ -479,7 +462,7 @@ class SubsSheetState(
                                         dismiss,
                                     ) {
                                         val result = SubscriptionRepository.delete(subsItem.id)
-                                        result.message()?.let { toast(it) }
+                                        result.message()?.let { ToastUtils.show(it) }
                                     }
                                 },
                             )

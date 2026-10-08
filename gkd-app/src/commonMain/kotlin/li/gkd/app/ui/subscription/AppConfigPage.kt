@@ -12,7 +12,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -45,7 +44,7 @@ import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.toRuleGroupTarget
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
-import li.gkd.app.ui.component.DialogRequests
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAnimatedFloatingActionButton
 import li.gkd.app.ui.component.GkAppNameText
 import li.gkd.app.ui.component.GkAppRuleRestrictionCard
@@ -72,19 +71,19 @@ import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.component.rememberRuleListFocus
 import li.gkd.app.ui.navigation.ActionLogRoute
 import li.gkd.app.ui.navigation.AppConfigRoute
-import li.gkd.app.ui.navigation.AppRoute
-import li.gkd.app.ui.navigation.GkBackHandler
-import li.gkd.app.ui.navigation.ShowRuleGroup
 import li.gkd.app.ui.navigation.SubsAppGroupListRoute
 import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
-import li.gkd.app.ui.navigation.launchUi
 import li.gkd.app.ui.option.RuleSortOption
 import li.gkd.app.ui.option.findOption
+import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.share.ListPlaceholder
+import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.ui.text.subscriptionMessageResource
 import li.gkd.app.util.SortUtils
+import li.gkd.app.util.ToastUtils
+import li.gkd.app.util.copyText
 import li.gkd.db.LOCAL_SUBS_ID
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -92,13 +91,8 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun AppConfigPage(
     route: AppConfigRoute,
-    onBack: () -> Unit,
-    onNavigate: (AppRoute) -> Unit,
-    showToast: (String) -> Unit,
-    dialogs: DialogRequests,
-    showRuleGroup: ShowRuleGroup,
-    copyText: (String) -> Unit,
 ) {
+    val mainVm = MainViewModel.requireCurrent()
     val appId = route.appId
     val focusLog = route.focusLog
     val vm = viewModel { AppConfigViewModel(route) }
@@ -119,7 +113,7 @@ fun AppConfigPage(
     val partialDisabled =
         store.enableBlockA11yAppList && !store.blockA11yAppListFollowMatch && appId in a11yWhitelist
     val showAppRestriction = whitelisted || partialDisabled
-    var revealDisabledRules by rememberSaveable(focusLog) { mutableStateOf(false) }
+    val revealDisabledRules by vm.revealDisabledRules.collectAsStateWithLifecycle()
     val showDisabledRules = store.showDisabledRule || revealDisabledRules
     val controls = remember(state, environment) {
         state?.subsPairs.orEmpty().flatMap { (entry, groups) ->
@@ -179,14 +173,14 @@ fun AppConfigPage(
         val targets = selectedDataSet
         if (targets.isNotEmpty() && state != null) {
             val request = vm.prepareSwitches(state, targets)
-            launchUi(scope, showToast) {
+            scope.launchUi {
                 vm.runBatchAction {
                     val action = when (enabled) {
                         false -> getString(Res.string.action_close)
                         true -> getString(Res.string.action_enable)
                         null -> getString(Res.string.setting_follow_default)
                     }
-                    if (!dialogs.confirm(
+                    if (!mainVm.dialogRequests.confirm(
                             title = getString(Res.string.action_notice),
                             text = getString(
                                 Res.string.app_rules_batch_setting_confirmation,
@@ -195,7 +189,7 @@ fun AppConfigPage(
                             ),
                         )
                     ) return@runBatchAction
-                    showToast(
+                    ToastUtils.show(
                         vm.applySwitches(request, RuleSetting.from(enabled))
                             .description()
                     )
@@ -226,7 +220,7 @@ fun AppConfigPage(
             groups.any { Triple(entry.subsItem.id, it.groupType, it.key) == focusKey }
         },
         stickyHeaderKeys = remember(subsPairs) { subsPairs.mapTo(mutableSetOf()) { it.first.subsItem.id } },
-        onRevealTarget = { revealDisabledRules = true },
+        onRevealTarget = { vm.setRevealDisabledRules(true) },
     )
     pageScrollState.ResetOnChange(
         groupSize > 0,
@@ -242,7 +236,7 @@ fun AppConfigPage(
                 selectedCount = selectedDataSet.size,
                 onExitSelection = selectionState::clear,
                 scrollBehavior = scrollBehavior,
-                onNavigateBack = { onBack() },
+                onNavigateBack = { mainVm.navigator.pop() },
                 onTitleClick = pageScrollState::resetScroll,
                 title = {
                     GkAppNameText(appId = appId)
@@ -262,7 +256,7 @@ fun AppConfigPage(
                                     val targets =
                                         selectedDataSet.filterIsInstance<RuleGroupTarget.App>()
                                             .toSet()
-                                    launchUi(scope, showToast) {
+                                    scope.launchUi {
                                         vm.runBatchAction {
                                             copyText(vm.buildSelectedGroupsText(targets))
                                         }
@@ -305,7 +299,7 @@ fun AppConfigPage(
                                         checked = showDisabledRules,
                                         onClick = {
                                             vm.setShowDisabledRules(!showDisabledRules)
-                                            revealDisabledRules = false
+                                            vm.setRevealDisabledRules(false)
                                         },
                                     )
                                 }
@@ -314,7 +308,7 @@ fun AppConfigPage(
                         GkIconButton(
                             imageVector = GkIcons.History,
                             onClick = {
-                                onNavigate(ActionLogRoute(appId = appId))
+                                mainVm.navigator.navigate(ActionLogRoute(appId = appId))
                             },
                         )
                     }
@@ -325,7 +319,7 @@ fun AppConfigPage(
             GkAnimatedFloatingActionButton(
                 visible = !isSelectedMode,
                 onClick = {
-                    onNavigate(
+                    mainVm.navigator.navigate(
                         UpsertRuleGroupRoute(
                             subsId = LOCAL_SUBS_ID,
                             groupKey = null,
@@ -351,8 +345,8 @@ fun AppConfigPage(
                             partialDisabled = partialDisabled,
                             partialFollowsWhitelist = partialFollowsWhitelist,
                             onRemoveWhitelist = {
-                                launchUi(scope, showToast) {
-                                    if (dialogs.confirm(
+                                scope.launchUi {
+                                    if (mainVm.dialogRequests.confirm(
                                             title = getString(Res.string.whitelist_remove),
                                             text = if (partialFollowsWhitelist) getString(Res.string.app_rule_whitelist_remove_follow_confirm)
                                             else getString(Res.string.app_rule_whitelist_remove_confirm),
@@ -363,8 +357,8 @@ fun AppConfigPage(
                                 }
                             },
                             onRemovePartialDisable = {
-                                launchUi(scope, showToast) {
-                                    if (dialogs.confirm(
+                                scope.launchUi {
+                                    if (mainVm.dialogRequests.confirm(
                                             title = getString(Res.string.app_rule_partial_disable_remove),
                                             text = getString(Res.string.app_rule_partial_disable_remove_confirm),
                                             confirmText = getString(Res.string.app_rule_restriction_remove),
@@ -381,7 +375,7 @@ fun AppConfigPage(
                     stickyHeader(entry.subsItem.id) {
                         GkRuleListHeader(
                             onClick = {
-                                onNavigate(
+                                mainVm.navigator.navigate(
                                     if (entry.subscription.apps.any { it.id == appId })
                                         SubsAppGroupListRoute(
                                             subsId,
@@ -432,16 +426,16 @@ fun AppConfigPage(
                             group = group,
                             control = controls.getValue(group.toRuleGroupTarget(subsId, appId)),
                             onOpen = {
-                                showRuleGroup(subsId, appId, group, appId)
+                                mainVm.showRuleGroup(subsId, appId, group, appId)
                             },
                             onSettingChange = { setting ->
                                 val request = vm.prepareSwitches(
                                     checkNotNull(state),
                                     setOf(group.toRuleGroupTarget(subsId, appId))
                                 )
-                                launchUi(scope, showToast) {
+                                scope.launchUi {
                                     vm.applySwitches(request, setting)
-                                        .failureMessage()?.let { showToast(it) }
+                                        .failureMessage()?.let { ToastUtils.show(it) }
                                 }
                             },
                             onLongClick = onLongClick,

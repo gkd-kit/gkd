@@ -22,38 +22,13 @@ import com.hjq.toast.Toaster
 import com.hjq.toast.style.WhiteToastStyle
 import li.gkd.app.app
 import li.gkd.app.permission.PermissionStates
-import li.gkd.app.platform.lifecycle.MainActivityVisibility
-import li.gkd.app.resources.Res
 import li.gkd.app.rule.ResolvedRule
 import li.gkd.app.service.A11yService
-import li.gkd.app.service.OverlayWindowService
 import li.gkd.app.settings.SettingsRepository.actionCount
 import li.gkd.app.settings.SettingsRepository.settings
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.ui.util.ActionToastTemplate
-import li.songe.codeorigin.CallSite
 
-object ToastUtils {
-    fun show(
-        text: CharSequence,
-        forced: Boolean = false,
-        delayMillis: Long = 0L,
-        @CallSite loc: String = "",
-    ) {
-        if (delayMillis > 0) {
-            ThreadUtils.runMainOrPost(delayMillis) {
-                show(text = text, forced = forced, loc = loc)
-            }
-            return
-        }
-        if (forced || MainActivityVisibility.isVisible || OverlayWindowService.isAnyAlive) {
-            Toaster.show(text)
-        }
-        if (loc.isNotEmpty()) {
-            LogUtils.d(text, loc = loc)
-        }
-    }
-
+object AndroidToastUtils {
     private val darkTheme: Boolean
         get() = settings.value.enableDarkTheme ?: app.resources.configuration.let {
             it.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
@@ -209,10 +184,6 @@ object ToastUtils {
                 cancel()
             }
         }
-    }
-
-    fun copyText(text: String) {
-        li.gkd.app.ui.navigation.copyText(text, ::show)
     }
 
     fun init() {

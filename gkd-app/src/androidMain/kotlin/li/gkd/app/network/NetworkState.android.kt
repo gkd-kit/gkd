@@ -1,3 +1,3 @@
 package li.gkd.app.network
 
-actual fun isNetworkAvailable(): Boolean = NetworkAvailability.canResolveProbeHost()
+actual suspend fun isNetworkAvailable(): Boolean = canReachNetwork()

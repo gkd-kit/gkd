@@ -20,6 +20,9 @@ class HomeNavigation {
     }
 
     fun unbind(state: HomeState) {
-        if (boundState === state) boundState = null
+        if (boundState === state) {
+            pendingTab = state.selectedTab.value
+            boundState = null
+        }
     }
 }

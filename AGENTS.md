@@ -10,21 +10,23 @@
 - androidMain 普通工具、适配、UI 接入及基类按职责归入 `li.gkd.app.*`；已注册 Application、Activity、Service、磁贴、特权入口及紧密关联实现保留原身份。`com.google.android.accessibility.selecttospeak.SelectToSpeakService` 的包名、路径和注册不变。包名整理不得改变组件、路由序列化名称/参数、AIDL 或持久化兼容标识。
 - Android 权限、Activity Result、通知、悬浮窗、Service 和特权进程位于 gkd-app/src/androidMain，由真实组件管理生命周期。gkd-aidl 只编译 Binder 协议；gkd-hidden-api 只提供 stub。引用 stub 的模块必须独立完成对应字节码的 remap。
 - ViewModel、Repository、业务状态和流程在 commonMain 保持唯一实现，ViewModel 使用 `XxxViewModel` 命名。禁止同名宿主子类、空壳继承、旧路径 typealias 或纯转发包装；共享类默认不可继承，宿主在原 ViewModelStoreOwner 直接创建，复杂/复用构造可用明确工厂。
-- 平台差异优先使用对应功能包的函数级 `expect/actual`，实现文件为 `.android.kt` / `.jvm.kt`；禁止整份 ViewModel、Repository 或业务流程 actual 化。能力签名只用公共类型，不导航、弹 Toast 或读取 UI ViewModel；仅 UI 组装可用 Composable expect/actual，显式接收窗口会话。无生命周期工具只持有 Application Context，Activity/窗口引用限于生命周期绑定的 UI 会话。
+- 平台差异优先使用对应功能包的函数级 `expect/actual`，实现文件为 `.android.kt` / `.jvm.kt`；禁止整份 ViewModel、Repository 或业务流程 actual 化。能力签名只用公共类型，不导航、弹 Toast 或读取 UI ViewModel；仅 UI 组装可用 Composable expect/actual，需平台 UI 能力时显式接收所属 UiHost。无生命周期工具只持有 Application Context，Activity/窗口引用限于生命周期绑定的 UI 会话。
 - 不支持的平台动作统一返回 `PlatformResult<T>`，无数据成功为 `Unit`；不得另造 Unsupported 类型或用 Boolean/null 暗示不支持。契约明确成功含义，保留异常/取消传播，不替代业务结果、用户取消或权限状态。
 - 应用仓库由应用生命周期唯一持有，禁止重复创建、可替换全局实例和无意义转发。无独立会话需求时优先使用 object；需要独立生命周期或明确依赖时允许普通类及构造注入。平台依赖先于消费者初始化，所属生命周期结束时清理协程和资源，不为测试增加生产重置接口。
 
 ## UI 与生命周期
 
-- 两端共用 commonMain 的生产页面、组件、业务和事件链，模拟输入也经过生产 Repository/ViewModel；共享代码不得读取 Android Application/MainViewModel/Store/Service 或伪造全局实例。Desktop 默认四标签，组件目录仅显式诊断。新增入口同时覆盖双端及下游弹窗、面板、返回路径，不用整页 Toast/占位掩盖缺失；交付需业务、读写、生命周期和验证证据。
+- 两端共用 commonMain 的生产页面、组件、业务和事件链，模拟输入也经过生产 Repository/ViewModel；共享代码不得直接依赖 Android Application、平台专属 Store/Service 或伪造全局实例；共享 MainViewModel 的访问遵循下述单主界面规则。Desktop 默认四标签，组件目录仅显式诊断。新增入口同时覆盖双端及下游弹窗、面板、返回路径，不用整页 Toast/占位掩盖缺失；交付需业务、读写、生命周期和验证证据。
 - 两端共用 `GkAppNavigation` 注册及 `GkNavigation` 保存状态/条目生命周期；禁止 Desktop 字符串分支注册生产路由、复制平台路由或另写保存/导航规则。普通/编辑页面过渡统一声明，公共页面只注册一次；HTTP 标签等状态读取生产来源。
-- ViewModel 只属于根页面 MainViewModel 或具体导航条目；没有业务状态/协程时不创建。根不持有其他 ViewModel 或子 ViewModelStore；子路由用条目标准 API 获取，多次入栈实例独立、出栈清理，不预建、缓存或跨路由借用。导航不重建仓库，宿主退出清理 ViewModel/协程；Desktop 场景重载只重置页面/草稿，不清空数据或模拟配置。
+- MainViewModel 属于主界面的 ViewModelStore，页面 ViewModel 属于具体导航条目；有需要保留的页面状态或事件流程时按需创建，不为纯展示或组件瞬时状态创建。根不持有其他 ViewModel 或子 ViewModelStore；子路由用条目标准 API 获取，多次入栈实例独立、出栈清理，不预建、缓存或跨路由借用。导航不重建仓库，宿主退出清理 ViewModel/协程；Desktop 场景重载只重置页面/草稿，不清空数据或模拟配置。
 - 路由及私有 Composable 可获取页面 ViewModel、处理平台 UI；主题、通用布局、可复用组件和工具仅接收状态/事件，不通过默认参数、工厂、CompositionLocal 或全局入口隐藏获取。Service、悬浮窗、后台任务使用自身作用域和应用仓库，不借用或补建页面 ViewModel。
-- 平台 UI 操作优先显式接收所属窗口会话或事件回调。现有 MainViewModel.requireCurrent() 仅限已初始化的 Android 单主界面接入，不向新通用能力扩散；commonMain、复用组件和后台不得获取，也不引入 LocalMainViewModel。引用绑定所属生命周期，不静态缓存或创建替代实例。
-- 仅影响当前展示的搜索输入、过滤和草稿，以及展开、弹窗、滚动、焦点、菜单、动画、拖拽和多选留在 Compose；驱动业务查询、分页、保存冲突或恢复需求的状态由所属 ViewModel 管理。rememberXxxState 不访问 ViewModel、数据库、Store、Service 或导航。组合工作使用 rememberCoroutineScope，稳定且绑定同一组合的 scope 不作冗余 remember key。主题状态、时序及深色优先级双端共用，宿主只给系统主题/色板。
+- Android/Desktop 均采用单主界面设计，同一应用运行实例只存在一个根 MainViewModel，其生命周期覆盖所有子页面 ViewModel。生产页面、其私有 Composable 及所属子页面 ViewModel（含 commonMain）可通过 `MainViewModel.requireCurrent()` 获取已注册的根实例，无需逐层传递。宿主完成初始化和必要绑定后注册，根实例清理时注销；静态入口只提供访问，不创建实例或延长其生命周期。主题、通用布局、可复用组件、工具、Repository、Service、悬浮窗和后台任务不得通过该入口获取，也不引入 LocalMainViewModel。
+- 页面 ViewModel 可组织校验、保存、确认弹窗及后续导航等事件流程，按需使用 MainViewModel 的页面能力；Compose 负责展示、收集状态、转发事件及 IME、焦点等组合/宿主相关操作。不为缩短调用增加纯转发方法，不把页面流程转移到根 ViewModel。平台 UI 操作显式接收所属 UiHost 或事件回调，宿主引用绑定所属生命周期，不由页面 ViewModel 长期持有。
+- 自定义页面业务状态，包括编辑草稿及基准、搜索/筛选条件、分页、保存冲突和页面切换后需要保留的状态，优先由所属页面 ViewModel 使用 `MutableStateFlow<T>` 管理，对外暴露只读 `StateFlow<T>` 和明确修改方法，默认不使用 `rememberSaveable` 或自定义 Saver。页面状态随所属导航条目清理，不为保留它而提升到 MainViewModel；StateFlow 本身不提供落盘或进程重启恢复。
+- 滚动、焦点、动画、拖拽及简单组件展开等纯 UI 工具状态留在 Compose，允许使用官方 `rememberXxxState`；确需恢复的简单工具/组件状态可使用 `rememberSaveable`，无需恢复的瞬时状态使用 `remember`。不为规避 rememberSaveable 将这些工具状态搬入 ViewModel，也不以工具状态名义承载页面业务对象。`rememberXxxState` 不访问 ViewModel、数据库、Store、Service 或导航。组合工作使用 rememberCoroutineScope，稳定且绑定同一组合的 scope 不作冗余 remember key。主题状态、时序及深色优先级双端共用，宿主只给系统主题/色板。
 - `XxxUiState/Actions` 仅用于确有需要的复用、预览或复杂契约；UiState 是不可变快照，不含 Flow、Paging 或高频状态；多个构造路径重复映射时才提取私有构建函数。业务状态不通过 CompositionLocal 传递。
-- 应用/仓库只读 Flow 在实际消费处用 `collectAsStateWithLifecycle` 收集，Paging 用专用 API，高频状态放最小子树；不复制进 UiState/ViewModel 或纯转发；公共页面接收不可变值和明确事件。ViewModel 可管理业务查询聚合、Paging 缓存、加载/失败和保存冲突基准，不因 map/combine 一律迁出。
-- ViewModel 可变状态为 private，只暴露只读状态及明确业务方法；只读 StateFlow 使用 Explicit Backing Fields，禁止 `_xxxFlow` 双属性及 `.asStateFlow()`。Composable 条件输出可用条件区块或清晰的提前返回，优先沿用邻近风格，不为形式增加嵌套或无关重构。
+- 应用/仓库只读 Flow 在实际消费处用 `collectAsStateWithLifecycle` 收集，Paging 用专用 API，高频状态放最小子树；不为转发而复制进 UiState/ViewModel；生产路由页面可获取所属 ViewModel，可复用组件接收不可变值和明确事件。ViewModel 可管理业务查询聚合、Paging 缓存、加载/失败和保存冲突基准，不因 map/combine 一律迁出。
+- ViewModel 状态仅在所属 VM 内修改，对外只暴露只读状态及明确事件方法；可变字段保持私有，只读 StateFlow 使用 Explicit Backing Fields 持有 MutableStateFlow，禁止 `_xxxFlow` 双属性及 `.asStateFlow()`。Composable 条件输出可用条件区块或清晰的提前返回，优先沿用邻近风格，不为形式增加嵌套或无关重构。
 - 共享页面用 `GkScaffold` 接收宿主 Insets（Android 原生，Desktop 模拟），不重复加系统留白。滚动内容末尾用 `GkPageBottomSpace()` / LazyColumn 的 `gkPageBottomSpace()`，高度由 GkPageBottomSpaceDefaults 统一；已有末尾 item 可内嵌但不重复添加，不替代系统栏或 IME Insets。
 - 动画不阻塞交互：禁止因过渡、图标变形、普通开关短暂保存或假设快速点击而禁用、节流、延时解锁或吞点击。禁用仅对应数据、输入、权限等业务前提，写入一致性交业务层处理。退场重复内容可隐藏于无障碍导航，但不改变颜色/增加等待；检查覆盖过渡中点击和切换。
 

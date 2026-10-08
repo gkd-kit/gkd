@@ -1,37 +1,37 @@
 package li.gkd.app.ui.settings
 
 import androidx.compose.runtime.Composable
-import li.gkd.app.ui.navigation.AppWindow
+import li.gkd.app.ui.platform.UiHost
 
-actual fun AppWindow.setSnapshotButtonEnabled(enabled: Boolean) {
+actual fun UiHost.setSnapshotButtonEnabled(enabled: Boolean) {
     state.unsupported()
 }
 
-actual fun AppWindow.setHttpServiceEnabled(enabled: Boolean) {
+actual fun UiHost.setHttpServiceEnabled(enabled: Boolean) {
     state.unsupported()
 }
 
-actual fun AppWindow.setActivityMonitorEnabled(enabled: Boolean) {
+actual fun UiHost.setActivityMonitorEnabled(enabled: Boolean) {
     state.unsupported()
 }
 
-actual fun AppWindow.setEventMonitorEnabled(enabled: Boolean) {
+actual fun UiHost.setEventMonitorEnabled(enabled: Boolean) {
     state.unsupported()
 }
 
-actual fun AppWindow.setTrackServiceEnabled(enabled: Boolean) {
+actual fun UiHost.setTrackServiceEnabled(enabled: Boolean) {
     state.unsupported()
 }
 
 @Composable
-actual fun AppWindow.httpRunning() = false
+actual fun httpRunning() = false
 @Composable
-actual fun AppWindow.localNetworkIps() = emptyList<String>()
+actual fun localNetworkIps() = emptyList<String>()
 @Composable
-actual fun AppWindow.snapshotButtonRunning() = false
+actual fun snapshotButtonRunning() = false
 @Composable
-actual fun AppWindow.activityMonitorRunning() = false
+actual fun activityMonitorRunning() = false
 @Composable
-actual fun AppWindow.eventMonitorRunning() = false
+actual fun eventMonitorRunning() = false
 @Composable
-actual fun AppWindow.trackServiceRunning() = false
+actual fun trackServiceRunning() = false

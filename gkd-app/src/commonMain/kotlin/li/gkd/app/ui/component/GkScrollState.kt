@@ -5,10 +5,12 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
-import androidx.compose.material3.TopAppBarState
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
@@ -17,7 +19,6 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -171,12 +172,10 @@ fun rememberListScrollState(
     val currentCanScroll = rememberUpdatedState(canScroll)
     val stableCanScroll = remember { { currentCanScroll.value() } }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
-        state = rememberSaveable(saver = TopAppBarState.Saver) {
-            TopAppBarState(-Float.MAX_VALUE, 0f, 0f)
-        },
+        state = rememberTopAppBarState(),
         canScroll = stableCanScroll,
     )
-    val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState(0, 0) }
+    val listState = rememberLazyListState()
     return remember(scrollBehavior, listState, coroutineScope) {
         ListScrollState(scrollBehavior, listState, coroutineScope)
     }
@@ -186,11 +185,9 @@ fun rememberListScrollState(
 fun rememberPinnedListScrollState(): ListScrollState {
     val coroutineScope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(
-        state = rememberSaveable(saver = TopAppBarState.Saver) {
-            TopAppBarState(-Float.MAX_VALUE, 0f, 0f)
-        },
+        state = rememberTopAppBarState(),
     )
-    val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState(0, 0) }
+    val listState = rememberLazyListState()
     return remember(scrollBehavior, listState, coroutineScope) {
         ListScrollState(scrollBehavior, listState, coroutineScope)
     }
@@ -200,11 +197,9 @@ fun rememberPinnedListScrollState(): ListScrollState {
 fun rememberColumnScrollState(): ColumnScrollState {
     val coroutineScope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
-        state = rememberSaveable(saver = TopAppBarState.Saver) {
-            TopAppBarState(-Float.MAX_VALUE, 0f, 0f)
-        },
+        state = rememberTopAppBarState(),
     )
-    val scrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(initial = 0) }
+    val scrollState = rememberScrollState()
     return remember(scrollBehavior, scrollState, coroutineScope) {
         ColumnScrollState(scrollBehavior, scrollState, coroutineScope)
     }

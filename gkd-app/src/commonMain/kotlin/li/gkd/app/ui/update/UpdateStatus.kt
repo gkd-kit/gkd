@@ -3,6 +3,8 @@ package li.gkd.app.ui.update
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import java.io.File
+import java.net.URI
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +22,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import li.gkd.app.network.NewVersion
 import li.gkd.app.network.UpdateClient
+import li.gkd.app.network.isNetworkAvailable
 import li.gkd.app.platform.PlatformResult
 import li.gkd.app.platform.requestPackageInstall
 import li.gkd.app.resources.Res
@@ -38,17 +41,14 @@ import li.gkd.app.ui.option.findOption
 import li.gkd.app.ui.text.displayMessage
 import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.LogUtils
+import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
-import java.io.File
-import java.net.URI
 
 /** App-owned update workflow; only package installation belongs to the platform. */
 class UpdateStatus(
     private val scope: CoroutineScope,
     private val versionCode: Int,
     private val versionName: String,
-    private val toast: (String) -> Unit,
-    private val networkAvailable: () -> Boolean,
 ) {
     private val storage by lazy { FileSettingsStorage(appStorage().store) }
     private val directory get() = appStorage().sharedCache
@@ -75,12 +75,12 @@ class UpdateStatus(
             try {
                 lastCheckTime = System.currentTimeMillis()
                 val ignored = ignoreMutex.withLock { withContext(Dispatchers.IO) { readIgnored() } }
-                check(networkAvailable()) { getString(Res.string.network_unavailable) }
+                check(isNetworkAvailable()) { getString(Res.string.network_unavailable) }
                 val url =
                     UpdateChannelOption.objects.findOption(SettingsRepository.settings.value.updateChannel).url
                 val result = withContext(Dispatchers.IO) { UpdateClient.fetch(url) }
                 if (result.versionCode <= versionCode) {
-                    if (manual) toast(getString(Res.string.updates_none))
+                    if (manual) ToastUtils.show(getString(Res.string.updates_none))
                 } else if (manual || result.versionCode !in ignored) {
                     lastManual = manual; versionUrl = url; newVersion.value = result
                 }
@@ -88,7 +88,7 @@ class UpdateStatus(
                 throw e
             } catch (e: Exception) {
                 LogUtils.d("Update check failed", e)
-                if (manual) toast(e.displayMessage())
+                if (manual) ToastUtils.show(e.displayMessage())
             } finally {
                 checkUpdatingFlow.value = false
             }
@@ -141,12 +141,12 @@ class UpdateStatus(
                         )
                     }
                     if (newVersion.value == version) newVersion.value = null
-                    toast(getString(Res.string.update_version_ignored))
+                    ToastUtils.show(getString(Res.string.update_version_ignored))
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                toast(e.displayMessage())
+                ToastUtils.show(e.displayMessage())
             }
         }
     }
@@ -179,9 +179,9 @@ class UpdateStatus(
             onInstall = {
                 downloaded?.let { file ->
                     try {
-                        if (requestPackageInstall(file) == PlatformResult.Unsupported) toast(Res.string.platform_action_unsupported.getSync())
+                        if (requestPackageInstall(file) == PlatformResult.Unsupported) ToastUtils.show(Res.string.platform_action_unsupported.getSync())
                     } catch (e: Exception) {
-                        toast(e.displayMessage())
+                        ToastUtils.show(e.displayMessage())
                     }
                 }
             })

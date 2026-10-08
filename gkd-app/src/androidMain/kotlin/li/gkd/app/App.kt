@@ -57,6 +57,7 @@ import li.gkd.app.util.AndroidStorage
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils
+import li.gkd.app.util.AndroidToastUtils
 import li.gkd.app.util.launchLogged
 import li.gkd.db.Db
 import li.gkd.db.initialize
@@ -238,7 +239,7 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        ToastUtils.init()
+        AndroidToastUtils.init()
         installCrashHandler()
         Db.initialize(this, AndroidStorage.storage.database.absolutePath)
         AppInfoRepository.initialize()

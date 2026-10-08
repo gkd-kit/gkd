@@ -3,13 +3,13 @@ package li.gkd.app.ui.home
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import li.gkd.app.ui.navigation.AppWindow
-import li.gkd.app.privilegeCapabilities
+import li.gkd.app.DesktopRuntime
 import li.gkd.app.permission.AppPermissionRestriction
+import li.gkd.app.privilegeCapabilities
 
 @Composable
-actual fun AppWindow.dashboardPlatformState(): DashboardPlatformState {
-    val simulatorSettings by state.simulator.settings.collectAsStateWithLifecycle()
+actual fun dashboardPlatformState(): DashboardPlatformState {
+    val simulatorSettings by DesktopRuntime.requireCurrent().simulator.settings.collectAsStateWithLifecycle()
     val device = simulatorSettings.environment().android
     val capabilities = simulatorSettings.privilegeCapabilities()
     return DashboardPlatformState(

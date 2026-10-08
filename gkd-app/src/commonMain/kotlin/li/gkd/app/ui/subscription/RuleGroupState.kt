@@ -6,7 +6,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import li.gkd.app.model.ExcludeData
@@ -28,14 +27,15 @@ import li.gkd.app.subscription.edit
 import li.gkd.app.ui.component.GkRetainedSheet
 import li.gkd.app.ui.component.SheetRequest
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
-import li.gkd.app.ui.navigation.AppRoute
+import li.gkd.app.ui.navigation.AppNavigator
 import li.gkd.app.ui.navigation.ConfirmDeletion
 import li.gkd.app.ui.navigation.RuleExcludeEditorRoute
 import li.gkd.app.ui.navigation.SubsGlobalGroupExcludeRoute
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
-import li.gkd.app.ui.navigation.launchUi
 import li.gkd.app.ui.share.DeletionTarget
+import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.text.getSync
+import li.gkd.app.util.ToastUtils
 
 private data class RuleSheetSnapshot(
     val target: RuleGroupTarget,
@@ -70,10 +70,10 @@ class RuleGroupState(
     private fun openExcludeEditor(
         state: RuleGroupTarget,
         dismiss: () -> Unit,
-        onNavigate: (AppRoute) -> Unit,
+        navigator: AppNavigator,
     ) {
         dismiss()
-        onNavigate(
+        navigator.navigate(
             if (state.appId == null) SubsGlobalGroupExcludeRoute(state.subsId, state.groupKey)
             else RuleExcludeEditorRoute(state.subsId, state.groupKey, state.appId)
         )
@@ -104,13 +104,10 @@ class RuleGroupState(
 
     @Composable
     fun Render(
-        onNavigate: (AppRoute) -> Unit,
-        showToast: (String) -> Unit,
-        topRoute: () -> NavKey,
+        navigator: AppNavigator,
         openSubscription: (Long) -> Unit,
         ruleControl: RuleControlDialogState,
         confirmDelete: ConfirmDeletion,
-        copyText: (String) -> Unit,
     ) {
         val scope = rememberCoroutineScope()
         val environment = rememberRuleControlEnvironment()
@@ -152,7 +149,7 @@ class RuleGroupState(
                 ExcludeData.parse(subsConfig?.exclude)
             }
             GkRuleGroupDialog(
-                onNavigate, topRoute, openSubscription, ruleControl, copyText,
+                navigator, openSubscription, ruleControl,
                 sheetState = sheetState,
                 subs = showSubs,
                 group = showGroup,
@@ -167,15 +164,15 @@ class RuleGroupState(
                         listOf(showSubs),
                         configSnapshot.snapshot
                     )
-                    launchUi(scope, showToast) {
+                    scope.launchUi {
                         RuleGroupConfigService.apply(change, setting)
                             .failureMessage()
-                            ?.let { showToast(it) }
+                            ?.let { ToastUtils.show(it) }
                     }
                 },
                 onClickEdit = {
                     dismiss()
-                    onNavigate(
+                    navigator.navigate(
                         UpsertRuleGroupRoute(
                             subsId = showGroupState.subsId,
                             groupKey = showGroupState.groupKey,
@@ -184,7 +181,7 @@ class RuleGroupState(
                     )
                 },
                 onClickEditExclude = {
-                    openExcludeEditor(showGroupState, dismiss, onNavigate)
+                    openExcludeEditor(showGroupState, dismiss, navigator)
                 },
                 onClickDelete = {
                     confirmDelete(
@@ -202,7 +199,7 @@ class RuleGroupState(
                         dismiss
                     ) {
                         deleteGroup(showGroupState)
-                        showToast(Res.string.delete_success.getSync())
+                        ToastUtils.show(Res.string.delete_success.getSync())
                     }
                 }
             )

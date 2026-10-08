@@ -1,21 +1,20 @@
 package li.gkd.app.ui.snapshot
 
+import java.io.File
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.platform.PlatformResult
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.snapshot_share
 import li.gkd.app.storage.FileSource
 import li.gkd.app.storage.saveToDownloads
-import li.gkd.app.ui.MainViewModel
-import li.gkd.app.ui.navigation.AppWindow
+import li.gkd.app.ui.androidState
+import li.gkd.app.ui.platform.UiHost
 import org.jetbrains.compose.resources.getString
-import java.io.File
 
-actual fun AppWindow.snapshotPlatformActions(): SnapshotPlatformActions {
-    val mainVm = MainViewModel.requireCurrent()
+actual fun UiHost.snapshotPlatformActions(): SnapshotPlatformActions {
     return object : SnapshotPlatformActions {
         override suspend fun ensureSavePermission() =
-            mainVm.permissionRequests.ensurePermissions(PermissionStates.writeExternalStorage)
+            mainVm.androidState.permissionRequests.ensurePermissions(PermissionStates.writeExternalStorage)
 
         override suspend fun share(file: File): PlatformResult<Unit> {
             shareFile(file, getString(Res.string.snapshot_share))
@@ -29,6 +28,6 @@ actual fun AppWindow.snapshotPlatformActions(): SnapshotPlatformActions {
             }
 
         override suspend fun pickImage(): FileSource? =
-            mainVm.activityResults.pickImage()?.let { FileSource.Uri(it.toString()) }
+            mainVm.androidState.activityResults.pickImage()?.let { FileSource.Uri(it.toString()) }
     }
 }

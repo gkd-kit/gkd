@@ -20,14 +20,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -45,7 +43,7 @@ import li.gkd.app.rule.RuleConfigIndex
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchTarget
 import li.gkd.app.settings.SettingsRepository
-import li.gkd.app.ui.component.DialogRequests
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAppBarTextField
 import li.gkd.app.ui.component.GkAppFilterContent
 import li.gkd.app.ui.component.GkEmptyState
@@ -70,55 +68,52 @@ import li.gkd.app.ui.component.rememberMultiSelectionState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.home.rememberVisitOrder
 import li.gkd.app.ui.icon.GkSearchCloseIconButton
-import li.gkd.app.ui.navigation.AppRoute
-import li.gkd.app.ui.navigation.GkBackHandler
+import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.navigation.RuleExcludeEditorRoute
-import li.gkd.app.ui.navigation.ShowRuleGroup
 import li.gkd.app.ui.navigation.SubsGlobalGroupExcludeRoute
-import li.gkd.app.ui.navigation.launchUi
 import li.gkd.app.ui.option.AppGroupOption
 import li.gkd.app.ui.option.AppSortOption
 import li.gkd.app.ui.option.findOption
+import li.gkd.app.ui.platform.GkBackHandler
+import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.hideIme
+import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.util.SortUtils
+import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SubsGlobalGroupExcludePage(
+    host: UiHost,
     route: SubsGlobalGroupExcludeRoute,
-    onBack: () -> Unit,
-    onNavigate: (AppRoute) -> Unit,
-    showToast: (String) -> Unit,
-    dialogs: DialogRequests,
-    showRuleGroup: ShowRuleGroup,
-    hideIme: () -> Boolean,
-    appIcon: @Composable (String, Dp) -> Unit,
 ) {
+    val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { SubsGlobalGroupExcludeViewModel(route) }
     val busy by vm.busyFlow.collectAsStateWithLifecycle()
     val environment = rememberRuleControlEnvironment()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
     val visits = rememberVisitOrder()
-    var query by rememberSaveable { mutableStateOf("") }
-    var showSearchBar by rememberSaveable { mutableStateOf(false) }
+    val query by vm.query.collectAsStateWithLifecycle()
+    val showSearchBar by vm.showSearchBar.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     fun closeSearch() {
-        showSearchBar = false
-        query = ""
+        vm.setShowSearchBar(false)
+        vm.setQuery("")
         focusManager.clearFocus()
-        hideIme()
+        host.hideIme()
     }
 
     val selection = rememberMultiSelectionState<String>()
     val scroll = rememberListScrollState()
     GkBackHandler(showSearchBar && !selection.active) {
-        if (!hideIme()) closeSearch()
+        if (!host.hideIme()) closeSearch()
     }
     GkBackHandler(selection.active) {
         if (!busy) selection.clear()
     }
-    GkSubscriptionPageContent(vm.uiState, onBack) { state ->
+    GkSubscriptionPageContent(vm.uiState, mainVm.navigator::pop) { state ->
         val subs = state.subscription
         val configIndex = remember(state.configs) { RuleConfigIndex(state.configs) }
         val group = state.group
@@ -178,9 +173,9 @@ fun SubsGlobalGroupExcludePage(
         LaunchedEffect(selectableTargets) { selection.retain(selectableTargets) }
         fun applyToApps(ids: Set<String>, setting: RuleSetting, confirm: Boolean = false) {
             val request = vm.prepareSwitches(state, ids)
-            launchUi(vm.scope, showToast) {
+            vm.scope.launchUi {
                 vm.runAction {
-                    if (confirm && !dialogs.confirm(
+                    if (confirm && !mainVm.dialogRequests.confirm(
                             getString(Res.string.global_rule_app_switch_set),
                             getString(
                                 Res.string.global_rule_app_switch_batch_confirmation,
@@ -189,7 +184,7 @@ fun SubsGlobalGroupExcludePage(
                             )
                         )
                     ) return@runAction
-                    showToast(vm.applySwitches(request, setting).description())
+                    ToastUtils.show(vm.applySwitches(request, setting).description())
                 }
             }
         }
@@ -203,7 +198,7 @@ fun SubsGlobalGroupExcludePage(
                     onNavigateBack = {
                         when {
                             showSearchBar -> closeSearch()
-                            else -> onBack()
+                            else -> mainVm.navigator.pop()
                         }
                     },
                     onTitleClick = if (showSearchBar) null else scroll::resetScroll,
@@ -215,7 +210,7 @@ fun SubsGlobalGroupExcludePage(
                                 value = query,
                                 onValueChange = {
                                     // 关闭时失焦可能回传旧文本，不能恢复已清空的搜索条件。
-                                    if (showSearchBar) query = it
+                                    if (showSearchBar) vm.setQuery(it)
                                 },
                                 hint = stringResource(Res.string.app_search_hint),
                                 modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
@@ -243,8 +238,8 @@ fun SubsGlobalGroupExcludePage(
                                     Res.string.search_close
                                 ) else stringResource(Res.string.search_clear),
                                 onClick = {
-                                    if (!showSearchBar) showSearchBar = true
-                                    else if (query.isNotEmpty()) query = ""
+                                    if (!showSearchBar) vm.setShowSearchBar(true)
+                                    else if (query.isNotEmpty()) vm.setQuery("")
                                     else closeSearch()
                                 },
                             )
@@ -281,7 +276,7 @@ fun SubsGlobalGroupExcludePage(
                                     contentDescription = stringResource(Res.string.action_edit),
                                     enabled = !busy,
                                     onClick = {
-                                        onNavigate(
+                                        mainVm.navigator.navigate(
                                             RuleExcludeEditorRoute(
                                                 subs.id,
                                                 group.key
@@ -298,7 +293,7 @@ fun SubsGlobalGroupExcludePage(
                 items(visibleIds, key = { it }) { appId ->
                     val control = controls.getValue(appId)
                     GkRuleListItem(
-                        onClick = { showRuleGroup(subs.id, appId, group, appId) },
+                        onClick = { mainVm.showRuleGroup(subs.id, appId, group, appId) },
                         selectedMode = selection.active, selected = appId in selected,
                         selectable = control.canEnable,
                         selectionEnabled = !busy,
@@ -306,19 +301,19 @@ fun SubsGlobalGroupExcludePage(
                         onLongClick = {
                             if (!busy && control.canEnable) {
                                 focusManager.clearFocus()
-                                hideIme()
+                                host.hideIme()
                                 selection.select(appId)
                             }
                         },
-                        leading = { appIcon(appId, 32.dp) },
+                        leading = { GkAppIcon(appId, 32.dp) },
                         trailing = { switchModifier ->
                             GkRuleEnableControl(
                                 control, onSettingChange = { setting ->
                                     val request = vm.prepareSwitches(state, setOf(appId))
-                                    launchUi(vm.scope, showToast) {
+                                    vm.scope.launchUi {
                                         vm.applySwitches(request, setting)
                                             .failureMessage()
-                                            ?.let { showToast(it) }
+                                            ?.let { ToastUtils.show(it) }
                                     }
                                 }, modifier = switchModifier,
                                 identity = RuleSwitchTarget.GlobalApp(

@@ -132,7 +132,7 @@ Invoke-RestMethod -NoProxy "$api/semantics?window=app"
 `POST /scenario` 默认页面为 `dashboard`，完整场景以 `/scenarios` 为准。支持带持久化序列化名称的 `route`：
 
 ```json
-{"page":"rule-editor","route":{"type":"li.gkd.app.feature.subscription.UpsertRuleGroupRoute","subsId":-2,"forward":true}}
+{"page":"rule-editor","route":{"type":"li.gkd.app.ui.navigation.UpsertRuleGroupRoute","subsId":-2,"forward":true}}
 ```
 
 共享提示可用 `{"page":"dashboard","overlay":"terms"}` 预览，overlay 支持 terms、restricted、occupied；条款预览不写接受状态。更新从关于页检查，上传从日志或快照的生成链接操作进入真实流程。

@@ -1,7 +1,5 @@
 package li.gkd.app.ui.settings
 
-import li.gkd.app.ui.navigation.AppWindow
-
 data class AppVersion(
     val appName: String,
     val channel: String,
@@ -11,6 +9,7 @@ data class AppVersion(
     val commitTime: String,
     val commitUrl: String,
     val isGkdChannel: Boolean,
+    val updateEnabled: Boolean,
 )
 
-expect fun AppWindow.appVersion(): AppVersion
+expect fun appVersion(): AppVersion

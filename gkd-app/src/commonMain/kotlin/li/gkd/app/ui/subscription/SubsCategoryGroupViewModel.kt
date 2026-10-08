@@ -1,5 +1,6 @@
 package li.gkd.app.ui.subscription
 
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import li.gkd.app.resources.Res
@@ -47,6 +48,20 @@ data class SubsCategoryGroupUiState(
 class SubsCategoryGroupViewModel(
     private val route: SubsCategoryGroupRoute,
 ) : BaseViewModel() {
+    val showActions: StateFlow<Boolean>
+        field = MutableStateFlow(false)
+
+    fun setShowActions(value: Boolean) {
+        showActions.value = value
+    }
+
+    val showFilter: StateFlow<Boolean>
+        field = MutableStateFlow(false)
+
+    fun setShowFilter(value: Boolean) {
+        showFilter.value = value
+    }
+
     private val mutation = MutexState()
     val busyFlow: StateFlow<Boolean> get() = mutation.state
 

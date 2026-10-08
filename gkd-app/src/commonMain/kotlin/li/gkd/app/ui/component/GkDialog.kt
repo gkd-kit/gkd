@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -55,7 +54,7 @@ private object DialogRegistry {
 
 @Composable
 private fun DialogLayer(content: @Composable () -> Unit) {
-    val order = rememberSaveable { DialogRegistry.createOrder() }
+    val order = remember { DialogRegistry.createOrder() }
     val token = remember { Any() }
 
     DisposableEffect(Unit) {

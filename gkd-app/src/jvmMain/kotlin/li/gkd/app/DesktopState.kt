@@ -1,12 +1,13 @@
 package li.gkd.app
 
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
-import androidx.navigation3.runtime.NavKey
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -16,9 +17,10 @@ import li.gkd.app.network.AppLinks
 import li.gkd.app.platform.writeClipboardText
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.uri_unknown
+import li.gkd.app.permission.SimulatorPermissionRequester
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.ToastState
 import li.gkd.app.ui.home.BottomNavItem
-import li.gkd.app.ui.home.HomeNavigation
 import li.gkd.app.ui.navigation.A11YScopeAppListRoute
 import li.gkd.app.ui.navigation.A11yEventLogRoute
 import li.gkd.app.ui.navigation.AboutRoute
@@ -92,6 +94,7 @@ data class DesktopSnapshot(
 )
 
 class DesktopState(
+    val toast: ToastState,
     initialEnvironment: DesktopEnvironment = DesktopEnvironment(),
     private val isolated: Boolean = false,
     val simulator: SimulatorStore = SimulatorStore(
@@ -101,7 +104,6 @@ class DesktopState(
     ),
 ) : ViewModelStoreOwner {
     var overlay by mutableStateOf<String?>(null)
-    val toast = ToastState()
     fun unsupported() {
         toast.show("当前平台不支持")
     }
@@ -119,14 +121,21 @@ class DesktopState(
     )
     private var requestedScenario by mutableStateOf(ScenarioRequest())
     override val viewModelStore = ViewModelStore()
-    var homeNavigation by mutableStateOf(HomeNavigation())
+    val mainVm = ViewModelProvider.create(this, viewModelFactory {
+        initializer {
+            MainViewModel(SimulatorPermissionRequester(simulator))
+        }
+    })[MainViewModel::class]
+
+    var showingComponentCatalog by mutableStateOf(false)
         private set
 
-    val backStack = mutableStateListOf<NavKey>(HomeRoute)
+    fun closeComponentCatalog() { showingComponentCatalog = false }
+
     val scenario: ScenarioRequest
-        get() = if (backStack.last() == HomeRoute) {
-            requestedScenario.copy(page = homePages.getValue(homeNavigation.selectedTab.key))
-        } else requestedScenario.copy(page = routeName(backStack.last()))
+        get() = if (showingComponentCatalog) requestedScenario.copy(page = "components") else if (mainVm.navigator.topRoute == HomeRoute) {
+            requestedScenario.copy(page = homePages.getValue(mainVm.homeNavigation.selectedTab.key))
+        } else requestedScenario.copy(page = routeName(mainVm.navigator.topRoute))
     var revision by mutableStateOf(0)
         private set
     var lastEvent by mutableStateOf<String?>(null)
@@ -135,31 +144,28 @@ class DesktopState(
     fun load(request: ScenarioRequest) {
         require(request.route != null || request.page in pages) { "Unknown page: ${request.page}" }
         require(request.variant in variants) { "Unknown variant: ${request.variant}" }
-        viewModelStore.clear()
-        homeNavigation = HomeNavigation()
         overlay = request.overlay
         requestedScenario = request
-        backStack.clear()
-        backStack.add(HomeRoute)
-        if (request.route != null) backStack.add(request.route)
-        else if (request.page !in homePages.values) backStack.add(routeFor(request.page))
+        showingComponentCatalog = request.route == null && request.page == "components"
+        mainVm.navigator.reset(
+            request.route ?: if (!showingComponentCatalog && request.page !in homePages.values) {
+                routeFor(request.page)
+            } else null,
+        )
         selectHomeTab(if (request.page == "edit-whitelist") "apps" else if (request.page in homePages.values) request.page else "settings")
         lastEvent = null
         revision++
     }
 
-    fun navigate(route: AppRoute, replaced: Boolean = false) {
-        if (replaced && backStack.size > 1) backStack.removeLast()
-        if (backStack.last() != route) backStack.add(route)
-    }
-
     fun navigate(page: String) {
         require(page in pages)
+        showingComponentCatalog = page == "components"
+        if (showingComponentCatalog) return
         if (page in homePages.values) {
-            while (backStack.size > 1) backStack.removeLast()
+            mainVm.navigator.popToHome()
             selectHomeTab(page)
-        } else if (backStack.last() != routeFor(page)) {
-            backStack.add(routeFor(page))
+        } else {
+            mainVm.navigator.navigate(routeFor(page))
         }
     }
 
@@ -169,19 +175,15 @@ class DesktopState(
         return true
     }
 
-    fun popPage() {
-        if (backStack.size > 1) backStack.removeLast()
-    }
-
     fun handleGkdUri(uri: String) {
         when (val link = GkdLink.parse(uri)) {
             is GkdLink.Home -> {
                 BottomNavItem.allSubObjects.firstOrNull { it.key == link.tab }
-                    ?.let(homeNavigation::selectTab)
-                while (backStack.size > 1) backStack.removeLast()
+                    ?.let(mainVm.homeNavigation::selectTab)
+                mainVm.navigator.popToHome()
             }
 
-            is GkdLink.Page -> navigate(link.route)
+            is GkdLink.Page -> mainVm.navigator.navigate(link.route)
             GkdLink.WeChatScanner -> unsupported()
             null -> toast.show(Res.string.uri_unknown.getSync(uri))
         }
@@ -189,7 +191,7 @@ class DesktopState(
 
     private fun selectHomeTab(page: String) {
         homePages.entries.firstOrNull { it.value == page }?.let { entry ->
-            homeNavigation.selectTab(BottomNavItem.allSubObjects.first { it.key == entry.key })
+            mainVm.homeNavigation.selectTab(BottomNavItem.allSubObjects.first { it.key == entry.key })
         }
     }
 
@@ -224,6 +226,10 @@ class DesktopState(
         )
     }
 
+    init {
+        mainVm.registerCurrent()
+    }
+
     companion object {
         private val homePages by lazy {
             mapOf(
@@ -233,12 +239,10 @@ class DesktopState(
                 BottomNavItem.Settings.key to "settings",
             )
         }
-        val pages by lazy { homePages.values + (desktopRoutes.keys - "home") }
+        val pages by lazy { homePages.values + (desktopRoutes.keys - "home") + "components" }
         val variants = listOf("normal", "empty")
     }
 }
-
-private data object ComponentCatalogRoute : NavKey
 
 private val desktopRoutes by lazy {
     mapOf(
@@ -272,12 +276,11 @@ private val desktopRoutes by lazy {
         "snapshot-preview" to SnapshotPreviewRoute(0, emptyList()),
         "web-view" to WebViewRoute(AppLinks.Home),
         "privilege-service" to PrivilegeServiceRoute,
-        "components" to ComponentCatalogRoute,
     )
 }
 
-fun routeFor(page: String): NavKey = desktopRoutes.getValue(page)
-fun routeName(route: NavKey): String = when (route) {
+fun routeFor(page: String): AppRoute = desktopRoutes.getValue(page)
+fun routeName(route: AppRoute): String = when (route) {
     is SubsGlobalGroupListRoute -> "subs-global-groups"
     is SubsAppListRoute -> "subs-apps"
     is SubsAppGroupListRoute -> "subs-app-groups"

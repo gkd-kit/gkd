@@ -1,17 +1,17 @@
 package li.gkd.app.ui.share
 
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import li.gkd.app.model.RpcError
-import li.gkd.app.ui.text.displayMessage
+import li.gkd.app.ui.text.subscriptionMessage
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.songe.codeorigin.CallSite
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 
 fun CoroutineScope.launchUi(
     context: CoroutineContext = EmptyCoroutineContext,
@@ -26,7 +26,7 @@ fun CoroutineScope.launchUi(
     } catch (e: Exception) {
         LogUtils.d(e, loc = loc)
         ToastUtils.show(
-            e.displayMessage(),
+            e.subscriptionMessage(),
             forced = e is RpcError,
             loc = "",
         )

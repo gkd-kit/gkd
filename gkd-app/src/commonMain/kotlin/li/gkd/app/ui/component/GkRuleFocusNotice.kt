@@ -11,7 +11,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -41,8 +40,8 @@ fun rememberRuleListFocus(
     stickyHeaderKeys: Set<Any> = emptySet(),
     onRevealTarget: () -> Unit = {},
 ): RuleListFocus {
-    var handled by rememberSaveable(requestKey) { mutableStateOf(requestKey == null) }
-    var missing by rememberSaveable(requestKey) { mutableStateOf(false) }
+    var handled by remember(requestKey) { mutableStateOf(requestKey == null) }
+    var missing by remember(requestKey) { mutableStateOf(false) }
     var positionedKey by remember(requestKey) { mutableStateOf<Any?>(null) }
     var highlightedKey by remember(requestKey) { mutableStateOf<Any?>(null) }
     val revealTarget by rememberUpdatedState(onRevealTarget)

@@ -7,13 +7,14 @@ import li.gkd.app.resources.intent_launch_failed_prefix
 import li.gkd.app.resources.platform_action_unsupported
 import li.gkd.app.ui.text.displayMessage
 import li.gkd.app.ui.text.getSync
+import li.gkd.app.util.ToastUtils
 
 object SystemActionFeedback {
-    fun openExternal(uri: String, toast: (String) -> Unit) {
+    fun openExternal(uri: String) {
         try {
-            if (openExternalUri(uri) == PlatformResult.Unsupported) toast(Res.string.platform_action_unsupported.getSync())
+            if (openExternalUri(uri) == PlatformResult.Unsupported) ToastUtils.show(Res.string.platform_action_unsupported.getSync())
         } catch (e: Exception) {
-            toast(Res.string.intent_launch_failed_prefix.getSync() + (e.displayMessage()))
+            ToastUtils.show(Res.string.intent_launch_failed_prefix.getSync() + (e.displayMessage()))
         }
     }
 }

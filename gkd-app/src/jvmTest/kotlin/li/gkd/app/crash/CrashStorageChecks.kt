@@ -11,6 +11,21 @@ fun assertCrashReports() {
     try {
         FileCrashStorage.save(record)
         assertEquals(listOf(record), FileCrashStorage.load())
+        // Startup consumes pending notices, tolerates malformed notices, and preserves their archives.
+        appStorage().crashTemp.resolve("malformed.json").writeText("invalid-json")
+        val archive = appStorage().crash.resolve(record.filename)
+        val expired = appStorage().crash.resolve("expired.json").apply { writeText("old report") }
+        val oldTime = java.nio.file.attribute.FileTime.fromMillis(
+            System.currentTimeMillis() - 31L * 24 * 60 * 60 * 1000,
+        )
+        java.nio.file.Files.setLastModifiedTime(archive.toPath(), oldTime)
+        java.nio.file.Files.setLastModifiedTime(expired.toPath(), oldTime)
+        assertEquals(listOf(record), FileCrashStorage.takePending())
+        assertTrue(archive.isFile)
+        assertFalse(expired.exists())
+        assertTrue(appStorage().crashTemp.listFiles().orEmpty().isEmpty())
+        // Repeated startup does not show the same notice again.
+        assertTrue(FileCrashStorage.takePending().isEmpty())
         assertTrue(FileCrashStorage.deleteAll())
         assertTrue(FileCrashStorage.load().isEmpty())
 

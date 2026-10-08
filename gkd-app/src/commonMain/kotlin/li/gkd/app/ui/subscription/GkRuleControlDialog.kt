@@ -63,7 +63,7 @@ import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.icon.ToggleMid
-import li.gkd.app.ui.navigation.GkFullscreenDialog
+import li.gkd.app.ui.platform.GkFullscreenDialog
 import li.gkd.db.SubscriptionConfigSnapshot
 import org.jetbrains.compose.resources.stringResource
 

@@ -23,9 +23,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +31,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.a11y_enable
@@ -66,6 +64,7 @@ import li.gkd.app.resources.work_mode_basic
 import li.gkd.app.resources.work_mode_enhanced
 import li.gkd.app.resources.work_mode_title
 import li.gkd.app.settings.SettingsRepository
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAlertDialog
 import li.gkd.app.ui.component.GkAnimatedBooleanContent
 import li.gkd.app.ui.component.GkIconButton
@@ -76,43 +75,43 @@ import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.home.dashboardPlatformState
 import li.gkd.app.ui.navigation.A11YScopeAppListRoute
-import li.gkd.app.ui.navigation.AppRoute
-import li.gkd.app.ui.navigation.AppWindow
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
-import li.gkd.app.ui.navigation.RefreshPermissions
-import li.gkd.app.ui.navigation.WebViewRoute
-import li.gkd.app.ui.navigation.changeAutomatorMode
-import li.gkd.app.ui.navigation.openA11ySettings
 import li.gkd.app.ui.option.AutomatorModeOption
 import li.gkd.app.ui.option.findOption
+import li.gkd.app.ui.platform.RefreshPermissions
+import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.changeAutomatorMode
+import li.gkd.app.ui.platform.openA11ySettings
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.surfaceCardColors
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun WorkModePage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRoute) -> Unit) {
-    window.RefreshPermissions()
-    val platform = window.dashboardPlatformState()
+fun WorkModePage(host: UiHost) {
+    val mainVm = MainViewModel.requireCurrent()
+    val vm = viewModel { WorkModeViewModel() }
+    RefreshPermissions()
+    val platform = dashboardPlatformState()
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val automatorMode: AutomatorModeOption =
         AutomatorModeOption.objects.findOption(store.automatorMode)
 
-    val onPrivilege: () -> Unit = { onNavigate(PrivilegeServiceRoute) }
+    val onPrivilege: () -> Unit = { mainVm.navigator.navigate(PrivilegeServiceRoute) }
 
-    val appName: String = window.appVersion().appName
+    val appName: String = appVersion().appName
 
     val automationAvailable =
         platform.privilegeAvailable && platform.privilegeCapabilities?.restricted != true
-    var showPrivilegeRequired by rememberSaveable { mutableStateOf(false) }
+    val showPrivilegeRequired by vm.showPrivilegeRequired.collectAsStateWithLifecycle()
     if (showPrivilegeRequired)
         GkPermissionRestrictionDialog(
             privilegeAvailable = platform.privilegeAvailable,
             capabilities = platform.privilegeCapabilities,
             appRestrictions = platform.appRestrictions,
-            onDismiss = { showPrivilegeRequired = false },
+            onDismiss = { vm.setShowPrivilegeRequired(false) },
             onPrivilege = onPrivilege,
         )
-    var showKeepAlive by rememberSaveable { mutableStateOf(false) }
+    val showKeepAlive by vm.showKeepAlive.collectAsStateWithLifecycle()
     if (showKeepAlive) {
         val tutorial =
             stringResource(Res.string.keep_alive_tile_description, appName) +
@@ -124,7 +123,7 @@ fun WorkModePage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRoute) -
                 ) +
                 stringResource(Res.string.keep_alive_setup_place_tile)
         GkAlertDialog(
-            onDismissRequest = { showKeepAlive = false },
+            onDismissRequest = { vm.setShowKeepAlive(false) },
             title = { Text(stringResource(Res.string.keep_alive_title)) },
             text = {
                 Text(
@@ -138,7 +137,7 @@ fun WorkModePage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRoute) -
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showKeepAlive = false
+                        vm.setShowKeepAlive(false)
                         if (!platform.writeSecureSettings) onPrivilege()
                     }
                 ) {
@@ -156,7 +155,7 @@ fun WorkModePage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRoute) -
                     {
                         TextButton(
                             onClick = {
-                                showKeepAlive = false
+                                vm.setShowKeepAlive(false)
                             }
                         ) {
                             Text(stringResource(Res.string.action_close))
@@ -174,7 +173,7 @@ fun WorkModePage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRoute) -
                 navigationIcon = {
                     GkIconButton(
                         imageVector = GkIcons.ArrowBack,
-                        onClick = onBack,
+                        onClick = mainVm.navigator::pop,
                     )
                 },
                 title = {
@@ -191,7 +190,7 @@ fun WorkModePage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRoute) -
         ) {
             Card(
                 modifier = Modifier.padding(horizontal = itemHorizontalPadding).fillMaxWidth(),
-                onClick = { window.changeAutomatorMode(AutomatorModeOption.A11yMode) },
+                onClick = { host.changeAutomatorMode(AutomatorModeOption.A11yMode) },
                 colors = surfaceCardColors,
             ) {
                 Row(
@@ -246,14 +245,14 @@ fun WorkModePage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRoute) -
                                     .padding(top = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
-                            TextButton(onClick = window::openA11ySettings) {
+                            TextButton(onClick = ::openA11ySettings) {
                                 Text(
                                     text = stringResource(Res.string.a11y_enable),
                                     style = MaterialTheme.typography.bodyLarge,
                                 )
                             }
                             TextButton(
-                                onClick = { onNavigate(WebViewRoute(AppLinks.WorkModeHelp)) }
+                                onClick = { mainVm.navigator.openWebPage(AppLinks.WorkModeHelp) }
                             ) {
                                 Text(
                                     text = stringResource(Res.string.help_view),
@@ -296,7 +295,7 @@ fun WorkModePage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRoute) -
                     if (!platform.writeSecureSettings) {
                         PrivilegeAuthButton(onPrivilege)
                     }
-                    TextButton(onClick = { showKeepAlive = true }) {
+                    TextButton(onClick = { vm.setShowKeepAlive(true) }) {
                         Text(
                             text = stringResource(Res.string.keep_alive_title),
                             style = MaterialTheme.typography.bodyLarge,
@@ -310,8 +309,8 @@ fun WorkModePage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRoute) -
                 modifier = Modifier.padding(horizontal = itemHorizontalPadding).fillMaxWidth(),
                 onClick = {
                     if (automationAvailable) {
-                        window.changeAutomatorMode(AutomatorModeOption.AutomationMode)
-                    } else showPrivilegeRequired = true
+                        host.changeAutomatorMode(AutomatorModeOption.AutomationMode)
+                    } else vm.setShowPrivilegeRequired(true)
                 },
                 colors = surfaceCardColors,
             ) {
@@ -362,7 +361,7 @@ fun WorkModePage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRoute) -
                     modifier = Modifier.padding(horizontal = 20.dp).padding(top = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    TextButton(onClick = { onNavigate(A11YScopeAppListRoute) }) {
+                    TextButton(onClick = { mainVm.navigator.navigate(A11YScopeAppListRoute) }) {
                         Text(
                             text = stringResource(Res.string.a11y_scoped),
                             style = MaterialTheme.typography.bodyLarge,

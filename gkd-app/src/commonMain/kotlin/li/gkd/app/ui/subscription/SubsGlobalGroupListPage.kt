@@ -28,7 +28,7 @@ import li.gkd.app.resources.selected_rules_changed
 import li.gkd.app.resources.setting_follow_default
 import li.gkd.app.rule.RuleConfigIndex
 import li.gkd.app.rule.RuleSetting
-import li.gkd.app.ui.component.DialogRequests
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAnimatedFloatingActionButton
 import li.gkd.app.ui.component.GkBatchActionMenuItem
 import li.gkd.app.ui.component.GkEmptyState
@@ -47,26 +47,21 @@ import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.component.rememberMultiSelectionState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.component.rememberRuleListFocus
-import li.gkd.app.ui.navigation.AppRoute
-import li.gkd.app.ui.navigation.GkBackHandler
-import li.gkd.app.ui.navigation.ShowRuleGroup
 import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
-import li.gkd.app.ui.navigation.launchUi
+import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.share.ListPlaceholder
+import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.scaffoldPadding
+import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SubsGlobalGroupListPage(
     route: SubsGlobalGroupListRoute,
-    onBack: () -> Unit,
-    onNavigate: (AppRoute) -> Unit,
-    showToast: (String) -> Unit,
-    dialogs: DialogRequests,
-    showRuleGroup: ShowRuleGroup,
 ) {
+    val mainVm = MainViewModel.requireCurrent()
     val subsItemId = route.subsItemId
     val focusGroupKey = route.focusGroupKey
 
@@ -75,7 +70,7 @@ fun SubsGlobalGroupListPage(
     val environment = rememberRuleControlEnvironment()
     val batchBusy by vm.batchBusyFlow.collectAsStateWithLifecycle()
 
-    GkSubscriptionPageContent(vm.uiState, onBack) { state ->
+    GkSubscriptionPageContent(vm.uiState, mainVm.navigator::pop) { state ->
         val subs = state.subscription
         val configIndex = remember(state.configs) { RuleConfigIndex(state.configs) }
         val editable = subsItemId < 0
@@ -102,14 +97,14 @@ fun SubsGlobalGroupListPage(
             val keysToUpdate = selectedKeys
             if (keysToUpdate.isNotEmpty()) {
                 val request = vm.prepareSwitches(state, keysToUpdate)
-                launchUi(scope, showToast) {
+                scope.launchUi {
                     vm.runBatchAction {
                         val action = when (enabled) {
                             false -> getString(Res.string.action_close)
                             true -> getString(Res.string.action_enable)
                             null -> getString(Res.string.setting_follow_default)
                         }
-                        if (!dialogs.confirm(
+                        if (!mainVm.dialogRequests.confirm(
                                 title = getString(Res.string.action_notice),
                                 text = getString(
                                     Res.string.global_rule_batch_setting_confirmation,
@@ -118,7 +113,7 @@ fun SubsGlobalGroupListPage(
                                 ),
                             )
                         ) return@runBatchAction
-                        showToast(
+                        ToastUtils.show(
                             vm.applySwitches(request, RuleSetting.from(enabled))
                                 .description()
                         )
@@ -145,7 +140,7 @@ fun SubsGlobalGroupListPage(
                     selectedCount = selectedKeys.size,
                     onExitSelection = selectionState::clear,
                     scrollBehavior = scrollBehavior,
-                    onNavigateBack = { onBack() },
+                    onNavigateBack = { mainVm.navigator.pop() },
                     onTitleClick = pageScrollState::resetScroll,
                     title = {
                         GkTwoLineText(
@@ -171,9 +166,9 @@ fun SubsGlobalGroupListPage(
                                         onDismiss = dismiss,
                                         onClick = {
                                             val keysToDelete = selectedKeys
-                                            launchUi(scope, showToast) {
+                                            scope.launchUi {
                                                 vm.runBatchAction {
-                                                    if (!dialogs.confirm(
+                                                    if (!mainVm.dialogRequests.confirm(
                                                             title = getString(Res.string.rule_delete),
                                                             text = getString(
                                                                 Res.string.rule_groups_delete_confirmation,
@@ -185,7 +180,7 @@ fun SubsGlobalGroupListPage(
                                                     val deletedSize =
                                                         vm.deleteSelectedGroups(keysToDelete)
                                                     selectionState.removeDeleted(keysToDelete)
-                                                    showToast(
+                                                    ToastUtils.show(
                                                         if (deletedSize > 0) getString(
                                                             Res.string.rule_groups_deleted_count,
                                                             deletedSize.toString()
@@ -206,7 +201,7 @@ fun SubsGlobalGroupListPage(
                     GkAnimatedFloatingActionButton(
                         visible = !isSelectedMode,
                         onClick = {
-                            onNavigate(
+                            mainVm.navigator.navigate(
                                 UpsertRuleGroupRoute(
                                     subsId = subsItemId,
                                     groupKey = null,
@@ -235,13 +230,13 @@ fun SubsGlobalGroupListPage(
                             highlighted = !isSelectedMode && focus.highlightedKey == group.key,
                             control = controls.getValue(group.key),
                             onOpen = {
-                                showRuleGroup(subs.id, null, group, null)
+                                mainVm.showRuleGroup(subs.id, null, group, null)
                             },
                             onSettingChange = { setting ->
                                 val request = vm.prepareSwitches(state, setOf(group.key))
-                                launchUi(scope, showToast) {
+                                scope.launchUi {
                                     vm.applySwitches(request, setting)
-                                        .failureMessage()?.let { showToast(it) }
+                                        .failureMessage()?.let { ToastUtils.show(it) }
                                 }
                             },
                             isSelectedMode = isSelectedMode,

@@ -18,15 +18,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import li.gkd.app.app.AppQuery
 import li.gkd.app.resources.Res
@@ -36,19 +35,14 @@ import li.gkd.app.resources.a11y_whitelist_independent
 import li.gkd.app.resources.action_save
 import li.gkd.app.resources.app_ids_input_hint
 import li.gkd.app.resources.app_name_id_input_hint
-import li.gkd.app.resources.edit_discard_confirmation
 import li.gkd.app.resources.filter_title
 import li.gkd.app.resources.mode_switch
-import li.gkd.app.resources.notice_title
 import li.gkd.app.resources.search_no_results
 import li.gkd.app.resources.sort_title
-import li.gkd.app.resources.unchanged
-import li.gkd.app.resources.update_success
 import li.gkd.app.resources.whitelist_text_edit
 import li.gkd.app.resources.whitelist_text_edit_mode_enter
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
-import li.gkd.app.ui.component.DialogRequests
 import li.gkd.app.ui.component.GkAnimatedBooleanContent
 import li.gkd.app.ui.component.GkAnimatedFloatingActionButton
 import li.gkd.app.ui.component.GkAppBarTextField
@@ -72,28 +66,24 @@ import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.icon.GkBackCloseIcon
 import li.gkd.app.ui.icon.GkSearchCloseIconButton
 import li.gkd.app.ui.icon.LockOpenRight
-import li.gkd.app.ui.navigation.GkBackHandler
-import li.gkd.app.ui.navigation.launchUiAction
+import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.option.AppGroupOption
 import li.gkd.app.ui.option.AppSortOption
 import li.gkd.app.ui.option.findOption
+import li.gkd.app.ui.platform.GkBackHandler
+import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.share.ListPlaceholder
+import li.gkd.app.ui.share.launchUiAction
 import li.gkd.app.ui.share.noRippleClickable
 import li.gkd.app.ui.style.scaffoldPadding
-import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun BlockA11yAppListPage(
-    vm: BlockA11yAppListViewModel,
-    onBack: () -> Unit,
-    showToast: (String) -> Unit,
-    dialogs: DialogRequests,
-    hideIme: () -> Boolean,
-    appIcon: @Composable (String, Dp) -> Unit,
-) {
+fun BlockA11yAppListPage(host: UiHost) {
+    val vm = viewModel { BlockA11yAppListViewModel() }
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
-    var searchStr by rememberSaveable { mutableStateOf("") }
+    val searchStr by vm.searchStr.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf(searchStr) }
     LaunchedEffect(searchStr) { delay(200); query = searchStr }
     val source by vm.uiState.collectAsStateWithLifecycle()
@@ -110,24 +100,18 @@ fun BlockA11yAppListPage(
     }
     val appInfos = result.value?.apps.orEmpty()
     val showAllApps = result.value?.showAllApps == true
-    val editorState = rememberAppListEditorState()
-    val showSearchBar = editorState.searchOpen
-    val editable = editorState.editing
-    val editText = editorState.draft
+    val editorState = vm.editorState
+    val editorUiState by editorState.state.collectAsStateWithLifecycle()
+    val showSearchBar = editorUiState.searchOpen
+    val editable = editorUiState.editing
+    val editText = editorUiState.draft
     val pageScrollState = rememberListScrollState(canScroll = { !editable })
     val scrollBehavior = pageScrollState.scrollBehavior
     val listState = pageScrollState.listState
     pageScrollState.ResetOnListChange(appInfos, key = { it.id })
-    GkBackHandler(editable, launchUiAction(vm.scope, showToast) {
-        hideIme()
-        if (vm.editor.hasChanges(editorState.draft)) {
-            if (!dialogs.confirm(
-                    title = getString(Res.string.notice_title),
-                    text = getString(Res.string.edit_discard_confirmation),
-                )
-            ) return@launchUiAction
-        }
-        editorState.closeEditor()
+    GkBackHandler(editable, vm.scope.launchUiAction {
+        host.hideIme()
+        vm.closeEditor()
     })
     GkScaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -137,21 +121,9 @@ fun BlockA11yAppListPage(
                 canScroll = !editable && !store.blockA11yAppListFollowMatch,
                 navigationIcon = {
                     IconButton(
-                        onClick = launchUiAction(vm.scope, showToast) {
-                            if (editable) {
-                                if (vm.editor.hasChanges(editorState.draft)) {
-                                    hideIme()
-                                    if (!dialogs.confirm(
-                                            title = getString(Res.string.notice_title),
-                                            text = getString(Res.string.edit_discard_confirmation),
-                                        )
-                                    ) return@launchUiAction
-                                }
-                                editorState.closeEditor()
-                            } else {
-                                hideIme()
-                                onBack()
-                            }
+                        onClick = vm.scope.launchUiAction {
+                            host.hideIme()
+                            vm.onBack()
                         }
                     ) {
                         GkBackCloseIcon(backOrClose = !editable)
@@ -161,13 +133,13 @@ fun BlockA11yAppListPage(
                     val firstShowSearchBar = remember { showSearchBar }
                     if (showSearchBar) {
                         GkBackHandler(true) {
-                            if (!hideIme()) {
-                                editorState.closeSearch({ searchStr = it.trim() })
+                            if (!host.hideIme()) {
+                                editorState.closeSearch({ vm.setSearchStr(it.trim()) })
                             }
                         }
                         GkAppBarTextField(
                             value = searchStr,
-                            onValueChange = { searchStr = it.trim() },
+                            onValueChange = { vm.setSearchStr(it.trim()) },
                             hint = stringResource(Res.string.app_name_id_input_hint),
                             modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                         )
@@ -192,12 +164,9 @@ fun BlockA11yAppListPage(
                             GkIconButton(
                                 imageVector = GkIcons.Check,
                                 contentDescription = stringResource(Res.string.action_save),
-                                onClick = launchUiAction(vm.scope, showToast) {
-                                    val draft = editorState.draft
-                                    hideIme()
-                                    val changed = vm.editor.save(draft)
-                                    showToast(getString(if (changed) Res.string.update_success else Res.string.unchanged))
-                                    if (editorState.draft == draft) editorState.closeEditor()
+                                onClick = vm.scope.launchUiAction {
+                                    host.hideIme()
+                                    vm.saveEditor()
                                 },
                             )
                         },
@@ -210,7 +179,7 @@ fun BlockA11yAppListPage(
                                             onClick = {
                                                 editorState.toggleSearch(
                                                     searchStr,
-                                                    { searchStr = it.trim() }
+                                                    { vm.setSearchStr(it.trim()) }
                                                 )
                                             },
                                             isSearchOpen = showSearchBar,
@@ -266,7 +235,7 @@ fun BlockA11yAppListPage(
                                     ) else stringResource(Res.string.a11y_whitelist_independent),
                                     onClickLabel = stringResource(Res.string.mode_switch),
                                     onClick = {
-                                        editorState.closeSearch({ searchStr = it.trim() })
+                                        editorState.closeSearch({ vm.setSearchStr(it.trim()) })
                                         vm.toggleFollowMatchList()
                                     }
                                 )
@@ -279,10 +248,7 @@ fun BlockA11yAppListPage(
             GkAnimatedFloatingActionButton(
                 visible = !editable && scrollBehavior.isFullVisible && !store.blockA11yAppListFollowMatch,
                 onClickLabel = stringResource(Res.string.whitelist_text_edit_mode_enter),
-                onClick = {
-                    editorState.closeSearch({ searchStr = it.trim() })
-                    editorState.startEditing(vm.editor.initialText())
-                },
+                onClick = vm::startEditing,
                 imageVector = GkIcons.Edit,
                 contentDescription = stringResource(Res.string.whitelist_text_edit)
             )
@@ -307,7 +273,7 @@ fun BlockA11yAppListPage(
                 onTextChange = editorState::setText,
                 immediateFocus = true,
                 placeholderText = stringResource(Res.string.app_ids_input_hint),
-                indicatorSize = editorState.indicatorSize,
+                indicatorSize = editorUiState.indicatorSize,
             )
         } else {
             val blockA11yAppList by SettingsRepository.blockA11yAppList.collectAsStateWithLifecycle()
@@ -317,7 +283,7 @@ fun BlockA11yAppListPage(
             ) {
                 items(appInfos, { it.id }) { appInfo ->
                     GkAppCheckboxCard(
-                        appIcon = { appIcon(appInfo.id, 32.dp) },
+                        appIcon = { GkAppIcon(appInfo.id, 32.dp) },
                         appName = { GkAppNameText(appInfo.id, appInfo.name) },
                         appInfo = appInfo,
                         checked = blockA11yAppList.contains(appInfo.id),

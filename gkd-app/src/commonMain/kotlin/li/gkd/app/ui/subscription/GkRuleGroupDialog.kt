@@ -24,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.navigation3.runtime.NavKey
 import li.gkd.app.model.ExcludeData
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.config_loading
@@ -59,27 +58,26 @@ import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.GkTwoLineText
 import li.gkd.app.ui.component.removeRuleCategoryPrefix
 import li.gkd.app.ui.icon.RuleList
-import li.gkd.app.ui.navigation.AppRoute
-import li.gkd.app.ui.navigation.GkFullscreenDialog
+import li.gkd.app.ui.navigation.AppNavigator
 import li.gkd.app.ui.navigation.ImagePreviewItem
 import li.gkd.app.ui.navigation.ImagePreviewRoute
 import li.gkd.app.ui.navigation.SubsAppGroupListRoute
 import li.gkd.app.ui.navigation.SubsCategoryGroupRoute
 import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
+import li.gkd.app.ui.platform.GkFullscreenDialog
 import li.gkd.app.ui.share.LocalDarkTheme
 import li.gkd.app.ui.style.JSON5_LARGE_TEXT_THRESHOLD
 import li.gkd.app.ui.style.getJson5AnnotatedString
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.ui.text.getSync
+import li.gkd.app.util.copyText
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun GkRuleGroupDialog(
-    onNavigate: (AppRoute) -> Unit,
-    topRoute: () -> NavKey,
+    navigator: AppNavigator,
     openSubscription: (Long) -> Unit,
     ruleControl: RuleControlDialogState,
-    copyText: (String) -> Unit,
     subs: RawSubscription,
     group: RawSubscription.RawGroupProps,
     appId: String?,
@@ -94,7 +92,7 @@ fun GkRuleGroupDialog(
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
 ) {
     // Keep the header width stable during dismissal after navigating to the list.
-    val sourceRoute = remember { topRoute() }
+    val sourceRoute = remember { navigator.topRoute }
     val category = if (group is RawSubscription.RawAppGroup) {
         subs.getCategory(group.name)?.takeIf { it.name.isNotBlank() }
     } else null
@@ -142,7 +140,7 @@ fun GkRuleGroupDialog(
                     onClick = {
                         val route = SubsCategoryGroupRoute(subs.id, category.key)
                         onDismissRequest()
-                        if (topRoute() != route) onNavigate(route)
+                        navigator.navigate(route)
                     },
                     label = { Text(category.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     modifier = Modifier.minimumInteractiveComponentSize(),
@@ -171,7 +169,7 @@ fun GkRuleGroupDialog(
                     modifier = Modifier.size(48.dp),
                     onClick = {
                         onDismissRequest()
-                        onNavigate(targetRoute)
+                        navigator.navigate(targetRoute)
                     },
                 )
             }
@@ -200,7 +198,7 @@ fun GkRuleGroupDialog(
                             onClick = {
                                 menu = false
                                 onDismissRequest()
-                                onNavigate(
+                                navigator.navigate(
                                     ImagePreviewRoute(
                                         title = group.name,
                                         items = buildRuleGroupPreviewItems(group)
@@ -246,14 +244,13 @@ fun GkRuleGroupDialog(
         }
     }
     if (showSource) {
-        RuleSourceDialog(group, copyText, onDismissRequest = { showSource = false })
+        RuleSourceDialog(group, onDismissRequest = { showSource = false })
     }
 }
 
 @Composable
 private fun RuleSourceDialog(
     group: RawSubscription.RawGroupProps,
-    copyText: (String) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
     // Syntax highlighting is only needed after the user opens the source viewer.
@@ -282,7 +279,7 @@ private fun RuleSourceDialog(
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             if (source.length > JSON5_LARGE_TEXT_THRESHOLD) {
                 GkLazyCopyableText(
-                    onCopy = copyText,
+                    onCopy = ::copyText,
                     text = annotatedText,
                     modifier = textModifier,
                     contentPadding = PaddingValues(16.dp),
@@ -292,7 +289,7 @@ private fun RuleSourceDialog(
                 )
             } else {
                 GkCopyableText(
-                    onCopy = copyText,
+                    onCopy = ::copyText,
                     text = annotatedText,
                     textToCopy = source,
                     modifier = textModifier,

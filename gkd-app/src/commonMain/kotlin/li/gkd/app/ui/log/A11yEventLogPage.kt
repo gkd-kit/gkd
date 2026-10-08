@@ -26,7 +26,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.compose.LazyPagingItems
@@ -47,6 +46,7 @@ import li.gkd.app.resources.event_type_prefix
 import li.gkd.app.resources.event_window_content_changed
 import li.gkd.app.resources.event_window_state_changed
 import li.gkd.app.subscription.SubscriptionJson.toJson5String
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAlertDialog
 import li.gkd.app.ui.component.GkAppNameText
 import li.gkd.app.ui.component.GkCopyableText
@@ -60,24 +60,21 @@ import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.gkLogTimelineRail
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.home.appLabel
+import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.navigation.AppConfigRoute
-import li.gkd.app.ui.navigation.AppRoute
 import li.gkd.app.ui.share.LocalDarkTheme
 import li.gkd.app.ui.share.noRippleClickable
 import li.gkd.app.ui.style.getJson5AnnotatedString
 import li.gkd.app.ui.style.iconTextSize
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.scaffoldPadding
+import li.gkd.app.util.copyText
 import li.gkd.db.A11yEventLog
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun A11yEventLogPage(
-    onBack: () -> Unit,
-    onNavigate: (AppRoute) -> Unit,
-    copyText: (String) -> Unit,
-    appIcon: @Composable (String, Dp) -> Unit,
-) {
+fun A11yEventLogPage() {
+    val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { A11yEventLogViewModel() }
     val list: LazyPagingItems<A11yEventLog> = vm.pagingDataFlow.collectAsLazyPagingItems()
 
@@ -96,7 +93,7 @@ fun A11yEventLogPage(
                     GkIconButton(
                         imageVector = GkIcons.ArrowBack,
                         onClick = {
-                            onBack()
+                            mainVm.navigator.pop()
                         },
                     )
                 },
@@ -113,7 +110,7 @@ fun A11yEventLogPage(
         GkLogTimeline(
             items = list,
             appLabel = { appLabel(it) },
-            appIcon = { appIcon(it, 24.dp) },
+            appIcon = { GkAppIcon(it, 24.dp) },
             appName = { id, modifier ->
                 GkAppNameText(
                     id,
@@ -125,7 +122,7 @@ fun A11yEventLogPage(
             key = { it.id },
             appId = { it.appId },
             time = { it.ctime },
-            onOpenApp = { onNavigate(AppConfigRoute(it)) },
+            onOpenApp = { mainVm.navigator.navigate(AppConfigRoute(it)) },
             modifier = Modifier.scaffoldPadding(contentPadding),
         ) { eventLog ->
             EventLogEntry(eventLog, onClick = { shownEventLog = eventLog })
@@ -186,7 +183,7 @@ fun A11yEventLogPage(
                     Text(text = stringResource(Res.string.event_data))
                     GkCopyableText(
                         text = eventText,
-                        onCopy = copyText,
+                        onCopy = ::copyText,
                         modifier =
                             Modifier.fillMaxWidth()
                                 .clip(MaterialTheme.shapes.extraSmall)

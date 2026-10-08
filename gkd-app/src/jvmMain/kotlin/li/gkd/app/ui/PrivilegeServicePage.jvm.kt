@@ -7,28 +7,27 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import li.gkd.app.privilegeUiState
 import li.gkd.app.ui.component.LocalEditorWindowInsets
-import li.gkd.app.ui.navigation.AppWindow
 import li.gkd.app.ui.page.GkPrivilegeTopBar
 import li.gkd.app.ui.page.PrivilegeServiceInfoDialog
+import li.gkd.app.ui.platform.UiHost
 import priv.kit.ui.PrivilegeScreen
 
 @Composable
-actual fun PrivilegeServicePage(window: AppWindow) {
-    val state = window.state
-    val session = window
+actual fun PrivilegeServicePage(host: UiHost) {
+    val mainVm = MainViewModel.requireCurrent()
+    val state = host.state
 
-    var showInfo by rememberSaveable { mutableStateOf(false) }
+    val vm = viewModel { PrivilegeServiceViewModel() }
+    val showInfo by vm.showInfo.collectAsStateWithLifecycle()
     val settings by state.simulator.settings.collectAsStateWithLifecycle()
     val device = settings.environment().android
     val simulation = state.privilege
-    if (showInfo) PrivilegeServiceInfoDialog { showInfo = false }
+    if (showInfo) PrivilegeServiceInfoDialog { vm.setShowInfo(false) }
     if (settings.privilege.externalAuthorizationRequested) {
         AlertDialog(
             onDismissRequest = simulation::cancelOperation,
@@ -57,6 +56,6 @@ actual fun PrivilegeServicePage(window: AppWindow) {
         systemPromptWindowInsets = WindowInsets(top = device.topInset.dp),
         contentWindowInsets = LocalEditorWindowInsets.current
             ?: ScaffoldDefaults.contentWindowInsets,
-        topBar = { GkPrivilegeTopBar(state::popPage) { showInfo = true } },
+        topBar = { GkPrivilegeTopBar(mainVm.navigator::pop) { vm.setShowInfo(true) } },
     )
 }

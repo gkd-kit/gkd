@@ -1,7 +1,7 @@
 package li.gkd.app.ui.snapshot
 
 import li.gkd.app.snapshot.SnapshotStore
-import li.gkd.app.ui.navigation.AppWindow
+import li.gkd.app.ui.platform.UiHost
 import li.gkd.db.Snapshot
 
 data class SnapshotImage(val path: String, val modifiedAt: Long, val exists: Boolean)
@@ -27,9 +27,8 @@ interface SnapshotActions {
     fun delete(snapshot: Snapshot)
 }
 
-
 fun Snapshot.image(): SnapshotImage = SnapshotStore.screenshotFile(id).let {
     SnapshotImage(it.absolutePath, it.lastModified(), it.isFile)
 }
 
-expect fun AppWindow.snapshotPlatformActions(): SnapshotPlatformActions
+expect fun UiHost.snapshotPlatformActions(): SnapshotPlatformActions

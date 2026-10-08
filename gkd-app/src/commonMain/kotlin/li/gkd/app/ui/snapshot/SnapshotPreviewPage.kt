@@ -22,40 +22,37 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation3.runtime.NavKey
-import coil3.ImageLoader
 import li.gkd.app.app.ActivityNames.getShowActivityId
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.more_label
 import li.gkd.app.resources.snapshot_missing_or_deleted
 import li.gkd.app.resources.snapshot_records
 import li.gkd.app.state.Loadable
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAppNameText
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkRetainedSheet
 import li.gkd.app.ui.component.SheetRequest
+import li.gkd.app.ui.image.appImageLoader
 import li.gkd.app.ui.navigation.AppRoute
 import li.gkd.app.ui.navigation.ImagePreviewItem
 import li.gkd.app.ui.navigation.ImagePreviewRoute
-import li.gkd.app.ui.navigation.SnapshotActionFactory
 import li.gkd.app.ui.navigation.SnapshotPageRoute
 import li.gkd.app.ui.navigation.SnapshotPreviewRoute
 import li.gkd.app.ui.page.GkImagePreviewContent
+import li.gkd.app.ui.platform.GkSystemBars
+import li.gkd.app.ui.platform.UiHost
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SnapshotPreviewPage(
+    host: UiHost,
     route: SnapshotPreviewRoute,
-    onBack: () -> Unit,
-    onNavigate: (AppRoute) -> Unit,
-    replaceRoute: (AppRoute) -> Unit,
-    topRoute: () -> NavKey,
-    copyText: (String) -> Unit,
-    imageLoader: ImageLoader,
-    systemBars: @Composable (Boolean) -> Unit,
-    snapshotActions: SnapshotActionFactory,
 ) {
+    val mainVm = MainViewModel.requireCurrent()
+    val imageLoader = appImageLoader()
+    val replaceRoute: (AppRoute) -> Unit = { mainVm.navigator.navigate(it, true) }
     val vm = viewModel { SnapshotViewModel() }
 
     val loadableState by vm.uiState.collectAsStateWithLifecycle()
@@ -74,13 +71,13 @@ fun SnapshotPreviewPage(
                 previewSnapshots.size
             }
             GkImagePreviewContent(
-                imageLoader = imageLoader, systemBars = { systemBars(it) },
+                imageLoader = imageLoader, systemBars = { host.GkSystemBars(it) },
                 route = ImagePreviewRoute(items = previewSnapshots.map {
                     ImagePreviewItem(uri = it.image().path)
                 }),
                 pagerState = pagerState,
                 imageVersion = imageVersion,
-                onBack = onBack,
+                onBack = mainVm.navigator::pop,
                 titleContent = { index ->
                     previewSnapshots.getOrNull(index)?.let { item ->
                         val appName = catalog.snapshot?.apps?.get(item.appId)?.name ?: item.appId
@@ -147,26 +144,26 @@ fun SnapshotPreviewPage(
                         snapshotIds = route.snapshotIds.filterNot { it == snapshot.id },
                     )
                 }
-                val actions = snapshotActions(
+                val actions = host.snapshotActions(mainVm,
                     vm,
                     { imageVersion++ },
                     {
                         if (routeAfterDelete == null) {
-                            onBack()
+                            mainVm.navigator.pop()
                         } else {
                             replaceRoute(routeAfterDelete)
                         }
                     },
                     {
                         if (routeAfterDelete == null) {
-                            if (topRoute() == SnapshotPageRoute) onNavigate(route)
-                        } else if (topRoute() == routeAfterDelete) {
+                            if (mainVm.navigator.topRoute == SnapshotPageRoute) mainVm.navigator.navigate(route)
+                        } else if (mainVm.navigator.topRoute == routeAfterDelete) {
                             replaceRoute(route)
                         }
                     },
                 )
                 GkSnapshotActionsSheet(
-                    copyText, imageLoader, snapshot = snapshot,
+                    imageLoader, snapshot = snapshot,
                     appName = catalog.snapshot?.apps?.get(snapshot.appId)?.name ?: snapshot.appId,
                     sheetState = sheetState,
                     onDismissRequest = dismiss,
@@ -182,9 +179,9 @@ fun SnapshotPreviewPage(
             Box(modifier = Modifier.fillMaxSize()) {
                 GkImagePreviewContent(
                     imageLoader = imageLoader,
-                    systemBars = { systemBars(it) },
+                    systemBars = { host.GkSystemBars(it) },
                     route = ImagePreviewRoute(title = stringResource(Res.string.snapshot_records)),
-                    onBack = onBack,
+                    onBack = mainVm.navigator::pop,
                 )
                 if (loadableState is Loadable.Loading) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))

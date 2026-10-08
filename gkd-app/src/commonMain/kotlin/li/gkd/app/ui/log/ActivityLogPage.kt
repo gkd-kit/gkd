@@ -15,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.compose.LazyPagingItems
@@ -26,6 +25,7 @@ import li.gkd.app.resources.Res
 import li.gkd.app.resources.action_log_activity_unknown
 import li.gkd.app.resources.activity_log_title
 import li.gkd.app.time.format
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAppNameText
 import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIconButton
@@ -37,8 +37,8 @@ import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.gkLogTimelineRail
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.home.appLabel
+import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.navigation.AppConfigRoute
-import li.gkd.app.ui.navigation.AppRoute
 import li.gkd.app.ui.share.noRippleClickable
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.scaffoldPadding
@@ -46,12 +46,8 @@ import li.gkd.db.ActivityLog
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun ActivityLogPage(
-    onBack: () -> Unit,
-    onNavigate: (AppRoute) -> Unit,
-    showText: (String) -> Unit,
-    appIcon: @Composable (String, Dp) -> Unit,
-) {
+fun ActivityLogPage() {
+    val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { ActivityLogViewModel() }
     val list: LazyPagingItems<ActivityLog> = vm.pagingDataFlow.collectAsLazyPagingItems()
 
@@ -64,7 +60,7 @@ fun ActivityLogPage(
             GkTopAppBar(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    GkIconButton(imageVector = GkIcons.ArrowBack, onClick = onBack)
+                    GkIconButton(imageVector = GkIcons.ArrowBack, onClick = mainVm.navigator::pop)
                 },
                 title = {
                     Text(
@@ -79,7 +75,7 @@ fun ActivityLogPage(
         GkLogTimeline(
             items = list,
             appLabel = { appLabel(it) },
-            appIcon = { appIcon(it, 24.dp) },
+            appIcon = { GkAppIcon(it, 24.dp) },
             appName = { id, modifier ->
                 GkAppNameText(
                     id,
@@ -91,11 +87,11 @@ fun ActivityLogPage(
             key = { it.id },
             appId = { it.appId },
             time = { it.ctime },
-            onOpenApp = { onNavigate(AppConfigRoute(it)) },
+            onOpenApp = { mainVm.navigator.navigate(AppConfigRoute(it)) },
             modifier = Modifier.scaffoldPadding(contentPadding),
         ) { log ->
             ActivityLogEntry(log) {
-                showText(
+                mainVm.textDialog.showText(
                     listOfNotNull(
                             AppInfoRepository.snapshot?.apps.orEmpty()[log.appId]?.name,
                             log.appId,

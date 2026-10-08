@@ -22,7 +22,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -51,6 +50,7 @@ import li.gkd.app.rule.RuleSetting
 import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionRepository
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAppNameText
 import li.gkd.app.ui.component.GkGroupNameText
 import li.gkd.app.ui.component.GkIcon
@@ -67,16 +67,17 @@ import li.gkd.app.ui.component.animateListItem
 import li.gkd.app.ui.component.gkLogTimelineRail
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
+import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.navigation.ActionLogRoute
 import li.gkd.app.ui.navigation.AppConfigRoute
-import li.gkd.app.ui.navigation.AppRoute
 import li.gkd.app.ui.navigation.SubsAppGroupListRoute
 import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
-import li.gkd.app.ui.navigation.launchUi
+import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.share.noRippleClickable
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.ui.text.getSync
+import li.gkd.app.util.ToastUtils
 import li.gkd.db.ActionLog
 import li.gkd.db.RuleGroupType
 import org.jetbrains.compose.resources.stringResource
@@ -84,11 +85,8 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun ActionLogPage(
     route: ActionLogRoute,
-    onBack: () -> Unit,
-    onNavigate: (AppRoute) -> Unit,
-    showToast: (String) -> Unit,
-    appIcon: @Composable (String, Dp) -> Unit,
 ) {
+    val mainVm = MainViewModel.requireCurrent()
     val subscriptions by SubscriptionRepository.snapshotFlow.collectAsStateWithLifecycle()
     val subsId = route.subsId
     val appId = route.appId
@@ -110,7 +108,7 @@ fun ActionLogPage(
                     GkIconButton(
                         imageVector = GkIcons.ArrowBack,
                         onClick = {
-                            onBack()
+                            mainVm.navigator.pop()
                         },
                     )
                 },
@@ -145,7 +143,7 @@ fun ActionLogPage(
         content = { contentPadding ->
             GkLogTimeline(
                 appLabel = { rememberRuleControlEnvironment().apps[it]?.name ?: it },
-                appIcon = { appIcon(it, 24.dp) },
+                appIcon = { GkAppIcon(it, 24.dp) },
                 appName = { id, modifier ->
                     GkAppNameText(
                         id,
@@ -153,7 +151,7 @@ fun ActionLogPage(
                         style = MaterialTheme.typography.titleSmall
                     )
                 },
-                onOpenApp = { onNavigate(AppConfigRoute(it)) },
+                onOpenApp = { mainVm.navigator.navigate(AppConfigRoute(it)) },
                 items = list,
                 listState = listState,
                 key = { it.actionLog.id },
@@ -187,19 +185,19 @@ fun ActionLogPage(
             showAppContext = appId == null,
             onOpenApp = {
                 vm.dismissActionLog()
-                onNavigate(AppConfigRoute(state.actionLog.appId))
+                mainVm.navigator.navigate(AppConfigRoute(state.actionLog.appId))
             },
             onOpenRule = {
                 vm.dismissActionLog()
                 val actionLog = state.actionLog
                 if (actionLog.groupType == RuleGroupType.App) {
-                    onNavigate(
+                    mainVm.navigator.navigate(
                         SubsAppGroupListRoute(
                             actionLog.subsId, actionLog.appId, actionLog.groupKey
                         )
                     )
                 } else if (actionLog.groupType == RuleGroupType.Global) {
-                    onNavigate(
+                    mainVm.navigator.navigate(
                         SubsGlobalGroupListRoute(
                             actionLog.subsId, actionLog.groupKey
                         )
@@ -208,15 +206,15 @@ fun ActionLogPage(
             },
             onSettingChange = { setting ->
                 val request = vm.prepareSwitch(state)
-                launchUi(scope, showToast) {
+                scope.launchUi {
                     vm.applySwitch(request, setting).failureMessage()
-                        ?.let { showToast(it) }
+                        ?.let { ToastUtils.show(it) }
                 }
             },
             onToggleActivityExclusion = {
-                launchUi(scope, showToast) {
+                scope.launchUi {
                     vm.updateActivityExclusion(state)
-                    showToast(Res.string.update_success.getSync())
+                    ToastUtils.show(Res.string.update_success.getSync())
                 }
             },
         )

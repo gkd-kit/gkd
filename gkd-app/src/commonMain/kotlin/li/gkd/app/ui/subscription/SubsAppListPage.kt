@@ -11,13 +11,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -38,7 +36,7 @@ import li.gkd.app.rule.RuleSetting
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.SubscriptionRepository
-import li.gkd.app.ui.component.DialogRequests
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAppBarTextField
 import li.gkd.app.ui.component.GkAppFilterContent
 import li.gkd.app.ui.component.GkAppNameText
@@ -60,31 +58,30 @@ import li.gkd.app.ui.component.rememberMultiSelectionState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.home.rememberVisitOrder
 import li.gkd.app.ui.icon.GkSearchCloseIconButton
-import li.gkd.app.ui.navigation.AppRoute
-import li.gkd.app.ui.navigation.GkBackHandler
+import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.navigation.SubsAppGroupListRoute
 import li.gkd.app.ui.navigation.SubsAppListRoute
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
-import li.gkd.app.ui.navigation.launchUi
 import li.gkd.app.ui.option.AppSortOption
 import li.gkd.app.ui.option.findOption
+import li.gkd.app.ui.platform.GkBackHandler
+import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.share.ListPlaceholder
+import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.ui.text.subscriptionMessageResource
+import li.gkd.app.util.ToastUtils
 import li.gkd.db.LOCAL_SUBS_IDS
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SubsAppListPage(
+    host: UiHost,
     route: SubsAppListRoute,
-    onBack: () -> Unit,
-    onNavigate: (AppRoute) -> Unit,
-    showToast: (String) -> Unit,
-    dialogs: DialogRequests,
-    hideIme: () -> Boolean,
-    appIcon: @Composable (String, Dp) -> Unit,
 ) {
+    val mainVm = MainViewModel.requireCurrent()
     val subsItemId = route.subsItemId
 
     val vm = viewModel { SubsAppListViewModel(route) }
@@ -98,14 +95,14 @@ fun SubsAppListPage(
     val appInfoMap = environment.apps
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val visits = rememberVisitOrder()
-    var searchStr by rememberSaveable { mutableStateOf("") }
-    var showSearchBar by rememberSaveable { mutableStateOf(false) }
+    val searchStr by vm.searchStr.collectAsStateWithLifecycle()
+    val showSearchBar by vm.showSearchBar.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     fun closeSearch() {
-        showSearchBar = false
-        searchStr = ""
+        vm.setShowSearchBar(false)
+        vm.setSearchStr("")
         focusManager.clearFocus()
-        hideIme()
+        host.hideIme()
     }
 
     val state = loadableState.value
@@ -136,14 +133,14 @@ fun SubsAppListPage(
     val selected = selection.selectedKeys intersect visibleTargets
     LaunchedEffect(visibleTargets) { selection.retain(visibleTargets) }
     GkBackHandler(showSearchBar && !selection.active) {
-        if (!hideIme()) closeSearch()
+        if (!host.hideIme()) closeSearch()
     }
     GkBackHandler(selection.active) { if (!busy) selection.clear() }
     val updateSelected: (RuleSetting) -> Unit = { setting ->
         val request = vm.prepareSwitches(checkNotNull(state), selected)
-        launchUi(scope, showToast) {
+        scope.launchUi {
             vm.runAction {
-                if (dialogs.confirm(
+                if (mainVm.dialogRequests.confirm(
                         getString(Res.string.subscription_app_switch_set),
                         getString(
                             Res.string.subscription_app_switch_batch_confirmation,
@@ -152,7 +149,7 @@ fun SubsAppListPage(
                         )
                     )
                 ) {
-                    showToast(vm.applySwitches(request, setting).description())
+                    ToastUtils.show(vm.applySwitches(request, setting).description())
                 }
             }
         }
@@ -170,7 +167,7 @@ fun SubsAppListPage(
             GkMultiSelectionTopAppBar(
                 selectedMode = selection.active, selectedCount = selected.size,
                 onExitSelection = selection::clear,
-                onNavigateBack = { if (showSearchBar) closeSearch() else onBack() },
+                onNavigateBack = { if (showSearchBar) closeSearch() else mainVm.navigator.pop() },
                 onTitleClick = if (showSearchBar) null else pageScrollState::resetScroll,
                 scrollBehavior = scrollBehavior, title = {
                     val firstShowSearchBar = remember { showSearchBar }
@@ -179,7 +176,7 @@ fun SubsAppListPage(
                             value = searchStr,
                             onValueChange = {
                                 // 关闭时失焦可能回传旧文本，不能恢复已清空的搜索条件。
-                                if (showSearchBar) searchStr = it
+                                if (showSearchBar) vm.setSearchStr(it)
                             },
                             hint = stringResource(Res.string.app_search_hint),
                             modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
@@ -202,8 +199,8 @@ fun SubsAppListPage(
                                 Res.string.search_close
                             ) else stringResource(Res.string.search_clear),
                             onClick = {
-                                if (!showSearchBar) showSearchBar = true
-                                else if (searchStr.isNotEmpty()) searchStr = ""
+                                if (!showSearchBar) vm.setShowSearchBar(true)
+                                else if (searchStr.isNotEmpty()) vm.setSearchStr("")
                                 else closeSearch()
                             },
                         )
@@ -235,7 +232,7 @@ fun SubsAppListPage(
         floatingActionButton = {
             if (LOCAL_SUBS_IDS.contains(subsItemId) && !selection.active) {
                 FloatingActionButton(onClick = {
-                    onNavigate(
+                    mainVm.navigator.navigate(
                         UpsertRuleGroupRoute(
                             subsId = subsItemId,
                             groupKey = null,
@@ -267,7 +264,7 @@ fun SubsAppListPage(
                     }
                 }
                 GkSubsAppCard(
-                    appIcon = { appIcon(app.id, 32.dp) },
+                    appIcon = { GkAppIcon(app.id, 32.dp) },
                     appName = { GkAppNameText(app.id, app.name) },
                     subsId = subsItemId,
                     rawApp = app,
@@ -283,20 +280,20 @@ fun SubsAppListPage(
                     onLongClick = {
                         if (!busy) {
                             focusManager.clearFocus()
-                            hideIme()
+                            host.hideIme()
                             selection.select(app.id)
                         }
                     },
                     onSelect = { selection.toggle(app.id) },
                     onClick = {
-                        hideIme()
-                        onNavigate(SubsAppGroupListRoute(subsItemId, app.id))
+                        host.hideIme()
+                        mainVm.navigator.navigate(SubsAppGroupListRoute(subsItemId, app.id))
                     },
                     onSettingChange = { setting ->
                         val request = vm.prepareSwitches(checkNotNull(state), setOf(app.id))
-                        launchUi(scope, showToast) {
+                        scope.launchUi {
                             vm.applySwitches(request, setting).failureMessage()
-                                ?.let { showToast(it) }
+                                ?.let { ToastUtils.show(it) }
                         }
                     },
                 )

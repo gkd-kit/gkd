@@ -20,10 +20,14 @@ import li.gkd.app.snapshot.SnapshotStore
 import li.gkd.app.snapshot.platform.saveImageToAlbum
 import li.gkd.app.storage.FileExports
 import li.gkd.app.storage.readFileBytes
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.DialogRequests
-import li.gkd.app.ui.navigation.launchUi
+import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.text.displayMessage
+import li.gkd.app.ui.upload.createSnapshotUploadItem
 import li.gkd.app.util.LogUtils
+import li.gkd.app.util.ToastUtils
 import li.gkd.db.Snapshot
 import org.jetbrains.compose.resources.getString
 
@@ -32,7 +36,6 @@ class SnapshotActionCoordinator(
     private val platform: SnapshotPlatformActions,
     private val scope: CoroutineScope,
     private val dialogs: DialogRequests,
-    private val toast: (String) -> Unit,
     private val startUpload: (Snapshot) -> Boolean,
     private val fileScope: CoroutineScope,
     private val onReplaced: (Long) -> Unit,
@@ -41,24 +44,24 @@ class SnapshotActionCoordinator(
 ) : SnapshotActions {
 
     override fun share(snapshot: Snapshot) {
-        launchUi(fileScope, toast) {
+        fileScope.launchUi {
             // A share target may read the archive after this call returns; cache expiry owns cleanup.
             val archive =
                 SnapshotStore.createArchive(snapshot.id, snapshot.appId, snapshot.activityId)
             if (platform.share(archive) == PlatformResult.Unsupported) {
                 SnapshotStore.deleteArchive(archive)
-                toast(getString(Res.string.platform_action_unsupported))
+                ToastUtils.show(getString(Res.string.platform_action_unsupported))
             }
         }
     }
 
     override fun replace(snapshot: Snapshot) {
-        launchUi(fileScope, toast) {
+        fileScope.launchUi {
             val source = platform.pickImage() ?: return@launchUi
             if (SnapshotStore.replaceScreenshot(snapshot, readFileBytes(source))) {
                 onReplaced(snapshot.id)
-                toast(getString(Res.string.screenshot_replace_success))
-            } else toast(getString(Res.string.screenshot_size_mismatch))
+                ToastUtils.show(getString(Res.string.screenshot_replace_success))
+            } else ToastUtils.show(getString(Res.string.screenshot_size_mismatch))
         }
     }
 
@@ -66,12 +69,12 @@ class SnapshotActionCoordinator(
     override fun saveToAlbum(snapshot: Snapshot) = saveOne(snapshot, true)
 
     private fun saveOne(snapshot: Snapshot, album: Boolean) {
-        launchUi(fileScope, toast) {
+        fileScope.launchUi {
             if (!platform.ensureSavePermission()) return@launchUi
-            toast(getString(Res.string.saving_progress))
+            ToastUtils.show(getString(Res.string.saving_progress))
             when (val result = save(snapshot, album)) {
-                is PlatformResult.Success -> if (result.value) toast(getString(Res.string.save_success))
-                PlatformResult.Unsupported -> toast(getString(Res.string.platform_action_unsupported))
+                is PlatformResult.Success -> if (result.value) ToastUtils.show(getString(Res.string.save_success))
+                PlatformResult.Unsupported -> ToastUtils.show(getString(Res.string.platform_action_unsupported))
             }
         }
     }
@@ -84,14 +87,14 @@ class SnapshotActionCoordinator(
 
     private suspend fun saveSelected(snapshots: List<Snapshot>, album: Boolean): Int? {
         if (!platform.ensureSavePermission()) return null
-        toast(getString(Res.string.saving_progress))
+        ToastUtils.show(getString(Res.string.saving_progress))
         var saved = 0
         for (snapshot in snapshots) {
             try {
                 when (val result = save(snapshot, album)) {
                     is PlatformResult.Success -> if (result.value) saved++ else break
                     PlatformResult.Unsupported -> {
-                        toast(getString(Res.string.platform_action_unsupported))
+                        ToastUtils.show(getString(Res.string.platform_action_unsupported))
                         return null
                     }
                 }
@@ -133,12 +136,12 @@ class SnapshotActionCoordinator(
                         confirmText = getString(Res.string.snapshot_generate_link),
                     ) && !startUpload(snapshot)
                 ) {
-                    toast(getString(Res.string.upload_busy))
+                    ToastUtils.show(getString(Res.string.upload_busy))
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                toast(e.displayMessage())
+                ToastUtils.show(e.displayMessage())
             }
         }
     }
@@ -160,13 +163,32 @@ class SnapshotActionCoordinator(
                     } catch (e: Exception) {
                         onDeleteFailed(); throw e
                     }
-                    toast(getString(Res.string.delete_success))
+                    ToastUtils.show(getString(Res.string.delete_success))
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                toast(e.displayMessage())
+                ToastUtils.show(e.displayMessage())
             }
         }
     }
+}
+
+fun UiHost.snapshotActions(
+    mainVm: MainViewModel,
+    vm: SnapshotViewModel,
+    onReplaced: (Long) -> Unit,
+    beforeDelete: () -> Unit,
+    deleteFailed: () -> Unit,
+): SnapshotActions {
+    return SnapshotActionCoordinator(
+        platform = snapshotPlatformActions(),
+        scope = mainVm.scope,
+        dialogs = mainVm.dialogRequests,
+        startUpload = { mainVm.githubUpload.startTask(createSnapshotUploadItem(it, it.appId)) },
+        fileScope = vm.scope,
+        onReplaced = onReplaced,
+        onBeforeDelete = beforeDelete,
+        onDeleteFailed = deleteFailed,
+    )
 }

@@ -7,27 +7,26 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.ImageLoader
 import coil3.PlatformContext
-import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.app.applicationScope
 import li.gkd.app.crash.CrashMetadata
 import li.gkd.app.crash.CrashRecorder
+import li.gkd.app.crash.CrashData
 import li.gkd.app.crash.FileCrashStorage
 import li.gkd.app.network.NetworkClients
 import li.gkd.app.record.RuntimeRecordRepository
 import li.gkd.app.settings.SettingsRepository
-import li.gkd.app.storage.LogArchive
 import li.gkd.app.storage.StorageMaintenance
 import li.gkd.app.storage.appStorage
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.image.ImageLoaders
+import li.gkd.app.ui.component.ToastState
 import li.gkd.app.ui.text.subscriptionDefaults
 import li.gkd.app.util.LogUtils
 import li.gkd.db.Db
@@ -41,6 +40,14 @@ class DesktopRuntime(
 ) : AutoCloseable {
     private val scope = applicationScope()
     val appCatalog = DesktopAppCatalog(simulator)
+    val toast = ToastState()
+    private var pendingCrashData = emptyList<CrashData>()
+    val hasPendingCrashReports get() = pendingCrashData.isNotEmpty()
+    val crashInitialization = scope.launch(Dispatchers.IO) {
+        pendingCrashData = FileCrashStorage.takePending()
+    }
+
+    fun takeCrashDataList(): List<CrashData> = pendingCrashData.also { pendingCrashData = emptyList() }
 
     companion object {
         @Volatile
@@ -105,7 +112,7 @@ class DesktopRuntime(
     }
 
     init {
-        scope.launch { StorageMaintenance.clearExpired(appStorage()); FileCrashStorage.trim() }
+        scope.launch { StorageMaintenance.clearExpired(appStorage()) }
     }
 
     val subscriptionInitialization = scope.launch {
@@ -140,13 +147,6 @@ class DesktopRuntime(
                 DesktopStorage.sessionDirectory.resolve("fixtures-imported")
             )
         }
-    }
-
-    suspend fun exportLogs(): File = withContext(Dispatchers.IO) {
-        LogUtils.flush()
-        LogArchive.build(
-            mapOf("desktop.txt" to { "GKD Desktop development host\n" + System.getProperty("os.name") })
-        )
     }
 
     override fun close() {

@@ -17,11 +17,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,7 +26,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.Res
@@ -52,6 +51,7 @@ import li.gkd.app.resources.update_check
 import li.gkd.app.resources.version_channel
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.settings.SettingsRepository.settings
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.DialogRequests
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
@@ -62,38 +62,33 @@ import li.gkd.app.ui.component.GkSettingItem
 import li.gkd.app.ui.component.GkTextMenu
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.icon.GkAnimatedLogoIcon
-import li.gkd.app.ui.navigation.AppRoute
-import li.gkd.app.ui.navigation.AppWindow
-import li.gkd.app.ui.navigation.WebViewRoute
-import li.gkd.app.ui.navigation.openExternalUrl
 import li.gkd.app.ui.option.UpdateChannelOption
 import li.gkd.app.ui.option.findOption
+import li.gkd.app.ui.page.GkVersionInfoDialog
 import li.gkd.app.ui.page.feedbackNotice
+import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.LocalDarkTheme
 import li.gkd.app.ui.style.itemPadding
 import li.gkd.app.ui.style.titleItemPadding
 import li.gkd.app.ui.text.displayMessage
 import li.gkd.app.ui.text.getSync
+import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AboutPage(
-    window: AppWindow,
-    onBack: () -> Unit,
-    onNavigate: (AppRoute) -> Unit,
-    toast: (String) -> Unit,
-    update: li.gkd.app.ui.update.UpdateStatus?,
-    onExportLogs: () -> Unit,
-    dialogs: DialogRequests,
+    host: UiHost,
 ) {
-    val version = window.appVersion()
-    var showVersionInfoDialog by rememberSaveable { mutableStateOf(false) }
-    var showShareAppDialog by rememberSaveable { mutableStateOf(false) }
+    val mainVm = MainViewModel.requireCurrent()
+    val vm = viewModel { AboutViewModel() }
+    val version = appVersion()
+    val showVersionInfoDialog by vm.showVersionInfoDialog.collectAsStateWithLifecycle()
+    val showShareAppDialog by vm.showShareAppDialog.collectAsStateWithLifecycle()
     val store by settings.collectAsStateWithLifecycle()
 
     val checkingUpdate: Boolean =
-        update?.checkUpdatingFlow?.collectAsStateWithLifecycle()?.value ?: false
+        mainVm.updateStatus?.checkUpdatingFlow?.collectAsStateWithLifecycle()?.value ?: false
 
     val scope = rememberCoroutineScope()
     val primary = MaterialTheme.colorScheme.primary
@@ -104,7 +99,7 @@ fun AboutPage(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                dialogs.showMessage(getString(Res.string.notice_title), e.displayMessage())
+                mainVm.dialogRequests.showMessage(getString(Res.string.notice_title), e.displayMessage())
             }
         }
     }
@@ -119,7 +114,7 @@ fun AboutPage(
                     GkIconButton(
                         imageVector = GkIcons.ArrowBack,
                         onClick = {
-                            onBack()
+                            mainVm.navigator.pop()
                         },
                     )
                 },
@@ -127,7 +122,7 @@ fun AboutPage(
                 actions = {
                     GkIconButton(
                         imageVector = GkIcons.Share,
-                        onClick = { showShareAppDialog = true },
+                        onClick = { vm.setShowShareAppDialog(true) },
                     )
                 },
             )
@@ -149,7 +144,7 @@ fun AboutPage(
                         Modifier.clickable(
                                 indication = null,
                                 interactionSource = remember { MutableInteractionSource() },
-                                onClick = { toast(Res.string.about_easter_egg.getSync()) },
+                                onClick = { ToastUtils.show(Res.string.about_easter_egg.getSync()) },
                             )
                             .fillMaxWidth(0.33f)
                             .aspectRatio(1f),
@@ -157,7 +152,7 @@ fun AboutPage(
                 Column(
                     modifier =
                         Modifier.clip(MaterialTheme.shapes.extraSmall)
-                            .clickable(onClick = { showVersionInfoDialog = true })
+                            .clickable(onClick = { vm.setShowVersionInfoDialog(true) })
                             .padding(horizontal = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -174,7 +169,7 @@ fun AboutPage(
                 imageVector = null,
                 title = stringResource(Res.string.source_code),
                 onClick = {
-                    window.openExternalUrl(AppLinks.Repository)
+                    mainVm.textDialog.showUrl(AppLinks.Repository)
                 },
             )
             if (version.isGkdChannel) {
@@ -182,7 +177,7 @@ fun AboutPage(
                     imageVector = null,
                     title = stringResource(Res.string.donate),
                     onClick = {
-                        onNavigate(WebViewRoute(AppLinks.Donate))
+                        mainVm.navigator.openWebPage(AppLinks.Donate)
                     },
                 )
             }
@@ -190,38 +185,38 @@ fun AboutPage(
                 imageVector = null,
                 title = stringResource(Res.string.terms_of_use),
                 onClick = {
-                    onNavigate(WebViewRoute(AppLinks.TermsOfService))
+                    mainVm.navigator.openWebPage(AppLinks.TermsOfService)
                 },
             )
             GkSettingItem(
                 imageVector = null,
                 title = stringResource(Res.string.privacy_policy),
                 onClick = {
-                    onNavigate(WebViewRoute(AppLinks.PrivacyPolicy))
+                    mainVm.navigator.openWebPage(AppLinks.PrivacyPolicy)
                 },
             )
 
             FeedbackSection {
                 launchAction {
                     if (
-                        dialogs.confirm(
+                        mainVm.dialogRequests.confirm(
                             title = getString(Res.string.feedback_notice),
                             text = feedbackNotice(primary),
                             confirmText = getString(Res.string.action_continue),
                             dismissOnRequest = true,
                         )
                     )
-                        window.openExternalUrl(AppLinks.Issues)
+                        mainVm.textDialog.showUrl(AppLinks.Issues)
                 }
             }
             GkSettingItem(
                 title = stringResource(Res.string.logs_export),
                 imageVector = GkIcons.Share,
                 onClick = {
-                    onExportLogs()
+                    mainVm.shareLog.show()
                 },
             )
-            if (update != null) {
+            if (mainVm.updateStatus != null) {
                 Text(
                     text = stringResource(Res.string.action_update),
                     modifier = Modifier.titleItemPadding(),
@@ -235,7 +230,7 @@ fun AboutPage(
                         launchAction {
                             if (
                                 option != UpdateChannelOption.Beta ||
-                                    dialogs.confirm(
+                                    mainVm.dialogRequests.confirm(
                                         title = getString(Res.string.version_channel),
                                         text = getString(Res.string.beta_channel_warning),
                                     )
@@ -247,7 +242,7 @@ fun AboutPage(
 
                 Row(
                     modifier =
-                        Modifier.clickable(onClick = { update.checkUpdate(true) })
+                        Modifier.clickable(onClick = { mainVm.updateStatus.checkUpdate(true) })
                             .fillMaxWidth()
                             .itemPadding(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -264,20 +259,31 @@ fun AboutPage(
         }
     }
 
-    li.gkd.app.ui.page.GkVersionInfoDialog(
+    GkVersionInfoDialog(
         showVersionInfoDialog,
         version.channel,
         version.versionCode,
         version.versionName,
         version.commitLabel,
         version.commitTime,
-        { window.openExternalUrl(version.commitUrl) },
-        { showVersionInfoDialog = false },
+        { mainVm.textDialog.showUrl(version.commitUrl) },
+        { vm.setShowVersionInfoDialog(false) },
     )
-    window.GkShareAppDialog(showShareAppDialog) { showShareAppDialog = false }
+    host.GkShareAppDialog(
+        visible = showShareAppDialog,
+        dialogs = mainVm.dialogRequests,
+        scope = mainVm.scope,
+        onOpenUrl = mainVm.textDialog::showUrl,
+    ) { vm.setShowShareAppDialog(false) }
 }
 
-@Composable expect fun AppWindow.GkShareAppDialog(visible: Boolean, onDismissRequest: () -> Unit)
+@Composable expect fun UiHost.GkShareAppDialog(
+    visible: Boolean,
+    dialogs: DialogRequests,
+    scope: CoroutineScope,
+    onOpenUrl: (String) -> Unit,
+    onDismissRequest: () -> Unit,
+)
 
 @Composable
 private fun FeedbackSection(onClick: () -> Unit) {

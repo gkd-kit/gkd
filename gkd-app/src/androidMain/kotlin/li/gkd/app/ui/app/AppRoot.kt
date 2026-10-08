@@ -6,39 +6,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
-import li.gkd.app.ui.MainViewModel
+import li.gkd.app.ui.androidState
 import li.gkd.app.ui.navigation.GkAppNavigation
 import li.gkd.app.ui.style.AppTheme
 
 @Composable
 fun AppRoot() {
-    val mainVm = MainViewModel.requireCurrent()
     val activity = androidx.activity.compose.LocalActivity.current as li.gkd.app.MainActivity
+    val mainVm = activity.mainVm
     AppTheme {
         Box(modifier = Modifier.fillMaxSize()) {
-            GkAppNavigation(
-                homeNavigation = mainVm.homeNavigation,
-                subsSheet = mainVm.subsSheet,
-                subsLinks = mainVm.subsLinkDialog,
-                backStack = mainVm.backStack,
-                onBack = mainVm::popPage,
-                window = activity,
-                onNavigate = { mainVm.navigatePage(it) },
-                replaceRoute = { mainVm.navigatePage(it, true) },
-                showToast = li.gkd.app.util.ToastUtils::show,
-                showText = mainVm.textDialog::showText,
-                topRoute = { mainVm.topRoute },
-                updateStatus = mainVm.updateStatus,
-                onExportLogs = mainVm.shareLog::show,
-                takeCrashDataList = mainVm::takeCrashDataList,
-                dialogs = mainVm.dialogRequests,
-                ruleGroups = mainVm.ruleGroupState,
-                githubUpload = mainVm.githubUpload,
-                confirmDelete = mainVm::confirmDelete,
-                scope = mainVm.scope,
-            )
+            GkAppNavigation(host = activity)
             AppOverlayHost()
-            mainVm.permissionRequests.Render(
+            mainVm.androidState.permissionRequests.Render(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .zIndex(1f),

@@ -1,6 +1,8 @@
 package li.gkd.app.ui.subscription
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withContext
 import li.gkd.app.app.AppInfoRepository
@@ -14,9 +16,13 @@ import li.gkd.app.subscription.SubscriptionException
 import li.gkd.app.subscription.SubscriptionFailureReason
 import li.gkd.app.subscription.SubscriptionInputParser
 import li.gkd.app.subscription.edit
+import li.gkd.app.ui.MainViewModel
+import li.gkd.app.ui.navigation.SubsAppGroupListRoute
+import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.app.ui.style.clearJson5TransformationCache
+import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 
 data class UpsertRuleGroupUiState(
@@ -26,8 +32,15 @@ data class UpsertRuleGroupUiState(
 
 class UpsertRuleGroupViewModel(
     val route: UpsertRuleGroupRoute,
-    private val toast: (String) -> Unit,
 ) : BaseViewModel() {
+    val draft: StateFlow<String?>
+        field = MutableStateFlow<String?>(null)
+
+    fun setDraft(value: String) {
+        beginEditing()
+        draft.value = value
+    }
+
     val groupKey get() = route.groupKey
     val appId get() = route.appId
 
@@ -68,7 +81,7 @@ class UpsertRuleGroupViewModel(
         )
     }
 
-    fun beginEditing() {
+    private fun beginEditing() {
         if (!editingStarted) {
             editBaseGroup = uiState.value.value?.initialGroup
             editingStarted = true
@@ -93,7 +106,22 @@ class UpsertRuleGroupViewModel(
 
     private val saveSession = EditorSaveSession<String?>()
 
-    suspend fun saveRule(text: String): String? = saveSession.save { performSave(text) }
+    private var addedAppId: String? = null
+
+    suspend fun saveRule(text: String) {
+        addedAppId = saveSession.save { performSave(text) }
+    }
+
+    fun onSaved() {
+        val mainVm = MainViewModel.requireCurrent()
+        if (route.forward) {
+            mainVm.navigator.navigate(
+                if (route.appId == null) SubsGlobalGroupListRoute(route.subsId)
+                else SubsAppGroupListRoute(route.subsId, addedAppId ?: route.appId),
+                replaced = true,
+            )
+        } else mainVm.navigator.pop()
+    }
 
     private suspend fun performSave(text: String): String? {
         val groupKey = groupKey
@@ -106,12 +134,12 @@ class UpsertRuleGroupViewModel(
                 error(getString(Res.string.rule_content_required))
             }
             if (text == state.initialText) {
-                toast(getString(Res.string.rule_content_unchanged))
+                ToastUtils.show(getString(Res.string.rule_content_unchanged))
                 return@withContext null
             }
             val input = SubscriptionInputParser.parse(text, groupKey ?: 0)
             if (input.jsonObject == initialGroup?.cacheJsonObject) {
-                toast(getString(Res.string.rule_content_unchanged))
+                ToastUtils.show(getString(Res.string.rule_content_unchanged))
                 return@withContext null
             }
             var addedAppId: String? = null
@@ -119,7 +147,7 @@ class UpsertRuleGroupViewModel(
                 if (appId != null) {
                     val newGroup = input.parseAppGroup(appId).copy(key = groupKey)
                     if (newGroup == initialGroup) {
-                        toast(getString(Res.string.rule_content_unchanged))
+                        ToastUtils.show(getString(Res.string.rule_content_unchanged))
                         return@withContext null
                     }
                     val originalGroup = requireNotNull(
@@ -141,7 +169,7 @@ class UpsertRuleGroupViewModel(
                 } else {
                     val newGroup = input.parseGlobalGroup().copy(key = groupKey)
                     if (newGroup == initialGroup) {
-                        toast(getString(Res.string.rule_content_unchanged))
+                        ToastUtils.show(getString(Res.string.rule_content_unchanged))
                         return@withContext null
                     }
                     val originalGroup = requireNotNull(
@@ -183,9 +211,9 @@ class UpsertRuleGroupViewModel(
                 }
             }
             if (isEdit) {
-                toast(getString(Res.string.update_success))
+                ToastUtils.show(getString(Res.string.update_success))
             } else {
-                toast(getString(Res.string.add_success))
+                ToastUtils.show(getString(Res.string.add_success))
             }
             addedAppId
         }

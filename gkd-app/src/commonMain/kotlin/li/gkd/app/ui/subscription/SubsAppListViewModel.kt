@@ -1,5 +1,6 @@
 package li.gkd.app.ui.subscription
 
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import li.gkd.app.rule.RuleGroupConfigService
@@ -25,6 +26,20 @@ data class SubsAppListUiState(
 class SubsAppListViewModel(
     val route: SubsAppListRoute,
 ) : BaseViewModel() {
+    val searchStr: StateFlow<String>
+        field = MutableStateFlow("")
+
+    fun setSearchStr(value: String) {
+        searchStr.value = value
+    }
+
+    val showSearchBar: StateFlow<Boolean>
+        field = MutableStateFlow(false)
+
+    fun setShowSearchBar(value: Boolean) {
+        showSearchBar.value = value
+    }
+
     private val mutation = MutexState()
     val busyFlow: StateFlow<Boolean> get() = mutation.state
     suspend fun runAction(action: suspend () -> Unit) {

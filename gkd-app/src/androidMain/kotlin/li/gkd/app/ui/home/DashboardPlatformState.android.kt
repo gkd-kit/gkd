@@ -2,7 +2,10 @@ package li.gkd.app.ui.home
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import li.gkd.app.a11y.useA11yServiceEnabledFlow
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.PrivilegeServiceStatus
 import li.gkd.app.priv.privilegeContextFlow
@@ -13,12 +16,9 @@ import li.gkd.app.service.ActivityService
 import li.gkd.app.service.StatusService
 import li.gkd.app.service.a11yPartDisabledFlow
 import li.gkd.app.service.topAppIdFlow
-import li.gkd.app.ui.MainViewModel
-import li.gkd.app.ui.navigation.AppWindow
 
 @Composable
-actual fun AppWindow.dashboardPlatformState(): DashboardPlatformState {
-    val mainVm = MainViewModel.requireCurrent()
+actual fun dashboardPlatformState(): DashboardPlatformState {
     val privilege by privilegeContextFlow.collectAsStateWithLifecycle()
     val privilegeStatus by privilegeServiceStatusFlow.collectAsStateWithLifecycle()
     val capabilities by PermissionStates.privilegeCapabilities.collectAsStateWithLifecycle()
@@ -26,7 +26,9 @@ actual fun AppWindow.dashboardPlatformState(): DashboardPlatformState {
     val automation by uiAutomationFlow.collectAsStateWithLifecycle()
     val status by StatusService.isRunning.collectAsStateWithLifecycle()
     val secure by PermissionStates.writeSecureSettings.stateFlow.collectAsStateWithLifecycle()
-    val a11yEnabled by mainVm.a11yServiceEnabledFlow.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    val enabled = remember { useA11yServiceEnabledFlow(scope) }
+    val a11yEnabled by enabled.collectAsStateWithLifecycle()
     val partial by a11yPartDisabledFlow.collectAsStateWithLifecycle()
     val topApp by topAppIdFlow.collectAsStateWithLifecycle()
     val restrictions by PermissionStates.appRestrictionsFlow.collectAsStateWithLifecycle()

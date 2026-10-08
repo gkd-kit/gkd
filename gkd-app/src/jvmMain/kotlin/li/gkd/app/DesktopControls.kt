@@ -268,11 +268,11 @@ fun DesktopControls(
             Text("应用流程（首次使用为预览）", style = MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { state.overlay = "terms" }) { Text("首次使用") }
-                OutlinedButton(onClick = { session.updateStatus.checkUpdate(true) }) { Text("更新") }
-                OutlinedButton(onClick = session.githubUpload::editCookie) { Text("Cookie") }
+                OutlinedButton(onClick = { session.state.mainVm.updateStatus?.checkUpdate(true) }) { Text("更新") }
+                OutlinedButton(onClick = session.state.mainVm.githubUpload::editCookie) { Text("Cookie") }
             }
             Text("当前路由：${state.scenario.page}")
-            Text("回退栈：${state.backStack.joinToString(" → ")}")
+            Text("回退栈：${state.mainVm.navigator.backStack.joinToString(" → ")}")
             GkTextSwitch(
                 title = "本地网络权限",
                 checked = android.localNetworkGranted,
@@ -288,7 +288,7 @@ fun DesktopControls(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { session.exportBackup() }) { Text("导出备份文件") }
                 OutlinedButton(
-                    onClick = { session.importBackup(selectFile = false) },
+                    onClick = { session.importBackup() },
                     enabled = session.backupPath.isNotBlank()
                 ) { Text("导入备份文件") }
             }

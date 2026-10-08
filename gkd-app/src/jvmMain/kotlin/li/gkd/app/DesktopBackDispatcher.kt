@@ -26,13 +26,11 @@ class DesktopBackDispatcher {
 val LocalDesktopBackDispatcher =
     staticCompositionLocalOf<DesktopBackDispatcher> { error("Missing Desktop window host") }
 
-val LocalDesktopRouteActive = staticCompositionLocalOf { true }
-
 @Composable
-fun GkDesktopBackHandler(overlay: Boolean = false, onBack: () -> Unit) {
+fun GkDesktopBackHandler(overlay: Boolean = false, enabled: Boolean = true, onBack: () -> Unit) {
     val dispatcher = LocalDesktopBackDispatcher.current
     val current by rememberUpdatedState(onBack)
-    val active by rememberUpdatedState(LocalDesktopRouteActive.current)
+    val active by rememberUpdatedState(enabled)
     DisposableEffect(dispatcher, overlay) {
         val remove = dispatcher.register(enabled = { active }, overlay = overlay) { current() }
         onDispose { remove() }

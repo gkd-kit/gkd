@@ -21,19 +21,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import li.gkd.app.crash.CrashData
+import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.android_version_description
 import li.gkd.app.resources.crash_app_description
@@ -57,7 +56,7 @@ import li.gkd.app.resources.logs_export
 import li.gkd.app.resources.stack_trace
 import li.gkd.app.state.Loadable
 import li.gkd.app.time.format
-import li.gkd.app.ui.component.DialogRequests
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkCopyTextCard
 import li.gkd.app.ui.component.GkEmptyState
 import li.gkd.app.ui.component.GkExpandableSection
@@ -74,26 +73,22 @@ import li.gkd.app.ui.style.itemVerticalPadding
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.ui.style.surfaceCardColors
 import li.gkd.app.ui.text.displayMessage
+import li.gkd.app.util.ToastUtils
+import li.gkd.app.util.copyText
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun CrashReportPage(
-    vm: CrashReportViewModel,
-    dialogs: DialogRequests,
-    onBack: () -> Unit,
-    onReport: () -> Unit,
-    onExport: () -> Unit,
-    onCopy: (String) -> Unit,
-    toast: (String) -> Unit,
-) {
+fun CrashReportPage() {
+    val mainVm = MainViewModel.requireCurrent()
+    val vm = viewModel { CrashReportViewModel(mainVm.takeCrashDataList()) }
     val records by vm.crashDataState.collectAsStateWithLifecycle()
-    var expandedCrashId by rememberSaveable { mutableStateOf(records.value?.firstOrNull()?.id) }
+    val expandedCrashId by vm.expandedCrashId.collectAsStateWithLifecycle()
     fun delete(record: CrashData?) {
         vm.scope.launch {
             try {
                 if (
-                    dialogs.confirm(
+                    mainVm.dialogRequests.confirm(
                         title =
                             getString(
                                 if (record == null) Res.string.crash_reports_clear
@@ -108,13 +103,13 @@ fun CrashReportPage(
                     )
                 ) {
                     if (record == null) vm.deleteAllCrashes() else vm.deleteCrash(record)
-                    if (record == null || expandedCrashId == record.id) expandedCrashId = null
-                    toast(getString(Res.string.delete_success))
+                    if (record == null || expandedCrashId == record.id) vm.setExpandedCrashId(null)
+                    ToastUtils.show(getString(Res.string.delete_success))
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                toast(e.displayMessage())
+                ToastUtils.show(e.displayMessage())
             }
         }
     }
@@ -132,7 +127,7 @@ fun CrashReportPage(
                 navigationIcon = {
                     GkIconButton(
                         imageVector = GkIcons.ArrowBack,
-                        onClick = onBack,
+                        onClick = mainVm.navigator::pop,
                     )
                 },
                 title = {
@@ -157,11 +152,11 @@ fun CrashReportPage(
             if (crashDataList.isNotEmpty()) {
                 BottomAppBar {
                     Spacer(modifier = Modifier.weight(1f))
-                    TextButton(onClick = onReport) {
+                    TextButton(onClick = { mainVm.textDialog.showUrl(AppLinks.Issues) }) {
                         Text(text = stringResource(Res.string.feedback_report))
                     }
                     Spacer(modifier = Modifier.width(itemHorizontalPadding))
-                    TextButton(onClick = onExport) {
+                    TextButton(onClick = mainVm.shareLog::show) {
                         Text(text = stringResource(Res.string.logs_export))
                     }
                     Spacer(modifier = Modifier.width(itemHorizontalPadding))
@@ -181,10 +176,10 @@ fun CrashReportPage(
                 val expanded = expandedCrashId == crashData.id
                 CrashReportCard(
                     crashData = crashData,
-                    onCopy = onCopy,
+                    onCopy = ::copyText,
                     expanded = expanded,
                     onToggle = {
-                        expandedCrashId = if (expanded) null else crashData.id
+                        vm.setExpandedCrashId(if (expanded) null else crashData.id)
                     },
                     onDelete = { delete(crashData) },
                 )

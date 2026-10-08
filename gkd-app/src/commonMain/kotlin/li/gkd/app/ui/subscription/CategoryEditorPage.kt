@@ -25,7 +25,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +33,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import li.gkd.app.resources.Res
@@ -51,41 +51,43 @@ import li.gkd.app.resources.unchanged
 import li.gkd.app.resources.update_success
 import li.gkd.app.subscription.CategoryPolicy
 import li.gkd.app.subscription.SubscriptionJson.json
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAppNameText
 import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkSubscriptionPageContent
 import li.gkd.app.ui.component.autoFocus
 import li.gkd.app.ui.navigation.CategoryEditorRoute
-import li.gkd.app.ui.navigation.EditorFrame
+import li.gkd.app.ui.navigation.GkEditor
 import li.gkd.app.ui.page.EditorSession
+import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.text.subscriptionMessageResource
+import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun CategoryEditorPage(
+    host: UiHost,
     route: CategoryEditorRoute,
-    onBack: () -> Unit,
-    showToast: (String) -> Unit,
-    editorFrame: EditorFrame,
 ) {
+    val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { CategoryEditorViewModel(route) }
     val policy = remember { CategoryPolicy() }
-    GkSubscriptionPageContent(vm.uiState, onBack) { subscription ->
+    GkSubscriptionPageContent(vm.uiState, mainVm.navigator::pop) { subscription ->
         val category = subscription.categories.find { it.key == route.categoryKey }
         val categorySnapshot = remember(category) { category?.let { json.encodeToString(it) } }
-        var originalCategory by rememberSaveable { mutableStateOf(categorySnapshot) }
-        var name by rememberSaveable { mutableStateOf(category?.name.orEmpty()) }
-        var description by rememberSaveable { mutableStateOf(category?.desc.orEmpty()) }
-        var originalName by rememberSaveable { mutableStateOf(name) }
-        var originalDescription by rememberSaveable { mutableStateOf(description) }
+        val draftState by vm.draft.collectAsStateWithLifecycle()
+        val draft = draftState ?: return@GkSubscriptionPageContent
+        val name = draft.name
+        val description = draft.description
         var previewName by remember(subscription, route.categoryKey) { mutableStateOf(name) }
         LaunchedEffect(name) {
             delay(300)
             previewName = name
         }
-        val conflict = route.categoryKey != null && categorySnapshot != originalCategory
+        val conflict = route.categoryKey != null && categorySnapshot != draft.originalCategory
         val validation =
             remember(subscription, route.categoryKey, name) {
                 runCatching { policy.validateEdit(subscription, route.categoryKey, name) }
@@ -108,7 +110,7 @@ fun CategoryEditorPage(
                 .orEmpty()
         val nameError = error?.takeIf { !conflict && name.isNotBlank() }
         val descriptionFocusRequester = remember { FocusRequester() }
-        editorFrame(
+        GkEditor(
             EditorSession(
                 title =
                     stringResource(
@@ -116,13 +118,13 @@ fun CategoryEditorPage(
                         else Res.string.category_edit
                     ),
                 hasChanges = {
-                    name.trim() != originalName.trim() ||
-                        description.trim() != originalDescription.trim()
+                    name.trim() != draft.originalName.trim() ||
+                        description.trim() != draft.originalDescription.trim()
                 },
                 saveEnabled = error == null,
                 onSave = {
                     val changed = vm.save(subscription, name.trim(), description.trim())
-                    showToast(
+                    ToastUtils.show(
                         getString(
                             if (!changed) Res.string.unchanged
                             else if (route.categoryKey == null) Res.string.add_success
@@ -131,7 +133,9 @@ fun CategoryEditorPage(
                     )
                 },
             ),
-            null,
+            navigator = mainVm.navigator,
+            hideIme = host::hideIme,
+            scope = mainVm.scope,
         ) { padding ->
             Column(
                 modifier =
@@ -145,7 +149,7 @@ fun CategoryEditorPage(
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     OutlinedTextField(
                         value = name,
-                        onValueChange = { name = it },
+                        onValueChange = vm::setName,
                         label = {
                             Text(
                                 nameError ?: stringResource(Res.string.category_name_prefix),
@@ -162,7 +166,7 @@ fun CategoryEditorPage(
                     )
                     OutlinedTextField(
                         value = description,
-                        onValueChange = { description = it },
+                        onValueChange = vm::setDescription,
                         label = { Text(stringResource(Res.string.category_description)) },
                         minLines = 1,
                         maxLines = 3,
@@ -185,11 +189,7 @@ fun CategoryEditorPage(
                             if (category != null) {
                                 TextButton(
                                     onClick = {
-                                        originalCategory = categorySnapshot
-                                        name = category.name
-                                        description = category.desc.orEmpty()
-                                        originalName = name
-                                        originalDescription = description
+                                        vm.reloadDraft(subscription)
                                     }
                                 ) {
                                     Text(stringResource(Res.string.action_reload_latest))

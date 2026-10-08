@@ -25,8 +25,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
+import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.action_cancel
 import li.gkd.app.resources.action_delete
@@ -53,9 +52,9 @@ import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.SubscriptionResult
 import li.gkd.app.ui.component.GkAlertDialog
-import li.gkd.app.ui.component.GkDesktopKeyHandler
 import li.gkd.app.ui.component.GkAnimatedFloatingActionButton
 import li.gkd.app.ui.component.GkBatchActionMenuItem
+import li.gkd.app.ui.component.GkDesktopKeyHandler
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkMatchingBanner
 import li.gkd.app.ui.component.GkMultiSelectionActions
@@ -70,7 +69,10 @@ import li.gkd.app.ui.component.gkPageBottomSpace
 import li.gkd.app.ui.component.rememberMultiSelectionState
 import li.gkd.app.ui.component.rememberPinnedListScrollState
 import li.gkd.app.ui.component.rememberReorderSession
-import li.gkd.app.ui.navigation.AppRoute
+import li.gkd.app.ui.MainViewModel
+import li.gkd.app.ui.platform.GkBackHandler
+import li.gkd.app.ui.settings.appVersion
+import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
 import li.gkd.app.ui.option.UpdateTimeOption
 import li.gkd.app.ui.option.findOption
@@ -78,63 +80,36 @@ import li.gkd.app.ui.subscription.SubsManageUiState
 import li.gkd.app.ui.subscription.message
 import li.gkd.app.ui.text.formatTimeAgo
 import li.gkd.app.ui.text.getSync
-import li.gkd.app.ui.text.subscriptionMessage
 import li.gkd.app.ui.text.subscriptionMessageResource
+import li.gkd.app.util.ToastUtils
 import li.gkd.db.LOCAL_SUBS_ID
 import org.jetbrains.compose.resources.stringResource
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-class SubsManageHost(
-    val appName: String,
-    val navigate: (AppRoute) -> Unit,
-    val openSubscription: (Long) -> Unit,
-    val requestUrl: suspend () -> String?,
-    val confirm: suspend (title: String, text: String, error: Boolean) -> Boolean,
-    val toast: (String) -> Unit,
-    val openPowerHelp: () -> Unit,
-)
-
 @Composable
 fun subsManagePage(
     vm: HomeViewModel,
-    homeState: HomeState,
-    host: SubsManageHost,
-    selectionBackHandler: @Composable (Boolean, () -> Unit) -> Unit,
 ): ScaffoldExt {
     val loadableState by vm.subscriptionsState.collectAsStateWithLifecycle()
-    return subsManageContent(vm, loadableState, homeState, host, selectionBackHandler)
+    return subsManageContent(vm, loadableState)
 }
 
 @Composable
 private fun subsManageContent(
     vm: HomeViewModel,
     loadableState: Loadable<SubsManageUiState>,
-    homeState: HomeState,
-    host: SubsManageHost,
-    selectionBackHandler: @Composable (Boolean, () -> Unit) -> Unit,
 ): ScaffoldExt {
 
+    val mainVm = MainViewModel.requireCurrent()
     val state = loadableState.value
-    val toast = host.toast
-    fun launchAction(block: suspend () -> Unit) = vm.scope.launch {
-        try {
-            block()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            toast(e.subscriptionMessage())
-        }
-    }
-
-    val refresh: () -> Unit = { launchAction { vm.refreshSubscriptions().message()?.let(toast) } }
+    val refresh: () -> Unit = { vm.scope.launchUi { vm.refreshSubscriptions().message()?.let { ToastUtils.show(it) } } }
     GkDesktopKeyHandler(Key.F5, onKey = refresh)
     var settingsDialogVisible by remember { mutableStateOf(false) }
     val powerWarningItem by vm.powerWarningItemFlow.collectAsStateWithLifecycle()
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val subItems = state?.subItems.orEmpty()
     val subsIdToRaw = state?.subscriptions.orEmpty()
-    val scope = vm.scope
     val batchBusy by vm.batchBusyFlow.collectAsStateWithLifecycle()
 
     val refreshing by li.gkd.app.subscription.SubscriptionRepository.updating.collectAsStateWithLifecycle()
@@ -146,7 +121,7 @@ private fun subsManageContent(
     val isSelectedMode = selectionState.active
     val reorderSession = rememberReorderSession(subItems) { it.id }
     val orderSubItems = reorderSession.items
-    selectionBackHandler(isSelectedMode) {
+    GkBackHandler(isSelectedMode) {
         selectionState.clear()
     }
     LaunchedEffect(allIds) {
@@ -182,7 +157,7 @@ private fun subsManageContent(
                         text = stringResource(Res.string.subscription_battery_help),
                         modifier = Modifier.clickable(onClick = {
                             vm.dismissPowerWarning()
-                            host.openPowerHelp()
+                            mainVm.navigator.openWebPage(AppLinks.BackgroundRunningHelp)
                         }),
                         textDecoration = TextDecoration.Underline,
                         color = MaterialTheme.colorScheme.primary,
@@ -192,7 +167,7 @@ private fun subsManageContent(
             onDismissRequest = {},
             confirmButton = {
                 TextButton(
-                    onClick = { launchAction { vm.confirmPowerWarning() } },
+                    onClick = { vm.scope.launchUi { vm.confirmPowerWarning() } },
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.error,
                     ),
@@ -212,7 +187,7 @@ private fun subsManageContent(
     val scrollBehavior = pageScrollState.scrollBehavior
     val lazyListState = pageScrollState.listState
     ResetPageScrollOnRequest(
-        homeState,
+        vm.homeState,
         BottomNavItem.SubsManage,
         pageScrollState::resetScrollAndAwait
     )
@@ -248,24 +223,24 @@ private fun subsManageContent(
                                         idsToDelete.size
                                     ) +
                                             if (LOCAL_SUBS_ID in selectedIds) Res.string.subscriptions_local_excluded_suffix.getSync() else ""
-                                    launchAction {
+                                    vm.scope.launchUi {
                                         vm.runBatchAction {
-                                            if (!host.confirm(
+                                            if (!mainVm.dialogRequests.confirm(
                                                     Res.string.subscription_delete.getSync(),
                                                     text,
-                                                    true,
+                                                    error = true,
                                                 )
                                             ) return@runBatchAction
                                             val result = vm.deleteSubscriptions(idsToDelete)
                                             if (result is SubscriptionResult.Success) {
                                                 selectionState.removeDeleted(idsToDelete)
-                                                toast(
+                                                ToastUtils.show(
                                                     if (result.count > 0) Res.string.subscriptions_deleted_count.getSync(
                                                         result.count
                                                     ) else Res.string.selected_subscriptions_changed.getSync()
                                                 )
                                             } else {
-                                                result.message()?.let { toast(it) }
+                                                result.message()?.let { ToastUtils.show(it) }
                                             }
                                         }
                                     }
@@ -278,11 +253,11 @@ private fun subsManageContent(
                             onToggleMatching = vm::toggleMatching,
                             onSettings = { settingsDialogVisible = true },
                             onMenuOpen = {
-                                if (refreshing) toast(Res.string.subscription_refresh_wait.getSync())
+                                if (refreshing) ToastUtils.show(Res.string.subscription_refresh_wait.getSync())
                                 !refreshing
                             },
                             onAddAppRule = {
-                                host.navigate(
+                                mainVm.navigator.navigate(
                                     UpsertRuleGroupRoute(
                                         subsId = LOCAL_SUBS_ID,
                                         groupKey = null,
@@ -292,7 +267,7 @@ private fun subsManageContent(
                                 )
                             },
                             onAddGlobalRule = {
-                                host.navigate(
+                                mainVm.navigator.navigate(
                                     UpsertRuleGroupRoute(
                                         subsId = LOCAL_SUBS_ID,
                                         groupKey = null,
@@ -313,11 +288,11 @@ private fun subsManageContent(
                 visible = !isSelectedMode,
                 onClick = {
                     if (refreshing) {
-                        toast(Res.string.subscription_refresh_wait_compact.getSync())
+                        ToastUtils.show(Res.string.subscription_refresh_wait_compact.getSync())
                     } else {
-                        launchAction {
-                            val url = host.requestUrl() ?: return@launchAction
-                            vm.addOrModifySubscription(url).message()?.let { toast(it) }
+                        vm.scope.launchUi {
+                            val url = mainVm.subsLinkDialog.request() ?: return@launchUi
+                            vm.addOrModifySubscription(url).message()?.let { ToastUtils.show(it) }
                         }
                     }
                 },
@@ -382,7 +357,7 @@ private fun subsManageContent(
                                                         .takeIf { it.order != item.order }
                                                 }
                                             if (changedItems.isNotEmpty()) {
-                                                launchAction { vm.updateOrder(changedItems) }
+                                                vm.scope.launchUi { vm.updateOrder(changedItems) }
                                             }
                                         }
                                     },
@@ -398,7 +373,7 @@ private fun subsManageContent(
                                     apps = subsIdToRaw[subItem.id]?.apps?.size ?: 0,
                                     appGroups = subsIdToRaw[subItem.id]?.appGroups?.size ?: 0,
                                     updatedAt = formatTimeAgo(subItem.mtime),
-                                    appName = host.appName,
+                                    appName = appVersion().appName,
                                     loadError = state?.loadErrors?.get(subItem.id)?.subscriptionMessageResource(),
                                     refreshError = state?.refreshErrors?.get(subItem.id)?.subscriptionMessageResource(),
                                 ),
@@ -415,10 +390,10 @@ private fun subsManageContent(
                                 isSelected = selectedIds.contains(subItem.id),
                                 refreshing = refreshing,
                                 onOpen = {
-                                    host.openSubscription(subItem.id)
+                                    mainVm.subsSheet.show(subItem.id)
                                 },
                                 onCheckedChange = { checked ->
-                                    launchAction { vm.requestSubscriptionEnabled(subItem, checked) }
+                                    vm.scope.launchUi { vm.requestSubscriptionEnabled(subItem, checked) }
                                 },
                                 onSelectedChange = { selectionState.toggle(subItem.id) },
                             )

@@ -21,23 +21,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import java.awt.event.KeyEvent
+import java.net.URI
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import li.gkd.app.DesktopProfile
 import li.gkd.app.DesktopStorage
-import li.gkd.app.LocalDesktopRouteActive
-import li.gkd.app.ui.navigation.copyText
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.webview_content
 import li.gkd.app.resources.webview_load_failed
 import li.gkd.app.resources.webview_runtime_install
 import li.gkd.app.storage.appStorage
 import li.gkd.app.ui.component.GkWebViewErrorContent
-import li.gkd.app.ui.navigation.AppWindow
 import li.gkd.app.ui.navigation.WebViewRoute
 import li.gkd.app.ui.page.WebViewScreen
 import li.gkd.app.ui.platform.SystemActionFeedback
+import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.LocalDarkTheme
+import li.gkd.app.util.copyText
 import li.songe.compose.webview2.JavascriptInterface
 import li.songe.compose.webview2.WebView
 import li.songe.compose.webview2.WebViewClient
@@ -47,8 +48,6 @@ import li.songe.compose.webview2.WebViewSettings
 import li.songe.compose.webview2.rememberWebViewBindings
 import li.songe.compose.webview2.rememberWebViewState
 import org.jetbrains.compose.resources.stringResource
-import java.awt.event.KeyEvent
-import java.net.URI
 
 private class DesktopWebViewBridge(initialDark: Boolean) {
     @Volatile
@@ -67,12 +66,11 @@ private data class WebViewFailure(val url: String, val message: String)
 @Suppress("DEPRECATION")
 actual fun WebViewPage(
     route: WebViewRoute,
-    window: AppWindow,
-    browsersRunning: () -> Boolean,
-    onHostKey: (Int) -> Unit
+    host: UiHost,
 ) {
-    val running = browsersRunning()
-    val state = window.state
+    val mainVm = MainViewModel.requireCurrent()
+    val running = host.browsersRunning()
+    val state = host.state
     val storage = appStorage()
 
     var attempt by remember(route) { mutableIntStateOf(0) }
@@ -83,8 +81,8 @@ actual fun WebViewPage(
         val dark = LocalDarkTheme.current
         val bridge = remember { DesktopWebViewBridge(dark) }
         SideEffect { bridge.dark = dark }
-        val hostKey by rememberUpdatedState(onHostKey)
-        val active by rememberUpdatedState(LocalDesktopRouteActive.current && running)
+        val entry = remember { mainVm.navigator.topEntry }
+        val active by rememberUpdatedState(mainVm.navigator.topEntry === entry && running)
         val bindings = rememberWebViewBindings(bridge, route) {
             allowOrigin("https://gkd.li")
             // The selected document can read the same read-only environment API.
@@ -109,7 +107,7 @@ actual fun WebViewPage(
             }
             addJavascriptInterface(bridge, "gkd")
         }
-        val client = remember(state, scope) {
+        val client = remember(host, scope) {
             WebViewClient(
                 onNavigationRequest = { request ->
                     when (runCatching { URI(request.url).scheme?.lowercase() }.getOrNull()) {
@@ -129,7 +127,7 @@ actual fun WebViewPage(
                         KeyEvent.VK_ESCAPE, KeyEvent.VK_F12,
                     )
                     if (handled && event.isKeyDown && !event.isRepeat) {
-                        scope.launch { if (active) hostKey(event.virtualKey) }
+                        scope.launch { if (active) host.onBrowserKey(event.virtualKey) }
                     }
                     handled
                 },
@@ -165,10 +163,10 @@ actual fun WebViewPage(
         WebViewScreen(
             title = if (error != null) stringResource(Res.string.webview_load_failed) else browser.title,
             loading = error == null && browser.isLoading,
-            onBack = state::popPage,
+            onBack = mainVm.navigator::pop,
             onReload = { if (error != null) retry() else browser.reload() },
-            onCopyLink = { copyText(url, state.toast::show) },
-            onOpenExternal = { SystemActionFeedback.openExternal(url, state.toast::show) },
+            onCopyLink = { copyText(url) },
+            onOpenExternal = { SystemActionFeedback.openExternal(url) },
         ) { padding ->
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 WebView(
@@ -189,20 +187,16 @@ actual fun WebViewPage(
                         onRetry = retry,
                         onOpenExternal = {
                             SystemActionFeedback.openExternal(
-                                url,
-                                state.toast::show
+                                url
                             )
                         },
                         url = url,
                         errorText = error?.message.orEmpty()
                     ) {
                         TextButton(onClick = {
-                            runCatching {
-                                SystemActionFeedback.openExternal(
-                                    "https://developer.microsoft.com/microsoft-edge/webview2/",
-                                    state.toast::show
-                                )
-                            }.onFailure { state.toast.show(it.message ?: it.toString()) }
+                            SystemActionFeedback.openExternal(
+                                "https://developer.microsoft.com/microsoft-edge/webview2/"
+                            )
                         }) { Text(stringResource(Res.string.webview_runtime_install)) }
                     }
                 }

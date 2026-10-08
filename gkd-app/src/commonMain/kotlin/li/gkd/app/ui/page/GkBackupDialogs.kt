@@ -3,7 +3,7 @@ package li.gkd.app.ui.page
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.action_save_to_downloads
@@ -18,7 +18,7 @@ fun GkBackupDialogs(
     visible: Boolean, onDismiss: () -> Unit, onImport: () -> Unit,
     onShare: () -> Unit, onSaveDownloads: () -> Unit
 ) {
-    var exporting by rememberSaveable { mutableStateOf(false) }
+    var exporting by remember { mutableStateOf(false) }
     if (visible) {
         GkTextListDialog(
             onDismiss = onDismiss, textList = listOf(

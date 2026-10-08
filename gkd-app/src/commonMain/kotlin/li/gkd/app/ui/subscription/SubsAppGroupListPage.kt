@@ -10,10 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
@@ -47,7 +44,7 @@ import li.gkd.app.rule.RuleConfigIndex
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchTarget
 import li.gkd.app.settings.SettingsRepository
-import li.gkd.app.ui.component.DialogRequests
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAnimatedFloatingActionButton
 import li.gkd.app.ui.component.GkAppNameText
 import li.gkd.app.ui.component.GkAppRuleRestrictionCard
@@ -73,27 +70,22 @@ import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.component.rememberMultiSelectionState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.component.rememberRuleListFocus
-import li.gkd.app.ui.navigation.AppRoute
-import li.gkd.app.ui.navigation.GkBackHandler
-import li.gkd.app.ui.navigation.ShowRuleGroup
 import li.gkd.app.ui.navigation.SubsAppGroupListRoute
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
-import li.gkd.app.ui.navigation.launchUi
+import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.share.ListPlaceholder
+import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.scaffoldPadding
+import li.gkd.app.util.ToastUtils
+import li.gkd.app.util.copyText
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SubsAppGroupListPage(
     route: SubsAppGroupListRoute,
-    onBack: () -> Unit,
-    onNavigate: (AppRoute) -> Unit,
-    showToast: (String) -> Unit,
-    dialogs: DialogRequests,
-    showRuleGroup: ShowRuleGroup,
-    copyText: (String) -> Unit,
 ) {
+    val mainVm = MainViewModel.requireCurrent()
     val subsItemId = route.subsItemId
     val appId = route.appId
     val focusGroupKey = route.focusGroupKey
@@ -110,9 +102,9 @@ fun SubsAppGroupListPage(
     val partialDisabled =
         restrictionSettings.enableBlockA11yAppList && !restrictionSettings.blockA11yAppListFollowMatch && appId in a11yWhitelist
     val showAppRestriction = whitelisted || partialDisabled
-    var showAppSetting by rememberSaveable { mutableStateOf(false) }
+    val showAppSetting by vm.showAppSetting.collectAsStateWithLifecycle()
     val batchBusy by vm.batchBusyFlow.collectAsStateWithLifecycle()
-    GkSubscriptionPageContent(vm.uiState, onBack) { state ->
+    GkSubscriptionPageContent(vm.uiState, mainVm.navigator::pop) { state ->
         val subs = state.subscription
         val configIndex = remember(state.configs) { RuleConfigIndex(state.configs) }
         val app = state.app
@@ -120,15 +112,15 @@ fun SubsAppGroupListPage(
         val appControl = environment.app(subs.id, appId, state.configs, configIndex)
         val setApp: (RuleSetting) -> Unit = { setting ->
             val request = vm.prepareAppSwitch(state)
-            launchUi(scope, showToast) {
+            scope.launchUi {
                 vm.applySwitches(request, setting).failureMessage()
-                    ?.let { showToast(it) }
+                    ?.let { ToastUtils.show(it) }
             }
         }
         if (showAppSetting && appExists) {
             GkRuleSettingsSheet(
                 title = app.name ?: appId, subtitle = appControl.scope.label,
-                onDismissRequest = { showAppSetting = false }) {
+                onDismissRequest = { vm.setShowAppSetting(false) }) {
                 GkRuleSettingsContent(
                     appControl,
                     setApp,
@@ -158,14 +150,14 @@ fun SubsAppGroupListPage(
             val keysToUpdate = selectedKeys
             if (keysToUpdate.isNotEmpty()) {
                 val request = vm.prepareSwitches(state, keysToUpdate)
-                launchUi(scope, showToast) {
+                scope.launchUi {
                     vm.runBatchAction {
                         val action = when (enabled) {
                             false -> getString(Res.string.action_close)
                             true -> getString(Res.string.action_enable)
                             null -> getString(Res.string.rule_clear_custom_settings)
                         }
-                        if (!dialogs.confirm(
+                        if (!mainVm.dialogRequests.confirm(
                                 title = getString(Res.string.action_notice),
                                 text = getString(
                                     Res.string.rule_batch_setting_confirmation_prefix,
@@ -176,7 +168,7 @@ fun SubsAppGroupListPage(
                                         else getString(Res.string.rule_custom_settings_description),
                             )
                         ) return@runBatchAction
-                        showToast(
+                        ToastUtils.show(
                             vm.applySwitches(request, RuleSetting.from(enabled))
                                 .description()
                         )
@@ -209,7 +201,7 @@ fun SubsAppGroupListPage(
                     selectedCount = selectedKeys.size,
                     onExitSelection = selectionState::clear,
                     scrollBehavior = scrollBehavior,
-                    onNavigateBack = { onBack() },
+                    onNavigateBack = { mainVm.navigator.pop() },
                     onTitleClick = pageScrollState::resetScroll,
                     title = {
                         GkTwoLineText(
@@ -232,7 +224,7 @@ fun SubsAppGroupListPage(
                                     onDismiss = dismiss,
                                     onClick = {
                                         val keysToCopy = selectedKeys
-                                        launchUi(scope, showToast) {
+                                        scope.launchUi {
                                             vm.runBatchAction {
                                                 copyText(vm.buildSelectedGroupsText(keysToCopy))
                                             }
@@ -250,9 +242,9 @@ fun SubsAppGroupListPage(
                                         onDismiss = dismiss,
                                         onClick = {
                                             val keysToDelete = selectedKeys
-                                            launchUi(scope, showToast) {
+                                            scope.launchUi {
                                                 vm.runBatchAction {
-                                                    if (!dialogs.confirm(
+                                                    if (!mainVm.dialogRequests.confirm(
                                                             title = getString(Res.string.rule_delete),
                                                             text = getString(
                                                                 Res.string.rule_groups_delete_confirmation,
@@ -264,7 +256,7 @@ fun SubsAppGroupListPage(
                                                     val deletedSize =
                                                         vm.deleteSelectedGroups(keysToDelete)
                                                     selectionState.removeDeleted(keysToDelete)
-                                                    showToast(
+                                                    ToastUtils.show(
                                                         if (deletedSize > 0) getString(
                                                             Res.string.rule_groups_deleted_count,
                                                             deletedSize.toString()
@@ -286,7 +278,7 @@ fun SubsAppGroupListPage(
                     GkAnimatedFloatingActionButton(
                         visible = !isSelectedMode,
                         onClick = {
-                            onNavigate(
+                            mainVm.navigator.navigate(
                                 UpsertRuleGroupRoute(
                                     subsId = subsItemId,
                                     groupKey = null,
@@ -312,8 +304,8 @@ fun SubsAppGroupListPage(
                                 partialDisabled = partialDisabled,
                                 partialFollowsWhitelist = partialFollowsWhitelist,
                                 onRemoveWhitelist = {
-                                    launchUi(scope, showToast) {
-                                        if (dialogs.confirm(
+                                    scope.launchUi {
+                                        if (mainVm.dialogRequests.confirm(
                                                 title = getString(Res.string.whitelist_remove),
                                                 text = if (partialFollowsWhitelist) getString(Res.string.app_rule_whitelist_remove_follow_confirm)
                                                 else getString(Res.string.app_rule_whitelist_remove_confirm),
@@ -324,8 +316,8 @@ fun SubsAppGroupListPage(
                                     }
                                 },
                                 onRemovePartialDisable = {
-                                    launchUi(scope, showToast) {
-                                        if (dialogs.confirm(
+                                    scope.launchUi {
+                                        if (mainVm.dialogRequests.confirm(
                                                 title = getString(Res.string.app_rule_partial_disable_remove),
                                                 text = getString(Res.string.app_rule_partial_disable_remove_confirm),
                                                 confirmText = getString(Res.string.app_rule_restriction_remove),
@@ -340,7 +332,7 @@ fun SubsAppGroupListPage(
                     if (appExists) {
                         item("app-switch") {
                             GkRuleListItem(
-                                onClick = { if (!isSelectedMode) showAppSetting = true },
+                                onClick = { if (!isSelectedMode) vm.setShowAppSetting(true) },
                                 trailing = {
                                     if (!isSelectedMode) GkRuleEnableControl(
                                         appControl, setApp, modifier = it,
@@ -374,13 +366,13 @@ fun SubsAppGroupListPage(
                             group = group,
                             control = controls.getValue(group.key),
                             onOpen = {
-                                showRuleGroup(subs.id, appId, group, appId)
+                                mainVm.showRuleGroup(subs.id, appId, group, appId)
                             },
                             onSettingChange = { setting ->
                                 val request = vm.prepareSwitches(state, setOf(group.key))
-                                launchUi(scope, showToast) {
+                                scope.launchUi {
                                     vm.applySwitches(request, setting)
-                                        .failureMessage()?.let { showToast(it) }
+                                        .failureMessage()?.let { ToastUtils.show(it) }
                                 }
                             },
                             highlighted = !isSelectedMode && focus.highlightedKey == group.key,

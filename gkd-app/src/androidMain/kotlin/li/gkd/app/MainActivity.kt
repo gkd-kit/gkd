@@ -18,6 +18,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.initializer
+import java.io.File
 import kotlinx.coroutines.launch
 import li.gkd.app.development.DesktopProfileExport
 import li.gkd.app.permission.PermissionRequests
@@ -34,8 +36,10 @@ import li.gkd.app.service.updateTopTaskAppId
 import li.gkd.app.settings.SettingsRepository.settings
 import li.gkd.app.storage.saveToDownloads
 import li.gkd.app.ui.MainViewModel
+import li.gkd.app.ui.androidState
 import li.gkd.app.ui.app.AppRoot
 import li.gkd.app.ui.component.LocalTopBarWindowInsets
+import li.gkd.app.ui.createMainViewModel
 import li.gkd.app.ui.share.ActivityImeController
 import li.gkd.app.ui.share.ActivityResultRequests
 import li.gkd.app.ui.share.FixedWindowInsets
@@ -46,10 +50,13 @@ import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.mapState
 import li.gkd.app.util.tryStartActivity
 import org.jetbrains.compose.resources.getString
-import java.io.File
 
 class MainActivity : ComponentActivity() {
-    val mainVm by viewModels<MainViewModel>()
+    val mainVm by viewModels<MainViewModel> {
+        androidx.lifecycle.viewmodel.viewModelFactory {
+            initializer { createMainViewModel() }
+        }
+    }
     val imeController = ActivityImeController(this)
     private val activityResultHost = ActivityResultRequests.Host(this)
     private val permissionRequestHost = PermissionRequests.Host(this)
@@ -86,7 +93,7 @@ class MainActivity : ComponentActivity() {
     }
 
     suspend fun saveFileToDownloads(file: File) {
-        if (!mainVm.permissionRequests.ensurePermissions(PermissionStates.writeExternalStorage)) {
+        if (!mainVm.androidState.permissionRequests.ensurePermissions(PermissionStates.writeExternalStorage)) {
             return
         }
         val result = saveToDownloads(file)
@@ -103,11 +110,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         fixTransparentNavigationBar()
         super.onCreate(savedInstanceState)
-        activityResultHost.bind(mainVm.activityResults)
-        permissionRequestHost.bind(mainVm.permissionRequests)
+        activityResultHost.bind(mainVm.androidState.activityResults)
+        permissionRequestHost.bind(mainVm.androidState.permissionRequests)
         mainVm.registerCurrent()
         addOnNewIntentListener {
-            if (!DesktopProfileExport.handle(this@MainActivity, it)) mainVm.handleIntent(it)
+            if (!DesktopProfileExport.handle(this@MainActivity, it)) mainVm.androidState.handleIntent(it)
             intent = null
         }
         StatusService.autoStart()
@@ -125,7 +132,7 @@ class MainActivity : ComponentActivity() {
             ) { AppRoot() }
             LaunchedEffect(null) {
                 intent?.let {
-                    if (!DesktopProfileExport.handle(this@MainActivity, it)) mainVm.handleIntent(it)
+                    if (!DesktopProfileExport.handle(this@MainActivity, it)) mainVm.androidState.handleIntent(it)
                     intent = null
                 }
             }

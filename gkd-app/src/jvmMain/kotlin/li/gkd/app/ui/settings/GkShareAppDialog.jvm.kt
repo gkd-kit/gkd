@@ -1,16 +1,23 @@
 package li.gkd.app.ui.settings
 
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.CoroutineScope
 import li.gkd.app.network.AppLinks
-import li.gkd.app.ui.navigation.AppWindow
-import li.gkd.app.ui.navigation.openExternalUrl
+import li.gkd.app.ui.component.DialogRequests
 import li.gkd.app.ui.page.GkShareAppDialog
+import li.gkd.app.ui.platform.UiHost
 
 @Composable
-actual fun AppWindow.GkShareAppDialog(visible: Boolean, onDismissRequest: () -> Unit) {
+actual fun UiHost.GkShareAppDialog(
+    visible: Boolean,
+    dialogs: DialogRequests,
+    scope: CoroutineScope,
+    onOpenUrl: (String) -> Unit,
+    onDismissRequest: () -> Unit,
+) {
     if (visible) GkShareAppDialog(
         onDismissRequest,
         state::unsupported,
         state::unsupported,
-        { openExternalUrl(AppLinks.PlayStore) })
+        { onOpenUrl(AppLinks.PlayStore) })
 }

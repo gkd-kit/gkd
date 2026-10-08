@@ -10,7 +10,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -42,7 +41,7 @@ import li.gkd.app.rule.RuleConfigIndex
 import li.gkd.app.rule.RuleGroupTarget
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.settings.SettingsRepository
-import li.gkd.app.ui.component.DialogRequests
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAppFilterContent
 import li.gkd.app.ui.component.GkAppNameText
 import li.gkd.app.ui.component.GkBatchActionMenuItem
@@ -62,33 +61,26 @@ import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.component.rememberMultiSelectionState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.home.rememberVisitOrder
-import li.gkd.app.ui.navigation.AppRoute
 import li.gkd.app.ui.navigation.CategoryEditorRoute
-import li.gkd.app.ui.navigation.ConfirmDeletion
-import li.gkd.app.ui.navigation.GkBackHandler
-import li.gkd.app.ui.navigation.ShowRuleGroup
 import li.gkd.app.ui.navigation.SubsAppGroupListRoute
 import li.gkd.app.ui.navigation.SubsCategoryGroupRoute
-import li.gkd.app.ui.navigation.launchUi
 import li.gkd.app.ui.option.AppSortOption
 import li.gkd.app.ui.option.findOption
+import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.share.DeletionTarget
 import li.gkd.app.ui.share.ListPlaceholder
+import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.ui.text.getSync
+import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SubsCategoryGroupPage(
     route: SubsCategoryGroupRoute,
-    onBack: () -> Unit,
-    onNavigate: (AppRoute) -> Unit,
-    showToast: (String) -> Unit,
-    dialogs: DialogRequests,
-    confirmDelete: ConfirmDeletion,
-    showRuleGroup: ShowRuleGroup,
 ) {
+    val mainVm = MainViewModel.requireCurrent()
     val environment = rememberRuleControlEnvironment()
     val vm = viewModel { SubsCategoryGroupViewModel(route) }
     val busy by vm.busyFlow.collectAsStateWithLifecycle()
@@ -96,12 +88,12 @@ fun SubsCategoryGroupPage(
     val appMap = rememberRuleControlEnvironment().apps
     val visitOrder = rememberVisitOrder()
     val blockApps by SettingsRepository.blockMatchAppList.collectAsStateWithLifecycle()
-    var showActions by rememberSaveable { mutableStateOf(false) }
-    var showFilter by rememberSaveable { mutableStateOf(false) }
+    val showActions by vm.showActions.collectAsStateWithLifecycle()
+    val showFilter by vm.showFilter.collectAsStateWithLifecycle()
     var retainForRemoval by remember { mutableStateOf(false) }
     GkSubscriptionPageContent(
         vm.uiState,
-        onBack = onBack,
+        onBack = mainVm.navigator::pop,
         retainContent = retainForRemoval
     ) { state ->
         val subs = state.subscription
@@ -153,7 +145,7 @@ fun SubsCategoryGroupPage(
             entireCategory: Boolean = false
         ) {
             val request = vm.prepareSwitches(state, targets)
-            launchUi(vm.scope, showToast) {
+            vm.scope.launchUi {
                 vm.runAction {
                     if (enabled == null) {
                         val scopeLabel =
@@ -163,7 +155,7 @@ fun SubsCategoryGroupPage(
                         val changedCount =
                             request.expected.values.count { it != RuleSetting.FollowDefault }
                         val unchangedCount = request.expected.size - changedCount
-                        if (!dialogs.confirm(
+                        if (!mainVm.dialogRequests.confirm(
                                 title = getString(Res.string.rule_clear_custom_settings),
                                 text = getString(
                                     Res.string.category_clear_settings_confirmation,
@@ -188,7 +180,7 @@ fun SubsCategoryGroupPage(
                     }
                     val result = vm.applySwitches(request, RuleSetting.from(enabled))
                     if (enabled == null) {
-                        showToast(
+                        ToastUtils.show(
                             result.failureMessage()
                                 ?: if (result.restricted > 0)
                                     getString(
@@ -198,7 +190,7 @@ fun SubsCategoryGroupPage(
                                 else getString(Res.string.update_success)
                         )
                     } else {
-                        showToast(result.description())
+                        ToastUtils.show(result.description())
                     }
                 }
             }
@@ -210,7 +202,7 @@ fun SubsCategoryGroupPage(
                     selectedMode = selection.active,
                     selectedCount = selected.size,
                     onExitSelection = selection::clear,
-                    onNavigateBack = onBack,
+                    onNavigateBack = mainVm.navigator::pop,
                     scrollBehavior = scroll.scrollBehavior,
                     onTitleClick = scroll::resetScroll,
                     title = { GkTwoLineText(title = subs.name, subtitle = category.name) },
@@ -249,10 +241,10 @@ fun SubsCategoryGroupPage(
                                 GkFilterIconButton(
                                     filtered = visibleTargets.size < state.targets.size,
                                     contentDescription = stringResource(Res.string.app_sort_filter),
-                                    onClick = { showFilter = true })
+                                    onClick = { vm.setShowFilter(true) })
                                 DropdownMenu(
                                     expanded = showFilter,
-                                    onDismissRequest = { showFilter = false }) {
+                                    onDismissRequest = { vm.setShowFilter(false) }) {
                                     GkAppFilterContent(
                                         sort = settings.subsCategorySort,
                                         groupType = settings.subsCategoryGroupType,
@@ -266,7 +258,7 @@ fun SubsCategoryGroupPage(
                             GkIconButton(
                                 imageVector = GkIcons.MoreVert,
                                 contentDescription = stringResource(Res.string.more_actions),
-                                onClick = { showActions = true })
+                                onClick = { vm.setShowActions(true) })
                         }
                     },
                 )
@@ -282,7 +274,7 @@ fun SubsCategoryGroupPage(
                             enabled = !selection.active,
                             onClickLabel = stringResource(Res.string.app_view_all_rules),
                             onClick = {
-                                onNavigate(
+                                mainVm.navigator.navigate(
                                     SubsAppGroupListRoute(
                                         subs.id,
                                         app.id
@@ -307,12 +299,12 @@ fun SubsCategoryGroupPage(
                             group = group,
                             control = controls.getValue(app.id to group.key),
                             hideCategoryPrefix = true,
-                            onOpen = { showRuleGroup(subs.id, app.id, group, app.id) },
+                            onOpen = { mainVm.showRuleGroup(subs.id, app.id, group, app.id) },
                             onSettingChange = { setting ->
                                 val request = vm.prepareSwitches(state, setOf(target))
-                                launchUi(vm.scope, showToast) {
+                                vm.scope.launchUi {
                                     vm.applySwitches(request, setting)
-                                        .failureMessage()?.let { showToast(it) }
+                                        .failureMessage()?.let { ToastUtils.show(it) }
                                 }
                             },
                             isSelectedMode = selection.active,
@@ -342,9 +334,9 @@ fun SubsCategoryGroupPage(
                 overrideCount = state.overrideTargets.size,
                 editable = subs.isLocal,
                 busy = busy,
-                onDismissRequest = { showActions = false },
+                onDismissRequest = { vm.setShowActions(false) },
                 onSetting = { setting ->
-                    launchUi(vm.scope, showToast) {
+                    vm.scope.launchUi {
                         vm.setCategorySetting(
                             subs,
                             setting,
@@ -353,11 +345,11 @@ fun SubsCategoryGroupPage(
                     }
                 },
                 onClearOverrides = {
-                    showActions = false
+                    vm.setShowActions(false)
                     updateGroups(state.overrideTargets, null, entireCategory = true)
                 },
                 onEdit = {
-                    showActions = false; onNavigate(
+                    vm.setShowActions(false); mainVm.navigator.navigate(
                     CategoryEditorRoute(
                         subs.id,
                         category.key
@@ -365,7 +357,7 @@ fun SubsCategoryGroupPage(
                 )
                 },
                 onDelete = {
-                    confirmDelete(
+                    mainVm.confirmDelete(
                         Res.string.category_delete.getSync(),
                         Res.string.category_delete_confirmation.getSync(
                             category.name,
@@ -373,11 +365,11 @@ fun SubsCategoryGroupPage(
                         ),
                         { setOf(DeletionTarget.Category(subs.id, category.key)) },
                         {
-                            showActions = false
+                            vm.setShowActions(false)
                             retainForRemoval = true
                         }) {
                         vm.deleteCategory(subs)
-                        showToast(getString(Res.string.delete_success))
+                        ToastUtils.show(getString(Res.string.delete_success))
                     }
                 },
             )

@@ -1,5 +1,7 @@
 package li.gkd.app.service
 
+import li.gkd.app.util.copyText
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -46,7 +48,6 @@ import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.style.iconTextSize
 import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.IntentUtils
-import li.gkd.app.util.ToastUtils
 
 class ActivityService : OverlayWindowService(
     positionKey = "activity"
@@ -156,7 +157,7 @@ private fun RowText(text: String?, color: Color = Color.Unspecified) {
                 modifier = Modifier
                     .clip(MaterialTheme.shapes.extraSmall)
                     .clickable(onClick = {
-                        ToastUtils.copyText(text)
+                        copyText(text)
                     })
                     .iconTextSize(),
             )

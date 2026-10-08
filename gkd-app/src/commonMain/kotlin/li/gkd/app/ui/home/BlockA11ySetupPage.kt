@@ -32,6 +32,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import li.gkd.app.permission.AppPermission
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.action_back
 import li.gkd.app.resources.action_close
@@ -64,28 +65,29 @@ import li.gkd.app.resources.service_partial_disable
 import li.gkd.app.resources.usage_notice
 import li.gkd.app.resources.usage_requirements
 import li.gkd.app.settings.SettingsRepository
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkTopAppBar
-import li.gkd.app.ui.navigation.AppRoute
-import li.gkd.app.ui.navigation.AppWindow
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
-import li.gkd.app.ui.navigation.ignoresBatteryOptimizations
-import li.gkd.app.ui.navigation.openAppDetails
-import li.gkd.app.ui.navigation.openRecents
-import li.gkd.app.ui.navigation.requestIgnoreBatteryOptimizations
-import li.gkd.app.ui.navigation.setStatusServiceEnabled
+import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.ignoresBatteryOptimizations
+import li.gkd.app.ui.platform.openAppDetails
+import li.gkd.app.ui.platform.openRecents
+import li.gkd.app.ui.platform.setStatusServiceEnabled
+import li.gkd.app.ui.share.launchUiAction
 import li.gkd.app.ui.style.itemHorizontalPadding
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun BlockA11ySetupPage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRoute) -> Unit) {
+fun BlockA11ySetupPage(host: UiHost) {
+    val mainVm = MainViewModel.requireCurrent()
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
-    val platform = window.dashboardPlatformState()
-    val ignoreBatteryOptimizations: Boolean = window.ignoresBatteryOptimizations()
+    val platform = dashboardPlatformState()
+    val ignoreBatteryOptimizations: Boolean = ignoresBatteryOptimizations()
 
     val scrollState = rememberScrollState()
     val remainingRequirements =
@@ -102,7 +104,7 @@ fun BlockA11ySetupPage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRo
                     GkIconButton(
                         imageVector = GkIcons.Close,
                         onClickLabel = stringResource(Res.string.action_close),
-                        onClick = onBack,
+                        onClick = mainVm.navigator::pop,
                     )
                 },
                 title = {
@@ -132,7 +134,7 @@ fun BlockA11ySetupPage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRo
                     enabled = store.enableBlockA11yAppList || remainingRequirements == 0,
                     onClick = {
                         SettingsRepository.updateSettings { it.copy(enableBlockA11yAppList = true) }
-                        onBack()
+                        mainVm.navigator.pop()
                     },
                 ) {
                     Text(
@@ -172,7 +174,7 @@ fun BlockA11ySetupPage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRo
                     imageVector =
                         if (platform.privilegeAvailable) GkIcons.Check
                         else GkIcons.KeyboardArrowRight,
-                    onClick = { onNavigate(PrivilegeServiceRoute) },
+                    onClick = { mainVm.navigator.navigate(PrivilegeServiceRoute) },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 BlockA11yRequirementItem(
@@ -180,7 +182,7 @@ fun BlockA11ySetupPage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRo
                     satisfied = platform.statusRunning,
                     onClickLabel = stringResource(Res.string.persistent_notification_enable),
                     imageVector = if (platform.statusRunning) GkIcons.Check else GkIcons.PlayArrow,
-                    onClick = { window.setStatusServiceEnabled(true) },
+                    onClick = { host.setStatusServiceEnabled(true) },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 BlockA11yRequirementItem(
@@ -189,7 +191,9 @@ fun BlockA11ySetupPage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRo
                     imageVector =
                         if (ignoreBatteryOptimizations) GkIcons.Check else GkIcons.OpenInNew,
                     onClickLabel = stringResource(Res.string.battery_optimization_settings_open),
-                    onClick = window::requestIgnoreBatteryOptimizations,
+                    onClick = mainVm.scope.launchUiAction {
+                        mainVm.permissions.ensurePermissions(AppPermission.IgnoreBatteryOptimizations)
+                    },
                 )
             }
             BlockA11ySectionTitle(
@@ -201,7 +205,7 @@ fun BlockA11ySetupPage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRo
                     text = stringResource(Res.string.autostart_allow),
                     imageVector = GkIcons.OpenInNew,
                     onClickLabel = stringResource(Res.string.app_details_open),
-                    onClick = window::openAppDetails,
+                    onClick = ::openAppDetails,
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 BlockA11yRequirementItem(
@@ -210,7 +214,7 @@ fun BlockA11ySetupPage(window: AppWindow, onBack: () -> Unit, onNavigate: (AppRo
                     onClickLabel =
                         if (platform.privilegeAvailable) stringResource(Res.string.recents_open)
                         else stringResource(Res.string.recents_lock_manual_hint),
-                    onClick = window::openRecents,
+                    onClick = ::openRecents,
                 )
             }
             BlockA11ySectionTitle(text = stringResource(Res.string.usage_notice))

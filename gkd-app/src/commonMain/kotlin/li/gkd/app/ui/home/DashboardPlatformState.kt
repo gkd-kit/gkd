@@ -1,5 +1,7 @@
 package li.gkd.app.ui.home
 
+import li.gkd.app.permission.AppPermissionRestriction
+import li.gkd.app.priv.PrivilegeCapabilities
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.a11y_fault
 import li.gkd.app.resources.a11y_partially_disabled
@@ -10,8 +12,6 @@ import li.gkd.app.resources.automation_partially_disabled
 import li.gkd.app.resources.automation_running
 import li.gkd.app.resources.automation_stopped
 import li.gkd.app.resources.automation_unauthorized
-import li.gkd.app.priv.PrivilegeCapabilities
-import li.gkd.app.permission.AppPermissionRestriction
 import li.gkd.app.settings.SettingsStore
 import li.gkd.app.ui.navigation.AppRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
@@ -68,4 +68,4 @@ data class DashboardPlatformState(
 }
 
 @androidx.compose.runtime.Composable
-expect fun li.gkd.app.ui.navigation.AppWindow.dashboardPlatformState(): DashboardPlatformState
+expect fun dashboardPlatformState(): DashboardPlatformState

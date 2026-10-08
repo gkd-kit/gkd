@@ -1,7 +1,7 @@
 package li.gkd.app.ui
 
 import androidx.compose.runtime.Composable
-import li.gkd.app.ui.navigation.AppWindow
+import li.gkd.app.ui.platform.UiHost
 
 @Composable
-expect fun PrivilegeServicePage(window: AppWindow)
+expect fun PrivilegeServicePage(host: UiHost)

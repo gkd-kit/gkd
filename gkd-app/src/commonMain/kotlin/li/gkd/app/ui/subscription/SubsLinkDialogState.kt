@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +20,10 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import li.gkd.app.network.AppLinks
 import li.gkd.app.network.LocalNetworkUrls
+import li.gkd.app.permission.AppPermission
+import li.gkd.app.permission.PermissionRequester
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.action_cancel
 import li.gkd.app.resources.action_ok
@@ -35,9 +39,10 @@ import li.gkd.app.ui.component.GkAlertDialog
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.autoFocus
+import li.gkd.app.ui.navigation.AppNavigator
 import li.gkd.app.ui.text.getSync
+import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.stringResource
-import kotlin.coroutines.resume
 
 private data class SubsLinkDialogRequest(
     val initialValue: String,
@@ -46,9 +51,8 @@ private data class SubsLinkDialogRequest(
 )
 
 class SubsLinkDialogState(
-    private val toast: (String) -> Unit,
-    private val onOpenHelp: () -> Unit,
-    private val requestLocalNetworkPermission: suspend () -> Boolean,
+    private val navigator: AppNavigator,
+    private val permissions: PermissionRequester,
 ) {
     private val requestFlow = MutableStateFlow<SubsLinkDialogRequest?>(null)
     private val requestMutex = Mutex()
@@ -70,16 +74,16 @@ class SubsLinkDialogState(
     private fun submit(request: SubsLinkDialogRequest) {
         val value = request.value
         if (!LocalNetworkUrls.isNetworkUrl(value)) {
-            toast(Res.string.link_invalid.getSync())
+            ToastUtils.show(Res.string.link_invalid.getSync())
             return
         }
         if (request.initialValue.isNotEmpty() && request.initialValue == value) {
-            toast(Res.string.unchanged.getSync())
+            ToastUtils.show(Res.string.unchanged.getSync())
             complete(null)
             return
         }
         if (value in request.existingUrls) {
-            toast(Res.string.subscription_duplicate_link.getSync())
+            ToastUtils.show(Res.string.subscription_duplicate_link.getSync())
             return
         }
         complete(value)
@@ -89,7 +93,7 @@ class SubsLinkDialogState(
 
     private fun openHelp() {
         cancel()
-        onOpenHelp()
+        navigator.openWebPage(AppLinks.SubscriptionHelp)
     }
 
     suspend fun request(initialValue: String = ""): String? {
@@ -113,7 +117,7 @@ class SubsLinkDialogState(
                 }
             }
         }
-        if (value != null && LocalNetworkUrls.isLocalNetworkUrl(value) && !requestLocalNetworkPermission()) {
+        if (value != null && LocalNetworkUrls.isLocalNetworkUrl(value) && !permissions.ensurePermissions(AppPermission.LocalNetwork)) {
             return null
         }
         return value

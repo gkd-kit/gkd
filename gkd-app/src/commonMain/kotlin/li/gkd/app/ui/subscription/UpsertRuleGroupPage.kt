@@ -12,31 +12,28 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.app_rule_input_hint
 import li.gkd.app.resources.global_rule_input_hint
 import li.gkd.app.resources.rule_add
 import li.gkd.app.resources.rule_edit
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkSubscriptionPageContent
 import li.gkd.app.ui.component.autoFocus
-import li.gkd.app.ui.navigation.AppRoute
-import li.gkd.app.ui.navigation.EditorFrame
-import li.gkd.app.ui.navigation.SubsAppGroupListRoute
-import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
+import li.gkd.app.ui.navigation.GkEditor
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
-import li.gkd.app.ui.navigation.inputInsets
 import li.gkd.app.ui.page.EditorSession
+import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.hideIme
+import li.gkd.app.ui.platform.inputInsets
 import li.gkd.app.ui.share.LocalDarkTheme
 import li.gkd.app.ui.style.getJson5Transformation
 import li.gkd.app.ui.style.scaffoldPadding
@@ -44,37 +41,30 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun UpsertRuleGroupPage(
+    host: UiHost,
     route: UpsertRuleGroupRoute,
-    onBack: () -> Unit,
-    replaceRoute: (AppRoute) -> Unit,
-    showToast: (String) -> Unit,
-    editorFrame: EditorFrame,
 ) {
+    val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel {
-        UpsertRuleGroupViewModel(route, showToast)
+        UpsertRuleGroupViewModel(route)
     }
-    var draft by rememberSaveable { mutableStateOf<String?>(null) }
-    var addedAppId by remember { mutableStateOf<String?>(null) }
-    GkSubscriptionPageContent(vm.uiState, onBack) { data ->
+    val draft by vm.draft.collectAsStateWithLifecycle()
+    GkSubscriptionPageContent(vm.uiState, mainVm.navigator::pop) { data ->
         val text = draft ?: data.initialText
         val inputInsets: Modifier = inputInsets()
 
-        editorFrame(
+        GkEditor(
             EditorSession(
                 title =
                     stringResource(if (vm.isEdit) Res.string.rule_edit else Res.string.rule_add),
                 hasChanges = { vm.hasTextChanged(text) },
                 saveEnabled = text.isNotBlank(),
-                onSave = { addedAppId = vm.saveRule(text) },
+                onSave = { vm.saveRule(text) },
             ),
-            {
-                if (route.forward) {
-                    replaceRoute(
-                        if (route.appId == null) SubsGlobalGroupListRoute(route.subsId)
-                        else SubsAppGroupListRoute(route.subsId, addedAppId ?: route.appId)
-                    )
-                } else onBack()
-            },
+            onSaved = vm::onSaved,
+            navigator = mainVm.navigator,
+            hideIme = host::hideIme,
+            scope = mainVm.scope,
         ) { paddingValues ->
             val textColors =
                 TextFieldDefaults.colors(
@@ -91,10 +81,7 @@ fun UpsertRuleGroupPage(
                         Modifier.autoFocus(immediateFocus = true).fillMaxSize().then(inputInsets)
                     TextField(
                         value = text,
-                        onValueChange = {
-                            vm.beginEditing()
-                            draft = it
-                        },
+                        onValueChange = vm::setDraft,
                         modifier = modifier,
                         shape = RectangleShape,
                         colors = textColors,

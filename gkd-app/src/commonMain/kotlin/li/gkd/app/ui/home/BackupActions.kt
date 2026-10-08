@@ -1,7 +1,28 @@
 package li.gkd.app.ui.home
 
-import li.gkd.app.ui.navigation.AppWindow
+import li.gkd.app.backup.BackupManager
+import li.gkd.app.resources.Res
+import li.gkd.app.resources.backup_share
+import li.gkd.app.resources.file_not_selected
+import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.share.importBackup
+import li.gkd.app.ui.share.launchFileAction
+import li.gkd.app.ui.share.pickBackupFile
+import li.gkd.app.ui.share.saveArchive
+import li.gkd.app.ui.share.shareArchive
+import li.gkd.app.util.ToastUtils
+import org.jetbrains.compose.resources.getString
 
-expect fun AppWindow.importAppBackup()
-expect fun AppWindow.shareAppBackup()
-expect fun AppWindow.saveAppBackup()
+fun UiHost.importAppBackup() = launchFileAction {
+    val source = pickBackupFile()
+    if (source == null) ToastUtils.show(getString(Res.string.file_not_selected))
+    else importBackup(source)
+}
+
+fun UiHost.shareAppBackup() = launchFileAction {
+    shareArchive(getString(Res.string.backup_share), BackupManager::exportData)
+}
+
+fun UiHost.saveAppBackup() = launchFileAction {
+    saveArchive(BackupManager::exportData)
+}

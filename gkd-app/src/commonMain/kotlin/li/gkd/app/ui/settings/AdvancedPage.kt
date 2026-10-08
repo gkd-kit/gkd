@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -29,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.a11y_event_logs
@@ -80,6 +80,7 @@ import li.gkd.app.resources.update_success
 import li.gkd.app.resources.upload_links_description
 import li.gkd.app.resources.usage_notice
 import li.gkd.app.settings.SettingsRepository
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAlertDialog
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
@@ -93,71 +94,67 @@ import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.autoFocus
 import li.gkd.app.ui.navigation.A11yEventLogRoute
 import li.gkd.app.ui.navigation.ActivityLogRoute
-import li.gkd.app.ui.navigation.AppRoute
-import li.gkd.app.ui.navigation.AppWindow
 import li.gkd.app.ui.navigation.CrashReportRoute
 import li.gkd.app.ui.navigation.SnapshotPageRoute
 import li.gkd.app.ui.navigation.SnapshotSettingsRoute
-import li.gkd.app.ui.navigation.WebViewRoute
-import li.gkd.app.ui.navigation.openExternalUrl
+import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.style.TABULAR_NUMBERS_FONT_FEATURE
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.itemVerticalPadding
 import li.gkd.app.ui.style.titleItemPadding
 import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.Constants
+import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AdvancedPage(
-    window: AppWindow,
-    onBack: () -> Unit,
-    onNavigate: (AppRoute) -> Unit,
-    toast: (String) -> Unit,
-    onCookieEdit: () -> Unit,
+    host: UiHost,
 ) {
+    val mainVm = MainViewModel.requireCurrent()
+    val vm = viewModel { AdvancedViewModel() }
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
-    val httpRunning: Boolean = window.httpRunning()
+    val httpRunning: Boolean = httpRunning()
 
-    val localNetworkIps: List<String> = window.localNetworkIps()
+    val localNetworkIps: List<String> = localNetworkIps()
 
-    val buttonServiceRunning: Boolean = window.snapshotButtonRunning()
+    val buttonServiceRunning: Boolean = snapshotButtonRunning()
 
-    val activityServiceRunning: Boolean = window.activityMonitorRunning()
+    val activityServiceRunning: Boolean = activityMonitorRunning()
 
-    val eventServiceRunning: Boolean = window.eventMonitorRunning()
+    val eventServiceRunning: Boolean = eventMonitorRunning()
 
-    val trackServiceRunning: Boolean = window.trackServiceRunning()
+    val trackServiceRunning: Boolean = trackServiceRunning()
 
-    var showTrackNotice by rememberSaveable { mutableStateOf(false) }
+    val showTrackNotice by vm.showTrackNotice.collectAsStateWithLifecycle()
     if (showTrackNotice)
         GkAlertDialog(
-            onDismissRequest = { showTrackNotice = false },
+            onDismissRequest = { vm.setShowTrackNotice(false) },
             title = { Text(stringResource(Res.string.usage_notice)) },
             text = { Text(stringResource(Res.string.track_overlay_usage_description)) },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showTrackNotice = false
-                        window.setTrackServiceEnabled(true)
+                        vm.setShowTrackNotice(false)
+                        host.setTrackServiceEnabled(true)
                     }
                 ) {
                     Text(stringResource(Res.string.action_continue))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showTrackNotice = false }) {
+                TextButton(onClick = { vm.setShowTrackNotice(false) }) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },
         )
-    var showEditPortDialog by rememberSaveable { mutableStateOf(false) }
-    var showHttpSettingsDialog by rememberSaveable { mutableStateOf(false) }
+    val showEditPortDialog by vm.showEditPortDialog.collectAsStateWithLifecycle()
+    val showHttpSettingsDialog by vm.showHttpSettingsDialog.collectAsStateWithLifecycle()
 
     if (showHttpSettingsDialog) {
         GkSettingsDialog(
             title = stringResource(Res.string.http_settings_title),
-            onDismissRequest = { showHttpSettingsDialog = false },
+            onDismissRequest = { vm.setShowHttpSettingsDialog(false) },
         ) {
             GkSettingItem(
                 title = stringResource(Res.string.http_port),
@@ -165,7 +162,7 @@ fun AdvancedPage(
                 imageVector = GkIcons.Edit,
                 onClickLabel = stringResource(Res.string.http_port_edit),
                 onClick = {
-                    showEditPortDialog = true
+                    vm.setShowEditPortDialog(true)
                 },
             )
             GkTextSwitch(
@@ -182,14 +179,14 @@ fun AdvancedPage(
     if (showEditPortDialog) {
         EditHttpPortDialog(
             currentPort = store.httpServerPort,
-            onDismissRequest = { showEditPortDialog = false },
+            onDismissRequest = { vm.setShowEditPortDialog(false) },
             onConfirm = { text ->
                 val oldPort = SettingsRepository.settings.value.httpServerPort
                 if (SettingsRepository.saveHttpServerPort(text)) {
-                    if (oldPort != text.toInt()) toast(Res.string.update_success.getSync())
-                    showEditPortDialog = false
+                    if (oldPort != text.toInt()) ToastUtils.show(Res.string.update_success.getSync())
+                    vm.setShowEditPortDialog(false)
                 } else {
-                    toast(Res.string.http_port_input_hint.getSync())
+                    ToastUtils.show(Res.string.http_port_input_hint.getSync())
                 }
             },
         )
@@ -204,7 +201,7 @@ fun AdvancedPage(
                 navigationIcon = {
                     GkIconButton(
                         imageVector = GkIcons.ArrowBack,
-                        onClick = onBack,
+                        onClick = mainVm.navigator::pop,
                     )
                 },
                 title = { Text(text = stringResource(Res.string.advanced_settings)) },
@@ -222,18 +219,18 @@ fun AdvancedPage(
             GkSettingItem(
                 title = stringResource(Res.string.snapshot_records),
                 subtitle = stringResource(Res.string.snapshot_records_description),
-                onClick = { onNavigate(SnapshotPageRoute) },
+                onClick = { mainVm.navigator.navigate(SnapshotPageRoute) },
             )
             GkTextSwitch(
                 title = stringResource(Res.string.snapshot_button_label),
                 subtitle = stringResource(Res.string.snapshot_button_description),
                 checked = buttonServiceRunning,
-                onCheckedChange = window::setSnapshotButtonEnabled,
+                onCheckedChange = host::setSnapshotButtonEnabled,
             )
             GkSettingItem(
                 title = stringResource(Res.string.snapshot_settings),
                 subtitle = stringResource(Res.string.snapshot_settings_description),
-                onClick = { onNavigate(SnapshotSettingsRoute) },
+                onClick = { mainVm.navigator.navigate(SnapshotSettingsRoute) },
             )
 
             AdvancedSectionTitle(stringResource(Res.string.advanced_live_debug))
@@ -242,44 +239,44 @@ fun AdvancedPage(
                 settingsSelected = showHttpSettingsDialog,
                 port = store.httpServerPort,
                 localNetworkIps = localNetworkIps,
-                onSettingsClick = { showHttpSettingsDialog = true },
-                onRunningChange = window::setHttpServiceEnabled,
-                onAddressClick = window::openExternalUrl,
+                onSettingsClick = { vm.setShowHttpSettingsDialog(true) },
+                onRunningChange = host::setHttpServiceEnabled,
+                onAddressClick = mainVm.textDialog::showUrl,
             )
             GkTextSwitch(
                 title = stringResource(Res.string.activity_service_label),
                 subtitle = stringResource(Res.string.activity_service_description),
                 checked = activityServiceRunning,
-                onCheckedChange = window::setActivityMonitorEnabled,
+                onCheckedChange = host::setActivityMonitorEnabled,
             )
             GkTextSwitch(
                 title = stringResource(Res.string.event_service_label),
                 subtitle = stringResource(Res.string.event_service_description),
                 checked = eventServiceRunning,
-                onCheckedChange = window::setEventMonitorEnabled,
+                onCheckedChange = host::setEventMonitorEnabled,
             )
             GkTextSwitch(
                 title = stringResource(Res.string.track_overlay),
                 subtitle = stringResource(Res.string.track_overlay_description),
                 checked = trackServiceRunning,
-                onCheckedChange = { if (it) showTrackNotice = true else window.setTrackServiceEnabled(false) },
+                onCheckedChange = { if (it) vm.setShowTrackNotice(true) else host.setTrackServiceEnabled(false) },
             )
 
             AdvancedSectionTitle(stringResource(Res.string.advanced_logs_diagnostics))
             GkSettingItem(
                 title = stringResource(Res.string.activity_log_title),
                 subtitle = stringResource(Res.string.activity_switch_logs),
-                onClick = { onNavigate(ActivityLogRoute) },
+                onClick = { mainVm.navigator.navigate(ActivityLogRoute) },
             )
             GkSettingItem(
                 title = stringResource(Res.string.event_log_title),
                 subtitle = stringResource(Res.string.a11y_event_logs),
-                onClick = { onNavigate(A11yEventLogRoute) },
+                onClick = { mainVm.navigator.navigate(A11yEventLogRoute) },
             )
             GkSettingItem(
                 title = stringResource(Res.string.crash_reports),
                 subtitle = stringResource(Res.string.crash_reports_description),
-                onClick = { onNavigate(CrashReportRoute) },
+                onClick = { mainVm.navigator.navigate(CrashReportRoute) },
             )
 
             AdvancedSectionTitle(stringResource(Res.string.advanced_upload_share))
@@ -288,36 +285,36 @@ fun AdvancedPage(
                 subtitle = stringResource(Res.string.upload_links_description),
                 suffix = stringResource(Res.string.tutorial_view),
                 suffixUnderline = true,
-                onSuffixClick = { onNavigate(WebViewRoute(AppLinks.CookieHelp)) },
+                onSuffixClick = { mainVm.navigator.openWebPage(AppLinks.CookieHelp) },
                 imageVector = GkIcons.Edit,
-                onClick = onCookieEdit,
+                onClick = mainVm.githubUpload::editCookie,
             )
             GkPageBottomSpace()
         }
     }
 }
 
-expect fun AppWindow.setSnapshotButtonEnabled(enabled: Boolean)
+expect fun UiHost.setSnapshotButtonEnabled(enabled: Boolean)
 
-expect fun AppWindow.setHttpServiceEnabled(enabled: Boolean)
+expect fun UiHost.setHttpServiceEnabled(enabled: Boolean)
 
-expect fun AppWindow.setActivityMonitorEnabled(enabled: Boolean)
+expect fun UiHost.setActivityMonitorEnabled(enabled: Boolean)
 
-expect fun AppWindow.setEventMonitorEnabled(enabled: Boolean)
+expect fun UiHost.setEventMonitorEnabled(enabled: Boolean)
 
-expect fun AppWindow.setTrackServiceEnabled(enabled: Boolean)
+expect fun UiHost.setTrackServiceEnabled(enabled: Boolean)
 
-@Composable expect fun AppWindow.httpRunning(): Boolean
+@Composable expect fun httpRunning(): Boolean
 
-@Composable expect fun AppWindow.localNetworkIps(): List<String>
+@Composable expect fun localNetworkIps(): List<String>
 
-@Composable expect fun AppWindow.snapshotButtonRunning(): Boolean
+@Composable expect fun snapshotButtonRunning(): Boolean
 
-@Composable expect fun AppWindow.activityMonitorRunning(): Boolean
+@Composable expect fun activityMonitorRunning(): Boolean
 
-@Composable expect fun AppWindow.eventMonitorRunning(): Boolean
+@Composable expect fun eventMonitorRunning(): Boolean
 
-@Composable expect fun AppWindow.trackServiceRunning(): Boolean
+@Composable expect fun trackServiceRunning(): Boolean
 
 @Composable
 private fun AdvancedSectionTitle(title: String, showTop: Boolean = true) {

@@ -1,52 +1,16 @@
 package li.gkd.app.ui.home
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.listSaver
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import kotlinx.coroutines.delay
 import li.gkd.app.app.AppQuery
 import li.gkd.app.app.AppSort
 import li.gkd.app.settings.SettingsStore
 import li.gkd.app.state.Loadable
 
-class AppListPageState(search: String = "", searchOpen: Boolean = false) {
-    var search by mutableStateOf(search)
-        private set
-    var searchOpen by mutableStateOf(searchOpen)
-        private set
-    private var editingFilter by mutableStateOf<Set<String>?>(null)
-    var query by mutableStateOf(search)
-
-    fun setSearchText(value: String) {
-        search = value.trim()
-    }
-
-    fun closeSearch() {
-        search = ""; searchOpen = false
-    }
-
-    fun toggleSearch() {
-        if (!searchOpen) searchOpen = true
-        else if (search.isEmpty()) searchOpen = false
-        else search = ""
-    }
-
-    fun toggleEdit(blocked: Set<String>) {
-        editingFilter = if (editingFilter == null) blocked else null
-    }
-
-    fun closeEdit() {
-        editingFilter = null
-    }
-
-    fun onLeave() {
-        searchOpen = searchOpen && search.isNotEmpty(); editingFilter = null
-    }
-
+data class AppListPageState(
+    val search: String = "",
+    val searchOpen: Boolean = false,
+    val editingFilter: Set<String>? = null,
+    val query: String = "",
+) {
     fun content(
         source: Loadable<AppListSource>,
         settings: SettingsStore,
@@ -91,16 +55,4 @@ class AppListPageState(search: String = "", searchOpen: Boolean = false) {
             showBlocked = settings.showBlockApp,
         )
     }
-}
-
-@Composable
-fun rememberAppListPageState(): AppListPageState {
-    val state = rememberSaveable(
-        saver = listSaver(
-            save = { listOf(it.search, it.searchOpen) },
-            restore = { AppListPageState(it[0] as String, it[1] as Boolean) },
-        )
-    ) { AppListPageState() }
-    LaunchedEffect(state.search) { delay(200); state.query = state.search }
-    return state
 }

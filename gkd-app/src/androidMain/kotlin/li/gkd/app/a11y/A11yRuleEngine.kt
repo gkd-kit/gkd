@@ -27,7 +27,7 @@ import li.gkd.app.service.topAppIdFlow
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.Constants
-import li.gkd.app.util.ToastUtils
+import li.gkd.app.util.AndroidToastUtils
 import li.gkd.app.util.launchLogged
 import java.util.concurrent.Executors
 import kotlin.coroutines.Continuation
@@ -405,7 +405,7 @@ class A11yRuleEngine(private val service: A11yCommonImpl) {
                     startQueryJob()
                 }
                 if (actionResult.action != ActionPerformer.None.action) {
-                    ToastUtils.showAction(rule)
+                    AndroidToastUtils.showAction(rule)
                 }
                 addActionLog(rule, topActivity, target, actionResult)
             }

@@ -1,5 +1,6 @@
 package li.gkd.app.ui.subscription
 
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import li.gkd.app.model.ExcludeData
@@ -37,6 +38,20 @@ data class SubsGlobalGroupExcludeUiState(
 class SubsGlobalGroupExcludeViewModel(
     val route: SubsGlobalGroupExcludeRoute,
 ) : BaseViewModel() {
+    val query: StateFlow<String>
+        field = MutableStateFlow("")
+
+    fun setQuery(value: String) {
+        query.value = value
+    }
+
+    val showSearchBar: StateFlow<Boolean>
+        field = MutableStateFlow(false)
+
+    fun setShowSearchBar(value: Boolean) {
+        showSearchBar.value = value
+    }
+
     private val mutation = MutexState()
     val busyFlow: StateFlow<Boolean> get() = mutation.state
     suspend fun runAction(action: suspend () -> Unit) {
@@ -81,5 +96,4 @@ class SubsGlobalGroupExcludeViewModel(
 
     suspend fun applySwitches(request: RuleSwitchRequest, setting: RuleSetting) =
         RuleGroupConfigService.apply(request, setting)
-
 }

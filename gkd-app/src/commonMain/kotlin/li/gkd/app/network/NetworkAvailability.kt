@@ -1,12 +1,15 @@
 package li.gkd.app.network
 
-import java.net.InetAddress
+import io.ktor.client.request.prepareGet
+import kotlinx.coroutines.CancellationException
+import li.gkd.app.util.LogUtils
 
-object NetworkAvailability {
-    /** Existing preflight heuristic, not a guarantee of Internet connectivity. */
-    fun canResolveProbeHost(): Boolean = try {
-        InetAddress.getByName("www.baidu.com") != null
-    } catch (_: Exception) {
-        false
-    }
+/** Any HTTPS response confirms probe reachability, not that an update host is reachable. */
+suspend fun canReachNetwork(): Boolean = try {
+    NetworkClients.probeClient.prepareGet("https://baidu.com/").execute { true }
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Exception) {
+    LogUtils.d("Network probe failed", e)
+    false
 }

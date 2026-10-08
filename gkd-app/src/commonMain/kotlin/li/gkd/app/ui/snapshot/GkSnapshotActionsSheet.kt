@@ -49,12 +49,12 @@ import li.gkd.app.ui.component.GkFixedTimeText
 import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkModalBottomSheet
+import li.gkd.app.util.copyText
 import li.gkd.db.Snapshot
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun GkSnapshotActionsSheet(
-    copyText: (String) -> Unit,
     imageLoader: ImageLoader,
     snapshot: Snapshot,
     appName: String,

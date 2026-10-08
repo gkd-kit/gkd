@@ -17,16 +17,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.notification_body_label
 import li.gkd.app.resources.notification_template_variables
@@ -45,18 +42,24 @@ import li.gkd.app.resources.template_text_input_hint
 import li.gkd.app.resources.update_success
 import li.gkd.app.rule.ruleGroupState
 import li.gkd.app.settings.SettingsRepository
-import li.gkd.app.settings.SettingsRepository.settings
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkSwitch
 import li.gkd.app.ui.component.GkTemplateVariableRow
-import li.gkd.app.ui.navigation.EditorFrame
+import li.gkd.app.ui.navigation.GkEditor
 import li.gkd.app.ui.page.EditorSession
+import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.text.getSync
+import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun NotificationTextPage(showToast: (String) -> Unit, editorFrame: EditorFrame) {
-    val initial = remember { settings.value }
+fun NotificationTextPage(
+    host: UiHost,
+) {
+    val mainVm = MainViewModel.requireCurrent()
+    val vm = viewModel { NotificationTextViewModel() }
     val rules by ruleGroupState.collectAsStateWithLifecycle()
     val count by SettingsRepository.actionCount.collectAsStateWithLifecycle()
     val groups = rules.value?.groups
@@ -70,26 +73,23 @@ fun NotificationTextPage(showToast: (String) -> Unit, editorFrame: EditorFrame) 
         )
     }
 
+    val enabled by vm.enabled.collectAsStateWithLifecycle()
+    val title by vm.title.collectAsStateWithLifecycle()
+    val text by vm.text.collectAsStateWithLifecycle()
 
-    var enabled by rememberSaveable { mutableStateOf(initial.useCustomNotifText) }
-    var title by rememberSaveable { mutableStateOf(initial.customNotifTitle) }
-    var text by rememberSaveable { mutableStateOf(initial.customNotifText) }
-
-    editorFrame(
+    GkEditor(
         EditorSession(
             title = stringResource(Res.string.notification_text),
-            hasChanges = {
-                enabled != initial.useCustomNotifText ||
-                    title != initial.customNotifTitle ||
-                    text != initial.customNotifText
-            },
+            hasChanges = vm::hasChanges,
             onSave = {
-                if (SettingsRepository.saveNotificationText(enabled, title, text)) {
-                    showToast(Res.string.update_success.getSync())
+                if (vm.save()) {
+                    ToastUtils.show(Res.string.update_success.getSync())
                 }
             },
         ),
-        null,
+        navigator = mainVm.navigator,
+        hideIme = host::hideIme,
+        scope = mainVm.scope,
     ) { padding ->
         Column(
             modifier =
@@ -112,7 +112,7 @@ fun NotificationTextPage(showToast: (String) -> Unit, editorFrame: EditorFrame) 
                             .toggleable(
                                 value = enabled,
                                 role = Role.Switch,
-                                onValueChange = { enabled = it },
+                                onValueChange = { vm.setEnabled(it) },
                             )
                             .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -131,7 +131,7 @@ fun NotificationTextPage(showToast: (String) -> Unit, editorFrame: EditorFrame) 
             }
             OutlinedTextField(
                 value = title,
-                onValueChange = { title = it.filter { c -> c !in "\n\r" }.take(32) },
+                onValueChange = { vm.setTitle(it.filter { c -> c !in "\n\r" }.take(32)) },
                 label = { Text(stringResource(Res.string.notification_title_label)) },
                 placeholder = { Text(stringResource(Res.string.template_text_input_hint)) },
                 singleLine = true,
@@ -146,7 +146,7 @@ fun NotificationTextPage(showToast: (String) -> Unit, editorFrame: EditorFrame) 
             )
             OutlinedTextField(
                 value = text,
-                onValueChange = { text = it.take(64) },
+                onValueChange = { vm.setText(it.take(64)) },
                 label = { Text(stringResource(Res.string.notification_body_label)) },
                 placeholder = { Text(stringResource(Res.string.template_text_input_hint)) },
                 minLines = 2,

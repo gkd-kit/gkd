@@ -22,6 +22,7 @@ import li.gkd.app.resources.action_close
 import li.gkd.app.resources.action_open
 import li.gkd.app.resources.link_view
 import li.gkd.app.resources.text_view
+import li.gkd.app.ui.platform.SystemActionFeedback
 import org.jetbrains.compose.resources.stringResource
 
 private data class TextDialogRequest(
@@ -29,7 +30,7 @@ private data class TextDialogRequest(
     val openable: Boolean,
 )
 
-class TextDialogState(private val openUri: (String) -> Unit) {
+class TextDialogState {
     private val requestFlow = MutableStateFlow<TextDialogRequest?>(null)
 
     fun showText(text: String) {
@@ -46,7 +47,7 @@ class TextDialogState(private val openUri: (String) -> Unit) {
                 openable = true,
             )
         } else {
-            openUri(url)
+            SystemActionFeedback.openExternal(url)
         }
     }
 
@@ -56,7 +57,7 @@ class TextDialogState(private val openUri: (String) -> Unit) {
 
     private fun open(request: TextDialogRequest) {
         dismiss()
-        openUri(request.text)
+        SystemActionFeedback.openExternal(request.text)
     }
 
     @Composable

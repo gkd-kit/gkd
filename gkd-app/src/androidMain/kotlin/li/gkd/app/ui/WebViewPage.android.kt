@@ -40,28 +40,26 @@ import li.gkd.app.resources.compatibility_notice
 import li.gkd.app.resources.webview_load_failed
 import li.gkd.app.resources.webview_outdated_notice
 import li.gkd.app.ui.component.GkWebViewErrorContent
-import li.gkd.app.ui.navigation.AppWindow
 import li.gkd.app.ui.navigation.WebViewRoute
 import li.gkd.app.ui.page.WebViewScreen
+import li.gkd.app.ui.platform.SystemActionFeedback
+import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.LocalDarkTheme
 import li.gkd.app.ui.share.launchUiAction
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.util.AndroidTarget
-import li.gkd.app.util.IntentUtils
 import li.gkd.app.util.LogUtils
-import li.gkd.app.util.ToastUtils
+import li.gkd.app.util.copyText
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 actual fun WebViewPage(
     route: WebViewRoute,
-    window: AppWindow,
-    browsersRunning: () -> Boolean,
-    onHostKey: (Int) -> Unit
+    host: UiHost,
 ) {
-    val initUrl = route.initUrl
     val mainVm = MainViewModel.requireCurrent()
+    val initUrl = route.initUrl
     val state = remember(initUrl) { BrowserState() }
     val dark = LocalDarkTheme.current
     val webView = state.view
@@ -77,7 +75,7 @@ actual fun WebViewPage(
         }
         Unit
     }
-    val openExternal = { IntentUtils.openUri(state.failure?.url ?: webView?.url ?: initUrl) }
+    val openExternal = { SystemActionFeedback.openExternal(state.failure?.url ?: webView?.url ?: initUrl) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(webView, lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
@@ -95,9 +93,9 @@ actual fun WebViewPage(
     WebViewScreen(
         title = if (state.failure != null) stringResource(Res.string.webview_load_failed) else state.title,
         loading = state.loading,
-        onBack = mainVm::popPage,
+        onBack = mainVm.navigator::pop,
         onReload = reload,
-        onCopyLink = { ToastUtils.copyText(state.failure?.url ?: webView?.url ?: initUrl) },
+        onCopyLink = { copyText(state.failure?.url ?: webView?.url ?: initUrl) },
         onOpenExternal = openExternal,
         onCompatibilityNotice = if (chromeVersion in 1..<MINI_CHROME_VERSION) {
             mainVm.scope.launchUiAction {
@@ -294,9 +292,9 @@ private class GkdWebViewClient(private val state: BrowserState) : WebViewClient(
         val uri = request?.url
         if (uri != null && uri.host != "gkd.li") {
             if (uri.scheme == "gkd") {
-                (view?.context as? MainActivity)?.mainVm?.handleGkdUri(uri)
+                (view?.context as? MainActivity)?.mainVm?.androidState?.handleGkdUri(uri)
             } else {
-                IntentUtils.openUri(uri)
+                SystemActionFeedback.openExternal(uri.toString())
             }
             return true
         }

@@ -17,6 +17,13 @@ import org.jetbrains.compose.resources.getString
 class CrashReportViewModel(
     initialCrashDataList: List<CrashData>,
 ) : BaseViewModel() {
+    val expandedCrashId: StateFlow<Long?>
+        field = MutableStateFlow<Long?>(initialCrashDataList.firstOrNull()?.id)
+
+    fun setExpandedCrashId(value: Long?) {
+        expandedCrashId.value = value
+    }
+
     val crashDataState: StateFlow<Loadable<List<CrashData>>>
         field = MutableStateFlow(
             if (initialCrashDataList.isEmpty()) {
@@ -71,5 +78,4 @@ class CrashReportViewModel(
             withContext(Dispatchers.IO) { FileCrashStorage.load() },
         )
     }
-
 }

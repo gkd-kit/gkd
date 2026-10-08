@@ -4,7 +4,7 @@ import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.settings.SettingsAppIds
 import li.gkd.app.settings.SettingsRepository
 
-/** The draft belongs to Compose; this object only prepares and persists explicit edits. */
+/** Prepares and persists explicit app ID edits; the owning page ViewModel manages the draft. */
 class AppIdListEditor(
     private val currentIds: () -> Set<String>,
     private val replace: (Set<String>) -> Unit,
