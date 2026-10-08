@@ -6,7 +6,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,6 +27,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
+import androidx.compose.ui.awt.ComposePanel
+import androidx.compose.ui.awt.RenderSettings
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -48,6 +49,8 @@ import androidx.compose.ui.window.WindowState
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.icon.Logo
 import java.awt.Rectangle
+import java.awt.BorderLayout
+import java.awt.Dimension
 import java.awt.Window
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
@@ -72,7 +75,11 @@ object DesktopWindowGeometry {
 
     fun isCustom(window: ComposeWindow) = window.rootPane.getClientProperty(FRAME) == true
     fun update(window: ComposeWindow, bounds: Rectangle, custom: Boolean) {
-        window.rootPane.putClientProperty(CONTENT, bounds)
+        val pane = window.contentPane
+        val content = (pane.layout as BorderLayout).getLayoutComponent(BorderLayout.CENTER)
+        window.rootPane.putClientProperty(CONTENT, Rectangle(bounds).apply {
+            translate(content.x, content.y)
+        })
         window.rootPane.putClientProperty(FRAME, custom)
     }
 
@@ -166,8 +173,8 @@ fun GkDesktopWindowFrame(
     SideEffect {
         if (!showTitle) controller?.layout = WindowsWindowHitTest()
     }
-    Column(Modifier.fillMaxSize().background(background)) {
-        if (showTitle) {
+    if (showTitle) {
+        DesktopTitleHost(window, requireNotNull(controller)) {
             // Consume the host theme's animated colors so the caption and content share one transition.
             val foreground = MaterialTheme.colorScheme.onSurface
             Row(
@@ -217,15 +224,47 @@ fun GkDesktopWindowFrame(
                 )
             }
         }
-        Box(Modifier.weight(1f).fillMaxWidth().onGloballyPositioned {
-            val rect = it.boundsInWindow()
-            DesktopWindowGeometry.update(
-                window, Rectangle(
-                    (rect.left / density).roundToInt(), (rect.top / density).roundToInt(),
-                    (rect.width / density).roundToInt(), (rect.height / density).roundToInt(),
-                ), showTitle
-            )
-        }) { content() }
+    }
+    Box(Modifier.fillMaxSize().background(background).onGloballyPositioned {
+        val rect = it.boundsInWindow()
+        DesktopWindowGeometry.update(
+            window, Rectangle(
+                (rect.left / density).roundToInt(), (rect.top / density).roundToInt(),
+                (rect.width / density).roundToInt(), (rect.height / density).roundToInt(),
+            ), showTitle
+        )
+    }) { content() }
+}
+
+/** A sibling of the application's canvas, outside its Dialog/Popup input and drawing layers. */
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+private fun DesktopTitleHost(
+    window: ComposeWindow,
+    controller: WindowsWindowFrameController,
+    content: @Composable () -> Unit,
+) {
+    val currentContent by rememberUpdatedState(content)
+    val colors by rememberUpdatedState(MaterialTheme.colorScheme)
+    val typography by rememberUpdatedState(MaterialTheme.typography)
+    val shapes by rememberUpdatedState(MaterialTheme.shapes)
+    DisposableEffect(window, controller) {
+        val panel = ComposePanel(renderSettings = RenderSettings.SkiaSurface()).apply {
+            preferredSize = Dimension(0, 32)
+            setContent {
+                MaterialTheme(colorScheme = colors, typography = typography, shapes = shapes) {
+                    currentContent()
+                }
+            }
+        }
+        window.contentPane.add(panel, BorderLayout.NORTH)
+        val detach = controller.attachTitlePanel(panel)
+        window.validate()
+        onDispose {
+            detach()
+            window.contentPane.remove(panel)
+            window.validate()
+        }
     }
 }
 

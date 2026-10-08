@@ -59,6 +59,16 @@ class WindowsWindowFrameController(private val window: ComposeWindow) : AutoClos
         )
     }
 
+    fun attachTitlePanel(panel: Container): () -> Unit {
+        val skia = requireNotNull(findSkia(panel)) { "Title canvas is unavailable" }
+        val hook = Hook(HWND(Native.getComponentPointer(skia.canvas)), true).also { it.install() }
+        hooks += hook
+        return {
+            hook.restore()
+            hooks.remove(hook)
+        }
+    }
+
     private fun hit(lParam: LPARAM): Int {
         val point =
             POINT(lParam.toInt().toShort().toInt(), (lParam.toLong() shr 16).toShort().toInt())
