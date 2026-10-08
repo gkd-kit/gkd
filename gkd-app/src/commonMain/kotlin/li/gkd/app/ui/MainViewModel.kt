@@ -93,7 +93,7 @@ class MainViewModel(val permissions: PermissionRequester) : BaseViewModel() {
         confirmDelete = ::confirmDelete,
     )
 
-    val ruleGroupState = RuleGroupState()
+    val ruleGroupState = RuleGroupState(dialogRequests)
     fun showRuleGroup(
         subscriptionId: Long,
         appId: String?,

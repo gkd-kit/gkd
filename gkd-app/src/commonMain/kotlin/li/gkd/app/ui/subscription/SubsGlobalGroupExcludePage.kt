@@ -35,7 +35,6 @@ import li.gkd.app.resources.app_search_hint
 import li.gkd.app.resources.apps_no_matches
 import li.gkd.app.resources.apps_no_matches_filter_hint
 import li.gkd.app.resources.global_rule_app_switch_batch_confirmation
-import li.gkd.app.resources.global_rule_app_switch_set
 import li.gkd.app.resources.search_clear
 import li.gkd.app.resources.search_close
 import li.gkd.app.resources.search_open
@@ -175,16 +174,14 @@ fun SubsGlobalGroupExcludePage(
             val request = vm.prepareSwitches(state, ids)
             vm.scope.launchUi {
                 vm.runAction {
-                    if (confirm && !mainVm.dialogRequests.confirm(
-                            getString(Res.string.global_rule_app_switch_set),
-                            getString(
-                                Res.string.global_rule_app_switch_batch_confirmation,
-                                ids.size.toString(),
-                                setting.labelText()
-                            )
-                        )
-                    ) return@runAction
-                    ToastUtils.show(vm.applySwitches(request, setting).description())
+                    vm.applySwitches(
+                        request, setting,
+                        confirmation = if (confirm) getString(
+                            Res.string.global_rule_app_switch_batch_confirmation,
+                            ids.size.toString(),
+                            setting.labelText()
+                        ) else null,
+                    )?.let { ToastUtils.show(it.description()) }
                 }
             }
         }
@@ -312,7 +309,7 @@ fun SubsGlobalGroupExcludePage(
                                     val request = vm.prepareSwitches(state, setOf(appId))
                                     vm.scope.launchUi {
                                         vm.applySwitches(request, setting)
-                                            .failureMessage()
+                                            ?.failureMessage()
                                             ?.let { ToastUtils.show(it) }
                                     }
                                 }, modifier = switchModifier,

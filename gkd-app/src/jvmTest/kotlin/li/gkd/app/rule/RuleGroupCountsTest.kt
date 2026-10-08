@@ -38,9 +38,9 @@ class RuleGroupCountsTest {
             emptyList(),
             launcherAppId = "app.launcher",
         )
-        // Personal includes cannot override built-in exclusions; page exclusions do not disable a group.
+        // Existing personal includes override built-in app disables; page exclusions do not disable a group.
         assertEquals(
-            mapOf("app.one" to 0, "app.two" to 2, "app.system" to 1, "app.launcher" to 0),
+            mapOf("app.one" to 1, "app.two" to 2, "app.system" to 1, "app.launcher" to 0),
             summary.appIdToGlobalGroupCount
         )
     }

@@ -207,7 +207,7 @@ fun ActionLogPage(
             onSettingChange = { setting ->
                 val request = vm.prepareSwitch(state)
                 scope.launchUi {
-                    vm.applySwitch(request, setting).failureMessage()
+                    vm.applySwitch(request, setting)?.failureMessage()
                         ?.let { ToastUtils.show(it) }
                 }
             },

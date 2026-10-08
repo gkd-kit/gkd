@@ -83,9 +83,10 @@ import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 fun runDesktop(args: Array<String>) {
-    require(args.all { it == "--test" }) { "Only --test is supported" }
+    require(args.all { it == "--test" || it == "--focus" }) { "Only --test and --focus are supported" }
     DesktopStorage.initialize("--test" in args)
-    val testWindows = if (DesktopStorage.isolated) DesktopTestWindows.install() else null
+    val backgroundTest = DesktopStorage.isolated && "--focus" !in args
+    val testWindows = if (backgroundTest) DesktopTestWindows.install() else null
     application {
         DisposableEffect(Unit) { onDispose { testWindows?.close() } }
         val windowIcon = rememberVectorPainter(GkIcons.Logo)
@@ -112,7 +113,7 @@ fun runDesktop(args: Array<String>) {
         var appWindow by remember { mutableStateOf<ComposeWindow?>(null) }
         val initialSize = remember { simulator.settings.value.device }
         val testPosition =
-            if (DesktopStorage.isolated) WindowPosition.Absolute(
+            if (backgroundTest) WindowPosition.Absolute(
                 (-10000).dp,
                 (-10000).dp
             )
@@ -131,7 +132,7 @@ fun runDesktop(args: Array<String>) {
         val openControls: () -> Unit = {
             controlsWindowState.isMinimized = false
             controlsVisible = true
-            if (!DesktopStorage.isolated) {
+            if (!backgroundTest) {
                 controlsWindow?.let {
                     it.extendedState = it.extendedState and Frame.ICONIFIED.inv()
                     it.toFront()
@@ -208,7 +209,7 @@ fun runDesktop(args: Array<String>) {
                 state = controlsWindowState,
                 visible = controlsReady,
                 icon = windowIcon,
-                focusable = !DesktopStorage.isolated
+                focusable = !backgroundTest
             ) {
                 SideEffect { controlsWindow = window }
                 DisposableEffect(window) { onDispose { controlsWindow = null } }
@@ -242,7 +243,7 @@ fun runDesktop(args: Array<String>) {
             state = windowState,
             visible = appReady,
             icon = windowIcon,
-            focusable = !DesktopStorage.isolated
+            focusable = !backgroundTest
         ) {
             LaunchedEffect(closeAttempt) {
                 if (closing) {

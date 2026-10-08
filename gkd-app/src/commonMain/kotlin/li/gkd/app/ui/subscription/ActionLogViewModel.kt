@@ -25,6 +25,7 @@ import li.gkd.app.rule.toRuleGroupTarget
 import li.gkd.app.rule.toSwitchTarget
 import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.navigation.ActionLogRoute
 import li.gkd.app.ui.state.BaseViewModel
@@ -163,7 +164,7 @@ class ActionLogViewModel(
     }
 
     suspend fun applySwitch(request: RuleSwitchRequest, setting: RuleSetting) =
-        RuleGroupConfigService.apply(request, setting)
+        applyRuleSwitchWithConfirmation(request, setting, MainViewModel.requireCurrent().dialogRequests, RuleSwitchHost.RuleDetail)
 
     suspend fun updateActivityExclusion(state: ActionLogDialogState) {
         val actionLog = state.actionLog

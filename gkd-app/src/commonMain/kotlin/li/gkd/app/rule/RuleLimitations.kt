@@ -95,7 +95,8 @@ class RuleLimitationPolicy {
 
         var blocked = 0
         val blockedReasons = linkedSetOf<RuleRestriction>()
-        val groupExcluded = group is RawSubscription.RawGlobalGroup && appId != null &&
+        val manuallyEnabled = appId != null && exclude.appIds[appId] == false
+        val groupExcluded = group is RawSubscription.RawGlobalGroup && appId != null && !manuallyEnabled &&
                 appId in subscription.globalGroupAppGroupNameDisableMap[group.key].orEmpty()
         if (groupExcluded) {
             blockedReasons.add(RuleRestriction.ShadowedByAppRule)
@@ -190,13 +191,14 @@ class RuleLimitationPolicy {
                             rule,
                             appId,
                             info,
-                            groupExcluded
+                            groupExcluded,
+                            manuallyEnabled,
                         )
                     ) {
                         blocked++
                         if (!groupExcluded) {
                             blockedReasons.add(
-                                if (RuleScopePolicy.globalApp(group, rule, appId)?.enable == false)
+                                if (!manuallyEnabled && RuleScopePolicy.globalApp(group, rule, appId)?.enable == false)
                                     RuleRestriction.AppExcluded else RuleRestriction.VersionMismatch
                             )
                         }
@@ -223,10 +225,10 @@ class RuleLimitationPolicy {
                     }
             }
             if (group is RawSubscription.RawGlobalGroup && appId != null && !groupExcluded &&
-                !RuleScopePolicy.globalRuleAllowed(group, null, appId, info, false)
+                !RuleScopePolicy.globalRuleAllowed(group, null, appId, info, false, manuallyEnabled)
             ) {
                 blockedReasons.add(
-                    if (RuleScopePolicy.globalApp(group, null, appId)?.enable == false)
+                    if (!manuallyEnabled && RuleScopePolicy.globalApp(group, null, appId)?.enable == false)
                         RuleRestriction.AppExcluded else RuleRestriction.VersionMismatch
                 )
             }

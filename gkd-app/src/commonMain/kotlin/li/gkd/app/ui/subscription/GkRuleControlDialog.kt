@@ -27,6 +27,21 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import li.gkd.app.resources.Res
+import li.gkd.app.resources.global_control_group
+import li.gkd.app.resources.global_control_app
+import li.gkd.app.resources.global_control_default_app
+import li.gkd.app.resources.global_control_default_group
+import li.gkd.app.resources.global_rule_enable_builtin_warning
+import li.gkd.app.resources.global_rule_enable_builtin_partial_warning
+import li.gkd.app.resources.global_control_name_off
+import li.gkd.app.resources.global_control_scope_off
+import li.gkd.app.resources.global_control_default_on
+import li.gkd.app.resources.global_control_group_hint
+import li.gkd.app.resources.global_control_pages_hint
+import li.gkd.app.resources.global_control_partial
+import li.gkd.app.resources.global_control_enabled
+import li.gkd.app.resources.global_control_manual
+import li.gkd.app.resources.global_control_group_off
 import li.gkd.app.resources.action_close
 import li.gkd.app.resources.action_turn_on
 import li.gkd.app.resources.category_settings
@@ -54,6 +69,8 @@ import li.gkd.app.resources.subscription_disabled
 import li.gkd.app.rule.RuleControlState
 import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.rule.RuleRestriction
+import li.gkd.app.rule.RuleScopePolicy
+import li.gkd.app.rule.RuleLimitationKind
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.ui.component.GkAppNameText
 import li.gkd.app.ui.component.GkGroupNameText
@@ -61,6 +78,7 @@ import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkScaffold
+import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.icon.ToggleMid
 import li.gkd.app.ui.platform.GkFullscreenDialog
@@ -70,15 +88,18 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun GkRuleControlDialog(
     subscription: RawSubscription,
-    group: RawSubscription.RawAppGroup,
+    group: RawSubscription.RawGroupProps,
     appId: String?,
     configuration: SubscriptionConfigSnapshot,
     control: RuleControlState,
     appEnabled: Boolean,
+    groupControl: RuleControlState,
     onDismissRequest: () -> Unit,
 ) {
 
-    val category = subscription.getCategory(group.name)
+    val global = group is RawSubscription.RawGlobalGroup
+    val inApp = global && appId != null
+    val category = if (global) null else subscription.getCategory(group.name)
     val categoryConfig = configuration.categoryConfigs.find {
         it.subsId == subscription.id && it.categoryKey == category?.key
     }
@@ -90,7 +111,7 @@ fun GkRuleControlDialog(
         addAll(control.restrictions.filterNot {
             it == RuleRestriction.SubscriptionDisabled || it == RuleRestriction.SubscriptionAppDisabled
         })
-        if (!control.canEnable) addAll(control.limitations.blockedReasons)
+        if (!global && !control.canEnable) addAll(control.limitations.blockedReasons)
     }.distinct().map { it.label }
     val hasOtherRestrictions = otherRestrictions.isNotEmpty() || !control.canEnable
     // This view explains rule configuration, independently of app whitelists and service state.
@@ -102,7 +123,9 @@ fun GkRuleControlDialog(
         category?.enable != null -> stringResource(Res.string.category_subscription_default)
         else -> stringResource(Res.string.category_use_group_default)
     }
-    val steps = buildList {
+    val steps = if (global) globalControlSteps(
+        subscription, group, appId, subscriptionEnabled, control, groupControl,
+    ) else buildList {
         add(
             ControlStep(
                 stringResource(Res.string.rule_control_subscription),
@@ -168,11 +191,11 @@ fun GkRuleControlDialog(
     }
     val decidingIndex = steps.indexOfFirst { it.stops }
     val result = when {
-        ruleEnabled -> stringResource(Res.string.rule_control_allowed)
+        ruleEnabled -> stringResource(if (global) Res.string.global_control_enabled else Res.string.rule_control_allowed)
         !subscriptionEnabled || !appEnabled || hasOtherRestrictions -> stringResource(Res.string.rule_control_restricted)
         else -> stringResource(Res.string.rule_control_disabled)
     }
-    val reason = when {
+    val reason = if (global) steps[decidingIndex].reason else when {
         !subscriptionEnabled -> stringResource(Res.string.subscription_disabled)
         !appEnabled -> stringResource(Res.string.subscription_app_disabled)
         hasOtherRestrictions -> otherRestrictions.firstOrNull()
@@ -202,11 +225,17 @@ fun GkRuleControlDialog(
                     Column(Modifier.padding(horizontal = 24.dp, vertical = 12.dp)) {
                         GkGroupNameText(
                             text = group.name,
-                            isGlobal = false,
+                            isGlobal = global,
                             categoryName = category?.name,
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(bottom = 20.dp)
                         )
+                        if (inApp) {
+                            GkAppNameText(
+                                appId = checkNotNull(appId), fallbackName = appName,
+                                modifier = Modifier.padding(bottom = 12.dp),
+                            )
+                        }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             GkIcon(
                                 if (ruleEnabled) GkIcons.ToggleOn else GkIcons.ToggleOff,
@@ -241,12 +270,88 @@ fun GkRuleControlDialog(
                         last = index == steps.lastIndex,
                         skippedReason = if (!subscriptionEnabled || !appEnabled || hasOtherRestrictions) {
                             stringResource(Res.string.rule_control_upstream_blocked)
-                        } else stringResource(Res.string.rule_control_already_decided),
+                        } else stringResource(if (global) Res.string.global_control_manual else Res.string.rule_control_already_decided),
                     )
                 }
+                if (global) {
+                    if (!inApp) Text(
+                        stringResource(Res.string.global_control_group_hint),
+                        modifier = Modifier.padding(12.dp),
+                    )
+                    if (inApp && control.limitations.blockedRules in 1 until control.limitations.ruleCount) {
+                        Text(stringResource(Res.string.global_control_partial), Modifier.padding(12.dp))
+                    }
+                    if ((control.limitations.builtIn + control.limitations.personal).any {
+                            it.kind == RuleLimitationKind.ExcludedPagePrefix || it.kind == RuleLimitationKind.ExcludedPageExact
+                        }) {
+                        Text(stringResource(Res.string.global_control_pages_hint), Modifier.padding(12.dp))
+                    }
+                }
+                GkPageBottomSpace()
             }
         }
     }
+}
+
+
+@Composable
+private fun globalControlSteps(
+    subscription: RawSubscription,
+    group: RawSubscription.RawGlobalGroup,
+    appId: String?,
+    subscriptionEnabled: Boolean,
+    control: RuleControlState,
+    groupControl: RuleControlState,
+): List<ControlStep> = buildList {
+    add(ControlStep(
+        stringResource(Res.string.rule_control_subscription), switchLabel(subscriptionEnabled),
+        if (subscriptionEnabled) subscription.name else stringResource(Res.string.subscription_disabled),
+        stops = !subscriptionEnabled, blocked = !subscriptionEnabled, icon = switchIcon(subscriptionEnabled),
+    ))
+    if (appId != null) {
+        val enabled = groupControl.configuredEnabled
+        add(ControlStep(
+            stringResource(Res.string.global_control_group), switchLabel(enabled),
+            if (!enabled) stringResource(Res.string.global_control_group_off)
+            else if (groupControl.hasCustomSetting) stringResource(Res.string.global_control_manual)
+            else stringResource(Res.string.global_control_default_group),
+            stops = !enabled, blocked = !enabled, icon = switchIcon(enabled),
+        ))
+    }
+    val restrictions = control.restrictions.filterNot {
+        it == RuleRestriction.SubscriptionDisabled || it == RuleRestriction.GlobalGroupDisabled
+    }
+    if (restrictions.isNotEmpty()) add(ControlStep(
+        stringResource(Res.string.rule_current_restrictions), stringResource(Res.string.rule_control_restricted),
+        restrictions.map { it.label }.joinToString("\n"),
+        stops = true, blocked = true, icon = GkIcons.WarningAmber,
+    ))
+    add(ControlStep(
+        stringResource(if (appId == null) Res.string.global_control_group else Res.string.global_control_app),
+        control.setting.label,
+        if (control.hasCustomSetting) stringResource(Res.string.global_control_manual)
+        else stringResource(Res.string.setting_follow_default),
+        stops = control.hasCustomSetting, blocked = control.hasCustomSetting && !control.configuredEnabled,
+        icon = switchIcon(control.setting.value),
+    ))
+    val defaultReason = if (appId == null) stringResource(Res.string.global_control_default_group)
+    else buildList {
+        val disabledRuleCount = RuleScopePolicy.globalAppDisabledRuleCount(group, appId)
+        if (disabledRuleCount > 0) add(stringResource(
+            if (disabledRuleCount == group.rules.size.coerceAtLeast(1)) Res.string.global_rule_enable_builtin_warning
+            else Res.string.global_rule_enable_builtin_partial_warning,
+        ))
+        if (control.limitations.builtIn.any { it.excludedByGroupName })
+            add(stringResource(Res.string.global_control_name_off))
+        if (isEmpty()) add(stringResource(
+            if (control.defaultEnabled) Res.string.global_control_default_on else Res.string.global_control_scope_off,
+        ))
+    }.joinToString("\n")
+    add(ControlStep(
+        stringResource(if (appId == null) Res.string.global_control_default_group else Res.string.global_control_default_app),
+        switchLabel(control.defaultEnabled), defaultReason,
+        stops = true, blocked = !control.defaultEnabled, icon = switchIcon(control.defaultEnabled),
+    ))
 }
 
 private data class ControlStep(

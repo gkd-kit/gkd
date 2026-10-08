@@ -41,7 +41,7 @@ import li.gkd.app.resources.rule_view_parent_list
 import li.gkd.app.resources.rule_view_source
 import li.gkd.app.resources.subscription_settings
 import li.gkd.app.rule.RuleControlState
-import li.gkd.app.rule.RuleGroupTarget
+import li.gkd.app.rule.toRuleGroupTarget
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.ui.component.GkCopyableText
@@ -230,15 +230,9 @@ fun GkRuleGroupDialog(
                 title = if (group is RawSubscription.RawGlobalGroup && appId != null) stringResource(
                     Res.string.rule_enable_in_app
                 ) else stringResource(Res.string.rule_enable),
-                onViewControl = if (group is RawSubscription.RawAppGroup && appId != null) ({
-                    ruleControl.show(
-                        RuleGroupTarget.App(
-                            subs.id,
-                            appId,
-                            group.key
-                        )
-                    )
-                }) else null
+                onViewControl = {
+                    ruleControl.show(group.toRuleGroupTarget(subs.id, appId))
+                }
             )
             GkRuleExclusionsCard(excludeData, excludeAppId, onClick = onClickEditExclude)
         }

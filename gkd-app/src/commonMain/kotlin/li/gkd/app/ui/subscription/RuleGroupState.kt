@@ -25,6 +25,7 @@ import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.subscription.edit
 import li.gkd.app.ui.component.GkRetainedSheet
+import li.gkd.app.ui.component.DialogRequests
 import li.gkd.app.ui.component.SheetRequest
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.navigation.AppNavigator
@@ -46,6 +47,7 @@ private data class RuleSheetSnapshot(
 )
 
 class RuleGroupState(
+    private val dialogs: DialogRequests,
 ) {
     private val showGroupFlow = MutableStateFlow<SheetRequest<RuleGroupTarget>?>(null)
     private fun dismissGroupShow(request: SheetRequest<RuleGroupTarget>) {
@@ -165,8 +167,8 @@ class RuleGroupState(
                         configSnapshot.snapshot
                     )
                     scope.launchUi {
-                        RuleGroupConfigService.apply(change, setting)
-                            .failureMessage()
+                        applyRuleSwitchWithConfirmation(change, setting, dialogs, RuleSwitchHost.RuleDetail)
+                            ?.failureMessage()
                             ?.let { ToastUtils.show(it) }
                     }
                 },

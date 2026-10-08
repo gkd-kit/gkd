@@ -22,6 +22,7 @@ import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
 import li.gkd.app.state.MutexState
 import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.subscription.SubscriptionJson.toJson5String
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.navigation.AppConfigRoute
@@ -122,8 +123,8 @@ class AppConfigViewModel(
             state.subsPairs.map { it.first.subscription }, state.configs
         )
 
-    suspend fun applySwitches(request: RuleSwitchRequest, setting: RuleSetting) =
-        RuleGroupConfigService.apply(request, setting)
+    suspend fun applySwitches(request: RuleSwitchRequest, setting: RuleSetting, confirmation: String? = null) =
+        applyRuleSwitchWithConfirmation(request, setting, MainViewModel.requireCurrent().dialogRequests, RuleSwitchHost.AppRules, confirmation)
 
     suspend fun buildSelectedGroupsText(selectedGroups: Set<RuleGroupTarget>): String =
         withContext(Dispatchers.Default) {

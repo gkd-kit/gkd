@@ -48,14 +48,20 @@ class RuleGroupPolicy {
         else null
         val defaultEnabled = if (inApp) globalDefault == true
         else defaultDecision.enabled
-        val canEnable = group.valid && !limitations.fullyBlocked &&
-                (!inApp || globalDefault != null)
+        val canEnable = group.valid && if (inApp) {
+            getGlobalGroupChecked(
+                subscription, ExcludeData(mapOf(checkNotNull(appId) to false), emptySet()),
+                group, appId, launcherAppId, systemAppIds, appInfo
+            ) != null
+        } else !limitations.fullyBlocked
         val restrictions = buildList {
             if (!group.valid) add(
                 RuleRestriction.Invalid(group.validationError)
             )
-            if (limitations.fullyBlocked || (group.valid && !canEnable)) {
-                addAll(limitations.blockedReasons.ifEmpty { listOf(RuleRestriction.AppNotApplicable) })
+            if (group.valid && !canEnable) {
+                // App defaults can be overridden; explain the remaining hard restriction.
+                if (inApp) add(RuleRestriction.VersionMismatch)
+                else addAll(limitations.blockedReasons.ifEmpty { listOf(RuleRestriction.AppNotApplicable) })
             }
             if (configIndex.subscriptionEnabled(subscription.id) == false) add(
                 RuleRestriction.SubscriptionDisabled
@@ -142,11 +148,14 @@ class RuleGroupPolicy {
                 it,
                 appId,
                 appInfo,
-                groupExcluded
+                groupExcluded,
+                manuallyEnabled = excludeData.appIds[appId] == false,
             )
         }
         if (allowed.isEmpty()) {
-            return null
+            return if (rules.any {
+                    RuleScopePolicy.globalRuleAllowed(group, it, appId, appInfo, groupExcluded, true)
+                }) false else null
         }
         excludeData.appIds[appId]?.let { return !it }
         return allowed.any {

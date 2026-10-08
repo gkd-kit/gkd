@@ -7,7 +7,8 @@ import li.gkd.app.subscription.RawSubscription
 data class GlobalAppScope(
     val enabled: Boolean,
     val included: List<String>,
-    val excluded: List<String>
+    val excluded: List<String>,
+    val versionAllowed: Boolean = true,
 )
 
 /** Pure applicability rules shared by execution and the settings UI. */
@@ -27,6 +28,7 @@ object RuleScopePolicy {
             globalAppEnabled(app, info),
             fixActivities(app.id, app.activityIds),
             fixActivities(app.id, app.excludeActivityIds),
+            app.enable == true || versionMatches(app, info),
         )
 
     fun appVersionMatches(
@@ -44,6 +46,11 @@ object RuleScopePolicy {
         appId: String,
     ): RawSubscription.RawGlobalApp? =
         (rule?.apps ?: group.apps).orEmpty().lastOrNull { it.id == appId }
+
+    fun globalAppDisabledRuleCount(group: RawSubscription.RawGlobalGroup, appId: String): Int =
+        group.rules.ifEmpty { listOf(null) }.count {
+            globalApp(group, it, appId)?.enable == false
+        }
 
     fun globalDefault(
         group: RawSubscription.RawGlobalGroup,
@@ -68,8 +75,12 @@ object RuleScopePolicy {
         appId: String,
         info: AppInfo?,
         groupExcluded: Boolean,
+        manuallyEnabled: Boolean = false,
     ): Boolean =
-        !groupExcluded && globalApp(group, rule, appId)?.let { globalAppEnabled(it, info) } != false
+        (!groupExcluded || manuallyEnabled) && globalApp(group, rule, appId)?.let {
+            if (manuallyEnabled) it.enable == true || versionMatches(it, info)
+            else globalAppEnabled(it, info)
+        } != false
 
     fun matchGlobalActivity(
         app: GlobalAppScope?,
@@ -79,7 +90,10 @@ object RuleScopePolicy {
         groupExcluded: Boolean,
         exclude: ExcludeData,
     ): Boolean {
-        if (groupExcluded || app?.enabled == false) return false
+        val manuallyEnabled = exclude.appIds[appId] == false
+        if (manuallyEnabled) {
+            if (app?.versionAllowed == false) return false
+        } else if (groupExcluded || app?.enabled == false) return false
         if (exclude.appIds[appId] == true) return false
         // Personal global page entries have always been exact activity IDs.
         if (activityId != null && appId to activityId in exclude.activityIds) return false

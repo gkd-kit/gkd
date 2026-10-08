@@ -135,11 +135,12 @@ class RuleGroupPolicyTest {
     }
 
     @Test
-    fun globalGroupScopeHonorsInnerDisableThenExplicitAndDefaultScopes() {
+    fun globalGroupScopeAllowsExplicitEnableOverInnerDisableAndRetainsDefaultScopes() {
         val group = subscription.globalGroups.single()
         val emptyExclude = ExcludeData(emptyMap(), emptySet())
 
-        assertNull(
+        assertEquals(
+            true,
             policy.getGlobalGroupChecked(
                 subscription,
                 ExcludeData(mapOf("blocked.app" to false), emptySet()),

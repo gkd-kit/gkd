@@ -22,7 +22,6 @@ import li.gkd.app.resources.Res
 import li.gkd.app.resources.action_close
 import li.gkd.app.resources.action_copy
 import li.gkd.app.resources.action_enable
-import li.gkd.app.resources.action_notice
 import li.gkd.app.resources.app_rule_partial_disable_remove
 import li.gkd.app.resources.app_rule_partial_disable_remove_confirm
 import li.gkd.app.resources.app_rule_restriction_remove
@@ -170,9 +169,8 @@ fun AppConfigPage(
 
     val updateSelected: (RuleSetting) -> Unit = { setting ->
         val enabled = setting.value
-        val targets = selectedDataSet
-        if (targets.isNotEmpty() && state != null) {
-            val request = vm.prepareSwitches(state, targets)
+        if (selectedDataSet.isNotEmpty() && state != null) {
+            val request = vm.prepareSwitches(state, selectedDataSet)
             scope.launchUi {
                 vm.runBatchAction {
                     val action = when (enabled) {
@@ -180,19 +178,14 @@ fun AppConfigPage(
                         true -> getString(Res.string.action_enable)
                         null -> getString(Res.string.setting_follow_default)
                     }
-                    if (!mainVm.dialogRequests.confirm(
-                            title = getString(Res.string.action_notice),
-                            text = getString(
-                                Res.string.app_rules_batch_setting_confirmation,
-                                targets.size.toString(),
-                                action
-                            ),
-                        )
-                    ) return@runBatchAction
-                    ToastUtils.show(
-                        vm.applySwitches(request, RuleSetting.from(enabled))
-                            .description()
-                    )
+                    vm.applySwitches(
+                        request, setting,
+                        confirmation = getString(
+                            Res.string.app_rules_batch_setting_confirmation,
+                            selectedDataSet.size.toString(),
+                            action
+                        ),
+                    )?.let { ToastUtils.show(it.description()) }
                 }
             }
         }
@@ -435,7 +428,7 @@ fun AppConfigPage(
                                 )
                                 scope.launchUi {
                                     vm.applySwitches(request, setting)
-                                        .failureMessage()?.let { ToastUtils.show(it) }
+                                        ?.failureMessage()?.let { ToastUtils.show(it) }
                                 }
                             },
                             onLongClick = onLongClick,

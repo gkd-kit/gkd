@@ -30,7 +30,7 @@ class RuleScopePolicyTest {
         val include = ExcludeData(mapOf("app.id" to false), emptySet())
         assertTrue(matches("app.id.Other", include))
         assertFalse(matches("app.id.Allowed.Blocked.Child", include))
-        assertFalse(
+        assertTrue(
             RuleScopePolicy.matchGlobalActivity(
                 scope.copy(enabled = false),
                 true,
@@ -40,7 +40,7 @@ class RuleScopePolicyTest {
                 include
             )
         )
-        assertFalse(RuleScopePolicy.matchGlobalActivity(scope, true, "app.id", null, true, include))
+        assertTrue(RuleScopePolicy.matchGlobalActivity(scope, true, "app.id", null, true, include))
     }
 
     @Test
@@ -105,7 +105,7 @@ class RuleScopePolicyTest {
     }
 
     @Test
-    fun mixedGlobalChildScopesOnlyBlockTheGroupWhenEveryChildExcludesTheApp() {
+    fun manualAppEnableOverridesInheritedAndChildAppDisables() {
         val sub = RawSubscription.parse(
             """{
           id:-2,name:'Test',version:0,
@@ -122,19 +122,26 @@ class RuleScopePolicyTest {
         )
         val partial =
             policy.controlState(sub, group, "app.id", configs, info, "launcher", emptySet())
-        assertEquals(1, partial.limitations.blockedRules)
+        assertEquals(0, partial.limitations.blockedRules)
         assertEquals(2, partial.limitations.ruleCount)
         assertTrue(partial.canEnable)
         assertTrue(partial.available)
         assertTrue(partial.restrictions.isEmpty())
-        assertEquals(listOf(RuleRestriction.AppExcluded), partial.limitations.blockedReasons)
+        assertTrue(partial.limitations.blockedReasons.isEmpty())
         val allExcluded = group.copy(rules = listOf(group.rules.first()))
         val blocked =
             policy.controlState(sub, allExcluded, "app.id", configs, info, "launcher", emptySet())
-        assertFalse(blocked.canEnable)
-        assertFalse(blocked.available)
+        assertTrue(blocked.canEnable)
+        assertTrue(blocked.available)
         assertEquals(RuleSetting.Enabled, blocked.setting)
-        assertEquals(listOf(RuleRestriction.AppExcluded), blocked.restrictions)
+        assertTrue(blocked.restrictions.isEmpty())
+        val following = policy.controlState(
+            sub, allExcluded, "app.id", configs.copy(globalGroupConfigs = emptyList()),
+            info, "launcher", emptySet()
+        )
+        assertTrue(following.canEnable)
+        assertFalse(following.configuredEnabled)
+        assertFalse(following.available)
     }
 
     @Test
@@ -203,16 +210,16 @@ class RuleScopePolicyTest {
             policy.controlState(subscription, raw, "app.id", configs, info, "launcher", emptySet())
 
         val matched = state(sub, group)
-        assertFalse(matched.canEnable)
-        assertEquals(
-            listOf(RuleRestriction.ShadowedByAppRule),
-            matched.restrictions
-        )
+        assertTrue(matched.canEnable)
+        assertFalse(matched.defaultEnabled)
+        assertTrue(matched.restrictions.isEmpty())
+        assertEquals(listOf(RuleRestriction.ShadowedByAppRule), matched.limitations.blockedReasons)
 
         val ignored = sub.copy(apps = sub.apps.map { app ->
             app.copy(groups = app.groups.map { it.copy(ignoreGlobalGroupMatch = true) })
         })
-        assertEquals(listOf(RuleRestriction.AppExcluded), state(ignored, group).restrictions)
+        assertTrue(state(ignored, group).canEnable)
+        assertEquals(listOf(RuleRestriction.AppExcluded), state(ignored, group).limitations.blockedReasons)
         val versionGroup = group.copy(
             rules = listOf(
                 group.rules.single().copy(
@@ -244,7 +251,46 @@ class RuleScopePolicyTest {
 
         val emptyGroup = group.copy(apps = group.rules.single().apps, rules = emptyList())
         val emptyState = state(ignored, emptyGroup)
-        assertFalse(emptyState.canEnable)
-        assertEquals(listOf(RuleRestriction.AppExcluded), emptyState.restrictions)
+        assertTrue(emptyState.canEnable)
+        assertFalse(emptyState.defaultEnabled)
+        assertTrue(emptyState.restrictions.isEmpty())
+    }
+
+    @Test
+    fun manualAppEnablePreservesVersionAndPageExclusionsAndResetRestoresDefaultDisable() {
+        // Existing !app.id values now override defaults, but never an incompatible version or excluded page.
+        val sub = RawSubscription.parse("""{
+          id:-2,name:'Test',version:0,
+          apps:[{id:'app.id',groups:[{key:1,name:'Ad',rules:[{matches:'*'}]}]}],
+          globalGroups:[{key:1,name:'Ad',disableIfAppGroupMatch:'',
+            apps:[{id:'app.id',enable:false,versionCode:{minimum:20},excludeActivityIds:['.Blocked']}],
+            rules:[{matches:'*'}]}]
+        }""")
+        val group = sub.globalGroups.single()
+        val target = RuleSwitchTarget.GlobalApp(-2, 1, "app.id")
+        val stored = SubsGlobalGroupConfig(-2, 1, null, "!app.id\napp.id/app.id.Personal")
+        val compatible = info.copy(versionCode = 20)
+        fun matches(config: SubsGlobalGroupConfig, appInfo: AppInfo, page: String) =
+            RuleScopePolicy.matchGlobalActivity(
+                RuleScopePolicy.globalScope(group.apps!!.single(), appInfo), true,
+                "app.id", page, true, ExcludeData.parse(config.exclude),
+            )
+        assertFalse(matches(stored, info, "app.id.Other"))
+        assertTrue(matches(stored, compatible, "app.id.Other"))
+        assertFalse(matches(stored, compatible, "app.id.Blocked.Child"))
+        assertFalse(matches(stored, compatible, "app.id.Personal"))
+        val reset = RuleSwitchPolicy.updateGroup(target, stored, RuleSetting.FollowDefault) as SubsGlobalGroupConfig
+        assertFalse(matches(reset, compatible, "app.id.Other"))
+        val disabled = RuleSwitchPolicy.updateGroup(target, stored, RuleSetting.Disabled) as SubsGlobalGroupConfig
+        assertFalse(matches(disabled, compatible, "app.id.Other"))
+        val configs = SubscriptionConfigSnapshot(
+            subsItems = listOf(SubsItem(-2, order = 0, enable = true)),
+            globalGroupConfigs = listOf(stored),
+        )
+        val incompatible = policy.controlState(sub, group, "app.id", configs, info, "launcher", emptySet())
+        assertFalse(incompatible.canEnable)
+        assertEquals(listOf(RuleRestriction.VersionMismatch), incompatible.restrictions)
+        assertTrue(policy.controlState(sub, group, "app.id", configs, compatible, "launcher", emptySet()).available)
+        assertFalse(policy.controlState(sub, group, "app.id", configs.copy(globalGroupConfigs = listOf(reset)), compatible, "launcher", emptySet()).available)
     }
 }
