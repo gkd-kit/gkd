@@ -105,7 +105,7 @@ class RuleScopePolicyTest {
     }
 
     @Test
-    fun manualAppEnableOverridesInheritedAndChildAppDisables() {
+    fun manualAppEnableOverridesGroupDisableEvenWithChildAppLists() {
         val sub = RawSubscription.parse(
             """{
           id:-2,name:'Test',version:0,
@@ -145,11 +145,11 @@ class RuleScopePolicyTest {
     }
 
     @Test
-    fun defaultsUseTheVersionCompatibleChildrenAndMatchFlagsWhileManualOnRemainsAnOption() {
+    fun defaultsUseGroupMatchFlagsAndVersionCompatibleChildren() {
         val sub = RawSubscription.parse(
             """{
           id:-2,name:'Test',version:0,
-          globalGroups:[{key:1,name:'Global',rules:[
+          globalGroups:[{key:1,name:'Global',matchAnyApp:false,rules:[
             {matches:'[text="Ad"]',apps:[{id:'app.id',versionCode:{minimum:20}}]},
             {matches:'[text="Ad"]',matchAnyApp:false}
           ]}]
@@ -198,7 +198,7 @@ class RuleScopePolicyTest {
             """{
           id:-2,name:'Test',version:0,
           apps:[{id:'app.id',groups:[{key:1,name:'广告-开屏',rules:[{matches:'[text="Ad"]'}]}]}],
-          globalGroups:[{key:1,name:'Global',disableIfAppGroupMatch:'广告',
+          globalGroups:[{key:1,name:'Global',disableIfAppGroupMatch:'广告',apps:[{id:'app.id',enable:false}],
             rules:[{matches:'[text="Ad"]',apps:[{id:'app.id',enable:false}]}]}]
         }"""
         )
@@ -225,7 +225,6 @@ class RuleScopePolicyTest {
                 group.rules.single().copy(
                     apps = listOf(
                         group.rules.single().apps!!.single().copy(
-                            enable = null,
                             versionCode = RawSubscription.IntegerMatcher(20, null, null, null)
                         ),
                     )
@@ -237,19 +236,14 @@ class RuleScopePolicyTest {
             state(ignored, versionGroup).restrictions
         )
         val explicitlyEnabled = versionGroup.copy(
-            rules = listOf(
-                versionGroup.rules.single().copy(
-                    apps = versionGroup.rules.single().apps!!.map { it.copy(enable = true) },
-                )
-            )
+            apps = versionGroup.apps!!.map { it.copy(enable = true) },
         )
-        val available = state(ignored, explicitlyEnabled)
-        assertTrue(available.canEnable)
-        assertTrue(available.available)
-        assertTrue(available.restrictions.isEmpty())
-        assertTrue(available.limitations.blockedReasons.isEmpty())
+        val unavailable = state(ignored, explicitlyEnabled)
+        assertFalse(unavailable.canEnable)
+        assertFalse(unavailable.available)
+        assertEquals(listOf(RuleRestriction.VersionMismatch), unavailable.restrictions)
 
-        val emptyGroup = group.copy(apps = group.rules.single().apps, rules = emptyList())
+        val emptyGroup = group.copy(rules = emptyList())
         val emptyState = state(ignored, emptyGroup)
         assertTrue(emptyState.canEnable)
         assertFalse(emptyState.defaultEnabled)

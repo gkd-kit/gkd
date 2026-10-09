@@ -13,25 +13,25 @@ class RuleGroupPolicyTest {
     private val policy = RuleGroupPolicy()
 
     @Test
-    fun explanationDistinguishesSubscriptionInheritanceFromExplicitGroupDefaultsAndManualOverrides() {
+    fun subscriptionInheritanceYieldsToExplicitGroupDefaultsAndManualOverrides() {
         val group = subscription.apps.single().groups.single()
         val category = subscription.categories.single()
         val explicitDefault = SubsCategoryConfig(null, subscription.id, category.key)
         assertEquals(
-            RuleEnableDecision(false, RuleEnableSource.SubscriptionCategory),
-            policy.explainGroupEnabled(group, null, category, null)
+            false,
+            policy.getGroupEnabled(group, null, category, null)
         )
         assertEquals(
-            RuleEnableDecision(true, RuleEnableSource.GroupDefault),
-            policy.explainGroupEnabled(group, null, category, explicitDefault)
+            true,
+            policy.getGroupEnabled(group, null, category, explicitDefault)
         )
         assertEquals(
-            RuleEnableDecision(false, RuleEnableSource.Category),
-            policy.explainGroupEnabled(group, null, category, explicitDefault.copy(enable = false))
+            false,
+            policy.getGroupEnabled(group, null, category, explicitDefault.copy(enable = false))
         )
         assertEquals(
-            RuleEnableDecision(true, RuleEnableSource.Manual),
-            policy.explainGroupEnabled(
+            true,
+            policy.getGroupEnabled(
                 group, SubsAppGroupConfig(subscription.id, "app.id", group.key, true),
                 category, explicitDefault.copy(enable = false)
             )

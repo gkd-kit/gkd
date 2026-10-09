@@ -50,7 +50,7 @@ object SubscriptionConfigStore {
         val current = dao.getConfig(subsId, groupKey)
         val next = transform(current ?: SubsGlobalGroupConfig(subsId, groupKey))
         require(next.subsId == subsId && next.groupKey == groupKey)
-        if (next.enable == null && next.exclude.isEmpty()) {
+        if (next.enable == null && next.exclude.isEmpty() && next.matchAnyApp == null) {
             if (current != null) dao.delete(current)
         } else if (next != current) dao.upsert(next)
         next

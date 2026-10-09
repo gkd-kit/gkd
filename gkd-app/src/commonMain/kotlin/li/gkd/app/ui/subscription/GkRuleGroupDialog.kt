@@ -1,6 +1,26 @@
 package li.gkd.app.ui.subscription
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import li.gkd.app.ui.component.GkTriStateSwitch
+import li.gkd.app.ui.icon.ResetSettings
+import li.gkd.app.resources.settings_reset_default
+import li.gkd.app.resources.global_rule_default_apps_follow_enabled
+import li.gkd.app.resources.global_rule_default_apps_follow_disabled
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,6 +46,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import li.gkd.app.model.ExcludeData
 import li.gkd.app.resources.Res
+import li.gkd.app.resources.global_rule_default_apps_enabled
+import li.gkd.app.resources.global_rule_default_apps_disabled
+import li.gkd.app.resources.global_rule_default_apps
 import li.gkd.app.resources.config_loading
 import li.gkd.app.resources.dialog_close
 import li.gkd.app.resources.rule_content
@@ -88,6 +111,8 @@ fun GkRuleGroupDialog(
     onClickEditExclude: () -> Unit,
     control: RuleControlState?,
     onSettingChange: (RuleSetting) -> Unit,
+    matchAnyApp: Boolean?,
+    onMatchAnyAppChange: (Boolean?) -> Unit,
     onClickDelete: () -> Unit = {},
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
 ) {
@@ -234,11 +259,68 @@ fun GkRuleGroupDialog(
                     ruleControl.show(group.toRuleGroupTarget(subs.id, appId))
                 }
             )
+            if (group is RawSubscription.RawGlobalGroup && appId == null) {
+                DefaultAppScopeSetting(group, matchAnyApp, onMatchAnyAppChange)
+            }
             GkRuleExclusionsCard(excludeData, excludeAppId, onClick = onClickEditExclude)
         }
     }
     if (showSource) {
         RuleSourceDialog(group, onDismissRequest = { showSource = false })
+    }
+}
+
+
+@Composable
+private fun DefaultAppScopeSetting(
+    group: RawSubscription.RawGlobalGroup,
+    matchAnyApp: Boolean?,
+    onChange: (Boolean?) -> Unit,
+) {
+    val subscriptionDefault = group.matchAnyApp ?: true
+    val checked = matchAnyApp ?: subscriptionDefault
+    val title = stringResource(Res.string.global_rule_default_apps)
+    val description = stringResource(when (matchAnyApp) {
+        true -> Res.string.global_rule_default_apps_enabled
+        false -> Res.string.global_rule_default_apps_disabled
+        null -> when (subscriptionDefault) {
+            true -> Res.string.global_rule_default_apps_follow_enabled
+            false -> Res.string.global_rule_default_apps_follow_disabled
+        }
+    })
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().height(IntrinsicSize.Min).heightIn(min = 64.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                modifier = Modifier.weight(1f)
+                    .padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 16.dp),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            GkIconButton(
+                imageVector = ResetSettings,
+                contentDescription = stringResource(Res.string.settings_reset_default),
+                enabled = matchAnyApp != null,
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+                onClick = { onChange(null) },
+            )
+            GkTriStateSwitch(
+                checked = checked,
+                onCheckedChange = { onChange(checked != true) },
+                modifier = Modifier.width(84.dp).fillMaxHeight().semantics {
+                    contentDescription = title
+                },
+                stateDescription = description,
+            )
+        }
     }
 }
 

@@ -27,6 +27,7 @@ data class SubsGlobalGroupConfig(
     @ColumnInfo(name = "group_key") override val groupKey: Int,
     @ColumnInfo(name = "enable") override val enable: Boolean? = null,
     @ColumnInfo(name = "exclude", defaultValue = "") override val exclude: String = "",
+    @ColumnInfo(name = "match_any_app", defaultValue = "NULL") val matchAnyApp: Boolean? = null,
 ) : SubsGroupConfig {
     @Dao
     interface SubsGlobalGroupConfigDao {

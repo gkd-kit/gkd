@@ -40,7 +40,8 @@ data class RuleLimitations(
 ) {
     val fullyBlocked: Boolean get() = ruleCount > 0 && blockedRules == ruleCount
     val hasBuiltInProperties: Boolean get() = builtIn.any { !it.implicit }
-    val hasPersonalProperties: Boolean get() = personal.isNotEmpty()
+    val hasPersonalExclusions: Boolean
+        get() = personal.any { it.kind != RuleLimitationKind.DefaultScope }
 }
 
 class RuleLimitationPolicy {
@@ -50,6 +51,7 @@ class RuleLimitationPolicy {
         appId: String?,
         exclude: ExcludeData,
         info: AppInfo?,
+        matchAnyApp: Boolean? = null,
     ): RuleLimitations {
         val entries = mutableListOf<RuleLimitation>()
         val groupSource = RuleLimitationSource()
@@ -60,34 +62,35 @@ class RuleLimitationPolicy {
         fun appProps(
             source: RuleLimitationSource,
             id: String,
-            props: RawSubscription.RawAppRuleProps
+            props: RawSubscription.RawAppRuleProps,
+            inheritedSource: RuleLimitationSource = source,
+            ownProps: RawSubscription.RawAppRuleProps? = props,
         ) {
             add(
-                source,
+                if (ownProps?.activityIds != null) source else inheritedSource,
                 RuleLimitationKind.AllowedPagePrefix,
                 RuleScopePolicy.fixActivities(id, props.activityIds)
             )
             add(
-                source,
+                if (ownProps?.excludeActivityIds != null) source else inheritedSource,
                 RuleLimitationKind.ExcludedPagePrefix,
                 RuleScopePolicy.fixActivities(id, props.excludeActivityIds)
             )
-            val appOverride = (props as? RawSubscription.RawGlobalApp)?.enable
             props.versionCode?.let {
                 entries.add(
                     RuleLimitation(
-                        source,
+                        if (ownProps?.versionCode != null) source else inheritedSource,
                         RuleLimitationKind.VersionCode,
-                        versionCode = it, appOverride = appOverride
+                        versionCode = it
                     )
                 )
             }
             props.versionName?.let {
                 entries.add(
                     RuleLimitation(
-                        source,
+                        if (ownProps?.versionName != null) source else inheritedSource,
                         RuleLimitationKind.VersionName,
-                        versionName = it, appOverride = appOverride
+                        versionName = it
                     )
                 )
             }
@@ -98,9 +101,6 @@ class RuleLimitationPolicy {
         val manuallyEnabled = appId != null && exclude.appIds[appId] == false
         val groupExcluded = group is RawSubscription.RawGlobalGroup && appId != null && !manuallyEnabled &&
                 appId in subscription.globalGroupAppGroupNameDisableMap[group.key].orEmpty()
-        if (groupExcluded) {
-            blockedReasons.add(RuleRestriction.ShadowedByAppRule)
-        }
         group.rules.forEachIndexed { index, rule ->
             val entryStart = entries.size
             val source = RuleLimitationSource(ruleIndex = index + 1, ruleName = rule.name)
@@ -150,57 +150,24 @@ class RuleLimitationPolicy {
 
                 is RawSubscription.RawGlobalGroup -> {
                     rule as RawSubscription.RawGlobalRule
-                    val propsSource = if (rule.apps != null) source else groupSource
-                    (rule.apps ?: group.apps).orEmpty().filter { appId == null || it.id == appId }
-                        .forEach { app ->
-                            val origin = propsSource.copy(appId = app.id)
-                            if (app.enable == false) entries.add(
-                                RuleLimitation(
-                                    origin,
-                                    RuleLimitationKind.ExcludedApp,
-                                    app.id
-                                )
-                            )
-                            appProps(origin, app.id, app)
-                        }
-                    if (!(rule.matchLauncher ?: group.matchLauncher ?: false)) entries.add(
-                        RuleLimitation(
-                            source,
-                            RuleLimitationKind.DefaultScope,
-                            defaultScope = DefaultRuleScope.Launcher,
-                            implicit = rule.matchLauncher == null && group.matchLauncher == null
+                    val appIds = (group.apps.orEmpty().map { it.id } + rule.apps.orEmpty().map { it.id }).distinct()
+                    appIds.filter { appId == null || it == appId }.forEach { id ->
+                        val app = checkNotNull(RuleScopePolicy.globalApp(group, rule, id))
+                        val parentSource = groupSource.copy(appId = id)
+                        if (app.enable == false) entries.add(
+                            RuleLimitation(parentSource, RuleLimitationKind.ExcludedApp, id)
                         )
-                    )
-                    if (!(rule.matchSystemApp ?: group.matchSystemApp ?: false)) entries.add(
-                        RuleLimitation(
-                            source,
-                            RuleLimitationKind.DefaultScope,
-                            defaultScope = DefaultRuleScope.SystemApp,
-                            implicit = rule.matchSystemApp == null && group.matchSystemApp == null
+                        appProps(
+                            source.copy(appId = id), id, app, parentSource,
+                            rule.apps.orEmpty().lastOrNull { it.id == id },
                         )
-                    )
-                    if (!(rule.matchAnyApp ?: group.matchAnyApp ?: true)) entries.add(
-                        RuleLimitation(
-                            source,
-                            RuleLimitationKind.DefaultScope,
-                            defaultScope = DefaultRuleScope.UnspecifiedApp
-                        )
-                    )
-                    if (appId != null && !RuleScopePolicy.globalRuleAllowed(
-                            group,
-                            rule,
-                            appId,
-                            info,
-                            groupExcluded,
-                            manuallyEnabled,
-                        )
-                    ) {
-                        blocked++
-                        if (!groupExcluded) {
-                            blockedReasons.add(
-                                if (!manuallyEnabled && RuleScopePolicy.globalApp(group, rule, appId)?.enable == false)
-                                    RuleRestriction.AppExcluded else RuleRestriction.VersionMismatch
-                            )
+                    }
+                    if (appId != null) {
+                        RuleScopePolicy.globalRuleRestriction(
+                            group, rule, appId, info, groupExcluded, manuallyEnabled,
+                        )?.let {
+                            blocked++
+                            blockedReasons.add(it)
                         }
                     }
                 }
@@ -224,16 +191,42 @@ class RuleLimitationPolicy {
                         appProps(groupSource.copy(appId = it.id), it.id, it)
                     }
             }
-            if (group is RawSubscription.RawGlobalGroup && appId != null && !groupExcluded &&
-                !RuleScopePolicy.globalRuleAllowed(group, null, appId, info, false, manuallyEnabled)
-            ) {
-                blockedReasons.add(
-                    if (!manuallyEnabled && RuleScopePolicy.globalApp(group, null, appId)?.enable == false)
-                        RuleRestriction.AppExcluded else RuleRestriction.VersionMismatch
-                )
+            if (group is RawSubscription.RawGlobalGroup && appId != null) {
+                RuleScopePolicy.globalRuleRestriction(
+                    group, null, appId, info, groupExcluded, manuallyEnabled,
+                )?.let { blockedReasons.add(it) }
             }
         }
         if (group is RawSubscription.RawGlobalGroup) {
+            if (group.rules.isNotEmpty()) {
+                val appliesTo = group.rules.indices.mapTo(mutableSetOf()) { it + 1 }
+                if (!(group.matchLauncher ?: false)) entries.add(
+                    RuleLimitation(
+                        groupSource,
+                        RuleLimitationKind.DefaultScope,
+                        appliesTo = appliesTo,
+                        defaultScope = DefaultRuleScope.Launcher,
+                        implicit = group.matchLauncher == null
+                    )
+                )
+                if (!(group.matchSystemApp ?: false)) entries.add(
+                    RuleLimitation(
+                        groupSource,
+                        RuleLimitationKind.DefaultScope,
+                        appliesTo = appliesTo,
+                        defaultScope = DefaultRuleScope.SystemApp,
+                        implicit = group.matchSystemApp == null
+                    )
+                )
+                if (!(group.matchAnyApp ?: true)) entries.add(
+                    RuleLimitation(
+                        groupSource,
+                        RuleLimitationKind.DefaultScope,
+                        appliesTo = appliesTo,
+                        defaultScope = DefaultRuleScope.UnspecifiedApp
+                    )
+                )
+            }
             subscription.globalGroupAppGroupNameDisableMap[group.key].orEmpty()
                 .filter { appId == null || it == appId }.forEach {
                     entries.add(
@@ -246,6 +239,14 @@ class RuleLimitationPolicy {
                 }
         }
         val personal = buildList {
+            if (group is RawSubscription.RawGlobalGroup && matchAnyApp != null) {
+                add(RuleLimitation(
+                    groupSource,
+                    RuleLimitationKind.DefaultScope,
+                    appOverride = matchAnyApp,
+                    defaultScope = DefaultRuleScope.UnspecifiedApp,
+                ))
+            }
             exclude.activityIds.filter { appId == null || it.first == appId }
                 .forEach { (id, activity) ->
                     add(

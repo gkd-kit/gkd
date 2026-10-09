@@ -94,6 +94,7 @@ object RuleGroupSummaryBuilder {
                     policy.getGlobalGroupChecked(
                         resolved.subscription, resolved.excludeData, resolved.group,
                         appId, launcherAppId, systemAppIds, info,
+                        resolved.matchAnyApp,
                     ) == true
                 }
             }

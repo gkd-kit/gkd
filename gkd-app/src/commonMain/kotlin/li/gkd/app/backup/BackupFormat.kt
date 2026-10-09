@@ -157,12 +157,14 @@ data class BackupGlobalGroupConfig(
     val groupKey: Int,
     val enable: Boolean? = null,
     val exclude: String = "",
+    val matchAnyApp: Boolean? = null,
 ) {
     fun toEntity() = SubsGlobalGroupConfig(
         subsId = subsId,
         groupKey = groupKey,
         enable = enable,
         exclude = exclude,
+        matchAnyApp = matchAnyApp,
     )
 
     companion object {
@@ -171,6 +173,7 @@ data class BackupGlobalGroupConfig(
             groupKey = entity.groupKey,
             enable = entity.enable,
             exclude = entity.exclude,
+            matchAnyApp = entity.matchAnyApp,
         )
     }
 }

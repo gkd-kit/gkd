@@ -6,13 +6,8 @@ import li.gkd.app.model.ExcludeData
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.db.SubsCategoryConfig
 import li.gkd.db.SubsGroupConfig
+import li.gkd.db.SubsGlobalGroupConfig
 import li.gkd.db.SubscriptionConfigSnapshot
-
-enum class RuleEnableSource {
-    Manual, Category, SubscriptionCategory, GroupDefault, Invalid, BuiltInAppScope, InstalledApp,
-}
-
-data class RuleEnableDecision(val enabled: Boolean, val source: RuleEnableSource)
 
 class RuleGroupPolicy {
     private val limitationsPolicy = RuleLimitationPolicy()
@@ -29,6 +24,7 @@ class RuleGroupPolicy {
     ): RuleControlState {
         val groupTarget = group.toRuleGroupTarget(subscription.id, appId)
         val config = configIndex.groupConfig(groupTarget)
+        val matchAnyApp = (config as? SubsGlobalGroupConfig)?.matchAnyApp
         val category = subscription.getCategory(group.name)
         val categoryConfig = configIndex.categoryConfig(subscription.id, category?.key)
         val inApp = group is RawSubscription.RawGlobalGroup && appId != null
@@ -37,23 +33,15 @@ class RuleGroupPolicy {
             group,
             appId,
             ExcludeData.parse(config?.exclude),
-            appInfo
+            appInfo,
+            matchAnyApp,
         )
-        val defaultDecision = explainGroupEnabled(group, null, category, categoryConfig)
-        val globalDefault = if (inApp) getGlobalGroupChecked(
-            subscription,
-            ExcludeData(emptyMap(), emptySet()), group,
-            checkNotNull(appId), launcherAppId, systemAppIds, appInfo
-        )
-        else null
-        val defaultEnabled = if (inApp) globalDefault == true
-        else defaultDecision.enabled
-        val canEnable = group.valid && if (inApp) {
-            getGlobalGroupChecked(
-                subscription, ExcludeData(mapOf(checkNotNull(appId) to false), emptySet()),
-                group, appId, launcherAppId, systemAppIds, appInfo
-            ) != null
-        } else !limitations.fullyBlocked
+        val defaultEnabledForGroup = getGroupEnabled(group, null, category, categoryConfig)
+        val globalDecision = if (group is RawSubscription.RawGlobalGroup && appId != null) {
+            globalAppDecision(subscription, group, appId, launcherAppId, systemAppIds, appInfo, matchAnyApp)
+        } else null
+        val defaultEnabled = globalDecision?.defaultEnabled ?: defaultEnabledForGroup
+        val canEnable = group.valid && (globalDecision?.versionAllowed ?: !limitations.fullyBlocked)
         val restrictions = buildList {
             if (!group.valid) add(
                 RuleRestriction.Invalid(group.validationError)
@@ -80,31 +68,14 @@ class RuleGroupPolicy {
         return RuleControlState(
             setting = configIndex.setting(groupTarget.toSwitchTarget()),
             defaultEnabled = defaultEnabled,
-            defaultSource = if (inApp) RuleEnableSource.BuiltInAppScope else defaultDecision.source,
             scope = if (inApp) RuleControlScope.CurrentApp else RuleControlScope.Group,
             restrictions = restrictions,
             canEnable = canEnable,
             limitations = limitations,
             blockedApp = blockedApp,
+            defaultOffReasons = globalDecision?.offReasons.orEmpty().takeIf { canEnable }.orEmpty(),
         )
     }
-
-    fun explainGroupEnabled(
-        group: RawSubscription.RawGroupProps,
-        subsConfig: SubsGroupConfig?,
-        category: RawSubscription.RawCategory? = null,
-        categoryConfig: SubsCategoryConfig? = null,
-    ): RuleEnableDecision = RuleEnableDecision(
-        enabled = getGroupEnabled(group, subsConfig, category, categoryConfig),
-        source = when {
-            !group.valid -> RuleEnableSource.Invalid
-            subsConfig?.enable != null -> RuleEnableSource.Manual
-            group is RawSubscription.RawGlobalGroup -> RuleEnableSource.GroupDefault
-            categoryConfig?.enable != null -> RuleEnableSource.Category
-            categoryConfig == null && category?.enable != null -> RuleEnableSource.SubscriptionCategory
-            else -> RuleEnableSource.GroupDefault
-        },
-    )
 
     fun getCategoryEnabled(
         category: RawSubscription.RawCategory?,
@@ -138,35 +109,45 @@ class RuleGroupPolicy {
         launcherAppId: String,
         systemAppIds: Set<String>,
         appInfo: AppInfo? = null,
+        matchAnyApp: Boolean? = null,
     ): Boolean? {
-        val rules = group.rules.ifEmpty { listOf(null) }
-        val groupExcluded =
-            appId in subscription.globalGroupAppGroupNameDisableMap[group.key].orEmpty()
-        val allowed = rules.filter {
-            RuleScopePolicy.globalRuleAllowed(
-                group,
-                it,
-                appId,
-                appInfo,
-                groupExcluded,
-                manuallyEnabled = excludeData.appIds[appId] == false,
-            )
-        }
-        if (allowed.isEmpty()) {
-            return if (rules.any {
-                    RuleScopePolicy.globalRuleAllowed(group, it, appId, appInfo, groupExcluded, true)
-                }) false else null
-        }
-        excludeData.appIds[appId]?.let { return !it }
-        return allowed.any {
-            RuleScopePolicy.globalDefault(
-                group,
-                it,
-                appId,
-                launcherAppId,
-                systemAppIds
-            )
-        }
+        val decision = globalAppDecision(
+            subscription, group, appId, launcherAppId, systemAppIds, appInfo, matchAnyApp,
+        )
+        if (!decision.versionAllowed) return null
+        return excludeData.appIds[appId]?.not() ?: decision.defaultEnabled
     }
 
+    private fun globalAppDecision(
+        subscription: RawSubscription,
+        group: RawSubscription.RawGlobalGroup,
+        appId: String,
+        launcherAppId: String,
+        systemAppIds: Set<String>,
+        appInfo: AppInfo?,
+        matchAnyApp: Boolean?,
+    ): GlobalAppDecision {
+        val versionAllowed = group.rules.ifEmpty { listOf(null) }.any {
+            RuleScopePolicy.globalRuleRestriction(group, it, appId, appInfo, false, true) == null
+        }
+        val offReasons = if (!versionAllowed) emptyList() else buildList {
+            if (RuleScopePolicy.globalAppDisabled(group, appId)) add(GlobalAppDefaultOffReason.SubscriptionApp)
+            if (appId in subscription.globalGroupAppGroupNameDisableMap[group.key].orEmpty()) {
+                add(GlobalAppDefaultOffReason.SameNameAppGroup)
+            }
+            if (isEmpty()) {
+                RuleScopePolicy.globalDefaultOffReason(
+                    group, appId, launcherAppId, systemAppIds, matchAnyApp,
+                )?.let { add(it) }
+            }
+        }
+        return GlobalAppDecision(versionAllowed, offReasons)
+    }
+}
+
+private data class GlobalAppDecision(
+    val versionAllowed: Boolean,
+    val offReasons: List<GlobalAppDefaultOffReason>,
+) {
+    val defaultEnabled: Boolean get() = versionAllowed && offReasons.isEmpty()
 }

@@ -4,7 +4,6 @@ import li.gkd.app.resources.Res
 import li.gkd.app.resources.action_continue
 import li.gkd.app.resources.action_notice
 import li.gkd.app.resources.global_rule_enable_builtin_warning
-import li.gkd.app.resources.global_rule_enable_builtin_partial_warning
 import li.gkd.app.resources.global_rule_enable_name_list_warning
 import li.gkd.app.resources.global_rule_enable_similar_warning
 import li.gkd.app.resources.global_rule_enable_title
@@ -89,8 +88,7 @@ suspend fun confirmRuleSwitch(
                     RuleSwitchHost.RuleDetail -> Unit
                 }
                 if (warning.builtInDisabled) add(getString(
-                    if (warning.disabledRuleCount == warning.ruleCount) Res.string.global_rule_enable_builtin_warning
-                    else Res.string.global_rule_enable_builtin_partial_warning,
+                    Res.string.global_rule_enable_builtin_warning,
                 ))
                 if (warning.similarGroups.isNotEmpty()) {
                     add(buildList {

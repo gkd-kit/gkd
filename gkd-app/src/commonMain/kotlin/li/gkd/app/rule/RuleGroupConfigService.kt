@@ -91,7 +91,7 @@ object RuleGroupConfigService {
         value: ExcludeData,
         subscription: RawSubscription,
     ) {
-        updateExclusions(subscription, target) { current ->
+        updateGroupConfig(subscription, target) { current ->
             check(ExcludeData.parse(current.exclude) == expected) {
                 throw SubscriptionException(SubscriptionFailureReason.ExclusionConfigConflict)
             }
@@ -107,7 +107,7 @@ object RuleGroupConfigService {
         expectedExcluded: Boolean,
         excluded: Boolean,
     ) {
-        updateExclusions(subscription, target) { current ->
+        updateGroupConfig(subscription, target) { current ->
             val value = ExcludeData.parse(current.exclude)
             val key = appId to activityId
             check((key in value.activityIds) == expectedExcluded) {
@@ -120,7 +120,15 @@ object RuleGroupConfigService {
         }
     }
 
-    private suspend fun updateExclusions(
+    suspend fun setMatchAnyApp(
+        subscription: RawSubscription,
+        target: RuleGroupTarget.Global,
+        value: Boolean?,
+    ) = updateGroupConfig(subscription, target) {
+        (it as SubsGlobalGroupConfig).copy(matchAnyApp = value)
+    }
+
+    private suspend fun updateGroupConfig(
         subscription: RawSubscription,
         target: RuleGroupTarget,
         transform: (SubsGroupConfig) -> SubsGroupConfig,
@@ -165,14 +173,12 @@ object RuleGroupConfigService {
                 val subscription = sources.getValue(target.subsId)
                 val group = subscription.globalGroups.find { it.key == target.groupKey }
                     ?: return@mapNotNull null
-                val disabledRuleCount = RuleScopePolicy.globalAppDisabledRuleCount(group, target.appId)
-                val excludedByGroupName = target.appId in
-                        subscription.globalGroupAppGroupNameDisableMap[group.key].orEmpty()
-                val disablingName = group.disableIfAppGroupMatch?.ifEmpty { group.name }
+                val builtInDisabled = RuleScopePolicy.globalAppDisabled(group, target.appId)
+                val matchingGroups = subscription.globalGroupAppGroupMatches[group.key]?.get(target.appId).orEmpty()
+                val excludedByGroupName = matchingGroups.isNotEmpty()
                 val similarGroups = subscription.getAppGroups(target.appId).filter {
                     it.name.contains(group.name) || group.name.contains(it.name) ||
-                            (excludedByGroupName && disablingName != null &&
-                                    it.ignoreGlobalGroupMatch != true && it.name.startsWith(disablingName))
+                            it in matchingGroups
                 }.map {
                     val category = subscription.getCategory(it.name)
                     SimilarAppGroup(
@@ -183,10 +189,10 @@ object RuleGroupConfigService {
                         )
                     )
                 }
-                if (disabledRuleCount == 0 && !excludedByGroupName && similarGroups.isEmpty()) return@mapNotNull null
+                if (!builtInDisabled && !excludedByGroupName && similarGroups.isEmpty()) return@mapNotNull null
                 GlobalAppEnableWarning(
                     target, subscription.getApp(target.appId).name ?: target.appId,
-                    group.name, disabledRuleCount, group.rules.size.coerceAtLeast(1), excludedByGroupName, similarGroups,
+                    group.name, builtInDisabled, excludedByGroupName, similarGroups,
                 )
             }
         )
@@ -300,13 +306,10 @@ data class GlobalAppEnableWarning(
     val target: RuleSwitchTarget.GlobalApp,
     val appName: String,
     val groupName: String,
-    val disabledRuleCount: Int,
-    val ruleCount: Int,
+    val builtInDisabled: Boolean,
     val excludedByGroupName: Boolean,
     val similarGroups: List<SimilarAppGroup>,
-) {
-    val builtInDisabled: Boolean get() = disabledRuleCount > 0
-}
+)
 
 data class RuleSwitchResult(
     val changed: Int,

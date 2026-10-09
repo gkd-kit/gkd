@@ -16,6 +16,7 @@ class DatabaseStoreIntegrationTest {
         try {
             Db.actionLogDao.count().first()
             SubscriptionConfigStoreChecks().apply {
+                defaultAppScopeSurvivesOtherUpdatesAndResetsWithoutLosingOverrides()
                 explicitAppAndGroupSettingsSurviveChangesToTheirDefaults()
                 resettingAppGateAndGroupSettingsPreservesOtherScopesAndPageExclusions()
                 aFailedMixedScopeTransactionDoesNotLeavePartiallyChangedSwitches()

@@ -1,6 +1,7 @@
 package li.gkd.app.ui.subscription
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -22,54 +23,51 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.global_control_group
+import li.gkd.app.resources.global_rule_default_apps
+import li.gkd.app.resources.global_rule_default_apps_follow
 import li.gkd.app.resources.global_control_app
 import li.gkd.app.resources.global_control_default_app
 import li.gkd.app.resources.global_control_default_group
-import li.gkd.app.resources.global_rule_enable_builtin_warning
-import li.gkd.app.resources.global_rule_enable_builtin_partial_warning
 import li.gkd.app.resources.global_control_name_off
-import li.gkd.app.resources.global_control_scope_off
-import li.gkd.app.resources.global_control_default_on
+import li.gkd.app.resources.global_control_launcher_off
+import li.gkd.app.resources.global_control_system_off
+import li.gkd.app.resources.global_control_local_off
+import li.gkd.app.resources.global_control_subscription_off
+import li.gkd.app.resources.global_control_app_off
 import li.gkd.app.resources.global_control_group_hint
 import li.gkd.app.resources.global_control_pages_hint
 import li.gkd.app.resources.global_control_partial
 import li.gkd.app.resources.global_control_enabled
-import li.gkd.app.resources.global_control_manual
-import li.gkd.app.resources.global_control_group_off
 import li.gkd.app.resources.action_close
 import li.gkd.app.resources.action_turn_on
 import li.gkd.app.resources.category_settings
-import li.gkd.app.resources.category_subscription_default
 import li.gkd.app.resources.category_use_group_default
 import li.gkd.app.resources.category_use_group_default_description
 import li.gkd.app.resources.dialog_close
 import li.gkd.app.resources.rule_control_allowed
-import li.gkd.app.resources.rule_control_already_decided
 import li.gkd.app.resources.rule_control_app
 import li.gkd.app.resources.rule_control_category
-import li.gkd.app.resources.rule_control_deciding_step
 import li.gkd.app.resources.rule_control_disabled
 import li.gkd.app.resources.rule_control_own
 import li.gkd.app.resources.rule_control_restricted
 import li.gkd.app.resources.rule_control_subscription
 import li.gkd.app.resources.rule_control_title
-import li.gkd.app.resources.rule_control_upstream_blocked
 import li.gkd.app.resources.rule_control_used
 import li.gkd.app.resources.rule_current_restrictions
 import li.gkd.app.resources.rule_group_default
+import li.gkd.app.rule.RuleControlExplanation
+import li.gkd.app.rule.RuleControlStep
+import li.gkd.app.rule.RuleControlStepKind
+import li.gkd.app.rule.RuleControlNote
 import li.gkd.app.resources.setting_follow_default
-import li.gkd.app.resources.subscription_app_disabled
-import li.gkd.app.resources.subscription_disabled
+import li.gkd.app.resources.setting_manual_disabled
 import li.gkd.app.rule.RuleControlState
-import li.gkd.app.rule.RuleGroupConfigService
-import li.gkd.app.rule.RuleRestriction
-import li.gkd.app.rule.RuleScopePolicy
+import li.gkd.app.rule.GlobalAppDefaultOffReason
 import li.gkd.app.rule.RuleLimitationKind
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.ui.component.GkAppNameText
@@ -80,9 +78,7 @@ import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkTopAppBar
-import li.gkd.app.ui.icon.ToggleMid
 import li.gkd.app.ui.platform.GkFullscreenDialog
-import li.gkd.db.SubscriptionConfigSnapshot
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -90,120 +86,20 @@ fun GkRuleControlDialog(
     subscription: RawSubscription,
     group: RawSubscription.RawGroupProps,
     appId: String?,
-    configuration: SubscriptionConfigSnapshot,
     control: RuleControlState,
-    appEnabled: Boolean,
-    groupControl: RuleControlState,
+    explanation: RuleControlExplanation,
     onDismissRequest: () -> Unit,
 ) {
 
     val global = group is RawSubscription.RawGlobalGroup
     val inApp = global && appId != null
     val category = if (global) null else subscription.getCategory(group.name)
-    val categoryConfig = configuration.categoryConfigs.find {
-        it.subsId == subscription.id && it.categoryKey == category?.key
-    }
-    val categoryEnabled = RuleGroupConfigService.policy.getCategoryEnabled(category, categoryConfig)
-    val subscriptionEnabled =
-        configuration.subsItems.find { it.id == subscription.id }?.enable != false
     val appName = subscription.apps.find { it.id == appId }?.name ?: appId.orEmpty()
-    val otherRestrictions = buildList {
-        addAll(control.restrictions.filterNot {
-            it == RuleRestriction.SubscriptionDisabled || it == RuleRestriction.SubscriptionAppDisabled
-        })
-        if (!global && !control.canEnable) addAll(control.limitations.blockedReasons)
-    }.distinct().map { it.label }
-    val hasOtherRestrictions = otherRestrictions.isNotEmpty() || !control.canEnable
-    // This view explains rule configuration, independently of app whitelists and service state.
-    val ruleEnabled =
-        subscriptionEnabled && appEnabled && control.configuredEnabled && !hasOtherRestrictions
-    val categorySource = when {
-        categoryConfig?.enable != null -> stringResource(Res.string.category_settings)
-        categoryConfig != null -> stringResource(Res.string.category_use_group_default_description)
-        category?.enable != null -> stringResource(Res.string.category_subscription_default)
-        else -> stringResource(Res.string.category_use_group_default)
-    }
-    val steps = if (global) globalControlSteps(
-        subscription, group, appId, subscriptionEnabled, control, groupControl,
-    ) else buildList {
-        add(
-            ControlStep(
-                stringResource(Res.string.rule_control_subscription),
-                switchLabel(subscriptionEnabled),
-                subscription.name,
-                stops = !subscriptionEnabled,
-                blocked = !subscriptionEnabled,
-                icon = switchIcon(subscriptionEnabled)
-            )
-        )
-        add(
-            ControlStep(
-                stringResource(Res.string.rule_control_app), switchLabel(appEnabled),
-                appName, stops = !appEnabled, blocked = !appEnabled,
-                icon = switchIcon(appEnabled), appId = appId
-            )
-        )
-        if (hasOtherRestrictions) {
-            add(
-                ControlStep(
-                    stringResource(Res.string.rule_current_restrictions),
-                    stringResource(Res.string.rule_control_restricted),
-                    otherRestrictions.joinToString("\n")
-                        .ifEmpty { stringResource(Res.string.rule_control_restricted) },
-                    stops = true,
-                    blocked = true,
-                    icon = GkIcons.WarningAmber
-                )
-            )
-        }
-        add(
-            ControlStep(
-                stringResource(Res.string.rule_control_own),
-                control.setting.label,
-                if (control.hasCustomSetting) stringResource(Res.string.rule_control_used) else stringResource(
-                    Res.string.setting_follow_default
-                ),
-                stops = control.hasCustomSetting,
-                blocked = control.hasCustomSetting && !control.configuredEnabled,
-                icon = switchIcon(control.setting.value)
-            )
-        )
-        add(
-            ControlStep(
-                stringResource(Res.string.rule_control_category),
-                if (categoryEnabled != null) switchLabel(categoryEnabled) else stringResource(Res.string.category_use_group_default),
-                categorySource,
-                stops = categoryEnabled != null,
-                blocked = categoryEnabled == false,
-                icon = switchIcon(categoryEnabled)
-            )
-        )
-        add(
-            ControlStep(
-                stringResource(Res.string.rule_group_default),
-                switchLabel(group.enable ?: true),
-                stringResource(Res.string.rule_group_default),
-                stops = true,
-                blocked = group.enable == false,
-                icon = switchIcon(group.enable ?: true)
-            )
-        )
-    }
-    val decidingIndex = steps.indexOfFirst { it.stops }
-    val result = when {
-        ruleEnabled -> stringResource(if (global) Res.string.global_control_enabled else Res.string.rule_control_allowed)
-        !subscriptionEnabled || !appEnabled || hasOtherRestrictions -> stringResource(Res.string.rule_control_restricted)
-        else -> stringResource(Res.string.rule_control_disabled)
-    }
-    val reason = if (global) steps[decidingIndex].reason else when {
-        !subscriptionEnabled -> stringResource(Res.string.subscription_disabled)
-        !appEnabled -> stringResource(Res.string.subscription_app_disabled)
-        hasOtherRestrictions -> otherRestrictions.firstOrNull()
-            ?: stringResource(Res.string.rule_control_restricted)
-
-        control.hasCustomSetting -> stringResource(Res.string.rule_control_own)
-        else -> control.defaultSource.label
-    }
+    val result = stringResource(when {
+        explanation.enabled -> if (global) Res.string.global_control_enabled else Res.string.rule_control_allowed
+        explanation.restricted -> Res.string.rule_control_restricted
+        else -> Res.string.rule_control_disabled
+    })
     GkFullscreenDialog(onDismissRequest) {
         GkScaffold(
             topBar = {
@@ -222,37 +118,33 @@ fun GkRuleControlDialog(
                             )
                         },
                     )
-                    Column(Modifier.padding(horizontal = 24.dp, vertical = 12.dp)) {
-                        GkGroupNameText(
-                            text = group.name,
-                            isGlobal = global,
-                            categoryName = category?.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(bottom = 20.dp)
-                        )
-                        if (inApp) {
-                            GkAppNameText(
-                                appId = checkNotNull(appId), fallbackName = appName,
-                                modifier = Modifier.padding(bottom = 12.dp),
+                    Column(
+                        Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            GkGroupNameText(
+                                text = group.name,
+                                isGlobal = global,
+                                categoryName = category?.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.weight(1f),
                             )
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
                             GkIcon(
-                                if (ruleEnabled) GkIcons.ToggleOn else GkIcons.ToggleOff,
-                                modifier = Modifier.size(20.dp), contentDescription = null,
-                                tint = if (ruleEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                            )
-                            Text(
-                                result, modifier = Modifier.padding(start = 8.dp),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = if (ruleEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                                imageVector = if (explanation.enabled) GkIcons.ToggleOn else GkIcons.ToggleOff,
+                                modifier = Modifier.size(24.dp),
+                                contentDescription = result,
+                                tint = if (explanation.enabled) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.error,
                             )
                         }
-                        Text(
-                            reason, modifier = Modifier.padding(start = 28.dp, top = 4.dp),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        if (inApp) {
+                            GkAppNameText(appId = checkNotNull(appId), fallbackName = appName)
+                        }
                     }
                 }
             },
@@ -261,16 +153,17 @@ fun GkRuleControlDialog(
                 Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
-                steps.forEachIndexed { index, step ->
+                explanation.steps.forEachIndexed { index, step ->
                     ControlTimelineStep(
                         step = step,
-                        active = index <= decidingIndex,
-                        decisive = index == decidingIndex,
+                        title = stepTitle(step.kind, global),
+                        description = stepDescription(step, subscription.name),
+                        appId = appId.takeIf { step.kind == RuleControlStepKind.App },
+                        appName = appName,
+                        active = index <= explanation.decidingIndex,
+                        decisive = index == explanation.decidingIndex,
                         first = index == 0,
-                        last = index == steps.lastIndex,
-                        skippedReason = if (!subscriptionEnabled || !appEnabled || hasOtherRestrictions) {
-                            stringResource(Res.string.rule_control_upstream_blocked)
-                        } else stringResource(if (global) Res.string.global_control_manual else Res.string.rule_control_already_decided),
+                        last = index == explanation.steps.lastIndex,
                     )
                 }
                 if (global) {
@@ -295,105 +188,73 @@ fun GkRuleControlDialog(
 
 
 @Composable
-private fun globalControlSteps(
-    subscription: RawSubscription,
-    group: RawSubscription.RawGlobalGroup,
-    appId: String?,
-    subscriptionEnabled: Boolean,
-    control: RuleControlState,
-    groupControl: RuleControlState,
-): List<ControlStep> = buildList {
-    add(ControlStep(
-        stringResource(Res.string.rule_control_subscription), switchLabel(subscriptionEnabled),
-        if (subscriptionEnabled) subscription.name else stringResource(Res.string.subscription_disabled),
-        stops = !subscriptionEnabled, blocked = !subscriptionEnabled, icon = switchIcon(subscriptionEnabled),
-    ))
-    if (appId != null) {
-        val enabled = groupControl.configuredEnabled
-        add(ControlStep(
-            stringResource(Res.string.global_control_group), switchLabel(enabled),
-            if (!enabled) stringResource(Res.string.global_control_group_off)
-            else if (groupControl.hasCustomSetting) stringResource(Res.string.global_control_manual)
-            else stringResource(Res.string.global_control_default_group),
-            stops = !enabled, blocked = !enabled, icon = switchIcon(enabled),
-        ))
-    }
-    val restrictions = control.restrictions.filterNot {
-        it == RuleRestriction.SubscriptionDisabled || it == RuleRestriction.GlobalGroupDisabled
-    }
-    if (restrictions.isNotEmpty()) add(ControlStep(
-        stringResource(Res.string.rule_current_restrictions), stringResource(Res.string.rule_control_restricted),
-        restrictions.map { it.label }.joinToString("\n"),
-        stops = true, blocked = true, icon = GkIcons.WarningAmber,
-    ))
-    add(ControlStep(
-        stringResource(if (appId == null) Res.string.global_control_group else Res.string.global_control_app),
-        control.setting.label,
-        if (control.hasCustomSetting) stringResource(Res.string.global_control_manual)
-        else stringResource(Res.string.setting_follow_default),
-        stops = control.hasCustomSetting, blocked = control.hasCustomSetting && !control.configuredEnabled,
-        icon = switchIcon(control.setting.value),
-    ))
-    val defaultReason = if (appId == null) stringResource(Res.string.global_control_default_group)
-    else buildList {
-        val disabledRuleCount = RuleScopePolicy.globalAppDisabledRuleCount(group, appId)
-        if (disabledRuleCount > 0) add(stringResource(
-            if (disabledRuleCount == group.rules.size.coerceAtLeast(1)) Res.string.global_rule_enable_builtin_warning
-            else Res.string.global_rule_enable_builtin_partial_warning,
-        ))
-        if (control.limitations.builtIn.any { it.excludedByGroupName })
-            add(stringResource(Res.string.global_control_name_off))
-        if (isEmpty()) add(stringResource(
-            if (control.defaultEnabled) Res.string.global_control_default_on else Res.string.global_control_scope_off,
-        ))
-    }.joinToString("\n")
-    add(ControlStep(
-        stringResource(if (appId == null) Res.string.global_control_default_group else Res.string.global_control_default_app),
-        switchLabel(control.defaultEnabled), defaultReason,
-        stops = true, blocked = !control.defaultEnabled, icon = switchIcon(control.defaultEnabled),
-    ))
-}
+private fun stepTitle(kind: RuleControlStepKind, global: Boolean): String = stringResource(when (kind) {
+    RuleControlStepKind.Subscription -> Res.string.rule_control_subscription
+    RuleControlStepKind.App -> Res.string.rule_control_app
+    RuleControlStepKind.Restrictions -> Res.string.rule_current_restrictions
+    RuleControlStepKind.Own -> Res.string.rule_control_own
+    RuleControlStepKind.Category -> Res.string.rule_control_category
+    RuleControlStepKind.GroupDefault -> if (global) Res.string.global_control_default_group else Res.string.rule_group_default
+    RuleControlStepKind.GlobalGroup -> Res.string.global_control_group
+    RuleControlStepKind.GlobalApp -> Res.string.global_control_app
+    RuleControlStepKind.DefaultApps -> Res.string.global_rule_default_apps
+    RuleControlStepKind.GlobalDefault -> Res.string.global_control_default_app
+})
 
-private data class ControlStep(
-    val title: String,
-    val value: String,
-    val reason: String,
-    val stops: Boolean,
-    val blocked: Boolean,
-    val icon: ImageVector,
-    val appId: String? = null,
-)
+@Composable
+private fun stepDescription(step: RuleControlStep, subscriptionName: String): String? {
+    if (step.kind == RuleControlStepKind.Subscription) return subscriptionName
+    if (step.kind == RuleControlStepKind.Restrictions) return step.restrictions.map { it.label }
+        .joinToString("\n").ifEmpty { stringResource(Res.string.rule_control_restricted) }
+    if (step.defaultOffReasons.isNotEmpty()) return step.defaultOffReasons.map { reason ->
+        stringResource(when (reason) {
+            GlobalAppDefaultOffReason.Launcher -> Res.string.global_control_launcher_off
+            GlobalAppDefaultOffReason.SystemApp -> Res.string.global_control_system_off
+            GlobalAppDefaultOffReason.LocalDefault -> Res.string.global_control_local_off
+            GlobalAppDefaultOffReason.SubscriptionDefault -> Res.string.global_control_subscription_off
+            GlobalAppDefaultOffReason.SubscriptionApp -> Res.string.global_control_app_off
+            GlobalAppDefaultOffReason.SameNameAppGroup -> Res.string.global_control_name_off
+        })
+    }.joinToString("\n")
+    return step.note?.let { note -> stringResource(when (note) {
+        RuleControlNote.FollowDefault -> Res.string.setting_follow_default
+        RuleControlNote.ManualDisabled -> Res.string.setting_manual_disabled
+        RuleControlNote.FollowSubscription -> Res.string.global_rule_default_apps_follow
+        RuleControlNote.CategorySettings -> Res.string.category_settings
+        RuleControlNote.IgnoreCategory -> Res.string.category_use_group_default_description
+        RuleControlNote.FollowGroup -> Res.string.category_use_group_default
+    }) }
+}
 
 @Composable
 private fun switchLabel(enabled: Boolean) =
     if (enabled) stringResource(Res.string.action_turn_on) else stringResource(Res.string.action_close)
 
-private fun switchIcon(enabled: Boolean?): ImageVector = when (enabled) {
-    true -> GkIcons.ToggleOn
-    false -> GkIcons.ToggleOff
-    null -> ToggleMid
-}
-
 @Composable
 private fun ControlTimelineStep(
-    step: ControlStep,
+    step: RuleControlStep,
+    title: String,
+    description: String?,
+    appId: String?,
+    appName: String,
     active: Boolean,
     decisive: Boolean,
     first: Boolean,
     last: Boolean,
-    skippedReason: String,
 ) {
-    val decidingLabel = stringResource(Res.string.rule_control_deciding_step)
+    val decidingLabel = stringResource(Res.string.rule_control_used)
+    val statusLabel = step.enabled?.let { switchLabel(it) }
     val color = when {
         !active -> MaterialTheme.colorScheme.outline
-        decisive && step.blocked -> MaterialTheme.colorScheme.error
+        decisive && (step.enabled == false) -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.primary
     }
     val lineColor = MaterialTheme.colorScheme.outlineVariant
+    val itemSpacing = if (last) 0.dp else 12.dp
     Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         Canvas(Modifier.width(32.dp).fillMaxHeight()) {
             val x = 12.dp.toPx()
-            val y = 24.dp.toPx()
+            val y = (size.height - itemSpacing.toPx()) / 2f
             val radius = if (decisive) 6.dp.toPx() else 4.dp.toPx()
             val dash = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 4.dp.toPx()))
             if (!first) drawLine(
@@ -413,51 +274,48 @@ private fun ControlTimelineStep(
         }
         Surface(
             color = when {
-                decisive && step.blocked -> MaterialTheme.colorScheme.errorContainer
+                decisive && (step.enabled == false) -> MaterialTheme.colorScheme.errorContainer
                 decisive -> MaterialTheme.colorScheme.primaryContainer
                 else -> MaterialTheme.colorScheme.surface
             },
             shape = MaterialTheme.shapes.medium,
-            modifier = Modifier.weight(1f).padding(bottom = 4.dp)
+            modifier = Modifier.weight(1f).padding(bottom = itemSpacing)
                 .semantics(mergeDescendants = true) {
-                    stateDescription = listOfNotNull(
-                        step.value,
-                        if (decisive) decidingLabel else if (!active) skippedReason else null
-                    ).joinToString("，")
+                    val description = listOfNotNull(statusLabel, decidingLabel.takeIf { decisive })
+                    if (description.isNotEmpty()) stateDescription = description.joinToString("，")
                 },
         ) {
-            Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
                     Text(
-                        step.title,
-                        Modifier.weight(1f),
+                        title,
                         style = MaterialTheme.typography.titleSmall,
-                        color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    GkIcon(
-                        step.icon, Modifier.padding(start = 12.dp).size(24.dp),
-                        tint = color, contentDescription = null
-                    )
-                }
-                if (step.appId != null) {
-                    GkAppNameText(
-                        appId = step.appId,
-                        fallbackName = step.reason,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    if (!active) {
-                        Text(
-                            skippedReason,
+                    if (appId != null) {
+                        GkAppNameText(
+                            appId = appId,
+                            fallbackName = appName,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else if (!description.isNullOrBlank()) {
+                        Text(
+                            description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (active) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.outline,
                         )
                     }
-                } else {
-                    Text(
-                        if (!active) skippedReason else step.reason,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                }
+                step.enabled?.let { enabled ->
+                    GkIcon(
+                        imageVector = if (enabled) GkIcons.ToggleOn else GkIcons.ToggleOff,
+                        modifier = Modifier.padding(start = 12.dp).size(24.dp),
+                        contentDescription = null,
+                        tint = color,
                     )
                 }
             }

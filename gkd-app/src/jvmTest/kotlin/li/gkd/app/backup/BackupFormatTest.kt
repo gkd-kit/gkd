@@ -99,6 +99,17 @@ class BackupFormatTest {
     }
 
     @Test
+    fun defaultAppScopeRoundTripsAllThreeValuesWithoutChangingOtherOverrides() {
+        listOf(null, false, true).forEach { value ->
+            val original = BackupFormat.decode(legacy).toSnapshot().copy(
+                globalGroupConfigs = listOf(SubsGlobalGroupConfig(7, 4, false, "!app.one", value)),
+            )
+            val encoded = BackupFormat.encode(BackupDatabaseData.fromSnapshot(original))
+            assertEquals(original, BackupFormat.decode(encoded).toSnapshot())
+        }
+    }
+
+    @Test
     fun version2BackupBeforeTableRenamingKeepsItsFieldNamesAndValues() {
         // Frozen database-v15 export: Room names must not change the V2 archive contract.
         val exportedBeforeRename = """

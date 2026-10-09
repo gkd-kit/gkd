@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="global_rule_default_apps">在应用中默认启用</string>
+    <string name="global_rule_default_apps_follow">跟随订阅</string>
+    <string name="global_rule_default_apps_follow_enabled">跟随订阅：默认开启</string>
+    <string name="global_rule_default_apps_follow_disabled">跟随订阅：默认关闭</string>
+    <string name="global_rule_default_apps_enabled">默认开启</string>
+    <string name="global_rule_default_apps_disabled">默认关闭</string>
     <string name="a11y_about">关于无障碍</string>
     <string name="a11y_automation_mode_notice">当前为自动化模式，无障碍将自动关闭</string>
     <string name="a11y_background_running_warning">必须确保服务关闭后的持续后台运行，否则会被系统暂停或结束运行导致重启失败</string>
@@ -238,7 +244,6 @@
     <string name="category_scope_selected_only">仅处理所选规则组。</string>
     <string name="category_selected_rules_changed">所选类别规则已变化</string>
     <string name="category_settings">类别设置</string>
-    <string name="category_subscription_default">订阅类别默认设置</string>
     <string name="category_subscription_default_value">订阅默认：%1$s</string>
     <string name="category_summary_counts">%1$s 个应用 · %2$s 组规则 · %3$s</string>
     <string name="category_use_group_default">跟随规则组</string>
@@ -352,7 +357,7 @@
     <string name="global_rule_enable_risk">开启后可能会点错按钮。</string>
     <string name="global_rule_enable_similar_risk">同时开启，可能会重复点击或点错按钮。</string>
     <string name="global_rule_enable_qualified_name">%1$s（%2$s）</string>
-    <string name="global_rule_enable_builtin_warning">订阅中默认关闭了此应用下的全部子规则。</string>
+    <string name="global_rule_enable_builtin_warning">订阅默认关闭此应用的全部规则。</string>
     <string name="global_rule_enable_similar_warning">此应用有名称相近的应用规则：</string>
     <string name="global_rule_similar_group_enabled">• %1$s（已开启）</string>
     <string name="global_rule_similar_group_disabled">• %1$s（已关闭）</string>
@@ -401,7 +406,6 @@
     <string name="image_reading">读取中</string>
     <string name="image_requesting">请求中</string>
     <string name="import_success">导入成功</string>
-    <string name="installed_apps_default_enabled">已安装应用默认开启</string>
     <string name="intent_launch_failed_prefix">跳转失败\n</string>
     <string name="item_toggle_description">切换%1$s</string>
     <string name="keep_alive_permission_description">自动重新开启无障碍服务需要此权限。请前往特权服务页面，启动服务并授权。</string>
@@ -536,7 +540,6 @@
     <string name="rule_app_or_version_mismatch">当前应用或版本不符合要求</string>
     <string name="rule_app_version_mismatch">当前应用版本不符合规则要求</string>
     <string name="rule_batch_setting_confirmation_prefix">是否对所选 %1$s 个规则组执行%2$s？\n\n</string>
-    <string name="rule_builtin_app_scope">规则自带应用范围</string>
     <string name="rule_categories">规则类别</string>
     <string name="rule_categories_view_list">查看规则类别列表</string>
     <string name="rule_clear_custom_settings">清除单独配置</string>
@@ -548,7 +551,6 @@
     <string name="rule_copy">复制规则</string>
     <string name="rule_current_app_scope">仅此全局规则在当前应用内</string>
     <string name="rule_current_restrictions">当前限制</string>
-    <string name="rule_custom_setting">单独配置</string>
     <string name="rule_custom_settings_description">将写入规则组的单独配置，之后不受类别设置影响。</string>
     <string name="rule_delete">删除规则</string>
     <string name="rule_edit">编辑规则</string>
@@ -986,9 +988,6 @@
     <string name="rule_control_disabled">已关闭</string>
     <string name="rule_control_restricted">当前受限</string>
     <string name="rule_control_group_off">规则组开关已关闭</string>
-    <string name="rule_control_upstream_blocked">被上级条件阻断</string>
-    <string name="rule_control_already_decided">已由前序设置决定，无需采用</string>
-    <string name="rule_control_deciding_step">决定当前结果</string>
     <string name="rule_control_deciding_reason">决定结果 · %1$s</string>
     <string name="app_rule_whitelist_notice">此应用内不执行规则，规则开关配置保留。</string>
     <string name="app_rule_whitelist_follow_notice">此应用内不执行规则，规则开关配置保留。局部关闭跟随此名单。</string>
@@ -1026,20 +1025,20 @@
     <string name="restriction_app_accessibility">无障碍访问</string>
     <string name="restriction_app_settings">受限设置访问</string>
     <string name="restriction_app_foreground">特殊用途前台服务</string>
-    <string name="global_control_group">规则总开关</string>
+    <string name="global_control_group">规则组开关</string>
     <string name="global_control_app">在此应用中的设置</string>
-    <string name="global_control_default_app">此应用的订阅默认设置</string>
-    <string name="global_control_default_group">订阅默认设置</string>
-    <string name="global_control_name_off">此应用已有对应的应用规则，所以默认关闭。</string>
-    <string name="global_control_scope_off">按订阅的适用范围或版本要求，默认不在此应用中开启。</string>
-    <string name="global_control_default_on">默认在此应用中开启。</string>
+    <string name="global_control_default_app">在此应用中的默认设置</string>
+    <string name="global_control_default_group">规则组默认</string>
+    <string name="global_control_name_off">已有名称匹配的应用规则组</string>
+    <string name="global_control_launcher_off">桌面应用默认关闭</string>
+    <string name="global_control_system_off">系统应用默认关闭</string>
+    <string name="global_control_local_off">本地设置为默认关闭</string>
+    <string name="global_control_subscription_off">订阅设置为默认关闭</string>
+    <string name="global_control_app_off">订阅对此应用默认关闭</string>
     <string name="global_control_group_hint">是否在某个应用中生效，还要看该应用的设置。</string>
-    <string name="global_control_pages_hint">已排除的页面仍不会运行。</string>
+    <string name="global_control_pages_hint">在已排除的页面中不运行规则。</string>
     <string name="global_control_partial">部分规则仍不可用，可在“范围与排除”中查看限制。</string>
     <string name="global_control_enabled">开关已开启</string>
-    <string name="global_control_manual">已使用手动设置。</string>
-    <string name="global_control_group_off">规则总开关已关闭。即使在此应用中开启，也不会生效。</string>
-    <string name="global_rule_enable_builtin_partial_warning">订阅中默认关闭了此应用下的部分子规则。</string>
     <string name="global_rule_enable_name_list_warning">此应用已有以下应用规则，因此这条全局规则默认关闭：</string>
     <string name="simulation_services">服务生命周期（模拟）</string>
     <string name="simulation_services_description">HTTP 服务实际监听本机端口；其他服务仅模拟启停与授权，不执行 Android 截屏或悬浮窗。</string>

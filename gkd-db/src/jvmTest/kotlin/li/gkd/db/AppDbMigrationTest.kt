@@ -66,12 +66,40 @@ class AppDbMigrationTest {
     }
 
     @Test
-    fun everyExportedSchemaMigratesToVersion16() = runBlocking {
+    fun everyExportedSchemaMigratesToVersion17() = runBlocking {
         // Protects the persisted schema compatibility contract for every released version.
-        for (startVersion in 1 until 16) {
+        for (startVersion in 1 until 17) {
             val helper = migrationHelper("all-migrations-$startVersion.db")
             helper.createDatabase(startVersion).close()
-            helper.runMigrationsAndValidate(16, listOf(Migration14To15)).close()
+            helper.runMigrationsAndValidate(17, listOf(Migration14To15)).close()
+        }
+    }
+
+    @Test
+    fun migration16To17KeepsOverridesAndDefaultsNewScopeToFollowSubscription() = runBlocking {
+        val name = "global-default-apps.db"
+        val helper = migrationHelper(name)
+        helper.createDatabase(16).use {
+            it.execSQL("INSERT INTO subs_item VALUES (7, 1, 2, 1, 1, 0, NULL)")
+            it.execSQL("INSERT INTO subs_global_group_config VALUES (7, 4, 0, '!app.one')")
+        }
+        helper.runMigrationsAndValidate(17).close()
+        val migrated = openDatabase(name)
+        try {
+            val old = SubsGlobalGroupConfig(7, 4, false, "!app.one")
+            assertEquals(old, migrated.subsGlobalGroupConfigDao().getConfig(7, 4))
+            migrated.subsGlobalGroupConfigDao().upsert(old.copy(matchAnyApp = false))
+        } finally {
+            migrated.close()
+        }
+        val reopened = openDatabase(name)
+        try {
+            assertEquals(
+                SubsGlobalGroupConfig(7, 4, false, "!app.one", false),
+                reopened.subsGlobalGroupConfigDao().getConfig(7, 4),
+            )
+        } finally {
+            reopened.close()
         }
     }
 

@@ -15,13 +15,17 @@ class GlobalRule(
 ) {
     val groupExcludeAppIds = g.groupExcludeAppIds
     val group = g.group
-    private val matchAnyApp = rawRule.matchAnyApp ?: group.matchAnyApp ?: true
-    private val matchLauncher = rawRule.matchLauncher ?: group.matchLauncher ?: false
-    private val matchSystemApp = rawRule.matchSystemApp ?: group.matchSystemApp ?: false
-    private val apps = (rawRule.apps ?: group.apps).orEmpty()
+    private val matchAnyApp = g.matchAnyApp
+    private val groupAppIds = group.apps.orEmpty().mapTo(mutableSetOf()) { it.id }
+    private val apps = (groupAppIds + rawRule.apps.orEmpty().map { it.id })
         // Only installed apps can supply runtime activity events (issue #619).
-        .filter { appInfoCache.isEmpty() || it.id in appInfoCache }
-        .associate { it.id to RuleScopePolicy.globalScope(it, appInfoCache[it.id]) }
+        .filter { appInfoCache.isEmpty() || it in appInfoCache }
+        .associateWith { id ->
+            RuleScopePolicy.globalScope(
+                checkNotNull(RuleScopePolicy.globalApp(group, rawRule, id)),
+                appInfoCache[id], id in groupAppIds,
+            )
+        }
 
     override val type = "global"
 
@@ -29,8 +33,10 @@ class GlobalRule(
         val environment = runtime.environment()
         return RuleScopePolicy.matchGlobalActivity(
             apps[appId],
-            matchAnyApp && (matchLauncher || appId != environment.launcherAppId) &&
-                    (matchSystemApp || appId !in environment.systemAppIds),
+            RuleScopePolicy.globalDefaultOffReason(
+                group, appId, environment.launcherAppId, environment.systemAppIds, matchAnyApp,
+                explicitlyIncluded = apps[appId]?.explicitlyIncluded == true,
+            ) == null,
             appId, activityId, appId in groupExcludeAppIds, excludeData,
         )
     }

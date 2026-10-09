@@ -41,12 +41,25 @@ class RulePropertyStateTest {
         assertTrue(app.defaultEnabled)
         assertTrue(app.configuredEnabled)
         assertTrue(app.hasCustomSetting)
-        assertFalse(app.limitations.hasPersonalProperties)
+        assertFalse(app.limitations.hasPersonalExclusions)
         val global = state(config, appId = null)
         assertFalse(global.hasCustomSetting)
-        assertTrue(global.limitations.hasPersonalProperties)
+        assertTrue(global.limitations.hasPersonalExclusions)
         assertFalse(state(config, "other.app").hasCustomSetting)
-        assertFalse(state(config, "other.app").limitations.hasPersonalProperties)
+        assertFalse(state(config, "other.app").limitations.hasPersonalExclusions)
+    }
+
+    @Test
+    fun defaultAppScopeDoesNotCountAsACustomExclusion() {
+        listOf(true, false).forEach { value ->
+            val config = SubsGlobalGroupConfig(-2, 1, matchAnyApp = value)
+            assertFalse(state(config, appId = null).limitations.hasPersonalExclusions)
+            assertFalse(state(config).limitations.hasPersonalExclusions)
+            assertTrue(state(config.copy(exclude = "!app.id"), appId = null)
+                .limitations.hasPersonalExclusions)
+            assertTrue(state(config.copy(exclude = "app.id/app.id.Page"))
+                .limitations.hasPersonalExclusions)
+        }
     }
 
     @Test
@@ -57,14 +70,14 @@ class RulePropertyStateTest {
         )
         val config = SubsGlobalGroupConfig(-2, 1, null, exclude.stringify())
         assertTrue(state(config).hasCustomSetting)
-        assertTrue(state(config).limitations.hasPersonalProperties)
+        assertTrue(state(config).limitations.hasPersonalExclusions)
         val reset = RuleSwitchPolicy.updateGroup(
             RuleSwitchTarget.GlobalApp(-2, 1, "app.id"),
             config, RuleSetting.FollowDefault
         ) as SubsGlobalGroupConfig
         val after = state(reset)
         assertFalse(after.hasCustomSetting)
-        assertTrue(after.limitations.hasPersonalProperties)
+        assertTrue(after.limitations.hasPersonalExclusions)
         assertEquals("app.id.Page", after.limitations.personal.single().value)
         assertEquals(RuleLimitationKind.ExcludedPageExact, after.limitations.personal.single().kind)
         assertEquals(exclude.activityIds, ExcludeData.parse(reset.exclude).activityIds)

@@ -13,7 +13,7 @@ import androidx.room3.migration.AutoMigrationSpec
 import kotlinx.serialization.json.Json
 
 @Database(
-    version = 16,
+    version = 17,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -41,6 +41,7 @@ import kotlinx.serialization.json.Json
         AutoMigration(from = 12, to = 13),
         AutoMigration(from = 13, to = 14),
         AutoMigration(from = 15, to = 16, spec = Migration15To16Spec::class),
+        AutoMigration(from = 16, to = 17),
     ]
 )
 @ColumnTypeConverters(DbConverters::class)

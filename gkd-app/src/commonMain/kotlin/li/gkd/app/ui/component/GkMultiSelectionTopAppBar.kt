@@ -64,6 +64,7 @@ fun GkMultiSelectionTopAppBar(
     onTitleClick: (() -> Unit)? = null,
     scrollBehavior: TopAppBarScrollBehavior? = null,
     canScroll: Boolean = true,
+    backOrClose: Boolean = !selectedMode,
     actions: @Composable RowScope.(selectedMode: Boolean) -> Unit = {},
 ) {
     val transition = updateTransition(selectedMode, label = "multiSelectionTopBar")
@@ -169,7 +170,7 @@ fun GkMultiSelectionTopAppBar(
                         if (selectedMode) onExitSelection() else onNavigateBack()
                     },
                 ) {
-                    GkBackCloseIcon(backOrClose = !selectedMode)
+                    GkBackCloseIcon(backOrClose = backOrClose)
                 }
             },
             title = animatedTitle,

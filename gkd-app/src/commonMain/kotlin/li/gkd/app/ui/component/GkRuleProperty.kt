@@ -88,7 +88,7 @@ fun GkRuleSupportingContent(
 fun GkRulePropertyIndicators(state: RuleControlState) {
     // Keep the personal property's slot stable without reserving space for warnings.
     Box(Modifier.size(16.dp), contentAlignment = Alignment.Center) {
-        if (state.limitations.hasPersonalProperties) {
+        if (state.limitations.hasPersonalExclusions) {
             GkRulePropertyIcon(
                 RuleProperty.Personal,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant

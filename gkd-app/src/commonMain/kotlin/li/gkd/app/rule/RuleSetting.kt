@@ -78,12 +78,12 @@ class RuleConfigIndex(configs: SubscriptionConfigSnapshot) {
 data class RuleControlState(
     val setting: RuleSetting,
     val defaultEnabled: Boolean,
-    val defaultSource: RuleEnableSource,
     val scope: RuleControlScope,
     val restrictions: List<RuleRestriction> = emptyList(),
     val canEnable: Boolean = true,
     val limitations: RuleLimitations = RuleLimitations(),
     val blockedApp: Boolean = false,
+    val defaultOffReasons: List<GlobalAppDefaultOffReason> = emptyList(),
 ) {
     val configuredEnabled: Boolean get() = setting.value ?: defaultEnabled
     val available: Boolean get() = configuredEnabled && canEnable && !blockedApp && restrictions.isEmpty()

@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.gkd.app.rule.RuleGroupConfigService
+import li.gkd.app.rule.explainControl
 import li.gkd.app.rule.RuleGroupTarget
 import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.SubscriptionRepository
@@ -67,16 +68,10 @@ class RuleControlDialogState {
                         subscription = subscription,
                         group = group,
                         appId = target.pageAppId,
-                        configuration = snapshot,
                         control = control,
-                        groupControl = if (target is RuleGroupTarget.Global && target.pageAppId != null) {
-                            environment.resolve(subscription, group, null, snapshot)
-                        } else control,
-                        appEnabled = target !is RuleGroupTarget.App || environment.app(
-                            target.subsId,
-                            target.appId,
-                            snapshot
-                        ).configuredEnabled,
+                        explanation = RuleGroupConfigService.policy.explainControl(
+                            subscription, group, target.pageAppId, snapshot, control,
+                        ),
                         onDismissRequest = { dismiss(current) },
                     )
                 }

@@ -36,7 +36,6 @@ import li.gkd.app.resources.setting_follow_default_value
 import li.gkd.app.rule.RuleConfigIndex
 import li.gkd.app.rule.RuleControlScope
 import li.gkd.app.rule.RuleControlState
-import li.gkd.app.rule.RuleEnableSource
 import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.rule.RuleRestriction
 import li.gkd.app.rule.RuleSetting
@@ -68,7 +67,6 @@ data class RuleControlEnvironment(
     ): RuleControlState = RuleControlState(
         setting = configIndex.setting(RuleSwitchTarget.App(subsId, appId)),
         defaultEnabled = appId in apps,
-        defaultSource = RuleEnableSource.InstalledApp,
         scope = RuleControlScope.SubscriptionApp,
         blockedApp = appId in blockedApps,
         restrictions = buildList {

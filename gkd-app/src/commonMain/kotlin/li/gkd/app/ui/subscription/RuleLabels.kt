@@ -8,17 +8,10 @@ import li.gkd.app.resources.category_enabled
 import li.gkd.app.resources.category_enabled_description
 import li.gkd.app.resources.category_follow_subscription
 import li.gkd.app.resources.category_follow_subscription_description
-import li.gkd.app.resources.category_settings
-import li.gkd.app.resources.category_subscription_default
 import li.gkd.app.resources.category_use_group_default
 import li.gkd.app.resources.category_use_group_default_description
-import li.gkd.app.resources.installed_apps_default_enabled
-import li.gkd.app.resources.rule_builtin_app_scope
 import li.gkd.app.resources.rule_current_app_scope
-import li.gkd.app.resources.rule_custom_setting
-import li.gkd.app.resources.rule_group_default
 import li.gkd.app.resources.rule_group_scope
-import li.gkd.app.resources.rule_invalid
 import li.gkd.app.resources.rule_switch_changed_counts
 import li.gkd.app.resources.rule_switch_restricted_count_suffix
 import li.gkd.app.resources.rule_switch_skipped_count
@@ -28,7 +21,6 @@ import li.gkd.app.resources.setting_manual_enabled
 import li.gkd.app.resources.subscription_app_switch_scope
 import li.gkd.app.rule.CategorySetting
 import li.gkd.app.rule.RuleControlScope
-import li.gkd.app.rule.RuleEnableSource
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchResult
 import org.jetbrains.compose.resources.StringResource
@@ -59,22 +51,6 @@ val RuleSetting.label: String
     @Composable get() = stringResource(labelResource)
 
 suspend fun RuleSetting.labelText(): String = getString(labelResource)
-
-private val RuleEnableSource.labelResource: StringResource
-    get() = when (this) {
-        RuleEnableSource.Manual -> Res.string.rule_custom_setting
-        RuleEnableSource.Category -> Res.string.category_settings
-        RuleEnableSource.SubscriptionCategory -> Res.string.category_subscription_default
-        RuleEnableSource.GroupDefault -> Res.string.rule_group_default
-        RuleEnableSource.Invalid -> Res.string.rule_invalid
-        RuleEnableSource.BuiltInAppScope -> Res.string.rule_builtin_app_scope
-        RuleEnableSource.InstalledApp -> Res.string.installed_apps_default_enabled
-    }
-
-val RuleEnableSource.label: String
-    @Composable get() = stringResource(labelResource)
-
-suspend fun RuleEnableSource.labelText(): String = getString(labelResource)
 
 private val RuleControlScope.labelResource: StringResource
     get() = when (this) {

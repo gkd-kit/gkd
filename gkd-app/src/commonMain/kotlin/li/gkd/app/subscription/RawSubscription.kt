@@ -92,20 +92,20 @@ data class RawSubscription(
 
     val groupsSize get() = appGroups.size + globalGroups.size
 
+    val globalGroupAppGroupMatches by lazy {
+        globalGroups.associate { group ->
+            val prefix = group.disableIfAppGroupMatch?.ifEmpty { group.name }
+            group.key to if (prefix == null) emptyMap() else apps.mapNotNull { app ->
+                val matches = app.groups.filter {
+                    it.ignoreGlobalGroupMatch != true && it.name.startsWith(prefix)
+                }
+                matches.takeIf { it.isNotEmpty() }?.let { app.id to it }
+            }.toMap()
+        }
+    }
+
     val globalGroupAppGroupNameDisableMap by lazy {
-        globalGroups.mapNotNull { g ->
-            val n = g.disableIfAppGroupMatch
-            if (n != null) {
-                val gName = n.ifEmpty { g.name }
-                g.key to apps.filter { a ->
-                    a.groups.any { ag ->
-                        ag.ignoreGlobalGroupMatch != true && ag.name.startsWith(gName)
-                    }
-                }.map { it.id }.toHashSet()
-            } else {
-                null
-            }
-        }.toMap()
+        globalGroupAppGroupMatches.mapValues { (_, apps) -> apps.keys }
     }
 
     @Serializable
@@ -305,14 +305,6 @@ data class RawSubscription(
         val versionName: StringMatcher?
     }
 
-    sealed interface RawGlobalRuleProps {
-        val matchAnyApp: Boolean?
-        val matchSystemApp: Boolean?
-        val matchLauncher: Boolean?
-        val apps: List<RawGlobalApp>?
-    }
-
-
     @Serializable
     data class RawGlobalApp(
         val id: String,
@@ -323,6 +315,15 @@ data class RawSubscription(
         override val versionName: StringMatcher?,
     ) : RawAppRuleProps
 
+
+    @Serializable
+    data class RawGlobalRuleApp(
+        val id: String,
+        override val activityIds: List<String>?,
+        override val excludeActivityIds: List<String>?,
+        override val versionCode: IntegerMatcher?,
+        override val versionName: StringMatcher?,
+    ) : RawAppRuleProps
 
     @Serializable
     data class RawGlobalGroup(
@@ -348,13 +349,13 @@ data class RawSubscription(
         override val snapshotUrls: List<String>?,
         override val excludeSnapshotUrls: List<String>?,
         override val exampleUrls: List<String>?,
-        override val matchAnyApp: Boolean?,
-        override val matchSystemApp: Boolean?,
-        override val matchLauncher: Boolean?,
+        val matchAnyApp: Boolean?,
+        val matchSystemApp: Boolean?,
+        val matchLauncher: Boolean?,
         val disableIfAppGroupMatch: String?,
         override val rules: List<RawGlobalRule>,
-        override val apps: List<RawGlobalApp>?,
-    ) : RawGroupProps, RawGlobalRuleProps {
+        val apps: List<RawGlobalApp>?,
+    ) : RawGroupProps {
         override val cacheMap by lazy { HashMap<String, Selector?>() }
         override val validationError by lazy { validateRules() }
         override val valid get() = validationError == null
@@ -397,11 +398,8 @@ data class RawSubscription(
         override val excludeMatches: List<String>?,
         override val excludeAllMatches: List<String>?,
         override val anyMatches: List<String>?,
-        override val matchAnyApp: Boolean?,
-        override val matchSystemApp: Boolean?,
-        override val matchLauncher: Boolean?,
-        override val apps: List<RawGlobalApp>?
-    ) : RawRuleProps, RawGlobalRuleProps
+        val apps: List<RawGlobalRuleApp>?
+    ) : RawRuleProps
 
     @Serializable
     data class RawAppGroup(
@@ -833,6 +831,15 @@ data class RawSubscription(
             )
         }
 
+        private fun jsonToGlobalRuleApp(jsonObject: JsonObject, index: Int): RawGlobalRuleApp =
+            RawGlobalRuleApp(
+                id = getString(jsonObject, "id") ?: error("miss apps[$index].id"),
+                activityIds = getStringIArray(jsonObject, "activityIds"),
+                excludeActivityIds = getStringIArray(jsonObject, "excludeActivityIds"),
+                versionCode = getCompatVersionCode(jsonObject),
+                versionName = getCompatVersionName(jsonObject),
+            )
+
         private fun jsonToGlobalRule(jsonObject: JsonObject): RawGlobalRule {
             return RawGlobalRule(
                 key = getInt(jsonObject, "key"),
@@ -850,11 +857,8 @@ data class RawSubscription(
                 exampleUrls = getStringIArray(jsonObject, "exampleUrls"),
                 actionMaximumKey = getInt(jsonObject, "actionMaximumKey"),
                 actionCdKey = getInt(jsonObject, "actionCdKey"),
-                matchAnyApp = getBoolean(jsonObject, "matchAnyApp"),
-                matchSystemApp = getBoolean(jsonObject, "matchSystemApp"),
-                matchLauncher = getBoolean(jsonObject, "matchLauncher"),
                 apps = jsonObject["apps"]?.jsonArray?.mapIndexed { index, jsonElement ->
-                    jsonToGlobalApp(
+                    jsonToGlobalRuleApp(
                         jsonElement.jsonObject, index
                     )
                 }?.distinctByIfAny { it.id },

@@ -3,6 +3,7 @@ package li.gkd.app.rule
 import li.gkd.app.model.ExcludeData
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.db.SubsGroupConfig
+import li.gkd.db.SubsGlobalGroupConfig
 import li.gkd.db.SubsItem
 
 sealed class ResolvedGroup(
@@ -36,6 +37,8 @@ class ResolvedGlobalGroup(
 ) : ResolvedGroup(group, subscription, subsItem, config) {
     override val appId: String?
         get() = null
+
+    val matchAnyApp = (config as? SubsGlobalGroupConfig)?.matchAnyApp
 
     val groupExcludeAppIds
         get() = subscription.globalGroupAppGroupNameDisableMap[group.key] ?: emptySet()

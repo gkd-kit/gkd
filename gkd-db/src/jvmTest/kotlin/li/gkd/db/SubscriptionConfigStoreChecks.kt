@@ -16,6 +16,27 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 
 class SubscriptionConfigStoreChecks {
+    fun defaultAppScopeSurvivesOtherUpdatesAndResetsWithoutLosingOverrides() = withDatabase { db, store ->
+        db.subsItemDao().upsert(SubsItem(7, order = 0))
+        store.updateGlobalGroupConfig(7, 4) { it.copy(matchAnyApp = false) }
+        assertEquals(false, db.subsGlobalGroupConfigDao().getConfig(7, 4)?.matchAnyApp)
+        coroutineScope {
+            awaitAll(
+                async { store.updateGlobalGroupConfig(7, 4) { it.copy(matchAnyApp = true) } },
+                async { store.updateGlobalGroupConfig(7, 4) { it.copy(exclude = "!app.one") } },
+            )
+        }
+        assertEquals(SubsGlobalGroupConfig(7, 4, exclude = "!app.one", matchAnyApp = true),
+            db.subsGlobalGroupConfigDao().getConfig(7, 4))
+        val checkpoint = store.capture()
+        store.updateGlobalGroupConfig(7, 4) { it.copy(matchAnyApp = null) }
+        assertEquals("!app.one", db.subsGlobalGroupConfigDao().getConfig(7, 4)?.exclude)
+        store.updateGlobalGroupConfig(7, 4) { it.copy(exclude = "") }
+        assertEquals(null, db.subsGlobalGroupConfigDao().getConfig(7, 4))
+        store.restore(checkpoint)
+        assertEquals(checkpoint, store.capture())
+    }
+
     fun explicitAppAndGroupSettingsSurviveChangesToTheirDefaults() = withDatabase { db, store ->
         db.subsItemDao().upsert(SubsItem(7, order = 0))
         db.subsCategoryConfigDao().upsert(SubsCategoryConfig(true, 7, 3))

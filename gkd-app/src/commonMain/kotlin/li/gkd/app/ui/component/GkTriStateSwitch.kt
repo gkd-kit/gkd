@@ -106,11 +106,12 @@ private fun TriStateSwitch(
     enabled: Boolean = true,
     colors: GkTriStateSwitchColors = GkTriStateSwitchDefaults.colors(),
     interactionSource: MutableInteractionSource? = null,
+    stateDescription: String? = null,
 ) {
     @Suppress("NAME_SHADOWING")
     val interactionSource = interactionSource ?: remember { MutableInteractionSource() }
 
-    val description = when (checked) {
+    val description = stateDescription ?: when (checked) {
         true -> stringResource(Res.string.action_turn_on)
         false -> stringResource(Res.string.action_close)
         null -> stringResource(Res.string.setting_follow)
@@ -131,7 +132,7 @@ private fun TriStateSwitch(
             Modifier
                 .minimumInteractiveComponentSize()
                 .semantics {
-                    stateDescription = description
+                    this.stateDescription = description
                 }
                 .triStateToggleable(
                     state = toggleableState,
@@ -684,6 +685,7 @@ fun GkTriStateSwitch(
     enabled: Boolean = true,
     colors: GkTriStateSwitchColors = GkTriStateSwitchDefaults.colors(),
     interactionSource: MutableInteractionSource? = null,
+    stateDescription: String? = null,
 ) = key(key) {
     TriStateSwitch(
         checked = checked,
@@ -693,5 +695,6 @@ fun GkTriStateSwitch(
         enabled = enabled,
         colors = colors,
         interactionSource = interactionSource,
+        stateDescription = stateDescription,
     )
 }

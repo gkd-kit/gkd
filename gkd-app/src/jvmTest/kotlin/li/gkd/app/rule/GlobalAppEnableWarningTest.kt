@@ -34,7 +34,7 @@ class GlobalAppEnableWarningTest {
         val configs = SubscriptionConfigSnapshot(subsItems = listOf(SubsItem(-2, order = 0)))
         val targets = (1..5).map { RuleSwitchTarget.GlobalApp(-2, it, "app.id") }
         val warnings = RuleGroupConfigService.prepare(targets, listOf(subscription), configs).enableWarnings
-        assertEquals(listOf(1, 3, 4, 5), warnings.map { it.target.groupKey })
+        assertEquals(listOf(1, 2, 4, 5), warnings.map { it.target.groupKey })
         val combined = warnings.first()
         assertTrue(combined.builtInDisabled)
         assertEquals(listOf("开屏广告", "广告", "开屏广告-跳过"), combined.similarGroups.map { it.name })
@@ -52,7 +52,7 @@ class GlobalAppEnableWarningTest {
         assertTrue(RuleGroupConfigService.prepare(listOf(RuleSwitchTarget.GlobalGroup(-2, 1)), listOf(subscription), configs).enableWarnings.isEmpty())
     }
     @Test
-    fun builtinDisableCountsRespectChildOverridesAndIgnoreVersionAndPageRestrictions() {
+    fun builtinDisableUsesOnlyGroupSettingsAndIgnoresVersionAndPageRestrictions() {
         val subscription = RawSubscription.parse("""{
           id:-2,name:'Test',version:0,globalGroups:[
             {key:1,name:'All',apps:[{id:'app.id',enable:false}],rules:[{matches:'*'},{matches:'*'}]},
@@ -67,8 +67,8 @@ class GlobalAppEnableWarningTest {
             (1..3).map { RuleSwitchTarget.GlobalApp(-2, it, "app.id") },
             listOf(subscription), SubscriptionConfigSnapshot(subsItems = listOf(SubsItem(-2, order = 0))),
         ).enableWarnings
-        assertEquals(listOf(2, 1, 1), warnings.map { it.disabledRuleCount })
-        assertEquals(listOf(2, 2, 2), warnings.map { it.ruleCount })
+        assertEquals(listOf(1, 2), warnings.map { it.target.groupKey })
+        assertTrue(warnings.all { it.builtInDisabled })
     }
 
     @Test

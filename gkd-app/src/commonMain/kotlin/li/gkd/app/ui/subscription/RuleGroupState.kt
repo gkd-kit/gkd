@@ -9,6 +9,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import li.gkd.app.model.ExcludeData
+import li.gkd.db.SubsGlobalGroupConfig
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.app_rule_missing
 import li.gkd.app.resources.delete_named_confirmation
@@ -160,6 +161,14 @@ class RuleGroupState(
                 excludeAppId = showGroupState.appId,
                 onDismissRequest = dismiss,
                 control = displayed.control,
+                matchAnyApp = (subsConfig as? SubsGlobalGroupConfig)?.matchAnyApp,
+                onMatchAnyAppChange = { value ->
+                    scope.launchUi {
+                        RuleGroupConfigService.setMatchAnyApp(
+                            showSubs, RuleGroupTarget.Global(showSubs.id, showGroup.key), value,
+                        )
+                    }
+                },
                 onSettingChange = { setting ->
                     val change = RuleGroupConfigService.prepare(
                         listOf(showGroupState.toSwitchTarget()),
