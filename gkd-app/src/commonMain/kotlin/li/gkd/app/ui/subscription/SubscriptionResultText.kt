@@ -13,7 +13,6 @@ import li.gkd.app.resources.subscription_file_delete_cancelled
 import li.gkd.app.resources.subscription_file_download_failed
 import li.gkd.app.resources.subscription_file_parsing_failed
 import li.gkd.app.resources.subscription_file_save_failed
-import li.gkd.app.resources.subscription_id_mismatched
 import li.gkd.app.resources.subscription_id_reserved
 import li.gkd.app.resources.subscriptions_updated_count
 import li.gkd.app.resources.updates_none
@@ -54,7 +53,6 @@ suspend fun SubscriptionResult.message(): String? = when (this) {
         )
 
         SubscriptionResult.FailureReason.AlreadyExists -> getString(Res.string.subscription_exists)
-        SubscriptionResult.FailureReason.IdMismatch -> getString(Res.string.subscription_id_mismatched)
         SubscriptionResult.FailureReason.InvalidId -> getString(Res.string.subscription_id_reserved,
             detail.orEmpty()
         )

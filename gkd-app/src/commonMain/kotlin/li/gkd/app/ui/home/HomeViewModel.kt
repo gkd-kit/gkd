@@ -92,7 +92,7 @@ class HomeViewModel : BaseViewModel() {
         Db.appLastVisitDao.query(),
         globalGroupCounts = { it.groups.appIdToGlobalGroupCount },
         appGroups = { it.groups.appIdToAllGroups },
-    ).catch { emit(Loadable.Failure(it)) }.stateInit(Loadable.Loading)
+    ).stateInit(Loadable.Loading)
 
     private val batchMutex = MutexState()
     val batchBusyFlow: StateFlow<Boolean> get() = batchMutex.state
@@ -160,8 +160,4 @@ class HomeViewModel : BaseViewModel() {
         SubscriptionRepository.requestEnabled(item.id, true, confirmed = true)
     }
 
-    suspend fun addOrModifySubscription(
-        url: String,
-        oldItem: SubsItem? = null,
-    ): SubscriptionResult = SubscriptionRepository.addOrModifyRemote(url, oldItem)
 }

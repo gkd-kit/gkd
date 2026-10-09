@@ -126,7 +126,7 @@ fun SubscriptionException.messageSync(): String {
 
 /** Resolves business errors at the rendering boundary, including persistence wrappers. */
 @Composable
-fun Throwable.subscriptionMessageResource(): String? = when (this) {
+fun Throwable.subscriptionMessageResource(): String = when (this) {
     is SubscriptionException -> messageResource()
     is li.gkd.app.subscription.SubscriptionPersistence.DeleteException -> cause?.subscriptionMessageResource() ?: toString()
     is li.gkd.app.storage.StorageException -> stringResource(issue.resource, *arguments.map { it.toString() }.toTypedArray())

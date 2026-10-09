@@ -165,18 +165,11 @@ object SubscriptionRepository {
         }
         updateMutex.withStateLock {
             val currentItem = Db.subsItemDao.queryAll().find { it.id == subscription.id }
-            try {
-                saveLocked(
-                    subscription = subscription,
-                    newItem = currentItem ?: defaultItem,
-                    insertItem = currentItem == null,
-                )
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                setUpdateError(subscription.id, e)
-                throw e
-            }
+            saveLocked(
+                subscription = subscription,
+                newItem = currentItem ?: defaultItem,
+                insertItem = currentItem == null,
+            )
         }
     }
 
@@ -247,15 +240,8 @@ object SubscriptionRepository {
                 throw SubscriptionException(SubscriptionFailureReason.SubscriptionIdImmutable, listOf(id.toString(), next.id.toString()))
             }
             if (next == current) return@withStateLock
-            try {
-                saveLocked(next)
-                changed = true
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                setUpdateError(id, e)
-                throw e
-            }
+            saveLocked(next)
+            changed = true
         }
         changed
     }
@@ -305,22 +291,19 @@ object SubscriptionRepository {
 
     suspend fun addOrModifyRemote(
         url: String,
-        oldItem: SubsItem? = null,
+        id: Long? = null,
     ): SubscriptionResult = withContext(Dispatchers.IO) {
-        fun failure(
-            reason: SubscriptionResult.FailureReason,
-            detail: String? = null,
-            cause: Exception = IllegalArgumentException(reason.name),
-        ): SubscriptionResult.Failure {
-            oldItem?.id?.let { setUpdateError(it, cause) }
-            return SubscriptionResult.Failure(reason, detail, cause)
-        }
-
         var result: SubscriptionResult = SubscriptionResult.Busy
         val acquired = updateMutex.tryWithStateLock {
             val items = Db.subsItemDao.queryAll()
-            if (items.any { it.updateUrl == url && it.id != oldItem?.id }) {
-                result = failure(SubscriptionResult.FailureReason.DuplicateUrl)
+            if (items.any { it.updateUrl == url && it.id != id }) {
+                result = SubscriptionResult.Failure(SubscriptionResult.FailureReason.DuplicateUrl)
+                return@tryWithStateLock
+            }
+            if (id != null) {
+                val item = items.first { it.id == id }
+                Db.subsItemDao.update(item.copy(updateUrl = url))
+                result = SubscriptionResult.Success(SubscriptionResult.SuccessKind.Modified)
                 return@tryWithStateLock
             }
             val text = try {
@@ -330,7 +313,7 @@ object SubscriptionRepository {
             } catch (e: Exception) {
                 e.printStackTrace()
                 LogUtils.d(e)
-                result = failure(
+                result = SubscriptionResult.Failure(
                     reason = SubscriptionResult.FailureReason.Download,
                     cause = e,
                 )
@@ -341,28 +324,24 @@ object SubscriptionRepository {
             } catch (e: Exception) {
                 e.printStackTrace()
                 LogUtils.d(e)
-                result = failure(
+                result = SubscriptionResult.Failure(
                     reason = SubscriptionResult.FailureReason.Parse,
                     cause = e,
                 )
                 return@tryWithStateLock
             }
-            if (oldItem == null && items.any { it.id == subscription.id }) {
-                result = failure(SubscriptionResult.FailureReason.AlreadyExists)
-                return@tryWithStateLock
-            }
-            if (oldItem != null && oldItem.id != subscription.id) {
-                result = failure(SubscriptionResult.FailureReason.IdMismatch)
+            if (items.any { it.id == subscription.id }) {
+                result = SubscriptionResult.Failure(SubscriptionResult.FailureReason.AlreadyExists)
                 return@tryWithStateLock
             }
             if (subscription.id < 0) {
-                result = failure(
+                result = SubscriptionResult.Failure(
                     reason = SubscriptionResult.FailureReason.InvalidId,
                     detail = subscription.id.toString(),
                 )
                 return@tryWithStateLock
             }
-            val newItem = oldItem?.copy(updateUrl = url) ?: SubsItem(
+            val newItem = SubsItem(
                 id = subscription.id,
                 updateUrl = url,
                 order = if (items.isEmpty()) 1 else items.maxOf { it.order } + 1,
@@ -371,38 +350,31 @@ object SubscriptionRepository {
                 saveLocked(
                     subscription = subscription,
                     newItem = newItem,
-                    insertItem = oldItem == null,
+                    insertItem = true,
                 )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                setUpdateError(oldItem?.id ?: subscription.id, e)
                 result = SubscriptionResult.Failure(
                     reason = SubscriptionResult.FailureReason.Save,
                     cause = e,
                 )
                 return@tryWithStateLock
             }
-            result = SubscriptionResult.Success(
-                if (oldItem == null) {
-                    SubscriptionResult.SuccessKind.Added
-                } else {
-                    SubscriptionResult.SuccessKind.Modified
-                },
-            )
+            result = SubscriptionResult.Success(SubscriptionResult.SuccessKind.Added)
         }
         if (!acquired) return@withContext SubscriptionResult.Busy
         result
     }
 
-    suspend fun refresh(): SubscriptionResult = withContext(Dispatchers.IO) {
+    suspend fun refresh(id: Long? = null): SubscriptionResult = withContext(Dispatchers.IO) {
         if (snapshotFlow.value is Loadable.Loading) {
             return@withContext SubscriptionResult.Busy
         }
         var result: SubscriptionResult = SubscriptionResult.Busy
         val acquired = updateMutex.tryWithStateLock {
             val items = try {
-                Db.subsItemDao.queryAll()
+                Db.subsItemDao.queryAll().filter { id == null || it.id == id }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -535,6 +507,14 @@ object SubscriptionRepository {
         return nextSnapshot
     }
 
+    suspend fun dismissUpdateError(id: Long, error: Exception) {
+        updateMutex.withStateLock {
+            if (snapshotFlow.value.value?.updateErrors?.get(id) === error) {
+                clearUpdateError(id)
+            }
+        }
+    }
+
     private fun clearUpdateError(id: Long) {
         val snapshot = snapshotFlow.value.value ?: return
         if (id !in snapshot.updateErrors) return
@@ -569,8 +549,7 @@ object SubscriptionRepository {
         val itemUpdateUrl = item.updateUrl ?: return null
         if (item.id < 0) return null
         val checkUrl = current?.checkUpdateUrl?.let { check ->
-            val base = current.updateUrl ?: itemUpdateUrl
-            runCatching { URI(base).resolve(check).toString() }.getOrNull()
+            runCatching { URI(itemUpdateUrl).resolve(check).toString() }.getOrNull()
         }
         if (checkUrl != null) {
             try {
@@ -584,9 +563,8 @@ object SubscriptionRepository {
                 LogUtils.d("快速检测更新失败", item, e.message)
             }
         }
-        val updateUrl = current?.updateUrl ?: itemUpdateUrl
         val text = try {
-            NetworkClients.client.get(updateUrl).bodyAsText()
+            NetworkClients.client.get(itemUpdateUrl).bodyAsText()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

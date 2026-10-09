@@ -50,7 +50,8 @@ data class ActionLogDialogState(
     val subsConfig: SubsGroupConfig?,
     val subscription: RawSubscription?,
     val group: RawSubscription.RawGroupProps?,
-    val configs: Loadable<SubscriptionConfigSnapshot>,
+    val configs: SubscriptionConfigSnapshot?,
+    val loadState: Loadable<Unit>,
     val activityDisabled: Boolean,
 )
 
@@ -129,7 +130,13 @@ class ActionLogViewModel(
                     subsConfig = subsConfig,
                     subscription = subscription,
                     group = group,
-                    configs = configs,
+                    configs = configs.value,
+                    loadState = when {
+                        configs is Loadable.Failure -> configs
+                        snapshot is Loadable.Failure -> snapshot
+                        configs is Loadable.Loading || snapshot is Loadable.Loading -> Loadable.Loading
+                        else -> Loadable.Ready(Unit)
+                    },
                     activityDisabled = actionLog.activityId?.let { activityId ->
                         exclude.activityIds.contains(actionLog.appId to activityId)
                     } ?: false,
@@ -159,7 +166,7 @@ class ActionLogViewModel(
             listOf(
                 group.toRuleGroupTarget(subscription.id, state.actionLog.appId).toSwitchTarget()
             ),
-            listOf(subscription), checkNotNull(state.configs.value)
+            listOf(subscription), checkNotNull(state.configs)
         )
     }
 

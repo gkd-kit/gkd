@@ -187,9 +187,7 @@ fun CrashReportPage() {
             item(key = "crash-report-footer") {
                 if (crashDataList.isEmpty() && records !is Loadable.Loading) {
                     GkEmptyState(
-                        text =
-                            (records as? Loadable.Failure)?.cause?.message
-                                ?: stringResource(Res.string.crash_reports_empty)
+                        text = stringResource(Res.string.crash_reports_empty)
                     )
                 }
                 GkPageBottomSpace()

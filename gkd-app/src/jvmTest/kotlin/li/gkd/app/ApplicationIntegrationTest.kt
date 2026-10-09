@@ -1,6 +1,7 @@
 package li.gkd.app
 
 import androidx.lifecycle.ViewModelStore
+import androidx.compose.runtime.snapshots.Snapshot
 import java.io.File
 import java.io.IOException
 import java.util.zip.ZipEntry
@@ -14,8 +15,11 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
@@ -113,6 +117,7 @@ class ApplicationIntegrationTest {
                 assertTrue(appStorage().subscription.resolve("92.json").isFile)
                 assertPlatformInputs(runtime.simulator)
                 assertSubscriptionCreationNames()
+                li.gkd.app.subscription.assertUpdateErrorDismissal(runtime.simulator)
                 assertHomeLifecycle()
                 assertRootNavigationLifecycle(runtime)
                 assertAppRuleParentVisibility()
@@ -233,6 +238,12 @@ class ApplicationIntegrationTest {
         val initialRevision = toast.revision
         assertFalse(li.gkd.app.network.isNetworkAvailable())
         val networkUnavailable = getString(Res.string.network_unavailable)
+        // This headless runtime has no composition to dispatch global snapshot changes.
+        val snapshotChanges = Channel<Unit>(Channel.CONFLATED)
+        val observer = Snapshot.registerGlobalWriteObserver { snapshotChanges.trySend(Unit) }
+        val notificationJob = launch(Dispatchers.Main) {
+            for (change in snapshotChanges) Snapshot.sendApplyNotifications()
+        }
         try {
             file.writeText("invalid-json")
             val update = UpdateStatus(
@@ -264,6 +275,9 @@ class ApplicationIntegrationTest {
             assertEquals("[10,20]", file.readText())
             assertEquals(initialRevision + 3, toast.revision)
         } finally {
+            observer.dispose()
+            snapshotChanges.close()
+            notificationJob.cancel()
             if (file.isDirectory) check(file.delete())
             if (previous == null) file.delete() else file.writeBytes(previous)
         }

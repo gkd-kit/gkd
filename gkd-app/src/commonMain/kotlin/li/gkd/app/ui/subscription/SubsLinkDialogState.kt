@@ -26,14 +26,15 @@ import li.gkd.app.permission.AppPermission
 import li.gkd.app.permission.PermissionRequester
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.action_cancel
+import li.gkd.app.resources.action_copy
 import li.gkd.app.resources.action_ok
+import li.gkd.app.resources.action_save
 import li.gkd.app.resources.link_invalid
 import li.gkd.app.resources.subscription_add
 import li.gkd.app.resources.subscription_duplicate_link
-import li.gkd.app.resources.subscription_edit
+import li.gkd.app.resources.subscription_link
 import li.gkd.app.resources.subscription_help
 import li.gkd.app.resources.subscription_link_input_hint
-import li.gkd.app.resources.unchanged
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.component.GkAlertDialog
 import li.gkd.app.ui.component.GkIconButton
@@ -42,6 +43,7 @@ import li.gkd.app.ui.component.autoFocus
 import li.gkd.app.ui.navigation.AppNavigator
 import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.ToastUtils
+import li.gkd.app.util.copyText
 import org.jetbrains.compose.resources.stringResource
 
 private data class SubsLinkDialogRequest(
@@ -75,11 +77,6 @@ class SubsLinkDialogState(
         val value = request.value
         if (!LocalNetworkUrls.isNetworkUrl(value)) {
             ToastUtils.show(Res.string.link_invalid.getSync())
-            return
-        }
-        if (request.initialValue.isNotEmpty() && request.initialValue == value) {
-            ToastUtils.show(Res.string.unchanged.getSync())
-            complete(null)
             return
         }
         if (value in request.existingUrls) {
@@ -117,7 +114,7 @@ class SubsLinkDialogState(
                 }
             }
         }
-        if (value != null && LocalNetworkUrls.isLocalNetworkUrl(value) && !permissions.ensurePermissions(AppPermission.LocalNetwork)) {
+        if (initialValue.isEmpty() && value != null && LocalNetworkUrls.isLocalNetworkUrl(value) && !permissions.ensurePermissions(AppPermission.LocalNetwork)) {
             return null
         }
         return value
@@ -128,6 +125,7 @@ class SubsLinkDialogState(
         val request by requestFlow.collectAsStateWithLifecycle()
         val currentRequest = request
         if (currentRequest != null) {
+            val editing = currentRequest.initialValue.isNotEmpty()
             GkAlertDialog(
                 properties = DialogProperties(dismissOnClickOutside = false),
                 title = {
@@ -137,8 +135,8 @@ class SubsLinkDialogState(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
-                            text = if (currentRequest.initialValue.isNotEmpty()) {
-                                stringResource(Res.string.subscription_edit)
+                            text = if (editing) {
+                                stringResource(Res.string.subscription_link)
                             } else {
                                 stringResource(Res.string.subscription_add)
                             },
@@ -157,7 +155,7 @@ class SubsLinkDialogState(
                         maxLines = 8,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .autoFocus(),
+                            .then(if (editing) Modifier else Modifier.autoFocus()),
                         placeholder = {
                             Text(text = stringResource(Res.string.subscription_link_input_hint))
                         },
@@ -168,17 +166,28 @@ class SubsLinkDialogState(
                 onDismissRequest = ::cancel,
                 confirmButton = {
                     TextButton(
-                        enabled = currentRequest.value.isNotEmpty(),
+                        enabled = currentRequest.value.isNotEmpty() &&
+                                currentRequest.value != currentRequest.initialValue,
                         onClick = {
                             submit(currentRequest)
                         },
                     ) {
-                        Text(text = stringResource(Res.string.action_ok))
+                        Text(text = stringResource(if (editing) Res.string.action_save else Res.string.action_ok))
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = ::cancel) {
-                        Text(text = stringResource(Res.string.action_cancel))
+                    Row {
+                        if (editing) {
+                            TextButton(
+                                enabled = currentRequest.value.isNotEmpty(),
+                                onClick = { copyText(currentRequest.value) },
+                            ) {
+                                Text(text = stringResource(Res.string.action_copy))
+                            }
+                        }
+                        TextButton(onClick = ::cancel) {
+                            Text(text = stringResource(Res.string.action_cancel))
+                        }
                     }
                 },
             )

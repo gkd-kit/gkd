@@ -79,6 +79,7 @@ import li.gkd.app.resources.settings_title
 import li.gkd.app.resources.sort_filter
 import li.gkd.app.resources.text_copy
 import li.gkd.app.ui.icon.AndroidHead
+import li.gkd.app.ui.icon.LinkDiagonal as SharedLinkDiagonal
 import li.songe.morph.compose.AnimatedMorphIcon
 import org.jetbrains.compose.resources.stringResource
 import li.gkd.app.ui.icon.CollapseContent as SharedCollapseContent
@@ -169,6 +170,7 @@ fun getIconDefaultDesc(imageVector: ImageVector): String? = when (imageVector) {
 object GkIcons {
     val PlayArrow get() = Icons.Filled.PlayArrow
     val Link get() = Icons.Outlined.Link
+    val LinkDiagonal get() = SharedLinkDiagonal
     val CheckCircle get() = Icons.Outlined.CheckCircle
     val RemoveCircleOutline get() = Icons.Outlined.RemoveCircleOutline
     val StackedDocuments get() = SharedStackedDocuments

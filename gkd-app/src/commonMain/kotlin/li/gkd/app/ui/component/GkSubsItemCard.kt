@@ -51,7 +51,7 @@ import li.gkd.app.resources.subscription_numbered_name
 import li.gkd.app.resources.subscription_order_description
 import li.gkd.app.resources.subscription_switch_paused_description
 import li.gkd.app.resources.subscription_version_description
-import li.gkd.app.resources.update_error_detail
+import li.gkd.app.resources.subscription_update_failed
 import li.gkd.app.resources.update_time_description
 import li.gkd.app.resources.version_prefixed
 import org.jetbrains.compose.resources.stringResource
@@ -60,7 +60,7 @@ data class SubscriptionCardData(
     val id: Long, val enabled: Boolean, val name: String?, val version: Int = 0,
     val author: String? = null, val globalGroups: Int = 0, val apps: Int = 0,
     val appGroups: Int = 0, val updatedAt: String, val appName: String,
-    val loadError: String? = null, val refreshError: String? = null,
+    val loadError: String? = null, val updateFailed: Boolean = false,
 )
 
 @Composable
@@ -244,12 +244,9 @@ fun GkSubsItemCard(
                         color = color
                     )
                 }
-                if (data.refreshError != null) {
+                if (data.updateFailed) {
                     Text(
-                        text = stringResource(
-                            Res.string.update_error_detail,
-                            data.refreshError.orEmpty()
-                        ),
+                        text = stringResource(Res.string.subscription_update_failed),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error
                     )

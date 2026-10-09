@@ -34,15 +34,7 @@ class CrashReportViewModel(
         )
 
     private val initialLoadJob = scope.launch(Dispatchers.IO) {
-        crashDataState.value = try {
-            Loadable.Ready(FileCrashStorage.load())
-        } catch (e: Exception) {
-            if (initialCrashDataList.isEmpty()) {
-                Loadable.Failure(e)
-            } else {
-                Loadable.Ready(initialCrashDataList)
-            }
-        }
+        crashDataState.value = Loadable.Ready(FileCrashStorage.load())
     }
 
     suspend fun deleteCrash(crashData: CrashData) {

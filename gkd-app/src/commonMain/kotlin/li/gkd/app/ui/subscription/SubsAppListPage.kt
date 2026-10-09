@@ -30,7 +30,6 @@ import li.gkd.app.resources.search_no_results_filter_hint
 import li.gkd.app.resources.search_open
 import li.gkd.app.resources.subscription_app_switch_batch_confirmation
 import li.gkd.app.resources.subscription_app_switch_set
-import li.gkd.app.resources.subscription_load_failed
 import li.gkd.app.rule.RuleConfigIndex
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.settings.SettingsRepository
@@ -302,7 +301,7 @@ fun SubsAppListPage(
                 if (apps.isEmpty() && !firstLoading) {
                     GkEmptyState(
                         text = if (loadError != null) {
-                            loadError.subscriptionMessageResource() ?: stringResource(Res.string.subscription_load_failed)
+                            loadError.subscriptionMessageResource()
                         } else if (searchStr.isNotEmpty()) {
                             if (showAllApps) stringResource(Res.string.search_no_results) else stringResource(
                                 Res.string.search_no_results_filter_hint

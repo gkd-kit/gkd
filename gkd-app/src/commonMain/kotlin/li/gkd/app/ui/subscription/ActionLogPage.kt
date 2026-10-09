@@ -388,7 +388,6 @@ private fun ActionLogDialog(
     onToggleActivityExclusion: () -> Unit,
 ) {
     val actionLog = state.actionLog
-    val subscriptions by SubscriptionRepository.snapshotFlow.collectAsStateWithLifecycle()
 
     val environment = rememberRuleControlEnvironment()
     GkRuleSettingsSheet(
@@ -397,10 +396,10 @@ private fun ActionLogDialog(
             ?: actionLog.appId else null,
         onDismissRequest = onDismissRequest,
     ) {
-        val configs = state.configs.value
-        if (state.configs is Loadable.Failure || subscriptions is Loadable.Failure) {
+        val configs = state.configs
+        if (state.loadState is Loadable.Failure) {
             Text(stringResource(Res.string.data_load_failed), Modifier.padding(16.dp))
-        } else if (state.configs is Loadable.Loading || subscriptions is Loadable.Loading) {
+        } else if (state.loadState is Loadable.Loading) {
             Text(stringResource(Res.string.loading_progress), Modifier.padding(16.dp))
         }
         if (state.subscription != null && state.group != null && configs != null) {

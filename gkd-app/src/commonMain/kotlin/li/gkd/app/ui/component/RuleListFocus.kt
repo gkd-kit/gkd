@@ -1,10 +1,7 @@
 package li.gkd.app.ui.component
 
 import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListLayoutInfo
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -13,19 +10,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.rule_focus_missing
-import org.jetbrains.compose.resources.stringResource
 
 data class RuleListFocus(
     val pending: Boolean,
-    val missing: Boolean,
     val highlightedKey: Any?,
 )
 
@@ -36,15 +27,16 @@ fun rememberRuleListFocus(
     scrollState: ListScrollState,
     itemKeys: List<Any>,
     targetExists: Boolean,
+    onTargetMissing: suspend () -> Unit,
     ready: Boolean = true,
     stickyHeaderKeys: Set<Any> = emptySet(),
     onRevealTarget: () -> Unit = {},
 ): RuleListFocus {
     var handled by remember(requestKey) { mutableStateOf(requestKey == null) }
-    var missing by remember(requestKey) { mutableStateOf(false) }
     var positionedKey by remember(requestKey) { mutableStateOf<Any?>(null) }
     var highlightedKey by remember(requestKey) { mutableStateOf<Any?>(null) }
     val revealTarget by rememberUpdatedState(onRevealTarget)
+    val notifyTargetMissing by rememberUpdatedState(onTargetMissing)
     val currentStickyHeaderKeys by rememberUpdatedState(stickyHeaderKeys)
     val listState = scrollState.listState
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -52,8 +44,8 @@ fun rememberRuleListFocus(
     LaunchedEffect(requestKey, ready, itemKeys, targetExists, stickyHeaderKeys) {
         if (handled || !ready || requestKey == null) return@LaunchedEffect
         if (!targetExists) {
-            missing = true
             handled = true
+            notifyTargetMissing()
             return@LaunchedEffect
         }
         val index = itemKeys.indexOf(requestKey)
@@ -100,7 +92,7 @@ fun rememberRuleListFocus(
             highlightedKey = null
         }
     }
-    return RuleListFocus(pending = !handled, missing = missing, highlightedKey = highlightedKey)
+    return RuleListFocus(pending = !handled, highlightedKey = highlightedKey)
 }
 
 private fun LazyListLayoutInfo.isUnobscured(key: Any, stickyHeaderKeys: Set<Any>): Boolean {
@@ -116,12 +108,3 @@ private fun LazyListLayoutInfo.unobscuredTop(stickyHeaderKeys: Set<Any>): Int {
         .maxOfOrNull { it.offset + it.size }?.coerceAtLeast(top) ?: top
 }
 
-@Composable
-fun GkRuleFocusNotice() {
-    Text(
-        text = stringResource(Res.string.rule_focus_missing),
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-}

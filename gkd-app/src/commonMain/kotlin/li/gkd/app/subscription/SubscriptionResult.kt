@@ -29,7 +29,6 @@ sealed interface SubscriptionResult {
         Download,
         Parse,
         AlreadyExists,
-        IdMismatch,
         InvalidId,
         Save,
         NetworkUnavailable,

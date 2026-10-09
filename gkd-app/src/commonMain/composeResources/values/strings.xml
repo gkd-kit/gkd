@@ -333,7 +333,6 @@
     <string name="feedback_thanks_prefix">感谢您愿意花时间反馈，</string>
     <string name="feedback_title">反馈</string>
     <string name="file_delete_failed">无法删除 %1$s</string>
-    <string name="file_load_failed_or_missing">文件加载错误或不存在</string>
     <string name="file_missing">文件不存在</string>
     <string name="file_not_selected">未选择文件</string>
     <string name="file_saved_to_downloads">已保存 %1$s 到下载</string>
@@ -809,7 +808,6 @@
     <string name="subscription_details_view">查看订阅详情</string>
     <string name="subscription_disabled">订阅已关闭</string>
     <string name="subscription_duplicate_link">已有相同链接订阅</string>
-    <string name="subscription_edit">修改订阅</string>
     <string name="subscription_edit_success">成功修改订阅</string>
     <string name="subscription_exists">订阅已存在</string>
     <string name="subscription_file_delete_cancelled">删除订阅文件失败，已取消删除</string>
@@ -825,14 +823,11 @@
     <string name="subscription_help">订阅帮助</string>
     <string name="subscription_id_description">id=%1$s</string>
     <string name="subscription_id_immutable">订阅id不可修改: %1$s -&gt; %2$s</string>
-    <string name="subscription_id_mismatched">订阅id不对应</string>
     <string name="subscription_id_reserved">订阅id不可为%1$s\n负数id为内部使用</string>
     <string name="subscription_invalid_filename">非法订阅文件名: %1$s</string>
     <string name="subscription_item_id_mismatch">订阅与订阅项id不一致: %1$s != %2$s</string>
     <string name="subscription_link">订阅链接</string>
-    <string name="subscription_link_edit">编辑订阅链接</string>
     <string name="subscription_link_input_hint">请输入订阅链接</string>
-    <string name="subscription_link_view">查看订阅链接</string>
     <string name="subscription_load_failed">订阅加载失败</string>
     <string name="subscription_local">本地订阅</string>
     <string name="subscription_memory">内存订阅</string>
@@ -912,7 +907,8 @@
     <string name="update_channel_stable">稳定版</string>
     <string name="update_check">检查更新</string>
     <string name="update_download">下载更新</string>
-    <string name="update_error_detail">更新错误: %1$s</string>
+    <string name="subscription_update_failed">更新失败</string>
+    <string name="subscription_update_error_dismiss">关闭更新错误提示</string>
     <string name="update_interval_daily">每天</string>
     <string name="update_interval_three_days">每3天</string>
     <string name="update_interval_weekly">每7天</string>

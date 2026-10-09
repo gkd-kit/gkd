@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.Res
+import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.resources.action_cancel
 import li.gkd.app.resources.action_delete
 import li.gkd.app.resources.data_load_failed
@@ -292,7 +293,7 @@ private fun subsManageContent(
                     } else {
                         vm.scope.launchUi {
                             val url = mainVm.subsLinkDialog.request() ?: return@launchUi
-                            vm.addOrModifySubscription(url).message()?.let { ToastUtils.show(it) }
+                            SubscriptionRepository.addOrModifyRemote(url).message()?.let { ToastUtils.show(it) }
                         }
                     }
                 },
@@ -375,7 +376,7 @@ private fun subsManageContent(
                                     updatedAt = formatTimeAgo(subItem.mtime),
                                     appName = appVersion().appName,
                                     loadError = state?.loadErrors?.get(subItem.id)?.subscriptionMessageResource(),
-                                    refreshError = state?.refreshErrors?.get(subItem.id)?.subscriptionMessageResource(),
+                                    updateFailed = state?.refreshErrors?.containsKey(subItem.id) == true,
                                 ),
                                 matchingEnabled = store.enableMatch,
                                 index = index + 1,

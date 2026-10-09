@@ -1,7 +1,7 @@
 package li.gkd.app.ui.subscription
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.DropdownMenu
@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import li.gkd.app.resources.Res
+import li.gkd.app.resources.rule_focus_missing
 import li.gkd.app.resources.action_close
 import li.gkd.app.resources.action_copy
 import li.gkd.app.resources.action_enable
@@ -30,7 +31,6 @@ import li.gkd.app.resources.app_rule_whitelist_remove_follow_confirm
 import li.gkd.app.resources.app_rules_batch_setting_confirmation
 import li.gkd.app.resources.data_empty
 import li.gkd.app.resources.data_empty_filter_hint
-import li.gkd.app.resources.data_load_failed
 import li.gkd.app.resources.filter_title
 import li.gkd.app.resources.not_enabled
 import li.gkd.app.resources.rule_add
@@ -59,7 +59,6 @@ import li.gkd.app.ui.component.GkMultiSelectionActions
 import li.gkd.app.ui.component.GkMultiSelectionTopAppBar
 import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkRuleBatchMenuItems
-import li.gkd.app.ui.component.GkRuleFocusNotice
 import li.gkd.app.ui.component.GkRuleGroupCard
 import li.gkd.app.ui.component.GkRuleListHeader
 import li.gkd.app.ui.component.GkScaffold
@@ -206,6 +205,7 @@ fun AppConfigPage(
     }
     val focus = rememberRuleListFocus(
         requestKey = focusKey,
+        onTargetMissing = { ToastUtils.show(getString(Res.string.rule_focus_missing)) },
         scrollState = pageScrollState,
         itemKeys = itemKeys,
         ready = loadableState is Loadable.Ready,
@@ -325,139 +325,136 @@ fun AppConfigPage(
             )
         },
     ) { contentPadding ->
-        Column(Modifier.scaffoldPadding(contentPadding)) {
-            if (focus.missing) GkRuleFocusNotice()
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                state = listState,
-            ) {
-                if (showAppRestriction) {
-                    item("app-restrictions") {
-                        GkAppRuleRestrictionCard(
-                            whitelisted = whitelisted,
-                            partialDisabled = partialDisabled,
-                            partialFollowsWhitelist = partialFollowsWhitelist,
-                            onRemoveWhitelist = {
-                                scope.launchUi {
-                                    if (mainVm.dialogRequests.confirm(
-                                            title = getString(Res.string.whitelist_remove),
-                                            text = if (partialFollowsWhitelist) getString(Res.string.app_rule_whitelist_remove_follow_confirm)
-                                            else getString(Res.string.app_rule_whitelist_remove_confirm),
-                                            confirmText = getString(Res.string.app_rule_restriction_remove),
-                                            dismissOnRequest = true,
-                                        )
-                                    ) vm.removeFromWhitelist()
-                                }
-                            },
-                            onRemovePartialDisable = {
-                                scope.launchUi {
-                                    if (mainVm.dialogRequests.confirm(
-                                            title = getString(Res.string.app_rule_partial_disable_remove),
-                                            text = getString(Res.string.app_rule_partial_disable_remove_confirm),
-                                            confirmText = getString(Res.string.app_rule_restriction_remove),
-                                            dismissOnRequest = true,
-                                        )
-                                    ) vm.removeFromPartialDisable()
-                                }
-                            },
+        LazyColumn(
+            modifier = Modifier.scaffoldPadding(contentPadding).fillMaxSize(),
+            state = listState,
+        ) {
+            if (showAppRestriction) {
+                item("app-restrictions") {
+                    GkAppRuleRestrictionCard(
+                        whitelisted = whitelisted,
+                        partialDisabled = partialDisabled,
+                        partialFollowsWhitelist = partialFollowsWhitelist,
+                        onRemoveWhitelist = {
+                            scope.launchUi {
+                                if (mainVm.dialogRequests.confirm(
+                                        title = getString(Res.string.whitelist_remove),
+                                        text = if (partialFollowsWhitelist) getString(Res.string.app_rule_whitelist_remove_follow_confirm)
+                                        else getString(Res.string.app_rule_whitelist_remove_confirm),
+                                        confirmText = getString(Res.string.app_rule_restriction_remove),
+                                        dismissOnRequest = true,
+                                    )
+                                ) vm.removeFromWhitelist()
+                            }
+                        },
+                        onRemovePartialDisable = {
+                            scope.launchUi {
+                                if (mainVm.dialogRequests.confirm(
+                                        title = getString(Res.string.app_rule_partial_disable_remove),
+                                        text = getString(Res.string.app_rule_partial_disable_remove_confirm),
+                                        confirmText = getString(Res.string.app_rule_restriction_remove),
+                                        dismissOnRequest = true,
+                                    )
+                                ) vm.removeFromPartialDisable()
+                            }
+                        },
+                    )
+                }
+            }
+            subsPairs.forEach { (entry, groups) ->
+                val subsId = entry.subsItem.id
+                stickyHeader(entry.subsItem.id) {
+                    GkRuleListHeader(
+                        onClick = {
+                            mainVm.navigator.navigate(
+                                if (entry.subscription.apps.any { it.id == appId })
+                                    SubsAppGroupListRoute(
+                                        subsId,
+                                        appId
+                                    ) else SubsGlobalGroupListRoute(
+                                    subsId
+                                )
+                            )
+                        },
+                    ) {
+                        Text(
+                            modifier = Modifier.weight(1f),
+                            text = entry.subscription.name,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
-                subsPairs.forEach { (entry, groups) ->
-                    val subsId = entry.subsItem.id
-                    stickyHeader(entry.subsItem.id) {
-                        GkRuleListHeader(
-                            onClick = {
-                                mainVm.navigator.navigate(
-                                    if (entry.subscription.apps.any { it.id == appId })
-                                        SubsAppGroupListRoute(
-                                            subsId,
-                                            appId
-                                        ) else SubsGlobalGroupListRoute(
-                                        subsId
-                                    )
-                                )
-                            },
-                        ) {
-                            Text(
-                                modifier = Modifier.weight(1f),
-                                text = entry.subscription.name,
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
+                items(groups, { Triple(subsId, it.groupType, it.key) }) { group ->
+                    val isSelected = selectedDataSet.any {
+                        it.subsId == subsId && it.groupType == group.groupType && it.groupKey == group.key
                     }
-                    items(groups, { Triple(subsId, it.groupType, it.key) }) { group ->
-                        val isSelected = selectedDataSet.any {
-                            it.subsId == subsId && it.groupType == group.groupType && it.groupKey == group.key
-                        }
-                        val onLongClick = {
-                            if (!batchBusy) {
-                                selectionState.select(
-                                    group.toRuleGroupTarget(
-                                        subsId = subsId,
-                                        appId = appId,
-                                    ),
-                                )
-                            }
-                        }
-                        val onSelectedChange = {
-                            selectionState.toggle(
+                    val onLongClick = {
+                        if (!batchBusy) {
+                            selectionState.select(
                                 group.toRuleGroupTarget(
                                     subsId = subsId,
                                     appId = appId,
-                                )
+                                ),
                             )
                         }
-                        GkRuleGroupCard(
-                            modifier = Modifier.animateListItem(),
-                            subs = entry.subscription,
-                            appId = appId,
-                            group = group,
-                            control = controls.getValue(group.toRuleGroupTarget(subsId, appId)),
-                            onOpen = {
-                                mainVm.showRuleGroup(subsId, appId, group, appId)
-                            },
-                            onSettingChange = { setting ->
-                                val request = vm.prepareSwitches(
-                                    checkNotNull(state),
-                                    setOf(group.toRuleGroupTarget(subsId, appId))
-                                )
-                                scope.launchUi {
-                                    vm.applySwitches(request, setting)
-                                        ?.failureMessage()?.let { ToastUtils.show(it) }
-                                }
-                            },
-                            onLongClick = onLongClick,
-                            isSelectedMode = isSelectedMode,
-                            selectionEnabled = !batchBusy,
-                            isSelected = isSelected,
-                            onSelectedChange = onSelectedChange,
-                            highlighted = !isSelectedMode && focus.highlightedKey == Triple(
-                                subsId,
-                                group.groupType,
-                                group.key
-                            ),
+                    }
+                    val onSelectedChange = {
+                        selectionState.toggle(
+                            group.toRuleGroupTarget(
+                                subsId = subsId,
+                                appId = appId,
+                            )
                         )
                     }
-                }
-                item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                    if (groupSize == 0 && !firstLoading) {
-                        GkEmptyState(
-                            text = if (loadError != null) {
-                                loadError.subscriptionMessageResource() ?: stringResource(Res.string.data_load_failed)
-                            } else if (showDisabledRules) {
-                                stringResource(Res.string.data_empty)
-                            } else {
-                                stringResource(Res.string.data_empty_filter_hint)
+                    GkRuleGroupCard(
+                        modifier = Modifier.animateListItem(),
+                        subs = entry.subscription,
+                        appId = appId,
+                        group = group,
+                        control = controls.getValue(group.toRuleGroupTarget(subsId, appId)),
+                        onOpen = {
+                            mainVm.showRuleGroup(subsId, appId, group, appId)
+                        },
+                        onSettingChange = { setting ->
+                            val request = vm.prepareSwitches(
+                                checkNotNull(state),
+                                setOf(group.toRuleGroupTarget(subsId, appId))
+                            )
+                            scope.launchUi {
+                                vm.applySwitches(request, setting)
+                                    ?.failureMessage()?.let { ToastUtils.show(it) }
                             }
-                        )
-                    } else {
-                        GkPageBottomSpace()
-                    }
+                        },
+                        onLongClick = onLongClick,
+                        isSelectedMode = isSelectedMode,
+                        selectionEnabled = !batchBusy,
+                        isSelected = isSelected,
+                        onSelectedChange = onSelectedChange,
+                        highlighted = !isSelectedMode && focus.highlightedKey == Triple(
+                            subsId,
+                            group.groupType,
+                            group.key
+                        ),
+                    )
+                }
+            }
+            item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
+                if (groupSize == 0 && !firstLoading) {
+                    GkEmptyState(
+                        text = if (loadError != null) {
+                            loadError.subscriptionMessageResource()
+                        } else if (showDisabledRules) {
+                            stringResource(Res.string.data_empty)
+                        } else {
+                            stringResource(Res.string.data_empty_filter_hint)
+                        }
+                    )
+                } else {
+                    GkPageBottomSpace()
                 }
             }
         }
