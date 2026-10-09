@@ -157,6 +157,9 @@ compose.desktop.application {
 tasks.withType<JavaExec>().matching { it.name == "run" || it.name == "runRelease" }
     .configureEach {
         systemProperty("gkd.projectRoot", rootProject.projectDir.absolutePath)
+        // Match Gradle's UTF-8 decoder instead of the Windows native output encoding.
+        systemProperty("stdout.encoding", "UTF-8")
+        systemProperty("stderr.encoding", "UTF-8")
     }
 
 if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
