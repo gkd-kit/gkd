@@ -92,6 +92,29 @@ adb shell am start -n li.songe.gkd.debug/li.gkd.app.MainActivity -a li.gkd.actio
 
 ## HTTP 调试
 
+### 服务启动模拟
+
+生产页面的服务开关已接入 Desktop 生命周期管理，包括常驻通知、快照按钮、界面、事件、轨迹、截屏、HTTP、无障碍和自动化服务。HTTP 使用真实服务端，其他服务使用生命周期模拟。F12 控制窗口的“服务生命周期（模拟）”可配置成功、失败或手动完成，以及授权同意、取消或弹窗确认。截屏服务默认弹出模拟授权框；手动启动保持“启动中”，直到投递连接完成或失败事件。
+
+运行状态由 `SimulatorStore` 统一提供，页面重载不会停止服务；退出 Desktop 后不恢复运行状态。模拟条件会保存到会话 `simulator.json`。模拟不执行 Android 自动化、真实截屏或悬浮窗。HTTP 服务复用 Android 的共享检查路由，实际监听 `127.0.0.1:<httpServerPort>`（默认 8888），与 17322 开发控制接口独立。页面可打开真实地址；修改端口时重启监听，关闭时释放端口，并按“自动清空内存订阅”设置清理 HTTP 订阅。快照列表/文件读取、删除和订阅更新使用真实 Repository/DAO；`captureSnapshot`、`execSelector` 返回不支持，设备信息标识 Desktop。特权模拟断开会结束依赖它的自动化模拟。
+
+可在隔离宿主中使用工具（`--port` 默认 17322）：
+
+```powershell
+pnpm app:tools services
+# 在控制窗口将界面服务的启动结果设为“手动完成”后：
+pnpm app:tools service-start --service Activity
+# 将 1 替换为启动输出中的 runtime.Activity.attempt：
+pnpm app:tools service-event --service Activity --event Connected --attempt 1
+pnpm app:tools service-stop --service Activity
+```
+
+`GET /services` 返回各服务的 `plans`、`runtime` 和 `[simulation]` 日志。`POST /services/command` 接收 `{"service":"Activity","enabled":true}`；`POST /services/event` 接收 `service`、`type`、`attempt` 及可选 `reason`。HTTP 不接受模拟完成/故障事件，也不使用模拟启动结果，其状态由真实端口绑定结果决定。其他服务事件类型为 `Authorized`、`Cancelled`、`Connected`、`Failed`（启动失败或运行中异常终止），`attempt` 使用当前服务返回的编号，旧请求的完成事件会被忽略。
+
+模拟条件通过控制窗口或 `/simulator/patch` 设置，例如 `{"services":{"plans":{"Activity":{"startResult":"Manual"}}}}`。服务枚举为 `Status`、`Button`、`Activity`、`Event`、`Track`、`Screenshot`、`Http`、`Accessibility`、`Automation`。`/simulator` 替换配置保留现有服务运行状态，`/simulator/patch` 不接受 `services.runtime/logs`；启停与故障使用服务命令/事件。验证页面按钮时仍通过 `/action` 操作真实控件。
+
+### 控件与数据接口
+
 所有写入检查先核对 `GET /state` 的 `isolated` 为 true。操作串行执行；节点失效时重新读取目标窗口控件树，只重试尚未执行的操作。
 
 | 方法与路径 | 用途 |

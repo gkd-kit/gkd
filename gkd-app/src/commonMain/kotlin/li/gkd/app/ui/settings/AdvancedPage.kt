@@ -116,7 +116,7 @@ fun AdvancedPage(
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val httpRunning: Boolean = httpRunning()
 
-    val localNetworkIps: List<String> = localNetworkIps()
+    val serverAddresses: List<String> = httpServerAddresses()
 
     val buttonServiceRunning: Boolean = snapshotButtonRunning()
 
@@ -183,7 +183,10 @@ fun AdvancedPage(
             onConfirm = { text ->
                 val oldPort = SettingsRepository.settings.value.httpServerPort
                 if (SettingsRepository.saveHttpServerPort(text)) {
-                    if (oldPort != text.toInt()) ToastUtils.show(Res.string.update_success.getSync())
+                    if (oldPort != text.toInt()) {
+                        host.httpServerPortChanged()
+                        ToastUtils.show(Res.string.update_success.getSync())
+                    }
                     vm.setShowEditPortDialog(false)
                 } else {
                     ToastUtils.show(Res.string.http_port_input_hint.getSync())
@@ -238,7 +241,7 @@ fun AdvancedPage(
                 running = httpRunning,
                 settingsSelected = showHttpSettingsDialog,
                 port = store.httpServerPort,
-                localNetworkIps = localNetworkIps,
+                serverAddresses = serverAddresses,
                 onSettingsClick = { vm.setShowHttpSettingsDialog(true) },
                 onRunningChange = host::setHttpServiceEnabled,
                 onAddressClick = mainVm.textDialog::showUrl,
@@ -298,6 +301,8 @@ expect fun UiHost.setSnapshotButtonEnabled(enabled: Boolean)
 
 expect fun UiHost.setHttpServiceEnabled(enabled: Boolean)
 
+expect fun UiHost.httpServerPortChanged()
+
 expect fun UiHost.setActivityMonitorEnabled(enabled: Boolean)
 
 expect fun UiHost.setEventMonitorEnabled(enabled: Boolean)
@@ -306,7 +311,7 @@ expect fun UiHost.setTrackServiceEnabled(enabled: Boolean)
 
 @Composable expect fun httpRunning(): Boolean
 
-@Composable expect fun localNetworkIps(): List<String>
+@Composable expect fun httpServerAddresses(): List<String>
 
 @Composable expect fun snapshotButtonRunning(): Boolean
 
@@ -331,7 +336,7 @@ private fun HttpServiceItem(
     running: Boolean,
     settingsSelected: Boolean,
     port: Int,
-    localNetworkIps: List<String>,
+    serverAddresses: List<String>,
     onSettingsClick: () -> Unit,
     onRunningChange: (Boolean) -> Unit,
     onAddressClick: (String) -> Unit,
@@ -404,9 +409,8 @@ private fun HttpServiceItem(
                         bottom = 4.dp,
                     )
             ) {
-                addressItem(Constants.loopbackHost, stringResource(Res.string.network_local_device))
-                localNetworkIps.forEach { host ->
-                    addressItem(host, stringResource(Res.string.network_lan))
+                serverAddresses.forEach { host ->
+                    addressItem(host, stringResource(if (host == Constants.loopbackHost) Res.string.network_local_device else Res.string.network_lan))
                 }
             }
         }

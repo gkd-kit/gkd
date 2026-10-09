@@ -87,10 +87,7 @@ data class SimulatorSettings(
                 ignoreBatteryOptimizations = a.ignoreBatteryOptimizations,
                 writeSecureSettings = a.writeSecureSettings
             ),
-            services = SimulatedServices(
-                a.serviceEnabled, a.automationRunning, a.a11yEnabled,
-                a.partiallyDisabled, a.activityRunning, a.statusEnabled
-            ),
+            services = services.copy(a11yEnabled = a.a11yEnabled, partiallyDisabled = a.partiallyDisabled),
             prompts = SimulatedPrompts(a.restrictedWarning, a.automationOccupied),
             privilege = if (privilege.available == a.privilegeAvailable) privilege else privilege.withAvailability(
                 a.privilegeAvailable
@@ -100,11 +97,14 @@ data class SimulatorSettings(
 
     fun persistent() = copy(
         device = device.copy(imeVisible = false, batteryPercent = defaultSimulatedDevice.batteryPercent),
+        services = services.persistent(),
         privilege = privilege.persistent()
     )
 
     fun validate() {
         environment().validate()
+        require(services.plans.keys == SimulatedService.entries.toSet() - SimulatedService.Http) { "Invalid service plans" }
+        require(services.runtime.keys == SimulatedService.entries.toSet()) { "Missing service states" }
         require(privilege.tcpPort in 1..65535) { "Invalid TCP port" }
         require(privilege.activeTcpPort == null || privilege.activeTcpPort in 1..65535) { "Invalid active TCP port" }
     }
@@ -136,17 +136,11 @@ data class SimulatedDevice(
 
 @Serializable
 data class SimulatedPermissions(
+    val notificationGranted: Boolean = true, val overlayGranted: Boolean = true,
     val canQueryPackages: Boolean = true, val queryPackagesAbnormal: Boolean = false,
     val restricted: Boolean = false, val localNetworkGranted: Boolean = true,
     val ignoreBatteryOptimizations: Boolean = false, val writeSecureSettings: Boolean = false,
     val deniedServerPermissions: Set<String> = emptySet(),
-)
-
-@Serializable
-data class SimulatedServices(
-    val serviceEnabled: Boolean = false, val automationRunning: Boolean = false,
-    val a11yEnabled: Boolean = false, val partiallyDisabled: Boolean = false,
-    val activityRunning: Boolean = false, val statusEnabled: Boolean = false,
 )
 
 @Serializable

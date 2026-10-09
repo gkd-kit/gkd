@@ -41,6 +41,10 @@ class DesktopRuntime(
     private val scope = applicationScope()
     val appCatalog = DesktopAppCatalog(simulator)
     val toast = ToastState()
+    val httpService = DesktopHttpService(simulator, scope, toast::show)
+    val services = DesktopServiceSimulation(simulator, httpService::setEnabled) { enabled ->
+        SettingsRepository.updateSettings { it.copy(enableStatusService = enabled) }
+    }
     private var pendingCrashData = emptyList<CrashData>()
     val hasPendingCrashReports get() = pendingCrashData.isNotEmpty()
     val crashInitialization = scope.launch(Dispatchers.IO) {
@@ -106,6 +110,9 @@ class DesktopRuntime(
             current = this
         }
         AppInfoRepository.initialize()
+        simulator.onServiceRunningChanged = { service, running ->
+            toast.show(serviceLifecycleToast(service, running))
+        }
         simulator.onAppCatalogChanged = { AppInfoRepository.requestRefresh() }
         AppInfoRepository.requestRefresh()
         Thread.setDefaultUncaughtExceptionHandler(crashHandler)
@@ -150,11 +157,14 @@ class DesktopRuntime(
     }
 
     override fun close() {
+        simulator.onServiceRunningChanged = null
         simulator.onAppCatalogChanged = null
         if (Thread.getDefaultUncaughtExceptionHandler() === crashHandler) Thread.setDefaultUncaughtExceptionHandler(
             previousCrashHandler
         )
         try {
+            httpService.close()
+            services.close()
             runBlocking {
                 try {
                     RuntimeRecordRepository.flush()

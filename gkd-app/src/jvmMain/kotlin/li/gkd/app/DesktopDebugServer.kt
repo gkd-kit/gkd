@@ -167,6 +167,23 @@ class DesktopDebugServer private constructor(private val stop: () -> Unit) : Aut
                             call.respond(result)
                         }
                     }
+                    get("/services") { call.respond(state.simulator.settings.value.services) }
+                    post("/services/command") {
+                        call.validated {
+                            val request = call.receive<ServiceCommand>()
+                            withContext(Edt) { runtime.services.setEnabled(request.service, request.enabled) }
+                            awaitFrame()
+                            call.respond(state.simulator.settings.value.services)
+                        }
+                    }
+                    post("/services/event") {
+                        call.validated {
+                            val request = call.receive<ServiceEvent>()
+                            withContext(Edt) { runtime.services.event(request) }
+                            awaitFrame()
+                            call.respond(state.simulator.settings.value.services)
+                        }
+                    }
                     get("/simulator") { call.respond(state.simulator.settings.value) }
                     post("/simulator/patch") {
                         call.validated {

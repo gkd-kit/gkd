@@ -1,5 +1,14 @@
 package li.gkd.app
 
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import li.gkd.app.resources.*
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+
 import li.gkd.app.permission.AndroidPermissions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,6 +35,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import li.gkd.app.ui.component.GkTextSwitch
 import li.gkd.app.ui.component.GkTopAppBar
 import kotlin.math.roundToInt
+import li.gkd.app.resources.Res
+import li.gkd.app.resources.simulation_accessibility_enabled
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun DesktopControls(
@@ -75,6 +87,7 @@ fun DesktopControls(
                 }) { Text("旋转") }
                 OutlinedButton(onClick = { state.load(state.scenario) }) { Text("重置页面") }
             }
+            ServiceSimulationControls(state)
             Text("视口", style = MaterialTheme.typography.titleMedium)
             GkControlSlider(
                 "宽度 dp",
@@ -188,10 +201,6 @@ fun DesktopControls(
                     }
                 })
             GkTextSwitch(
-                title = "无障碍运行（模拟）",
-                checked = android.serviceEnabled,
-                onCheckedChange = { v -> system { it.copy(serviceEnabled = v) } })
-            GkTextSwitch(
                 title = "特权服务（模拟）",
                 checked = settings.privilege.available,
                 onCheckedChange = { v ->
@@ -199,10 +208,6 @@ fun DesktopControls(
                         state.simulator.setPrivilegeAvailable(v)
                     }
                 })
-            GkTextSwitch(
-                title = "常驻通知（模拟）",
-                checked = android.statusEnabled,
-                onCheckedChange = { v -> system { it.copy(statusEnabled = v) } })
             GkTextSwitch(
                 title = "忽略电池优化（模拟）",
                 checked = android.ignoreBatteryOptimizations,
@@ -212,21 +217,15 @@ fun DesktopControls(
                 checked = android.writeSecureSettings,
                 onCheckedChange = { v -> system { it.copy(writeSecureSettings = v) } })
             GkTextSwitch(
-                title = "自动化运行（模拟）",
-                checked = android.automationRunning,
-                onCheckedChange = { v -> system { it.copy(automationRunning = v) } })
-            GkTextSwitch(
-                title = "无障碍已启用但未连接（模拟）",
+                title = stringResource(Res.string.simulation_accessibility_enabled),
                 checked = android.a11yEnabled,
-                onCheckedChange = { v -> system { it.copy(a11yEnabled = v) } })
+                onCheckedChange = { v -> state.simulatorCommand {
+                    DesktopRuntime.requireCurrent().services.setAccessibilityEnabled(v)
+                } })
             GkTextSwitch(
                 title = "局部禁用（模拟）",
                 checked = android.partiallyDisabled,
                 onCheckedChange = { v -> system { it.copy(partiallyDisabled = v) } })
-            GkTextSwitch(
-                title = "活动记录服务（模拟）",
-                checked = android.activityRunning,
-                onCheckedChange = { v -> system { it.copy(activityRunning = v) } })
             GkTextSwitch(
                 title = "系统设置受限（模拟）",
                 checked = settings.permissions.restricted,
@@ -344,4 +343,94 @@ private fun GkControlSlider(
             onValueChangeFinished = onFinished
         )
     }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ServiceSimulationControls(state: DesktopState) {
+    val settings by state.simulator.settings.collectAsStateWithLifecycle()
+    val controller = DesktopRuntime.requireCurrent().services
+    Text(stringResource(Res.string.simulation_services), style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(Res.string.simulation_services_description), style = MaterialTheme.typography.bodySmall)
+    GkTextSwitch(
+        title = stringResource(Res.string.permission_notifications),
+        checked = settings.permissions.notificationGranted,
+        onCheckedChange = { value -> state.simulatorCommand { state.simulator.update {
+            it.copy(permissions = it.permissions.copy(notificationGranted = value))
+        } } },
+    )
+    GkTextSwitch(
+        title = stringResource(Res.string.permission_overlay),
+        checked = settings.permissions.overlayGranted,
+        onCheckedChange = { value -> state.simulatorCommand { state.simulator.update {
+            it.copy(permissions = it.permissions.copy(overlayGranted = value))
+        } } },
+    )
+    var selectedService by remember { mutableStateOf(SimulatedService.Status) }
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        SimulatedService.entries.forEach { service ->
+            FilterChip(selected = selectedService == service, onClick = { selectedService = service },
+                label = { Text(stringResource(service.label())) })
+        }
+    }
+    val service = selectedService
+    val current = settings.services.state(service)
+    fun event(type: ServiceEventType) = state.simulatorCommand {
+        controller.event(ServiceEvent(service, type, current.attempt))
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        HorizontalDivider()
+        Text(stringResource(Res.string.simulation_service_status,
+            stringResource(service.label()), stringResource(current.phase.label())))
+        current.failure?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            OutlinedButton(onClick = { state.simulatorCommand { controller.setEnabled(service, true) } }) {
+                Text(stringResource(Res.string.simulation_start))
+            }
+            OutlinedButton(onClick = { state.simulatorCommand { controller.setEnabled(service, false) } }) {
+                Text(stringResource(Res.string.action_stop))
+            }
+            if (current.phase == ServicePhase.Starting && service != SimulatedService.Http) {
+                OutlinedButton(onClick = { event(ServiceEventType.Connected) }) { Text(stringResource(Res.string.simulation_complete)) }
+                OutlinedButton(onClick = { event(ServiceEventType.Failed) }) { Text(stringResource(Res.string.simulation_failed)) }
+            }
+            if (current.phase == ServicePhase.AwaitingAuthorization) {
+                OutlinedButton(onClick = { event(ServiceEventType.Authorized) }) { Text(stringResource(Res.string.action_agree)) }
+                OutlinedButton(onClick = { event(ServiceEventType.Cancelled) }) { Text(stringResource(Res.string.action_cancel)) }
+            }
+            if (current.phase == ServicePhase.Running && service != SimulatedService.Http) {
+                OutlinedButton(onClick = { event(ServiceEventType.Failed) }) { Text(stringResource(Res.string.simulation_terminate)) }
+            }
+        }
+        if (service != SimulatedService.Http) {
+            val plan = settings.services.plans.getValue(service)
+            Text(stringResource(Res.string.simulation_start_result), style = MaterialTheme.typography.labelMedium)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                ServiceStartResult.entries.forEach { result ->
+                    FilterChip(selected = plan.startResult == result,
+                        onClick = { state.simulatorCommand { controller.configure(service, plan.copy(startResult = result)) } },
+                        label = { Text(stringResource(when (result) {
+                            ServiceStartResult.Success -> Res.string.simulation_success
+                            ServiceStartResult.Failure -> Res.string.simulation_failed
+                            ServiceStartResult.Manual -> Res.string.simulation_manual
+                        })) })
+                }
+            }
+            if (service == SimulatedService.Screenshot || service == SimulatedService.Accessibility) {
+                Text(stringResource(Res.string.simulation_authorization_result), style = MaterialTheme.typography.labelMedium)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ServiceAuthorization.entries.forEach { authorization ->
+                        FilterChip(selected = plan.authorization == authorization,
+                            onClick = { state.simulatorCommand { controller.configure(service, plan.copy(authorization = authorization)) } },
+                            label = { Text(stringResource(when (authorization) {
+                                ServiceAuthorization.Allow -> Res.string.action_agree
+                                ServiceAuthorization.Cancel -> Res.string.action_cancel
+                                ServiceAuthorization.Manual -> Res.string.simulation_authorization_dialog
+                            })) })
+                    }
+                }
+            }
+        }
+    }
+    settings.services.logs.takeLast(8).forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
 }

@@ -18,6 +18,8 @@ class SimulatorStore(
         initial.validate(); Locale.setDefault(Locale.forLanguageTag(initial.environment().locale))
     }
 
+    var onServiceRunningChanged: ((SimulatedService, Boolean) -> Unit)? = null
+
     var onAppCatalogChanged: (() -> Unit)? = null
 
     private val json = Json { encodeDefaults = true }
@@ -30,11 +32,21 @@ class SimulatorStore(
     fun update(transform: (SimulatorSettings) -> SimulatorSettings) {
         val previous = settings.value
         val transformed = transform(previous)
-        val next = hostBatteryPercent?.let {
+        val nextWithBattery = hostBatteryPercent?.let {
             transformed.copy(
                 device = transformed.device.copy(batteryPercent = it)
             )
         } ?: transformed
+        var next = if (previous.privilege.available && !nextWithBattery.privilege.available &&
+            nextWithBattery.services.state(SimulatedService.Automation).active
+        ) nextWithBattery.copy(services = nextWithBattery.services.transition(
+            SimulatedService.Automation, ServicePhase.Failed, "Privilege service disconnected", newAttempt = true,
+        )) else nextWithBattery
+        if (previous.services.a11yEnabled && !next.services.a11yEnabled &&
+            next.services.state(SimulatedService.Accessibility).active
+        ) next = next.copy(services = next.services.transition(
+            SimulatedService.Accessibility, ServicePhase.Stopped, newAttempt = true,
+        ))
         next.validate()
         if (next == previous) return
         val persistent = next.persistent()
@@ -43,6 +55,10 @@ class SimulatorStore(
             Locale.setDefault(Locale.forLanguageTag(next.environment().locale))
         }
         settings.value = next
+        SimulatedService.entries.forEach { service ->
+            val running = next.services.running(service)
+            if (previous.services.running(service) != running) onServiceRunningChanged?.invoke(service, running)
+        }
         if (previous.permissions.canQueryPackages != next.permissions.canQueryPackages ||
             previous.permissions.queryPackagesAbnormal != next.permissions.queryPackagesAbnormal
         ) onAppCatalogChanged?.invoke()
@@ -57,7 +73,8 @@ class SimulatorStore(
     }
 
     fun replace(value: SimulatorSettings) = update { current ->
-        value.persistent().copy(
+        value.copy(
+            services = value.services.copy(runtime = current.services.runtime, logs = current.services.logs),
             privilege = value.privilege.persistent()
                 .copy(operationId = current.privilege.operationId + 1)
         )
@@ -65,6 +82,10 @@ class SimulatorStore(
 
     /** Field updates use the same model as the file and StateFlow. */
     fun patch(patch: JsonObject) = update { current ->
+        val servicePatch = patch["services"] as? JsonObject
+        require(servicePatch == null || servicePatch.keys.none { it == "runtime" || it == "logs" }) {
+            "Use /services/command or /services/event to change service runtime"
+        }
         val previous = json.encodeToJsonElement(current).jsonObject
         val next = json.decodeFromJsonElement<SimulatorSettings>(merge(previous, patch))
         next.copy(

@@ -21,6 +21,14 @@ export interface Environment {
   android: Record<string, number | boolean | string>;
 }
 export type SimulatorSettings = Record<string, Record<string, unknown>>;
+export type SimulatedService = 'Status' | 'Button' | 'Activity' | 'Event' | 'Track' | 'Screenshot' | 'Http' | 'Accessibility' | 'Automation';
+export type ServiceEventType = 'Authorized' | 'Cancelled' | 'Connected' | 'Failed';
+export interface ServiceSnapshot {
+  runtime: Record<SimulatedService, { phase: 'Stopped' | 'AwaitingAuthorization' | 'Starting' | 'Running' | 'Failed'; attempt: number; failure: string | null }>;
+  plans: Record<Exclude<SimulatedService, 'Http'>, { startResult: 'Success' | 'Failure' | 'Manual'; authorization: 'Allow' | 'Cancel' | 'Manual'; failure: string }>;
+  a11yEnabled: boolean; partiallyDisabled: boolean;
+  logs: string[];
+}
 export interface DesktopState {
   simulator: SimulatorSettings;
   isolated: boolean; page: string; variant: string; environment: Environment; lastEvent: string | null;
@@ -65,6 +73,11 @@ export class DesktopClient {
     return JSON.parse((await this.bytes(path, body)).toString()) as T;
   }
   state() { return this.json<DesktopState>('state'); }
+  services() { return this.json<ServiceSnapshot>('services'); }
+  serviceCommand(service: SimulatedService, enabled: boolean) { return this.json<ServiceSnapshot>('services/command', { service, enabled }); }
+  serviceEvent(service: SimulatedService, type: ServiceEventType, attempt: number, reason?: string) {
+    return this.json<ServiceSnapshot>('services/event', { service, type, attempt, ...(reason === undefined ? {} : { reason }) });
+  }
   window(window: WindowId = 'app') { return this.json<WindowSnapshot>(`window?window=${window}`); }
   scenario(page: string, extra: Record<string, unknown> = {}) { return this.json('scenario', { page, ...extra }); }
   replaceSimulator(value: SimulatorSettings) { return this.json('simulator', value); }

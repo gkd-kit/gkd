@@ -3,6 +3,8 @@ package li.gkd.app.ui.platform
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import li.gkd.app.DesktopRuntime
+import li.gkd.app.SimulatedService
+import li.gkd.app.selectedSimulatedAutomator
 import li.gkd.app.resources.Res
 import li.gkd.app.resources.platform_action_unsupported
 import li.gkd.app.ui.text.getSync
@@ -29,11 +31,13 @@ actual fun openRecents() {
 }
 
 actual fun openA11ySettings() {
-    ToastUtils.show(Res.string.platform_action_unsupported.getSync())
+    DesktopRuntime.requireCurrent().services.setEnabled(SimulatedService.Accessibility, true)
 }
 
 actual fun switchAutomator() {
-    ToastUtils.show(Res.string.platform_action_unsupported.getSync())
+    val service = selectedSimulatedAutomator()
+    val current = DesktopRuntime.requireCurrent().simulator.settings.value.services.state(service)
+    DesktopRuntime.requireCurrent().services.setEnabled(service, !current.active)
 }
 
 actual fun dynamicColorAvailable() = true

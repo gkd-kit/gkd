@@ -76,7 +76,7 @@ class PrivilegeRestrictionTest {
     fun serverRestrictionsDoNotStopExistingSimulatedAutomation() {
         val store = SimulatorStore(SimulatorSettings(
             permissions = SimulatedPermissions(writeSecureSettings = true),
-            services = SimulatedServices(automationRunning = true),
+            services = SimulatedServices().transition(SimulatedService.Automation, ServicePhase.Running),
             privilege = SimulatedPrivilege().withAvailability(true),
         ))
         for (permission in listOf(

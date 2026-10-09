@@ -1041,4 +1041,23 @@
     <string name="global_control_group_off">规则总开关已关闭。即使在此应用中开启，也不会生效。</string>
     <string name="global_rule_enable_builtin_partial_warning">订阅中默认关闭了此应用下的部分子规则。</string>
     <string name="global_rule_enable_name_list_warning">此应用已有以下应用规则，因此这条全局规则默认关闭：</string>
+    <string name="simulation_services">服务生命周期（模拟）</string>
+    <string name="simulation_services_description">HTTP 服务实际监听本机端口；其他服务仅模拟启停与授权，不执行 Android 截屏或悬浮窗。</string>
+    <string name="simulation_service_status">%1$s（模拟）：%2$s</string>
+    <string name="simulation_stopped">已停止</string>
+    <string name="simulation_authorizing">等待授权</string>
+    <string name="simulation_starting">启动中</string>
+    <string name="simulation_running">运行中</string>
+    <string name="simulation_failed">失败</string>
+    <string name="simulation_start">启动</string>
+    <string name="simulation_success">成功</string>
+    <string name="simulation_manual">手动完成</string>
+    <string name="simulation_authorization_dialog">弹窗确认</string>
+    <string name="simulation_start_result">启动结果</string>
+    <string name="simulation_authorization_result">授权结果</string>
+    <string name="simulation_complete">连接完成</string>
+    <string name="simulation_terminate">异常终止</string>
+    <string name="simulation_authorization_title">%1$s（模拟授权）</string>
+    <string name="simulation_authorization_message">是否允许本次模拟启动？此操作不会获取真实 Android 权限。</string>
+    <string name="simulation_accessibility_enabled">无障碍系统开关（模拟，开启后可处于未连接状态）</string>
 </resources>
